@@ -133,9 +133,15 @@ class EMGUIModule(EventsEmitterAndReciever):
 		EventsEmitterAndReciever.__init__(self)
 		self.disable_inspector = False
 	
+	def setWindowTitle(self,title):
+		pass
+	
 	def enable_inspector(self,val=True): self.disable_inspector = not val
 	def emitter(self):
 		return self.core_object
+	
+	def show(self):
+		get_application().show_specific(self)
 	
 	def emit(self,*args,**kargs):
 		self.core_object.emit(*args,**kargs)

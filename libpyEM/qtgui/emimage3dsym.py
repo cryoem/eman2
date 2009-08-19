@@ -358,7 +358,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			if getattr(self,dl) != 0:
 				glDeleteLists(getattr(self,dl),1)
 				setattr(self,dl,0)
-						
+	
+	def set_data(self,emdata_list):
+		return self.set_emdata_list_as_data(emdata_list)
+				
 	def set_emdata_list_as_data(self,emdata_list,default="None"):
 		self.euler_data = EulerData()
 		self.euler_data.set_data(emdata_list)

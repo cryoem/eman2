@@ -543,7 +543,14 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.qt_context_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 
 		if data == None: return
-		self.data = data
+		
+		if data.get_zsize() == 1:
+			new_data = EMData(data.get_xsize(),data.get_ysize(),2)
+			new_data.insert_clip(data,[0,0,0])
+			new_data.insert_clip(data,[0,0,1])
+			self.data = new_data
+		else: self.data = data
+		
 		self.data.process_inplace("normalize.edgemean")
 		
 		nx,ny,nz = self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()

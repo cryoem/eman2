@@ -113,19 +113,12 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def init_font_renderer(self):
 		if self.font_renderer == None:
 			self.font_renderer = get_3d_font_renderer()
-#<<<<<<< emplot3d.py
-#			self.font_renderer.set_face_size(self.font_size)
-#			self.font_renderer.set_depth(12)
-#			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-#=======
 			self.font_renderer.set_face_size(self.font_size)
 			self.font_renderer.set_depth(self.font_depth)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
-#>>>>>>> 1.18
-		
+			
 	def set_data_based_coloring(self,value): 
 		self.data_based_coloring = value	
-		print "set dbc to",value
 
 	def set_Rotations(self,rotList): # Added by Muthu
 		self.rotaList = rotList
@@ -285,7 +278,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 				traceback.print_exc()
 				print "couldn't read",filename
 				return False
-				
+		
+		self.full_refresh()
 		return True
 	
 	def parse_txt_file(filename):
@@ -310,44 +304,53 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		
 		'''
 		
-		if len(data) < 2:
-			print "error, the length of the input data must be atleast 2"
+		if isinstance(data,EMData):
+			v = data.get_data_as_vector()
+			x = [i for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+			y = [j for i in range(data.get_xsize()) for j in range(data.get_ysize())]
+			working_data = [x,y,v]
+		else: working_data = data
+				
+		if len(working_data) < 2:
+			print "error, the length of the input working_data must be atleast 2"
 			return
 		l = -1
-		for d in data:
+		for d in working_data:
 			if l == -1: l = len(d)
 			else:
 				if l != len(d):
-					print "error, the axis data must all be the same length"
+					print "error, the axis working_data must all be the same length"
 					return
 		
 		if clear_current: 
-			self.clear_data() # use this so there's only one function
+			self.clear_working_data() # use this so there's only one function
 		
-		# note no checking, if the old data exists it is simply replaced
-		self.data[key] = data
+		# note no checking, if the old working_data exists it is simply replaced
+		self.data[key] = working_data
 		self.visibility[key] = True
-		if len(data) == 2:
+		if len(working_data) == 2:
 			self.axes[key] = [0,1]
-		else: # the data must have atleast 3 axes, this is guaranteed by the checking functions at the entry point into this function 
+		else: # the working_data must have atleast 3 axes, this is guaranteed by the checking functions at the entry point into this function 
 			self.axes[key] = [0,1,2]
 			
-			keys = self.colors.keys()
-			n = len(keys)
-			
-			
-			self.axis_colors[key] = "Color cube"
-			self.shapes[key] = shape
+			#keys = self.colors.keys()
+			#n = len(keys)
+				
+		
+		if not self.axis_colors.has_key(key): self.axis_colors[key] = "Color cube"
+		if not self.shapes.has_key(key):	self.shapes[key] = shape
 			
 		min  = []
 		max = []
-		for d in data:
+		for d in working_data:
 			s = copy.copy(d)
 			s.sort()
 			min.append(s[0])
 			max.append(s[-1])
 		self.min[key] = min
 		self.max[key] = max
+		
+		self.full_refresh()
 
 
 	def init_color_themes(self):

@@ -749,15 +749,15 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			max = len(colortypes)
 			
 			for k in conv:
-				module.set_data(k,db[k],color=(i%max),linewidth=1) # there are only a ceratin number of  colors
+				module.set_data(db[k],k,color=(i%max),linewidth=1) # there are only a ceratin number of  colors
 				i += 1
 			
 			for plot in [eo,res]:
 				for k in plot:
-					module.set_data(k,db[k],color=(i%max),linewidth=3) # there are only a ceratin number of  colors
+					module.set_data(db[k],k,color=(i%max),linewidth=3) # there are only a ceratin number of  colors
 					i += 1
 					
-			get_application().show_specific(module)
+			module.show()
 			self.add_module([str(module),"Display",module])
 		else:
 			module = EMModuleFromFile(filename,get_application())

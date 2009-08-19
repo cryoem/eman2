@@ -643,6 +643,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			data = []
 			idx_included = []
 			running_idx = 0
+			from emimagemx import ApplyAttribute
 			for val in included:
 				bdata.append([self.particle_file,val,[ApplyAttribute("Img #",val)]])
 				idx_included.append(running_idx)
@@ -693,6 +694,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 					
 					t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
 					t.set_trans(x,y)
+					from emimagemx import ApplyTransform
 					f.append(ApplyTransform(t))
 					#data[i].transform(t)
 				self.particle_viewer.set_data(data)
@@ -751,20 +753,6 @@ def set_included_0(e):
 	e.set_attr("included",0)
 	e.mxset = [0]
 	
-class ApplyTransform:
-	def __init__(self,transform):
-		self.transform = transform
-	
-	def __call__(self,emdata):
-		emdata.transform(self.transform)
-		
-class ApplyAttribute:
-	def __init__(self,attribute,value):
-		self.attribute = attribute
-		self.value = value
-	
-	def __call__(self,emdata):
-		emdata.set_attr(self.attribute,self.value)
 
 
 class EMAsymmetricUnitInspector(EMSymInspector):

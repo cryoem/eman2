@@ -185,6 +185,10 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		from emimage3d import EMImage3DGeneralWidget
 		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
 			self.gl_context_parent.set_camera_defaults(self.data)
+			
+		if ( self.tex_dl != 0 ): 
+			glDeleteLists( self.tex_dl, 1)
+			self.tex_dl = 0
 		self.busy = False
 	def get_eman_transform(self,p):
 		

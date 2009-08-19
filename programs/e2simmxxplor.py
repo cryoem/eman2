@@ -85,6 +85,19 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.mx_display = None # mx display module for displaying projection and aligned particle
 		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
 		
+	def set_data(self,simmx_file):
+		'''
+		Can only set data using the name of a simmx file 
+		'''
+		if "EMAN2DB" in simmx_file: simmx_file = db_convert_path(simmx_file)
+		self.simmx_file = simmx_file
+		e = EMData()
+		e.read_image(simmx_file,0,True)
+		self.projection_file = e["projection_file"]
+		self.particle_file = e["particle_file"]
+		self.init_vitals()
+		self.regen_dl()
+		
 	def set_projection_file(self,file): self.projection_file = file
 	def set_simmx_file(self,file): self.simmx_file = file
 	def set_particle_file(self,file): self.particle_file = file

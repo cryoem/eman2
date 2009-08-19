@@ -159,7 +159,13 @@ class EMPlot2DModule(EMGUIModule):
 			self.gl_widget.setWindowTitle("2D Plot")
 			
 		return self.gl_widget
-	
+
+	def setWindowTitle(self,filename):
+		if isinstance(self.gl_context_parent,EMPlot2DWidget):
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
+		else:
+			if self.gl_widget != None:
+				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 	
 	def __init__(self,application=None):
 		EMGUIModule.__init__(self)
@@ -197,7 +203,7 @@ class EMPlot2DModule(EMGUIModule):
 		#self.clear_gl_memory()
 		self.core_object.deleteLater()
 
-	def set_data(self,key,input_data,replace=False,quiet=False,color=0,linewidth=1):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -327,6 +333,63 @@ class EMPlot2DModule(EMGUIModule):
 				return False
 				
 		return True
+	
+	def get_data_from_file(filename):
+		file_type = Util.get_filename_ext(filename)
+		em_file_type = EMUtil.get_image_ext_type(file_type)
+		data = None
+		
+		if em_file_type != IMAGE_UNKNOWN or filename[:4]=="bdb:" :
+			
+			im=EMData.read_images(filename)
+			if len(im) == 1:
+				im = im[0]
+				l = [i for i in range(im.get_size())]
+				k = im.get_data_as_vector()
+				data = [l,k]
+			elif im[0].get_attr_default("isvector",0):
+#				all=[i.get_data_as_vector() for i in im]
+
+				all=[]
+				for j in range(im[0].get_xsize()):
+					r=[]
+					for i in range(len(im)):
+						r.append(im[i][j,0])
+					all.append(r)
+				data = all
+			else:
+				for idx,image in enumerate(im):
+					l = [i for i in range(image.get_size())]
+					k = image.get_data_as_vector()
+					data = [l,k]
+				
+		elif file_type == 'fp':
+			fin=file(filename)
+			fph=struct.unpack("120sII",fin.read(128))
+			ny=fph[1]
+			nx=fph[2]
+			data=[]
+			for i in range(nx):
+				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+		else:
+			try:
+				fin=file(filename)
+				fin.seek(0)
+				rdata=fin.readlines()
+				rdata=[i for i in rdata if i[0]!='#']
+				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				nx=len(rdata[0])
+				ny=len(rdata)
+				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+					
+			except:
+				print "couldn't read",filename
+		
+		return data
+	
+	# make the function static
+	get_data_from_file = staticmethod(get_data_from_file)
 
 	def is_file_readable(filename):
 		'''

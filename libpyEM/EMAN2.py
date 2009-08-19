@@ -838,7 +838,13 @@ def remove_file( file_name, img_couples_too=True ):
 				os.remove(name+'img')
 			else: os.remove(name+file_tag)
 		else:
-			os.remove(file_name)
+			if os.path.isfile(file_name): os.remove(file_name)
+			elif os.path.isdir(file_name):
+				import shutil
+				shutil.rmtree(file_name)
+			else:
+				raise RuntimeError("Unknown url %s" %url)
+			
 		return True
 	elif db_check_dict(file_name):
 		db_remove_dict(file_name)

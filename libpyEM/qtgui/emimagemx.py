@@ -617,7 +617,7 @@ class EMImageMXModule(EMGUIModule):
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.target_translations_allowed(True)
-			self.update_window_title(self.file_name)
+			self.setWindowTitle(self.file_name)
 		return self.gl_widget
 	
 	def get_desktop_hint(self):
@@ -863,7 +863,7 @@ class EMImageMXModule(EMGUIModule):
 			return (int(w)+12,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
 		else: return (512+12,512+12)
 	
-	def update_window_title(self,filename):
+	def setWindowTitle(self,filename):
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
 			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
 		else:
@@ -874,44 +874,46 @@ class EMImageMXModule(EMGUIModule):
 		if self.data.set_xyz(str(xyz)):
 			self.display_states = []
 			self.updateGL()
-	def set_data(self,data_or_filename,filename='',update_gl=True,soft_delete=False):
+			
+	def __get_cache(self,obj,soft_delete=False):
+		'''
+		Get the correct cache for the given obj
+		@param obj a string or a list of EMData objects
+		@param soft_delete only applicable if obj is a list
+		'''
+		if isinstance(obj,str):
+			nx,ny,nz = gimme_image_dimensions3D(filename)
+			if nz == 1:
+				return EMLightWeightParticleCache.from_file(filename)
+			else:
+				return EM3DDataListCache(filename)
+		else:
+			if isinstance(obj,list):
+				return EMDataListCache(obj,-1,soft_delete=soft_delete)
+			else:
+				return None
+		
+	def set_data(self,obj,filename='',update_gl=True,soft_delete=False):
 		'''
 		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
 		If this solution is undesirable one could easily split this function into two equivalents.
 		'''
 		cache_size = -1
+		if isinstance(obj,EMMXDataCache): self.data = obj
+		else: self.data = self.__get_cache(obj,soft_delete)
 		
-		if isinstance(data_or_filename,str):
-			nx,ny,nz = gimme_image_dimensions3D(data_or_filename)
-#			bytes_per_image = nx*ny*4.0
-#			cache_size = int(75000000/bytes_per_image) # 75 MB
-			
-			if nz == 1:
-				#self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
-				# this is much faster
-				self.data = EMLightWeightParticleCache.from_file(data_or_filename)
-				self.get_inspector()
-				self.inspector.disable_xyz()
-			else:
-				self.data = EM3DDataListCache(data_or_filename)
-				self.get_inspector()
-				self.inspector.enable_xyz()
-				self.data.set_xyz(str(self.inspector.xyz.currentText()))
-				filename = data_or_filename
+		if self.data == None: return
+		
+		if self.data.is_3d():
+			self.get_inspector()
+			self.inspector.enable_xyz()
+			self.data.set_xyz(str(self.inspector.xyz.currentText()))
 		else:
-			
-			if isinstance(data_or_filename, EMLightWeightParticleCache):
-				self.data = data_or_filename
-			elif data_or_filename != None and len(data_or_filename) > 0:
-				self.data = EMDataListCache(data_or_filename,cache_size,soft_delete=soft_delete)
-				self.get_inspector()
-				self.inspector.disable_xyz()
-			else:
-				self.data= None
-				return
+			self.get_inspector()
+			self.inspector.disable_xyz()
 
 		self.file_name = filename
-		if self.file_name != None and len(self.file_name) > 0:self.update_window_title(self.file_name)
+		if self.file_name != None and len(self.file_name) > 0:self.setWindowTitle(self.file_name)
 		
 		self.force_display_update()
 		self.nimg=len(self.data)
@@ -2932,9 +2934,21 @@ class EMMXDataCache:
 	
 	def get_ysize(self):
 		'''
-		must be able to get the xsize of the data
+		must be able to get the zsize of the data
 		'''
 		raise NotImplementedException
+	
+	def get_zsize(self):
+		'''
+		must be able to get the zsize of the data
+		'''
+		raise NotImplementedException
+	
+	def is_complex(self):
+		raise NotImplementedException
+	
+	def get_attr(self,attr):
+		return self.get_image_header(0)[attr]
 	
 	def get_image_header_keys(self):
 		'''
@@ -2968,7 +2982,42 @@ class EMMXDataCache:
 			return None
 		except:
 			return self[idx]
+		
+	def is_3d(self):
+		'''
+		Asks whether the cache is of type 3D - so the inspector can have an x/y/z combo box
+		'''
+		raise NotImplementedException
 	
+	def set_xyz(self,x_y_or_z):
+		'''
+		Must be supplied by 3d type caches
+		@param x_y_or_z a string
+		'''
+		raise NotImplementedException
+
+class ApplyTransform:
+	def __init__(self,transform):
+		self.transform = transform
+	
+	def __call__(self,emdata):
+		emdata.transform(self.transform)
+		
+class ApplyAttribute:
+	def __init__(self,attribute,value):
+		self.attribute = attribute
+		self.value = value
+	
+	def __call__(self,emdata):
+		emdata.set_attr(self.attribute,self.value)
+
+class ApplyProcessor:
+	def __init__(self,processor="",processor_args={}):
+		self.processor = processor
+		self.processor_args = processor_args
+		
+	def __call__(self,data):
+		data.process_inplace(self.processor,self.processor_args)
 
 class EMLightWeightParticleCache(EMMXDataCache):
 	'''
@@ -3010,6 +3059,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		self.cache = [None for i in range(self.cache_max)]
 		self.xsize = None
 		self.ysize = None
+		self.zsize = None
 		self.header_keys = None
 		# set stuff
 		self.visible_sets = [] 
@@ -3020,6 +3070,8 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		support for len
 		'''
 		return len(self.data)
+	
+	def is_complex(self): return False
 	
 	def delete_box(self,idx):
 		'''
@@ -3047,6 +3099,16 @@ class EMLightWeightParticleCache(EMMXDataCache):
 			self.ysize = image.get_ysize()
 		
 		return self.ysize
+	
+	def get_zsize(self):
+		'''
+		Get the get_ysize of the particles. Assumes all particle have the same size, which is potentially flawed
+		'''
+		if self.zsize == None:
+			image = self[self.cache_start]
+			self.zsize = image.get_zsize()
+		
+		return self.zsize
 	
 	def get_image_header(self,idx):
 		'''
@@ -3131,7 +3193,8 @@ class EMLightWeightParticleCache(EMMXDataCache):
 				self.__load_item(idx,idx+self.cache_start)
 				return
 
-
+	def is_3d(self): return False
+	
 class EMDataListCache(EMMXDataCache):
 	'''
 	This class became semi-redundant after the introduction of the EMLightWeightParticleCache, however it is still used
@@ -3401,6 +3464,8 @@ class EMDataListCache(EMMXDataCache):
 		'''
 		pass
 	
+	def is_3d(self): return False
+	
 class EM3DDataListCache(EMMXDataCache):
 	'''
 	A class that looks like a list to the outside word
@@ -3427,6 +3492,8 @@ class EM3DDataListCache(EMMXDataCache):
 		and let the calling program display the deleted box differently
 		'''
 		return 0
+	
+	def is_complex(self): return False
 	
 	def set_xyz(self,xyz):
 		if xyz != self.major_axis:
@@ -3527,7 +3594,8 @@ class EM3DDataListCache(EMMXDataCache):
 		call this to load unloaded images in the cache, for example
 		'''
 		pass
-
+	
+	def is_3d(self): return True
 
 
 if __name__ == '__main__':

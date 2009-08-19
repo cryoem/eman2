@@ -118,10 +118,10 @@ class EMImageModule(object):
 			from emplot2d import EMPlot2DModule
 			if old:
 				if isinstance(old,EMPlot2DModule) :
-					old.set_data(remove_directories_from_name(filename),data)
+					old.set_data(data,remove_directories_from_name(filename),replace)
 					return old
 			module = EMPlot2DModule(application=app)
-			module.set_data(remove_directories_from_name(filename),data)
+			module.set_data(data,remove_directories_from_name(filename),replace)
 			return module	
 		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
 			from emimage2d import EMImage2DModule
@@ -164,10 +164,10 @@ class EMImageModule(object):
 				from emplot2d import EMPlot2DModule
 				if old:
 					if isinstance(old,EMPlot2DModule) :
-						old.set_data(remove_directories_from_name(filename),data,replace)
+						old.set_data(data,remove_directories_from_name(filename),replace)
 						return old
 				module = EMPlot2DModule(application=app)
-				module.set_data(remove_directories_from_name(filename),data,replace)
+				module.set_data(data,remove_directories_from_name(filename),replace)
 				return module	
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

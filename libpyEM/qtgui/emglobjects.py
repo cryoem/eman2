@@ -1867,7 +1867,16 @@ class EMImage3DGUIModule(EMGUIModule):
 			
 			
 		return self.gl_widget
+
 		
+	def setWindowTitle(self,filename):
+		from emimage3d import EMImage3DGeneralWidget,EMImage3DWidget
+		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget) or isinstance(self.gl_context_parent,EMImage3DWidget):
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
+		else:
+			if self.gl_widget != None:
+				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
+				
 	#def get_gl_widget(self,qt_parent=None):
 		#from emfloatingwidgets import EM3DGLView,EM3DGLWindow
 		#if self.gl_widget == None:

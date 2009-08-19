@@ -424,11 +424,14 @@ class EMStackSaveDialog(EMFileSaver):
 		progress.show()
 		tally = 0
 		for i in range(total_images):
-			try:
-					d = self.__item_list[i].get_emdata() # this will be case from the selector
-			except:
-				d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
-				if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface
+			if isinstance(self.__item_list[i],EMData):
+				d = self.__item_list[i]
+			else:
+				try:
+					d = self.__item_list[i].get_data() # this will be case from the selector
+				except:
+					d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
+					if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface
 			
 			progress.setValue(tally)
 			tally += 1
@@ -437,15 +440,14 @@ class EMStackSaveDialog(EMFileSaver):
 			# this is necessary to cause the progress bar to update on Mac, not sure about windows
 			QtCore.QCoreApplication.instance().processEvents()
 			
-			if not d.has_attr("excluded") or d["excluded"] == False:
-				try:
-					d.write_image(out_file,-1)
-				except:
-					msg.setText("An exception occured while writing %s, please try again" %out_file)
-					msg.exec_()
-					tmp_file_object.remove_tmp_file()
-					progress.close()
-					return 1
+			try:
+				d.write_image(out_file,-1)
+			except:
+				msg.setText("An exception occured while writing %s, please try again" %out_file)
+				msg.exec_()
+				tmp_file_object.remove_tmp_file()
+				progress.close()
+				return 1
 			#else if d == None this is the equivalent of the particle being deleted, which makes sense for the EMDataListCache
 				
 				
