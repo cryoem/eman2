@@ -749,7 +749,8 @@ class EM2DStackTable(EMFileTable):
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
-			self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
+			from emimagemx import EMLightWeightParticleCache
+			self.display_module.set_data(EMLightWeightParticleCache.from_file(filename)) #  I know this looks stupid, but c'est la vie
 			self.display_module.updateGL()
 					
 		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)

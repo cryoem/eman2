@@ -882,11 +882,11 @@ class EMImageMXModule(EMGUIModule):
 		@param soft_delete only applicable if obj is a list
 		'''
 		if isinstance(obj,str):
-			nx,ny,nz = gimme_image_dimensions3D(filename)
+			nx,ny,nz = gimme_image_dimensions3D(obj)
 			if nz == 1:
-				return EMLightWeightParticleCache.from_file(filename)
+				return EMLightWeightParticleCache.from_file(obj)
 			else:
-				return EM3DDataListCache(filename)
+				return EM3DDataListCache(obj)
 		else:
 			if isinstance(obj,list):
 				return EMDataListCache(obj,-1,soft_delete=soft_delete)

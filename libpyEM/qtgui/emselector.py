@@ -401,20 +401,20 @@ def EMSelectorBaseTemplate(Type):
 			self.__redo_list_widget_contents()
 		
 		def __redo_list_widget_contents(self):
-			self.lock = True
-			
-			directory = folderize(self.list_widgets[0].get_url())
-			for i,data in  enumerate(self.list_widget_data):
-				
-				if data != None:d = str(data.text())
-				old_row = self.list_widgets[i].currentRow()
-				self.__load_url(directory,self.list_widgets[i])
-				self.list_widget_data[i] = self.list_widgets[i].item(old_row)
-				if data == None: return
-				else:
-					directory = folderize(directory) + d
-		
-			self.lock = False
+			pass
+#			self.lock = True
+#			
+#			directory = folderize(self.list_widgets[0].get_url())
+#			for i,data in  enumerate(self.list_widget_data):
+#				if data != None:d = str(data.text())
+#				old_row = self.list_widgets[i].currentRow()
+#				self.__load_url(directory,self.list_widgets[i])
+#				self.list_widget_data[i] = self.list_widgets[i].item(old_row)
+#				if data == None: return
+#				else:
+#					directory = folderize(directory) + d
+#		
+#			self.lock = False
 	
 		def add_list_widget(self, list_widget = None):
 			if list_widget == None:	list_widget = EMListWidget()
