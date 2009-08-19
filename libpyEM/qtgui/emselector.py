@@ -71,22 +71,26 @@ class EMSelectorModule(EMQtWidgetModule):
 		return self.widget.exec_()
 
 
-
+class EMActionDelegate:
+	'''
+	interface for action delegates
+	'''
+	def closeEvent(self,event): pass
 class EMItemAction:
 	'''
-	base class for item actions
+	interface for single item actions
 	'''
 	
 	def item_action(self,item,*args,**kargs): raise NotImplementedException
 	
 class EMMultiItemAction:
 	'''
-	base class for item actions
+	interface for multiple item actions
 	'''
 	
 	def multi_item_action(self,items,*args,**kargs): raise NotImplementedException
 	
-class EMSaveItemAction(EMItemAction,EMMultiItemAction):
+class EMSaveItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 	
 	def item_action(self,item,*args,**kargs):
 		data = item.get_data()
@@ -99,12 +103,12 @@ class EMSaveItemAction(EMItemAction,EMMultiItemAction):
 				result = save_data(data)
 				if not result: return
 		
-class EMSaveStackSaveAction(EMMultiItemAction):
+class EMSaveStackSaveAction(EMMultiItemAction,EMActionDelegate):
 	
 	def multi_item_action(self,items,*args,**kargs):
-		save_data(items)
+		save_data(items) # save_data knows how to deal with items
 
-class EMDeleteItemAction(EMItemAction,EMMultiItemAction):
+class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 	
 	def item_action(self,item,*args,**kargs):
 		self.__delete_items( [item] )
@@ -132,9 +136,9 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction):
 def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 	'''
 	This would be similar to policy based design using templated inheritance
-	Type is a type of EMAN2 display module
+	Type is a type of EMAN2 display module. Search for DataDisplayModuleTemplate
 	'''
-	class DataDisplayModule(EMItemAction):
+	class DataDisplayModule(EMItemAction,EMActionDelegate):
 		def __init__(self):
 			self.module_type = Type
 			self.display_modules = [] # a list of display modules
@@ -176,12 +180,22 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 					return
 				
 			print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+		
+		def closeEvent(self,event):
+			self.module_events = [] # this should take care of complications that arise if self.module_closed is called
+			for module in self.display_modules:
+				module.closeEvent(event)
+				
+			self.display_modules = []
 			
 	return DataDisplayModule
 
 from emimagemx import EMImageMXModule
 class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXModule,"get_2d_stack"),EMMultiItemAction):
-
+	'''
+	This is like a template specialization of the DataDisplayModuleTemplate in the case of
+	using an EMImageMXModule. The reason is because we support a special "Preview Subset" action.
+	'''
 	def multi_item_action(self,items,single_mode=False):
 		data = []
 		from emimagemx import ApplyAttribute
@@ -207,6 +221,7 @@ class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXModule,"get_2d_s
 		module.updateGL()
 		module.setWindowTitle(item.get_url())
 
+# Global location for common and unique strings
 DELETE = "Delete"
 SAVE_AS ="Save As"
 VIEWER_3D = "3D Viewer"
@@ -221,771 +236,18 @@ SIMMX_EULER_VIEWER = "Simmx Euler View"
 PREVIEW_SUBSET = "Preview Subset"
 SAVE_SUBSET = "Save Subset"
 
-#def EMSelectorTemplate(Type):
-#	''' 
-#	This is just an example of using nested scope inheritance to achieve templated inheritance, ala what you'd do in C++
-#	It solved a problem for me, but the best solution may be to break the functionality into two (written, not templated) classes
-#	Valid Types are QtGui.Dialog and QtGui.QWidget
-#	'''
-#	class EMSelector(Type):
-#		'''
-#		This class is hybrid. It can be used both as a file system browser
-#		and as a save-file dialog. To see an example of using it as a system browser, see the
-#		EMBrowserModule. To see an example of using it as a save-file dialog, see emsave.py.
-#		Also, emsprworkflow uses this class as a browser for selecting files.  
-#		I wish I had time to correct the design... but that said, it's not too far from where it should
-#		be - the code is relatively clean, and correcting the design involves breaking some of the member
-#		functions into separate classes.
-#		'''
-#		def __init__(self,module,single_selection=False):
-#			'''
-#			@param module - should be an EMSelectorModule
-#			@param application - should be a type of application as supplied in emapplication
-#			@param single_selection - should selections be limited to singles?
-#			@param save_as_mode - should be True if using this object as a pure dialog (using exec_).
-#			'''
-#			Type.__init__(self,None)
-#			self.setFocusPolicy(Qt.StrongFocus)
-#			self.module=weakref.ref(module) # Avoid strong cycle
-#			self.desktop_hint = "dialog" # So the desktop knows how to display this
-#			self.single_selection = single_selection # Flag indicating single selection in interface
-#			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url
-#			
-#			self.hbl = QtGui.QVBoxLayout(self)
-#			self.hbl.setMargin(0)
-#			self.hbl.setSpacing(6)
-#			self.hbl.setObjectName("hbl")
-#			
-#			self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/display_icon.png"))
-#			
-#			self.__init_filter_combo()
-#			
-#			self.__init_action_delegates()
-#			
-#			self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
-#			self.selections = []
-#			self.current_list_widget = None
-#			self.lock = True
-#			self.list_widgets = []
-#			self.previews = [] # keeps track of all of the preview windows
-#			self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
-#			self.list_widget_data= [] # entries should be tuples containing (current folder item)
-#			self.splitter = QtGui.QSplitter(self)
-#			self.splitter.setChildrenCollapsible(False)
-#
-#			self.add_list_widget()
-#			self.add_list_widget()
-#			if Type != QtGui.QDialog:
-#				self.__add_list_widget() # 3 panels in browsing mode
-#			else: pass # 2 panels in the dialog mode
-#			
-#			self.hbl.addWidget(self.splitter,1)
-#			
-#			self.__load_url(e2getcwd(),self.list_widgets[0])
-#	
-#			self.dialog_mode = False
-#			if Type == QtGui.QDialog:
-#				hbl2=QtGui.QHBoxLayout()
-#				hbl2.setMargin(0)
-#				hbl2.setSpacing(2)
-#				self.selection_label = QtGui.QLabel(SAVE_AS,self)
-#				hbl2.addWidget(self.selection_label)
-#				self.save_as_line_edit = QtGui.QLineEdit("",self)
-#				hbl2.addWidget(self.save_as_line_edit,0)
-#				self.hbl.addLayout(hbl2)
-#				self.dialog_mode = True
-#				self.validator = None # an optional feature which makes the behavior of the dialog more sophisticated - see emsave.py
-#				self.dialog_result = ""
-#	
-#			self.bottom_hbl = QtGui.QHBoxLayout()
-#			self.bottom_hbl.addWidget(self.filter_text,0)
-#			self.bottom_hbl.addWidget(self.filter_combo,1)
-#			self.__init_buttons()
-#			self.bottom_hbl.addWidget(self.cancel_button,0)
-#			self.bottom_hbl.addWidget(self.ok_button,0)
-#			self.hbl.addLayout(self.bottom_hbl)
-#			
-#			if Type != QtGui.QDialog: 
-#				self.gl_image_preview = None
-#				
-#				self.bottom_hbl2 = QtGui.QHBoxLayout()
-#				self.__init_preview_options()
-#				self.bottom_hbl2.addWidget(self.preview_options,0)
-#				self.hbl.addLayout(self.bottom_hbl2)
-#				
-#				self.bottom_hbl3 = QtGui.QHBoxLayout()
-#				self.__init_plot_options()
-#				self.bottom_hbl3.addWidget(self.replace,0)
-#				self.bottom_hbl3.addWidget(self.include,0)
-#				
-#				self.groupbox = QtGui.QGroupBox("Plot/3D options")
-#				self.groupbox.setLayout(self.bottom_hbl3)
-#				self.groupbox.setEnabled(False)
-#				
-#				self.bottom_hbl2.addWidget(self.groupbox)
-#			else:
-#				self.ok_button.setDefault(True)
-#			
-#			if Type != QtGui.QDialog:
-#				self.resize(480,480)
-#			else:
-#				self.resize(480,400)
-#			
-#			self.lock = False
-#			
-#			self.paint_events = 0
-#			
-#			self.timer_interval = 500 # half a second
-#			self.timer = QtCore.QTimer()
-#			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out) # for auto refresh
-#			
-#			self.timer.start(self.timer_interval)
-#			
-#			self.selected_files = []
-#			
-#		def __del__(self):
-#			pass
-#		
-#		def set_selection_text(self,text):
-#			'''
-#			Selection label is a QLabel, by default its text is "Save As", but you can change it
-#			'''
-#			self.selection_label.setText(text)
-#		
-#		def set_validator(self,validator):
-#			'''
-#			Sets the validator which is used only in save_as mode (when this is being used as a file selecting dialog)
-#			An example validator is an emsave.EMSaveImageValidator
-#			'''
-#			self.validator = validator
-#		
-#		if Type == QtGui.QDialog:
-#			def exec_(self):
-#				'''
-#				Wraps QtGui.QDialog.exec_
-#				@return a list of selected filenames
-#				'''
-#				QtGui.QDialog.exec_(self)
-#				return self.dialog_result
-#		else:
-#			def exec_(self):
-#				print "exec performs no function - inherit from a QtGui.QDialog instead"
-#				return ""
-#		
-#		def time_out(self):
-#			'''
-#			This function takes care of automatic updates - if the file system changes then so does
-#			the information we display
-#			'''
-#			if self.lock: return
-#			self.lock = True
-#			for idx,widget in enumerate(self.list_widgets):
-#				if widget.get_mod_time() != None and widget.get_delegate() != None:
-#					mod_time = widget.get_delegate().url_mod_time(widget.get_url())
-#					if mod_time != widget.get_mod_time():
-#						old_items = [widget.item(i) for i in range(widget.count())]
-#						new_items = widget.get_delegate().get_items(widget.get_url())
-#						old_set = set([str(item.text()) for item in old_items])
-#						new_set = set([str(item.text()) for item in new_items])
-#						
-#						added = new_set - old_set
-#						removed = old_set - new_set
-#						
-#						if len(added) > 0:
-#							for k in added:
-#								new_item = (item for item in new_items if item.text() == k).next()
-#								widget.addItem(new_item)
-#
-#						if len(removed) > 0:
-#							for k in removed:
-#								old_item = (item for item in old_items if item.text() == k).next()
-#								if old_item.isSelected():
-#									for j in range(idx+1,len(self.list_widgets)):
-#										self.list_widgets[j].clear()
-#								widget.takeItem(widget.row(old_item))
-#
-#						widget.set_mod_time(mod_time)
-#						self.lock = False
-#						return
-#							
-#			self.lock = False
-#					
-#		def get_desktop_hint(self):
-#			return self.desktop_hint
-#			
-#		def __init_action_delegates(self):
-#			self.action_delegates = {}
-#			from emimage3d import EMImage3DModule
-#			self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DModule)()
-#			from emimage3dvol import EMVolumeModule
-#			from emimagemx import ApplyProcessor
-#			self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModule,data_functors=[ApplyProcessor("normalize",{})])()
-#			from emimage3dslice import EM3DSliceViewerModule
-#			self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceViewerModule,data_functors=[ApplyProcessor("normalize",{})])()
-#			from emimage2d import EMImage2DModule
-#			self.action_delegates[SINGLE_2D_VIEWER] = DataDisplayModuleTemplate(EMImage2DModule)()
-#			from emimagemx import EMImageMXModule
-#			stack_action = EM2DStackPreviewAction()
-#			self.action_delegates[MULTI_2D_VIEWER] = stack_action #DataDisplayModuleTemplate(EMImageMXModule,"get_2d_stack")
-#			from emplot2d import EMPlot2DModule
-#			self.action_delegates[PLOT_2D_VIEWER] = DataDisplayModuleTemplate(EMPlot2DModule)()
-#			from emplot3d import EMPlot3DModule
-#			self.action_delegates[PLOT_3D_VIEWER] = DataDisplayModuleTemplate(EMPlot3DModule)()
-#			from emimage3dsym import EM3DSymViewerModule
-#			self.action_delegates[EULER_VIEWER] = DataDisplayModuleTemplate(EM3DSymViewerModule)()
-#			from e2simmxxplor import EMSimmxExplorer
-#			self.action_delegates[SIMMX_EULER_VIEWER] = DataDisplayModuleTemplate(EMSimmxExplorer,"get_url")()
-#			
-#			self.action_delegates[SAVE_AS] = EMSaveItemAction()
-#			self.action_delegates[DELETE] = EMDeleteItemAction()
-#			self.action_delegates[PREVIEW_SUBSET] = stack_action
-#			self.action_delegates[SAVE_SUBSET] = EMSaveStackSaveAction()
-#			
-#		def __init_plot_options(self):
-#			self.replace = QtGui.QRadioButton("Replace")
-#			self.include = QtGui.QRadioButton("Include")
-#			self.include.setChecked(True)
-#	
-#		def __init_preview_options(self):
-#			self.preview_options = QtGui.QComboBox(self)
-#			#self.preview_options.addItem("No preview")
-#			self.preview_options.addItem("Single preview")
-#			self.preview_options.addItem("Multi preview")
-#			#self.preview_options.setCurrentIndex(0)
-#			
-#			QtCore.QObject.connect(self.preview_options, QtCore.SIGNAL("currentIndexChanged(QString)"), self.preview_options_changed)
-#		
-#		def preview_options_changed(self,qstring):
-#			if str(qstring) == "Single preview":
-#				self.groupbox.setEnabled(True)
-#			else:
-#				self.groupbox.setEnabled(False)
-#		
-#		def previews_allowed(self):
-#			if self.dialog_mode: return False
-#			
-#			return str(self.preview_options.currentText()) != "No preview"
-#		
-#		def single_preview_only(self):
-#			return str(self.preview_options.currentText()) == "Single preview"
-#		
-#		def __init_buttons(self):
-#			self.ok_button = QtGui.QPushButton("Ok")
-#			self.ok_button.adjustSize()
-#			
-#			self.cancel_button = QtGui.QPushButton("Cancel")
-#			self.cancel_button.adjustSize()
-#		
-#			QtCore.QObject.connect(self.ok_button, QtCore.SIGNAL("clicked(bool)"),self.ok_button_clicked)
-#			QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
-#	
-##		def single_preview_clicked(self,bool):
-##			pass
-#			#print "not supported"
-#		
-#		def get_current_directory(self):
-#			directory = self.list_widgets[0].get_url()
-#			for i in range(len(self.list_widgets)-1):
-#				items = self.list_widgets[i].selectedItems()
-#				if len(items) >  0:
-#					directory = folderize(directory) + items[0].text()
-#					#directory += "/" + items[0].text()
-#	#			elif len(items) > 1:
-#	#				raise
-#				else:
-#					break
-#			
-#			directory = str(directory)
-#			if os.path.isfile(directory):
-#				[directory,unused] = os.path.split(directory)
-#			
-#			if not os.path.isdir(directory): # try for bdb format
-#				directory = directory.replace("bdb","EMAN2DB")
-#				if not os.path.isdir(directory): # in this case it's probably a bdb file minus the ".bdb"
-#					[directory,unused] = os.path.split(directory)
-#				if not os.path.isdir(directory):
-#					return None
-#			
-#			if len(directory) == 0: directory = "/"
-#			directory = folderize(directory)
-#			#if directory[-1] != "/": directory += "/"
-#			
-#			return directory
-#		
-#		def cancel_button_clicked(self,bool):
-#			if self.dialog_mode:
-#				self.accept()
-#			else:
-#				self.module().emit(QtCore.SIGNAL("cancel"),self.selections)
-#		
-#		def ok_button_clicked(self,bool):
-#			if self.dialog_mode:
-#				directory = self.get_current_directory()
-#				if directory == None:
-#					msg = QtGui.QMessageBox()
-#					msg.setText("Can not deduce the current directory. Please update your selection")
-#					msg.exec_()
-#					return
-#				names = str(self.save_as_line_edit.text()).split()
-#				names = [name.strip(";") for name in names]
-#				
-#				if len(names)== 1:
-#					file = self.__convert_name_to_write_image_format(names[0],directory)
-#	#				file = directory + names[0]
-#				else:
-#					file = [self.__convert_name_to_write_image_format(name,directory) for name in names]
-#				
-#				if self.validator == None:
-#					self.dialog_result = file
-#					self.accept()
-#				else:
-#					if not self.validator.validate_file_name(file): return
-#					else: 
-#						self.dialog_result = file
-#						self.accept()
-#				
-#			else:
-#				self.module().emit(QtCore.SIGNAL("ok"),self.selections)
-#				
-#		def __convert_name_to_write_image_format(self,name,directory):
-#			if len(name) > 3 and name[0:4] == "bdb:":
-#				if len(directory) > 0:
-#					last_bit = name[4:]	
-#					v = directory
-#					# strip out the EMAN2DB
-#					# assumption that only one "EMAN2DB" exists in the string
-#					for cand in ["EMAN2DB/","EMAN2DB"]:
-#						l = len(cand)
-#						n = v.find(cand)
-#						if  n != -1:
-#							v = v[:n]+v[n+l:]
-#							break # if we find one the first then there is no need t
-#					
-#					if len(v) > 0 and v[-1] == "/":
-#						v = v[:-1]
-#					
-#					ret = "bdb:"+v+"#"+last_bit
-#			elif directory.find("EMAN2DB/") != -1 or directory.find("EMAN2DB") != -1: # this test should be sufficient for establishing that bdb is the desired format
-#				ret = db_convert_path(directory+name)
-#			else: ret = directory + name
-#				
-#			return ret
-#		
-#		def __init_filter_combo(self):
-#			self.filter_text = QtGui.QLabel("Filter:",self)
-#			self.filter_combo = QtGui.QComboBox(None)
-#			self.filter_combo.addItem("EM types")
-#			self.filter_combo.addItem("Databases") # this doesn't really do anything
-#			self.filter_combo.addItem("*.spi,*.hdf,*.img, bdb:")
-#			self.filter_combo.addItem("*.hdf,*.img,*.hed,*.spi,bdb:,*.tif,*.mrc,*.dm3, *.pif, *.rec")
-#			self.filter_combo.addItem("*.*")
-#			self.filter_combo.addItem("*")
-#			self.filter_combo.setEditable(True)
-#		
-#			QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(int)"),self.filter_index_changed)
-#	#		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(QString&)"),self.filter_index_changed)
-#	
-#		def filter_index_changed(self):
-#			self.__redo_list_widget_contents()
-#		
-#		def __redo_list_widget_contents(self):
-#			self.lock = True
-#			
-#			directory = folderize(self.list_widgets[0].get_url())
-#			for i,data in  enumerate(self.list_widget_data):
-#				
-#				if data != None:d = str(data.text())
-#				old_row = self.list_widgets[i].currentRow()
-#				self.__load_url(directory,self.list_widgets[i])
-#				self.list_widget_data[i] = self.list_widgets[i].item(old_row)
-#				if data == None: return
-#				else:
-#					directory = folderize(directory) + d
-#		
-#			self.lock = False
-#		
-#		def list_widget_context_menu_event(self,event):
-#			'''
-#			Dynamic menu creation depending on item type
-#			'''
-#			focus = self.current_list_widget
-#			l = focus
-#			if focus == None: return
-#			selected_items = l.selectedItems()
-#			if len(selected_items) == 0: return
-#			
-#			menu = QtGui.QMenu()
-#			self.menu_selected_items = selected_items
-#			if len(selected_items) == 1:
-#				first_item = selected_items[0]
-#				actions = first_item.actions()
-#				if actions == None: return
-#				for action in actions: menu.addAction(action)
-#			else:
-#				multi_actions = []
-#				common = [SAVE_AS,DELETE]
-#				for item in selected_items:
-#					actions = item.actions()
-#					rm = []
-#					for i,c in enumerate(common):
-#						if c not in actions:
-#							rm.append(i)
-#					rm.reverse()
-#					for idx in rm: common.pop(idx)
-#							
-#					if len(common) == 0: break
-#					
-#				for action in common: menu.addAction(action)
-#				
-#				all_2d = True
-#				
-#				# some specialized behavior for 2D images with the same dimensions
-#				for item in selected_items:
-#					if not item.get_name() == EM2DImageItem.NAME:
-#						all_2d = False
-#						break
-#
-#				if all_2d:
-#					all_same_dims = True
-#					nx = -1
-#					ny = -1
-#					for item in selected_items:
-#						md = item.get_metadata()
-#						if nx == -1 and ny == -1:
-#							nx = md["nx"]
-#							ny = md["ny"]
-#						else:
-#							if nx != md["nx"] or ny != md["ny"]:
-#								all_same_dims = False
-#								
-#					if all_same_dims:
-#						menu.addAction(PREVIEW_SUBSET)
-#						menu.addAction(SAVE_SUBSET)
-#					
-#
-#			QtCore.QObject.connect(menu,QtCore.SIGNAL("triggered(QAction*)"),self.menu_action_triggered)
-#			self.action_list_widget = l # only set if the menu acutally triggers
-#			menu.exec_(event.globalPos())
-#			
-#		def menu_action_triggered(self,action):
-#			'''
-#			Slot for right click menu
-#			'''
-#			items = self.menu_selected_items
-#			
-#			total = len(items)
-#			if total == 0: return
-#			if total == 1 and self.action_delegates.has_key(str(action.text())):
-#				get_application().setOverrideCursor(Qt.BusyCursor)
-#				self.action_delegates[str(action.text())].item_action(items[0],self.single_preview_only())
-#				get_application().setOverrideCursor(Qt.ArrowCursor)
-#				return
-#			else:
-#				get_application().setOverrideCursor(Qt.BusyCursor)
-#				self.action_delegates[str(action.text())].multi_item_action(items,self.single_preview_only())
-#				get_application().setOverrideCursor(Qt.ArrowCursor)
-#				return
-#			
-#		def add_list_widget(self, list_widget = None):
-#			if list_widget == None:	list_widget = EMListWidget()
-#			
-#			list_widget.contextMenuEvent = self.list_widget_context_menu_event
-#			
-#			if self.single_selection:list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-#			else: list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-#			list_widget.setMouseTracking(True)	
-#			self.list_widgets.append(list_widget)
-#			self.splitter.addWidget(list_widget)
-#			
-#			self.list_widget_data.append(None)
-#			
-#			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-#			QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
-#			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
-#			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemSelectionChanged()"),self.selection_changed)
-#			
-##		def list_widget_current_changed(self,new,prev):
-##			if new != None:
-##				if self.current_list_widget == new.listWidget():
-##					self.list_item_selected(new,False)
-#		
-#		def __go_up_a_directory(self,item=None):
-#			
-#			if item != None:
-#				#url = item.get_url()
-#				url = self.list_widgets[0].get_url()
-#				for delegate in self.browse_delegates:
-#					if delegate.handles_url(url): 
-#						new_dir = delegate.parent_url(url)
-#						break
-#				else:
-#					raise RuntimeError("Unknown url %s" %url)
-#			else:
-#				raise
-#			
-##			if len(new_dir) == 0: new_dir = get_dtag()
-##			elif  new_dir[-1] == ":": new_dir += get_dtag() # C: becomes C:/
-##			elif len(new_dir) == 1 and new_dir != get_dtag(): new_dir += ":/"# C becomes C:/
-#
-#			self.lock = True	
-#			for j in range(0,len(self.list_widgets)):
-#				widget = self.list_widgets[j]
-#				widget.clear()
-#				self.list_widget_data[j] = None
-#					
-#			self.__load_url(new_dir,self.list_widgets[0])
-#			self.lock = False
-#			
-#		def __go_forward_a_directory(self):
-#			self.lock = True
-#			for i in range(len(self.list_widgets)-1):
-#				items = []
-#				li = self.list_widgets[i]
-#				lip = self.list_widgets[i+1]
-#				old_row = lip.currentRow()
-#				n = lip.count()
-#				for j in range(n-1,-1,-1):
-#					items.append(lip.takeItem(j))
-#					
-#				li.clear()	
-#				for k in items:
-#					li.insertItem(0,k)
-#				
-#				li.setCurrentRow(old_row)
-#				li.set_mod_time(lip.get_mod_time())
-#				li.set_url(lip.get_url())
-#				li.set_delegate(lip.get_delegate())
-#
-#				self.list_widget_data[i] = li.item(old_row)
-#				#directory = folderize(directory) + str(self.list_widget_data[i].text())
-#				#directory += dtag + str(self.list_widget_data[i].text())
-#			
-#			# The last widget must have these attributes removed if they existed,
-#			# or else the time_out function will produce incorrect results
-#			last_widget = self.list_widgets[-1]
-#
-#			a = EMUpArrowItem(None,"../",self.list_widgets[0].get_url())
-#			self.list_widgets[0].insertItem(0,a)
-#			
-#			self.lock = False
-#			self.hide_preview()
-#			
-#		def update_selections(self):
-#			'''
-#			Makes the list of currently selected files accurate and up to date. Called when
-#			something has been clicked in a a list widget
-#			'''
-#			# now make the list of selections reflect what is need to display them using
-#			
-#			self.selections = []
-#			items = self.current_list_widget.selectedItems()
-#			if len(items) > 0:
-#				a = items[0]
-#				self.selections = self.valid_emdata_urls(items)
-#			
-#			# Make sure the save as line is updated if we're in that mode
-#			if self.dialog_mode:
-#				text = ""
-#				for i,name in enumerate(self.selections):
-#					if i > 0:
-#						text+= "; "
-#					text += base_name(name)
-#					
-#				self.save_as_line_edit.setText(text)
-#		
-#		def valid_emdata_urls(self,items):
-#			return [item.emdata_save_as_url() for item in items if item.emdata_save_as_url() != None]
-#		
-#		def hide_preview(self):
-#			if self.dialog_mode: return
-#			
-#			if self.gl_image_preview  != None:
-#				get_application().close_specific(self.gl_image_preview)
-#		
-#		def list_widget_item_entered(self,item):
-#			list_widget = item.listWidget()
-#			if list_widget != self.current_list_widget:
-#				if self.current_list_widget != None:
-#					QtCore.QObject.disconnect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
-#				self.current_list_widget = item.listWidget()
-#				QtCore.QObject.connect(self.current_list_widget,QtCore.SIGNAL("itemSelectionChanged()"), self.current_item_changed)
-##				
-#		def current_item_changed(self):
-#			'''
-#			This function handles any change in current item
-#			'''
-#			if self.lock: return
-#			if self.current_list_widget == None: return 
-#			item = self.current_list_widget.currentItem()
-#			if item != None:
-#				self.list_item_selected(item)
-#				
-#		def keyPressEvent(self,event):
-#			if event.key() == Qt.Key_F1:
-#				try:
-#					import webbrowser
-#					webbrowser.open("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emselector")
-#				except:
-#					pass
-#
-#		def list_widget_dclicked(self,item):
-#			self.preview_item(item)
-#
-#		def list_item_selected(self,item):
-#			if self.lock : return
-#			#if self.current_list_widget == None: return
-#			if item.get_name() == EMGenericItem.NAME: return #it's just a value in the db
-#			
-#			self.update_selections()
-#			if item == None: return		
-#			
-#			if item.get_name() == EMUpArrowItem.NAME: 
-#				self.__go_up_a_directory(item)
-#				return
-#			
-#			self.current_list_widget = item.listWidget()
-#			if self.current_list_widget  == self.list_widgets[-1]:
-#					self.lock = True
-#					self.list_widget_data[-1] = item
-#					self.__go_forward_a_directory()
-#					self.__load_url_from_item(self.list_widgets[-1],item)
-#					self.lock = False
-#					return
-#			
-#			idx = (i for i in range(len(self.list_widgets)) if self.list_widgets[i] == self.current_list_widget).next()
-#			if self.__load_url_from_item(self.list_widgets[idx+1],item):
-#				self.list_widget_data[idx] = item
-#				self.list_widget_data[idx+1] = None
-#				
-#			for i in range(idx+2,len(self.list_widgets)):
-#				self.list_widgets[i].clear()
-#				self.list_widget_data[i] = None
-#		
-#		def preview_item(self,item):
-#			'''
-#			previews the item (loads an appropriate display module) if possible
-#			Returns True if the item was loaded into a display module, otherwise returns False
-#			'''
-#			preview_occured = False
-#			get_application().setOverrideCursor(Qt.BusyCursor)
-#			view_action = item.default_view_action()
-#			if view_action != None:
-#				self.action_delegates[view_action].item_action(item,self.single_preview_only())
-#				preview_occured = True
-#			get_application().setOverrideCursor(Qt.ArrowCursor)
-#				
-#			return preview_occured
-#		
-#		def closeEvent(self,event):
-#			self.module_events=[]
-#			for mod in self.previews:
-#				mod.closeEvent(None)
-#			
-#			self.module().closeEvent(event)
-#		
-#		def get_file_filter(self):
-#			return str(self.filter_combo.currentText())
-#		
-#		def filter_strings(self,strings):
-#			
-#			filters = str(self.filter_combo.currentText()).split(",")
-#			
-#			for j,f in enumerate(filters):
-#				s = f.replace("*","\w*")
-#				s = s.replace(".","\.")
-#				filters[j] = s
-#			
-#			reg_exp = []
-#			for f in filters:
-#				reg_exp.append(re.compile(f))
-#			
-#			solution = []
-#			for s in strings:
-#				for r in reg_exp:
-#					if len(re.findall(r,s)) != 0:
-#						solution.append(s)
-#						break
-#						
-#			
-#			return solution
-#						
-##		def __is_non_empty_directory(self,s):
-##			'''
-##			Returns true if s is a non empty directory
-##			'''
-##	
-##			dirs, files  = get_files_and_directories(s)
-##			files = self.filter_strings(files)
-##			file_length = len(files)
-##			if file_length == 0: file_length = len(dirs)
-##		
-##			if file_length != 0: return True
-##			
-##			return False
-#		
-##		def __load_database_directory(self,database_name,list_widget):
-##			
-##			print "loading database directory",database_name
-##		
-#		
-##		def __refresh_directory_data(self):
-##			#self.__load_url(self.ldd_directory,self.ldd_list_widget,self.ldd_item)
-##			self.__load_url_from_item(self.ldd_list_widget,self.ldd_item)
-##		
-#		def __load_url(self,url,list_widget):
-#			'''
-#			A way to load items in the list_widget using a url
-#			especially at start up
-#			'''
-#			get_application().setOverrideCursor(Qt.BusyCursor)
-#			
-#			list_widget.clear()
-#			if (list_widget == self.list_widgets[0]):
-#				self.lock = True
-#				a = EMUpArrowItem(None,"../",url)
-#				list_widget.addItem(a)
-#				self.lock = False
-#
-#			for delegate in self.browse_delegates:
-#				if delegate.handles_url(url): 
-#					items = delegate.get_items(url)
-#					for item in items: list_widget.addItem(item)
-#					ret = True
-#					list_widget.set_url(url)
-#					list_widget.set_mod_time(delegate.url_mod_time(url))
-#					list_widget.set_delegate(delegate)
-#					break
-#			else:
-#				raise RuntimeError("unknown url %s" %url)
-#				ret = False
-#				
-#			get_application().setOverrideCursor(Qt.ArrowCursor)
-#			return ret
-#		
-#		def __load_url_from_item(self,list_widget,item):
-#			'''
-#			A way to load items in the list_widget using data from the item
-#			i.e. user clicked on the item
-#			'''
-#			return self.__load_url(item.get_url(),list_widget)
-#			
-#	
-#	return EMSelector
 
 def EMSelectorBaseTemplate(Type):
+	'''
+	This is templated inheritance. I need the selector to be a dialog, and I need it to be a normal widget.
+	See the EMSelectorDialogType and EMBrowserType
+	Types currently in use are the QtGui.QWidget and the QtGui.QDialog
+	'''
 	class EMSelectorBase(Type):
 		def __init__(self,module,single_selection=False):
 			'''
 			@param module - should be an EMSelectorModule
-			@param application - should be a type of application as supplied in emapplication
 			@param single_selection - should selections be limited to singles?
-			@param save_as_mode - should be True if using this object as a pure dialog (using exec_).
 			'''
 			Type.__init__(self,None)
 			self.setFocusPolicy(Qt.StrongFocus)
@@ -1052,9 +314,11 @@ def EMSelectorBaseTemplate(Type):
 			QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
 		
 		def ok_button_clicked(self,bool):
+			''' Slot for OK button '''
 			self.module().emit(QtCore.SIGNAL("ok"),self.selections)
 		
 		def cancel_button_clicked(self,bool):
+			''' Slot for Cancel button '''
 			self.module().emit(QtCore.SIGNAL("cancel"),self.selections)
 		
 		
@@ -1064,13 +328,15 @@ def EMSelectorBaseTemplate(Type):
 		def set_selection_text(self,text):
 			'''
 			Selection label is a QLabel, by default its text is "Save As", but you can change it
+			Called in emsprworkflow
 			'''
 			self.selection_label.setText(text)
 		
 		def time_out(self):
 			'''
-			This function takes care of automatic updates - if the file system changes then so does
-			the information we display
+			This function takes care of automatic updates - if a url is detected to have changed
+			then so does the information we display
+			This is somewhat inefficient but it works
 			'''
 			if self.lock: return
 			self.lock = True
@@ -1107,42 +373,6 @@ def EMSelectorBaseTemplate(Type):
 					
 		def get_desktop_hint(self):
 			return self.desktop_hint
-			
-	
-			
-#		def single_preview_clicked(self,bool):
-#			pass
-			#print "not supported"
-		
-		def get_current_directory(self):
-			directory = self.list_widgets[0].get_url()
-			for i in range(len(self.list_widgets)-1):
-				items = self.list_widgets[i].selectedItems()
-				if len(items) >  0:
-					directory = folderize(directory) + items[0].text()
-					#directory += "/" + items[0].text()
-	#			elif len(items) > 1:
-	#				raise
-				else:
-					break
-			
-			directory = str(directory)
-			if os.path.isfile(directory):
-				[directory,unused] = os.path.split(directory)
-			
-			if not os.path.isdir(directory): # try for bdb format
-				directory = directory.replace("bdb","EMAN2DB")
-				if not os.path.isdir(directory): # in this case it's probably a bdb file minus the ".bdb"
-					[directory,unused] = os.path.split(directory)
-				if not os.path.isdir(directory):
-					return None
-			
-			if len(directory) == 0: directory = "/"
-			directory = folderize(directory)
-			#if directory[-1] != "/": directory += "/"
-			
-			return directory
-		
 		
 		def __init_filter_combo(self):
 			self.filter_text = QtGui.QLabel("Filter:",self)
@@ -1207,12 +437,16 @@ def EMSelectorBaseTemplate(Type):
 #					self.list_item_selected(new,False)
 
 		def list_widget_dclicked(self,item):
+			'''
+			Inheriting class should supply specialize this
+			'''
 			pass
-		
 		
 		def list_widget_context_menu_event(self,event):
+			'''
+			Inheriting class should supply specialize this
+			'''
 			pass
-			
 		
 		def __go_up_a_directory(self,item=None):
 			
@@ -1286,6 +520,9 @@ def EMSelectorBaseTemplate(Type):
 				self.selections = self.valid_emdata_urls(items)
 					
 		def valid_emdata_urls(self,items):
+			'''
+			Get the valid EMData urls from the list of items. Useful in EMAN2 when selecting images, etc
+			'''
 			return [item.emdata_save_as_url() for item in items if item.emdata_save_as_url() != None]
 		
 		def list_widget_item_entered(self,item):
@@ -1345,13 +582,8 @@ def EMSelectorBaseTemplate(Type):
 				self.list_widget_data[i] = None
 		
 		
-		
 		def closeEvent(self,event):
-			self.module_events=[]
-			for mod in self.previews:
-				mod.closeEvent(None)
-			
-			self.module().closeEvent(event)
+			self.module().closeEvent(None)
 		
 		def get_file_filter(self):
 			return str(self.filter_combo.currentText())
@@ -1445,6 +677,10 @@ class EMBrowser(EMBrowserType):
 		self.bottom_hbl2.addWidget(self.groupbox)
 		self.resize(480,480)
 	
+	def closeEvent(self,event):
+		for delegate in self.action_delegates.values():
+			delegate.closeEvent(event)
+		self.module().closeEvent(None)
 	
 	def __init_action_delegates(self):
 		self.action_delegates = {}
@@ -1638,6 +874,35 @@ class EMSelectorDialog(EMSelectorDialogType):
 		An example validator is an emsave.EMSaveImageValidator
 		'''
 		self.validator = validator
+		
+	def get_current_directory(self):
+		directory = self.list_widgets[0].get_url()
+		for i in range(len(self.list_widgets)-1):
+			items = self.list_widgets[i].selectedItems()
+			if len(items) >  0:
+				directory = folderize(directory) + items[0].text()
+				#directory += "/" + items[0].text()
+#			elif len(items) > 1:
+#				raise
+			else:
+				break
+		
+		directory = str(directory)
+		if os.path.isfile(directory):
+			[directory,unused] = os.path.split(directory)
+		
+		if not os.path.isdir(directory): # try for bdb format
+			directory = directory.replace("bdb","EMAN2DB")
+			if not os.path.isdir(directory): # in this case it's probably a bdb file minus the ".bdb"
+				[directory,unused] = os.path.split(directory)
+			if not os.path.isdir(directory):
+				return None
+		
+		if len(directory) == 0: directory = "/"
+		directory = folderize(directory)
+		#if directory[-1] != "/": directory += "/"
+		
+		return directory
 	
 	def update_selections(self):
 		'''
@@ -2884,16 +2149,6 @@ class EMGenericItem(EMListItem):
 		
 	def get_name(self): return EMGenericItem.NAME
 
-#class EMBrowserDialog(object):
-#	def __new__(self,target):
-#		#selector = EMSelectorTemplate(QtGui.QWidget)(target,False)
-#		selector = EMBrowser(target,False)
-#		selector.setWindowTitle("EMAN2 Browser")
-#		selector.preview_options.setCurrentIndex(0)
-#		selector.preview_options_changed(selector.preview_options.currentText())
-#		selector.ok_button.setEnabled(False)
-#		selector.cancel_button.setEnabled(False)
-#		return selector
 
 class EMBrowserModule(EMQtWidgetModule):
 	def __init__(self):

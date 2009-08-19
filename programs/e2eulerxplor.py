@@ -738,11 +738,11 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.current_events_handler = self.events_handlers[mode]
 			
 	def closeEvent(self,event):
-		self.emit(QtCore.SIGNAL("module_closed")) # this signal is
 		if self.inspector !=None: self.inspector.close()
 		if self.proj_class_viewer !=None: self.proj_class_viewer.closeEvent(None)
 		if self.particle_viewer != None: self.particle_viewer.closeEvent(None)
 		get_application().close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed")) # this signal is
 
 
 def set_included_1(e):
