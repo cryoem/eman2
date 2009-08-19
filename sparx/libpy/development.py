@@ -1895,7 +1895,8 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	return total_time, total_time2
 
 
-def max_3D_pixel_error(t1, t2, r)
+def max_3D_pixel_error(t1, t2, r):
+	from math import sin, cos, pi, sqrt
 	t3 = t2*t1.inverse()
 	tm = t3.get_matrix()
 	
