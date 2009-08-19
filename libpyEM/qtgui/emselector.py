@@ -692,6 +692,9 @@ class EMBrowser(EMBrowserType):
 		self.module().closeEvent(None)
 	
 	def __init_action_delegates(self):
+		'''
+		All of the available actions for the context menu (right click)
+		'''
 		self.action_delegates = {}
 		from emimage3d import EMImage3DModule
 		self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DModule)()
@@ -716,7 +719,7 @@ class EMBrowser(EMBrowserType):
 		
 		self.action_delegates[SAVE_AS] = EMSaveItemAction()
 		self.action_delegates[DELETE] = EMDeleteItemAction()
-		self.action_delegates[PREVIEW_SUBSET] = stack_action
+		self.action_delegates[PREVIEW_SUBSET] = stack_action # can use the same object
 		self.action_delegates[SAVE_SUBSET] = EMSaveStackSaveAction()
 		
 	def __init_plot_options(self):
@@ -769,6 +772,7 @@ class EMBrowser(EMBrowserType):
 		'''
 		Dynamic menu creation depending on item type
 		'''
+		event.accept()
 		focus = self.current_list_widget
 		l = focus
 		if focus == None: return

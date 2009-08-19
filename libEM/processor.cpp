@@ -7962,33 +7962,37 @@ void TransformProcessor::assert_valid_aspect(const EMData* const image) const {
 	if (! params.has_key("transform") ) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
 }
 
-void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {
-
-	float inv_scale = 1.0f/scale;
-	vector<string> inv_scale_attrs;
-	inv_scale_attrs.push_back("origin_x");
-	inv_scale_attrs.push_back("origin_y");
-	inv_scale_attrs.push_back("origin_z");
-
-	for(vector<string>::const_iterator it = inv_scale_attrs.begin(); it != inv_scale_attrs.end(); ++it) {
-		if (attr_dict.has_key(*it)) {
-			p->set_attr(*it,(float) attr_dict[*it] * inv_scale);
-		}
-	}
-
-	vector<string> scale_attrs;
-	scale_attrs.push_back("apix_x");
-	scale_attrs.push_back("apix_y");
-	scale_attrs.push_back("apix_z");
-
-
-	for(vector<string>::const_iterator it = scale_attrs.begin(); it != scale_attrs.end(); ++it) {
-		if (attr_dict.has_key(*it)) {
-			p->set_attr(*it,(float) attr_dict[*it] * scale);
-		}
-	}
-
-}
+//void TransformProcessor::update_emdata_attributes(EMData* const p, const Dict& attr_dict, const float& scale) const {
+//
+//	float inv_scale = 1.0f/scale;
+//
+//	p->scale_pixel(1.0f/scale);
+//
+//	// According to Baker the origin attributes remain unchanged
+////	vector<string> inv_scale_attrs;
+////	inv_scale_attrs.push_back("origin_x");
+////	inv_scale_attrs.push_back("origin_y");
+////	inv_scale_attrs.push_back("origin_z");
+////
+////	for(vector<string>::const_iterator it = inv_scale_attrs.begin(); it != inv_scale_attrs.end(); ++it) {
+////		if (attr_dict.has_key(*it)) {
+////			p->set_attr(*it,(float) attr_dict[*it] * scale);
+////		}
+////	}
+//
+//	vector<string> scale_attrs;
+//	scale_attrs.push_back("apix_x");
+//	scale_attrs.push_back("apix_y");
+//	scale_attrs.push_back("apix_z");
+//
+//
+//	for(vector<string>::const_iterator it = scale_attrs.begin(); it != scale_attrs.end(); ++it) {
+//		if (attr_dict.has_key(*it)) {
+//			p->set_attr(*it,(float) attr_dict[*it] * inv_scale);
+//		}
+//	}
+//
+//}
 
 EMData* TransformProcessor::process(const EMData* const image) {
 	ENTERFUNC;
@@ -8025,7 +8029,8 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	float scale = t->get_scale();
 	if (scale != 1.0) {
-		update_emdata_attributes(p,image->get_attr_dict(),scale);
+		p->scale_pixel(1.0f/scale);
+//		update_emdata_attributes(p,image->get_attr_dict(),scale);
 	}
 
 	return p;
@@ -8064,7 +8069,8 @@ void TransformProcessor::process_inplace(EMData* image) {
 	}
 	float scale = t->get_scale();
 	if (scale != 1.0) {
-		update_emdata_attributes(image,image->get_attr_dict(),scale);
+		image->scale_pixel(1.0f/scale);
+//		update_emdata_attributes(image,image->get_attr_dict(),scale);
 	}
 
 	EXITFUNC;
@@ -8132,22 +8138,22 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 		throw ImageDimensionException("x size and z size of image do not match. This processor only works for uniformly sized data");
 		}
 	}
-	
+
 	float scale = params.set_default("scale",0.0f);
 	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
-	
+
 	int clip = 0;
-	
+
 	if(params.has_key("clip"))
 	{
-		clip = params["clip"]; 
+		clip = params["clip"];
 		if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
 	}
 	else
 	{
 		clip = scale*image->get_xsize();
 	}
-	
+
 	Region r;
 	if (ndim == 3) {
 		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);
@@ -8188,22 +8194,22 @@ EMData* ScaleTransformProcessor::process(const EMData* const image) {
 		throw ImageDimensionException("x size and z size of image do not match. This processor only works for uniformly sized data");
 		}
 	}
-	
+
 	float scale = params.set_default("scale",0.0f);
 	if (scale <= 0.0f) throw InvalidParameterException("The scale parameter must be greater than 0");
-	
+
 	int clip = 0;
-	
+
 	if(params.has_key("clip"))
 	{
-		clip = params["clip"]; 
+		clip = params["clip"];
 		if (clip < 0) throw InvalidParameterException("The clip parameter must be greater than 0"); // If it's zero it's not used
 	}
 	else
 	{
 		clip = scale*image->get_xsize();
 	}
-	
+
 	Region r;
 	if (ndim == 3) {
 		 r = Region( (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2, (image->get_xsize()-clip)/2,clip, clip,clip);

@@ -1373,8 +1373,8 @@ The basic design of EMAN Processors: <br>\
 			}
 		private:
 			float* transform(const EMData* const image, const Transform& t) const;
-
-			void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale) const;
+			// This function became redundant if favor of EMData::scale_pixel
+			//void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale) const;
 
 
 			void assert_valid_aspect(const EMData* const image) const;
@@ -1874,7 +1874,7 @@ The basic design of EMAN Processors: <br>\
 		float low;
 		float high;
 	};
-	
+
 	/**f(x) = f(x) if f(x) is finite | to if f(x) is not finite
 	 *@param to Pixels which are not finite will be set to this value
 	 */
@@ -1915,9 +1915,9 @@ The basic design of EMAN Processors: <br>\
 
 		protected:
 			/**
-			* 
+			*
 			*/
-			void process_pixel(float *x) const; 
+			void process_pixel(float *x) const;
 		private:
 			float to;
 	};
@@ -3018,7 +3018,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 	};
-	
+
 	/** BooleanShrinkProcessor encapsulates code common to
 	* MaxShrinkProcessor and MinShrinkProcessor - the processors use more or less
 	* identical code, the main difference being the logical operator.
@@ -5260,7 +5260,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
 
 	};
-	
+
 	/** Operates on two images, returning an image containing the maximum/minimum/multiplied pixel (etc, you choose) at each location
 	 * The actual operation depends on what template argument you use. Currently the MaxPixelOperator and MinPixelOperator
 	 * are the only ones utilized - see processor.cpp where the Processor Factory constructor is defined to get an idea of how to add another one
@@ -5273,7 +5273,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	template<class Type>
 	class BinaryOperateProcessor : public Processor{
 		public:
-			/** 
+			/**
 			* @exception InvalidParameterException if with is not specified
 			* @exception ImageDimensionException if image dimensions do not match
 			*/
@@ -5295,7 +5295,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return op.get_name();
 			}
-			
+
 			virtual string get_desc() const
 			{
 				return op.get_desc();
@@ -5305,7 +5305,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new BinaryOperateProcessor<Type>();
 			}
-			
+
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -5315,7 +5315,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		private:
 			Type op;
 	};
-	
+
 	class MaxPixelOperator {
 		public:
 		string get_name() const
@@ -5327,14 +5327,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Compares pixels in two images, returning an image with the maximum pixel value in each pixel location";
 		}
-		
+
 		static float binary_operate(const float& left, const float& right) {
 			if (left > right) return left;
 			return right;
 		}
 
 	};
-	
+
 	class MinPixelOperator {
 		public:
 			string get_name() const
@@ -5346,7 +5346,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Compares pixels in two images, returning an image with the minimum pixel value in each pixel location";
 			}
-		
+
 			static float binary_operate(const float& left, const float& right) {
 				if (left < right) return left;
 				return right;
@@ -5535,7 +5535,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
+
 	/**
 	 * @author David Woolford
 	 * @date June 15th 2009
@@ -5567,8 +5567,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			return d;
 		}
 	};
-	
-	
+
+
 	/**
 	* @author David Woolford
 	* @date June 15th 2009

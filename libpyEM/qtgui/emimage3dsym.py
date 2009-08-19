@@ -722,9 +722,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 	def closeEvent(self,event):
 		self.close_image_display()
-		EMGUIModule.closeEvent(event)
-		import sys
-		print sys.getrefcount(self)
+		EMGUIModule.closeEvent(self,event)
+#		import sys
+#		print sys.getrefcount(self)
 
 	def generate_current_display_list(self,force=False):
 		self.init_basic_shapes()
