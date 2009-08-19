@@ -1894,6 +1894,25 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
 
+
+def max_3D_pixel_error(t1, t2, r)
+	t3 = t2*t1.inverse()
+	tm = t3.get_matrix()
+	
+	ddmax = 0
+	for i in xrange(1, r+1):
+		for j in xrange(360):
+			ang = j/360.0*2*pi
+			sx = i*cos(ang)
+			sy = i*sin(ang)
+			dx = (tm[0]-1)*sx+tm[1]*sy+tm[3]
+			dy = tm[4]*sx+(tm[5]-1)*sy+tm[7]
+			dz = tm[8]*sx+tm[9]*sy+tm[8]
+			dd = dx*dx+dy*dy+dz*dz
+			if dd > ddmax: ddmax=dd
+	return sqrt(ddmax)
+
+
 def max_3D_pixel_error1(phi1, theta1, psi1, sx1, sy1, phi2, theta2, psi2, sx2, sy2, r):
 	from numpy import mat, linalg
 	from math import cos, sin, sqrt, pi
