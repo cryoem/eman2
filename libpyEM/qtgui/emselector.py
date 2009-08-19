@@ -81,22 +81,22 @@ class EMItemAction:
 	interface for single item actions
 	'''
 	
-	def item_action(self,item,*args,**kargs): raise NotImplementedException
+	def item_action(self,item,target): raise NotImplementedException
 	
 class EMMultiItemAction:
 	'''
 	interface for multiple item actions
 	'''
 	
-	def multi_item_action(self,items,*args,**kargs): raise NotImplementedException
+	def multi_item_action(self,items,target): raise NotImplementedException
 	
 class EMSaveItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 	
-	def item_action(self,item,*args,**kargs):
+	def item_action(self,item,target):
 		data = item.get_data()
 		if data != None: save_data(data)
 		
-	def multi_item_action(self,items,*args,**kargs):
+	def multi_item_action(self,items,target):
 		for item in items:
 			data = item.get_data()
 			if data != None: 
@@ -105,12 +105,12 @@ class EMSaveItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 		
 class EMSaveStackSaveAction(EMMultiItemAction,EMActionDelegate):
 	
-	def multi_item_action(self,items,*args,**kargs):
+	def multi_item_action(self,items,target):
 		save_data(items) # save_data knows how to deal with items
 
 class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 	
-	def item_action(self,item,*args,**kargs):
+	def item_action(self,item,target):
 		self.__delete_items( [item] )
 
 	def __delete_items(self,items):
@@ -128,7 +128,7 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 			delegate= item.get_delegate()
 			delegate.delete_url(item.get_url())
 			
-	def multi_item_action(self,items,*args,**kargs):
+	def multi_item_action(self,items,target):
 		self.__delete_items(items)
 			
 
@@ -146,7 +146,8 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			self.get_data_attr = get_data_attr
 			self.data_functors = data_functors # functors that can be called once the data is acquired
 			
-		def item_action(self,item,single_mode=False):
+		def item_action(self,item,target):
+			single_mode = target.single_preview_only()
 			if single_mode and len(self.display_modules) != 0:
 				old_module = self.display_modules[-1]
 				data = getattr(item,self.get_data_attr)()
@@ -196,7 +197,8 @@ class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXModule,"get_2d_s
 	This is like a template specialization of the DataDisplayModuleTemplate in the case of
 	using an EMImageMXModule. The reason is because we support a special "Preview Subset" action.
 	'''
-	def multi_item_action(self,items,single_mode=False):
+	def multi_item_action(self,items,target):
+		single_mode = target.single_preview_only()
 		data = []
 		from emimagemx import ApplyAttribute
 		for item in items:
@@ -757,7 +759,7 @@ class EMBrowser(EMBrowserType):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		view_action = item.default_view_action()
 		if view_action != None:
-			self.action_delegates[view_action].item_action(item,self.single_preview_only())
+			self.action_delegates[view_action].item_action(item,self)
 			preview_occured = True
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 			
@@ -839,12 +841,12 @@ class EMBrowser(EMBrowserType):
 		if total == 0: return
 		if total == 1 and self.action_delegates.has_key(str(action.text())):
 			get_application().setOverrideCursor(Qt.BusyCursor)
-			self.action_delegates[str(action.text())].item_action(items[0],self.single_preview_only())
+			self.action_delegates[str(action.text())].item_action(items[0],self)
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 		else:
 			get_application().setOverrideCursor(Qt.BusyCursor)
-			self.action_delegates[str(action.text())].multi_item_action(items,self.single_preview_only())
+			self.action_delegates[str(action.text())].multi_item_action(items,self)
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 
