@@ -767,7 +767,6 @@ class EMImageMXModule(EMGUIModule):
 		pass
 		#print "do inspector update"
 		
-	
 	def set_reroute_delete(self,val=True):
 		self.reroute_delete = val
 	

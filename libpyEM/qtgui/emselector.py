@@ -401,20 +401,15 @@ def EMSelectorBaseTemplate(Type):
 			self.__redo_list_widget_contents()
 		
 		def __redo_list_widget_contents(self):
-			pass
-#			self.lock = True
-#			
-#			directory = folderize(self.list_widgets[0].get_url())
-#			for i,data in  enumerate(self.list_widget_data):
-#				if data != None:d = str(data.text())
-#				old_row = self.list_widgets[i].currentRow()
-#				self.__load_url(directory,self.list_widgets[i])
-#				self.list_widget_data[i] = self.list_widgets[i].item(old_row)
-#				if data == None: return
-#				else:
-#					directory = folderize(directory) + d
-#		
-#			self.lock = False
+			'''
+			Clears the widgets and refreshes widget 0
+			This is not the best way of doing it
+			'''
+			self.lock = True
+			directory = folderize(self.list_widgets[0].get_url())
+			for list_widget in self.list_widgets: list_widget.clear()
+			self.__load_url(directory,self.list_widgets[0])
+			self.lock = False
 	
 		def add_list_widget(self, list_widget = None):
 			if list_widget == None:	list_widget = EMListWidget()
@@ -439,11 +434,6 @@ def EMSelectorBaseTemplate(Type):
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemSelectionChanged()"),self.selection_changed)
-			
-#		def list_widget_current_changed(self,new,prev):
-#			if new != None:
-#				if self.current_list_widget == new.listWidget():
-#					self.list_item_selected(new,False)
 
 		def list_widget_dclicked(self,item):
 			'''
@@ -1532,20 +1522,12 @@ class EM2DStackItem(EMDataListItem,EMStack2DCapableMixin):
 		ret.append(MULTI_2D_VIEWER)
 		
 		md = self.get_metadata()
-		#if EMUtil.get_image_count(selected_items[0].get_url()) < 1001:
-		#	menu2.addAction(self.plot_icon,PLOT_2D_VIEWER)
-		#	menu2.addAction(self.emdata_3d_icon,VIEWER_3D)
 		if md.has_key("xform.projection"):
 			# the assumption is that they all have the xform.projection header attribute, which could be fatal
 			ret.append(EULER_VIEWER)
 		if md.has_key(PROJ_FILE_ATTR) and md.has_key(PART_FILE_ATTR): 
 			ret.append(SIMMX_EULER_VIEWER)
 		return  ret
-	
-#	def loads_metadata(self): return True
-#	
-#	def get_metadata_items(self):
-#		return [EM2DMetaImageItem(self.delegate,str(i),self.full_path,i) for i in xrange(0,EMUtil.get_image_count(self.full_path))]
 	
 class EM3DStackItem(EMDataListItem):
 	ICON = None
@@ -1565,7 +1547,6 @@ class EM3DStackItem(EMDataListItem):
 	def get_data(self):
 		return self.delegate.get_stack_data(self.full_path)
 	
-
 class EM2DImageItem(EMDataListItem):
 	ICON = None
 	NAME = "2D image"
@@ -1612,7 +1593,6 @@ class EM2DImageItem(EMDataListItem):
 			ret.append(PLOT_3D_VIEWER)
 			
 		return ret
-	
 	
 class EM3DImageItem(EM2DImageItem,EMStack2DCapableMixin):
 	ICON = None
@@ -1690,7 +1670,6 @@ class EM3DMetaImageItem(EM3DImageItem):
 		ret.append(SINGLE_2D_VIEWER)
 		ret.append(MULTI_2D_VIEWER)
 		return ret
-	
 	
 class EMFSPlotItem(EMListItem):
 	ICON = None
@@ -2000,45 +1979,6 @@ class EMBDBDelegate(EMBrowseDelegate):
 			
 		a.file_name = file
 		return a
-
-#	def __convert_to_absolute_path(self,file_or_folder):
-#		print "converting",file_or_folder,
-#		dtag = get_dtag()
-#		ret = file_or_folder
-#		found = False
-#		for dir_rep in self.directory_replacements.items():
-#			if ret.find(dtag+dir_rep[1]) != -1:
-#				ret = ret.replace(dtag+dir_rep[1],dtag+dir_rep[0])
-#				found = True
-#		if not found: return ret
-#		if (not os.path.isdir(ret)) and (not os.path.isfile(ret)):
-#			if ret[-1] == dtag: ret = ret[:-1]
-#			ret += ".bdb"
-#		
-#		print ret
-#		return ret
-#
-#	def __is_database_file(self,file_name):
-#		file = self.__convert_to_absolute_path(file_name)
-#		if len(file) > 4 and file[-4:] == ".bdb":
-#			if self.__get_last_directory(file) == "EMAN2DB":
-#				if file_exists(file):
-#					return True
-#			
-#		return False
-
-#	def __get_last_directory(self,file):
-#		dtag = get_dtag()
-#		idx1 = file.rfind(dtag)
-#		if idx1 > 0:
-#			ret = file[0:idx1]
-#		else: return ret
-#		
-#		idx2 = ret.rfind(dtag)
-#		if idx2 > 0:
-#			ret = ret[idx2+1:]
-#		
-#		return ret
 		
 	def __get_database_directory(self,file):
 		'''
@@ -2070,7 +2010,6 @@ class EMBDBFolderItem(EMListItem):
 	
 	def get_url(self):
 		return self.full_path
-		
 
 class EMBDBDirectoryItem(EMListItem):
 	NAME = "bdb directory"
@@ -2127,8 +2066,6 @@ class EMBDBKeyValueItem(EMListItem):
 	def get_url(self):
 		return self.url +EMFileSystemDelegate.MDS+str(self.key)
 
-
-
 class EMBDBDictItem(EMListItem):
 	'''
 	Most basic BDB item, basic string display
@@ -2165,12 +2102,10 @@ class EMGenericItem(EMListItem):
 		
 	def get_name(self): return EMGenericItem.NAME
 
-
 class EMGenericFileItem(EMGenericItem):
 	'''
 	A generic item that can be deleted
 	'''
-	
 	def actions(self):
 		ret = [DELETE]
 		return  ret
@@ -2188,8 +2123,6 @@ class EMBrowserModule(EMQtWidgetModule):
 		selector.cancel_button.setEnabled(False)
 		self.widget = selector
 		EMQtWidgetModule.__init__(self,self.widget)
-
-	
 
 app = None
 def on_done(string_list):
@@ -2210,5 +2143,3 @@ if __name__ == '__main__':
 	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
-
-

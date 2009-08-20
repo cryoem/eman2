@@ -1387,34 +1387,6 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	
 	get_quality_score = staticmethod(get_quality_score)
 	
-	
-#class ParticleColumns:
-#	'''
-#	Basically some functions with a cache - the cache is to avoid
-#	re-reading stuff from disk multiple times
-#	'''
-#	def __init__(self):
-#		self.ptcls_dict = {}
-#		if db_check_dict("bdb:project"):
-#			db = db_open_dict("bdb:project")
-#			if db.has_key(spr_ptcls_dict):
-#				self.ptcls_dict = db[spr_ptcls_dict]
-#
-#	
-#	def get_num_ptcls(self,name):
-#		try:
-#			str(EMUtil.get_image_count(self.ptcls_dict[name]["Original Data"]))
-#		except:
-#			return "-"
-#		
-#	def get_dimensions(self,name):
-#		try:
-#			file_name = self.ptcls_dict[name]["Original Data"]
-#			nx,ny,nz = gimme_image_dimensions3D(file_name)
-#			return "%ix%ix%i" %(nx,ny,nz)
-#		except:
-#			return "-"
-
 class CTFColumns:
 	'''
 	Basically some functions with a cache - the cache is to avoid
@@ -1465,19 +1437,6 @@ class CTFColumns:
 			except: pass
 			return "%.3f" %snr
 		else: return ""
-		
-#	def get_snr_integral(self,name):
-#		ctf = self.get_ctf(name)
-#		if ctf != None:
-#			igl = 0
-#			apix = ctf.apix
-#			nyq = 1/(2.0*apix)
-#			n = float(len(ctf.snr))
-#			for i,snr in enumerate(ctf.snr):
-#				igl += i/n*snr
-#			igl /= n
-#			return "%.3f" %igl
-#		else: return ""
 
 class CTFDBColumns(CTFColumns):
 	def __init__(self):
@@ -1511,70 +1470,12 @@ class CTFDBColumns(CTFColumns):
 			except:
 				pass
 		return "-"
-	
-
-
-# these ptable functions are used by the EMParamTable class for converting entries into absolute file paths, for the purpose of displaying things (like 2D images and plots etc)
-def ptable_convert(text):
-	return "bdb:particles#"+text+"_ptcls"
-
-def image_generic_delete(text_list,application):
-	'''
-	A function that will delete all of the files in the argument text list. It does not delete .img/.hed pairs automatically
-	'''
-	msg = QtGui.QMessageBox()
-	msg.setText("Deletion will be permanent. Are you sure you want to delete these files?");
-	s = ""
-	for text in text_list: s+=text+"\n"
-	msg.setInformativeText(s)
-	msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
-	msg.setDefaultButton(QtGui.QMessageBox.Cancel)
-	ret = msg.exec_()
-	if ret == QtGui.QMessageBox.Cancel: return
-	elif ret == QtGui.QMessageBox.Ok:
-		application.setOverrideCursor(Qt.BusyCursor)
- 		for text in text_list: remove_file(text,img_couples_too=False)
- 		application.setOverrideCursor(Qt.ArrowCursor)
-
-def image_db_delete(text_list,application):
-	msg = QtGui.QMessageBox()
-	msg.setText("Deletion will be permanent. Are you sure you want to delete these files?");
-	s = ""
-	for text in text_list: s+=text+"\n"
-	msg.setInformativeText(s)
-	msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
-	msg.setDefaultButton(QtGui.QMessageBox.Cancel)
-	ret = msg.exec_()
-	if ret == QtGui.QMessageBox.Cancel: return
-	elif ret == QtGui.QMessageBox.Ok:
-		application.setOverrideCursor(Qt.BusyCursor)
- 		for text in text_list: remove_file(text)
- 		application.setOverrideCursor(Qt.ArrowCursor)
-
-def image_db_save_as(text_list,application):
-	msg = QtGui.QMessageBox()
-	msg.setWindowTitle("Woops")
-	for text in text_list:
-		if not db_check_dict(text):
-			msg.setText("The database (%s) does not exist" %text) # this is a disturbing scenario, it should never happen
-			msg.exec_()
-			continue
-		else:
-			if EMUtil.get_image_count(text) > 0:
-				name = save_data(EMDataListCache(text))
-			else:
-				name = save_data(EMData(text))
-			if name == "": break # a way to cancel 
 
 def ptable_convert_2(text):
+	'''
+	This is needed in one location - very close to removal
+	'''
 	return text
-
-def ptable_convert_3(text):
-	return "bdb:particles#"+text
-
-def ptable_convert_4(text):
-	return "bdb:initial_models#"+text
-
 
 class EMParticleReportTask(ParticleWorkFlowTask):
 	'''This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory.'''
@@ -2289,6 +2190,9 @@ class OldBoxerRecoveryDialog(QtGui.QDialog):
 		return self.ret_code
 
 def recover_old_boxer_database():
+	'''
+	This function will become redundant, probably by the beginning of 2010
+	'''
 	old_boxer_database = "bdb:e2boxer.cache"
 	if db_check_dict(old_boxer_database):
 		recovery_items = []
@@ -2338,7 +2242,6 @@ def recover_old_boxer_database():
 		
 	return 1
 			
-
 
 class E2BoxerGuiTask(E2BoxerTask):	
 	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."
@@ -2575,7 +2478,6 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		p.append(pdims)
 		return p
 	
-	
 class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 	'''
 	This task is called from e2boxer itself. Not from the workflow
@@ -2603,9 +2505,6 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		params.append(p)
 		
 		self.add_general_params(params)
-	
-#		boxer_project_db = db_open_dict("bdb:e2boxer.project")
-#		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("interface_boxsize",dfl=128),choices=[]))
 		return params
 	
 	def on_form_ok(self,params):
