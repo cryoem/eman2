@@ -5537,20 +5537,29 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						finfo.flush()
 
 		del peaks
-		#  compute numbr of particles that changed assignment
+		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
+		npergroup = [0]*numref
 		for im in xrange(nima):
 			iref = data[im].get_attr('group')
+			npergroup[iref] += 1
 			if( iref != assignment[im]):
 				assignment[im] = iref
 				nchng += 1
 		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		npergroup = mpi_reduce(npergroup, numref, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		npergroup = npergroup.tolist()
 		terminate = 0
 		if( myid == 0 ):
 			nchng = int(nchng[0])
 			precn = 100*float(nchng)/float(total_nima)
 			msg = " Number of particles that change assignment %7d, percentage of total: %5.1f\n"%(nchng, precn)
 			print_msg(msg)
+			msg = " Group       number of particles\n"
+			print_msg(msg)
+			for iref in xrange(numref):
+				msg = " %5d       7d\n"%(iref, npergroup[iref])
+				print_msg(msg)			
 			if(precn <= termprec):  terminate = 1
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
