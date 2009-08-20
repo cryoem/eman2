@@ -1895,32 +1895,6 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	return total_time, total_time2
 
 
-def max_3D_pixel_error(t1, t2, r):
-	"""
-	  Compute maximum pixel error between two projection directions
-	  assuming object has radius r, t1 is the projection transformation
-	  of the first projection and t2 of the second one, respectively:
-		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t.set_trans(Vec2f(-tx, -ty))
-	  Note the function is symmetric in t1, t2.
-	"""
-	from math import sin, cos, pi, sqrt
-	t3 = t2*t1.inverse()
-	tm = t3.get_matrix()
-
-	ddmax = 0.0
-	for i in xrange(1, r+1):
-		for ang in xrange(int(2*pi*i+0.5)):
-			sx = i*cos(ang)
-			sy = i*sin(ang)
-			dx = (tm[0]-1)*sx+tm[1]*sy+tm[3]
-			dy = tm[4]*sx+(tm[5]-1)*sy+tm[7]
-			dz = tm[8]*sx+tm[9]*sy+tm[8]
-			dd = dx*dx+dy*dy+dz*dz
-			if dd > ddmax: ddmax=dd
-	return sqrt(ddmax)
-
-
 def max_3D_pixel_error1(phi1, theta1, psi1, sx1, sy1, phi2, theta2, psi2, sx2, sy2, r):
 	from numpy import mat, linalg
 	from math import cos, sin, sqrt, pi
@@ -1988,40 +1962,6 @@ def max_3D_pixel_error2(phi1, theta1, psi1, sx1, sy1, phi2, theta2, psi2, sx2, s
 			dmax=dd
 	return dmax
 
-"""	
-def max_3D_pixel_error3(phi1, theta1, psi1, sx1, sy1, phi2, theta2, psi2, sx2, sy2, r):
-	from numpy import mat, linalg, concatenate, eye
-	from math import cos, sin, sqrt, pi
-	from utilities import even_angles
-
-	phi1 = phi1/180.0*pi
-	theta1 = theta1/180.0*pi
-	psi1 = psi1/180.0*pi
-	phi2 = phi2/180.0*pi
-	theta2 = theta2/180.0*pi
-	psi2 = psi2/180.0*pi	
-	R1a = mat([[cos(phi1), sin(phi1), 0],[-sin(phi1), cos(phi1), 0],[0, 0, 1]])
-	R1b = mat([[cos(theta1), 0, -sin(theta1)],[0, 1, 0],[sin(theta1), 0, cos(theta1)]])
-	R1c = mat([[cos(psi1), sin(psi1), 0],[-sin(psi1), cos(psi1), 0],[0, 0, 1]])
-	R1  = R1a*R1b*R1c
-	R1e = concatenate((concatenate((R1,[[sx1],[sy1],[0]]),1), [[0,0,0,1]]))
-	R1inv = linalg.inv(R1e) 
-	R2a = mat([[cos(phi2), sin(phi2), 0],[-sin(phi2), cos(phi2), 0],[0, 0, 1]])
-	R2b = mat([[cos(theta2), 0, -sin(theta2)],[0, 1, 0],[sin(theta2), 0, cos(theta2)]])
-	R2c = mat([[cos(psi2), sin(psi2), 0],[-sin(psi2), cos(psi2), 0],[0, 0, 1]])
-	R2  = R2a*R2b*R2c
-	R2e = concatenate((concatenate((R2,[[sx2],[sy2],[0]]),1), [[0,0,0,1]]))
-	dmax = 0
-	angles = even_angles(0.5, 0.0, 180.0, 0.0, 359.9, "S", symmetry='c1', phiEqpsi='Minus')
-	nangles = len(angles)
-	for i in range(nangles):
-		X = mat([[r*sin(angles[i][1]*pi/180.0)*cos(angles[i][0]*pi/180.0)],[r*sin(angles[i][1]*pi/180.0)*sin(angles[i][0]*pi/180.0)],[r*cos(angles[i][1]*pi/180.0)], [1.0]])
-		d = (R1inv*R2e-eye(4))*X
-		dd = sqrt(d[0,0]*d[0,0]+d[1,0]*d[1,0]+d[2,0]*d[2,0])
-		if dd > dmax: 	
-			dmax=dd
-	return dmax
-"""
 
 def max_3D_pixel_error3(phi1, theta1, psi1, sx1, sy1, phi2, theta2, psi2, sx2, sy2, r):
 	from numpy import mat, linalg, concatenate, eye
