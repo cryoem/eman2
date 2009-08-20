@@ -1896,14 +1896,21 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 
 
 def max_3D_pixel_error(t1, t2, r):
+	"""
+	  Compute maximum pixel error between two projection directions
+	  assuming object has radius r, t1 is the projection transformation
+	  of the first projection and t2 of the second one, respectively:
+		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t.set_trans(Vec2f(-tx, -ty))
+	  Note the function is symmetric in t1, t2.
+	"""
 	from math import sin, cos, pi, sqrt
 	t3 = t2*t1.inverse()
 	tm = t3.get_matrix()
-	
-	ddmax = 0
+
+	ddmax = 0.0
 	for i in xrange(1, r+1):
-		for j in xrange(360):
-			ang = j/360.0*2*pi
+		for ang in xrange(int(2*pi*i+0.5)):
 			sx = i*cos(ang)
 			sy = i*sin(ang)
 			dx = (tm[0]-1)*sx+tm[1]*sy+tm[3]
