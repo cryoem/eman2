@@ -5417,11 +5417,11 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		nima =0
 
 	nima = bcast_number_to_all(nima, source_node = main_node)
-	
+
 	if(myid != main_node):
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
 	total_nima = nima
@@ -5537,7 +5537,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					peaks[im] = peak
 					data[im].set_attr('group', iref)
 					if runtype=="REFINEMENT":
-						pixer[im] = pixe_error
+						pixer[im] = pixel_error
 						trans[im] = data[im].get_attr( "xform.projection" )
 					if not(finfo is None):
 						finfo.write( " current best\n" )
@@ -5569,12 +5569,12 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			msg = " Group       number of particles\n"
 			print_msg(msg)
 			for iref in xrange(numref):
-				msg = " %5d       7d\n"%(iref, npergroup[iref])
-				print_msg(msg)			
+				msg = " %5d       %7d\n"%(iref+1, npergroup[iref])
+				print_msg(msg)
 			if(precn <= termprec):  terminate = 1
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
-			
+
 		if runtype=="REFINEMENT":
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])

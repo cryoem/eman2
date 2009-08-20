@@ -1003,19 +1003,19 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
 		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-		s2x   = sxb + sxo
-		s2y   = syb + syo
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
 	else:
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + sxo
-		s2y   = syb + syo
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
 	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
 	data.set_attr("xform.projection", t2)
-	from development import max_3D_pixel_error
+	from alignment import max_3D_pixel_error
 	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
@@ -1062,20 +1062,20 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb + sxo
-			s2y   = syb + syo
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb+sxo
-			s2y   = syb+syo
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from development import max_3D_pixel_error
+		from alignment import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1128,20 +1128,20 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb + sxo
-			s2y   = syb + syo
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb+sxo
-			s2y   = syb+syo
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from development import max_3D_pixel_error
+		from alignment import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1504,9 +1504,7 @@ def max_3D_pixel_error(t1, t2, r):
 	ddmax = 0.0
 	for i in xrange(1, r+1):
 		for ang in xrange(int(2*pi*i+0.5)):
-			sx = i*cos(ang)
-			sy = i*sin(ang)
-			v = Vec3f(sx, sy, 0)
+			v = Vec3f(i*cos(ang), i*sin(ang), 0)
 			d = t3*v - v
 			dd = d[0]**2+d[1]**2+d[2]**2
 			if dd > ddmax: ddmax=dd
