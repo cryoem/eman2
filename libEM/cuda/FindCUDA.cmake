@@ -509,7 +509,7 @@ endif(CUDA_CUDA_LIBRARY)
 
 if (CUDA_cublas_LIBRARY)
   set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_cublas_LIBRARY})
-endif(CUDA_CUDA_LIBRARY)
+endif(CUDA_cublas_LIBRARY)
 
 #if (CUDA_cublasemu_LIBRARY)
 #  set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_cublasemu_LIBRARY})
