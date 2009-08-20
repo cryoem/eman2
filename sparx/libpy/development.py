@@ -4658,6 +4658,102 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 	#exit()
 '''
 
+def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
+	from utilities    import even_angles, model_circle, compose_transform2, print_msg
+	from alignment    import prepare_refprojs
+	from utilities    import get_params_proj, set_params_proj
+
+	mode    = "F"
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	ref_angles = []#even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
+	nphi = 0
+	for i in xrange(0,360.0,delta): nphi += 1
+	ntheta = 0
+	for j in xrange(0,91.0+delta, delta):
+		ntheta += 1
+		for i in xrange(0,360.0,delta):
+			ref_angles.append([float(i), float(j), 0.0])
+	for i in xrange(len(ref_angles)):
+		print ref_angles[i]
+	print len(ref_angles)
+
+	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
+	if mask3D:
+		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
+		volref -= mean
+		Util.mul_img(volref, mask3D)
+	if CTF:
+		from filter    import filt_ctf
+
+	nx   = volref.get_xsize()
+	ny   = volref.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	#precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr   = ringwe(numr ,mode)
+
+	# prepare 2-D mask for normalization
+	mask2D = model_circle(last_ring, nx, ny)
+	if(first_ring > 0): mask2D -= model_circle(first_ring, nx, ny)
+
+	# generate reference projections in polar coords
+	ref_proj_rings = prepare_refprojs( volref, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr, MPI )
+	print  "  projections prepared"
+	for imn in xrange(len(projdata)):
+		#if(imn%10 == 0):  print_msg("%d  "%(imn))
+		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
+		if not(finfo is None):
+			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
+			finfo.flush()
+		from utilities import ttime
+		print ttime()
+		ccfs = EMData()
+		ccfm = EMData()
+		if CTF:
+			ctf_params = projdata[imn].get_attr("ctf")
+			ima = filt_ctf(projdata[imn], ctf_params, True)
+			Util.multiref_peaks_ali(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
+		else:
+			Util.multiref_peaks_ali(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
+		print ttime()
+		from utilities import info
+		info(ccfs)
+		info(ccfm)
+		from utilities import peak_search
+		pp = peak_search(ccfs,1000)
+		pm = peak_search(ccfm,1000)
+		print ttime()
+		print len(pp),pp[0],len(pm),pm[0]
+		"""
+		numref=int(nref)
+		#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+		#ang = (ang+360.0)%360.0
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
+		if  mirror:
+                        phi   = (ref_angles[numref][0]+540.0)%360.0
+                        theta = 180.0-ref_angles[numref][1]
+                        psi   = (540.0-ref_angles[numref][2]+angb)%360.0
+                        s2x   = sxb + sxo
+                        s2y   = syb + syo
+                else:
+                        phi   = ref_angles[numref][0]
+                        theta = ref_angles[numref][1]
+                        psi   = (ref_angles[numref][2]+angb+360.0)%360.0
+                        s2x   = sxb + sxo
+                        s2y   = syb + syo
+		set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
+		projdata[imn].set_attr('peak', peak)
+		if not(finfo is None):
+			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
+			finfo.flush()
+		"""
+
+
 def ref_3d_ali(image, mask, volref, currentparams):
 	from projection import prep_vol
 	from utilities  import amoeba

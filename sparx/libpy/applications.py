@@ -4647,8 +4647,8 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
  		for Iter in xrange(max_iter):
 			print_msg("ITERATION #%3d\n"%(N_step*max_iter + Iter+1))
 
-			if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, MPI=False)
-			else:	                proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, MPI=False)
+			if(an[N_step] == -1):	peak, pixel_error = proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, MPI=False)
+			else:	                peak, pixel_error = proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, MPI=False)
 			#  3D stuff
 			if(CTF): vol1 = recons3d_4nn_ctf(data, range(0,nima,2), 1.0e6, 1, sym)
 			else:	 vol1 = recons3d_4nn(data, range(0,nima,2), sym)
@@ -4804,9 +4804,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
 
 				if an[N_step] == -1:	
-					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
-					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
@@ -5011,9 +5011,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
 
 				if an[N_step] == -1: 
-					proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:           
-					proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
 
 			if myid == main_node:
@@ -5227,9 +5227,9 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 						finfo.flush()
 				else:		
 					if(an[N_step] == -1):	
-						peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:	           
-						peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
@@ -5469,6 +5469,15 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 
+	#  this is needed for gathering of peak_errors
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
 
@@ -5486,6 +5495,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	
 		peaks = [ -1.0e23]*nima
  		trans = [tr_dummy]*nima
+		if runtype=="REFINEMENT":  pixer = [0.0]*nima
 	
 		cs = [0.0]*3	
 		for iref in xrange(numref):
@@ -5515,9 +5525,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
 				else:
 					if(an[N_step] == -1):	
-						peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:	           
-						peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
@@ -5527,6 +5537,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					peaks[im] = peak
 					data[im].set_attr('group', iref)
 					if runtype=="REFINEMENT":
+						pixer[im] = pixe_error
 						trans[im] = data[im].get_attr( "xform.projection" )
 					if not(finfo is None):
 						finfo.write( " current best\n" )
@@ -5576,6 +5587,22 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
 				rotate_3D_shift(data, cs)
+			#output peak errors
+			from mpi import mpi_gatherv
+			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				recvbuf = recvbuf.tolist()
+				from statistics import hist_list
+				lhist = 20
+				region, histo = hist_list(recvbuf, lhist)
+				msg = " Histogram of pixel errors\n ERROR       number of particles\n"
+				print_msg(msg)
+				for lhx in xrange(lhist):
+					msg = " %10.3f   %d7\n"%(region[lhx], histo[lhx])
+					print_msg(msg)
+				del region, histo
+			del recvbuf
 
 		if CTF: del vol
 		fscc = [None]*numref
@@ -8975,9 +9002,9 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
 
 				if an[N_step] == -1:	
-					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
-					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 
 				paramali = get_params_proj(data[im])
 				# phi theta psi sx sy
@@ -9208,9 +9235,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
 
 				if an[N_step] == -1: 
-					peak = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:           
-					peak = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
 				paramali = get_params_proj(data[im])
 				# phi theta psi sx sy
@@ -10136,11 +10163,6 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 	#if myid == nproc-1 : image_end = nimage
 	#else:                image_end = image_start + nimage_per_node
 	image_start, image_end = MPI_start_end(nimage, nproc, myid)
-
-	# Berlin
-	#from utilities import read_txt_col, set_arb_params
-	#prm = read_txt_col("coco","u")
-	#par_str=["phi", "theta", "psi", "s2x", "s2y"]
 
 	prjlist = []
 	for i in range(image_start,image_end):
