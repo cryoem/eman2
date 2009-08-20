@@ -14,7 +14,7 @@
 
 ##############################################################################
 # Build a shared library
-CUDA_ADD_LIBRARY(EM2SparxCuda SHARED
+CUDA_ADD_LIBRARY(EM2SparxCuda
   cuda_ccf.cu
   cuda_kmeans.cu
 )
@@ -22,9 +22,7 @@ CUDA_ADD_LIBRARY(EM2SparxCuda SHARED
   
 # Specify the dependency.
 TARGET_LINK_LIBRARIES(EM2SparxCuda
-  cufft
-  cudart
-  cublas
+  ${CUDA_LIBRARIES}
 )
 
 ##############################################################################

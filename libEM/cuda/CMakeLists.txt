@@ -12,7 +12,7 @@
 
 ##############################################################################
 # Build a shared library
-CUDA_ADD_LIBRARY(EM2Cuda SHARED
+CUDA_ADD_LIBRARY(EM2Cuda
   cuda_projector.cu
   cuda_util.cu
   cuda_emfft.cu
@@ -23,8 +23,7 @@ CUDA_ADD_LIBRARY(EM2Cuda SHARED
 
 # Specify the dependency.
 TARGET_LINK_LIBRARIES(EM2Cuda
-  cufft
-  cudart
+  ${CUDA_LIBRARIES}
   )
 
 ##############################################################################

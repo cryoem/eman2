@@ -457,12 +457,12 @@ MACRO(CUDA_ADD_LIBRARY cuda_target)
   CUDA_add_custom_commands( ${cuda_target} ${ARGN} )  
   
   # Add the library.
-  ADD_LIBRARY(${cuda_target}
+  ADD_LIBRARY(${cuda_target} SHARED
     ${target_srcs}
     ${cuda_cu_sources}
     )
 
-  TARGET_LINK_LIBRARIES(${cuda_target}
+  TARGET_LINK_LIBRARIES(${cuda_target} 
     ${CUDA_TARGET_LINK}
     )
 
