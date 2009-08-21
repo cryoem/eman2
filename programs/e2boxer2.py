@@ -39,7 +39,24 @@ from copy import deepcopy
 
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
 
-
+def e2boxer2_check(options,args):
+	error_message = check(options,args)
+	
+	if options.autoboxer:
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if not db_check_dict(db_name): error_message.append("There is no autoboxing information present in the current directory")
+		else:
+			db = db_open_dict(db_name)
+			print db.values()
+			if not db.has_key(options.autoboxer): error_message.append("There is no autoboxing information present for %s" %options.autoboxer)
+			else:
+				print db.keys(),options.autoboxer
+				for k,v in db.items(): print k,v
+				print db[options.autoboxer]
+				print db[str(options.autoboxer)]
+	
+	return error_message
+	
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image> <image2>....
@@ -61,7 +78,8 @@ e2boxer2.py ????.mrc --boxsize=256
 	parser.add_option("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False)
 	parser.add_option("--suffix",type="string",help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	
+	parser.add_option("--autoboxer",type="string",help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
+		
 	(options, args) = parser.parse_args()
 	
 	db = db_open_dict(EMBOXERBASE_DB)
@@ -70,7 +88,7 @@ e2boxer2.py ????.mrc --boxsize=256
 		cache_box_size = False
 		options.boxsize = db.get("box_size",dfl=128)
 	
-	error_message = check(options,args)
+	error_message = e2boxer2_check(options,args)
 	if len(error_message) > 0:
 		error = "\n"
 		for e in error_message:
@@ -81,11 +99,11 @@ e2boxer2.py ????.mrc --boxsize=256
 	
 	if cache_box_size: db["box_size"] = options.boxsize
 	
-	args = [abs_path(arg) for arg in args] # always try to use full file names  - this means the workflow can keep track of where images come from
-
-	
 #	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	
+	if options.autoboxer:
+		autobox(args,options,logid)
+		return
 	if options.write_dbbox or options.write_ptcls:
 		write_output(args,options,logid)
 	else:
@@ -97,6 +115,14 @@ e2boxer2.py ????.mrc --boxsize=256
 		application.execute()
 		
 	E2end(logid)
+	
+def autobox(args,options,logid):
+	
+	boxer = SwarmBoxer()
+	boxer.handle_file_change(options.autoboxer)
+	for arg in args:
+		print arg
+		boxer.auto_box(arg, False, True, False)
 		
 def write_output(args,options,logid):
 	params = {}
@@ -1028,7 +1054,7 @@ class SwarmBoxer:
 			self.template_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
 				
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
-			self.template_viewer.update_window_title("Templates")
+			self.template_viewer.setWindowTitle("Templates")
 			from PyQt4 import QtCore
 			QtCore.QObject.connect(self.template_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
 			

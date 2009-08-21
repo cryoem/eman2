@@ -107,6 +107,7 @@ class EMOrientationDistDialog(EMButtonDialog):
 		from emimage3dsym import EMSymChoiceDialog
 		dialog = EMSymChoiceDialog(symname)
 		result = dialog.exec_()
+		#dialog.closeEvent(None)
 		if result != None:
 			combo = name_map["orientgen"][0] # assume the first entry in the list is the combo
 			s = [combo.itemText(i) for i in range(combo.count())]
@@ -1334,11 +1335,12 @@ class EMFormWidget(QtGui.QWidget):
 	def update_texture(self):
 		self.parent().force_texture_update()
 #		
-	#def closeEvent(self,event):
-		#if self.parent() != None:
-		#self.parent().closeEvent(event)
-		#self.parent().emit(QtCore.SIGNAL("emform_close"))
-		#event.accept()
+	def closeEvent(self,event):
+		if self.parent() != None:
+			self.parent().emit(QtCore.SIGNAL("emform_close"))
+			self.parent().closeEvent(event)
+		
+		event.accept()
 #		
 #	def resizeEvent(self,event):
 #		return
@@ -1484,7 +1486,7 @@ class IncorpBool:
 		target.name_widget_map[param.name] = check_box
 		
 		if hasattr(param,"dependents"):
-			target.event_handlers.append(BoolDependentsEventHandler(target,check_box,param.dependents))    
+			target.event_handlers.append(BoolDependentsEventHandler(target,check_box,param.dependents,hasattr(param,"invert_logic") and param.invert_logic))    
 
 class IncorpString:
 	def __init__(self): pass
@@ -1965,14 +1967,14 @@ class BoolDependentsEventHandler:
 	This event handler works on the assumption that a boolean type is always a checkbox.
 	If the boolean types also has the "dependents" attribute, then toggling the checkbox will enable/disable the dependent widgets
 	'''
-	def __init__(self,target,checkbox,dependents):
+	def __init__(self,target,checkbox,dependents,invert_logic=False):
 		'''
 		Need the target because we need access to the name_widget_map
 		'''
 		self.target = weakref.ref(target)
 		self.checkbox = checkbox
 		self.dependents = dependents # a list of depent names (ParamDef.name)
-		
+		self.invert_logic = invert_logic
 		QtCore.QObject.connect(self.checkbox, QtCore.SIGNAL("stateChanged(int)"),self.checkbox_state_changed)
 		
 	def checkbox_state_changed(self,integer=0):
@@ -1980,6 +1982,9 @@ class BoolDependentsEventHandler:
 		
 		enabled = False
 		if self.checkbox.isChecked(): enabled = True
+		
+		if self.invert_logic: enabled = not enabled
+		
 		for name in self.dependents:
 			widgets = name_map[name]
 			if isinstance(widgets,list):

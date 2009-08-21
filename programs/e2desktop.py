@@ -52,7 +52,6 @@ import math
 
 from emglobjects import Camera,EMGLProjectionViewMatrices
 from e2boxer import EMBoxerModule
-from emselector import EMBrowserDialog
 from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
 from emimageutil import EMEventRerouter

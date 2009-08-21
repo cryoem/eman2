@@ -41,12 +41,29 @@ import copy
 from emapplication import EMProgressDialogModule,get_application
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
-from pyemtbx.boxertools import set_idd_image_entry, TrimBox
 import weakref
 from e2history import HistoryForm
 import time
 from emsave import save_data
 from emimagemx import EMDataListCache
+
+USING_RELATIVE_DIRS = True # used by database infrastructure for recording file names
+
+def workflow_path(path="",dir=None):
+	'''
+	Makes paths relative if possible.
+	'''
+	
+	if USING_RELATIVE_DIRS:
+		if dir==None: dir = e2getcwd()
+		from emselector import folderize
+		dir = folderize(dir)
+		name = path
+		if dir in name:	name = name[len(dir):]
+		
+		return name
+	
+	return path
 
 spr_raw_data_dict = "global.spr_raw_data_dict"
 spr_filt_ptcls_map = "global.spr_filt_ptcls_map"# this is for recovery and back compatibility
@@ -103,10 +120,6 @@ class EMErrorMessageDisplay:
 		msg.exec_()
 	
 	run = staticmethod(run)
-
-
-
-		
 
 class WorkFlowTask:
 	def __init__(self):
@@ -359,18 +372,6 @@ class WorkFlowTask:
 		error_message is a list of error messages
 		'''
 		EMErrorMessageDisplay.run(error_message)
-#		msg = QtGui.QMessageBox()
-#		msg.setWindowTitle("Almost")
-#		mes = ""
-#		for error in error_message:
-#			mes += error
-#			
-#			if len(error) > 0 and error[-1] != '.':
-#				# correct my own inconsistencies....AWESOME
-#				mes += '.'
-#			if error != error_message[-1]: mes += "\n"
-#		msg.setText(mes)
-#		msg.exec_()
 		
 	def get_latest_r2d_classes(self):
 		dirs = get_numbered_directories("r2d_")
@@ -578,7 +579,6 @@ class EMProjectDataDict:
 					ret.append(name)
 		return ret
 	
-	
 	def add_names(self,list_of_names,filt=original_data,use_file_tag=False):
 		'''
 		@param list_of_names a list of names - should be full path file names
@@ -590,10 +590,12 @@ class EMProjectDataDict:
 		'''
 		dict = self.get_data_dict()
 		for name in list_of_names:
+			
+			n = workflow_path(name)
 			tmp = {}
-			tmp[filt] = name
-			if use_file_tag: dict[get_file_tag(name)] = tmp
-			else: dict[name] = tmp
+			tmp[filt] = n
+			if use_file_tag: dict[get_file_tag(n)] = tmp
+			else: dict[n] = tmp
 			
 			
 		self.__write_db(dict)
@@ -650,7 +652,7 @@ class EMProjectDataDict:
 			# also uncomment this line in about a year - i.e. around June 2010
 			self.__recover_missing_key_dict()
 			
-			# remove the dictionary if any data was lost
+			# remove the dictionary if any data was lost - do not delete
 			self.__remove_dict_if_files_lost()
 			
 			# this recovery function removed on August 14th
@@ -702,11 +704,15 @@ class EMProjectDataDict:
 		project_db = db_open_dict(self.db_name)
 		dict = project_db.get(self.data_dict_name,dfl={})
 		rem = []
-		for name, map in dict.items():
+		for name, map in dict.items():			
 			for key,image_name in map.items():
 				if not file_exists(image_name):
 					map.pop(key)
 					rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
+					
+			if len(map) == 0:
+				dict.pop(name)
+				rem.append("%s no longer exists. Automatically removing from project" %(name))
 		
 		if len(rem) != 0:
 			EMErrorMessageDisplay.run(rem,"Warning")
@@ -945,6 +951,7 @@ class EMRawDataReportTask(WorkFlowTask):
 				em_qt_widget.widget.set_selection_text("Selection(s)")
 				em_qt_widget.widget.set_validator(self.validator)
 				files = em_qt_widget.exec_()
+				em_qt_widget.closeEvent(None)
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
@@ -1082,17 +1089,21 @@ class EMFilterRawDataTask(WorkFlowTask):
 		params = []
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Filtering Raw Data",desc_long="",property=None,defaultunits=EMFilterRawDataTask.documentation_string,choices=None))
-		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
-		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="Filter X-ray pixels",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=db.get("xraypixel",dfl=False),choices=None)
-		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Tick this if you want eman2 to automatically normalize your images using the edgmean approach",property=None,defaultunits=db.get("norm.edgemean",dfl=True),choices=None)
-		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Generate thumbnail",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=db.get("thumbs",dfl=True),choices=None)
-		passociate = ParamDef(name="project_associate",vartype="boolean",desc_short="Associate with project",desc_long="If ticked the filtered raw data will be automatically added to the list of files in the project",property=None,defaultunits=db.get("project_associate",dfl=True),choices=None)
-		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="If ticked the filtered data will be processed in place. This can save on disk space ",property=None,defaultunits=db.get("inplace",dfl=True),choices=None)
+		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Invert pixel intensities",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
+		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="Filter X-ray pixels",desc_long="Filter X-ray pixels (4*sigma)",property=None,defaultunits=db.get("xraypixel",dfl=False),choices=None)
+		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Normalize using the normalize.edgemean processor",property=None,defaultunits=db.get("norm.edgemean",dfl=True),choices=None)
+		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Generate thumbnail",desc_long="Generate thumbnails for e2boxer",property=None,defaultunits=db.get("thumbs",dfl=True),choices=None)
+		passociate = ParamDef(name="project_associate",vartype="boolean",desc_short="Associate with project",desc_long="Associate filtered images with the project",property=None,defaultunits=db.get("project_associate",dfl=True),choices=None)
+		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="Process images inplace to save disk space",property=None,defaultunits=db.get("inplace",dfl=True),choices=None)
+		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl="_filt"),choices=None )
 	
+		pinplace.dependents = ["suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		pinplace.invert_logic = True
 		params.append(p)
 		params.append([pinvert,pxray,pnorm])
-		params.append([pthumbnail,passociate,pinplace])
-					
+		params.append([pthumbnail,passociate])
+		params.append([pinplace,psuffix])
+		
 		#db_close_dict("bdb:project")
 		return params
 	
@@ -1111,34 +1122,47 @@ class EMFilterRawDataTask(WorkFlowTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
 		self.write_db_entries(params)
+		
 	def check_params(self,params):
 		error_message = []
 		filenames = params["filenames"]
 		
 		if len(filenames) == 0:
-			error_message.append("Please specify files to import.")
+			error_message.append("Please specify files to filter.")
 			return error_message
 		
 		import copy
 		self.output_names = copy.deepcopy(filenames)
 		
+		num_proc_ops = 0
+		num_thm_ops = 0
+		if params["invert"]: num_proc_ops += 1
+		if params["xraypixel"]: num_proc_ops += 1
+		if params["thumbs"]:num_thm_ops += 1
+		if params["norm.edgemean"]:num_proc_ops += 1
+		
+		if num_thm_ops+ num_proc_ops== 0: error_message.append("Please choose an operation to perform")
+		
+		if num_proc_ops == 0 and params["inplace"]:
+			error_message.append(["Inplace filtering is only valid if you supply a processing operation"])
+		
 		if not params["inplace"]:
 			reps = []
 			for file in filenames:
 				if len(file) > 3 and file[:4] == "bdb:":
-					reps.append(file+"_filt")
+					reps.append(file+params["suffix"])
 				else:
 					idx = file.rfind(".")
 					if idx == -1: error_message.append("Couldn't interpret %s" %file)
 					else:
 						type_ = file[idx+1:]
 						if type_ not in get_supported_2d_write_formats(): type_ = "mrc"
-						reps.append(file[:idx]+"_filt."+type_)
+						reps.append(file[:idx]+params["suffix"]+"."+type_)
 			self.output_names = reps
 			
 			for name in self.output_names:
 				if file_exists(name):
-					error_message.append("The output file %s already exists. Please remove it" %name)
+					error_message.append("The output file %s already exists. Please remove it or change your suffix." %name)
 		else:
 			for file in self.output_names:
 				if len(file) > 3 and file[:4] == "bdb:": continue
@@ -1185,7 +1209,6 @@ class EMFilterRawDataTask(WorkFlowTask):
 		if params["thumbs"]:num_processing_operations += 1
 		if params["norm.edgemean"]:num_processing_operations += 1
 		
-		
 		# now add the files to db (if they don't already exist
 		progress = EMProgressDialogModule(get_application(),"Filtering Raw Files", "Abort", 0, len(filenames)*num_processing_operations,None)
 		progress.qt_widget.show()
@@ -1204,24 +1227,29 @@ class EMFilterRawDataTask(WorkFlowTask):
 			get_application().processEvents()
 			e.set_attr("disk_file_name",name)
 			
+			write_large = False
 			if params["norm.edgemean"]:
 				e.process_inplace("normalize.edgemean")
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
+				write_large = True
 			
 			if params["invert"]:
 				e.mult(-1)
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
+				write_large = True
 			
 			if params["xraypixel"]:
 				e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
 				i += 1
 				progress.qt_widget.setValue(i)
 				get_application().processEvents()
-			e.write_image(outname,0)
+				write_large = True
+			
+			if write_large:	e.write_image(outname,0)
 			#db_close_dict(db_name)
 			cancelled_writes.append(outname)
 			i += 1
@@ -1232,6 +1260,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 				shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
 				thumb = e.process("math.meanshrink",{"n":shrink})
 				thumb.process_inplace("normalize.edgemean")
+				from emboxerbase import set_idd_image_entry
+				if not write_large: outname = name
 				set_idd_image_entry(outname,"image_thumb",thumb) # boxer uses the full name
 				i += 1
 				progress.qt_widget.setValue(i)
@@ -1355,6 +1385,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			if self.validator != None: 
 				em_qt_widget.widget.set_validator(self.validator)
 			files = em_qt_widget.exec_()
+			em_qt_widget.closeEvent(None)
 			
 			if files != "":
 				if isinstance(files,str): files = [files]
@@ -1478,7 +1509,7 @@ def ptable_convert_2(text):
 	return text
 
 class EMParticleReportTask(ParticleWorkFlowTask):
-	'''This tool is for displaying the particles that are currently associated with this project. This list is generating by inspecting the contents of the project particles directory.'''
+	'''This tool is for displaying the particles that are currently associated with this project.'''
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project Particles"
@@ -1732,6 +1763,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				em_qt_widget.widget.set_selection_text("Selection(s)")
 				em_qt_widget.widget.set_validator(self.validator)
 				files = em_qt_widget.exec_()
+				em_qt_widget.closeEvent(None)
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
@@ -1797,27 +1829,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems
 	
-#	def get_boxes_in_database(file_name):
-#		
-#		db_name = "bdb:e2boxercache#boxes"
-#		db_name = "bdb:e2boxer.cache"		
-#		box_maps = {}
-#		nbox = 0
-#		if db_check_dict(db_name):
-#			e2boxer_db = db_open_dict(db_name,ro=True)
-#			for name in e2boxer_db.keys():
-#				d = e2boxer_db[name]
-#				if not isinstance(d,dict): continue
-#				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
-#					continue
-#				name = d["e2boxer_image_name"]
-#				if get_file_tag(name) != get_file_tag(file_name): continue
-#				
-#				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
-#					if d.has_key(key):
-#						boxes = d[key]
-#						if boxes != None: nbox += len(boxes)
-#		return str(nbox)
 	
 	def get_boxes_in_database(file_name):
 		
@@ -1830,19 +1841,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			if e2boxer_db.has_key(file_name):
 				return str(len(e2boxer_db[file_name]))
 		return "-"
-#			for name in e2boxer_db.keys():
-#				d = e2boxer_db[name]
-#				if not isinstance(d,dict): continue
-#				if not d.has_key("e2boxer_image_name"): # this is the test, if something else has this key then we're screwed.
-#					continue
-#				name = d["e2boxer_image_name"]
-#				if get_file_tag(name) != get_file_tag(file_name): continue
-#				
-#				for key in ["auto_boxes","manual_boxes","reference_boxes"]:
-#					if d.has_key(key):
-#						boxes = d[key]
-#						if boxes != None: nbox += len(boxes)
-		
 
 	get_boxes_in_database = staticmethod(get_boxes_in_database)
 #	get_num_particles_project = staticmethod(get_num_particles_project)
@@ -1944,8 +1942,22 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		table,n = self.report_task.get_raw_data_table()
 		from emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
-		
+		table.add_column_data(EMFileTable.EMColumnData("Quality",E2BoxerTask.get_quality,"Quality metadata score stored in local database",int_lt))
+	
 		return table, n
+	
+	def get_quality(file_name):
+		'''
+		A static function for getting the number of boxes associated with each file
+		'''
+		from emboxerbase import get_database_entry
+		val = get_database_entry(file_name,"quality")
+		
+		if val == None: return "-"
+		else: return str(val)
+		
+	get_quality = staticmethod(get_quality)
+		
 	
 	def get_project_files_that_have_db_boxes_in_table(self):
 		
@@ -1957,9 +1969,11 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	
 		from emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
+		table.insert_column_data(1,EMFileTable.EMColumnData("Quality",E2BoxerTask.get_quality,"Quality metadata score stored in local database",int_lt))
+
 		self.columns_object = E2BoxerTask.ParticleColumns()
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image",int_lt))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
+		table.insert_column_data(2,EMFileTable.EMColumnData("Particles On Disk",self.columns_object.get_num_particles_project,"Particles currently stored on disk that are associated with this image",int_lt))
+		table.insert_column_data(3,EMFileTable.EMColumnData("Particle Dims",self.columns_object.get_particle_dims_project,"The dimensions of the particles that are stored on disk"))
 		#self.tmp = E2BoxerTask.Tmp()
 		return table, n
 		
@@ -2054,10 +2068,8 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 
 class E2BoxerAutoTask(E2BoxerTask):
 	'''
-	A task for running automated boxing in the project context
+	A task for running automated boxing. Choose the boxing data and the images you wish to aubox, then hit OK to spawn autoboxing processes.
 	'''
-	documentation_string = "Select the images you wish to run autoboxing on and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs.\nData will be autoboxed using the current autoboxer in the database, which is placed there by e2boxer."
-	warning_string = "\n\n\nNOTE: This feature is currently disabled as there is no autoboxing information in the EMAN2 database. You can fix this situation by using e2boxer to interactively box a few images first"
 	
 	def __init__(self):
 		E2BoxerTask.__init__(self)
@@ -2067,27 +2079,102 @@ class E2BoxerAutoTask(E2BoxerTask):
 	def get_params(self):
 		params = []
 		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		
-		db_name = "bdb:e2boxer.cache"
-		fail = False
+		db_name = "bdb:e2boxercache#swarm_boxers"
 		if db_check_dict(db_name):
-			db = db_open_dict(db_name,ro=True)
-			if not db.has_key("current_autoboxer"): fail = True
-		else:
-			fail = True
+			db = db_open_dict(db_name)
+			project_list = spr_raw_data_dict
+		
+			data_dict = EMProjectDataDict(project_list)
+			self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
+			project_names = data_dict.keys()
 			
-		if fail:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string+E2BoxerAutoTask.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
-			p,n = self.get_boxer_basic_table()
-			params.append(p)
-	
+			culled_names = []
+			for name in project_names:
+				if db.has_key(name) and len(db[name]) > 0:
+					culled_names.append(name)
+			
+			from emform import EM2DFileTable,EMFileTable
+			table = EM2DFileTable(culled_names,desc_short="Choose Autoboxer",desc_long="",single_selection=True,name="autoboxer")
+			table.add_column_data(EMFileTable.EMColumnData("Autoboxer ID",E2BoxerAutoTask.auto_boxer_id,"Autoboxer time stamp indicating last alteration"))
+			table.add_column_data(EMFileTable.EMColumnData("Mode",E2BoxerAutoTask.swarm_mode,"Swarm picking mode"))
+			table.add_column_data(EMFileTable.EMColumnData("Proximity Theshold",E2BoxerAutoTask.proximity_threshold,"Swarm autoboxer proximity threshold"))
+			table.add_column_data(EMFileTable.EMColumnData("Threshold",E2BoxerAutoTask.swarm_threshold,"Swarm correlation threshold"))
+			table.add_column_data(EMFileTable.EMColumnData("References",E2BoxerAutoTask.swarm_num_refs,"The number of references used by the Swarm autoboxer"))
+			table.add_column_data(EMFileTable.EMColumnData("Profile",E2BoxerAutoTask.swarm_profile,"Swarm picking profile"))
+			
+			data_table,n = self.get_boxer_basic_table() # note n is unused, it's a refactoring residual		
+			
+			params.append([table,data_table])
+			
 		return params
+	
+	def auto_boxer_id(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(data[-1][9])
+		return "-"
+	auto_boxer_id = staticmethod(auto_boxer_id)
+		
+	def proximity_threshold(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(data[-1][10])
+		return "-"	
+	proximity_threshold = staticmethod(proximity_threshold)
+	
+	def swarm_mode(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(data[-1][7])
+		return "-"
+	
+	swarm_mode = staticmethod(swarm_mode)
+	
+	def swarm_threshold(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(data[-1][3])
+		return "-"
+		
+	swarm_threshold = staticmethod(swarm_threshold)
+	
+	
+	def swarm_profile(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(data[-1][2])
+		return "-"
+		
+	swarm_profile = staticmethod(swarm_profile)
+	
+	def swarm_num_refs(filename):
+		db_name = "bdb:e2boxercache#swarm_boxers"
+		if db_check_dict(db_name):
+			db = db_open_dict(db_name)
+			data = db[filename]
+			return str(len(data[-1][0]))
+		return "-"
+	swarm_num_refs = staticmethod(swarm_num_refs)
 			
 	def on_form_ok(self,params): 
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
+			return
+		
+		if  params.has_key("autoboxer") and len(params["autoboxer"]) == 0:
+			error("Please choose autoboxer data")
 			return
 	
 		else:
@@ -2096,11 +2183,12 @@ class E2BoxerAutoTask(E2BoxerTask):
 			for k,v in params.items():
 				setattr(options,k,v)
 			
-			string_args = []
+			options.autoboxer = params["autoboxer"][0]
+			string_args = ["autoboxer"]
+			additional_args = []
 			bool_args = []
-			additional_args = ["--method=Swarm", "--auto=db"]
-			temp_file_name = "e2boxer_autobox_stdout.txt"
-			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			temp_file_name = "e2boxer2_autobox_stdout.txt"
+			self.spawn_task("e2boxer2.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
@@ -3987,7 +4075,7 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 	 	# if we make it here we are almost definitely good to go, the only thing that can fail is the e2bdb or e2proc2d commands
 	 	options.path = numbered_path("r2d",True)
-	 	if options.filenames[0][:4] == "bdb:": 
+	 	if len(options.filenames) > 0 and options.filenames[0][:4] == "bdb:": 
 	 		if len(options.filenames) > 1:
 	 			bdb_success, bdb_cmd = self.make_v_stack(options)
 	 			input = "bdb:"+options.path+"#all"

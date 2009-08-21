@@ -49,6 +49,7 @@ from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 from valslider import ValSlider
+from emsprworkflow import workflow_path
 
 import os,sys,weakref,math
 from optparse import OptionParser
@@ -97,8 +98,6 @@ specific needs/algorithms
 	
 	if cache_box_size: db["box_size"] = options.boxsize
 	
-	args = [abs_path(arg) for arg in args] # always try to use full file names 
-
 	application = EMStandAloneApplication()
 #	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	
@@ -152,7 +151,7 @@ def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
 	'''
-	image.set_attr("src_image",image_name)
+	image.set_attr("src_image",workflow_path(image_name))
 	db_name =  db_title+key
 	# first have to make sure it's not already there
 	db = db_open_dict(db_name)
@@ -161,7 +160,7 @@ def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 		for idx in range(0,db["maxrec"]+1):
 			header = db.get_header(idx)
 			try:
-				if header["src_image"] == image_name:
+				if header["src_image"] == workflow_path(image_name):
 					db[idx] = image
 					#image.write_image("bdb:e2boxercache#"+key,idx)
 					db_close_dict(db_name)
@@ -697,7 +696,7 @@ class EraseTool(EMBoxingTool):
 	def mouse_move(self,event):
 		from emshape import EMShape
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3]))
+		self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 		self.get_2d_window().updateGL()
 		
 	def adjust_erase_rad(self,delta):
@@ -715,20 +714,20 @@ class EraseTool(EMBoxingTool):
 			from emshape import EMShape
 			self.adjust_erase_rad(event.delta())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
-			self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3]))
+			self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 			self.get_2d_window().updateGL()
 	
 	def mouse_down(self,event) :
 		from emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3]))
+		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)	
 
 	def mouse_drag(self,event) :
 		from emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		self.get_2d_window().add_eraser_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3]))
+		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
 		
@@ -982,7 +981,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_drag(event)
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_drag(event)
 			
 	def change_event_handler(self,name):
@@ -1000,7 +999,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_up(event)
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_up(event)
 		
 	def key_press(self,event):
@@ -1017,7 +1016,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_wheel(event)
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_wheel(event)
 			
 	def mouse_move(self,event):
@@ -1027,7 +1026,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 		try: self.mouse_handler.mouse_move(event)
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_move(event)
 		
 	def module_closed(self):
@@ -1068,7 +1067,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		
 		try: self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		#self.target().moving_ptcl_established(im,event.x(),event.y())
 		#self.target().get_2d_window().set_active(im,.9,.9,.4)
@@ -1082,7 +1081,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		if self.moving_box_data:
 			try: self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 			except EMUnknownBoxType,data:
-				self.change_event_handler(data.type)
+				self.change_event_handler(self.box_to_tool_dict[data.type])
 				self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 			#self.target().move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 			
@@ -1094,7 +1093,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		
 		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.x(),event.y())
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
 		#self.target().release_moving_ptcl(self.first_clicked,event.x(),event.y())
 		if self.moving_box_data:
@@ -1110,9 +1109,8 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		box_num = lc[0]
 		try: self.mouse_handler.delete_ptcl(box_num)
 		except EMUnknownBoxType,data:
-			self.change_event_handler(data.type)
+			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.delete_ptcl(box_num)
-		#box = self.target().delete_ptcl(lc[0])
 	
 	def module_closed(self):
 		'''
@@ -1846,7 +1844,7 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 				
 			self.thumbs_window.set_data(self.image_thumbs,soft_delete=True)
 			self.thumbs_window.set_mouse_mode("App")
-			self.thumbs_window.update_window_title("Thumbnails")
+			self.thumbs_window.setWindowTitle("Thumbnails")
 			self.signal_slot_handlers["thumbs_window"] = ThumbsEventHandler(self,self.thumbs_window)
 			for tool in self.tools.values():
 				self.signal_slot_handlers["thumbs_window"].add_mouse_handler(tool)
@@ -1879,7 +1877,7 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 			self.particles_window.desktop_hint = "rotor" # this is to make it work in the desktop
 				
 			self.particles_window.set_mouse_mode("App")
-			self.particles_window.update_window_title("Particles")
+			self.particles_window.setWindowTitle("Particles")
 			self.signal_slot_handlers["particles_window"] = ParticlesWindowEventHandler(self,self.particles_window)
 			for tool in self.tools.values():
 				self.signal_slot_handlers["particles_window"].add_mouse_handler(tool)

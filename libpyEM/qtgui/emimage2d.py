@@ -1445,6 +1445,18 @@ class EMImage2DModule(EMGUIModule):
 					glBegin(GL_POINTS)
 					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
 					glEnd()
+				elif s.shape[0] == "circle":
+					GL.glPushMatrix()
+					p = s.shape
+					GL.glColor(*p[1:4])
+					v= (p[4],p[5])
+					v2=(p[4]+1,p[5]+1)
+					sc=v2[0]-v[0]
+					GL.glLineWidth(p[7])
+					GL.glTranslate(v[0],v[1],0)
+					GL.glScalef(p[6]*(v2[0]-v[0]),p[6]*(v2[1]-v[1]),1.0)
+					glCallList(self.circle_dl)
+					GL.glPopMatrix()
 				else:
 #					print "shape",s.shape
 					s.draw()		# No need for coordinate transform any more
@@ -1546,14 +1558,23 @@ class EMImage2DModule(EMGUIModule):
 		self.shapes[k]=s
 		self.shapechange=1
 		
-	def add_eraser_shape(self,k,s):
+	def add_eraser_shape(self,k,args):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
 		purposes may be simultaneously displayed.
 		
 		"""
-		if k != "None":self.eraser_shape=s
-		else: self.eraser_shape = None
+		self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
+
+		if k != "None":
+			#self.eraser_shape=EMShape(args)
+			self.shapes["eraser"] = EMShape(args)
+		else:
+			self.eraser_shape = None
+			try:
+				self.shapes.pop("eraser")
+			except: pass
+		
 		self.shapechange=1
 		#self.updateGL()
 	

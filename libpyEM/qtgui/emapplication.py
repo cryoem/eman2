@@ -361,7 +361,8 @@ class EMApplication:
 			#if QtGui.QApplication.startingUp():
 			#a = QtGui.QApplication.QApplication(sys.argv)
 
-
+	def processEvents(self):
+		self.app.processEvents()
 	
 
 class EMStandAloneApplication(EMApplication):

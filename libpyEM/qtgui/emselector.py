@@ -52,6 +52,8 @@ import math
 read_header_only = True
 EMAN2DB = "EMAN2DB"
 
+MDS = "%" # metadata separator
+
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,single_selection=False,save_as_mode=True):
 		#self.widget = EMSelectorTemplate(QtGui.QDialog)(self,single_selection)
@@ -70,12 +72,12 @@ class EMSelectorModule(EMQtWidgetModule):
 		'''
 		return self.widget.exec_()
 
-
 class EMActionDelegate:
 	'''
-	interface for action delegates
+	interface for action delegates - they are notified when the widget owning them is closed
 	'''
 	def closeEvent(self,event): pass
+	
 class EMItemAction:
 	'''
 	interface for single item actions
@@ -411,10 +413,11 @@ def EMSelectorBaseTemplate(Type):
 			self.__load_url(directory,self.list_widgets[0])
 			self.lock = False
 	
-		def add_list_widget(self, list_widget = None):
-			if list_widget == None:	list_widget = EMListWidget()
+		def add_list_widget(self):
+			list_widget = EMListWidget(self)
 			
-			list_widget.contextMenuEvent = self.list_widget_context_menu_event
+			
+			#list_widget.contextMenuEvent = self.list_widget_context_menu_event
 			
 			if self.single_selection:list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 			else: list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
@@ -583,6 +586,7 @@ def EMSelectorBaseTemplate(Type):
 		
 		def closeEvent(self,event):
 			self.module().closeEvent(None)
+			#self.timer.stop()
 		
 		def get_file_filter(self):
 			return str(self.filter_combo.currentText())
@@ -659,22 +663,25 @@ class EMBrowser(EMBrowserType):
 		
 		self.__init_action_delegates()
 		
-		self.bottom_hbl2 = QtGui.QHBoxLayout()
+		bottom_hbl2 = QtGui.QHBoxLayout()
 		self.__init_preview_options()
-		self.bottom_hbl2.addWidget(self.preview_options,0)
-		self.hbl.addLayout(self.bottom_hbl2)
+		bottom_hbl2.addWidget(self.preview_options,0)
+		self.hbl.addLayout(bottom_hbl2)
 				
-		self.bottom_hbl3 = QtGui.QHBoxLayout()
+		bottom_hbl3 = QtGui.QHBoxLayout()
 		self.__init_plot_options()
-		self.bottom_hbl3.addWidget(self.replace,0)
-		self.bottom_hbl3.addWidget(self.include,0)
+		bottom_hbl3.addWidget(self.replace,0)
+		bottom_hbl3.addWidget(self.include,0)
 		
 		self.groupbox = QtGui.QGroupBox("Plot/3D options")
-		self.groupbox.setLayout(self.bottom_hbl3)
+		self.groupbox.setLayout(bottom_hbl3)
 		self.groupbox.setEnabled(False)
 		
-		self.bottom_hbl2.addWidget(self.groupbox)
+		bottom_hbl2.addWidget(self.groupbox)
 		self.resize(480,480)
+	
+	def __del__(self):
+		pass
 	
 	def closeEvent(self,event):
 		for delegate in self.action_delegates.values():
@@ -983,13 +990,17 @@ class EMListWidget(QtGui.QListWidget):
 	'''
 	Customized ListWidget as displayed in the browser
 	'''
-	def __init__(self,*args):
+	def __init__(self,target,*args):
+		self.target = weakref.ref(target)
 		QtGui.QListWidget.__init__(self,*args)
 		self.reset_vars()
 	
 	def clear(self):
 		self.reset_vars()
 		QtGui.QListWidget.clear(self)
+		
+	def contextMenuEvent(self,event):
+		self.target().list_widget_context_menu_event(event)
 		
 	def reset_vars(self):
 		'''
@@ -1094,7 +1105,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 	The Delegate for reading file system contents 
 	Main function is to return the the correct list items to the EMSelector 
 	'''
-	MDS = "%" # metadata separator
+	
 	def __init__(self,target):
 		self.target = weakref.ref(target)
 		self.threed_dim_limit = 128
@@ -1144,7 +1155,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		'''
 		if "EMAN2DB" in url: return False
 		
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		if os.path.exists(vals[0]): return True
 		
 		return False
@@ -1153,7 +1164,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		remove_file(url)
 		
 	def parent_url(self,url):
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		if len(vals) == 1:
 			if os.path.isfile(url):
 				return os.path.dirname(url)
@@ -1277,7 +1288,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		return return_items
 	
 	def __get_metadata_items(self,url):
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		if not os.path.isfile(vals[0]): raise RuntimeError("% is not a valid file system url" %url)
 		
 		return_items = []
@@ -1477,7 +1488,7 @@ class EMDataHeaderItem(EMListItem):
 	def get_name(self): return EMDataHeaderItem.NAME
 
 	def get_url(self):
-		return self.url +EMFileSystemDelegate.MDS+str(self.key)
+		return self.url +MDS+str(self.key)
 
 class EMStack2DCapableMixin:
 	'''
@@ -1632,7 +1643,7 @@ class EM2DMetaImageItem(EM2DImageItem):
 #	def get_name(self): return EM2DMetaImageItem.NAME
 	
 	def get_url(self):
-		return self.full_path+EMFileSystemDelegate.MDS+str(self.idx)
+		return self.full_path+MDS+str(self.idx)
 	
 	def actions(self):
 		'''
@@ -1657,7 +1668,7 @@ class EM3DMetaImageItem(EM3DImageItem):
 #	def get_name(self): return EM3DMetaImageItem.NAME
 	
 	def get_url(self):
-		return self.full_path+EMFileSystemDelegate.MDS+str(self.idx)
+		return self.full_path+MDS+str(self.idx)
 	
 	def actions(self):
 		'''
@@ -1778,7 +1789,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 	
 	def parent_url(self,url):
 		
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		if len(vals) == 1:
 			#if not os.path.isdir(url): raise RuntimeError("Unknown url %s" %url)
 
@@ -1816,7 +1827,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 		else: raise RuntimeError("Unknown url %s" %url)
 	
 	def __is_image_url(self,url):
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		is_image = False
 		try:
 			db_url = db_convert_path(vals[0])
@@ -1828,7 +1839,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 	
 	def __get_bdb_image_items(self,url):
 		if not self.__is_image_url(url): raise RuntimeError("Unknown image url %s" %url)
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		db_url = db_convert_path(vals[0])
 		
 		return_items = []
@@ -1866,7 +1877,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 	
 	def __get_bdb_type_items(self,url):
 		
-		vals = url.split(EMFileSystemDelegate.MDS)
+		vals = url.split(MDS)
 		
 		return_items = []
 		if len(vals) == 1:
@@ -1973,9 +1984,9 @@ class EMBDBDelegate(EMBrowseDelegate):
 					a = EM3DImageItem(self,f[0],folderize(real_directory)+f[0],0)
 					
 			else:
-				a = EMBDBItem(self,f[0],real_directory+EMFileSystemDelegate.MDS+f[0])
+				a = EMBDBItem(self,f[0],real_directory+MDS+f[0])
 		else:
-			a = EMBDBItem(self,f[0],real_directory+EMFileSystemDelegate.MDS+f[0])
+			a = EMBDBItem(self,f[0],real_directory+MDS+f[0])
 			
 		a.file_name = file
 		return a
@@ -2064,7 +2075,7 @@ class EMBDBKeyValueItem(EMListItem):
 	def get_name(self): return EMBDBKeyValueItem.NAME
 
 	def get_url(self):
-		return self.url +EMFileSystemDelegate.MDS+str(self.key)
+		return self.url +MDS+str(self.key)
 
 class EMBDBDictItem(EMListItem):
 	'''
@@ -2080,7 +2091,7 @@ class EMBDBDictItem(EMListItem):
 	def get_name(self): return EMBDBDictItem.NAME
 
 	def get_url(self):
-		return self.url +EMFileSystemDelegate.MDS+str(self.key)
+		return self.url +MDS+str(self.key)
 	
 	def get_icon(self):
 		'''
@@ -2123,6 +2134,11 @@ class EMBrowserModule(EMQtWidgetModule):
 		selector.cancel_button.setEnabled(False)
 		self.widget = selector
 		EMQtWidgetModule.__init__(self,self.widget)
+		
+#	def __del__(self):
+#		print "delete browse module"
+#		import sys
+#		print "browser module death", sys.getrefcount(self.widget)
 
 app = None
 def on_done(string_list):
