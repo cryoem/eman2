@@ -2235,7 +2235,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					nvalue.append(int(header[par_begin+ilis]))
 					ilis += 1
 				elif ink[il]==0:
-					nvalue.append(header[par_begin+ilis])
+					nvalue.append(float(header[par_begin+ilis]))
 					ilis += 1
 				else:
 					assert ink[il]==2
@@ -2322,7 +2322,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 						nvalue.append(int(header[par_begin+ilis]))
 						ilis += 1
 					elif ink[il]==0:
-						nvalue.append(header[par_begin+ilis])
+						nvalue.append(float(header[par_begin+ilis]))
 						ilis += 1
 					else:
 						assert ink[il]==2
@@ -2345,7 +2345,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 				ID = data[n-image_start].get_attr_default('ID', n)
 				for param in list_params:
 					if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
-	DB.close()		
+	DB.close()
 
 def check_attr(ima, num, params, default_value, action="Warning"):
 	from sys import exit
