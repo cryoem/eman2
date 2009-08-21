@@ -4932,7 +4932,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
-	
+
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
@@ -4953,11 +4953,11 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	else:
 		nima =0
 	nima = bcast_number_to_all(nima, source_node = main_node)
-	
+
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
@@ -4980,7 +4980,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		ref_data.append( None )
 		ref_data.append( None )
 		ref_data.append( None )
-	
+
    	from time import time	
 
 	#  this is needed for gathering of peak_errors
@@ -5056,10 +5056,10 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
-			
+
 			if myid == main_node:
 				print_msg("Time Used = %d\n"%(time()-start_time))
-				
+
 			if fourvar:
 			#  Compute Fourier variance
 				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)

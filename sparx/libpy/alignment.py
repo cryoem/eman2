@@ -938,10 +938,9 @@ def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
 			for j in xrange(ncpu):
 				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
 				if i >= ref_start and i < ref_end: rootid = j
-			
+
 			bcast_EMData_to_all( refrings[i], myid, rootid )
 
-	
 	for i in xrange(len(ref_angles)):
 		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
 		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
@@ -950,8 +949,6 @@ def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
 		refrings[i].set_attr("phi", ref_angles[i][0])
 		refrings[i].set_attr("theta", ref_angles[i][1])
 		refrings[i].set_attr("psi", ref_angles[i][2])
-
-
 
 	return refrings
 

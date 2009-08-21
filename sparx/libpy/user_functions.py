@@ -355,7 +355,7 @@ def reference3( ref_data ):
 	stat = Util.infomask(ref_data[2], ref_data[0], False)
 	volf = ref_data[2] - stat[0]
 	Util.mul_scalar(volf, 1.0/stat[1])
-	#volf = threshold(volf)
+	volf = threshold(volf)
 	Util.mul_img(volf, ref_data[0])
 	fl, aa = fit_tanh1(ref_data[3], 0.1)
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
@@ -846,6 +846,3 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 		return None
 	else:
 		return dynamic_func
-
-	
-	
