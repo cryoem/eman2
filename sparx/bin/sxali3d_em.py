@@ -44,21 +44,22 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --maxit=max_iter --CTF --snr=SNR --sym=symmetry"
+	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR --sym=symmetry"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ou",     type="float",        default=-1,    help="  radius < int(nx/2)-1 (set to int(nx/2)-1)")
-	parser.add_option("--delta",  type="float",        default=2,     help="  angular bracket (set to 2)")
-	parser.add_option("--ts",     type="float",        default=0.25,  help="  shift bracket (set to 2)")
-	parser.add_option("--maxit",  type="int",          default=2,     help="  maximum number of iterations (set to 10) ")
-	parser.add_option("--nassign",type="int",          default=4,     help="  number of assignment steps in one iteration")
-	parser.add_option("--nrefine",type="int",          default=1,     help="  number of refinement steps in one iteration")
-	parser.add_option("--CTF",    action="store_true", default=False, help="  Consider CTF correction during the alignment ")
-	parser.add_option("--snr",    type="float", 	   default=1,     help="  SNR > 0.0 (set to 1.0)")
-	parser.add_option("--sym",    type="string",       default="c1",  help="  symmetry group (set to c1)")
-	parser.add_option("--MPI",    action="store_true", default=False,         help="  whether using MPI version ")
-	parser.add_option("--function", type="string",	   default="ref_ali3dm", help="user function")
-	parser.add_option("--fourvar",action="store_true", default=False, help="  use fourier variance.")
-	parser.add_option("--debug",  action="store_true", default=False,         help="  debug mode ")
+	parser.add_option("--ou",       type="float",        default=-1,            help="radius < int(nx/2)-1 (set to int(nx/2)-1)")
+	parser.add_option("--delta",    type="float",        default=2,             help="angular bracket (set to 2)")
+	parser.add_option("--ts",       type="float",        default=0.25,          help="shift bracket (set to 2)")
+	parser.add_option("--maxit",    type="int",          default=2,             help="maximum number of iterations (set to 10) ")
+	parser.add_option("--stoprnct", type="float",        default=0.0,           help="Minimum percentage of assignment change to stop the program")   
+	parser.add_option("--nassign",  type="int",          default=4,             help="number of assignment steps in one iteration")
+	parser.add_option("--nrefine",  type="int",          default=1,             help="number of refinement steps in one iteration")
+	parser.add_option("--CTF",      action="store_true", default=False,         help="Consider CTF correction during the alignment ")
+	parser.add_option("--snr",      type="float", 	     default=1,             help="SNR > 0.0 (set to 1.0)")
+	parser.add_option("--sym",      type="string",       default="c1",          help="symmetry group (set to c1)")
+	parser.add_option("--MPI",      action="store_true", default=False,         help="use MPI version ")
+	parser.add_option("--function", type="string",	     default="ref_ali3dm",  help="user function")
+	parser.add_option("--fourvar",  action="store_true", default=False,         help="use fourier variance.")
+	parser.add_option("--debug",    action="store_true", default=False,         help="debug mode ")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 3 or len(args) > 4):
@@ -81,7 +82,7 @@ def main():
 		from applications import ali3d_em_MPI
 		global_def.BATCH = True
 		if options.MPI:
-			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.debug)
+			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.debug, options.stoprnct)
 		else:
 			print 'ali3d_em serial version not implemented'
 
