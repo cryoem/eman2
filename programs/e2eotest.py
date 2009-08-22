@@ -137,6 +137,14 @@ def main():
 		a = EMData("bdb:"+options.path+"#threed_"+options.iteration+"_even",0)
 		b = EMData("bdb:"+options.path+"#threed_"+options.iteration+"_odd",0)
 		
+		mask_file = "bdb:"+options.path+"#threed_mask_"+options.iteration
+		if file_exists(mask_file):
+			mask = EMData(mask_file,0)
+			a.mult(mask)
+			b.mult(mask)
+			a.write_image("bdb:"+options.path+"#threed_mask_"+options.iteration+"_even",0)
+			b.write_image("bdb:"+options.path+"#threed_mask_"+options.iteration+"_odd",0)
+		
 		fsc = a.calc_fourier_shell_correlation(b)
 		third = len(fsc)/3
 		xaxis = fsc[0:third]
@@ -164,13 +172,10 @@ def main():
 		xaxis = tmp_axis
 		
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")
-		print "bdb:"+options.path+"#convergence.results"
 		db["even_odd_"+options.iteration+"_fsc"] = [xaxis,plot] # warning, changing this naming convention will disrupt forms in the workflow (make them fail)
 		#db["error_even_odd_"+options.iteration+"_fsc"] = [xaxis,error]
 		db_close_dict("bdb:"+options.path+"#convergence.results")
 		
-		
-					
 		exit_eotest(0,logid)
 			
 def exit_eotest(n,logid):

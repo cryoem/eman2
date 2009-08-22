@@ -639,6 +639,7 @@ def fourier_reconstruction(options,logid):
 			if options.verbose: print " Done"
 			
 		idx = 0	
+		contributing_ptcls = 0 # calculate how many particles went into the final reconstruction
 		for i in range(total_images):
 			#print i
 			image = get_processed_image(options,i)
@@ -655,11 +656,13 @@ def fourier_reconstruction(options,logid):
 			t = image.get_attr("xform.projection")
 			r = t.get_params("eman")
 			failure = recon.insert_slice(image,t)
+			
 			progress += 1
 			E2progress(logid,float(progress)/total_progress)
 			ptcl_repr = 0
 			if image.has_attr("ptcl_repr"):
 				ptcl_repr = image.get_attr("ptcl_repr")
+			if not failure: contributing_ptcls += ptcl_repr
 			if (options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i,total_images, ptcl_repr,
@@ -681,6 +684,7 @@ def fourier_reconstruction(options,logid):
 	if (options.verbose):
 		print "Inverting 3D Fourier volume to generate the real space reconstruction"
 	output = recon.finish()
+	output.set_attr("contributing_ptcls",contributing_ptcls)
 	progress += 10
 	E2progress(logid,float(progress)/total_progress)
 	if (options.verbose):
