@@ -53,15 +53,17 @@ def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 		info.write("    Project inserted.\t time: %10.3f\n" % (time() - overall_start) )
 		info.flush()
 
-def bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, info=None ):
+def bootstrap_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None ):
 	from time import time
 	overall_start = time()
 	nvol = len(fftvols)
 	for ivol in xrange(nvol):
 		start_time = time()
-		iwrite = nvol*iter + ivol
+		iwrite = nvol*niter + ivol
 
 		vol = rectors[ivol].finish()
+		# Here add multiplication by the number of projections
+		Util.mul_scalar( vol, float(nprj) )
 		vol.write_image( volfile, iwrite )
 		if not(info is None):
 			t = time()
@@ -148,8 +150,8 @@ def prepare_wgts( wgts ):
 
 	return accu_prbs 		
 
-def write_mults( fmults, iter, mults ):
-	fmults.write( "iter: %d\n" % iter )
+def write_mults( fmults, kiter, mults ):
+	fmults.write( "iter: %d\n" % kiter )
 
 	for ivol in xrange( len(mults) ):
 		fmults.write( "vol: %d\n" % ivol )
@@ -193,7 +195,7 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	groupsize = ncpu/ngroup
 	if genbuf and (myid%groupsize==0):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
-	
+
 	if genbuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
 
@@ -203,9 +205,9 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	volfile = os.path.join(outdir, "bsvol%04d.hdf" % myid)
 
 	niter = nvol/ncpu/nbufvol
-	for iter in xrange(niter):
+	for kiter in xrange(niter):
 		if(verbose == 1):
-			finfo.write( "Iteration %d: \n" % iter )
+			finfo.write( "Iteration %d: \n" % kiter )
 			finfo.flush()
 
 		iter_start = time()
@@ -214,7 +216,7 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 		assert len(mults)==nbufvol
 		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF, npad )
 		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, finfo )
-		bootstrap_finish( rectors, fftvols, wgtvols, volfile, iter, finfo )
+		bootstrap_finish( rectors, fftvols, wgtvols, volfile, kiter, nprj, finfo )
 		rectors = None
 		fftvols = None
 		wgtvols = None
