@@ -43,44 +43,41 @@ To see how it works just run it from the commandline:
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
 '''
-
+from optparse import OptionParser
 from emapplication import EMStandAloneApplication,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
-from valslider import ValSlider
 from emsprworkflow import workflow_path
 
 import os,sys,weakref,math
-from optparse import OptionParser
 
 
 TEMPLATE_MIN = 30
 
 EMBOXERBASE_DB = "bdb:emboxerbase"
 
-def main():
+def my_main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image> <image2>....
+	usage = '''%prog [options] <image> <image2>....
 
-This is a a really basic version of boxer that can be copied 
-and used as the basis of developing something more advanced.
-Design is meant to be granular and logical, i.e. easy to add to.
-
-To see how it works just run it from the commandline:
-./e2boxerbase.py test.mrc --boxsize=128 # single image handling
--or-
-./e2boxerbase.py test.mrc test2.mrc --boxsize=128 # multiple images
-
-The EMBoxerModule class is the epicenter of everything: 
-functions like "add_box" and "move_box" are probably good starting
-points in terms of figuring out how to adapt this code to your
-specific needs/algorithms
-"""
+	This is a a really basic version of boxer that can be copied 
+	and used as the basis of developing something more advanced.
+	Design is meant to be granular and logical, i.e. easy to add to.
+	
+	To see how it works just run it from the commandline:
+	./e2boxerbase.py test.mrc --boxsize=128 # single image handling
+	-or-
+	./e2boxerbase.py test.mrc test2.mrc --boxsize=128 # multiple images
+	
+	The EMBoxerModule class is the epicenter of everything: 
+	functions like "add_box" and "move_box" are probably good starting
+	points in terms of figuring out how to adapt this code to your
+	specific needs/algorithms
+	'''
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	
+	parser.add_option("--boxsize",type="int",help="Box size in pixels",default=-1)
 	(options, args) = parser.parse_args()
 	
 	db = db_open_dict(EMBOXERBASE_DB)
@@ -610,7 +607,7 @@ class ErasingPanel:
 			
 			hbl = QtGui.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-
+			from valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
 			self.erase_rad_edit.setValue(int(self.erase_radius))
 			self.erase_rad_edit.setEnabled(True)
@@ -1422,6 +1419,74 @@ class EMBoxList:
 			f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
 		f.close()
 
+
+class EMBoxerModuleVitals:
+	'''
+	If you want to run autoboxing without the gui, then the SwarmBoxer still needs
+	mediator functionality
+	'''
+	def __init__(self,filename="",box_size=128):
+		self.fname = filename
+		self.box_size=box_size
+		self.box_list = EMBoxList(self)
+	
+	def current_file(self): return self.fname
+	
+	def get_subsample_rate(self): 
+		'''
+		
+		'''
+		return int(math.ceil(float(self.box_size)/float(TEMPLATE_MIN)))
+
+	def add_boxes(self,boxes,update_gl=True):
+		'''
+		boxes should be a list like [[x,y,type],[x,y,type],....[int,int,string]]
+		'''
+
+		self.box_list.add_boxes(boxes)
+		self.box_list.save_boxes_to_database(self.current_file())
+	
+	def get_boxes(self,as_dict=False):
+		'''
+		A way of getting all of the boxes as a list or a dict
+		@param as_dict - results are returned as a dict, key is the box number, value is the box itself
+		@return a list of boxes  - or - if as_dict is supplied a dict is returned and the keys are box numbers, the values are the boxes
+		'''
+		return self.box_list.get_boxes(as_dict)
+	
+	
+	def remove_boxes(self,box_numbers,update_gl=True):
+		'''
+		Removes a list of box numbers from the display and also those that are stored in the local database
+		@param box_numbers a list of integer box numbers
+		'''
+		self.box_list.remove_boxes(box_numbers)
+		self.box_list.save_boxes_to_database(self.current_file())
+
+	def clear_boxes(self,type,cache=False):
+		self.box_list.clear_boxes(type,cache=cache)
+	
+	def get_exclusion_image(self,mark_boxes=False):
+		'''
+		@mark_boxes if true the exclusion image is copied and the locations of the current boxes are painted in as excluded regions
+		This is useful for autoboxers - they  obviously dont want to box any region that already has a box in it (such as a manual box,
+		or a previously autoboxed box)
+		'''
+		exc_image = ScaledExclusionImageCache.get_image(self.current_file(),self.get_subsample_rate())
+		if not mark_boxes: return exc_image
+		else:
+			image = exc_image.copy()
+			boxes = self.box_list.get_boxes()
+			if len(boxes) > 0:
+				sr = self.get_subsample_rate()
+				global BinaryCircleImageCache
+				mask = BinaryCircleImageCache.get_image_directly(int(self.box_size/(2*sr)))
+				for box in self.box_list.get_boxes():
+					x,y = int(box.x/sr),int(box.y/sr)
+					from EMAN2 import BoxingTools
+					BoxingTools.set_region(image,mask,x,y,0.1) # 0.1 is also the value set by the eraser - all that matters is that it's zon_zero
+			
+			return image
 
 import PyQt4
 class EMBoxerModule(PyQt4.QtCore.QObject):
@@ -2449,7 +2514,7 @@ class EMBoxerInspector(QtGui.QWidget):
 			except: pass
 			
 if __name__ == "__main__":
-	main()
+	my_main()
 
 	
 	

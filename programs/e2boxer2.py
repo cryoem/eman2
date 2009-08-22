@@ -31,13 +31,14 @@
 #
 #
 
-from emboxerbase import *
-from valslider import ValSlider
-from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress
+
+
+from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
-
+from emboxerbase import *
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
+
 
 def e2boxer2_check(options,args):
 	error_message = check(options,args)
@@ -47,13 +48,13 @@ def e2boxer2_check(options,args):
 		if not db_check_dict(db_name): error_message.append("There is no autoboxing information present in the current directory")
 		else:
 			db = db_open_dict(db_name)
-			print db.values()
 			if not db.has_key(options.autoboxer): error_message.append("There is no autoboxing information present for %s" %options.autoboxer)
 			else:
-				print db.keys(),options.autoboxer
-				for k,v in db.items(): print k,v
-				print db[options.autoboxer]
-				print db[str(options.autoboxer)]
+				print "yaya"
+#				print db.keys(),options.autoboxer
+#				for k,v in db.items(): print k,v
+#				print db[options.autoboxer]
+#				print db[str(options.autoboxer)]
 	
 	return error_message
 	
@@ -79,9 +80,10 @@ e2boxer2.py ????.mrc --boxsize=256
 	parser.add_option("--suffix",type="string",help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--autoboxer",type="string",help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
-		
+	
 	(options, args) = parser.parse_args()
 	
+	logid=E2init(sys.argv)
 	db = db_open_dict(EMBOXERBASE_DB)
 	cache_box_size = True
 	if options.boxsize == -1:
@@ -94,8 +96,6 @@ e2boxer2.py ????.mrc --boxsize=256
 		for e in error_message:
 			error += "Error: "+e +"\n"
 		parser.error(error)
-	
-	logid=E2init(sys.argv)
 	
 	if cache_box_size: db["box_size"] = options.boxsize
 	
@@ -120,9 +120,11 @@ def autobox(args,options,logid):
 	
 	boxer = SwarmBoxer()
 	boxer.handle_file_change(options.autoboxer)
-	for arg in args:
-		print arg
-		boxer.auto_box(arg, False, True, False)
+	for i,arg in enumerate(args):
+		boxer_vitals= EMBoxerModuleVitals(arg)
+		boxer.target = weakref.ref(boxer_vitals)
+		boxer.auto_box(arg, False, True, True)
+		E2progress(logid,float(i+1)/len(args))
 		
 def write_output(args,options,logid):
 	params = {}
@@ -393,6 +395,7 @@ class SwarmPanel:
 			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
 			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
 			self.enable_interactive_threshold.setChecked(False)
+			from valslider import ValSlider
 			self.thr = ValSlider(None,(0.0,3.0),"")
 			self.thr.setValue(1.0)
 			self.thr.setEnabled(False)
@@ -615,14 +618,19 @@ class SwarmBoxer:
 	REF_NAME = "swarm_ref"
 	AUTO_NAME = "swarm_auto"
 	WEAK_REF_NAME = "swarm_weak_ref"
-	EMBox.set_box_color(REF_NAME,[0,0,0])
-	EMBox.set_box_color(WEAK_REF_NAME,[0.2,0.2,0.4])
-	EMBox.set_box_color(AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
+	INIT = True
 	MVT_THRESHOLD = 200 # a squared distance - used by the movement cache to automatically update using previously supplied user movement data
 	SWARM_BOXERS = "swarm_boxers"
 	SWARM_FWD_BOXERS = "swarm_fwd_boxers"
 	SWARM_USER_MVT = "swarm_user_mvt"
 	def __init__(self,particle_diameter=128):
+		if SwarmBoxer.INIT: # this solved a strange problem with databases
+			SwarmBoxer.INIT = False
+			EMBox.set_box_color(SwarmBoxer.REF_NAME,[0,0,0])
+			EMBox.set_box_color(SwarmBoxer.WEAK_REF_NAME,[0.2,0.2,0.4])
+			EMBox.set_box_color(SwarmBoxer.AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
+		
+		self.panel_object = None # maybe it doesn't exist
 		self.particle_diameter = particle_diameter
 		self.update_template = True # Tied to the SwarmPanel - Whether or not the act of adding a reference should force an update of the template
 		self.pick_mode = SwarmBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
@@ -639,7 +647,7 @@ class SwarmBoxer:
 		self.step_fwd_cache = [] # this will store the redo lists
 		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
 
-		self.gui_mode = True # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
+		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
 		
 	def __del__(self):
 		'''
@@ -807,8 +815,8 @@ class SwarmBoxer:
 		'''
 		self.step_back_cache.append(self.to_list())
 		self.step_fwd_cache = []
-		self.panel_object.enable_step_forward(False)
-		self.panel_object.enable_step_back(True,len(self.step_back_cache))
+		if self.gui_mode: self.panel_object.enable_step_forward(False)
+		if self.gui_mode: self.panel_object.enable_step_back(True,len(self.step_back_cache))
 		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
 	
 	def cache_to_database(self):
@@ -846,7 +854,8 @@ class SwarmBoxer:
 		
 		self.step_fwd_cache = get_database_entry(file_name,SwarmBoxer.SWARM_FWD_BOXERS,dfl=[])
 		if len(self.step_fwd_cache) > 0: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
-		else: self.panel_object.enable_step_forward(False)
+		else:
+			if self.panel_object: self.panel_object.enable_step_forward(False)
 			
 		self.step_back_cache = get_database_entry(file_name,SwarmBoxer.SWARM_BOXERS,dfl=[])
 		if self.step_back_cache == None: self.step_back_cache = []
@@ -865,8 +874,10 @@ class SwarmBoxer:
 			self.step_back_cache.append(l)
 			self.cache_to_database()
 
-		if len(self.step_back_cache) > 0: self.panel_object.enable_step_back(True,len(self.step_back_cache))
-		else: self.panel_object.enable_step_back(False)
+		if len(self.step_back_cache) > 0:
+			if self.panel_object: self.panel_object.enable_step_back(True,len(self.step_back_cache))
+		else: 
+			if self.panel_object: self.panel_object.enable_step_back(False)
 		
 		if l != None:
 			self.load_from_last_state()
@@ -874,7 +885,7 @@ class SwarmBoxer:
 			if len(self.step_back_cache) > 0: self.load_from_list(deepcopy(self.step_back_cache[-1]))
 			# else we're probably establishing an empty slate
 			
-		self.panel_object.update_states(self)
+		if self.panel_object: self.panel_object.update_states(self)
 		if self.template_viewer != None:
 			self.template_viewer.set_data(self.templates,soft_delete=True)
 			self.template_viewer.updateGL()
@@ -973,8 +984,9 @@ class SwarmBoxer:
 #		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 #		
 	def __remove_proximal_particles_from_target(self):
-		from PyQt4 import QtCore
-		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		if self.gui_mode: 
+			from PyQt4 import QtCore
+			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		boxes = self.target().get_boxes()
 		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
 		proximal_boxes_idxs.sort()
@@ -984,7 +996,9 @@ class SwarmBoxer:
 		conv = [box.to_list() for box in proximal_boxes]
 		self.proximal_boxes.extend(conv)
 		self.target().remove_boxes(proximal_boxes_idxs)
-		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
+		if self.gui_mode:
+			from PyQt4 import QtCore
+			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 		
 	def check_proximity_add_boxes(self,boxes):
 		'''
@@ -1271,16 +1285,16 @@ class SwarmBoxer:
 		
 		if self.signal_template_update or force_remove_auto_boxes:
 			self.target().clear_boxes([SwarmBoxer.AUTO_NAME])
-			
-			self.get_2d_window().updateGL()
+			if self.gui_mode: self.get_2d_window().updateGL()
 			
 		
 		if self.signal_template_update:
-			self.target().set_status_message("Updating Swarm Template",0)
+			if self.gui_mode: self.target().set_status_message("Updating Swarm Template",0)
 			self.templates = gen_rot_ave_template(image_name,self.ref_boxes,self.get_subsample_rate(),self.particle_diameter)
-			self.panel_object.enable_update_template(True)
-			self.target().set_status_message("Swarm Template Update Done",1000)
-			self.panel_object.enable_view_template(True)
+			if self.gui_mode:
+				self.panel_object.enable_update_template(True)
+				self.target().set_status_message("Swarm Template Update Done",1000)
+				self.panel_object.enable_view_template(True)
 			self.signal_template_update = False
 			if self.template_viewer != None:
 				self.template_viewer.set_data(self.templates,soft_delete=True)
@@ -1292,9 +1306,9 @@ class SwarmBoxer:
 		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
 		
 		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2),shrink,self.templates[-1])
-		self.target().set_status_message("Getting Correlation Image",0)
+		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
 		correlation_image = FLCFImageCache.get_image(image_name,mediator)
-		self.target().set_status_message("Correlation Image Done",1000)
+		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
 		
 		exclusion_shrink = exclusion_image.get_attr("shrink")
 		
@@ -1335,9 +1349,9 @@ class SwarmBoxer:
 		
 		searchradius = self.templates[-1].get_xsize()/2
 		correlation = FLCFImageCache.get_image(image_name,mediator)
-		self.target().set_status_message("Autoboxing ....",0)
+		if self.gui_mode: self.target().set_status_message("Autoboxing ....",0)
 		soln = BoxingTools.auto_correlation_pick(correlation,self.peak_score,searchradius,self.profile,exclusion_image,self.profile_trough_point,mode)
-		self.target().set_status_message("Auboxing Done",1000)
+		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
 		
 		scaled_template = self.templates[-1].process("math.transform.scale",{"scale":shrink,"clip":self.particle_diameter})
 		scaled_template.process_inplace("xform.centeracf")
@@ -1357,9 +1371,9 @@ class SwarmBoxer:
 			if exclusion_image.get(exc_x,exc_y) != 0: boxes.append(box)
 			#else the particle was re-centered on an excluded region!
 		
-		self.target().set_status_message("Updating Positions",0)
+		if self.gui_mode: self.target().set_status_message("Updating Positions",0)
 		self.update_auto_box_user_mvt(boxes)
-		self.target().set_status_message("Done",1000)
+		if self.gui_mode: self.target().set_status_message("Done",1000)
 		
 		for box in self.ref_boxes:
 			if not box.ever_moved and box.image_name == self.target().current_file():
@@ -1383,13 +1397,13 @@ class SwarmBoxer:
 			self.cache_current_state()
 			self.cache_to_database()
 			
-		self.panel_object.enable_auto_box(False)
+		if self.gui_mode: self.panel_object.enable_auto_box(False)
 		
 		if self.gui_mode:
 			from PyQt4 import QtCore 
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 			
-		self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
+		if self.gui_mode: self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
 	
 	def update_opt_picking_data(self):
 		'''
@@ -1519,6 +1533,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		self.current_file = None # the name of the file that is being studied in the main viewer
 		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
 		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
+		self.gui_mode = True
 		
 	def unique_name(self): return "Swarm"
 	

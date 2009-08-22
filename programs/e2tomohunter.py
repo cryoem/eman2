@@ -208,7 +208,6 @@ class EMTomoHunter:
 		self.output_images.append(e.copy())
 		# need to store translation phi
 		self.output_images.append(e.copy())
-		
 	
 	def execute(self):
 		'''
@@ -266,7 +265,6 @@ class EMTomoHunter:
 				peak=peak+1
 				
 			out.close()
-		
 		
 		options = self.options
 		if options.dbls:

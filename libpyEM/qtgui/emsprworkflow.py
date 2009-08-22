@@ -2099,10 +2099,10 @@ class E2BoxerAutoTask(E2BoxerTask):
 			table = EM2DFileTable(culled_names,desc_short="Choose Autoboxer",desc_long="",single_selection=True,name="autoboxer")
 			table.add_column_data(EMFileTable.EMColumnData("Autoboxer ID",E2BoxerAutoTask.auto_boxer_id,"Autoboxer time stamp indicating last alteration"))
 			table.add_column_data(EMFileTable.EMColumnData("Mode",E2BoxerAutoTask.swarm_mode,"Swarm picking mode"))
-			table.add_column_data(EMFileTable.EMColumnData("Proximity Theshold",E2BoxerAutoTask.proximity_threshold,"Swarm autoboxer proximity threshold"))
+			table.add_column_data(EMFileTable.EMColumnData("Proximity Threshold",E2BoxerAutoTask.proximity_threshold,"Swarm autoboxer proximity threshold"))
 			table.add_column_data(EMFileTable.EMColumnData("Threshold",E2BoxerAutoTask.swarm_threshold,"Swarm correlation threshold"))
 			table.add_column_data(EMFileTable.EMColumnData("References",E2BoxerAutoTask.swarm_num_refs,"The number of references used by the Swarm autoboxer"))
-			table.add_column_data(EMFileTable.EMColumnData("Profile",E2BoxerAutoTask.swarm_profile,"Swarm picking profile"))
+			#table.add_column_data(EMFileTable.EMColumnData("Profile",E2BoxerAutoTask.swarm_profile,"Swarm picking profile"))
 			
 			data_table,n = self.get_boxer_basic_table() # note n is unused, it's a refactoring residual		
 			

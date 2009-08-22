@@ -84,10 +84,8 @@ def main():
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
-
 	
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
-
 
 	(options, args) = parser.parse_args()
 	
