@@ -2496,13 +2496,13 @@ def write_headers(filename, data, lima):
 	from utilities import file_type
 	ftp = file_type(filename)
 	if ftp == "bdb":
-		#  For unknown reasons this does not work on Linux, but works on Mac
-		#DB = db_open_dict(filename)
-		#for i in range(len(lima)):
-		#	DB.set_header(lima[i], data[i])
-		#DB.close()
+		#  For unknown reasons this does not work on Linux, but works on Mac ??? Really?
+		DB = db_open_dict(filename)
 		for i in range(len(lima)):
-			data[i].write_image(filename, lima[i])
+			DB.set_header(lima[i], data[i])
+		DB.close()
+		#for i in range(len(lima)):
+		#	data[i].write_image(filename, lima[i])
 	elif ftp == "hdf":
 		for i in range(len(lima)):
 			data[i].write_image(filename, lima[i], EMUtil.ImageType.IMAGE_HDF, True)

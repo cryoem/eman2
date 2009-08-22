@@ -4759,7 +4759,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	numr   = Numrinit(first_ring, last_ring, rstep, "F")
 
-	if CTF:	from reconstruction import recons3d_4nn_ctf
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf
+		from filter         import filt_ctf
 	else: from reconstruction import recons3d_4nn
 
 	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
@@ -4773,6 +4775,12 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	data = EMData.read_images(stack, list_of_particles)
         for im in xrange(len(data)):
                 data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
 
 	nima = len(data)
 	# initialize data for the reference preparation function
@@ -4788,20 +4796,11 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
  		for Iter in xrange(max_iter):
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 
-			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+			volft,kb = prep_vol( vol )
+			refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+			del volft,kb
 
 			for im in xrange( nima ):
-				if CTF:
-					ctf = data[im].get_attr( "ctf" )
-					if ctf.defocus != previous_defocus:
-						previous_defocus = ctf.defocus
-						ctfvol = filt_ctf(vol, ctf)
-						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
 
 				if an[N_step] == -1:	
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
@@ -4824,7 +4823,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			del vol2
 			
 			# calculate new and improved 3D
-			if CTF: vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
+			if CTF:  vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
 			else:	 vol = recons3d_4nn(data, range(nima), sym)
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
@@ -4837,7 +4836,11 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			#  here we write header info
 			from utilities import write_headers
+			if CTF:
+				for dat in data:  dat.del_attr('ctf_applied')
 			write_headers(stack, data, list_of_particles)
+			if CTF:
+				for dat in data:  dat.set_attr('ctf_applied', 1)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -4875,7 +4878,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		while not os.path.exists(outdir):
 			print  "Node ",myid,"  waiting..."
 			sleep(5)
-
 
 		info_file = os.path.join(outdir, "progress%04d"%myid)
 		finfo = open(info_file, 'w')
@@ -4937,7 +4939,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 	fscmask = model_circle(last_ring,nx,nx,nx)
-	if CTF:	from reconstruction import rec3D_MPI
+	if CTF:
+		from reconstruction import rec3D_MPI
+		from filter         import filt_ctf
 	else:	from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
@@ -4952,25 +4956,34 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		nima = len(list_of_particles)
 	else:
 		nima =0
-	nima = bcast_number_to_all(nima, source_node = main_node)
+	total_nima = bcast_number_to_all(nima, source_node = main_node)
 
 	if myid != main_node:
-		list_of_particles = [-1]*nima
+		list_of_particles = [-1]*total_nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
 	if debug:
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
-	for im in xrange(len(data)):
+	if fourvar:  original_data = []
+	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		if fourvar: original_data.append(data[im].copy())
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
 
 	if debug:
-		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.write( '%d loaded  \n' % nima )
 		finfo.flush()
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -4992,7 +5005,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
-	pixer = [0.0]*len(data)
+	pixer = [0.0]*nima
 	cs = [0.0]*3
 	# do the projection matching
 	for N_step in xrange(lstp):
@@ -5000,47 +5013,39 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
-			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
 
-			for im in xrange( len(data) ):
-				if CTF:
-					ctf = data[im].get_attr( "ctf" )
-					if( ctf.defocus != previous_defocus):
-						previous_defocus = ctf.defocus
-						ctfvol = filt_ctf(vol, ctf)
-						volft,kb = prep_vol( ctfvol )
-						start_prepare = time()
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
-						if myid== main_node:
-							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
+			volft,kb = prep_vol( vol )
+			refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, True)
+			del volft,kb
+			if myid== main_node:
+				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
+				start_time = time()
+
+			for im in xrange( nima ):
 
 				if an[N_step] == -1: 
 					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:           
 					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
-
 			if myid == main_node:
-				print_msg("Time Used = %d\n"%(time()-start_time))
+				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
 
 			#output peak errors
 			from mpi import mpi_gatherv
-			recvbuf = mpi_gatherv(pixer, len(data), MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = recvbuf.tolist()
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
+				if(region[0] < 0.0):  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f   %7d\n"%(region[lhx], histo[lhx])
+					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
 				del region, histo
 			del recvbuf
@@ -5062,7 +5067,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 			if fourvar:
 			#  Compute Fourier variance
-				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				for im in xrange(nima):
+					original_data.set_param( 'xform.projection', data[im].get_attr('xform.projection') )
+				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 				if myid == main_node:   varf = 1.0/varf
 			else:  varf = None
 
@@ -5620,10 +5627,11 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
+				if(region[0] < 0.0):  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f   %7d\n"%(region[lhx], histo[lhx])
+					msg = " %10.3f      %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
 				del region, histo
 			del recvbuf
@@ -5979,10 +5987,11 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
+				if(region[0] < 0.0):  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f   %7d\n"%(region[lhx], histo[lhx])
+					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
 				del region, histo
 			del recvbuf

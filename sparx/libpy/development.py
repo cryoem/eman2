@@ -1331,6 +1331,427 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 
 '''
 
+
+'''
+
+# What follow is incorrect ali3d_d code by Wei removed by PAP on 08/22/09
+#  Wei created a very slow version by applying CTF to reference volumes instead of to the ddata.
+
+def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
+	    user_func_name = "ref_ali3d", fourvar = True, debug = False, MPI = False):
+	if MPI:
+		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name,
+			fourvar, debug)
+		return
+
+	from alignment      import proj_ali_incore, proj_ali_incore_local
+	from utilities      import model_circle, drop_image, get_image, get_input_from_string
+	from utilities      import get_params_proj
+	from utilities      import estimate_3D_center, rotate_3D_shift
+	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
+	from statistics     import fsc_mask
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	print_begin_msg("ali3d_d")
+
+	# DEBUG
+	from alignment      import Numrinit, prepare_refrings
+	from projection     import prep_vol
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Reference volume            : %s\n"%(ref_vol))	
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Maskfile                    : %s\n"%(maskfile))
+	print_msg("Inner radius                : %i\n"%(first_ring))
+
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	if last_ring == -1:	last_ring = nx/2 - 2
+
+	print_msg("Outer radius                : %i\n"%(last_ring))
+	print_msg("Ring step                   : %i\n"%(rstep))
+	print_msg("X search range              : %s\n"%(xrng))
+	print_msg("Y search range              : %s\n"%(yrng))
+	print_msg("Translational step          : %s\n"%(step))
+	print_msg("Angular step                : %s\n"%(delta))
+	print_msg("Angular search range        : %s\n"%(an))
+	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Center type                 : %i\n"%(center))
+	print_msg("Data with CTF               : %s\n"%(CTF))
+	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+	print_msg("Reference projection method : %s\n"%(ref_a))
+	print_msg("Symmetry group              : %s\n\n"%(sym))
+
+	if maskfile :
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else                                  : mask3D = maskfile
+	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
+	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	numr   = Numrinit(first_ring, last_ring, rstep, "F")
+
+	if CTF:	from reconstruction import recons3d_4nn_ctf
+	else: from reconstruction import recons3d_4nn
+
+	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
+	else:      outf = None
+
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if(active[im]):  list_of_particles.append(im)
+	del active
+	data = EMData.read_images(stack, list_of_particles)
+        for im in xrange(len(data)):
+                data[im].set_attr('ID', list_of_particles[im])
+
+	nima = len(data)
+	# initialize data for the reference preparation function
+	ref_data = []
+	ref_data.append( mask3D )
+	ref_data.append( max(center,0) )#  for center -1 switch of centereing by user function
+	ref_data.append( None )
+	ref_data.append( None )
+
+	cs = [0.0]*3
+	# do the projection matching
+	for N_step in xrange(lstp):
+ 		for Iter in xrange(max_iter):
+			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+			for im in xrange( nima ):
+				if CTF:
+					ctf = data[im].get_attr( "ctf" )
+					if ctf.defocus != previous_defocus:
+						previous_defocus = ctf.defocus
+						ctfvol = filt_ctf(vol, ctf)
+						volft,kb = prep_vol( ctfvol )
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+
+				if an[N_step] == -1:	
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+				else:
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+
+			if center == -1:
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
+				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				print_msg(msg)
+				rotate_3D_shift(data, cs)
+
+			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
+			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
+			if CTF:   vol2 = recons3d_4nn_ctf(data, range(1, nima, 2), snr, 1, sym)
+			else:	   vol2 = recons3d_4nn(data, range(1, nima, 2), sym)
+
+			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
+			del vol1
+			del vol2
+			
+			# calculate new and improved 3D
+			if CTF: vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
+			else:	 vol = recons3d_4nn(data, range(nima), sym)
+			# store the reference volume
+			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
+			ref_data[2] = vol
+			ref_data[3] = fscc
+
+			#  call user-supplied function to prepare reference image, i.e., center and filter it
+			vol, dummy = user_func(ref_data)
+
+			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+			#  here we write header info
+			from utilities import write_headers
+			write_headers(stack, data, list_of_particles)
+	print_end_msg("ali3d_d")
+
+def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1",
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
+	    fourvar = True, debug = False):
+
+	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import send_attr_dict
+	from utilities      import get_params_proj, file_type
+	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+	from fundamentals   import rot_avg_image
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from filter         import filt_ctf
+	from projection     import prep_vol, prgs
+
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	if myid == main_node:
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
+
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_begin_msg("ali3d_d_MPI")
+		print_msg("Input stack                 : %s\n"%(stack))
+		print_msg("Reference volume            : %s\n"%(ref_vol))	
+		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("Maskfile                    : %s\n"%(maskfile))
+		print_msg("Inner radius                : %i\n"%(first_ring))
+		print_msg("Outer radius                : %i\n"%(last_ring))
+		print_msg("Ring step                   : %i\n"%(rstep))
+		print_msg("X search range              : %s\n"%(xrng))
+		print_msg("Y search range              : %s\n"%(yrng))
+		print_msg("Translational step          : %s\n"%(step))
+		print_msg("Angular step                : %s\n"%(delta))
+		print_msg("Angular search range        : %s\n"%(an))
+		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		print_msg("Center type                 : %i\n"%(center))
+		print_msg("Data with CTF               : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		print_msg("Reference projection method : %s\n"%(ref_a))
+		print_msg("Symmetry group              : %s\n\n"%(sym))
+
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = model_circle(last_ring, nx, nx, nx)
+
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
+	fscmask = model_circle(last_ring,nx,nx,nx)
+	if CTF:	from reconstruction import rec3D_MPI
+	else:	from reconstruction import rec3D_MPI_noCTF
+
+	if myid == main_node:
+       		if(file_type(stack) == "bdb"):
+			from EMAN2db import db_open_dict
+			dummy = db_open_dict(stack, True)
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if active[im]:  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+
+	if myid != main_node:
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	if debug:
+		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
+		finfo.flush()
+
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
+
+	if debug:
+		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.flush()
+	if myid == main_node:
+		# initialize data for the reference preparation function
+		ref_data = []
+		ref_data.append( mask3D )
+		ref_data.append( max(center,0) )  # for method -1, switch off centering in user function
+		ref_data.append( None )
+		ref_data.append( None )
+		ref_data.append( None )
+
+   	from time import time	
+
+	#  this is needed for gathering of peak_errors
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+
+	pixer = [0.0]*len(data)
+	cs = [0.0]*3
+	# do the projection matching
+	for N_step in xrange(lstp):
+ 		for Iter in xrange(max_iter):
+			if myid == main_node:
+				start_time = time()
+				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+
+			for im in xrange( len(data) ):
+				if CTF:
+					ctf = data[im].get_attr( "ctf" )
+					if( ctf.defocus != previous_defocus):
+						previous_defocus = ctf.defocus
+						ctfvol = filt_ctf(vol, ctf)
+						volft,kb = prep_vol( ctfvol )
+						start_prepare = time()
+						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+						if myid== main_node:
+							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
+
+				if an[N_step] == -1: 
+					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
+				else:           
+					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+
+
+			if myid == main_node:
+				print_msg("Time Used = %d\n"%(time()-start_time))
+				start_time = time()
+
+			#output peak errors
+			from mpi import mpi_gatherv
+			recvbuf = mpi_gatherv(pixer, len(data), MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				recvbuf = recvbuf.tolist()
+				from statistics import hist_list
+				lhist = 20
+				region, histo = hist_list(recvbuf, lhist)
+				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
+				print_msg(msg)
+				for lhx in xrange(lhist):
+					msg = " %10.3f   %7d\n"%(region[lhx], histo[lhx])
+					print_msg(msg)
+				del region, histo
+			del recvbuf
+
+			if(center == -1):
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					print_msg(msg)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				rotate_3D_shift(data, cs)
+
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+
+			if myid == main_node:
+				print_msg("Time Used = %d\n"%(time()-start_time))
+
+			if fourvar:
+			#  Compute Fourier variance
+				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				if myid == main_node:   varf = 1.0/varf
+			else:  varf = None
+
+			if myid == main_node:
+				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
+				ref_data[2] = vol
+				ref_data[3] = fscc
+				ref_data[4] = varf
+				#  call user-supplied function to prepare reference image, i.e., center and filter it
+				vol, cs = user_func(ref_data)
+				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+
+			del varf
+			bcast_EMData_to_all(vol, myid, main_node)
+			# write out headers, under MPI writing has to be done sequentially
+			mpi_barrier(MPI_COMM_WORLD)
+			par_str = ['xform.projection', 'ID']
+	        	if myid == main_node:
+	        		if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+	if myid == main_node: print_end_msg("ali3d_d_MPI")
+
+
+'''
+
+
+
 """
 This is not used, mainly because it is not parallelizable.
 def ali2d_b(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10):
