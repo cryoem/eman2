@@ -4853,7 +4853,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, file_type
-	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 	from fundamentals   import rot_avg_image
 	import os
 	import types
@@ -5051,7 +5050,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			del recvbuf
 
 			if(center == -1):
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)				
+				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
@@ -5063,7 +5063,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 
 			if myid == main_node:
-				print_msg("Time Used = %d\n"%(time()-start_time))
+				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
 
 			if fourvar:
 			#  Compute Fourier variance
