@@ -7997,7 +7997,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 
 	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
 	if(chunk <= 0.0):  chunk = 1.0
-	
+
 	outf = file(replace("progress%4d"%myid,' ','0'), "w")
 	outf.write("  chunk = "+str(chunk)+"   ")
 	outf.write("\n")
@@ -11474,13 +11474,13 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		else:             refstat = [0.0,0.0,0.0,0.0]
 		refstat = mpi_bcast(refstat, 4, MPI_FLOAT, 0, MPI_COMM_WORLD)
 		refstat = refstat.tolist()
-		
-	varfile = outdir + "/var.hdf"
-	avgfile = outdir + "/avg.hdf"
-	varfileE = outdir + "/varE.hdf"
-	avgfileE = outdir + "/avgE.hdf"
-	varfileO = outdir + "/varO.hdf"
-	avgfileO = outdir + "/avgO.hdf"
+
+	varfile  = os.path.join(outdir, "var.hdf")
+	avgfile  = os.path.join(outdir, "avg.hdf")
+	varfileE = os.path.join(outdir, "varE.hdf")
+	avgfileE = os.path.join(outdir, "avgE.hdf")
+	varfileO = os.path.join(outdir, "varO.hdf")
+	avgfileO = os.path.join(outdir, "avgO.hdf")
 	#varstack = outdir + "/varstack.hdf" 
 	#oddstack = outdir + "/oddvarstack.hdf"
 	#evestack = outdir + "/evevarstack.hdf"
@@ -11513,11 +11513,11 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			#img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
-				if writestack: img.write_image( outdir+"/filtered%04d.hdf"%(ifile), i )
+				if writestack: img.write_image( os.path.join(outdir, "filtered%04d.hdf"%(ifile) ), i )
 			if(repair):
 				Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
 				if pca:
-					pc = Util.infomask(img, pcamask, True)
+					pc   = Util.infomask(img, pcamask, True)
 					img -= pc[0]
 					img *= (refstat[1]/pc[1])
 					img += refstat[1]
@@ -11547,7 +11547,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	var2 = model_blank(nx,ny,nz)
 	if(fl > 0.0 and writestack):
 		for ifile in xrange(file_start, file_end):
-			f = outdir+"/filtered%04d.hdf"%(ifile)
+			f = os.path.join(outdir, "filtered%04d.hdf"%(ifile) )
 			nimg = EMUtil.get_image_count( f )
 			print myid," V  ",f,"   ",nimg
 			for i in xrange(nimg):
@@ -11600,7 +11600,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		eigs = pcaer.analyze()
 
 		if myid==0:
-			eigfile = outdir + "/eigvol.hdf"
+			eigfile = os.path.join(outdir, "eigvol.hdf")
 			for i in xrange( len(eigs) ):
 				eigs[i].write_image( eigfile, i )
 

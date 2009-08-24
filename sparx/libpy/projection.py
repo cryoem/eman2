@@ -234,13 +234,13 @@ def plot_angles(agls):
 	for i in xrange(nx):
 		im.set_value_at(i, int(nx / 2.0), 0.006)
 		im.set_value_at(int(nx / 2.0), i, 0.006)
-	
+
 	# draw the circles
 	lth = range(0, 90, kc)
 	lth.append(90)
-	
+
 	for th in lth:
-		
+
 		if th == 90: color = 0.03
 		else:        color = 0.006
 
@@ -252,13 +252,13 @@ def plot_angles(agls):
 			px = nx / 2.0 + (rc - 1) / 2.0 * cos(a)
 			py = nx / 2.0 + (rc - 1) / 2.0 * sin(a)
 			im.set_value_at(int(px), int(py), color)
-	
+
 	# for each angles plot on circle area
 	# agsl: [phi, theta, phi]
 	for i in xrange(len(agls)):
-		if agls[i][1] > 90:
-			agls[i][0] = (float(agls[i][0]) + 180) % 360
-			agls[i][1] = 180 - float(agls[i][1])
+		if agls[i][1] > 90.0:
+			agls[i][0] = (agls[i][0] + 180.0) % 360.0
+			agls[i][1] = 180.0 - float(agls[i][1])
 		
 		rc  = sin((agls[i][1] / 180.0) * pi)
 		rc *= ((nx - 1) / 2)
@@ -277,16 +277,16 @@ def plot_angles(agls):
 		#if agls[i][1] > 90: style = 2
 		#else:               style = 1
 		style = 1
-	
+
 		for cx in xrange(px - c, px + c + 1, style):
 			if cx > nx - 1: cx = nx - 1
 			if cx < 0:  cx = 0
-			im.set_value_at(cx, py, 1.0)
+			im.set_value_at(cx, py, 1.0 + im.get_value_at(cx, py))
 
 		for cy in xrange(py - c, py + c + 1, style):
 			if cy > nx - 1: cy = nx - 1
 			if cy < 0:  cy = 0
-			im.set_value_at(px, cy, 1.0)
+			im.set_value_at(px, cy, 1.0 + im.get_value_at(cx, py))
 
 	return im
 

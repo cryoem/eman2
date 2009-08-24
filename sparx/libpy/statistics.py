@@ -1249,23 +1249,6 @@ def ccc(img1, img2, mask=None):
 	"""
 	return img1.cmp("ccc", img2, {"mask":mask,"negative":0})
 
-def ccr(list1, list2):
-	"""Cross-correlation coefficient between two lists
-	   Usage: result = ccr(list1, list2)
-	"""
-	N = len(list1)
-	s1=s2=q1=q2=ccr=0.0
-	for i in xrange(N):
-		l1 = list1[i]
-		l2 = list2[i]
-		s1 += l1
-		s2 += l2
-		q1 += l1*l1
-		q2 += l2*l2
-		ccr += l1*l2
-	from math import sqrt
-	return  (ccr - s1*s2/N)/sqrt((q1-s1*s1/N)*(q2-s2*s2/N))
-
 def fsc(img1, img2, w = 1.0, filename=None):
 	"""Fourier Shell (or Ring) Correlation.
 
@@ -7334,7 +7317,7 @@ def linreg(X, Y):
 
 def pearson(X, Y):
 	"""
-	  Pearson correlation coefficient
+	  Pearson correlation coefficient between two lists
 	"""
 	from math import sqrt
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
