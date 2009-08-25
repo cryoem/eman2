@@ -5409,6 +5409,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
 		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
@@ -5460,7 +5461,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	nima = len(list_of_particles)
 
 	if debug:
-		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		finfo.write( "Image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
@@ -5473,7 +5474,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		print 'computing Fourier variance'
+		#print 'computing Fourier variance'
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=frec)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
@@ -9563,6 +9564,7 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
+	
 	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
@@ -9599,6 +9601,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
+
 	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
@@ -9608,7 +9611,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 
 	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
 	params = get_params3D(ref)
-	print  " params of the reference volume",params
+	#print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	e = get_image(vol)
 	params = get_params3D(e)
@@ -9617,7 +9620,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-1, 1.e-1, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
-	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
+	#print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	if type(vol)==type(""):
 		from utilities import write_headers
@@ -9631,6 +9634,7 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
+
 	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
@@ -9640,17 +9644,17 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 
 	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
 	params = get_params3D(ref)
-	print  " params of the reference volume",params
+	#print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_image(vol)
 	params = get_params3D(e)
-	print  " input params ",params
+	#print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [shift_scale, shift_scale, shift_scale], ali_vol_func_shift, 1.e-1, 1.e-1, 500, data)
 	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
-	print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
+	#print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
 	if type(vol)==type(""):
 		from utilities import write_headers

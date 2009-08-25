@@ -39,53 +39,6 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 
-def minfilt( fscc ):
-	from filter import fit_tanh
-	numref = len(fscc)
-	flmin = 1.0
-	flmax = -1.0
-	for iref in xrange(numref):
-		fl, aa = fit_tanh( fscc[iref] )
-		if (fl < flmin):
-			flmin = fl
-			aamin = aa
-			idmin = iref
-		if (fl > flmax):
-			flmax = fl
-			aamax = aa
-	return flmin,aamin,idmin
-
-def alivol_mask_getref( v, mask ):
-	from utilities import set_params3D
-	v50S_ref = v.copy()
-	v50S_ref *= mask
-	cnt = v50S_ref.phase_cog()
-	set_params3D( v50S_ref, (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
-	return v50S_ref
-
-def alivol_mask( v, vref, mask ):
-	from utilities import set_params3D, get_params3D,compose_transform3
-	from fundamentals import rot_shift3D
-	from applications import ali_vol_shift, ali_vol_rotate
-	v50S_i = v.copy()
-	v50S_i *= mask
-	cnt = v50S_i.phase_cog()
-	set_params3D( v50S_i,   (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
-
-	v50S_i = ali_vol_shift( v50S_i, vref, 1.0 )
-	v50S_i = ali_vol_rotate(v50S_i, vref, 5.0 )
-	v50S_i = ali_vol_shift( v50S_i, vref, 0.5 )
-	v50S_i = ali_vol_rotate(v50S_i, vref, 1.0 )
-	phi,tht,psi,s3x,s3y,s3z,mirror,scale = get_params3D( v50S_i )
-	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
-	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
-	v = rot_shift3D( v, phi,tht,psi,s3x,s3y,s3z )
-	print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
-	return v
-
-
-
-
 ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
 	from utilities    import print_msg
@@ -137,7 +90,7 @@ def ref_ali2d_c( ref_data ):
 	cs = [0.0]*2
 	if(ref_data[1] > 0):
 		tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
-		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+		msg = "Center x = %10.3f, y       = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
 
@@ -165,7 +118,7 @@ def ref_ali2d_m( ref_data ):
 	cs = [0.0]*2
 	tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 	if(ref_data[1] > 0):
-		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+		msg = "Center x = %10.3f, y = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
 
@@ -184,23 +137,24 @@ def ref_ali3dm( refdata ):
 
 	print 'filter every volume at (0.4, 0.1)'
 	for iref in xrange(numref):
-		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
+		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, 0.4, 0.1)
 		v *= mask
-		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 					
 
 
 def ref_ali3dm_ali_50S( refdata ):
-	from filter import fit_tanh, filt_tanl
-	from utilities import get_im
+	from filter       import fit_tanh, filt_tanl
+	from utilities    import get_im
 	from fundamentals import rot_shift3D
+	import  os
 
-	numref = refdata[0]
-	outdir = refdata[1]
-	fscc   = refdata[2]
+	numref     = refdata[0]
+	outdir     = refdata[1]
+	fscc       = refdata[2]
 	total_iter = refdata[3]
-	varf   = refdata[4]
+	varf       = refdata[4]
 
 	#mask_50S = get_im( "mask-50S.spi" )
 
@@ -218,11 +172,11 @@ def ref_ali3dm_ali_50S( refdata ):
 		# filter to minimum resolution
 	print 'flmin,aamin:', flmin, aamin
 	for iref in xrange(numref):
-		v = get_im(os.path.join(outdir, "vol%04d.hdf"%(total_iter)), iref)
+		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, flmin, aamin)
 		
 		if ali50s:
-			from utilities import get_params3D, set_params3D, combine_params3
+			from utilities    import get_params3D, set_params3D, combine_params3
 			from applications import ali_vol_shift, ali_vol_rotate
 			if iref==0:
 				v50S_ref = alivol_mask_getref( v, mask_50S )
@@ -233,7 +187,7 @@ def ref_ali3dm_ali_50S( refdata ):
 			print 'filtering by fourier variance'
 			v.filter_by_image( varf )
 	
-		v.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 
 def ref_random( ref_data ):
 	from utilities    import print_msg
@@ -578,58 +532,75 @@ def spruce_up_variance( ref_data ):
 	return  volf, cs
 
 
-
+def minfilt( fscc ):
+	from filter import fit_tanh
+	numref = len(fscc)
+	flmin = 1.0
+	flmax = -1.0
+	for iref in xrange(numref):
+		fl, aa = fit_tanh( fscc[iref] )
+		if (fl < flmin):
+			flmin = fl
+			aamin = aa
+			idmin = iref
+		if (fl > flmax):
+			flmax = fl
+			aamax = aa
+	return flmin,aamin,idmin
 
 def ref_ali3dm_new( refdata ):
-        from utilities import model_circle, get_im
-        from filter    import filt_tanl, filt_gaussl, filt_table
-        from morphology import threshold
+	from utilities    import print_msg
+	from utilities    import model_circle, get_im
+	from filter       import filt_tanl, filt_gaussl, filt_table
+	from morphology   import threshold
 	from fundamentals import rops_table
-	from math import sqrt
-	print "ref_ali3dm_new"
+	from alignment    import ali_nvol
+	from math         import sqrt
+	import   os
 
-        numref = refdata[0]
-        outdir = refdata[1]
-        fscc   = refdata[2]
-        total_iter = refdata[3]
-        varf   = refdata[4]
-        mask   = refdata[5]
-	ali50S = refdata[6]
+	numref     = refdata[0]
+	outdir     = refdata[1]
+	fscc       = refdata[2]
+	total_iter = refdata[3]
+	varf       = refdata[4]
+	mask       = refdata[5]
+	ali50S     = refdata[6]
 
-        flmin,aamin,idmin = minfilt( fscc )
-	aamin = aamin/2
-	print "flmin,aamin,idmin: ", flmin,aamin,idmin
+	if fscc is None:
+		flmin = 0.25
+		aamin = 0.1
+	else:
+		flmin, aamin, idmin = minfilt( fscc )
+		aamin /= 2.0
+	msg = "Minimum tangent filter derived from volume %2d:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(idmin, flmin, aamin)
+	print_msg(msg)
 
-        vref = get_im( outdir + ("/vol%04d.hdf"%total_iter) , idmin)
+	vol = []
+	for i in xrange(numref):
+		vol.append(get_im( os.path.join(outdir, "vol%04d.hdf"%total_iter), i ))
+
+	reftab = rops_table( vol[idmin] )
+	for i in xrange(numref):
+		if(i != idmin):
+			vtab = rops_table( vol[i] )
+			ftab = [None]*len(vtab)
+			for j in xrange(len(vtab)):
+		        	ftab[j] = sqrt( reftab[j]/vtab[j] )
+			vol[i] = filt_table( vol[i], ftab )
+		vol[i]  = filt_tanl( vol[i], flmin, aamin )
+		stat = Util.infomask( vol[i], mask, False )
+		vol[i] -= stat[0]
+		vol[i] /= stat[1]
+		vol[i] *= mask
+
 	if ali50S:
-		m50S = get_im( "mask-50S.spi" )
-		aliref = alivol_mask_getref( vref, m50S )
-
-        stat = Util.infomask( vref, mask, False )
-        vref -= stat[0]
-        vref /= stat[1]
-        vref *= mask
-        rtab = rops_table( vref )
-	del vref
-        for i in xrange(numref):
-                vol = get_im( outdir + ("/vol%04d.hdf"%total_iter), i )
-		if ali50S:
-			vol = alivol_mask( vol, aliref, m50S )
-
-                stat = Util.infomask( vol, mask, False )
-                vol -= stat[0]
-                vol /= stat[1]
-                vol *= mask
-
-                vtab = rops_table( vol )
-                ftab = [None]*len(vtab)
-                for j in xrange(len(vtab)):
-                        ftab[j] = sqrt( rtab[j]/vtab[j] )
-                volf = filt_table( vol, ftab )
-                volf = filt_tanl( volf, flmin, aamin )
-                volf.write_image( outdir+("/volf%04d.hdf" % total_iter), i )
+		vol = ali_nvol(vol, get_im( "mask-50S.spi" ))
+	for i in xrange(numref):
+		vol[i] = filt_gaussl( threshold(vol[i]), 0.4)
+		vol[i].write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):
+	from utilities  import print_msg
 	from utilities  import model_circle, get_im
 	from filter     import filt_tanl, filt_gaussl
 	from morphology import threshold
@@ -654,11 +625,12 @@ def spruce_up_var_m( refdata ):
 		flmin,aamin,idmin=minfilt( fscc )
 		aamin = aamin
 	
-	print 'flmin,aamin:', flmin, aamin
+	msg = "Minimum tangent filter:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(fflmin, aamin)
+	print_msg(msg)
 
 	for i in xrange(numref):
 		volf = get_im( os.path.join(outdir, "vol%04d.hdf"% total_iter) , i )
-		if(not (varf is None) ):volf = volf.filter_by_image( varf )
+		if(not (varf is None) ):   volf = volf.filter_by_image( varf )
 		volf = filt_tanl(volf, flmin, aamin)
 		stat = Util.infomask(volf, mask, True)
 		volf -= stat[0]
