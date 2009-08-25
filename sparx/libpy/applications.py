@@ -9325,11 +9325,12 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None ):
+def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, MPI=False ):
 # 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
 	from projection    import   prgs, prep_vol
-	from utilities     import   even_angles, read_txt_col, set_params_proj
+	from utilities     import   even_angles, read_txt_col, set_params_proj, model_gauss_noise, info
 	from string        import   split
+	from filter        import   filt_ctf
 	import os
 	import types
 
@@ -9340,6 +9341,29 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	else:
 		angles = listagls
 
+	# try to parse the CTFs list. this is either not set (None), a filename or a list of values
+	if listctfs is None:
+		# not set, so simply ignore it 
+		pass
+	elif (type(listctfs) is types.StringType):
+		# a string, so assume this is a filename and try to open the file
+		try:
+			ctfs = read_txt_col(listctfs, "", "")
+		except DebugError:
+			ctfs = [None for ii in xrange(len(angles))]
+	else:
+		# assume this a list of len(angles)
+		ctfs = listctfs
+
+	if not noise is None:
+		# try to convert noise string to float. ignore noise if this fails
+		try:
+			noise_level = float(noise)
+		except DebugError:
+			noise_level = None
+	# ignore noise, since it was not requested
+	else:
+		noise_level = None
 
 	if(type(volume) is types.StringType):
 		vol = EMData()
@@ -9378,6 +9402,44 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 		proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		proj.set_attr_dict({'active':1})
+
+		# add noise, if noise is set. this is two-fold: application of noise before
+		#    ctf filtering and after it.
+		if noise is not None:
+			try:
+				# no mask, so call w/ false
+				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
+							      proj.get_ysize())
+			except DebugError:
+				pass
+			else:
+				proj += noise_ima
+
+		# apply ctf, if ctf option is set and if we can create a valid CTF object
+		try:
+			ctf = EMAN2Ctf()
+			# order of values is the one applied in sxheader for import / export!
+			ctf.from_dict({ "defocus":ctfs[i][0], "cs":ctfs[i][1], "voltage":ctfs[i][2], 
+					"apix":ctfs[0][3], "bfactor":ctfs[i][4], "ampcont":ctfs[i][5] })
+		except DebugError:
+			# there are no ctf values, so ignore this and set no values
+			proj.set_attr( "error",1)
+		else:
+			# setting of values worked, so apply ctf and set the header info correctly
+			proj = filt_ctf(proj,ctf)
+			proj.set_attr( "ctf",ctf)
+			proj.set_attr( "ctf_applied",0)
+		
+		# add second noise level
+		if noise is not None:
+			try:
+				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
+							      proj.get_ysize())
+			except DebugError:
+				pass
+			else:
+				proj += noise_ima
+
 		if(Disk):
                     proj.write_image(stack, i)
 		else: 
