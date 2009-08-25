@@ -569,6 +569,7 @@ def ref_ali3dm_new( refdata ):
 	if fscc is None:
 		flmin = 0.25
 		aamin = 0.1
+		idmin = 0
 	else:
 		flmin, aamin, idmin = minfilt( fscc )
 		aamin /= 2.0
