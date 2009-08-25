@@ -13,7 +13,7 @@ def getvec( phi, tht ):
 	if tht > 180.0:
 		tht = tht - 180.0
 		phi = phi + 180.0
-	elif tht > 90.0:
+	if tht > 90.0:
 		tht = 180.0 - tht
 		phi = phi + 180.0
 
@@ -114,7 +114,7 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 			for i in xrange( len(angs) ):
 				tmp[i] = float(angs[i])
 			wgts = Util.cml_weights( tmp )
-	
+
 	else:
 		eve_angs = even_angles( delta, 0.0, 89.99, method='P' )
 		eve_vecs = [None]*len(eve_angs)
