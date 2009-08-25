@@ -9330,7 +9330,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	from projection    import   prgs, prep_vol
 	from utilities     import   even_angles, read_txt_col, set_params_proj, model_gauss_noise, info
 	from string        import   split
-	from filter        import   filt_ctf
+	from filter        import   filt_ctf,filt_gaussl
 	import os
 	import types
 
@@ -9420,7 +9420,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 			ctf = EMAN2Ctf()
 			# order of values is the one applied in sxheader for import / export!
 			ctf.from_dict({ "defocus":ctfs[i][0], "cs":ctfs[i][1], "voltage":ctfs[i][2], 
-					"apix":ctfs[0][3], "bfactor":ctfs[i][4], "ampcont":ctfs[i][5] })
+					"apix":ctfs[i][3], "bfactor":ctfs[i][4], "ampcont":ctfs[i][5] })
 		except DebugError:
 			# there are no ctf values, so ignore this and set no values
 			proj.set_attr( "error",1)
@@ -9430,7 +9430,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 			proj.set_attr( "ctf",ctf)
 			proj.set_attr( "ctf_applied",0)
 		
-		# add second noise level
+		# add second noise level that is not affected by CTF
 		if noise is not None:
 			try:
 				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
