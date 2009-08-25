@@ -97,6 +97,90 @@ def prgs(volft, kb, params):
 	temp.depad()
 	return temp
 
+
+def gen_rings_ctf( prjref, nx, ctf, numr):
+	"""
+	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
+	  The command returns list of rings
+	"""
+        from math         import sin, cos, pi
+	from fundamentals import fft
+	from alignment    import ringwe, normalize_ring, Applyws
+	from filter       import filt_ctf
+	mode = "F"
+	wr_four  = ringwe(numr, "F")
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+	qv = pi/180.
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+        for i in xrange( len(prjref) ):
+		cimage = Util.Polar2Dm(fft( filt_ctf(prjref[i], ctf) ), cnx, cny, numr, mode)  # currently set to quadratic....
+		normalize_ring(cimage, numr)
+
+		Util.Frngs(cimage, numr)
+		Applyws(cimage, numr, wr_four)
+		refrings.append(cimage)
+		phi   = prjref[i].get_attr('phi')
+		theta = prjref[i].get_attr('theta')
+		psi   = prjref[i].get_attr('psi')
+		n1 = sin(theta*qv)*cos(phi*qv)
+		n2 = sin(theta*qv)*sin(phi*qv)
+		n3 = cos(theta*qv)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
+
+	return refrings
+
+def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
+	"""
+	  Generate set of projections based on even angles
+	  The command returns list of ffts of projections
+	"""
+        from projection   import prep_vol, prgs
+	from applications import MPI_start_end
+	from utilities    import even_angles
+	from fundamentals import fft
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "F"
+	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+        num_ref = len(ref_angles)
+
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		ncpu = 1
+		myid = 0
+	from applications import MPI_start_end
+	ref_start,ref_end = MPI_start_end( num_ref, ncpu, myid )
+
+	prjref = []     # list of (image objects) reference projections in Fourier representation
+
+        for i in xrange(num_ref):
+		prjref.append(EMData(nx, nx, 1, False))  # I am not sure why is that necessary, why not put None's??
+
+        for i in xrange(ref_start, ref_end):
+		prjref[i] = fft(prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0]))
+
+	if MPI:
+		from utilities import bcast_EMData_to_all
+		for i in xrange(num_ref):
+			for j in xrange(ncpu):
+				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
+				if i >= ref_start and i < ref_end: rootid = j
+			bcast_EMData_to_all( prjref[i], myid, rootid )
+
+	for i in xrange(len(ref_angles)):
+		prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})
+
+	return prjref
+
+
 def prgs1d( prjft, kb, params ):
 	from fundamentals import fft
 	from math import cos, sin, pi

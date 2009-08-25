@@ -887,7 +887,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
+def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False):
         from projection   import prep_vol, prgs
         from math         import sin, cos, pi
 	from applications import MPI_start_end
@@ -896,11 +896,9 @@ def prepare_refrings( volft, kb, delta, ref_a, sym, numr, MPI=False):
 	#  phi, theta, psi
 	mode = "F"
 	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
-	wr_four  = ringwe(numr, "F")
-	ny = volft.get_ysize()/2
-        nx = ny
+	wr_four  = ringwe(numr, mode)
 	cnx = nx//2 + 1
-	cny = ny//2 + 1
+	cny = nx//2 + 1
 	qv = pi/180.
         num_ref = len(ref_angles)
 

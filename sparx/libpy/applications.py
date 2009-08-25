@@ -4797,7 +4797,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 
 			volft,kb = prep_vol( vol )
-			refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, MPI=False)
+			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
 			del volft,kb
 
 			for im in xrange( nima ):
@@ -5014,7 +5014,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 
 			volft,kb = prep_vol( vol )
-			refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr, True)
+			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			del volft,kb
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
@@ -5240,7 +5240,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 			else:
 				volft, kb = prep_vol(vol)
 				if runtype=="REFINEMENT":
-					refrings = prepare_refrings(volft,kb,delta[N_step],ref_a,sym,numr)
+					refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr)
 			for im in xrange(nima):
 				if(CTF):
 					ctf_params = data[im].get_attr("ctf")
@@ -5248,7 +5248,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 						previous_defocus = ctf_params.defocus
 						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
 					if runtype=="REFINEMENT":
-						refrings = prepare_refrings(volft,kb,delta[N_step],ref_a,sym,numr)
+						refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr)
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -5341,9 +5341,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
 	from random         import randint
-	from fundamentals   import fshift
+	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from projection     import prep_vol, prgs, project
+	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -5397,12 +5397,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	rstep       = int(rs)
 	last_ring   = int(ou)
 	center      = int(center)
-
-
-	vol     = EMData()
-	vol.read_image(ref_vol)
-	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	numref = EMUtil.get_image_count(ref_vol)
 	volref     = EMData()
@@ -5500,9 +5494,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 	if myid==main_node:
 		for  iref in xrange(numref):
-			volref     = EMData()
-			volref.read_image(ref_vol, iref)
-			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			get_im(ref_vol, iref).write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier( MPI_COMM_WORLD )
 
 	if(CTF):
@@ -5547,15 +5539,24 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		cs = [0.0]*3	
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			volft, kb = prep_vol(vol)
 			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft, kb = prep_vol(vol)
 				if runtype=="REFINEMENT":
 					start_time = time()
-					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					if(myid == 0):
+						print_msg( "Calculation of projections: %d\n" % (time()-start_time) );start_time = time()
+					previous_defocus = -1.0
+					del volft, kb
+
+			else:
+				if runtype=="REFINEMENT":
+					start_time = time()
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if(myid == 0):
 						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) );start_time = time()
+					del volft, kb
+
 
 			start_time = time()
 			for im in xrange(nima):
@@ -5563,24 +5564,22 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					ctf = data[im].get_attr( "ctf" )
 					if(ctf.defocus != previous_defocus):
 						previous_defocus = ctf.defocus
-						ctfvol = filt_ctf(vol, ctf)
-						volft,kb = prep_vol( ctfvol )
 						if runtype=="REFINEMENT":
 							rstart_time = time()
-							refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0):
 								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) );rstart_time = time()
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					ref = filt_ctf( prgs( volft, kb, [phi,tht,psi,-s2x,-s2y]) )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
 				else:
-					if(an[N_step] == -1):	
+					if(an[N_step] == -1):
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
-					else:	           
+					else:
 						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -5604,7 +5603,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				print_msg( "Time to process particles: %d\n" % (time()-start_time) );start_time = time()
 
 
-		del peaks
+		del peaks, prjref, refrings
+		if runtype=="ASSIGNMENT":  del volft, kb
 		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
 		npergroup = [0]*numref
@@ -8688,11 +8688,11 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 					previous_defocus = -1.0
 				else:
 					volft,kb = prep_vol( vol )
-					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
 					del volft
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+				refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
 				del volft
 			sx = 0.0
 			sy = 0.0
@@ -8703,7 +8703,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 						previous_defocus = ctf.defocus
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+						refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
 
 				if an[N_step] == -1:	
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
@@ -8917,11 +8917,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 					previous_defocus = -1.0
 				else:
 					volft,kb = prep_vol( vol )
-					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI=False)
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
 					del volft
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr, MPI = True)
+				refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True)
 				del volft
 
 			sx = 0.0
@@ -8934,7 +8934,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
 						start_prepare = time()
-						refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, symref, numr)
+						refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr)
 						if myid== main_node:
 							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
 
