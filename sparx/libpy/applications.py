@@ -4993,7 +4993,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		ref_data.append( None )
 		ref_data.append( None )
 
-   	from time import time	
+	from time import time	
 
 	#  this is needed for gathering of peak_errors
 	disps = []
@@ -5352,10 +5352,21 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	nx = 0
 	if(myid == main_node):
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		os.mkdir(outdir)
+		if os.path.exists(outdir):
+			nx = 1
+			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		else:
+			os.mkdir(outdir)
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = int(nx[0])
+	if(nx != 0):
+		import sys
+		exit()
+
 	mpi_barrier(MPI_COMM_WORLD)
+	from time import time	
 
 	if debug:
 		from time import sleep
@@ -5419,8 +5430,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Angular step                : %s\n"%(delta))
 		print_msg("Angular search range        : %s\n"%(an))
-		print_msg("Number of assignment in each iteration   : %i\n"%(nassign))
-		print_msg("Number of alignment in each iteration    : %i\n"%(nrefine))
+		print_msg("Number of assignments in each iteration   : %i\n"%(nassign))
+		print_msg("Number of alignments in each iteration    : %i\n"%(nrefine))
 		print_msg("Number of iterations                     : %i\n"%(lstp*maxit) )
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Data with CTF               : %s\n"%(CTF))
@@ -5464,7 +5475,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		finfo.write( "Image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
 
+	start_time = time()
 	data = EMData.read_images(stack, list_of_particles)
+	if(myid == 0):
+		print_msg( "Time to read data: %d\n" % (time()-start_time) );start_time = time()
 	#  Initialize Particle ID and set group number to non-existant -1
 	assignment = [-1]*len(data)
  	for im in xrange(len(data)):
@@ -5524,6 +5538,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		total_iter += 1
 		if(myid == main_node):
 			print_msg("%s ITERATION #%3d\n"%(runtype, total_iter))
+			start_ime = time()
 	
 		peaks = [ -1.0e23]*nima
  		trans = [tr_dummy]*nima
@@ -5537,8 +5552,12 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			else:
 				volft, kb = prep_vol(vol)
 				if runtype=="REFINEMENT":
+					start_time = time()
 					refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+					if(myid == 0):
+						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) );start_time = time()
 
+			start_time = time()
 			for im in xrange(nima):
 				if(CTF):
 					ctf = data[im].get_attr( "ctf" )
@@ -5547,7 +5566,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
 						if runtype=="REFINEMENT":
+							rstart_time = time()
 							refrings = prepare_refrings( volft, kb, delta[N_step], ref_a, sym, numr)
+							if(myid == 0):
+								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) );rstart_time = time()
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -5578,6 +5600,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					if not(finfo is None):
 						finfo.write( "\n" )
 						finfo.flush()
+			if(myid == 0):
+				print_msg( "Time to process particles: %d\n" % (time()-start_time) );start_time = time()
+
 
 		del peaks
 		#  compute number of particles that changed assignment and how man are in which group
@@ -5596,7 +5621,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		if( myid == 0 ):
 			nchng = int(nchng[0])
 			precn = 100*float(nchng)/float(total_nima)
-			msg = " Number of particles that changed assignment %7d, percentage of total: %5.1f\n"%(nchng, precn)
+			msg = " Number of particles that changed assignments %7d, percentage of total: %5.1f\n"%(nchng, precn)
 			print_msg(msg)
 			msg = " Group       number of particles\n"
 			print_msg(msg)
@@ -5643,6 +5668,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
 
+		sart_time = time()
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -5650,6 +5676,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			#	print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
 			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
+			if(myid == 0):
+				print_msg( "Time to compute 3D: %d\n" % (time()-start_time) );start_time = time()
 
 			if(myid == main_node):
 				#print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
@@ -5678,6 +5706,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 		#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
+		start_time = time()
 		if runtype=="REFINEMENT":
 			par_str = ['xform.projection', 'ID', 'group']
 		else:
@@ -5696,6 +5725,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				print_end_msg("ali3d_m_MPI terminated due to small number of objects changing assignments")
 			from sys import exit
 			exit()
+		if(myid == 0):
+			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid==main_node:
 		print_end_msg("ali3d_m_MPI")
 
