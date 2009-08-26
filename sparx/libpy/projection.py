@@ -139,7 +139,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	"""
         from projection   import prep_vol, prgs
 	from applications import MPI_start_end
-	from utilities    import even_angles
+	from utilities    import even_angles, model_blank
 	from fundamentals import fft
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
@@ -162,7 +162,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	prjref = []     # list of (image objects) reference projections in Fourier representation
 
         for i in xrange(num_ref):
-		prjref.append(EMData(nx, nx, 1, False))  # I am not sure why is that necessary, why not put None's??
+		prjref.append(model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
 
         for i in xrange(ref_start, ref_end):
 		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
