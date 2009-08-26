@@ -12,7 +12,7 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + "stack1 <stack2> <mask> --ccc --fsc file --inf --rad=r"
+	usage = progname + "  stack1 <stack2> <mask> --ccc --fsc file --inf --rad=r"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option( "--ccc", action="store_true", default=False, help="print cross corelation coefficient" )

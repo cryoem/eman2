@@ -5541,12 +5541,12 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			volft, kb = prep_vol(vol)
 			if CTF:
+				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
 					start_time = time()
 					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if(myid == 0):
 						print_msg( "Calculation of projections: %d\n" % (time()-start_time) );start_time = time()
-					previous_defocus = -1.0
 					del volft, kb
 
 			else:
@@ -5572,7 +5572,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = filt_ctf( prgs( volft, kb, [phi,tht,psi,-s2x,-s2y]) )
+					ref = filt_ctf( prgs( volft, kb, [phi,tht,psi,-s2x,-s2y]), ctf )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
@@ -5603,8 +5603,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				print_msg( "Time to process particles: %d\n" % (time()-start_time) );start_time = time()
 
 
-		del peaks, prjref, refrings
-		if runtype=="ASSIGNMENT":  del volft, kb
+		del peaks
+		if runtype=="ASSIGNMENT":  del volft, kb, ref
+		else:  del prjref, refrings
 		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
 		npergroup = [0]*numref
