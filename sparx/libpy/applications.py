@@ -9612,7 +9612,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 		# a string, so assume this is a filename and try to open the file
 		try:
 			ctfs = read_txt_col(listctfs, "", "")
-		except DebugError:
+		except:
 			ctfs = [None for ii in xrange(len(angles))]
 	else:
 		# assume this a list of len(angles)
@@ -9622,7 +9622,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 		# try to convert noise string to float. ignore noise if this fails
 		try:
 			noise_level = float(noise)
-		except DebugError:
+		except:
 			noise_level = None
 	# ignore noise, since it was not requested
 	else:
@@ -9673,7 +9673,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 				# no mask, so call w/ false
 				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
 							      proj.get_ysize())
-			except DebugError:
+			except:
 				pass
 			else:
 				proj += noise_ima
@@ -9684,7 +9684,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 			# order of values is the one applied in sxheader for import / export!
 			ctf.from_dict({ "defocus":ctfs[i][0], "cs":ctfs[i][1], "voltage":ctfs[i][2], 
 					"apix":ctfs[i][3], "bfactor":ctfs[i][4], "ampcont":ctfs[i][5] })
-		except DebugError:
+		except:
 			# there are no ctf values, so ignore this and set no values
 			proj.set_attr( "error",1)
 		else:
@@ -9698,7 +9698,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 			try:
 				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
 							      proj.get_ysize())
-			except DebugError:
+			except:
 				pass
 			else:
 				proj += noise_ima
