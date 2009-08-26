@@ -535,6 +535,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if last_ring == -1: last_ring = nx/2-2
 
+	# Some useful parameters
+	grid_size = 4
+	fl = 0.4
+	aa = 0.1
+	Fourvar = False
+	N_merge = 10
+
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -549,6 +556,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of averages used     : %d\n"%(number_of_ave))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
+		print_msg("Number of recombinations    : %d\n"%(N_merge))
+		if restart != -1:
+			print_msg("Restarted from iteration    : %d\n"%(restart))
+		print_msg("Grid size of the chessboard : %d\n"%(grid_size))
+		print_msg("Tangent filter                  \n")
+		print_msg("    cut-off frequency       : %f\n"%(fl))
+		print_msg("    fall-off                : %f\n"%(aa))
+		print_msg("Average divided by variance : %s\n"%(Fourvar))
 
 	if maskfile:
 		import  types
@@ -593,20 +608,21 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
 		drop_image(var, os.path.join(outdir, "initial_var%02d.hdf"%(color)))
 
-		#tavg = fft(Util.divn_img(tavg_I, var))
+		if Fourvar:
+			tavg = fft(Util.divn_img(tavg_I, var))
+			drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
 
-		drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
 		a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
 		sum_SSNR = a0[0]
 
-		if myid != main_node:
-			mpi_send(sum_SSNR, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
-		else:
+		if myid == main_node:
 			print_msg("Initial criterion for average %d : %12.3e\n"%(0, sum_SSNR))
 			for iave in xrange(1, number_of_ave):
 				sum_SSNR = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
 				sum_SSNR = float(sum_SSNR[0])
 				print_msg("Initial criterion for average %d : %12.3e\n"%(iave, sum_SSNR))
+		else:
+			mpi_send(sum_SSNR, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
 	else: tavg = model_blank(nx, nx)
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
@@ -621,9 +637,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(center)
 		ref_data.append(None)
 		ref_data.append(None)
+		ref_data.append(fl)
+		ref_data.append(aa)
 	
 	# Generate the chessboard image
-	grid_size = 4
 	if myid == main_node:
 		chessboard1 = model_blank(nx, nx)
 		chessboard2 = model_blank(nx, nx)
@@ -638,12 +655,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
-	N_merge = 10
 
 	for ipt in xrange(max(restart, 0), N_merge):
 
-		if key == group_main_node:
-		        msg = ""
+		if key == group_main_node:        msg = ""
 
 		if restart==-1 or ipt>restart:
 			total_iter = 0
@@ -689,7 +704,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        		drop_image(var, os.path.join(outdir, "var%02d_%02d.hdf"%(ipt, color)))
 
 			        	real_tavg = tavg.copy()
-			        	#tavg = fft(Util.divn_img(tavg_I, var))
+					if Fourvar:	tavg = fft(Util.divn_img(tavg_I, var))
 
 			        	ref_data[2] = tavg
 			        	#  call user-supplied function to prepare reference image, i.e., center and filter it
@@ -707,7 +722,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        	else:
 			        		tavg, cs = user_func(ref_data)
 
-			        	if Iter == max_iter-1:
+			        	if Iter == max_iter-1 and Fourvar:
 			        		drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
 
 			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %15.7e\n\n"%(ipt, color, Iter, sum_SSNR)

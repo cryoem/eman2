@@ -201,6 +201,11 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)
 		Util.mul_scalar(var, 1.0/float(nima-1))
+		# Comment by Zhengfan Yang on 08/09/09
+		# The value of this component is ofter close to zero, and very often
+		# numerical inaccuracy causes this component to be less than zero,
+		# in this case, we set it to zero.
+		if var.get_value_at(0, 0) < 0.0:   var.set_value_at(0, 0, 0.0)
 		st = Util.infomask(var, None, True)
 		if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf_MPI", 1)
 	else:
