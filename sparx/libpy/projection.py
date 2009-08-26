@@ -116,7 +116,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
         for i in xrange( len(prjref) ):
-		cimage = Util.Polar2Dm(fft( filt_ctf(prjref[i], ctf) ), cnx, cny, numr, mode)  # currently set to quadratic....
+		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
 		normalize_ring(cimage, numr)
 
 		Util.Frngs(cimage, numr)
@@ -165,7 +165,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 		prjref.append(EMData(nx, nx, 1, False))  # I am not sure why is that necessary, why not put None's??
 
         for i in xrange(ref_start, ref_end):
-		prjref[i] = fft(prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0]))
+		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 
 	if MPI:
 		from utilities import bcast_EMData_to_all
