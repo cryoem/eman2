@@ -51,6 +51,7 @@ Various utilities related to BDB databases."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
+	parser.add_option("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
 	parser.add_option("--all","-a",action="store_true",help="List per-particle info",default=False)
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
@@ -63,6 +64,8 @@ Various utilities related to BDB databases."""
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 
 	(options, args) = parser.parse_args()
+
+	if options.cleanup : db_cleanup()
 
 	if options.all : options.long=1
 	if len(args)==0 : args.append("bdb:.")
@@ -103,6 +106,7 @@ Various utilities related to BDB databases."""
 			dbs=[db for db in dbs if re.match(options.match,db)]
 		
 		if options.makevstack!=None or options.appendvstack!=None :
+			
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,with_keys=True)
 				if dct==vstack : continue
@@ -177,6 +181,26 @@ Various utilities related to BDB databases."""
 				print " "
 
 	if logid : E2end(logid)
+
+def db_cleanup():
+	"""This is an important utility function to clean up the database environment so databases can safely be moved or used remotely
+	from other machines. If working on a cluster, this routine should be called on any machine which has opened a database before that
+	database is written to on another machine"""
+	
+	if(sys.platform == 'win32'):
+		print "Database cleanup is not supported on windows machines"
+		sys.exit(1)
+		
+	path="eman2db-%s"%os.getenv("USER","anyone")
+
+	try:
+		op=[l.split() for l in os.popen("lsof","r") if path in l]
+	except:
+		print "Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning."
+		sys.exit(1)
+		
+	s=set()
+	
 
 def human_size(size):
 	if size>1000000000: return "%1.2f gb"%(size/1000000000)

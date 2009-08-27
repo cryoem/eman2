@@ -87,7 +87,9 @@ def DB_cleanup(signum=None,stack=None):
 		d.close()
 		d.lock.acquire(False)		# prevents reopening
 	for e in EMAN2DB.opendbs.values(): e.close()
-	for d in DBDict.alldicts.keys(): d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
+	for d in DBDict.alldicts.keys(): 
+		try : d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
+		except : pass
 	if signum in (2,15) :
 		print "Shutdown complete, exiting" 
 		sys.exit(1)
@@ -733,7 +735,8 @@ class EMAN2DB:
 		
 		
 	def close(self):
-		"""close the environment associated with this object"""
+		"""close the environment associated with this object. This should ONLY be called if no other
+		EMAN2 programs are currently running. Even then it is optional. see e2bdb.py --cleanup"""
 		try: self.dbenv.close()
 		except: pass
 		self.dbenv=None

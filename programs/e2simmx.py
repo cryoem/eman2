@@ -54,37 +54,30 @@ def opt_rectangular_subdivision(x,y,n):
 		Note that this routine needs a little bit of work - it returns good results when
 		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
 		'''
-		candidates = []	
-		best = None
-		for a in xrange(1,int((sqrt(n)+1))):
-			x = a
-			y = n/a
-			if ( x*y/float(n) < 0.95 ): continue
-			candidates.append([a,n/a])
-			
-		print candidates
-		min = None
 		
-		expense = []
-		for rn,cn in candidates:
+		print "Matrix size %d x %d into %d regions -> "%(x,y,n),
+		candidates = []	
+
+		# x,ysub is the number of x,y subdivisions
+		# we insure that xsub<x and ysub<y, and that xsub>=1 and ysub>=1
+		# for a given target n, we can compute ysub for a given xsub
+		# and from that the corresponding maximum transfer cost (x/xsub+y/ysub)*xsub*ysub
+		# we wish to minimize that quantity (note that it doesn't simplify due to int/float issues)
+		for xsub in range(1,x):
+			ysub=int(ceil(float(n/xsub)))
+			if ysub>y or ysub<1 : continue		# can't have more subdivisions than rows
 			
-			f = (float(x)/rn + float(y)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
-			expense.append(f)
-			#print f,rn,cn,(x/rn + y/cn)
-			if min == None or f <= min: # less than or equal favours subdivisions that are close to the sqrt
-				#print f,rn,cn
-				best = [rn,cn]
-				min = f
-				
-			f = (float(y)/rn + float(x)/cn)*rn*cn # yes this could be simplified, but leaving as is for clarity
-			if min == None or f <= min: # less than or equal favours subdivisions that are close to the sqrt
-				#print f,rn,cn
-				best = [cn,rn]
-				min = f
-			expense.append(f)
-			
-		print expense
-		return best	
+			# the ceil() makes us overestimate cases uneven division, but that breaks the tie in a good way
+			cost=(ceil(float(x)/xsub)+ceil(float(y)/ysub))*xsub*ysub	
+			candidates.append((cost,(xsub,ysub)))
+		
+		if len(candidates)==0:  return (x,y)		# should only happen if we have more processors than similarity matrix pixels
+		
+		candidates.sort()
+		#print candidates
+		print " %d x %d blocks -> %d subprocesses"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1])
+
+		return candidates[0][1]
 
 
 
@@ -252,7 +245,7 @@ class EMParallelSimMX:
 		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			self.__init_memory(self.options)
 			blocks = self.__get_blocks()
-	#		print blocks
+#			print blocks
 	
 			self.check_blocks(blocks) # testing function can be removed at some point
 			
