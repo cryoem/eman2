@@ -342,15 +342,18 @@ accessible to the server."""
 #  Here we define the classes for publish and subscribe parallelism
 
 def openEMDCsock(addr,clientid=0, retry=3):
+	alrm=signal.alarm(0)
 	addr=tuple(addr)
 	for i in range(retry):
 		try :
 			xch="WAIT"
 			while xch=="WAIT" :
+				if alrm>0 : signal.alarm(alrm)
 				sock=socket.socket()
 				sock.connect(addr)
 				sockf=sock.makefile()
 				xch=sockf.read(4)
+				signal.alarm(0)
 				if xch=="WAIT" :
 					time.sleep(random.randint(3,10))
 					continue
@@ -370,7 +373,9 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	if sockf.read(4)=="BADV" : 
 		print "ERROR: Server version mismatch ",socket.gethostname()
 		sys.exit(1)
-	
+
+	if alrm>0 : signal.alarm(alrm)
+
 	return(sock,sockf)
 
 def sendobj(sock,obj):
