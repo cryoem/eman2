@@ -4687,7 +4687,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			vol, cs = user_func( ref_data )
 			if center == 1:
 				from utilities import rotate_3D_shift
-				rotate_3D_shift(data, cs)
+				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 	#  here we  write header info
 	from utilities import write_headers
@@ -4826,7 +4826,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)
-				rotate_3D_shift(data, cs)
+				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
 			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
@@ -5071,7 +5071,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
@@ -5304,7 +5304,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data, total_nima, myid, number_of_proc, main_node)
 				msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
 
@@ -5658,7 +5658,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 			#output peak errors
 			from mpi import mpi_gatherv
@@ -6256,7 +6256,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 			#output peak errors
 			from mpi import mpi_gatherv
@@ -6528,7 +6528,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 		for ic in xrange(n_of_chunks):
 			if(center == -1):
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(dataim)				
-				rotate_3D_shift(dataim, cs)
+				rotate_3D_shift(dataim, [-cs[0], -cs[1], -cs[2]])
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)				
 			# compute updated 3D at the beginning of each chunk
@@ -6803,7 +6803,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 					finfo.flush()
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(dataim, cs)
 				if myid == main_node:
 					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])

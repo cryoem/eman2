@@ -1467,7 +1467,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)
-				rotate_3D_shift(data, cs)
+				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
 			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
@@ -1706,7 +1706,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
