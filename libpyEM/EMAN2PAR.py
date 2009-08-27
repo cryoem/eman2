@@ -50,7 +50,10 @@ import signal
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=10
+EMAN2PARVER=11
+
+# This is the maximum number of active server threads before telling clients to wait
+DCMAXTHREADS=10
 
 def DCcustomer_alarm(signum=None,stack=None):
 #		if stack!=None : traceback.print_stack(stack)
@@ -124,10 +127,16 @@ class EMTaskCustomer:
 		"""Trigger an already submitted task to be re-executed"""
 		
 		if self.servtype=="dc":
+			signal.alarm(60)
 			try: return EMDCsendonecom(self.addr,"RQUE",tid)
 			except:
+				signal.alarm(60)
 				self.wait_for_server()
-				return EMDCsendonecom(self,addr,"RQUE",tid)
+				ret=EMDCsendonecom(self,addr,"RQUE",tid)
+				signal.alarm(0)
+				return ret
+				
+			signal.alarm(0)
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
@@ -336,15 +345,21 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	addr=tuple(addr)
 	for i in range(retry):
 		try :
-			sock=socket.socket()
-			sock.connect(addr)
-			sockf=sock.makefile()
-			if sockf.read(4)!="EMAN" : raise Exception,"Not an EMAN server"
-			break
+			xch="WAIT"
+			while xch=="WAIT" :
+				sock=socket.socket()
+				sock.connect(addr)
+				sockf=sock.makefile()
+				xch=sockf.read(4)
+				if xch=="WAIT" :
+					time.sleep(random.randint(3,10))
+					continue
 		except:
 			time.sleep(8)
 			if i>2 : print "Retrying connect to server (%d)"%i
 			continue
+		if xch!="EMAN" : raise Exception,"Not an EMAN server"
+		break
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
 
 	# Introduce ourselves and ask for a task to execute
@@ -426,11 +441,14 @@ class DCThreadingMixIn:
 		N=DCThreadingMixIn.N
 		DCThreadingMixIn.N+=1
 		count=0
-		while threading.active_count()>8 and count<10: 
-			time.sleep(2)
-			count +=1
 		
-#		print threading.active_count()," threads running"
+		# Handled in the thread now
+		#if threading.active_count()>10:
+		#while threading.active_count()>8 and count<10: 
+			#time.sleep(2)
+			#count +=1
+			
+		
 		t = threading.Thread(target = self.process_request_thread,
 								args = (request, client_address))
 		t.setName(str(N))
@@ -529,6 +547,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		# 8-11 : int, client id
 		# 12-15 : 4 char command
 		# 16-19: count of bytes in pickled data following header
+
+		# if we have too many threads, we trigger the client to sleep a while before even doing a handshake
+		if threading.active_count()>DCMAXTHREADS:
+			self.sockf.write("WAIT")
+			self.sockf.flush()
+			if self.verbose>1 : print "Telling client to wait ",self.client_address
+			return
 
 		# initial exchange to make sure we're talking to a client
 		self.sockf.write("EMAN")
