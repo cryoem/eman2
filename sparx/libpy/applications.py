@@ -5756,7 +5756,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
-	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
+	from utilities      import rotate_3D_shift, estimate_3D_center_MPI
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
 	from random         import randint
 	from filter         import filt_ctf

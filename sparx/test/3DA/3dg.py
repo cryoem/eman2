@@ -5,15 +5,15 @@ from sparx  import *
 
 from sys import exit
 from time import time
-#vol = EMData()
-#vol.read_image("../model001.tcp")
-nx = 128
-vol = model_circle(61,nx,nx,nx)
+vol = EMData()
+vol.read_image("../model001.tcp")
+#nx = 128
+#vol = model_circle(61,nx,nx,nx)
 #vol.read_image("model.spi")
 #info(e)
 nx = vol.get_xsize()
 r = nx//2-2
-delta=1.5
+delta=5.0
 '''
 angles=even_angles(delta,0.,90.,0,359.99,"S")
 i1 = len(angles)
@@ -23,12 +23,12 @@ i2 = len(at)
 for i in xrange(i2-i1):
 	angles.append(at[i+i1-1])
 '''
-angles=even_angles(delta,0.,179.9,0.0,359.99,"S", phiEqpsi="Zero")
+angles=even_angles(delta,0.,179.9,0.0,359.99,"S", phiEqpsi="Minus")
 volft,kb=prep_vol(vol)
 
-stack_data="bdb:data128"
+stack_data="bdb:data"
 import os
-os.system("rm -f  "+stack_data)
+#os.system("rm -f  "+stack_data)
 #print  angles
 nangles = len(angles)
 #dropSpiderDoc("angles",angles)
@@ -39,8 +39,8 @@ defocus = -1
 from random import random,randint
 start =  time()
 for i in xrange(nangles):
-	#s2x = 4.0*randint(-1,1)
-	#s2y = 4.0*randint(-1,1)
+	s2x = 4.0*randint(-1,1)
+	s2y = 4.0*randint(-1,1)
 	#ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
 	if i%100 == 0:   print i
 	#proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
@@ -66,7 +66,7 @@ start=time()
 nprojdata = EMUtil.get_image_count(stack_data)
 vol1   = recons3d_4nn(stack_data, range(nprojdata))
 print time()-start
-vol1.write_image("b4_128.hdf", 0)
+vol1.write_image("b4.hdf", 0)
 exit()
 del volft
 write_text_file(ppp, "params.txt")

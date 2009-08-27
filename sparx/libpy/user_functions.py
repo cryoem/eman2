@@ -573,12 +573,18 @@ def ref_ali3dm_new( refdata ):
 	else:
 		flmin, aamin, idmin = minfilt( fscc )
 		aamin /= 2.0
-	msg = "Minimum tangent filter derived from volume %2d:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(idmin, flmin, aamin)
+	msg = "Minimum tangent filter derived from volume %2d:  cut-off frequency = %10.3f, fall-off = %10.3f\n"%(idmin, flmin, aamin)
 	print_msg(msg)
 
 	vol = []
 	for i in xrange(numref):
 		vol.append(get_im( os.path.join(outdir, "vol%04d.hdf"%total_iter), i ))
+		stat = Util.infomask( vol[i], mask, False )
+		vol[i] -= stat[0]
+		vol[i] /= stat[1]
+		vol[i] *= mask
+		vol[i] = threshold(vol[i])
+	del stat
 
 	reftab = rops_table( vol[idmin] )
 	for i in xrange(numref):
@@ -588,17 +594,11 @@ def ref_ali3dm_new( refdata ):
 			for j in xrange(len(vtab)):
 		        	ftab[j] = sqrt( reftab[j]/vtab[j] )
 			vol[i] = filt_table( vol[i], ftab )
-		vol[i]  = filt_tanl( vol[i], flmin, aamin )
-		stat = Util.infomask( vol[i], mask, False )
-		vol[i] -= stat[0]
-		vol[i] /= stat[1]
-		vol[i] *= mask
 
 	if ali50S:
 		vol = ali_nvol(vol, get_im( "mask-50S.spi" ))
 	for i in xrange(numref):
-		vol[i] = filt_gaussl( threshold(vol[i]), 0.4)
-		vol[i].write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
+		filt_tanl( vol[i], flmin, aamin ).write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):
 	from utilities  import print_msg

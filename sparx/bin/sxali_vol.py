@@ -40,7 +40,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " volume ref_volume --discrepancy=ccc --ang_scale=angular range  --shift_scale=shift range  --mag_scale=magnification range --r=radius of a mask"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--discrepancy", type="string", default="ccc", help="  Discrepancy measure used: ccc - crosscorrelation coefficient (default), SqEuclidean - Euclidean sqaured) ")
+	parser.add_option("--discrepancy", type="string", default="ccc", help="  Discrepancy measure used: ccc - crosscorrelation coefficient (default), SqEuclidean - Euclidean squared) ")
 	parser.add_option("--ang_scale",    type='float', default=None, help="  Correct angles will be within +/- ang_scale of initial values")
 	parser.add_option("--shift_scale",  type='float', default=None, help="  Correct shifts will be within +/- shift_scale of initial values")
 	parser.add_option("--mag_scale",    type='float', default=None, help="  Correct magnification will be within +/- mag_scale of initial value")
