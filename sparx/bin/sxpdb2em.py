@@ -61,13 +61,13 @@ map to the center of the volume."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_option("--apix", "-A", type="float",        help="A/voxel", default=1.0)
+	parser.add_option("--box",  "-B", type="string",       help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	parser.add_option("--het",        action="store_true", help="Include HET atoms in the map", default=False)
 	#parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
-	parser.add_option("--center",  type="string",  default="a", help="center: c - coordinates, a - center of gravity, n - no" )
-	parser.add_option("--O",  action="store_true", default=False, help="use O system of coordinates")
-	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_option("--center",     type="string",       default="n", help="center: c - coordinates, a - center of gravity, default: n - no" )
+	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
+	parser.add_option("--quiet",      action="store_true", default=False,help="Verbose is the default")
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
