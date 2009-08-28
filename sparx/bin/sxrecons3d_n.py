@@ -90,7 +90,7 @@ def main():
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.verbose, options.MPI)
 	global_def.BATCH = False
-	
+
 
 if __name__=="__main__":
 	main()
