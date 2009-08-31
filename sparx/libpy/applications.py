@@ -12158,40 +12158,36 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 		ext = file_type(stack)
-		if   ext == 'bdb': BDB = True
+		if ext == 'bdb':   BDB = True
 		else:              BDB = False
 		if ext == 'txt':   TXT = True
 		else:              TXT = False
-		if myid == main_node:
-			print_begin_msg('k-means')
-			if TXT:
-				data   = open(stack, 'r').readlines()
-				N      = len(data)
-				listID = range(N)
-			else:	listID, N = k_means_list_active(stack)
-			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
-		
-		mpi_barrier(MPI_COMM_WORLD)
-		if myid != main_node: N = 0
-		N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		N = N.tolist()[0]
-		if myid != main_node: listID = 0
-		listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		listID = listID.tolist()
+		if myid == main_node: print_begin_msg('k-means')
 
-		N_start = int(round(float(N) / nb_cpu * myid))  # This is not the right way fo doing it, please read other code. PAP.
-		N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
-		if BDB:
-			# with BDB all node can not read the same data base in the same time
-			import os
-			for i in xrange(nb_cpu):
-				if myid == i: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
-				mpi_barrier(MPI_COMM_WORLD)
-		elif TXT:
+		if TXT:
+			N = len(open(stack, 'r').readlines())
+			N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
 			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
 		else:
-			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
-	
+			if myid == main_node: listID, N = k_means_list_active(stack)
+			mpi_barrier(MPI_COMM_WORLD)
+			if myid != main_node: N = 0
+			N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			N = N.tolist()[0]
+			if myid != main_node: listID = 0
+			listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
+			listID = listID.tolist()
+			N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
+
+			if BDB:
+				for i in xrange(nb_cpu):
+					if myid == i: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+					mpi_barrier(MPI_COMM_WORLD)
+			else:
+				im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+
+		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
+		
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit,\
 				trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
@@ -12203,14 +12199,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 
 		if myid == main_node:
-			"""
-			import pickle
-			f = open('Assign', 'w')
-			pickle.dump(assign, f)
-			f.close()
-			"""
-			#N = EMUtil.get_image_count(stack)  #I commented this one out PAP.
-			glb_assign = k_means_locasg2glbasg(assign, listID, N)
+			# This N (total number of images of the stack) is different than the previous N (number of active images in the stack)
+			# list ID of each groups need to refert to the absolute ID from the stack not to the relative ID from the list of active images. JB
+			if not TXT:
+				N = EMUtil.get_image_count(stack)
+				glb_assign = k_means_locasg2glbasg(assign, listID, N)
+			else:   glb_assign = assign
 			crit = k_means_criterion(Cls, critname)
 			k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT)
 			print_end_msg('k-means')
@@ -12222,8 +12216,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_cuda_export, k_means_cuda_init_open_im, k_means_cuda_info
 		from utilities  import model_blank, get_im, get_image
 		ext = file_type(stack)
-		if   ext == 'bdb': BDB = True
-		else:               BDB = False
 		if ext == 'txt':   TXT = True
 		else:              TXT = False
 		
@@ -12258,8 +12250,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		AVE  = KmeansCUDA.get_averages() # return flat images
 
 		# local to absolue index
-		if not TXT:
-			N = EMUtil.get_image_count(stack)
+		if not TXT: N = EMUtil.get_image_count(stack)
 		GASG = k_means_locasg2glbasg(ASG, LUT, N)
 
 		# export data
@@ -12281,9 +12272,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if ext == 'txt': TXT = True
 		else:            TXT = False
 		if TXT:
-			N = open(stack, 'r').readlines()
+			N = len(open(stack, 'r').readlines())
 			im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
-
 		else:
 			listID, N = k_means_list_active(stack)
 			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
@@ -12306,7 +12296,8 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		crit = k_means_criterion(Cls, critname)
 		if not TXT:
 			N = EMUtil.get_image_count(stack)
-		glb_assign = k_means_locasg2glbasg(assign, listID, N)
+			glb_assign = k_means_locasg2glbasg(assign, listID, N)
+		else:   glb_assign = assign
 		k_means_export(Cls, crit, glb_assign, out_dir, 0, TXT)
 
 		print_end_msg('k-means')
@@ -12314,24 +12305,17 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 # -- K-means groups ---------------------------------------------------------------------------
 			
 # K-means groups driver
-def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False):
-
-	# check entry
-	if stack.split(':')[0] == 'bdb': BDB = True
-	else:                            BDB = False
+def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
-		[rescrit, KK] = k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0)
+		k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
 	elif CUDA:
 		from statistics import k_means_groups_CUDA
 		k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0)
-		rescrit, KK = None, None
 	else:
 		from statistics import k_means_groups_serial
-		[rescrit, KK] = k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, DEBUG)
-		
-		return rescrit, KK
+		k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG, flagnorm)
 
 # -- K-means stability ---------------------------------------------------------------------------
 # 2009-07-29 14:06:54 new code

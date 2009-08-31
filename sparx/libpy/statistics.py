@@ -1443,7 +1443,8 @@ def k_means_open_txt(stack, maskname, N_start, N_stop, N):
 	im_M = [0] * N
 	data = open(stack, 'r').readlines()
 	nx   = len(data[0].split())
-	mask = get_image(maskname)
+	if maskname is not None: mask = get_image(maskname)
+	else: mask = None
 	for i in xrange(N_start, N_stop):
 		im   = model_blank(nx)
 		line = data[i]
@@ -1451,7 +1452,8 @@ def k_means_open_txt(stack, maskname, N_start, N_stop, N):
 		for j in xrange(nx):
 			val = float(line[j])
 			im.set_value_at_fast(j, 0, val)
-		im_M[i] = Util.compress_image_mask(im, mask)
+		if mask is not None: im_M[i] = Util.compress_image_mask(im, mask)
+		else: im_M[i] = im
 
 	return im_M, mask, None, None
 
@@ -1538,31 +1540,6 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, fla
 
 	if CTF: return im_M, mask, ctf, ctf2
 	else:   return im_M, mask, None, None
-
-# k-means init for MPI version
-def k_means_init_MPI(stack):
-	from mpi   import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi   import mpi_bcast, MPI_INT
-	import sys
-	
-	# init
-	sys.argv = mpi_init(len(sys.argv),sys.argv)
-	ncpu     = mpi_comm_size(MPI_COMM_WORLD)
-	myid     = mpi_comm_rank(MPI_COMM_WORLD)
-
-	# chose a main one
-	main_node = 0
-
-	# define the node affected to the images
-	N = 0
-	if myid == main_node: N = EMUtil.get_image_count(stack)
-	mpi_barrier(MPI_COMM_WORLD)
-	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	N = N.tolist()[0]
-	N_start = int(round(float(N) / ncpu * myid))
-	N_stop  = int(round(float(N) / ncpu * (myid + 1)))
-
-	return main_node, myid, ncpu, N_start, N_stop, N
 
 # k-means write the head of the logfile
 def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu):
@@ -3712,173 +3689,78 @@ def k_means_groups_gnuplot(file, src, C, DB, H):
 	out.close()
 
 # to figure out the number of clusters
-def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, DEBUG=False):
-	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
-	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
-	from statistics  import k_means_classical, k_means_SSE
-	import time
-	import string
-	import os
-	import sys
+def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG = False, flagnorm = False):
+	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
+	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog, k_means_open_txt
+	from statistics  import k_means_classical, k_means_SSE, k_means_list_active, k_means_groups_gnuplot
+	import os, sys, time
 
 	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
 	os.mkdir(out_file)
 
-	if stack.split(':')[0] == 'bdb': BDB = True
-	else:                            BDB = False
-	
 	t_start = time.time()
-	N       = EMUtil.get_image_count(stack)								
+	print_begin_msg('k-means groups')	
 
-	print_begin_msg('k-means groups')
-	k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+	if TXT:
+		N = len(open(stack, 'r').readlines())
+		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
+	else:
+		listID, N = k_means_list_active(stack)
+		im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
+
+	k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
 	
-	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
-	
-	# watch file
-	out = open(out_file + '/WATCH_GRP_KMEANS', 'w')
-	out.write('Watch grp k-means ' + time.ctime() +'\n')
-	out.close()
-	
-	Crit = {}
-	KK   = range(K1, K2 + 1)	# Range of works
-	if crit_name == 'all': crit_name='CHD'
-	
-	# init the criterion
-	for name in crit_name:
-		if name == 'C':		
-			Crit['C']=[0] * len(KK)
-			txt_C = ''
-		elif name == 'H':
-			Crit['H']=[0] * len(KK)
-			txt_H = ''
-		elif name == 'D':
-			Crit['D']=[0] * len(KK)
-			txt_DB = ''
-		else:
-			ERROR('Kind of criterion k-means unknown', 'k_means_groups', 1)
-			sys.exit()
+	# init
+	KK       = range(K1, K2 + 1)	# Range of works
+	C, DB, H = [], [], []
+	sp       = 15                   # cst space to format file
 	
 	# init the file result
 	file_crit = open(out_file + '/' + out_file, 'w')
 	file_crit.write('# Criterion of k-means group\n')
-	txt = '# N  '
-	for name in crit_name:
-		if name == 'C':
-			txt += '  Coleman'.ljust(13, ' ')
-		elif name == 'H':
-			txt += '  Harabasz'.ljust(13, ' ')
-		elif name == 'D':
-			txt += '  Davies-Bouldin'.ljust(13, ' ')
-
-	txt += '\n'
-	file_crit.write(txt)
+	file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
+	file_crit.close()
 		
 	# Compute the criterion and format
-	index = -1
-	stop  = False 
 	for K in KK:
 		
-		index += 1
 		print_msg('\n')
 		print_msg('| K=%d |====================================================================\n' % K)
 
-		flag_run = True
-		ct_rnd   = 0
-		while flag_run:
-			try:
-				if opt_method   == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
-				elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
-				else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
-				flag_run = False
-			except SystemExit:
-				rand_seed += 100
-				ct_rnd    += 1
-				print_msg('Empty cluster, restart with random seed: %d\n' % rand_seed)
-				if ct_rnd >= 5:
-					stop = True
-					break
-				else: flag_run = True
+		try:
+			if opt_method   == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+			else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 
-		if stop:
-			print_msg('\n=== STOP number of groups to high. ===\n\n')
-			break
+		except SystemExit:
+			ERROR('Empty cluster, number of groups to high', 'k_means_groups', 1)
 		
-		crit = k_means_criterion(Cls, crit_name)
+		crit = k_means_criterion(Cls, 'CHD')
 
-		# watch file
-		out = open(out_file + '/WATCH_GRP_KMEANS', 'a')
-		out.write('%3d  C: %11.4e  H: %11.4e  DB: %11.4e | %s\n' % (K, crit['C'], crit['H'], crit['D'], time.ctime())) 
-		out.close()
+		# res file
+		file_crit = open(out_file + '/' + out_file, 'a')
+		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, crit['C'], crit['D'], crit['H'], time.ctime())) 
+		file_crit.close()
 		
-		# result file
-		txt = '%3d ' % K
-		ipos, pos = 2, {}
-		for name in crit_name:
-			if name == 'C':
-				txt += '  %11.4e' % crit['C']
-				pos['C'] = ipos
-				Crit['C'][index]  = crit['C']
-			elif name == 'H':
-				txt += '  %11.4e' % crit['H']
-				pos['H'] = ipos
-				Crit['H'][index]  = crit['H']
-			elif name == 'D':
-				txt += '  %11.4e' % crit['D']
-				pos['D'] = ipos
-				Crit['D'][index]  = crit['D']
-			ipos += 1
-		txt += '\n'
-		file_crit.write(txt)
+		# mem
+		C.append(crit['C'])
+		H.append(crit['H'])
+		DB.append(crit['D'])
 		
-	file_crit.close()	
-	
-	# make script file to gnuplot
-	out = open(out_file + '/' + out_file + '.p', 'w')
-	out.write('# Gnuplot script file for plotting result in kmeans groups\n')
-	out.write('# cmd: gnuplot> load \x22%s.p\x22\n' % out_file)
-	out.write('reset\n')
-	out.write('set autoscale\n')
-	txt = 'plot'
-	
-	for name in crit_name:
-		if name == 'C':
-			# norm plot [0;1]
-			d = max(Crit['C']) - min(Crit['C'])
-			a = 1 / d
-			b = 0.5 - ((max(Crit['C']) * a + min(Crit['C']) * a) / 2)
-			txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Coleman\x22 w l,' % (out_file, pos['C'], a, b)
-		elif name == 'H':
-			# norm plot [0;1]
-			d = max(Crit['H']) - min(Crit['H'])
-			a = 1 / d
-			b = 0.5 - ((max(Crit['H']) * a + min(Crit['H']) * a) / 2)
-			txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Harabasz\x22 w l,' % (out_file, pos['H'], a, b)
-		elif name == 'D':
-			# norm plot [0;1]
-			d = max(Crit['D']) - min(Crit['D'])
-			a = 1 / d
-			b = 0.5 - ((max(Crit['D']) * a + min(Crit['D']) * a) / 2)
-			txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Davies-Bouldin\x22 w l,' % (out_file, pos['D'], a, b)
-	txt = txt.rstrip(',') + '\n'
-	out.write(txt)
-	out.close()
-		
-	# runtime
+	# gnuplot script
+	k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
 	running_time(t_start)
 	print_end_msg('k-means groups')
-		
-	return Crit, KK
 
 # to figure out the number of clusters CUDA version
 def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
 	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
 	from statistics  import k_means_cuda_open_im, k_means_cuda_error, k_means_groups_gnuplot
-	import time
-	import string
-	import os
-	import sys
+	import time, os, sys
 
 	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
 	os.mkdir(out_file)
@@ -3905,7 +3787,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	# init
 	KK       = range(K1, K2 + 1)	# Range of works
 	C, DB, H = [], [], []
-	sp       = 15                   # space for format file result
+	sp       = 15                   # cst space to format file result
 		
 	# init the file result
 	file_crit = open(out_file + '/' + out_file, 'w')
@@ -3940,7 +3822,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 				print_msg('\n=== STOP number of groups to high. ===\n\n')
 				sys.exit()
 		
-		# get back cirterions
+		# get back informations
 		INFO = KmeansCUDA.get_info()
 		print_msg('Criterion SSE: %11.4e\n' % INFO['Je'])
 		print_msg('Number of iterations: %i\n' % INFO['noi'])
@@ -3963,186 +3845,105 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	print_end_msg('k-means groups')
 
 # to figure out the number of clusters MPI version
-def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0):
-	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
-	from mpi 	 import MPI_COMM_WORLD, mpi_barrier
-	from statistics  import k_means_init_MPI, k_means_open_im, k_means_criterion, k_means_headlog
-	from statistics  import k_means_cla_MPI, k_means_SSE_MPI
-	import sys
-	import time
-	import os
-	
-	# [id]   part of different code for each node
-	# [sync] synchronise each node
-	# [main] part of code just for the main node
-	# [all]  code write for all node
-	main_node, myid, ncpu, N_start, N_stop, N = k_means_init_MPI(stack)
+def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm):
+	from utilities    import print_begin_msg, print_end_msg, print_msg, running_time, file_type
+	from statistics   import k_means_open_im, k_means_criterion, k_means_headlog
+	from statistics   import k_means_cla_MPI, k_means_SSE_MPI
+	from applications import MPI_start_end
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT
+	import sys, os, time
 
+	sys.argv  = mpi_init(len(sys.argv), sys.argv)
+	nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	mpi_barrier(MPI_COMM_WORLD)
+
+	ext = file_type(stack)
+	if ext == 'bdb':   BDB = True
+	else:              BDB = False
+	if ext == 'txt':   TXT = True
+	else:              TXT = False
+	
 	if myid == main_node:
 		if os.path.exists(out_file): os.system('rm -rf ' + out_file)
 		os.mkdir(out_file)
-
-	if stack.split(':')[0] == 'bdb': BDB = True
-	else:                            BDB = False
-
-	if myid == main_node:
-		t_start = time.time()
-
 		print_begin_msg('k-means groups')
-		k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
+		t_start = time.time()
 		
-		# watch file
-		out = open(out_file + '/WATCH_GRP_KMEANS', 'w')
-		out.write('Watch grp k-means ' + time.ctime() +'\n')
-		out.close()
-
-	# Seq reading due to BDB file
-	for i in xrange(ncpu):
-		if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
+	if TXT:
+		N = len(open(stack, 'r').readlines())
+		N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
+		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
+	else:
+		if myid == main_node: listID, N = k_means_list_active(stack)
 		mpi_barrier(MPI_COMM_WORLD)
+		if myid != main_node: N = 0
+		N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		N = N.tolist()[0]
+		if myid != main_node: listID = 0
+		listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
+		listID = listID.tolist()
+		N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
 
-	# define the node affected to the numbers tests
-	Crit = {}
+		if BDB:
+			for i in xrange(nb_cpu):
+				if myid == i: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+				mpi_barrier(MPI_COMM_WORLD)
+		else:
+			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+
+
 	KK = range(K1, K2 + 1)	# Range of works
-	if crit_name == 'all': crit_name='CHD'
-	
-	#[all] init the criterion
-	# init the criterion
-	for name in crit_name:
-		if name == 'C':		
-			Crit['C']=[0] * len(KK)
-			txt_C = ''
-		elif name == 'H':
-			Crit['H']=[0] * len(KK)
-			txt_H = ''
-		elif name == 'D':
-			Crit['D']=[0] * len(KK)
-			txt_DB = ''
-		else:	ERROR('Kind of criterion k-means unknown', 'k_means_groups', 1)
-	
-	# init the file result
 	if myid == main_node:
+		# init
+		C, DB, H = [], [], []
+		sp       = 15                   # cst space to format file
+
+		# init the file result
 		file_crit = open(out_file + '/' + out_file, 'w')
 		file_crit.write('# Criterion of k-means group\n')
-		txt = '# N  '
-		for name in crit_name:
-			if name == 'C':
-				txt += '  Coleman'.ljust(13, ' ')
-			elif name == 'H':
-				txt += '  Harabasz'.ljust(13, ' ')
-			elif name == 'D':
-				txt += '  Davies-Bouldin'.ljust(13, ' ')
-			else:
-				ERROR('Kind of criterion k-means unknown', 'k_means_groups', 1)
-		txt += '\n'
-		file_crit.write(txt)
-	
-	index = -1
+		file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
+		file_crit.close()
 
-	stop  = False
-	# [id] Measure the criterions
+		k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
+
+	# get some criterion
 	for K in KK:
-
-		index += 1
 		if myid == main_node:
 			print_msg('\n')
 			print_msg('| K=%d |====================================================================\n' % K)
 
-		flag_run = True
-		ct_rnd   = 0
-		while flag_run:
-			try:
-				if   opt_method == 'cla':
-					[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
-				elif opt_method == 'SSE':
-					[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0)
-				else:   ERROR('kind of k-means unknown', 'k_means_groups', 1)
-				flag_run = False
-			except SystemExit:
-				rand_seed += 100
-				ct_rnd    += 1
-				if myid == main_node: print_msg('Empty cluster, restart with random seed: %d\n' % rand_seed)
-				if ct_rnd >= 5:
-					stop = True
-					break
-				else: flag_run = True
+		try:
+			if   opt_method == 'cla':
+				[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+			elif opt_method == 'SSE':
+				[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+			else:   ERROR('kind of k-means unknown', 'k_means_groups', 1)
 
-		if stop:
-			if myid == main_node: print_msg('\n=== STOP number of groups to high. ===\n\n')
-			break
-					
+		except SystemExit:
+			ERROR('Empty cluster, number of groups to high', 'k_means_groups', 1)
 
-		if myid == main_node: crit = k_means_criterion(Cls, crit_name)
+		if myid == main_node:
+			crit = k_means_criterion(Cls, 'CHD')
+
+			# res file
+			file_crit = open(out_file + '/' + out_file, 'a')
+			file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, crit['C'], crit['D'], crit['H'], time.ctime())) 
+			file_crit.close()
+
+			# mem
+			C.append(crit['C'])
+			H.append(crit['H'])
+			DB.append(crit['D'])
 
 		mpi_barrier(MPI_COMM_WORLD)
-
-		# [main] Format and export the result
-		if myid == main_node:
-			# watch file
-			out = open(out_file + '/WATCH_GRP_KMEANS', 'a')
-			out.write('%d  C: %11.4e  H: %11.4e  DB: %11.4e | %s\n' % (K, crit['C'], crit['H'], crit['D'], time.ctime())) 
-			out.close()
-
-			# result file
-			txt = '%3d ' % K
-			ipos, pos = 2, {}
-			for name in crit_name:
-				if name == 'C':
-					txt += '  %11.4e' % crit['C']
-					pos['C'] = ipos
-					Crit['C'][index]  = crit['C']	# Coleman
-				elif name == 'H':
-					txt += '  %11.4e' % crit['H']
-					pos['H'] = ipos
-					Crit['H'][index]  = crit['H']	# Harabasz
-				elif name == 'D':
-					txt += '  %11.4e' % crit['D']
-					pos['D'] = ipos
-					Crit['D'][index]  = crit['D']	# Davies & Bouldin
-				ipos += 1
-			txt += '\n'
-			file_crit.write(txt)
-
-	if myid == main_node:
-		# make script file to gnuplot
-		out = open(out_file + '/' + out_file + '.p', 'w')
-		out.write('# Gnuplot script file for plotting result in kmeans groups\n')
-		out.write('# cmd: gnuplot> load \x22%s.p\x22\n' % out_file)
-		out.write('reset\n')
-		out.write('set autoscale\n')
-		txt = 'plot'
-
-		for name in crit_name:
-			if name == 'C':
-				# norm plot [0;1]
-				d = max(Crit['C']) - min(Crit['C'])
-				a = 1 / d
-				b = 0.5 - ((max(Crit['C']) * a + min(Crit['C']) * a) / 2)
-				txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Coleman\x22 w l,' % (out_file, pos['C'], a, b)
-			elif name == 'H':
-				# norm plot [0;1]
-				d = max(Crit['H']) - min(Crit['H'])
-				a = 1 / d
-				b = 0.5 - ((max(Crit['H']) * a + min(Crit['H']) * a) / 2)
-				txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Harabasz\x22 w l,' % (out_file, pos['H'], a, b)
-			elif name == 'D':
-				# norm plot [0;1]
-				d = max(Crit['D']) - min(Crit['D'])
-				a = 1 / d
-				b = 0.5 - ((max(Crit['D']) * a + min(Crit['D']) * a) / 2)
-				txt += ' \x22%s\x22 using 1:($%d*(%11.4e)+(%11.4e)) title \x22Davies-Bouldin\x22 w l,' % (out_file, pos['D'], a, b)
-
-		txt = txt.rstrip(',') + '\n'
-		out.write(txt)
-		out.close()
 		
-		# logfile
-		file_crit.close()
+	# gnuplot script
+	if myid == main_node:
+		k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
 		running_time(t_start)
 		print_end_msg('k-means groups')
-
-	if myid == main_node: return Crit, KK
-	else:                 return None, None
 
 ## K-MEANS CUDA ###########################################################################
 # 2009-02-20 15:39:43
@@ -4312,7 +4113,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
 	nz = image.get_zsize()
 	del image
 
-	# open one by one to avoid allocation of twice memory (python/C)
+	# open one by one to avoid twice allocation of memory (python/C)
 	# even if it takes more time
 	c = 0
 	for i in lim:
@@ -4367,7 +4168,9 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1, TXT = Fals
 	K   = max(PART) + 1
 	N   = len(PART)
 	GRP = [[] for i in xrange(K)]
-	for n in xrange(N): GRP[int(PART[n])].append(n)
+	for n in xrange(N):
+		# if image are assigned somewhere (active)
+		if int(PART[n]) != -1: GRP[int(PART[n])].append(n)
 	flagHDF = False
 	for k in xrange(K):
 		if len(GRP[k]) > 16000: flagHDF = True
