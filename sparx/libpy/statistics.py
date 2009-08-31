@@ -4099,9 +4099,9 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
 			line = line.split()
 			for i in xrange(nx):
 				val = float(line[i])
-				im.set_value_at_fast(i, val)
+				im.set_value_at_fast(i, 0, val)
 			im = Util.compress_image_mask(im, mask)
-			KmeansCUDA.append_flat_image(image, c)
+			KmeansCUDA.append_flat_image(im, c)
 			c += 1
 			
 		return
@@ -4171,6 +4171,7 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1, TXT = Fals
 	for n in xrange(N):
 		# if image are assigned somewhere (active)
 		if int(PART[n]) != -1: GRP[int(PART[n])].append(n)
+
 	flagHDF = False
 	for k in xrange(K):
 		if len(GRP[k]) > 16000: flagHDF = True
