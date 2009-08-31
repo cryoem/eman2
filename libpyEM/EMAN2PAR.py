@@ -464,6 +464,13 @@ class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
 
 def runEMDCServer(port,verbose,killclients=False):
 	"""This will create a ThreadingTCPServer instance and execute it"""
+	
+	# place to put results
+	try:
+		os.makedirs("%s/results"%self.path)
+	except:
+		pass
+	
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
 	EMDCTaskHandler.killclients=killclients
@@ -660,7 +667,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				
 				# then we get a sequence of key,value objects, ending with a final None key
-				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
+#				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
+				result=file("%s/results/%07d"%(self.queue.path,tid),"w")
 				
 				cnt=0
 				while (1) :
@@ -673,7 +681,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						print "Error in network communications"
 						cnt=-1
 						break
-					result[key]=val				# store each key in the database
+#					result[key]=val				# store each key in the database
+					dump(key,result,-1)
+					dump(val,result,-1)
 					cnt+=1
 					if self.verbose>3: print key,val
 
@@ -806,19 +816,32 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				sendobj(self.sockf,ret)
 
 				if self.verbose>2 : print "RSLT: ",data
-				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,data))
-				for k in result.keys():
-					if k=="maxrec": continue
-					sendobj(self.sockf,k)
-					sendobj(self.sockf,result[k])
-					if self.verbose>3 : print k,result[k]
+#				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,data))
+				#for k in result.keys():
+					#if k=="maxrec": continue
+					#sendobj(self.sockf,k)
+					#sendobj(self.sockf,result[k])
+					#if self.verbose>3 : print k,result[k]
 					
+				result=file("%s/results/%07d"%(self.queue.path,data),"r")
+				while 1:
+					try:
+						k=load(result)
+						v=load(result)
+						sendobj(self.sockf,k)
+						sendobj(self.sockf,v)
+					except:
+						break
+					if self.verbose>3 : print k,v
+				result.close()
+				
 				sendobj(self.sockf,None)
 				self.sockf.flush()
 				
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
-					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+#					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
+					os.unlink("%s/results/%07d"%(self.queue.path,data))
 					EMDCTaskHandler.dbugfile.write("Results for task %5d retrieved [%s]\n"%(data,local_datetime()))
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."

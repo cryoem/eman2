@@ -71,6 +71,7 @@ be classified. """
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	
+	print "Classify by k-means"
 	logid=E2init(sys.argv)
 	if options.onein :
 		d=EMData(args[0],0)

@@ -65,7 +65,9 @@ Various utilities related to BDB databases."""
 
 	(options, args) = parser.parse_args()
 
-	if options.cleanup : db_cleanup()
+	if options.cleanup : 
+		db_cleanup()
+		sys.exit(0)
 
 	if options.all : options.long=1
 	if len(args)==0 : args.append("bdb:.")
@@ -198,8 +200,27 @@ def db_cleanup():
 	except:
 		print "Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning."
 		sys.exit(1)
-		
-	s=set()
+	
+	# someone is still using the cache
+	if len(op)>0 :
+		s=set()
+		for i in op:
+			s.add(i[1])
+	
+		print "These processes are actively using the cache. Please exit them and try again :"
+		for i in s: 
+			try: print os.popen("ps %s"%i,"r").readlines()[-1]
+			except: print i
+			
+		return
+
+	# ok, properly close the cache and delete it
+	d=EMAN2DB()
+	d.close()		# Properly 'close' the environment before we delete it
+	
+	os.system("rm -rf /tmp/%s"%path)
+	print "Database cache removed. Now safe to access databases from another machine"
+	
 	
 
 def human_size(size):
