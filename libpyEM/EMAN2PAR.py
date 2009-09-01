@@ -39,7 +39,7 @@ from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
 from e2tomoaverage import EMTomoAlignTaskDC
 import SocketServer
-from cPickle import dumps,loads
+from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
 import os.path
 import time
