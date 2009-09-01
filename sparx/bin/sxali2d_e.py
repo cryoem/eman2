@@ -60,6 +60,11 @@ def main():
 			mask = args[2]
 		
 		from applications import ali2d_e
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+		
 		global_def.BATCH = True	
 		ali2d_e(args[0], args[1], mask, options.ou, options.br, options.center, options.eps, options.maxit, options.CTF, options.snr, options.function)
 		global_def.BATCH = False	

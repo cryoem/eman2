@@ -31,6 +31,7 @@
 #
 
 import os
+import global_def
 from global_def import *
 from applications import ali2d_cls_mref
 from optparse import OptionParser
@@ -54,6 +55,10 @@ def main():
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+		
 		ali2d_cls_mref(args[0], args[1],options.cls, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.c, options.maxit, options.ncls)
 if __name__ == "__main__":
 	main()

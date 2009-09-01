@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import sys
 import os
-from global_def import SPARXVERSION
+
+import global_def
+from global_def import *
 
 def main():
 	from mpi import mpi_init
 	sys.argv = mpi_init( len(sys.argv), sys.argv )
-
 
 	arglist = []
 	for arg in sys.argv:
@@ -31,6 +32,10 @@ def main():
 	else:
 		files = args[0:-1]
 		outdir = args[-1]
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 
 		if options.MPI:
 			from applications import defvar_mpi

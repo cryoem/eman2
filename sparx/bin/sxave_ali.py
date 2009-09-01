@@ -53,6 +53,11 @@ def main():
 		else:              name_output = args[1]
 		 
 		from applications import ave_ali
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		global_def.BATCH = True
 		ave_ali(args[0], name_output, options.ali, options.active)
 		global_def.BATCH = False

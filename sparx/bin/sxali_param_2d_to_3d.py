@@ -30,6 +30,7 @@
 #
 #
 import os
+import global_def
 from global_def import *
 from applications import ali_param_2d_to_3d
 from optparse import OptionParser
@@ -44,6 +45,11 @@ def main():
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		print args[1]
+		
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		ali_param_2d_to_3d(args[1][0])
 if __name__ == "__main__":
 	        main()

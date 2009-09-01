@@ -32,6 +32,11 @@ def main():
 	outdir = args[1]
 
 	from applications import bootstrap_genbuf
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
 	global_def.BATCH = True
 	bootstrap_genbuf(proj_stack, outdir, options.npad, options.verbose, options.CTF) 
 	global_def.BATCH = False

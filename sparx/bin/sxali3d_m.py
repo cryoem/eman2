@@ -85,7 +85,7 @@ def main():
 			maskfile = args[3]
 
 		from applications import ali3d_m
-		if CACHE_DISABLE:
+		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		

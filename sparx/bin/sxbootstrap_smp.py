@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import global_def
+from global_def import *
+
 from EMAN2 import *
 from sparx import *
 from time import time
@@ -341,6 +344,10 @@ def main():
 		return None
 
 	prjfile = args[0]
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 
 	if( options.calcwgt ):
 		wgtfile = args[1]

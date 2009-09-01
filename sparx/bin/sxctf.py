@@ -34,6 +34,9 @@
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters
 
+import global_def
+from global_def import *
+
 from EMAN2 import *
 from sparx import *
 from optparse import OptionParser
@@ -51,6 +54,7 @@ logid=None
 sfcurve=None		# This will store a global structure factor curve if specified
 envelopes=[]		# simplex minimizer needs to use a global at the moment
 import weakref
+
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
@@ -85,7 +89,13 @@ images far from focus."""
 	parser.add_option("--debug",action="store_true",default=False)
 	
 	(options, args) = parser.parse_args()
+
 	if len(args)<1 : parser.error("Input image required")
+	
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
 	if options.auto_fit:
 		if options.voltage==0 : parser.error("Please specify voltage")
 		if options.cs==0 : parser.error("Please specify Cs")

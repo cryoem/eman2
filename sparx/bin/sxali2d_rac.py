@@ -60,9 +60,15 @@ def main():
 			mask = None
 		else:
 			mask = args[1]
+
 	        if options.MPI:
 			from mpi import mpi_init
    			sys.argv = mpi_init(len(sys.argv), sys.argv)
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		global_def.BATCH = True
 		ali2d_rac(args[0], mask, options.ir, options.ou, options.rs, options.nclass, options.maxit, options.maxin, options.check_mirror, options.rand_seed, options.rand_alpha, options.MPI)
 		global_def.BATCH = False

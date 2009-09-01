@@ -30,6 +30,7 @@
 #
 #
 import os
+import global_def
 from global_def import *
 from applications import ali2d_w_mf
 from optparse import OptionParser
@@ -51,6 +52,11 @@ def main():
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	elif len(args)==2:
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		ali2d_w_mf(args[0], args[1], None, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.c, options.maxit)
 	else:
 		ali2d_w_mf(args[0], args[1], args[2], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.c, options.maxit)				

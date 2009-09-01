@@ -31,6 +31,7 @@
 #
 #
 
+import global_def
 from global_def import *
 from applications import apply_ali_params
 from optparse import OptionParser
@@ -40,6 +41,11 @@ def main():
 	usage = progname + "instack outstack"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	(options, args) = parser.parse_args()    	
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
     	if len(args) != 2:
         	print "usage: " + usage
         	print "Please run '" + progname + " -h' for detailed options"

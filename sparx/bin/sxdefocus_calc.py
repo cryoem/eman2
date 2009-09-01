@@ -62,6 +62,11 @@ def main():
         	print "Please run '" + progname + " -h' for detailed options"
 	else: 	
 		from applications import defocus_calc
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		global_def.BATCH = True
 		defocus_calc(args[0],options.mtd, options.oup, options.ps, options.volt, options.cs, options.wgh, options.rndf, options.dz_max, options.f_l, options.f_h, options.nr1, options.nr2, options.prf, options.f, options.skip, options.micdir, options.pnt)
 		global_def.BATCH = False

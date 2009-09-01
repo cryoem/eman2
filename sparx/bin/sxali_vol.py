@@ -46,6 +46,11 @@ def main():
 	parser.add_option("--mag_scale",    type='float', default=None, help="  Correct magnification will be within +/- mag_scale of initial value")
 	parser.add_option("--r",            type='float', default=None, help="  Radius of a spherical mask (nx/2-2)")
 	(options, args) = parser.parse_args()    	
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
     	if len(args) != 2:
 		print "usage: " + usage
         	print "Please run '" + progname + " -h' for detailed options"

@@ -60,6 +60,11 @@ def main():
         	print "Please run '" + progname + " -h' for detailed options"
 	else: 
 		from applications import autowin
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		if options.MPI: 
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)

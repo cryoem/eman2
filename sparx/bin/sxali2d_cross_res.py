@@ -60,6 +60,11 @@ def main():
 		else:              mask = args[2]
 
 		from applications import ali2d_cross_res
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+		
 		global_def.BATCH = True
 		ali2d_cross_res(args[0], args[1],  mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function)
 		global_def.BATCH = False

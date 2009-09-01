@@ -60,6 +60,11 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		global_def.BATCH = True
 		ali_SSNR(args[0], mask, options.ou, options.maxit, options.CTF, options.opti_method, False, [], options.MPI)
 		global_def.BATCH = False

@@ -55,6 +55,11 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 
 	exefile = "/home/pawel/EMAN2/src/eman2/libEM/sparx/temp/rununified"
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
 	if len(args) < 2 or len(args) >7 :
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"

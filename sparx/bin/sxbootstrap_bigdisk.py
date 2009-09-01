@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import global_def
+from global_def import *
+
 from EMAN2 import *
 from sparx import *
 from time import time
@@ -255,12 +258,15 @@ def main():
 	prjfile = args[0]
 
 	if options.MPI and options.genbuf:   ERROR('Generation of buffer does not have MPI version, swith off MPI flag', "sxbootstrap_bigdisk", 1)
+
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
+
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
-
-		from utilities import init_mpi_bdb
-		init_mpi_bdb()
 
 	wgts = read_text_file( args[1], 0 )
 	outdir = args[2]

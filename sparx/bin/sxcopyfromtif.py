@@ -63,10 +63,17 @@ def main():
 			outdir = args[1]
 
 		from applications import copyfromtif
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+
 		global_def.BATCH = True
+
 		copyfromtif(args[0], outdir, options.inx, options.foc, options.ext, options.cst, options.pixel_size, options.sca_a, options.sca_b, options.step, options.mag, options.MPI)
 		global_def.BATCH = False
 

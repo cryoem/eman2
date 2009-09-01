@@ -1,10 +1,16 @@
 #! /usr/bin/env python
+import global_def
 from global_def import *
+
 from random import seed
 from string import atoi,replace,atof
 from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 from projection import cmlines_voronoi_optall
 import sys
+
+if global_def.CACHE_DISABLE:
+	from utilities import disable_bdb_cache
+	disable_bdb_cache()
 
 if MPI:
 	sys.argv = mpi_init( len(sys.argv), sys.argv )

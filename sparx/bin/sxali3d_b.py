@@ -33,6 +33,7 @@
 
 
 import os
+import global_def
 from global_def import *
 from applications import ali3d_b
 from optparse import OptionParser
@@ -58,6 +59,11 @@ def main():
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
+
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+
 		ali3d_b(args[0], args[1], args[2], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.maxit, options.ref_a, options.sym)
 
 

@@ -33,10 +33,17 @@ outdir = args[2]
 nvol = string.atoi(args[3])
 
 from applications import bootstrap_run
+
+if global_def.CACHE_DISABLE:
+	from utilities import disable_bdb_cache
+	disable_bdb_cache()
+
 if options.MPI:
 	from mpi import mpi_init
 	sys.argv = mpi_init(len(sys.argv), sys.argv)
+
 global_def.BATCH = True
+
 bootstrap_run(prj_stack, buf_prefix, outdir, nvol, options.CTF, options.snr, options.sym, options.verbose, options.MPI)
 global_def.BATCH = False
 
