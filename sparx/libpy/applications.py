@@ -5629,7 +5629,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 		del peaks
 		if runtype=="ASSIGNMENT":  del volft, kb, ref
-		else:  del prjref, refrings
+		else:
+			if CTF: del prjref
+			del refrings
 		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
 		npergroup = [0]*numref
@@ -12150,7 +12152,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type, get_im, model_blank
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog, k_means_locasg2glbasg, k_means_list_active
 	from statistics import k_means_open_txt
-	import sys
+	import sys, os
 
 	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
 		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k-means', 1)
@@ -12165,6 +12167,18 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		myid      = mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
+
+		flag = 0
+		if myid == main_node:
+			if os.path.exists(out_dir):
+				flag = 1
+				ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+
+		flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		flag = int(flag[0])
+		if flag != 0: sys.exit()
+
+		mpi_barrier( MPI_COMM_WORLD )
 
 		ext = file_type(stack)
 		if ext == 'bdb':   BDB = True
@@ -12227,6 +12241,9 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		ext = file_type(stack)
 		if ext == 'txt':   TXT = True
 		else:              TXT = False
+
+		if os.path.exists(out_dir):
+			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
 		
 		# instance of CUDA kmeans obj
 		KmeansCUDA = CUDA_kmeans()
@@ -12275,6 +12292,9 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:
 		from statistics import k_means_classical, k_means_SSE
 
+		if os.path.exists(out_dir):
+			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+
 		ext = file_type(stack)
 		if ext == 'bdb': BDB = True
 		else:            BDB = False
@@ -12315,6 +12335,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			
 # K-means groups driver
 def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
+
+	import os
+	if os.path.exists(out_file):
+		ERROR('Output directory exists, please change the name and restart the program', " ", 0)
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
