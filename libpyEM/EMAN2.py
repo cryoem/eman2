@@ -100,10 +100,10 @@ def E2init(argv) :
 This function is called to log information about the current job to the local logfile. The flags stored for each process
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
-	if EMAN2db.MPIMODE :
+	if EMAN2db.BDB_CACHE_DISABLE :
 		print "Note: Running in MPI mode, history database disabled"
 		return
-	
+
 	global HOMEDB
 	HOMEDB=EMAN2db.EMAN2DB.open_db()
 	HOMEDB.open_dict("history")
@@ -133,7 +133,7 @@ is complete. If the process is killed, 'end' may never be set."""
 def E2progress(n,progress):
 	"""Updates the progress fraction (0.0-1.0) for a running job. Negative values may optionally be
 set to indicate an error exit."""
-	if EMAN2db.MPIMODE : return
+	if EMAN2db.BDB_CACHE_DISABLE : return
 
 	global HOMEDB
 	
@@ -153,7 +153,7 @@ set to indicate an error exit."""
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	if EMAN2db.MPIMODE : return
+	if EMAN2db.BDB_CAHCE_DISABLE : return
 
 	global HOMEDB
 	
