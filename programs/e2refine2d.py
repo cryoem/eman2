@@ -64,6 +64,8 @@ def main():
 	#options associated with generating initial class-averages
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
 	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifying particles")
+	parser.add_option("--minchange", type="int",default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = -1 (auto)")
+	parser.add_option("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
 
 	# options associated with e2simmx.py
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate_flip)", default="rotate_translate_flip")
@@ -141,7 +143,10 @@ def main():
 	
 	if options.dbls:
 		most_recent_classes = None
-	
+
+	if options.fastseed : fastseed="--fastseed"
+	else : fastseed=""
+
 	# if we aren't given starting class-averages, make some
 	if not options.initial and not "classes_init" in dcts:
 		print "Building initial averages"
@@ -169,7 +174,7 @@ def main():
 		# classify the subspace vectors
 #		try: db_remove_dict(path+"#classmx_00")
 #		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_00 --onein %s"%(inputproj,options.input,options.ncls,options.path,excludestr))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_00 --minchange=%d --onein %s %s"%(inputproj,options.input,options.ncls,options.path,options.minchange,excludestr,fastseed))
 		
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
@@ -242,7 +247,7 @@ def main():
 		run("e2basis.py projectrot %s#basis_%02d %s %s#simmx_%02d %s --oneout --mean1 --normproj --verbose=%d %s"%(options.path,it,options.input,options.path,it,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --oneinali %s"%(inputproj,options.input,options.ncls,options.path,it,excludestr))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=%s#classmx_%02d --minchange=%d --oneinali %s %s"%(inputproj,options.input,options.ncls,options.path,it,options.minchange,excludestr,fastseed))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		

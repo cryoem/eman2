@@ -153,7 +153,7 @@ set to indicate an error exit."""
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	if EMAN2db.BDB_CAHCE_DISABLE : return
+	if EMAN2db.BDB_CACHE_DISABLE : return
 
 	global HOMEDB
 	

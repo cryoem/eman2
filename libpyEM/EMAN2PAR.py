@@ -467,7 +467,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	
 	# place to put results
 	try:
-		os.makedirs("%s/results"%self.path)
+		os.makedirs("results")
 	except:
 		pass
 	
