@@ -38,6 +38,9 @@ def main():
 	else:
 		refvol = None
 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 	from applications import normal_prj
 	if options.MPI:
 		from mpi import mpi_init

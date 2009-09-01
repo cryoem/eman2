@@ -33,6 +33,7 @@
 
 
 from global_def import *
+import global_def
 from applications  import dell_all
 import sys
 # delete files from a doc list
@@ -47,6 +48,9 @@ def main():
 	if len(args) != 1:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 	dell_allargs[0])
 
 if __name__ == "__main__":

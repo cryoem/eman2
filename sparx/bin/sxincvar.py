@@ -2,6 +2,7 @@
 import sys
 import os
 from global_def import SPARXVERSION
+import global_def
 
 def main():
 	from mpi import mpi_init
@@ -29,6 +30,9 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		prefix = args[0]
 		nfile  = int(args[1])
 		nprj   = int(args[2])

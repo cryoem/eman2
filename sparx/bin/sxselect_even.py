@@ -4,10 +4,15 @@ from EMAN2 import *
 from sparx import *
 from string import atoi, split, atof
 from sys import argv, exit
+import global_def
 
 if len(argv) != 5:
 	print "Usage: select_even.py prj_stack stat.txt each_prj prj_out"
 	exit(-1)
+
+if global_def.CACHE_DISABLE:
+	from utilities import disable_bdb_cache
+	disable_bdb_cache()
 
 stack_in = argv[1]
 fstat    = open( argv[2], 'r' )

@@ -49,6 +49,9 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from  applications  import  HAC_averages
 		global_def.BATCH = True
 		HAC_averages(args[0], args[1], args[2], options.K)

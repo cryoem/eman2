@@ -68,6 +68,9 @@ def main():
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		if options.CUDA:
 			from  applications  import  k_means_stab_CUDA_stream
 			global_def.BATCH = True

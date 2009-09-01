@@ -4,6 +4,8 @@ from sparx import *
 from string import atoi, replace, split, atof
 from sys import argv, exit
 from user_functions import *
+import  global_def
+from global_def import *
 from optparse import OptionParser
 import sys
 
@@ -11,6 +13,9 @@ if len(argv) != 8:
 	print "incpca.py prefix start end average.hdf output.hdf maskfile nvec "
 	exit(-1)
 
+if global_def.CACHE_DISABLE:
+	from utilities import disable_bdb_cache
+	disable_bdb_cache()
 prefix = argv[1]
 start  = atoi(argv[2])
 end    = atoi(argv[3])

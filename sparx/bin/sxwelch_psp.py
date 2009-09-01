@@ -56,6 +56,9 @@ def main():
 		print "usage: "      + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from applications  import  pw2sp	
 		global_def.BATCH = True
 		pw2sp(args[0],args[1],options.w,options.xo,options.yo,options.xd,options.yd,options.r,options.prm)

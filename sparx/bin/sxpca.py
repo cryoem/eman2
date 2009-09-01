@@ -35,6 +35,9 @@ def main():
 		from mpi import mpi_init
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 	from applications import pca
 	global_def.BATCH = True
 	pca(input_stacks, output_stack, options.subavg, options.rad, options.sdir, options.nvec, options.shuffle, not(options.usebuf), options.mask, options.MPI)

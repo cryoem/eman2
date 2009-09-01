@@ -48,6 +48,9 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from applications import plot_projs_distrib
 		global_def.BATCH = True
 		plot_projs_distrib(args[0], args[1])

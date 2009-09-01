@@ -28,6 +28,9 @@ def main():
 		files = args[0:-1]
 		outdir = args[-1]
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init( len(sys.argv), sys.argv )
@@ -37,9 +40,6 @@ def main():
 			for arg in sys.argv:
 				arglist.append( arg )
 			from applications import var_mpi
-			from utilities import init_mpi_bdb
-			init_mpi_bdb()
-
 
 			global_def.BATCH = True
 			var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)

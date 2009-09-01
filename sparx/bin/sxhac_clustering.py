@@ -63,6 +63,9 @@ def main():
 		if len(args) == 2: maskname = None
 		else:              maskname = args[2]
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from  applications  import  HAC_clustering
 		global_def.BATCH = True
 		HAC_clustering(args[0], args[1], maskname, options.link, options.dist, options.dissimilar)

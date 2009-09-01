@@ -32,6 +32,9 @@ def main():
 	if(len(args) == 5):  mask = args[4]
 	else:               mask = None
 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
         from applications import varimax
 	global_def.BATCH = True
         varimax(input_stack, range(imgstart, imgend), output_stack, mask, options.rad, options.verbose)

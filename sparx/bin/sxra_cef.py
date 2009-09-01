@@ -35,6 +35,7 @@
 
 import os
 from global_def import *
+import global_def
 from applications import import ra_cef
 from optparse import OptionParser
 import sys
@@ -48,6 +49,10 @@ def main():
     	if len(args) != 3:
         	print "usage: " + usage
         	print "Please run '" + progname + " -h' for detailed options"
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+
 	ra_cef(args[0],args[1],args[2],options.prf,options.num)
 				
 

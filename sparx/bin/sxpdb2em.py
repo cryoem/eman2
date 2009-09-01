@@ -46,6 +46,7 @@ from sparx import *
 from optparse import OptionParser
 from math import *
 from global_def import *
+import global_def
 import os
 import sys
 
@@ -73,6 +74,9 @@ map to the center of the volume."""
 	if len(args)<2 : parser.error("Input and output files required")
 	#try: chains=options.chains
 	#except: 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 	chains=None
 	
 	try : infile=open(args[0],"r")

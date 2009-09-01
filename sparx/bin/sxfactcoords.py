@@ -33,12 +33,9 @@ def main():
 		if options.rad < 0:
 			print "Error: mask radius is not given"
 			sys.exit(-1)
-		if options.MPI:
-			from mpi import mpi_init	
-			sys.argv = mpi_init( len(sys.argv), sys.argv )
-
-			from utilities import init_mpi_bdb
-			init_mpi_bdb()
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 
 		from utilities import get_im
 		global_def.BATCH = True

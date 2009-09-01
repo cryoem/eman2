@@ -67,6 +67,9 @@ def main():
 		if options.noweights: weights = False
 		else:                 weights = True
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		if options.MPIGA:
 			from development import cml2_main_mpi
 			global_def.BATCH = True

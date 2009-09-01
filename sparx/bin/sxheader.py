@@ -6,6 +6,7 @@ def main():
 	import sys
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
+	import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -37,6 +38,9 @@ def main():
 		print "Error: no parameters given"
 		exit(-1)
 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
         from applications import header
 	header(args[0], options.params, options.zero, options.one, options.randomize, options.rand_alpha, options.fimport, options.fexport, options.fprint, options.backup, options.suffix, options.restore, options.delete)
 

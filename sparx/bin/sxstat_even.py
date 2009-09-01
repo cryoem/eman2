@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from EMAN2 import *
 from sparx import *
-
+import global_def
 from math import pi,sin,cos
 
 angle_to_rad = pi/180.0
@@ -46,6 +46,9 @@ from string import atof
 if len(argv)!=4:
 	print "Usage: sxstat_even.py prj_stack delta out.txt"
 	exit(-1)
+if global_def.CACHE_DISABLE:
+	from utilities import disable_bdb_cache
+	disable_bdb_cache()
 
 prj_stack = argv[1]
 eve_angls = even_angles( atof(argv[2]), 0.0, 90.0, method='P' )

@@ -74,6 +74,9 @@ def main():
 			sys.stderr.write('ERROR: K must be > 1 group\n\n')
 			sys.exit()
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from  applications  import  k_means_main
 		global_def.BATCH = True
 		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug, options.normalize)

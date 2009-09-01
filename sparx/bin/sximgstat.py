@@ -28,6 +28,9 @@ def main():
 		sys.exit(-1)
 
 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 	from applications import imgstat
 	global_def.BATCH = True
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )

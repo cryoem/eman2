@@ -51,6 +51,9 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		from applications  import  pw2sp_tilt
 		global_def.BATCH = True
 		pw2sp_tilt(args[0],args[1],options.the,options.bnd,options.yo,options.xd,options.yd,options.r,options.prm,options.w)
