@@ -818,9 +818,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        qt[isav][1] = isav
 					qt.sort(reverse = True)
 
+					tsavg = []
 					if number_of_ave > 2:
 						itp = 0
-						tsavg = []
 						i1 = 0
 						i2 = 1
 						while itp < number_of_ave:
@@ -833,8 +833,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						        	i1 += 1
 					else:
 						# If there are only two averages, we only have one combination, and we use the best one as the second average
-					        tsavg.append(Util.addn_img(Util.muln_img(savg[qt[0][1]], chessboard1), Util.muln_img(savg[qt[1][1]], chessboard2)))
-					        tsavg.append(savg[qt[0][1]])
+						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[0][1]], chessboard1), Util.muln_img(savg[qt[1][1]], chessboard2)))
+						tsavg.append(savg[qt[0][1]])
 					for isav in xrange(number_of_ave):
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
 					for isav in xrange(1, number_of_ave):
