@@ -71,7 +71,7 @@ qt_color_map["y"] = QtGui.QColor(255,255,0)
 qt_color_map["c"] = QtGui.QColor(0,255,255)
 qt_color_map["m"] = QtGui.QColor(255,0,255)
 
-class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
+class EMPlot2DWidget(EMEventRerouter,QtOpenGL.QGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 	def __init__(self, em_plot_module):

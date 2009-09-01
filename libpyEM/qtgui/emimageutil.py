@@ -63,7 +63,7 @@ class EMEventRerouter:
 			self.orig_target = None
 		self.selected_object = None
 		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
-		
+
 	def lock_target(self,target):
 		self.target = target
 		
@@ -137,7 +137,6 @@ class EMEventRerouterToList:
 		self.targets = self.orig_targets
 
 	def set_target(self,target):
-		print "desktop set target"
 		self.targets = [target]
 		self.orig_targets  = [target]
 		
@@ -458,7 +457,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 #		EMEventRerouter.__init__(self,child)
 
 		self.child = weakref.ref(child)
-		child.setParent(self)
+#		child.setParent(self)
 		
 		
 		self.resize(child.width(),child.height())
@@ -467,7 +466,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 		self.hbl = QtGui.QVBoxLayout()
 		
 		self.hbl.setSpacing(0)
-		self.hbl.addWidget(self.child(),100)
+		self.hbl.addWidget(self.child(),100)		# Not sure why we are using a weakref here..., seems risky...
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
 			self.status = QtGui.QStatusBar()
 			self.status.setSizeGripEnabled(True)
@@ -507,7 +506,12 @@ class EMParentWin(QtGui.QWidget,Animator):
 	
 	def keyPressEvent(self,event):
 		self.child().keyPressEvent(event)
-	
+
+	#def mousePressEvent(self, event):
+		#print "mouse",event
+		#self.child().mousePressEvent(event)
+
+
 	#def width(self):
 		##print "asked for width!"
 		#return self.child.width()

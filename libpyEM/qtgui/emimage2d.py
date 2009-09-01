@@ -63,14 +63,14 @@ MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImage2DWidget(EMEventRerouter,QtOpenGL.QGLWidget):
 	def __init__(self, em_image_2d_module):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		#fmt.setSampleBuffers(True)
 		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self,em_image_2d_module) # makes self.target
+		QtOpenGL.QGLWidget.__init__(self,fmt)
 		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)

@@ -54,7 +54,7 @@ from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule, EMGLProjectionViewMa
 from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 
 
-class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMImageMXRotorWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	"""
 	"""
 	allim=WeakKeyDictionary()

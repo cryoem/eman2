@@ -53,7 +53,7 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 from emimage import EMImageModule
 
 
-class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMImageRotorWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	"""
 	"""
 	allim=WeakKeyDictionary()

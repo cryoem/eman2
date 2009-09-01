@@ -577,7 +577,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 
-class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMVolumeWidget(EMEventRerouter,QtOpenGL.QGLWidget):
 	
 	allim=WeakKeyDictionary()
 	def __init__(self, em_volume_module):

@@ -61,7 +61,7 @@ from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMImage3DGeneralWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	def __init__(self, em_3d_module):
 		assert(isinstance(em_3d_module,EMImage3DGUIModule))
 		
@@ -171,7 +171,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionVi
 		
 		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 
-class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMImage3DWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""

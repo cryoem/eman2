@@ -57,7 +57,7 @@ import weakref
 
 from emapplication import EMProgressDialogModule
 
-class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMImageMXWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	"""
 	"""
 	def __init__(self, em_mx_module,parent=None):
