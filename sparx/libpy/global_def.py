@@ -60,10 +60,10 @@ Util.set_randnum_seed(rand_seed)
 # However, the user may change it to True (either here or in other programs) so that the output is only written to the log file.
 BATCH = False
 
-# variable for disabling bdb cache use
-CACHE_DISABLE = True
+# variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
+CACHE_DISABLE = False
 
-# variable for disabling gui use 
+# variable for disabling gui use (set by default to True, which means use GUI. Change to False to dsiable GUI).
 GUIUSE = True
 
 LOGFILE = "logfile"

@@ -1941,17 +1941,6 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 		
 		return 0.0, 0.0, 0.0, 0.0, 0.0	
 
-'''
-def rotate_3D_shift(data, shift3d):
-	from utilities import compose_transform3, get_params_proj, set_params_proj
-
-	nimage = len(data)
-	for i in xrange(nimage):
-		phi,theta,psi,s2xo,s2yo = get_params_proj( data[i] )
-		phi,theta,psi,s2x,s2y,dummy,dummy = compose_transform3(0.0,0.0,0.0,shift3d[0],shift3d[1],shift3d[2],1.0,phi,theta,psi,0.0,0.0,0.0,1.0)
-		set_params_proj( data[i], [phi, theta, psi, s2xo-s2x, s2yo-s2y] )
-'''
-
 def rotate_3D_shift(data, shift3d):
 	
 	p = [0.0, 0.0, 0.0, -shift3d[0], -shift3d[1], -shift3d[2], 0, 1.0]
