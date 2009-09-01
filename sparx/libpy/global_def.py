@@ -60,6 +60,12 @@ Util.set_randnum_seed(rand_seed)
 # However, the user may change it to True (either here or in other programs) so that the output is only written to the log file.
 BATCH = False
 
+# variable for disabling bdb cache use
+CACHEUSE = True
+
+# variable for disabling gui use 
+GUIUSE = True
+
 LOGFILE = "logfile"
 from time import localtime, strftime
 timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
@@ -69,7 +75,7 @@ IS_LOGFILE_OPEN = False
 
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v1.00"
+SPARXVERSION = "SPARX v2.0"
 
 def ERROR(message, where, action = 1):
 	"""

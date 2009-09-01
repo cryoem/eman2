@@ -39,8 +39,11 @@
 
 from EMAN2 import *
 from sparx import *
+import global_def
+from global_def import *
 
-try:
+if GUIUSE:
+
 	import sys
 	import os
 	from optparse import OptionParser
@@ -143,7 +146,7 @@ try:
 		#    app = get_app()
 		sh.mainloop(banner="Welcome to GUI "+SPARXVERSION)
 
-except:
+else:
 	try:
 		from IPython.Shell import IPShellEmbed
 		ipshell = IPShellEmbed(banner="Welcome to non-GUI "+SPARXVERSION)

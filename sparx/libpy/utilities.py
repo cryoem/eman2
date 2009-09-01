@@ -2709,15 +2709,18 @@ def getvec( phi, tht ):
 
 	return (x,y,z)
 
-def init_mpi_bdb():
-	from mpi import mpi_comm_rank, MPI_COMM_WORLD
+def disable_bdb_cache():
 
-	myid = mpi_comm_rank( MPI_COMM_WORLD )
 	import EMAN2db
-	if myid == 0:
-		EMAN2db.MPIMODE = False
-	else:
-		EMAN2db.MPIMODE = True
+
+	EMAN2db.BDB_CACHE_DISABLE = True
+
+
+def enable_bdb_cache():
+
+	import EMAN2db
+
+	EMAN2db.BDB_CACHE_DISABLE = False
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
 # return the global rotation (dphi, dtheta, dpsi) between the two systems

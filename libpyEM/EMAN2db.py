@@ -64,7 +64,7 @@ envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_
 
 # If set, databases will be opened without any caching, locking, etc.
 # DANGER, unless DB is single-threaded and local, don't do any writing
-MPIMODE=0
+BDB_CACHE_DISABLE=0
 
 # This hardcoded value is the maximum number of DBDict objects which will be simultaneously open
 # when more than this are open, we begin closing the oldest ones. They will be reopened on-demand,
@@ -687,7 +687,7 @@ class EMAN2DB:
 	
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
-		global MPIMODE
+		global BDB_CACHE_DISABLE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
 		if not path : path=e2gethome()+"/.eman2"
@@ -708,11 +708,11 @@ class EMAN2DB:
 				
 		# make the shared cache directory in /tmp
 		if(sys.platform != 'win32'):
-			if (not MPIMODE) and not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+			if (not BDB_CACHE_DISABLE) and not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 		else:
-			if (not MPIMODE) and not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
+			if (not BDB_CACHE_DISABLE) and not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
 
-		if MPIMODE:
+		if BDB_CACHE_DISABLE:
 			self.dbenv=None
 		else :
 			self.dbenv=db.DBEnv()
@@ -858,7 +858,7 @@ class DBDict:
 			#print
 		
 
-		self.bdb=db.DB(self.dbenv)		# we don't check MPIMODE here, since self.dbenv will already be None if its set
+		self.bdb=db.DB(self.dbenv)		# we don't check BDB_CACHE_DISABLE here, since self.dbenv will already be None if its set
 		if self.file==None : file=self.name+".bdb"
 		else : file=self.file
 #		print "open ",self.path+"/"+file,self.name,ro

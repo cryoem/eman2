@@ -85,12 +85,13 @@ def main():
 			maskfile = args[3]
 
 		from applications import ali3d_m
+		if CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+		
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
-
-			from utilities import init_mpi_bdb
-			init_mpi_bdb()
 
 
 		global_def.BATCH = True
