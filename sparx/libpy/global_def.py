@@ -61,7 +61,7 @@ Util.set_randnum_seed(rand_seed)
 BATCH = False
 
 # variable for disabling bdb cache use
-CACHEUSE = True
+CACHE_DISABLE = True
 
 # variable for disabling gui use 
 GUIUSE = True
