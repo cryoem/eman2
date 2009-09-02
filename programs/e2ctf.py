@@ -80,6 +80,7 @@ images far from focus."""
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
 	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
+	parser.add_option("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False)
 	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
 	parser.add_option("--virtualout",type="string",help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_option("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
@@ -134,7 +135,7 @@ images far from focus."""
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
-	if options.phaseflip or options.wiener or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
+	if options.phaseflip or options.wiener or options.phasefliphp or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	if options.computesf :
@@ -225,7 +226,7 @@ def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
 	
-	if options.phaseflip or options.wiener:
+	if options.phaseflip or options.wiener or options.phasefliphp :
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
@@ -233,6 +234,9 @@ def write_e2ctf_output(options):
 
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
 			else: phaseout=None
+		
+			if options.phasefliphp: phasehpout="bdb:particles#"+name+"_ctf_flip_hp"
+			else: phasehpout=None
 		
 			if options.wiener:
 				if options.autohp: wienerout="bdb:particles#"+name+"_ctf_wiener_hp"
@@ -246,11 +250,12 @@ def write_e2ctf_output(options):
 			#else : wienerout=None
 			
 			if phaseout : print "Phase image out: ",phaseout,"\t",
+			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
 			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
-			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
+			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
@@ -430,7 +435,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 	
-def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -464,7 +469,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 #		print i
 		fft1=im1.do_fft()
 			
-		if phaseflip :
+		if phaseflip or phasehp:
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
@@ -477,7 +482,11 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
 			out.process("normalize.edgemean")
-			out.write_image(phaseflip,i)
+			if phaseflip: out.write_image(phaseflip,i)
+
+			if phasehp:
+				out.process_inplace("filter.highpass.autopeak")
+				out.write_image(phasehp,i)
 
 		if wiener :
 			if not lctf or not lctf.equal(ctf):

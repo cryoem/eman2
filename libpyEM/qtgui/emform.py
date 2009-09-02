@@ -691,11 +691,11 @@ class EMTomographicFileTable(EMFileTable):
 	Basically makes sure the correct icon is displayed.
 	Passes on image display - because tomographic images are huge
 	'''
-	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False):
+	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,enable_save=False):
 		'''
 		see EMFileTable for comments on parameters
 		'''
-		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection)
+		EMFileTable.__init__(self,listed_names,name,desc_short,desc_long,single_selection,enable_save)
 		self.icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 	
 	def table_item_double_clicked(self,item):

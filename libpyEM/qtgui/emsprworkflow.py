@@ -946,7 +946,7 @@ class EMRawDataReportTask(WorkFlowTask):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
 				from emselector import EMSelectorModule
-				em_qt_widget = EMSelectorModule()
+				em_qt_widget = EMSelectorModule(save_as_mode=False)
 				
 				em_qt_widget.widget.set_selection_text("Selection(s)")
 				em_qt_widget.widget.set_validator(self.validator)
@@ -1380,7 +1380,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		def __call__(self,list_of_names,table_widget):
 		
 			from emselector import EMSelectorModule
-			em_qt_widget = EMSelectorModule()
+			em_qt_widget = EMSelectorModule(save_as_mode=False)
 			
 			if self.validator != None: 
 				em_qt_widget.widget.set_validator(self.validator)
@@ -1758,7 +1758,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
 				from emselector import EMSelectorModule
-				em_qt_widget = EMSelectorModule()
+				em_qt_widget = EMSelectorModule(save_as_mode=False)
 				
 				em_qt_widget.widget.set_selection_text("Selection(s)")
 				em_qt_widget.widget.set_validator(self.validator)
@@ -2652,8 +2652,10 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		from emform import EMFileTable,int_lt
 		table.add_column_data(EMFileTable.EMColumnData("Phase flip",self.other_column_data.get_num_phase_flipped,"The number of phase flipped particles on disk",int_lt))
 		table.add_column_data(EMFileTable.EMColumnData("Phase flip dims",self.other_column_data.phase_flipped_dim,"The dimensions of the phase flippped particles"))
+		table.add_column_data(EMFileTable.EMColumnData("Phase flip hp",self.other_column_data.get_num_phase_flipped_hp,"The number of phase flipped high pass filtered particles on disk",int_lt))
+#		table.add_column_data(EMFileTable.EMColumnData("Phase flip hp dims",self.other_column_data.phase_flipped_dim,"The dimensions of the phase flippped particles"))
 		table.add_column_data(EMFileTable.EMColumnData("Wiener filt",self.other_column_data.get_num_wein_filt,"The number of Wiener filtered particles on disk",int_lt))
-		table.add_column_data(EMFileTable.EMColumnData("Wiener filt dims",self.other_column_data.wien_filt_dim,"The dimensions of the Wiener filtered particles"))
+#		table.add_column_data(EMFileTable.EMColumnData("Wiener filt dims",self.other_column_data.wien_filt_dim,"The dimensions of the Wiener filtered particles"))
 		return table, n
 	
 	class MoreCTFColumns:
@@ -2711,6 +2713,9 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		def phase_flipped_dim(self,name):
 			return self.__get_dim_filtered(name,"Phase flipped")
 		
+		def get_num_phase_flipped_hp(self,name):
+			return self.__get_num_filtered(name,"Phase flipped hp")
+				
 		def get_num_wein_filt(self,name):
 			return self.__get_num_filtered(name,"Wiener filtered")
 				
@@ -3016,8 +3021,9 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
 		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=db.get("wiener",dfl=True),choices=None)
 		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=db.get("phaseflip",dfl=True),choices=None)
+		pphasehp = ParamDef(name="phasefliphp",vartype="boolean",desc_short="Phase flip hp",desc_long="Phase flip your particle images and apply an automatic high-pass filter",property=None,defaultunits=db.get("phasefliphp",dfl=False),choices=None)
 		params.append(pos)
-		params.append([pphase,pwiener])
+		params.append([pphase,pphasehp,pwiener])
 			#db_close_dict(self.form_db_name)
 		
 		return params
@@ -3044,8 +3050,9 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		options.filenames = params["filenames"]
 		options.wiener = params["wiener"]
 		options.phaseflip = params["phaseflip"]
+		options.phasefliphp = params["phasefliphp"]
 		options.oversamp = params["oversamp"]
-		if not options.wiener and not options.phaseflip:
+		if not options.wiener and not options.phaseflip and not options.phasefliphp:
 			error_message.append("Please choose at atleast one of the phaseflip or Wiener options.")
 			
 		if options.oversamp < 1:
@@ -3064,11 +3071,12 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			return
 
 		options = self.get_default_ctf_options(params)
-		if options != None and len(options.filenames) > 0 and (options.wiener or options.phaseflip):
+		if options != None and len(options.filenames) > 0 and (options.wiener or options.phaseflip or options.phasefliphp):
 			self.write_db_entries(params)
 			string_args = []
-			bool_args = ["wiener","phaseflip"]
-			additional_args = ["--dbds=%s"  %spr_ptcls_dict,"--computesf"]
+			bool_args = ["wiener","phaseflip","phasefliphp"]
+#			additional_args = ["--dbds=%s"  %spr_ptcls_dict,"--computesf"] # don't want automatic computesf any more
+			additional_args = ["--dbds=%s"  %spr_ptcls_dict]
 			temp_file_name = "e2ctf_output_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			# Steve directed that the output writing task should use a single thead on July 3rd 2009
@@ -3165,8 +3173,9 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			params.append(p)
 			pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
 			pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
+			pphasehp = ParamDef(name="phasefliphp",vartype="boolean",desc_short="Phase flip hp",desc_long="Phase flip your particle images and apply an automatic high-pass filter",property=None,defaultunits=False,choices=None)
 		
-			params.append([pphase,pwiener])
+			params.append([pphase,pphasehp,pwiener])
 			
 		return params
 	
@@ -4671,6 +4680,7 @@ class E2Make3DTools:
 		bool_args.append("m3dkeepsig")
 		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
 		if hasattr(options,"m3dpostprocess"): string_args.append("m3dpostprocess")
+		if hasattr(options,"m3dpostprocess2"): string_args.append("m3dpostprocess2")
 		if hasattr(options,"pad"): string_args.append("pad")
 
 	def check_make3d_page(self,params,options):
@@ -4737,6 +4747,31 @@ class E2Make3DTools:
 						error_message.append(s)
 		return error_message
 
+		if params["m3dpostprocess2"] != "None":
+			if len(params["m3dpostprocessargs2"]) == 0:
+				error_message.append("If you supply a second post processor for make3d, you have to supply one of the cutoff_abs, cutoff_freq, or cutoff_pixels parameters")
+			else:
+				s = params["m3dpostprocess2"] + ":"
+				s += params["m3dpostprocessargs2"]
+				p = parsemodopt(s)
+				if p[0] == None:
+					error_message.append("Error can't interpret the make3d post processor string (%s)" %(s))
+				else:
+					try:
+						Processors.get(p[0], p[1])
+						options.m3dpostprocess2 = s
+					except:
+						error_message.append("Error, can't interpret parameters for the make3d post processor (%s)" %(s))
+						vals = dump_processors_list()
+						values = vals[p[0]]
+						s = "The parameters for the %s processor are:"  %p[0]
+						
+						for i in xrange(1,len(values),3):
+							s += " " + values[i] +","
+						s = s[:-1] # get rid of the last column
+						error_message.append(s)
+		return error_message
+
 	def get_make3d_page(self):
 		
 		db = db_open_dict(self.form_db_name)
@@ -4749,7 +4784,10 @@ class E2Make3DTools:
 		
 		ppostproc =  ParamDef("m3dpostprocess",vartype="string",desc_short="Post processor",desc_long="A post processor applied to the reconstructed model",property=None,defaultunits=db.get("m3dpostprocess",dfl="None"),choices=self.get_postprocess_filt_options())
 		ppostprocargs =  ParamDef(name="m3dpostprocessargs",vartype="string",desc_short="params",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("m3dpostprocessargs",dfl=""),choices=[])	
-	
+
+		ppostproc2 =  ParamDef("m3dpostprocess2",vartype="string",desc_short="Post processor 2",desc_long="A second post processor applied to the reconstructed model",property=None,defaultunits=db.get("m3dpostprocess2",dfl="None"),choices=self.get_postprocess_filt_options())
+		ppostprocargs2 =  ParamDef(name="m3dpostprocessargs2",vartype="string",desc_short="params 2",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("m3dpostprocessargs2",dfl=""),choices=[])	
+
 		precon = ParamDef("recon",vartype="string",desc_short="Reconstructor",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
 		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
 		params = []
@@ -4763,6 +4801,7 @@ class E2Make3DTools:
 		params.append([pnormproc,ppad])
 		params.append([pkeep,pkeepsig])
 		params.append([ppostproc,ppostprocargs])
+		params.append([ppostproc2,ppostprocargs2])
 		return ["Make3d", params]
 		
 	

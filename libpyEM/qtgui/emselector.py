@@ -525,7 +525,15 @@ def EMSelectorBaseTemplate(Type):
 			'''
 			Get the valid EMData urls from the list of items. Useful in EMAN2 when selecting images, etc
 			'''
-			return [item.emdata_save_as_url() for item in items if item.emdata_save_as_url() != None]
+			# This ALWAYS required save files to be valid EMData objects, which was not always desirable...
+			#return [item.emdata_save_as_url() for item in items if item.emdata_save_as_url() != None]
+		
+			ret=[]
+			for item in items:
+				if item.emdata_save_as_url() != None : ret.append(item.emdata_save_as_url())
+				elif item.get_url() != None: ret.append(item.get_url())
+
+			return ret
 		
 		def list_widget_item_entered(self,item):
 			list_widget = item.listWidget()
@@ -2154,7 +2162,7 @@ def on_cancel(string_list):
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	#dialog = EMSelector(None,em_app)
-	em_qt_widget = EMSelectorModule()
+	em_qt_widget = EMSelectorModule(save_as_mode=False)
 	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("ok"),on_done)
 	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
