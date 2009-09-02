@@ -372,6 +372,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
+			# The following code it used when mirror is considered
 			retvals = Util.Crosrng_ms(crefim, cimage, numr)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
@@ -379,13 +380,24 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 		 		sx = -ix
 		 		sy = -iy
 				if (qn >= qm):
-			 		ang = ang_n(retvals["tot"], mode, numr[len(numr)-1])
+			 		ang = ang_n(retvals["tot"], mode, numr[-1])
 			 		peak = qn
 			 		mirror = 0
 		   		else:
-			 		ang = ang_n(retvals["tmt"], mode, numr[len(numr)-1])
+			 		ang = ang_n(retvals["tmt"], mode, numr[-1])
 			 		peak = qm
 			 		mirror = 1
+			'''
+			# The following code is used when mirror is not considered
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			qn = retvals["qn"]
+			if qn >= peak:
+		 		sx = -ix
+		 		sy = -iy
+		 		ang = ang_n(retvals["tot"], mode, numr[-1])
+		 		peak = qn
+		 		mirror = 0
+			'''
 	co =  cos(ang*pi/180.0)
 	so = -sin(ang*pi/180.0)
 	sxs = sx*co - sy*so
