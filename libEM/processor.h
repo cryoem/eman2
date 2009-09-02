@@ -6481,6 +6481,42 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			int default_bins;
 	};
 
+	class ModelEMCylinderProcessor : public Processor
+	{
+	  public:
+		void process_inplace(EMData * in);
+
+		string get_name() const
+		{
+			return "math.model_em_cylinder";
+		}
+
+		static Processor *NEW()
+		{
+			return new ModelEMCylinderProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Adds a cylinder with a radial density profile similar to that of an alpha helix.";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("type", EMObject::INT, "Radial profile of density method -- 0 = pure Gaussian falloff; \
+					1 = pure Gaussian falloff + dip, so mean is zero; 2 = polynomial fitting of real helix density");
+			d.put("len", EMObject::FLOAT, "cylinder length in angstroms");
+			d.put("x0", EMObject::INT, "x coordinate in pixels for the midpoint of the cylinder's axis");
+			d.put("y0", EMObject::INT, "y coordinate in pixels for the midpoint of the cylinder's axis");
+			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis");
+			//TODO: Check with Matt Baker about description strings
+			return d;
+		}
+	  protected:
+		inline float radprofile(float r, int type);
+
+		};
 
 #ifdef EMAN2_USING_CUDA
 	/** Cuda based constant multiplication processor
@@ -6673,3 +6709,4 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 #endif	//eman_filter_h__
 
 /* vim: set ts=4 noet: */
+

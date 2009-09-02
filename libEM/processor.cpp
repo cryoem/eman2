@@ -269,6 +269,8 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&DirectionalSumProcessor::NEW);
 
+	force_add(&ModelEMCylinderProcessor::NEW);
+
 #ifdef EMAN2_USING_CUDA
 	force_add(&CudaMultProcessor::NEW);
 	force_add(&CudaCorrelationProcessor::NEW);
@@ -9424,3 +9426,89 @@ map<string, vector<string> > EMAN::group_processors()
 
 
 /* vim: set ts=4 noet: */
+
+void ModelEMCylinderProcessor::process_inplace(EMData * in)
+//Ross Coleman: modified from EMAN1 Cylinder.C by Wen Jiang
+{
+	// synthesize model alpha helix, len is Angstrom, default to 2 turns
+	//The helical axis is parallel to the z axis.
+	EMData * cyl = in;
+	int nx = cyl->get_xsize();
+	int ny = cyl->get_ysize();
+	int nz = cyl->get_zsize();
+
+	int type = params.set_default("type", 2);
+	float len = params.set_default("len", 10.8); //in angstroms
+	int x0 = params.set_default("x0", -1); //in voxels -- default value changed a few lines down
+	int y0 = params.set_default("y0", -1); //in voxels
+	int z0 = params.set_default("z0", -1); //in voxels
+	//TODO: check with Matt about default values
+
+	if (x0 < 0 || x0 >= nx)
+		x0 = nx / 2;
+	if (y0 < 0 || y0 >= ny)
+		y0 = ny / 2;
+	if (z0 < 0 || z0 >= nz)
+		z0 = nz / 2;
+
+	float apix_x = cyl->get_attr("apix_x"); //TODO: Ask Matt if I correctly handled cases where apix_x != apix_y or apix_x != apix_z are not equal
+	float apix_y = cyl->get_attr("apix_y");
+	float apix_z = cyl->get_attr("apix_z");
+
+	float * dat = cyl->get_data();
+	int cyl_voxel_len = (int) (len / apix_z);
+	int cyl_k_min = z0 - cyl_voxel_len / 2;
+	int cyl_k_max = z0 + cyl_voxel_len / 2;
+
+	int x, y;
+	for (int k = 0; k < nz; k++) {
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i++, dat++) {
+				x = i - x0;//coordinate sys centered on cylinder
+				y = j - y0;//coordinate sys centered on cylinder
+				float radius = hypot(x * apix_x, y * apix_y);
+				if ((k > cyl_k_min) && (k < cyl_k_max))
+					*dat += radprofile(radius, type); //pointer arithmetic for array done in loop
+				//else
+					//continue;
+
+			}
+		}
+	}
+}
+
+inline float ModelEMCylinderProcessor::radprofile(float r, int type)
+//Ross Coleman: modified from EMAN1 Cylinder.C by Wen Jiang
+{
+	// r in angstrom
+	double ret = 0;//iterations ==> rounding is problematic with float types if 15 < r < 20 and really bad if 20 < r < 30
+	if (type == 0) { // pure Gaussian falloff
+		r /= 2;
+		ret = exp(-r * r);
+	} else if (type == 1) { // pure Gaussian falloff + negative dip, so mean is 0
+		r /= 2;
+		ret = (1 - r * r / 4) * exp(-r * r / 4);
+	} else if (type == 2) {
+		// polynomial fitting to the radial profile of real helix density
+		// f=a0*x^n+a1+x^(n-1)+ ... +a[n-1]*x+an
+		//float an[11]={2.847024584977009e-10,-3.063997224364090e-08,1.418801040660860e-06,-3.678676414383996e-05,5.804871622801710e-04,-5.640340018430164e-03,3.208802421493864e-02,-9.068475313823952e-02,7.097329559749284e-02,-9.993347339658298e-02,1.000000000000000e+00};
+
+		// now the fitting to the original profile
+		if (r >= 20)
+			return 0; //We don't want that part of the polynomial --> goes way below zero
+		static float an[15] = { -3.9185246832229140e-16,
+				3.3957205298900993e-14, 2.0343351971222658e-12,
+				-4.4935965816879751e-10, 3.0668169835080933e-08,
+				-1.1904544689091790e-06, 2.9753088549414953e-05,
+				-4.9802112876220150e-04, 5.5900917825309360e-03,
+				-4.0823714462925299e-02, 1.8021733669148599e-01,
+				-4.0992557296268717e-01, 3.3980328566901458e-01,
+				-3.6062024812411908e-01, 1.0000000000000000e+00 };
+
+		ret = an[0];
+		for (int i = 1; i < 15; i++) {
+			ret = ret * r + an[i];
+		}
+	}
+	return ret;
+}
