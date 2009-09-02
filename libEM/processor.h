@@ -6553,6 +6553,47 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		protected:
 	};
 
+	/* class MPI CUDA kmeans processor
+	 * 2009-09-02 11:19:10 JB
+	 * python wrap for GPU cluster
+	 */
+	class MPICUDA_kmeans {
+	public:
+		MPICUDA_kmeans();
+		~MPICUDA_kmeans();
+		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
+		void append_flat_image(EMData* im, int pos);
+		int kmeans();
+		vector<EMData*> get_averages();
+		vector<int> get_partition();
+		void set_K(int valK);
+		void set_rnd(int valrnd);
+		Dict get_info();
+	private:
+		// params
+		int m;
+		int N;
+		int K;
+		int maxite;
+		int nb_part;
+		float F;
+		float T0;
+		int rnd;
+		// host memory
+		float* h_IM;
+		float* h_INFO;
+		float* h_AVE;
+		float* h_DIST;
+		float* h_AVE2;
+		float* h_IM2;
+		unsigned short int* h_ASG;
+		unsigned int* h_NC;
+		// device memory
+		float* d_IM;
+		float* d_AVE;
+		float* d_DIST;
+
+	};
 
 	/* class CUDA kmeans processor
 	* 02/13/2009 JB

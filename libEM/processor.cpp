@@ -9102,10 +9102,154 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	delete e;
 }
 
+
+#ifdef EMAN2_USING_CUDA
+
+/* CLASS MPICUDA_kmeans processor
+ *
+ */
+MPICUDA_kmeans::MPICUDA_kmeans() {
+    h_IM = NULL;
+    h_AVE = NULL;
+    h_ASG = NULL;
+    h_INFO = NULL;
+    h_DIST = NULL;
+    h_AVE2 = NULL;
+    h_IM2 = NULL;
+    h_NC = NULL;
+    d_IM = NULL;
+    d_AVE = NULL;
+    d_DIST = NULL;
+}
+
+MPICUDA_kmeans::~MPICUDA_kmeans() {
+    if (h_IM) delete h_IM;
+    if (h_ASG) delete h_ASG;
+    if (h_INFO) delete h_INFO;
+    if (h_AVE) delete h_AVE;
+    if (h_DIST) delete h_DIST;
+    if (h_AVE2) delete h_AVE2;
+    if (h_IM2) delete h_IM2;
+    if (h_NC) delete h_NC;
+}
+
+int MPICUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd) {
+    m = extm;				// number of pixels per image
+    N = extN;				// number of images
+    K = extK;				// number of classes
+    F = extF;				// value of the cooling factor
+    T0 = extT0;                         // first temperature for SA
+    maxite = extmaxite;		        // maximum number of iteration
+    rnd = extrnd;                       // random seed
+
+    // Host memory allocation for images
+    h_IM = (float*)malloc(m * N * sizeof(float));
+    if (h_IM == 0) return 1;
+    // Host memory allocation for the averages
+    h_AVE = (float*)malloc(m * K * sizeof(float));
+    if (h_AVE == 0) return 1;
+    // Host memory allocation for all assignment
+    h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
+    if (h_ASG == 0) return 1;
+    // Host memory allocation for info about partition
+    h_INFO = (float*)malloc(6 * sizeof(float));
+    if (h_INFO == 0) return 1;
+    /* DATA STRUCTURE OF INFO
+     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
+     */
+    // allocate the memory for the sum squared of averages
+    h_AVE2 = (float*)malloc(K * sizeof(float));
+    // allocate the memory for the sum squared of images
+    h_IM2 = (float*)malloc(N * sizeof(float));
+    // allocate the memory for the distances
+    h_DIST = (float*)malloc(N * K * sizeof(float));
+    // allocate the memory for the number of images per class
+    h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
+
+    return 0;
+}
+
+// add image pre-process by Util.compress_image_mask
+void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
+    for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
+}
+
+// DEVICE FUNCTION TO INIT MEM DEVICE (get device ptr)
+// mpicuda_initmem(h_IM, d_IM, d_AVE, d_DIST)
+
+// CLASS FUNCTION TO PRECALCULATE IM2
+
+// CLASS FUNCTION TO RND ASG
+
+// CLASS FUNCTION TO COMPUTE AVE
+
+// DEVICE FUNCTION K-MEANS ONE STEP
+// mpicuda_onestep(h_AVE, d_AVE, d_IM, d_DIST, h_ASG)
+
+// get back the assignment for each partition
+vector <int> MPICUDA_kmeans::get_partition() {
+    vector <int> PART(h_ASG, &h_ASG[N]);
+    return PART;
+}
+
+// DEVICE FUNCTION CLEAN DEVICE
+// mpicuda_shutdown(d_IM, d_AVE, d_DIST)
+
+// cuda k-means core
+#include "sparx/cuda/cuda_kmeans.h"
+int MPICUDA_kmeans::kmeans() {
+    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, T0, rnd);
+}
+
+// change the value of K
+void MPICUDA_kmeans::set_K(int valK) {
+    if (h_AVE) delete h_AVE;
+    K = valK;
+    h_AVE = (float*)malloc(m * K * sizeof(float));
+}
+
+// change the value of the random seed
+void MPICUDA_kmeans::set_rnd(int valrnd) {
+    rnd = valrnd;
+}
+
+// get back the averages
+vector<EMData*> MPICUDA_kmeans::get_averages() {
+    vector<EMData*> ave(K);
+
+    for (int k = 0; k < K; ++k) {
+	EMData* im = new EMData();
+	im->set_size(m, 1, 1);
+	for (int i = 0; i < m; ++i) {
+	    im->set_value_at(i, h_AVE[k * m + i]);
+	}
+	ave[k] = im->copy();
+	delete im;
+    }
+
+    return ave;
+}
+
+// get back informations about the partition for each classification
+Dict MPICUDA_kmeans::get_info() {
+    /* DATA STRUCTURE OF INFO
+     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
+     */
+    Dict INFO;
+    INFO["Je"] = h_INFO[0];
+    INFO["C"] = h_INFO[1];
+    INFO["DB"] = h_INFO[2];
+    INFO["H"] = h_INFO[3];
+    INFO["noi"] = h_INFO[4];
+    INFO["time"] = h_INFO[5];
+    return INFO;
+}
+
+
+
 /* CLASS CUDA_kmeans processor
  *
  */
-#ifdef EMAN2_USING_CUDA
 CUDA_kmeans::CUDA_kmeans() {
     h_IM = NULL;
     h_AVE = NULL;
