@@ -880,8 +880,8 @@ __global__ void ap2ri_kernel(float *data,const int num_threads)
 		float a = shared_data[x];
 		float b = shared_data[x+1];
 
-		shared_data[x]= a*sin(b);
-		shared_data[x+1] =a*cos(b);
+		shared_data[x+1]= a*sin(b);
+		shared_data[x] =a*cos(b);
 	}
 
 	__syncthreads();
