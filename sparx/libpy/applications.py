@@ -458,7 +458,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from numpy        import reshape, shape
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	from fundamentals import fft, rot_shift2D, fshift
-	from random       import randint, random
+	from random       import randint, random, shuffle
 	from string       import split, atoi, atof
 	import os
 
@@ -640,8 +640,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(fl)
 		ref_data.append(aa)
 	
-	# Generate the chessboard image
 	if myid == main_node:
+		# Generate the chessboard image
 		chessboard1 = model_blank(nx, nx)
 		chessboard2 = model_blank(nx, nx)
 		for ii in xrange(nx):
@@ -651,6 +651,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				kkk = (iii+jjj)%2
 				chessboard1.set_value_at(ii, jj, kkk)
 				chessboard2.set_value_at(ii, jj, 1-kkk)
+		
+		# Generate the array to store goal value and average
+		# We need two times of averages because we don't want to lose the old ones
+		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave*2)]
 
 	N_step = 0
 	sx_sum = 0.0
@@ -791,6 +795,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        	print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))  		       
 					print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
+					# Collect all averages and align them
 					savg = [real_tavg.copy()]
 					real_tavg.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
 					for isav in xrange(1, number_of_ave):
@@ -798,43 +803,33 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        savg.append(img.copy())
 					        Util.add_img(real_tavg, img)
 					        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
-					"""
-					for isav in xrange(number_of_ave):
-					        savg[isav] = rot_shift2D(savg[isav], randint(0, 360), randint(-2, 2), randint(-2, 2), randint(0, 1))
-					        savg[isav].set_attr_dict({'xform.align2d':tnull, 'active':1})
-					"""
+
 					for isav in xrange(number_of_ave):
 					        savg[isav].set_attr_dict({'active':1})
 					        set_params2D(savg[isav], [0.0, 0.0, 0.0, 0, 1.0])
 					for inp in xrange(5):
 					        sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], real_tavg, cnx, cny, 3.0, 3.0, 0.5, mode, False)
 					        real_tavg = ave_series(savg)
-					qt = [[None, None] for inp in xrange(number_of_ave)]
+						
 					for isav in xrange(number_of_ave):
+						qt[isav+number_of_ave][0] = qt[isav][0]
+						qt[isav+number_of_ave][1] = qt[isav][1]
 	 				        alpha, sx, sy, mirror, scale = get_params2D(savg[isav])
-					        savg[isav] = rot_shift2D(savg[isav], alpha, sx, sy, mirror)
-					        savg[isav].write_image(os.path.join(outdir, "avg_after_ali%02d.hdf"%(ipt)), isav)
-					        qt[isav][0] = savg[isav].cmp("dot", savg[isav], dict(negative = 0, mask = ref_data[0]))
-					        qt[isav][1] = isav
+					        img = rot_shift2D(savg[isav], alpha, sx, sy, mirror)
+					        img.write_image(os.path.join(outdir, "avg_after_ali%02d.hdf"%(ipt)), isav)
+					        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
+						qt[isav][1] = img
 					qt.sort(reverse = True)
 
 					tsavg = []
-					if number_of_ave > 2:
-						itp = 0
-						i1 = 0
-						i2 = 1
-						while itp < number_of_ave:
-						        tsavg.append(Util.addn_img(Util.muln_img(savg[qt[i1][1]], chessboard1), Util.muln_img(savg[qt[i2][1]], chessboard2)))
-						        itp += 1
-					        	if i2-i1 == 1:
-					        		i2 += 1
-						        	i1 = 0
-						        else:
-						        	i1 += 1
-					else:
-						# If there are only two averages, we only have one combination, and we use the best one as the second average
-						tsavg.append(Util.addn_img(Util.muln_img(savg[qt[0][1]], chessboard1), Util.muln_img(savg[qt[1][1]], chessboard2)))
-						tsavg.append(savg[qt[0][1]])
+					index = range(number_of_ave)
+					shuffle(index)
+					for isav in xrange(0, number_of_ave-1, 2):
+					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[isav+1]][1], chessboard2)))
+					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard2), Util.muln_img(qt[index[isav+1]][1], chessboard1)))
+					if number_of_ave%2 == 1:
+					        tsavg.append(qt[number_of_ave][1].copy())
+					
 					for isav in xrange(number_of_ave):
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
 					for isav in xrange(1, number_of_ave):
