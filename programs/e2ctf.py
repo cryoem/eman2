@@ -447,11 +447,15 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
 	lctf=None
+	db_parms=db_open_dict("bdb:e2ctf.parms")
+
 	if virtualout: 
 		vin=db_open_dict(stackfile)
 		vout=db_open_dict(virtualout)
 	
 	for i in range(n):
+		name = get_file_tag(stackfile)
+		
 		im1 = EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
@@ -473,6 +477,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+#				if i==0: flipim.write_image("flip.mrc")
 			fft1.mult(flipim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
@@ -485,6 +490,16 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 			if phaseflip: out.write_image(phaseflip,i)
 
 			if phasehp:
+				p1d=db_parms[name][1]
+				for c in xrange(2,len(p1d)):
+					if p1d[c-1]<p1d[c] : break
+				c-=1
+				trg=p1d[c-1]
+				filt=[1.0 for i in p1d]
+				for i in xrange(1,c): filt[i]=trg/p1d[i]
+				
+				print filt[:c+4]
+
 				out.process_inplace("filter.highpass.autopeak")
 				out.write_image(phasehp,i)
 

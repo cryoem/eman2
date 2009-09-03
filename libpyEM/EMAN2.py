@@ -560,7 +560,7 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 	if GUIMode:
 		from emplot2d import EMPlot2DModule
 		plotw=EMPlot2DModule(application=app)
-		plotw.set_data("interactive",data)
+		plotw.set_data(data,"interactive")
 		plotw.get_qt_widget().setWindowTitle("2D Plot")
 		app.show_specific(plotw)
 		return plotw

@@ -395,14 +395,13 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 
 	if (image->is_complex()) {
-		// we use 2 samples per radial pixel here
-		vector <float>yarray = image->calc_radial_dist(image->get_ysize(),0,0.5,1);
+		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray);
 		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
-		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize(),0,0.5,1);
+		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray);
 		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray);
 		EMData *ift = fft->do_ift();
@@ -760,18 +759,18 @@ void HighpassAutoPeakProcessor::preprocess(EMData * image)
 
 void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask) const
 {
-	unsigned int c=2;
+	unsigned int c;
 
-	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
+//	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
 	for (c=2; c<radial_mask.size(); c++) if (radial_mask[c-1]<=radial_mask[c]) break;
-	if (c>highpass*2) c=highpass*2;		// the *2 is for the 2x oversampling
+	if (c>highpass) c=highpass;		// the *2 is for the 2x oversampling
 
 	radial_mask[0]=0.0;
 //	for (int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?radial_mask[c+1]/radial_mask[i]:1.0);
 	for (unsigned int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?0.0:1.0);
 
 	printf("%f %d\n",highpass,c);
-	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
+//	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
 
 }
 

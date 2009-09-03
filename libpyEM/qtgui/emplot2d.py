@@ -288,7 +288,7 @@ class EMPlot2DModule(EMGUIModule):
 				im = im[0]
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
-				self.set_data(filename,[l,k])
+				self.set_data([l,k],filename)
 			elif im[0].get_attr_default("isvector",0):
 #				all=[i.get_data_as_vector() for i in im]
 
@@ -298,12 +298,12 @@ class EMPlot2DModule(EMGUIModule):
 					for i in range(len(im)):
 						r.append(im[i][j,0])
 					all.append(r)
-				self.set_data("Vecset",all)
+				self.set_data(all,vecset)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
 					k = image.get_data_as_vector()
-					self.set_data("Image "+str(idx),[l,k])
+					self.set_data([l,k],"Image "+str(idx))
 				
 		elif file_type == 'fp':
 			fin=file(filename)
@@ -314,7 +314,7 @@ class EMPlot2DModule(EMGUIModule):
 			for i in range(nx):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 				
-			self.set_data(filename,data)
+			self.set_data(data,filename)
 		else:
 			try:
 				fin=file(filename)
@@ -327,7 +327,7 @@ class EMPlot2DModule(EMGUIModule):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 					
-				self.set_data(remove_directories_from_name(filename),data)
+				self.set_data(data,remove_directories_from_name(filename))
 			except:
 				print "couldn't read",filename
 				return False
@@ -474,7 +474,7 @@ class EMPlot2DModule(EMGUIModule):
 		GL.glPopMatrix()
 		
 		if render: 
-
+	
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			if self.limits :ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
 			else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
@@ -1073,8 +1073,8 @@ if __name__ == '__main__':
 	window = EMPlot2DModule(app)
 	if len(sys.argv)==1 : 
 		l=[i/30.*pi for i in range(30)]
-		window.set_data("test",[[1,2,3,4],[2,3,4,3]])
-		window.set_data("test2",[l,[sin(2*i) for i in l]])
+		window.set_data([[1,2,3,4],[2,3,4,3]],test)
+		window.set_data([l,[sin(2*i) for i in l]],"test2")
 	else:
 		for i in range(1,len(sys.argv)):
 			window.set_data_from_file(sys.argv[i])
