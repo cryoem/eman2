@@ -567,7 +567,7 @@ def ref_ali3dm_new( refdata ):
 	ali50S     = refdata[6]
 
 	if fscc is None:
-		flmin = 0.4
+		flmin = 0.35
 		aamin = 0.1
 		idmin = 0
 	else:

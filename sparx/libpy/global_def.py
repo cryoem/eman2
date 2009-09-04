@@ -63,7 +63,7 @@ BATCH = False
 # variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
 CACHE_DISABLE = False
 
-# variable for disabling gui use (set by default to True, which means use GUI. Change to False to dsiable GUI).
+# variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
 GUIUSE = True
 
 LOGFILE = "logfile"

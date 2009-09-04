@@ -6042,6 +6042,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
         # if set to -1, no (??) refinement only assignment 
 
 	nx  = get_image( refvol ).get_xsize()
+	ou = int(ou)
 	if(ou <= 0):  ou = nx//2-2
 	if maskfile:
 		import  types
