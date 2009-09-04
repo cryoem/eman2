@@ -6421,7 +6421,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		string get_name() const
 		{
-			return "filter.radialtable";
+			return "mask.radialprofile";
 		}
 
 		static Processor *NEW()
@@ -6432,13 +6432,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("table", EMObject::FLOATARRAY, "radial float array for multiplication");
+			d.put("table", EMObject::FLOATARRAY, "Radial array of floats, 1 float/pixel");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "multiply an image in real-space by a radial function";
+			return "Multiply a real-space image by a radial function. 1 value / pixel, extending to corner. Missing values -> 0.";
 		}
 	};
 

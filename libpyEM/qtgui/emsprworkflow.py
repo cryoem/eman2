@@ -2828,7 +2828,7 @@ class E2CTFAutoFitTask(E2CTFWorkFlowTask):
 		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pac = ParamDef(name="ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=db.get("ac",dfl=10),choices=None)
-		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
+		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when fitting CTF. It is not automatically applied when phase flipping particles since it would make the process irreversible.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		pahp = ParamDef(name="autohp",vartype="boolean",desc_short="Auto high pass",desc_long="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",property=None,defaultunits=db.get("autohp",dfl=False),choices=None)
 		pns = ParamDef(name="nosmooth",vartype="boolean",desc_short="No smoothing",desc_long="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",property=None,defaultunits=db.get("nosmooth",dfl=False),choices=None)
@@ -3018,7 +3018,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
-		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
+		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, data will be oversampled during phase flipping. Using this will make the flipping process irreversible and visibly depress the power spectra near zeroes.",property=None,defaultunits=db.get("oversampout",dfl=1),choices=None)
 		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=db.get("wiener",dfl=True),choices=None)
 		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=db.get("phaseflip",dfl=True),choices=None)
 		pphasehp = ParamDef(name="phasefliphp",vartype="boolean",desc_short="Phase flip hp",desc_long="Phase flip your particle images and apply an automatic high-pass filter",property=None,defaultunits=db.get("phasefliphp",dfl=False),choices=None)
@@ -3101,6 +3101,8 @@ class E2CTFSFOutputTask(E2CTFWorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
+		pos = ParamDef(name="oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when fitting CTF. It is not automatically applied when phase flipping particles since it would make the process irreversible.",property=None,defaultunits=db.get("oversamp",dfl=1),choices=None)
+		params.append(pos)
 		
 		return params
 	
@@ -3113,6 +3115,7 @@ class E2CTFSFOutputTask(E2CTFWorkFlowTask):
 
 		options = EmptyObject()
 		options.filenames = params["filenames"]
+		options.oversamp = params["oversamp"]
 		
 		string_args = []
 		bool_args = []
@@ -3590,11 +3593,13 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		output_stacks[""] = []
 		stack_type_map = {}
 		
+		print params["filenames"]
 		for name in params["filenames"]:
 			root_name = self.data_name_map[name]
 			dict = project_data[root_name]
 			for filt,name in dict.items():
-				f = "_"+filt.split()[0].lower()
+#				f = "_"+filt.split()[0].lower()			# This produces redundant names sometimes
+				f ="_"+filt.lower().replace(" ","_")	# This doesn't
 
 				if not stack_type_map.has_key(f):
 					stack_type_map[f] = filt
@@ -3609,13 +3614,18 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				return False
 			
 		stacks_map = {}
+	 	progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, 1000,None)
+	 	progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
+		progress.show()
+		n=-1
+		print output_stacks
 		for key,filenames in output_stacks.items():
+			n+=1
 			if len(filenames) == 0:
 				print "Warning, there were no files in the list"
 				continue
 			if len(filenames[0]) > 3 and filenames[0][:4] == "bdb:":
-
-				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"])
+				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"],progress,n,len(output_stacks.items()))
 				
 			else:
 				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set (%s) is being ignored" %stack_type_map[key], "Warning")
@@ -3629,7 +3639,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 			else:
 				if key != "": stacks_map[stack_type_map[key]] ="bdb:sets#"+ base_stack_root+key
 			
-#		
+		progress.close()
 		stack_root = params["stack_name"]	
 	
 		stacks_data_dict = EMProjectDataDict(spr_sets_dict)
@@ -3640,11 +3650,8 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		
 		return True
 		
-	def make_v_stack(self,filenames,out_name,path,exclude_bad):
+	def make_v_stack(self,filenames,out_name,path,exclude_bad,progress=None,N=0,M=1):
 	 	
-	 	progress = QtGui.QProgressDialog("Making virtual stacks...", "Abort import", 0, len(filenames),None)
-	 	progress.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-		progress.show()
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select")
 		else:
@@ -3663,23 +3670,25 @@ class E2MakeSetTask(E2ParticleExamineTask):
 			if no_exc:
 				cmd += " "+name
 				
- 			cmd += " --appendvstack=bdb:"+path+"#"+out_name
- 			print cmd
- 			success = (os.system(cmd) in (0,11,12))
- 			if not success:
- 				progress.close()
- 				get_application().setOverrideCursor(Qt.ArrowCursor)
- 				return False,cmd
- 			else:
- 				get_application().setOverrideCursor(Qt.ArrowCursor)
- 				progress.setValue(i+1)
- 				get_application().processEvents()
- 				
- 			if progress.wasCanceled():
- 				get_application().setOverrideCursor(Qt.ArrowCursor)
-	 			return False,"did not finish. The operation was cancelled"
+			cmd += " --appendvstack=bdb:"+path+"#"+out_name
+			print cmd
+#			print N,i,len(filenames),M
+			success = (os.system(cmd) in (0,11,12))
+			if not success:
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+				return False,cmd
+			else:
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+				progress.setValue(1000*(N+(i+1.0)/len(filenames))/M)
+				get_application().processEvents()
+				
+			try:
+				if progress.wasCanceled():
+					get_application().setOverrideCursor(Qt.ArrowCursor)
+					return False,"did not finish. The operation was cancelled"
+			except: 
+				pass
 		
-		progress.close()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		return True,cmd
 

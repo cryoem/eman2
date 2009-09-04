@@ -429,11 +429,13 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{ return "filter.radialtable"; }
+		
 		static Processor *NEW()
 		{ return new NewRadialTableProcessor(); }
+		
 		string get_desc() const
 		{
-			return "Filter with tabulated data in Fourier space.";
+			return "Filter with tabulated data in Fourier space. 1 value per Fourier pixel, extending to corners. Missing value assumed to be 0.";
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = RADIAL_TABLE;
@@ -441,8 +443,9 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("table", EMObject::FLOATARRAY, "Tabulated filter data.");
+//			TypeDict d = NewFourierProcessor::get_param_types();
+			TypeDict d;
+			d.put("table", EMObject::FLOATARRAY, "Radial data array. 1 value per Fourier image pixel.");
 			return d;
 		}
 	};

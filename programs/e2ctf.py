@@ -266,6 +266,8 @@ def write_e2ctf_output(options):
 				
 				if phaseout:
 					data_entry["Phase flipped"] = phaseout
+				if phasehpout:
+					data_entry["Phase flipped-hp"] = phasehpout
 				if wienerout:
 					data_entry["Wiener filtered"] = wienerout
 					
@@ -453,9 +455,30 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 		vin=db_open_dict(stackfile)
 		vout=db_open_dict(virtualout)
 	
-	for i in range(n):
-		name = get_file_tag(stackfile)
+	name = get_file_tag(stackfile)
+	if phasehp:
+		p1d=db_parms[name][1]
+		for c in xrange(2,len(p1d)):
+			if p1d[c-1]<p1d[c] : break
+		c-=1
+		trg=p1d[c-1]
+		hpfilt=[1.0 for i in range(int(ys*1.5))]
+		hpfilt[0]=0.0
+		for i in xrange(1,c): 
+			try :hpfilt[i]=sqrt(trg/p1d[i])
+			except: hpfilt[i]=0.0
 		
+		oscor=2.0*len(p1d)/ys
+		if oscor!=floor(oscor) : print "Warning, incompatible oversampling from earlier results %d vs %d"%(len(p1d),ys/2)
+		
+		oscor=int(oscor)
+#		print hpfilt[:c+4]
+		hpfilt=[0.0]+[sum(hpfilt[i+1:i+1+oscor])/oscor for i in range(0,len(hpfilt)-1,oscor)]	# this downsamples the correction curve
+		
+#		print hpfilt[:c+4]
+
+	
+	for i in range(n):
 		im1 = EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
@@ -490,17 +513,19 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 			if phaseflip: out.write_image(phaseflip,i)
 
 			if phasehp:
-				p1d=db_parms[name][1]
-				for c in xrange(2,len(p1d)):
-					if p1d[c-1]<p1d[c] : break
-				c-=1
-				trg=p1d[c-1]
-				filt=[1.0 for i in p1d]
-				for i in xrange(1,c): filt[i]=trg/p1d[i]
-				
-				print filt[:c+4]
+				fft2=fft1.copy()
+				fft2.process_inplace("filter.radialtable",{"table":hpfilt})
+				out=fft2.do_ift()
+				out["ctf"]=ctf
+				out["apix_x"] = ctf.apix
+				out["apix_y"] = ctf.apix
+				out["apix_z"] = ctf.apix
+				out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
-				out.process_inplace("filter.highpass.autopeak")
+				print fft2.get_ysize(),len(hpfilt)
+
+				out.process_inplace("normalize.edgemean")
+				#process_inplace("filter.highpass.autopeak")
 				out.write_image(phasehp,i)
 
 		if wiener :
