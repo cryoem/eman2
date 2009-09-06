@@ -605,7 +605,8 @@ class EMTaskQueue:
 		if cpl :
 			print "Completed task %d requeued (%d failures)"%(taskid,task.failcount)
 			del self.complete[taskid]
-			self.active[taskid]=task
+
+		self.active[taskid]=task
 			
 		return
 		
