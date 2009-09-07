@@ -5030,7 +5030,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
  		for Iter in xrange(max_iter):
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f , an = %5.2f\n"%(N_step*max_iter+Iter+1, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step],an[N_step]))
 
 			volft,kb = prep_vol( vol )
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
@@ -5445,7 +5445,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		print_msg("Angular search range        : %s\n"%(an))
 		print_msg("Number of assignments in each iteration   : %i\n"%(nassign))
 		print_msg("Number of alignments in each iteration    : %i\n"%(nrefine))
-		print_msg("Number of iterations                     : %i\n"%(lstp*maxit) )
+		print_msg("Number of iterations                      : %i\n"%(lstp*maxit) )
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Data with CTF               : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -5548,7 +5548,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 		total_iter += 1
 		if(myid == main_node):
-			print_msg("%s ITERATION #%3d\n"%(runtype, total_iter))
+			print_msg("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f , an = %5.2f\n"%(runtype, total_iter, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step],an[N_step]))
 			start_ime = time()
 	
 		peaks = [ -1.0e23]*nima
@@ -10782,7 +10782,7 @@ def params_3D_to_2D(stack):
 		phi,theta,psi,s2x,s2y = get_params_proj( ima )
 		alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 		set_params2D(ima, [alpha, sx, sy, mirror, 1.0])
-		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+		write_header(stack, ima, im)
 	print_end_msg("params_3D_to_2D")
 
 
