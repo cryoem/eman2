@@ -657,7 +657,8 @@ def drop_spider_doc(filename, data, comment = None):
 	"""Create a spider-compatible "Doc" file.
 
 	   filename: name of the Doc file
-	   data: List of lists, with the inner list being a list of floats.
+	   data: List of lists, with the inner list being a list of floats
+	         and is written as a line into the doc file.
 	"""
 	outf = open(filename, "w")
 	from datetime import datetime
