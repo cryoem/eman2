@@ -132,7 +132,7 @@ class EMTaskCustomer:
 			except:
 				signal.alarm(60)
 				self.wait_for_server()
-				ret=EMDCsendonecom(self,addr,"RQUE",tid)
+				ret=EMDCsendonecom(self.addr,"RQUE",tid)
 				signal.alarm(0)
 				return ret
 				
