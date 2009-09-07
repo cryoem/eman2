@@ -55,12 +55,10 @@ def params_3D_2D(phi, theta, psi, s2x, s2y):
 		into 2D alignment parameters (alpha, sx, sy, mirror)
 	"""
 	if (theta > 90.0):
-		alpha = (720.0 - psi + phi)%360.0
 		mirror = 1
 	else:
-		alpha = (720.0 - psi - phi)%360.0
 		mirror = 0
-	alphan, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, -psi-phi, 0, 0, 1.0)
+	alphan, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, psi, 0, 0, 1.0)
 
 	return  alpha, sx, sy, mirror
 	
