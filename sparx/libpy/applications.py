@@ -5581,9 +5581,9 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			for im in xrange(nima):
 				if(CTF):
 					ctf = data[im].get_attr( "ctf" )
-					if(ctf.defocus != previous_defocus):
-						previous_defocus = ctf.defocus
-						if runtype=="REFINEMENT":
+					if runtype=="REFINEMENT":
+						if(ctf.defocus != previous_defocus):
+							previous_defocus = ctf.defocus
 							rstart_time = time()
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0):
@@ -5591,7 +5591,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = filt_ctf( prgs( volft, kb, [phi,tht,psi,-s2x,-s2y]), ctf )
+					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					if CTF:  ref = filt_ctf( ref, ctf )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
@@ -6311,11 +6312,11 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
-			refdata[2] = fscc
+			refdata[2] = None # fscc
 			refdata[3] = iteration
 			refdata[4] = varf
 			refdata[5] = mask3D
-			refdata[6] = False
+			refdata[6] = (runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
 			user_func( refdata )
 
 
@@ -9611,8 +9612,7 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, MPI=False ):
-# 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
+def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None):
 	from projection    import   prgs, prep_vol
 	from utilities     import   even_angles, read_txt_col, set_params_proj, model_gauss_noise, info
 	from string        import   split

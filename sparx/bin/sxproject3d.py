@@ -40,18 +40,15 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1"
+	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1 --CTF --noise=N"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--delta",    type="float", default=2, help="  angular step ")
-	parser.add_option("--phiEqpsi", type="string",  default="Minus", help="  if Minus, psi is set to minus phi (default), if Zero, set to zero ")
-	parser.add_option("--method",   type="string", default="S", help="  method of quasi-uniformly distributing Eulerian angles S (default) or P")
-	parser.add_option("--symmetry", type="string", default="c1", help="  symmetry group")
-	parser.add_option("--angles",   type="string", default=None, help="  List of angles (phi, theta, psi)")
-	
-	# extensions to generate noise, ctf and to use MPI
-	parser.add_option("--noise",type="float",default=None,help="add Gaussian noise with relative SNR of N")
-	parser.add_option("--CTF",type="string",default=None,help="list of defocus values")
-	parser.add_option("--MPI",action="store_true",default=False,help="use MPI")
+	parser.add_option("--delta",    type="float",   default=2,       help="angular step ")
+	parser.add_option("--phiEqpsi", type="string",  default="Minus", help="if Minus, psi is set to minus phi (default), if Zero, set to zero ")
+	parser.add_option("--method",   type="string",  default="S",     help="method of quasi-uniformly distributed Eulerian angles S (default) or P")
+	parser.add_option("--symmetry", type="string",  default="c1",    help="symmetry group")
+	parser.add_option("--angles",   type="string",  default=None,    help="List of angles (phi, theta, psi)")
+	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with relative SNR of N")
+	parser.add_option("--CTF",      type="string",  default=None,    help="list of CTF parameters")
 
 	(options, args) = parser.parse_args()
 	if(len(args) < 2 or len(args) > 3):
@@ -68,7 +65,7 @@ def main():
 			disable_bdb_cache()
 		from   applications import project3d
 		global_def.BATCH = True
-		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise,MPI=options.MPI)
+		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

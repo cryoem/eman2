@@ -42,7 +42,7 @@ from sparx import *
 import global_def
 from global_def import *
 
-if GUIUSE:
+if global_def.GUIUSE:
 
 	import sys
 	import os
@@ -141,6 +141,9 @@ if GUIUSE:
 		import EMAN2
 		EMAN2.GUIMode=True
 
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
 		sh=IPShellQt4a()
 		EMAN2.app = sh.get_app()
 		#    app = get_app()
@@ -148,6 +151,9 @@ if GUIUSE:
 
 else:
 	try:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()		
 		from IPython.Shell import IPShellEmbed
 		ipshell = IPShellEmbed(banner="Welcome to non-GUI "+SPARXVERSION)
 		ipshell()
