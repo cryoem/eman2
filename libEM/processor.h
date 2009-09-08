@@ -6599,12 +6599,16 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		~MPICUDA_kmeans();
 		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
 		void append_flat_image(EMData* im, int pos);
-		int kmeans();
+		int init_mem();
+		void init_IM2();
+		int init_ASG();
+		void compute_ave();
+		int one_iter();
+		int one_iter_SA();
+		int shutdown();
 		vector<EMData*> get_averages();
 		vector<int> get_partition();
-		void set_K(int valK);
-		void set_rnd(int valrnd);
-		Dict get_info();
+
 	private:
 		// params
 		int m;
@@ -6615,9 +6619,19 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float F;
 		float T0;
 		int rnd;
+		int ite;
+		int* flag_stop_part;
+		int flag_stop_SA;
+		int size_IM;
+		int size_AVE;
+		int size_DIST;
+		int BLOCK_SIZE;
+		int NB;
+		int ins_BLOCK;
+		// debug
+		int* ct_im_mv;
 		// host memory
 		float* h_IM;
-		float* h_INFO;
 		float* h_AVE;
 		float* h_DIST;
 		float* h_AVE2;

@@ -192,12 +192,16 @@ BOOST_PYTHON_MODULE(libpyProcessor2)
     class_< EMAN::MPICUDA_kmeans, boost::noncopyable >("MPICUDA_kmeans", init<>())
 	.def("setup", &EMAN::MPICUDA_kmeans::setup)
 	.def("append_flat_image", &EMAN::MPICUDA_kmeans::append_flat_image)
-	.def("kmeans", &EMAN::MPICUDA_kmeans::kmeans)
-	.def("set_K", &EMAN::MPICUDA_kmeans::set_K)
-	.def("set_rnd", &EMAN::MPICUDA_kmeans::set_rnd)
+	.def("init_mem", &EMAN::MPICUDA_kmeans::init_mem)
+	.def("init_IM2", &EMAN::MPICUDA_kmeans::init_IM2)
+	.def("init_ASG", &EMAN::MPICUDA_kmeans::init_ASG)
+	.def("compute_ave", &EMAN::MPICUDA_kmeans::compute_ave)
+	.def("one_iter", &EMAN::MPICUDA_kmeans::one_iter)
+	.def("one_iter_SA", &EMAN::MPICUDA_kmeans::one_iter_SA)
+	.def("shutdown", &EMAN::MPICUDA_kmeans::shutdown)
 	.def("get_averages", &EMAN::MPICUDA_kmeans::get_averages)
 	.def("get_partition", &EMAN::MPICUDA_kmeans::get_partition)
-	.def("get_info", &EMAN::MPICUDA_kmeans::get_info)
+
     ;
 
 #endif //EMAN2_USING_CUDA

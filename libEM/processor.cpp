@@ -9109,11 +9109,11 @@ void ZGradientProcessor::process_inplace( EMData* image )
 /* CLASS MPICUDA_kmeans processor
  *
  */
+#include "sparx/cuda/cuda_mpi_kmeans.h"
 MPICUDA_kmeans::MPICUDA_kmeans() {
     h_IM = NULL;
     h_AVE = NULL;
     h_ASG = NULL;
-    h_INFO = NULL;
     h_DIST = NULL;
     h_AVE2 = NULL;
     h_IM2 = NULL;
@@ -9126,7 +9126,6 @@ MPICUDA_kmeans::MPICUDA_kmeans() {
 MPICUDA_kmeans::~MPICUDA_kmeans() {
     if (h_IM) delete h_IM;
     if (h_ASG) delete h_ASG;
-    if (h_INFO) delete h_INFO;
     if (h_AVE) delete h_AVE;
     if (h_DIST) delete h_DIST;
     if (h_AVE2) delete h_AVE2;
@@ -9142,28 +9141,33 @@ int MPICUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0,
     T0 = extT0;                         // first temperature for SA
     maxite = extmaxite;		        // maximum number of iteration
     rnd = extrnd;                       // random seed
+    size_IM = m * N;                    // nb elements in IM
+    size_AVE = m * K;                   // nb elements in AVE
+    size_DIST = N * K;                  // nb elements in DIST
+    ite = 0;                            // init nb of iterations
+    if (F != 0.0) {flag_stop_SA = 0;}   // flag to run SA or not
+    else {flag_stop_SA = 1;}
+    flag_stop_part = 0;                 // flag to stop k-means
+    ct_im_mv = 0;                       // DEBUG 
+    BLOCK_SIZE = 512;
+    NB = size_DIST / BLOCK_SIZE;
+    ins_BLOCK = NB * BLOCK_SIZE;
 
     // Host memory allocation for images
-    h_IM = (float*)malloc(m * N * sizeof(float));
+    h_IM = (float*)malloc(size_IM * sizeof(float));
     if (h_IM == 0) return 1;
     // Host memory allocation for the averages
-    h_AVE = (float*)malloc(m * K * sizeof(float));
+    h_AVE = (float*)malloc(size_AVE * sizeof(float));
     if (h_AVE == 0) return 1;
     // Host memory allocation for all assignment
     h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
     if (h_ASG == 0) return 1;
-    // Host memory allocation for info about partition
-    h_INFO = (float*)malloc(6 * sizeof(float));
-    if (h_INFO == 0) return 1;
-    /* DATA STRUCTURE OF INFO
-     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
-     */
     // allocate the memory for the sum squared of averages
     h_AVE2 = (float*)malloc(K * sizeof(float));
     // allocate the memory for the sum squared of images
     h_IM2 = (float*)malloc(N * sizeof(float));
     // allocate the memory for the distances
-    h_DIST = (float*)malloc(N * K * sizeof(float));
+    h_DIST = (float*)malloc(size_DIST * sizeof(float));
     // allocate the memory for the number of images per class
     h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
 
@@ -9175,17 +9179,108 @@ void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
     for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
 }
 
-// DEVICE FUNCTION TO INIT MEM DEVICE (get device ptr)
-// mpicuda_initmem(h_IM, d_IM, d_AVE, d_DIST)
+// cuda init mem device, cublas (get device ptr)
+int MPICUDA_kmeans::init_mem() {
+    //return cuda_mpi_init(h_IM, d_IM, d_AVE, d_DIST, size_IM, size_AVE, size_DIST, rnd);
+    return 0;
+}
 
-// CLASS FUNCTION TO PRECALCULATE IM2
+// precalculate IM2
+void MPICUDA_kmeans::init_IM2() {
+    for (int i = 0; i < N; i++) {
+	h_IM2[i] = 0.0f;
+	for (int j = 0; j < m; j++) h_IM2[i] += (h_IM[i * m + j] * h_IM[i * m + j]);
+    }
+}
 
-// CLASS FUNCTION TO RND ASG
+// init randomly the first assignment
+int MPICUDA_kmeans::init_ASG() {
+    int ret = 20;
+    int flag = 0;
+    int n, k;
+    for (k = 0; k < K; k++) h_NC[k] = 0;
+    while (ret > 0) {
+	ret--;
+	for (n = 0; n < N; n++) {
+	    h_ASG[n] = rand() % K;
+	    h_NC[h_ASG[n]]++;
+	}
+	flag = 1;
+	k = K;
+	while (k > 0 && flag) {
+	    k--;
+	    if (h_NC[k] <= 1) {
+		flag = 0;
+		if (ret == 0) {
+		    //printf("Erreur randomize assignment\n");
+		    return 1;
+		}
+		for (k = 0; k < K; k++) h_NC[k] = 0;
+	    }
+	if (flag == 1) ret = 0;
+	}
+    }
+    return 0;
+}
 
-// CLASS FUNCTION TO COMPUTE AVE
+// compute ave and ave2
+void MPICUDA_kmeans::compute_ave() {
+    float buf = 0.0f;
+    int i, j, c, d, ind;
+    // compute the averages according ASG
+    for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;                          // set averages to zero
+    for (i = 0; i < N; ++i) {
+	c = h_ASG[i] * m;
+	d = i * m;
+	for (j = 0; j < m; ++j) h_AVE[c + j] += h_IM[d + j];                 // accumulate images
+    }
+    for (i = 0; i < K; i++) {
+	buf = 0.0f;
+	for (j= 0 ; j < m; j++) {
+	    ind = i * m + j;
+	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average 
+	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE 
+	}
+	h_AVE2[i] = buf;
+    }
+}
 
-// DEVICE FUNCTION K-MEANS ONE STEP
-// mpicuda_onestep(h_AVE, d_AVE, d_IM, d_DIST, h_ASG)
+// k-means one iteration
+int MPICUDA_kmeans::one_iter() {
+
+    //int err = cuda_mpi_kmeans(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, flag_stop_part, K, N, m);
+    // need to check err
+
+    ite++;
+    if (ite < maxite && !flag_stop_part) {
+	return 0;
+    } else {
+	return 1;
+    }
+
+    // debug print out
+    printf("ite: %i \n", ite);
+
+}
+
+// k-means SA one iteration
+int MPICUDA_kmeans::one_iter_SA() {
+    //int err = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, flag_stop_part, ct_im_mv, K, N, m, T0, BLOCK_SIZE, NB, ins_BLOCK);
+    // need to check err
+
+    ite++;
+    if (ite < maxite && !flag_stop_part) {
+	return 0;
+    } else {
+	return 1;
+    }
+
+    T0 *= F;                                // cooling temperature
+    if (T0 < 0.0001) flag_stop_SA = 1;      // turn off SA, we consider this T value is equivalent to k-means
+
+    // debug print out
+    printf("ite: %i T: %f CRE: %i\n", ite, T0, ct_im_mv);
+}
 
 // get back the assignment for each partition
 vector <int> MPICUDA_kmeans::get_partition() {
@@ -9193,25 +9288,10 @@ vector <int> MPICUDA_kmeans::get_partition() {
     return PART;
 }
 
-// DEVICE FUNCTION CLEAN DEVICE
-// mpicuda_shutdown(d_IM, d_AVE, d_DIST)
-
-// cuda k-means core
-#include "sparx/cuda/cuda_kmeans.h"
-int MPICUDA_kmeans::kmeans() {
-    return cuda_kmeans(h_IM, h_AVE, h_ASG, h_INFO, N, m, K, maxite, F, T0, rnd);
-}
-
-// change the value of K
-void MPICUDA_kmeans::set_K(int valK) {
-    if (h_AVE) delete h_AVE;
-    K = valK;
-    h_AVE = (float*)malloc(m * K * sizeof(float));
-}
-
-// change the value of the random seed
-void MPICUDA_kmeans::set_rnd(int valrnd) {
-    rnd = valrnd;
+// shutdown cublas and releas device mem
+int MPICUDA_kmeans::shutdown() {
+    //return cuda_mpi_shutdown(d_IM, d_AVE, d_DIST);
+    return 0;
 }
 
 // get back the averages
@@ -9230,22 +9310,6 @@ vector<EMData*> MPICUDA_kmeans::get_averages() {
 
     return ave;
 }
-
-// get back informations about the partition for each classification
-Dict MPICUDA_kmeans::get_info() {
-    /* DATA STRUCTURE OF INFO
-     * SEQ INFO = [Je, Coleman, Davies-Bouldin, Harabasz, number of iterations, running time]
-     */
-    Dict INFO;
-    INFO["Je"] = h_INFO[0];
-    INFO["C"] = h_INFO[1];
-    INFO["DB"] = h_INFO[2];
-    INFO["H"] = h_INFO[3];
-    INFO["noi"] = h_INFO[4];
-    INFO["time"] = h_INFO[5];
-    return INFO;
-}
-
 
 
 /* CLASS CUDA_kmeans processor
