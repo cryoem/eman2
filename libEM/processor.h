@@ -6481,7 +6481,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			int default_bins;
 	};
 
-	class ModelEMCylinderProcessor : public Processor
+	class ModelHelixProcessor : public Processor
+	{
+	  protected:
+		float radprofile(float r, int type);
+	};
+
+	class ModelEMCylinderProcessor : public ModelHelixProcessor
 	{
 	  public:
 		void process_inplace(EMData * in);
@@ -6513,10 +6519,35 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			//TODO: Check with Matt Baker about description strings
 			return d;
 		}
-	  protected:
-		inline float radprofile(float r, int type);
 
-		};
+	};
+	class ApplyPolynomialProfileToHelix : public ModelHelixProcessor
+	{
+	public:
+		void process_inplace(EMData * in);
+
+		string get_name() const
+		{
+			return "math.poly_radial_profile";
+		}
+
+		static Processor *NEW()
+		{
+			return new ApplyPolynomialProfileToHelix();
+		}
+
+		string get_desc() const
+		{
+			return "Finds the CM of each z-axis slice and applies a polynomial radial profile about it.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("len", EMObject::FLOAT, "Helix length in angstroms.");
+			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis");
+			return d;
+		}
+	};
 
 #ifdef EMAN2_USING_CUDA
 	/** Cuda based constant multiplication processor
