@@ -222,7 +222,9 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			self.mx_display.set_data([projection,particle])
 			
 			if self.frc_display != None :
-				pass   # TODO
+				frc=projection.calc_fourier_shell_correlation(particle)
+				self.frc_display.set_data(frc,"frc")
+				
 		else:
 			self.mx_display.set_data([projection])
 		if update: self.mx_display.updateGL()

@@ -394,7 +394,7 @@ def recvobj(sock):
 		datlen=unpack("I",l)[0]
 	except:
 		print "Format error in unpacking '%s'"%l
-		raise Exception,"Protocol error"
+		raise Exception,"Network error receiving object"
 	if datlen<=0 :return None
 	return loads(sock.read(datlen))
 
@@ -612,8 +612,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					print "Command %s (%s): %s %s    \r"%(str(self.client_address),str(client_id),cmd,str(data)),
 					sys.stdout.flush()
 				else :
-					try: print "Command %s (%s): %s (%d)"%(str(self.client_address),str(client_id),cmd,len(data))
-					except: print "Command %s (%s): %s (-)"%(str(self.client_address),str(client_id),cmd)
+					try: print "Command %s (%s): %s (%d)  "%(str(self.client_address),str(client_id),cmd,len(data))
+					except: print "Command %s (%s): %s (-)  "%(str(self.client_address),str(client_id),cmd)
 			
 			######################  These are issued by clients
 			# Ready for a task

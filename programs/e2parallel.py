@@ -49,13 +49,13 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients","dcservmon")
+	commandlist=("dcserver","dcclient","dckill","dckillclients","dcservmon","dcrerunall")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill, dckillclients servmon
+<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillclients, dcservmon
 
 run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 

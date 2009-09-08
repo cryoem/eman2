@@ -331,8 +331,10 @@ class EMGenClassAverages:
 				
 				task = EMClassAveTask(data=data,options=self.__get_task_options(self.options))
 				
-				print "generating class",class_idx
+				print "generating class",class_idx," ",
+				sys.stdout.flush()
 				rslt = task.execute(self.progress_callback)
+				print " "
 				self.__write_class_data(rslt)
 				
 		self.__finalize_writing()
@@ -341,7 +343,8 @@ class EMGenClassAverages:
 		'''
 		Had to supply this function so that the infrastructure works with and without parallelism enabled
 		'''
-		print i
+		print "*",
+		sys.stdout.flush()
 	
 	def __finalize_writing(self):
 		'''

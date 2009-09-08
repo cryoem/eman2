@@ -5232,7 +5232,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		int dy = -(int)(floor(com[1] + 0.5f) - ny / 2);
 		int dz = 0;
 		if (nz > 1) {
-			dz = -(int)(floor(com[1] + 0.5f) - nz / 2);
+			dz = -(int)(floor(com[2] + 0.5f) - nz / 2);
 		}
 		image->translate(dx, dy, dz);
 

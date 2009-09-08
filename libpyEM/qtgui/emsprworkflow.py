@@ -1317,9 +1317,10 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			d = a.get_attr_dict()
 			if enable_ctf and d.has_key("ctf"):
 				self.column_data = CTFColumns()
-				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR",float_lt))
 				table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus",float_lt))
 				table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1",float_lt))
+				table.add_column_data(EMFileTable.EMColumnData("SNR",self.column_data.get_snr,"The averaged SNR",float_lt))
+				table.add_column_data(EMFileTable.EMColumnData("Quality",self.column_data.get_quality,"The quality of the fit as judged by e2ctf",int_lt))
 				table.add_column_data(EMFileTable.EMColumnData("Sampling",self.column_data.get_sampling,"The amount of sampling used for generating CTF parameters",int_lt))
 		else:
 			context_menu_data = ParticleWorkFlowTask.DataContextMenu()
@@ -1461,13 +1462,28 @@ class CTFColumns:
 		except: return ""
 			
 	def get_snr(self,name):
-		ctf = self.get_ctf(name)
+#		ctf = self.get_ctf(name)
 		if ctf != None:
 			snr = 0
 			try: snr = sum(ctf.snr)/len(ctf.snr)
 			except: pass
 			return "%.3f" %snr
 		else: return ""
+		
+	def get_quality(self,name):
+		'''
+		Quality is only applicable in the instance of the database
+		'''
+		print name
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
+			try:
+				quality = ctf_db[get_file_tag(name)][3]
+				return "%i" %quality
+			except:
+				pass
+		return "-"
+
 
 class CTFDBColumns(CTFColumns):
 	def __init__(self):
