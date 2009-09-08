@@ -9715,7 +9715,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 			proj = filt_ctf(proj,ctf)
 			proj.set_attr( "ctf",ctf)
 			proj.set_attr( "ctf_applied",0)
-		
+
 		# add second noise level that is not affected by CTF
 		if noise is not None:
 			try:
@@ -9727,9 +9727,9 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 				proj += noise_ima
 
 		if(Disk):
-                    proj.write_image(stack, i)
+			proj.write_image(stack, i)
 		else: 
-                    out.append(proj)
+			out.append(proj)
 	if(not Disk):  return out
 
 def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph", MPI=False):

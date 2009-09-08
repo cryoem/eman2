@@ -40,14 +40,14 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1 --CTF --noise=N"
+	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1 --CTF --noise=s"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",    type="float",   default=2,       help="angular step ")
 	parser.add_option("--phiEqpsi", type="string",  default="Minus", help="if Minus, psi is set to minus phi (default), if Zero, set to zero ")
 	parser.add_option("--method",   type="string",  default="S",     help="method of quasi-uniformly distributed Eulerian angles S (default) or P")
 	parser.add_option("--symmetry", type="string",  default="c1",    help="symmetry group")
 	parser.add_option("--angles",   type="string",  default=None,    help="List of angles (phi, theta, psi)")
-	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with relative SNR of N")
+	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with standard deviation s and zero mean")
 	parser.add_option("--CTF",      type="string",  default=None,    help="list of CTF parameters")
 
 	(options, args) = parser.parse_args()
