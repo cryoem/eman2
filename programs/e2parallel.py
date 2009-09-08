@@ -88,6 +88,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dckillclients" :
 		killdcclients(options.server,options.port,options.verbose)
 
+	elif args[0]=="dcrerunall":
+		rerunalldc()
+
 	elif args[0]=="dcservmon" :
 		runservmon()
 		
@@ -108,6 +111,14 @@ def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
 	client=EMDCTaskClient(host,port,verbose)
 	client.run(dieifnoserver=300)
+
+def rerunalldc():
+	"""Requeues all active tasks"""
+	q=EMTaskQueue()
+	e=q.active.keys()
+	e=[i for i in e if isinstance(i,int)]
+	
+	for i in e: q.task_rerun(i)
 
 def killdcserver(server,port,verbose):
 	EMDCsendonecom(server,port,"QUIT")

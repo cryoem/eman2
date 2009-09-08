@@ -83,6 +83,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.current_projection = None # keep track of the current projection
 		self.projections = None # a list of the projections - the initial design keeps them all in memory - this could be overcome
 		self.mx_display = None # mx display module for displaying projection and aligned particle
+		self.frc_display = None # 2d plot for displaying comparison between particle and projection
 		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
 		
 	def set_data(self,simmx_file):
@@ -166,14 +167,22 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			from PyQt4 import QtCore
 			QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
-		
+
+		if self.frc_display == None:
+			from emplot2d import EMPlot2DModule
+			self.frc_display = EMPlot2DModule
+			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
+
 		self.update_display(False)
 
 		if resize_necessary:
 			get_application().show_specific(self.mx_display)
 			self.mx_display.optimally_resize()
+			get_application().show_specific(self.frc_display)
+			self.frc_display.optimally_resize()
 		else:
 			self.mx_display.updateGL()
+			self.frc_display.updateGL()
 			
 		if object_number != self.special_euler:
 			self.special_euler = object_number
@@ -183,7 +192,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		'''
 		Uses self.current_particle and self.current_projection to udpate the self.mx_display
 		'''
-		if self.mx_display == None: return
+		if self.mx_display == None : return
 		
 		data = []
 		projection = EMData()
@@ -211,6 +220,9 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			particle.process_inplace("normalize.toimage.lsq",{"to":projection})
 			
 			self.mx_display.set_data([projection,particle])
+			
+			if self.frc_display != None :
+				pass   # TODO
 		else:
 			self.mx_display.set_data([projection])
 		if update: self.mx_display.updateGL()
