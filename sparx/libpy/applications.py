@@ -10916,7 +10916,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		# Export structure
 		cml_export_struc(stack, out_dir, itrial, Ori)
 
-		from development import cml2_ori_collinearity
+	from development import cml2_ori_collinearity
 	coll[itrial] = cml2_ori_collinearity(Ori)
 
 	mpi_barrier(MPI_COMM_WORLD)
