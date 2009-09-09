@@ -36,79 +36,88 @@ import pprint
 from EMAN2 import *
 
 def get_data_type_string(datatype):
-    dtstring = {
-        0 : "UNKNOWN",
-        1 : "CHAR",
-        2 : "UNSIGNED CHAR",
-        3 : "SHORT",
-        4 : "UNSIGNED SHORT",
-        5 : "INT",
-        6 : "UNSIGNED INT",
-        7 : "FLOAT",
-        8 : "DOUBLE",
-        9 : "SHORT_COMPLEX",
-        10 : "USHORT_COMPLEX",
-        11 : "FLOAT_COMPLEX"
-    }
-    return dtstring.get(datatype, 'UNKNOWN')
+	dtstring = {
+		0 : "UNKNOWN",
+		1 : "CHAR",
+		2 : "UNSIGNED CHAR",
+		3 : "SHORT",
+		4 : "UNSIGNED SHORT",
+		5 : "INT",
+		6 : "UNSIGNED INT",
+		7 : "FLOAT",
+		8 : "DOUBLE",
+		9 : "SHORT_COMPLEX",
+		10 : "USHORT_COMPLEX",
+		11 : "FLOAT_COMPLEX"
+	}
+	return dtstring.get(datatype, 'UNKNOWN')
 
 def main():
-    progname = os.path.basename(sys.argv[0])
-    usage = """%prog [options] imagefile
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog [options] imagefile ...
 This program will print out some information about the image.
-    """
-    
-    parser = OptionParser(usage=usage,version=EMANVERSION)
-    
-    parser.add_option("-H", "--header", action="store_true",help="show all header information",default=False)
-#    parser.add_option("-v", "--verbose", type="int", help="set verbosity level. N=0,1,2,3. large N means more verbose.")
-    parser.add_option("-s", "--stat", action="store_true",help="show statistical information about the image(s).",default=False)
-    
-    (options, args) = parser.parse_args()
-    
-    if len(args)<1:
-        print usage
-        parser.error("Specify image file")
-    
-    if options.header:
-        show_all_header = True
-    else:
-        show_all_header = False
-    if options.stat:
-        stat = True
-    else:
-        stat = False
-    
-    imagefile = args[0]
-    nimg = EMUtil.get_image_count(imagefile)
-    imgtype = EMUtil.get_image_type(imagefile)
-    imgtypename = EMUtil.get_imagetype_name(imgtype)
-    image_index = 0
-    if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not stat: 
-        image_index = -1
-    print '%20s: %d' % ('Number of Images', nimg)
-    print '%20s: %s' % ('Image Format',imgtypename)
-    
-    d = EMData()
-    if not stat:
-        d.read_image(imagefile, image_index, True)
-    else:
-        d.read_image(imagefile, image_index, False)
-    
-    print '%20s: %d x %d x %d' % ("Image Dimensions", d.get_xsize(), d.get_ysize(), d.get_zsize())
-    print '%20s: %s' % ("Image Data Type", get_data_type_string(d.get_attr("datatype")))
-    if options.stat: 
-        print '\nmean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g' % \
-            ( d.get_attr("mean"), d.get_attr("sigma"), d.get_attr("skewness"), d.get_attr("kurtosis"))
-    
-    ctf = d.get_ctf()
-    if ctf is not None:
-        print '\nCTF: %s' % (ctf.to_string())
-    
-    if options.header:
-        dict = d.get_attr_dict()
-        print '\nDetailed Header Information:'
-        pprint.pprint(dict)
+	"""
+	
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_option("-H", "--header", action="store_true",help="show all header information",default=False)
+	parser.add_option("-N", "--number", type="int", help="Image number for single image info",default=0)
+	parser.add_option("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
+	parser.add_option("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
+	
+	(options, args) = parser.parse_args()
+	
+	if len(args)<1:
+		print usage
+		parser.error("Specify image file")
 
+	if options.header and options.stat : 
+		print "Only one of --header and --stat may be specified"
+		sys.exit(1)
+	
+	for imagefile in args:
+	
+		if imagefile.lower()[:4]!="bdb:" :
+			nimg = EMUtil.get_image_count(imagefile)
+			imgtype = EMUtil.get_image_type(imagefile)
+			imgtypename = EMUtil.get_imagetype_name(imgtype)
+			if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not stat: 
+				image_index = -1
+				
+			d=EMData(imagefile, options.number, True)
+			if d["nz"]==1 : print "%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"])
+			else : print "%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"])
+			
+			
+		else :
+			dct=db_open_dict(imagefile,ro=True)
+			d=dct.get_header(0)
+			nimg=len(dct)
+			
+			d=EMData(imagefile, options.number, True)
+			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
+			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
+
+		if options.all : imgn=xrange(nimg)
+		else : imgn=[options.number]
+
+		if options.stat :
+			for i in imgn:
+				d=EMData(imagefile,i)
+				print "%d.\tmean=%1.4f\tsigma=%1.4f\tskewness=%1.4f \tkurtosis=%1.4f"%(i,d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
+				try:
+					c=d["ctf"]
+					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)
+				except:
+					print " "
+
+		if options.header :
+			for i in imgn:
+				d=EMData(imagefile,i)
+				print "%d."%i,
+				for k in d.get_attr_dict():
+					print "\t%s: %s"%(k,str(d[k]))
+				print
+			
 if __name__ == "__main__":
-    main()
+	main()

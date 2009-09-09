@@ -355,7 +355,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 				xch=sockf.read(4)
 				signal.alarm(0)
 				if xch=="WAIT" :
-					time.sleep(random.randint(3,10))
+					time.sleep(random.randint(5,20))
 					continue
 		except:
 			time.sleep(8)
@@ -561,7 +561,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		# 16-19: count of bytes in pickled data following header
 
 		# if we have too many threads, we trigger the client to sleep a while before even doing a handshake
-		if threading.active_count()>DCMAXTHREADS:
+		# We'll try not to make localhost wait
+		if threading.active_count()>DCMAXTHREADS and self.client_address!="127.0.0.1":
 			self.sockf.write("WAIT")
 			self.sockf.flush()
 			if self.verbose>1 : print "Telling client to wait ",self.client_address
