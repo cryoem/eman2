@@ -69,7 +69,8 @@ This program will sort a stack of images based on some similarity criterion. Not
 	
 	if options.iterative+options.byptcl+options.reverse>1 :
 		parser.error("byptcl, iterative and reverse are mututally exclusive")
-	
+
+	print "Beginning image sort/alignment"
 	E2n=E2init(sys.argv)
 
 	if options.simalign : options.simalign=parsemodopt(options.simalign)
@@ -95,8 +96,9 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 	stackshrink=[i.copy() for i in stack]
 	if (shrink>1) :
 		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
-		if center : 
-			for i in stackshrink: i.process_inplace("xform.centerofmass")
+
+	if center : 
+		for i in stackshrink: i.process_inplace("xform.centerofmass")
 
 	# initialize the connectivity with a random linear chain
 	for i,im in enumerate(stack): 
@@ -146,6 +148,9 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 
 	# a single particle can stay in its original orientation. We will use the most referenced particle for this
 	stack[bn[0][1]].set_attr("aligned",1)
+	if center : 
+		stack[bn[0][1]].process_inplace("xform.centerofmass")
+
 
 	ret=[stack[bn[0][1]]]
 	# now align the particles in the order we find them in the referenced sublists

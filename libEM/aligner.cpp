@@ -1007,6 +1007,8 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
 
+	
+
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
@@ -1048,6 +1050,10 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	float precision = params.set_default("precision",0.04f);
 	int maxiter = params.set_default("maxiter",28);
+	
+//	printf("Refine sx=%1.2f sy=%1.2f sa=%1.2f prec=%1.4f maxit=%d\n",stepx,stepy,stepaz,precision,maxiter);
+//	printf("%1.2f %1.2f %1.1f  ->",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+	
 	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;
 		status = gsl_multimin_fminimizer_iterate(s);
@@ -1064,14 +1070,16 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	}
 	float fmaxshift = static_cast<float>(maxshift);
 	EMData *result;
-	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  )
+	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1))  )
 	{
+//		printf(" Refine good %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 		tsoln.set_mirror(mirror);
 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
 		result = this_img->process("math.transform",Dict("transform",&tsoln));
 		result->set_attr("xform.align2d",&tsoln);
 	} else { // The refine aligner failed - this shift went beyond the max shift
+//		printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
 		result = this_img->process("math.transform",Dict("transform",t));
 		result->set_attr("xform.align2d",t);
 	}

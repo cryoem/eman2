@@ -549,10 +549,10 @@ class EMClassAveTask(EMTask):
 	   	
 	   	
 	   	for i in xrange(0,self.options["iter"]):
-	   		if i != 0 : # on the first iteration we already have the initial alignments. 
+	   		#if i != 0 : # on the first iteration we already have the initial alignments. 
 	   			
-	   			alis = self.__align_all(averages[-1],ali_images)
-	   			all_alis.append(alis)
+			alis = self.__align_all(averages[-1],ali_images)
+			all_alis.append(alis)
 	   		
 	   		threshold = None
 	   		sims = None
@@ -731,6 +731,7 @@ class EMClassAveTask(EMTask):
 		@return the aligned image
 		'''
 		# Align the particle to "to"
+
 		options = self.options
 		this.del_attr("xform.align2d")
 		aligned=this.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
