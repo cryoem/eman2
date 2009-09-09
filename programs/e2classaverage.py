@@ -235,9 +235,10 @@ class EMGenClassAverages:
 		options = self.options
 		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
 			
-			self.task_customers = []
-			self.tids = []
+			from EMAN2PAR import EMTaskCustomer
 			self.__init_memory(self.options)
+			self.etc=EMTaskCustomer(self.options.parallel)
+			tasks=[]
 			for class_idx in xrange(self.class_min,self.class_max+1):
 				ptcl_indices,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)
 				if len(ptcl_indices) == 0: continue
@@ -267,35 +268,29 @@ class EMGenClassAverages:
 				
 				task = EMClassAveTaskDC(data=data,options=self.__get_task_options(self.options))
 				
-				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
-				tid=etc.send_task(task)
-				#print "Task submitted tid=",tid
+				tasks.append(task)
 				
-				self.task_customers.append(etc)
-				self.tids.append(tid)
+			self.tids=self.etc.send_tasks(tasks)
 
 			
 			while 1:
-				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"class averaging tasks left in main loop"
-				st_vals = self.task_customers[0].check_task(self.tids)
-				for i in xrange(len(self.task_customers)-1,-1,-1):
+				if len(self.tids) == 0: break
+				print len(self.tids),"class averaging tasks left in main loop"
+				st_vals = self.etc.check_task(self.tids)
+				for i in xrange(len(self.tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
-						task_customer = self.task_customers[i]
 						tid = self.tids[i] 
 						
-						self.task_customers.pop(i)
 						self.tids.pop(i)
 
-						rslts = task_customer.get_results(tid)
+						rslts = etc.get_results(tid)
 						
 						self.__write_class_data(rslts[1])
 
 						if self.logger != None:
-							E2progress(self.logger,1.0-len(self.task_customers)/(self.class_max+1-self.class_min))
+							E2progress(self.logger,1.0-len(self.tids)/(self.class_max+1-self.class_min))
 				
 				time.sleep(5)
 				

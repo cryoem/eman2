@@ -249,8 +249,10 @@ class EMParallelSimMX:
 	
 			self.check_blocks(blocks) # testing function can be removed at some point
 			
-			self.task_customers = []
-			self.tids = []
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(self.options.parallel)
+
+			tasks=[]
 			for block in blocks:
 				
 				data = {}
@@ -258,41 +260,35 @@ class EMParallelSimMX:
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
-				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
-				tid=etc.send_task(task)
-				#print "Task submitted tid=",tid
+				tasks.append(task)
 				
-				self.task_customers.append(etc)
-				self.tids.append(tid)
-
+			self.tids=etc.send_tasks(tasks)
+			print len(self.tids)," tasks submitted"
 #			
 			while 1:
-				if len(self.task_customers) == 0: break
-				print len(self.task_customers),"simmx tasks left in main loop   \r",
+				if len(self.tids) == 0: break
+				print len(self.tids),"simmx tasks left in main loop   \r",
 				sys.stdout.flush()
-				st_vals = self.task_customers[0].check_task(self.tids)
-				for i in xrange(len(self.task_customers)-1,-1,-1):
+				st_vals = etc.check_task(self.tids)
+				for i in xrange(len(self.tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
-						task_customer = self.task_customers[i]
 						tid = self.tids[i]
 						
 						try:
-							rslts = task_customer.get_results(tid)
+							rslts = etc.get_results(tid)
 							self.__store_output_data(rslts[1])
 						except:
 							print "ERROR storing results for task %d. Rerunning."%tid
 							task_customer.rerun_task(tid)
 							contintue
 						if self.logger != None:
-							E2progress(self.logger,1.0-len(self.task_customers)/float(len(blocks)))
+							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
 							if self.options.verbose: 
-								print "%d/%d\r"%(len(self.task_customers),len(blocks))
+								print "%d/%d\r"%(len(self.tids),len(blocks))
 								sys.stdout.flush()
 								
-						self.task_customers.pop(i)
 						self.tids.pop(i)
 
 				

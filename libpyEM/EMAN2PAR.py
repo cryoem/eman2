@@ -138,6 +138,39 @@ class EMTaskCustomer:
 				
 			signal.alarm(0)
 
+	def send_tasks(self,tasks):
+		"""Send a group of tasks to the server. Returns a taskid."""
+
+		ret=[]
+
+		for task in tasks:
+			try: task.user=os.getlogin()
+			except: task.user="unknown"
+			
+			for k in task.data:
+				try :
+					if task.data[k][0]=="cache" :
+						task.data[k]=list(task.data[k])
+						task.data[k][1]=abs_path(task.data[k][1])
+				except: pass
+			
+		if self.servtype=="dc" :
+			# Try to open a socket until we succeed
+			try: 
+				signal.alarm(60)
+				ret=EMDCsendonecom(self.addr,"TSKS",tasks)
+				signal.alarm(0)
+				return ret
+			except:
+				traceback.print_exc()
+				print "***************************  ERROR SENDING TASK"
+				signal.alarm(60)
+				self.wait_for_server()
+				signal.alarm(0)
+				return EMDCsendonecom(self.addr,"TSKS",tasks)
+		
+		raise Exception,"Unknown server type"
+
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
 		
@@ -770,6 +803,24 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				
 				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
 
+			################### These are issued by customers
+			# A set of new tasks to enqueue
+			# the request contains a list of EMTask objects
+			# return is a list of task ids or None upon error
+			elif cmd=="TSKS":
+				tids=[]
+				for task in data:
+					tids.append(self.queue.add_task(task))
+					if self.verbose>1 : print "new TASK %s.%s"%(data.command,str(data.data))
+				try: 
+					sendobj(self.sockf,tids)
+					self.sockf.flush()
+				except: 
+					sendobj(self.sockf,None)
+					self.sockf.flush()
+				
+				EMDCTaskHandler.dbugfile.write("Task %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
+				
 			# This will requeue a task which has already been run (and may be completed)
 			# This will generally happen if there was some unexpected error in the returned results
 			# and should not ever really be necessary. It is likely indicative of some sort of 
