@@ -53,7 +53,7 @@ import traceback
 EMAN2PARVER=11
 
 # This is the maximum number of active server threads before telling clients to wait
-DCMAXTHREADS=10
+DCMAXTHREADS=5
 
 def DCcustomer_alarm(signum=None,stack=None):
 #		if stack!=None : traceback.print_stack(stack)
@@ -157,7 +157,7 @@ class EMTaskCustomer:
 		if self.servtype=="dc" :
 			# Try to open a socket until we succeed
 			try: 
-				signal.alarm(60)
+				signal.alarm(240)		# sometime there is a lot of congestion here...
 				ret=EMDCsendonecom(self.addr,"TSKS",tasks)
 				signal.alarm(0)
 				return ret
@@ -381,7 +381,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 		try :
 			xch="WAIT"
 			while xch=="WAIT" :
-				if alrm>0 : signal.alarm(alrm)
+				if alrm>0 : signal.alarm(alrm+1)
 				sock=socket.socket()
 				sock.connect(addr)
 				sockf=sock.makefile()
@@ -407,7 +407,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 		print "ERROR: Server version mismatch ",socket.gethostname()
 		sys.exit(1)
 
-	if alrm>0 : signal.alarm(alrm)
+	if alrm>0 : signal.alarm(alrm+1)
 
 	return(sock,sockf)
 
@@ -732,6 +732,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# the request should be of the form ["queue",did,image#]
 			# Returns requested object
 			elif cmd=="DATA" :
+				# if the server is congested, we slow down the data flow to the clients a bit to produce better threading
+				#if threading.active_count()>DCMAXTHREADS : 
+					#if random.randint(1,10)==1 : time.sleep(1)
 				try:
 					fsp=self.queue.didtoname[data[1]]
 					obj=EMData(fsp,data[2])
@@ -819,7 +822,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					self.sockf.flush()
 				
-				EMDCTaskHandler.dbugfile.write("Task %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
+				EMDCTaskHandler.dbugfile.write("Tasks %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
 				
 			# This will requeue a task which has already been run (and may be completed)
 			# This will generally happen if there was some unexpected error in the returned results
