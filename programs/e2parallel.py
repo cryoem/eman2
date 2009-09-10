@@ -109,7 +109,6 @@ def killdcclients(server,port,verbose):
 
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
-	from EMAN2 import *
 	while (1):
 		client=EMDCTaskClient(host,port,verbose)
 		client.run(onejob=True)
