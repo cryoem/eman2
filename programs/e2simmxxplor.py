@@ -170,8 +170,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 
 		if self.frc_display == None:
 			from emplot2d import EMPlot2DModule
-			self.frc_display = EMPlot2DModule
-			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
+			self.frc_display = EMPlot2DModule()
+#			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
 		self.update_display(False)
 
@@ -223,7 +223,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			
 			if self.frc_display != None :
 				frc=projection.calc_fourier_shell_correlation(particle)
-				self.frc_display.set_data(frc,"frc")
+				nf=len(frc)/3
+				self.frc_display.set_data((frc[:nf],frc[nf:nf*2]),"frc")
 				
 		else:
 			self.mx_display.set_data([projection])

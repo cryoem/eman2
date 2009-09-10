@@ -109,11 +109,14 @@ def killdcclients(server,port,verbose):
 
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
-	client=EMDCTaskClient(host,port,verbose)
-	client.run(dieifnoserver=300)
+	from EMAN2 import *
+	while (1):
+		client=EMDCTaskClient(host,port,verbose)
+		client.run(onejob=True)
+		print "New client (%d alloced)"%EMData.totalalloc
 
 def rerunalldc():
-	"""Requeues all active tasks"""
+	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
 	e=q.active.keys()
 	e=[i for i in e if isinstance(i,int)]

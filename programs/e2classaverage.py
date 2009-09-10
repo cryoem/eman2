@@ -285,7 +285,7 @@ class EMGenClassAverages:
 						
 						self.tids.pop(i)
 
-						rslts = etc.get_results(tid)
+						rslts = self.etc.get_results(tid)
 						
 						self.__write_class_data(rslts[1])
 
@@ -368,7 +368,7 @@ class EMGenClassAverages:
 				average.set_attr("projection_image",self.options.ref)
 #			average.write_image(self.options.output,rslts["class_idx"])
 			average.set_attr("class_ptcl_src",abs_path(self.options.input))
-			average.write_image(self.options.output,-1)
+			average.write_image(self.options.output,rslts["class_idx"])
 			ptcl_indices,dcol_idx_cache =  self.__get_class_data(rslts["class_idx"], self.options)
 			
 			final_alis = rslts["final_alis"]
@@ -388,7 +388,7 @@ class EMGenClassAverages:
 				sigma.set_attr("class_img",abs_path(options.output))
 				if average.has_attr("class_ptcl_idxs"):
 					sigma.set_attr("class_ptcl_idxs",average.get_attr("class_ptcl_idxs"))
-				sigma.write_image(new_name,-1)
+				sigma.write_image(new_name,rslts["class_idx"])
 					
 class EMClassAveTask(EMTask):
 	'''

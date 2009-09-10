@@ -53,7 +53,7 @@ import traceback
 EMAN2PARVER=11
 
 # This is the maximum number of active server threads before telling clients to wait
-DCMAXTHREADS=5
+DCMAXTHREADS=7
 
 def DCcustomer_alarm(signum=None,stack=None):
 #		if stack!=None : traceback.print_stack(stack)
@@ -811,8 +811,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# the request contains a list of EMTask objects
 			# return is a list of task ids or None upon error
 			elif cmd=="TSKS":
+				grp=self.queue.add_group()
 				tids=[]
 				for task in data:
+					task.group=grp
 					tids.append(self.queue.add_task(task))
 					if self.verbose>1 : print "new TASK %s.%s"%(data.command,str(data.data))
 				try: 
@@ -950,7 +952,7 @@ class EMDCTaskClient(EMTaskClient):
 		signal.alarm(0)
 		return ret
 
-	def run(self,dieifidle=86400,dieifnoserver=86400):
+	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after
 		which to terminate the client if we aren't given something to do. dieifnoserver is the same if we can't find a server to
 		communicate with. Both default to 24 hours."""
@@ -1093,6 +1095,8 @@ class EMDCTaskClient(EMTaskClient):
 			
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
+			
+			if onejob : break
 			
 			lastjob=time.time()
 			time.sleep(3)

@@ -1118,7 +1118,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 	def reducetog(self,bool):
 		self.reduce = bool
 
-class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
+class EMSymViewerWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	
 	allim=WeakKeyDictionary()
 	def __init__(self, em_slice_viwer):
