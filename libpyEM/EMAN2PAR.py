@@ -579,7 +579,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 		if self.verbose>1 : print "Thread %s start"%threading.currentThread().getName()
 		
-		# periodic housekeeping
+		# periodic housekeeping, but not if too busy
+		if threading.active_count()>=DCMAXTHREADS :  EMDCTaskHandler.lasthk = time.time()
 		if time.time()-EMDCTaskHandler.lasthk>30 :
 			EMDCTaskHandler.lasthk=time.time()
 			self.housekeeping()

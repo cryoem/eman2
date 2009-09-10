@@ -179,7 +179,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			get_application().show_specific(self.mx_display)
 			self.mx_display.optimally_resize()
 			get_application().show_specific(self.frc_display)
-			self.frc_display.optimally_resize()
+#			self.frc_display.optimally_resize()
 		else:
 			self.mx_display.updateGL()
 			self.frc_display.updateGL()
@@ -214,17 +214,23 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			t = Transform(d)
 			
 			particle = EMData()
-			n = EMUtil.get_image_count(self.particle_file)
+			#n = EMUtil.get_image_count(self.particle_file)
 			particle.read_image(self.particle_file,self.current_particle)
 			particle.transform(t)
 			particle.process_inplace("normalize.toimage.lsq",{"to":projection})
 			
-			self.mx_display.set_data([projection,particle])
+			particle_masked=particle.copy()
+			tmp=projection.process("threshold.notzero")
+			particle_masked.mult(tmp)
+			
+			self.mx_display.set_data([projection,particle,particle_masked])
 			
 			if self.frc_display != None :
 				frc=projection.calc_fourier_shell_correlation(particle)
+				frcm=projection.calc_fourier_shell_correlation(particle_masked)
 				nf=len(frc)/3
 				self.frc_display.set_data((frc[:nf],frc[nf:nf*2]),"frc")
+				self.frc_display.set_data((frcm[:nf],frcm[nf:nf*2]),"frcm")
 				
 		else:
 			self.mx_display.set_data([projection])
