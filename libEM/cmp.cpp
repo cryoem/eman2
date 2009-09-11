@@ -980,7 +980,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (snrweight) {
 		if (!image->has_attr("ctf")) throw InvalidCallException("SNR weight with no CTF parameters");
 		Ctf *ctf=image->get_attr("ctf");
-		float ds=2.0f/(ctf->apix*ny);
+		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR);
 	}
 

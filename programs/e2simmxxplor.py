@@ -233,8 +233,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 				self.frc_display.set_data((frcm[:nf],frcm[nf:nf*2]),"frcm")
 				
 				ctf=particle["ctf"]
-				ds=2.0/(ctf.apix*particle["nx"])
-				snr=ctf.compute_1d(particle["nx"],ds,Ctf.CtfType.CTF_SNR)
+				ds=1.0/(ctf.apix*particle["nx"])
+				snr=ctf.compute_1d(particle["nx"],ds,Ctf.CtfType.CTF_SNR_SMOOTH)
 				
 				self.frc_display.set_data(([i*ds for i in range(particle["nx"]/2)],snr),"CTF")
 				
