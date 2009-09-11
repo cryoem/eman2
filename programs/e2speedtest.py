@@ -293,7 +293,6 @@ so in most cases it is not dealt with.'
         
         return
         
-    tmp = EMData()
     t1 = time.clock()
     for i in xrange(3):
         for j in xrange(5, NTT):
