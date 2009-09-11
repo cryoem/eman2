@@ -3921,7 +3921,7 @@ void FlipProcessor::process_inplace(EMData * image)
 	// This means when flipping even sized dimensions that some pixels are redundant.
 	// Here redundant pixels are set to zero, however, should this change to something
 	// like the mean.
-	if (axis == "x" || axis == "X") {		// vertical flip
+	if (axis == "x" || axis == "X") {		// Horizontal flip
 		int offset = (nx%2 == 0);
 		size_t idx1, idx2;
 		for(int z = 0; z < nz; ++z) {
@@ -9149,7 +9149,7 @@ int MPICUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0,
     if (F != 0.0) {flag_stop_SA = 0;}   // flag to run SA or not
     else {flag_stop_SA = 1;}
     flag_stop_part = 0;                 // flag to stop k-means
-    ct_im_mv = 0;                       // DEBUG 
+    ct_im_mv = 0;                       // DEBUG
     BLOCK_SIZE = 512;
     NB = size_DIST / BLOCK_SIZE;
     ins_BLOCK = NB * BLOCK_SIZE;
@@ -9239,8 +9239,8 @@ void MPICUDA_kmeans::compute_ave() {
 	buf = 0.0f;
 	for (j= 0 ; j < m; j++) {
 	    ind = i * m + j;
-	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average 
-	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE 
+	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average
+	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
 	}
 	h_AVE2[i] = buf;
     }
