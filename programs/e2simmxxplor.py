@@ -233,11 +233,14 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 				self.frc_display.set_data((frcm[:nf],frcm[nf:nf*2]),"frcm")
 				
 				ctf=particle["ctf"]
-				ds=1.0/(ctf.apix*particle["nx"])
-				snr=ctf.compute_1d(particle["nx"],ds,Ctf.CtfType.CTF_SNR_SMOOTH)
-				
-				self.frc_display.set_data(([i*ds for i in range(particle["nx"]/2)],snr),"CTF")
-				
+				ds=1.0/(ctf.apix*particle["ny"])
+				snr=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_SNR)
+				ses=[i*ds for i in range(particle["ny"]/2)]
+				self.frc_display.set_data((ses,snr),"SNR",color=1)
+
+				amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP
+				self.frc_display.set_data((ses,amp),"CTF",color=2)
+
 		else:
 			self.mx_display.set_data([projection])
 		if update: self.mx_display.updateGL()

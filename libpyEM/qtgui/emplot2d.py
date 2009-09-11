@@ -229,7 +229,7 @@ class EMPlot2DModule(EMGUIModule):
 			else : self.axes[key]=(-1,0,-1)
 		except: return
 		
-		if color not in range(len(colortypes)): color = 0 # we are only a certain number of colors
+		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
 		self.pparm[key]=(color,1,0,linewidth,0,0,5)
 		
 		if not isinstance(data[0],list):
