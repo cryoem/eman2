@@ -141,7 +141,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		for i in range(len(self.projections)):
 			r = Region(i,self.current_particle,1,1)
 			e.read_image(self.simmx_file,0,False,r)
-			self.projections[i].set_attr("cmp",e.get(0))
+			self.projections[i].set_attr("cmp",-e.get(0))		# We plot negative values so taller peaks are better...
 		
 		self.regen_dl()
 		
@@ -231,6 +231,12 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 				nf=len(frc)/3
 				self.frc_display.set_data((frc[:nf],frc[nf:nf*2]),"frc")
 				self.frc_display.set_data((frcm[:nf],frcm[nf:nf*2]),"frcm")
+				
+				ctf=particle["ctf"]
+				ds=2.0/(ctf.apix*particle["nx"])
+				snr=ctf.compute_1d(particle["nx"],ds,Ctf.CtfType.CTF_SNR)
+				
+				self.frc_display.set_data(([i*ds for i in range(particle["nx"]/2)],snr),"CTF")
 				
 		else:
 			self.mx_display.set_data([projection])
@@ -418,6 +424,7 @@ def simmx_xplore_dir_data():
 	ret = []
 	
 	for dir in dirs:
+		# Get the name of the input 3-D Model
 		register_db_name = "bdb:"+dir+"#register"
 		if not db_check_dict(register_db_name): continue
 		db = db_open_dict(register_db_name,ro=True)
@@ -425,33 +432,25 @@ def simmx_xplore_dir_data():
 		# need to be able to get the input data
 		cmd = db["cmd_dict"]
 		if not cmd.has_key("input"): continue
-		input = cmd["input"]
+		inp = cmd["input"]
 		
+		dcts=db_list_dicts("bdb:"+dir)		# list all databases
 		projs = []
 		simxs  = []
-		fail = False
-		for i in range(0,9):
-			for j in range(0,9):
-				last_bit = str(i)+str(j)
-				r = []
+		for name in dcts:
+			if "simmx" in name :
+				num=name.split("_")[1]		# we assume names of the form simmx_12_ext
+				name="bdb:%s#%s"%(dir,name)
+				namep="bdb:%s#projections_%s"%(dir,num)
 				
-				proj_db = "bdb:"+dir+"#projections_"+last_bit
-				simx_db = "bdb:"+dir+"#simmx_"+last_bit
-				if db_check_dict(proj_db) and db_check_dict(simx_db):
-					projs.append(proj_db)
-					simxs.append(simx_db)
-				else:
-					fail = True
-					
+				if db_check_dict(namep) :
+					projs.append(namep)
+					simxs.append(name)
 				
-				if fail: break
-				
-			if fail: break
-
 		if len(projs) > 0:
 			projs.reverse()
 			simxs.reverse()
-			ret.append([dir,input,projs,simxs])
+			ret.append([dir,inp,projs,simxs])
 			
 	return ret
 	
