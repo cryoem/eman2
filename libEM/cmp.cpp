@@ -83,8 +83,8 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 		throw ImageFormatException( "Complex images not supported by CMP::CccCmp");
 	validate_input_args(image, with);
 
-	float *d1 = image->get_data();
-	float *d2 = with->get_data();
+	const float *const d1 = image->get_const_data();
+	const float *const d2 = with->get_const_data();
 
 	float negative = (float)params.set_default("negative", 1);
 	if (negative) negative=-1.0; else negative=1.0;
@@ -101,7 +101,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	}
 
 	if (has_mask) {
-		float* dm = mask->get_data();
+		const float *const dm = mask->get_const_data();
 		for (size_t i = 0; i < totsize; ++i) {
 			if (dm[i] > 0.5) {
 				avg1 += double(d1[i]);
@@ -141,8 +141,8 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	float *y_data = with->get_data();
-	float *x_data = image->get_data();
+	const float *const y_data = with->get_const_data();
+	const float *const x_data = image->get_const_data();
 	double result = 0.;
 	float n = 0.0f;
 	if(image->is_complex() && with->is_complex()) {
@@ -220,7 +220,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		if (params.has_key("mask")) {
 		  EMData* mask;
 		  mask = params["mask"];
-  		  float* dm = mask->get_data();
+  		  const float *const dm = mask->get_const_data();
 		  for (size_t i = 0; i < totsize; i++) {
 			   if (dm[i] > 0.5) {
 				double temp = x_data[i]- y_data[i];
@@ -250,8 +250,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	float *x_data = image->get_data();
-	float *y_data = with->get_data();
+	const float *const x_data = image->get_const_data();
+	const float *const y_data = with->get_const_data();
 
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
@@ -406,7 +406,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		if (params.has_key("mask")) {
 			EMData* mask;
 			mask = params["mask"];
-			float* dm = mask->get_data();
+			const float *const dm = mask->get_const_data();
 			if (normalize) {
 				for (size_t i = 0; i < totsize; i++) {
 					if (dm[i] > 0.5) {
@@ -599,8 +599,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		a->ri2ap();
 		b->ri2ap();
 
-		float *ad=a->get_data();
-		float *bd=b->get_data();
+		const float *const ad=a->get_const_data();
+		float * bd=b->get_data();
 
 		for (size_t i=0; i<size2; i+=2) bd[i]=ad[i];
 		b->update();
@@ -612,10 +612,10 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		delete b;
 	}
 
-	float *x_data;
-	if (with2) x_data=with2->get_data();
-	else x_data = with->get_data();
-	float *y_data = image->get_data();
+	const float * x_data;
+	if (with2) x_data=with2->get_const_data();
+	else x_data = with->get_const_data();
+	const float *const y_data = image->get_const_data();
 
 	size_t nx = image->get_xsize();
 	float m = 0;
@@ -766,8 +766,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	EMData *with_fft = with->do_fft();
 	with_fft->ri2ap();
 
-	float *image_fft_data = image_fft->get_data();
-	float *with_fft_data = with_fft->get_data();
+	const float *const image_fft_data = image_fft->get_const_data();
+	const float *const with_fft_data = with_fft->get_const_data();
 	double sum = 0;
 	double norm = FLT_MIN;
 	size_t i = 0;
@@ -984,7 +984,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 			ctf=with->get_attr("ctf");
 		}
 		else ctf=image->get_attr("ctf");
-		
+
 		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR);
 	}
