@@ -406,7 +406,7 @@ class EMSimTaskDC(EMTask):
 				min_ptcl_idx = ptcl_idx 
 			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
 			i+=1
-			progress_callback(int(100*i/n))
+			if progress_callback(int(100*i/n))<0 : break
 		
 			
 			

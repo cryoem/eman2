@@ -576,7 +576,7 @@ class EMClassAveTask(EMTask):
 	   		#print inclusions
 	   		
 	   		progress += 1
-	  		progress_callback(int(100*(progress/float(total_averages))))
+	  		if progress_callback(int(100*(progress/float(total_averages))))<0 : break
 	   		
 	   		
 	   	if ref != None:
