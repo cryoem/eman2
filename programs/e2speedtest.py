@@ -85,7 +85,7 @@ improved with time."""
     pat.process_inplace('normalize.circlemean')
     pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0});
     
-    data = [EMData() for i in xrange(5000)]
+    data = [None for i in xrange(NTT)]
     
     for i in xrange(NTT):
         data[i] = pat.copy()
