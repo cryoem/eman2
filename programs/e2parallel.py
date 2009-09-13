@@ -109,10 +109,10 @@ def killdcclients(server,port,verbose):
 
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
-	while (1):
-		client=EMDCTaskClient(host,port,verbose)
-		client.run(onejob=True)
-		print "New client (%d alloced)"%EMData.totalalloc
+#	while (1):
+	client=EMDCTaskClient(host,port,verbose)
+	client.run(onejob=False)
+#	print "New client (%d alloced)"%EMData.totalalloc
 
 def rerunalldc():
 	"""Requeues all active (incomplete) tasks"""

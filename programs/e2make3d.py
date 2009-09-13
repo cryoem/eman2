@@ -161,6 +161,7 @@ def main():
 	if options.check: exit(0)
 	
 
+	print "e2make3d.py"
 	logger=E2init(sys.argv)
 	
 	# just remove the output file - if the user didn't specify force then the error should have been found in the check function
