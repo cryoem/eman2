@@ -1165,6 +1165,7 @@ void EMData::scale_pixel(float scale) const
 		Ctf *ctf=(Ctf *)attr_dict["ctf"];
 		ctf->apix*=scale;
 		attr_dict["ctf"]=ctf;
+		if(ctf) {delete ctf; ctf=0;}
 	}
 }
 

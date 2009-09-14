@@ -629,6 +629,7 @@ EMData * Wiener2DFourierProcessor::process(const EMData *in)
 	delete filt;
 	if (!in->is_complex()) delete in2;
 
+	if(!ictf && ctf) {delete ctf; ctf=0;}
 	return(ret);
 /*	const EMData *fft;
 	float *fftd;
@@ -5368,6 +5369,8 @@ void SNRProcessor::process_inplace(EMData * image)
 	else {
 		ctf = image_ctf->compute_1d(image->get_ysize(),1.0f/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR, &sf);
 	}
+
+	if(image_ctf) {delete image_ctf; image_ctf=0;}
 
 	image->process_inplace("normalize.circlemean");
 

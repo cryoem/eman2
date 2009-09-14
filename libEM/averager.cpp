@@ -524,6 +524,7 @@ void CtfCWautoAverager::add_image(EMData * image)
 	}
 	snrsum->add(*snr);
 
+	delete ctf;
 	delete fft;
 	delete snr;
 	delete ctfi;
@@ -844,7 +845,7 @@ void CtfAverager::add_image(EMData * image)
 
 	EMData *image_fft = image->do_fft();
 	image_fft->update();
-
+	if(image_ctf) {delete image_ctf; image_ctf=0;}
 }
 
 EMData * CtfAverager::finish()
@@ -1052,6 +1053,8 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		else {
 			ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_RELATIVE_SNR);
 		}
+
+		if(image_ctf) {delete image_ctf; image_ctf=0;}
 	}
 
 	EMData *image0_fft = image0->do_fft();

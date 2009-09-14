@@ -3508,6 +3508,7 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
         ampcont = params["ampcont"];
         bfactor = params["bfactor"];
         defocus = params["defocus"];
+        if(ctf) {delete ctf; ctf=0;}
     }
 
     vector<point_t> points;
@@ -3778,6 +3779,7 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
         m_voltage = ctf_params["voltage"];
         m_amp_contrast = ctf_params["ampcont"];
         m_defocuses.push_back( ctf_params["defocus"] );
+        if(ctf) {delete ctf; ctf=0;}
     }
 
     Dict params = tf.get_rotation( "spider" );

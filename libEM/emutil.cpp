@@ -1061,7 +1061,13 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 	}
 
 	if (ctf1 && ctf2) {
-		return ctf1->equal(ctf2);
+		bool result = ctf1->equal(ctf2);
+		delete ctf1;
+		ctf1 = 0;
+		delete ctf2;
+		ctf2 = 0;
+
+		return result;
 	}
 	return false;
 }

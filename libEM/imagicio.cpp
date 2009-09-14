@@ -431,6 +431,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	if( dict.has_key("ctf") ) {
 		Ctf * ctf_ = dict["ctf"];
 		write_ctf(ctf_);
+		if(ctf_) {delete ctf_; ctf_=0;}
 	}
 
 	EXITFUNC;

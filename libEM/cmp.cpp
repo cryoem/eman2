@@ -987,6 +987,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR);
+		if(ctf) {delete ctf; ctf=0;}
 	}
 
 	vector<float> amp;
