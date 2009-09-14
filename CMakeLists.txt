@@ -79,7 +79,7 @@ IF (ENABLE_BOUNDS_CHECKING)
 ENDIF (ENABLE_BOUNDS_CHECKING)
 
 IF (ENABLE_DEBUG)
-    SET (OPT_FLAGS "-DDEBUG")
+    SET (OPT_FLAGS "-DDEBUG -O0 -g")
 ELSE (ENABLE_DEBUG)
     IF (ENABLE_ATHLON)
 		SET (OPT_FLAGS "-O3 -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
