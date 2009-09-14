@@ -467,7 +467,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("snrweight", EMObject::INT, "If set, the SNR of 'this' will be used to weight the result. If 'this' lacks CTF info, it will check 'with'. (default=0)");
-			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=1)");
+			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=0)");
 			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the number of pixels in each ring (default=1)");
 			d.put("nweight", EMObject::INT, "Downweight similarity based on number of particles in reference (default=0)");
 			return d;

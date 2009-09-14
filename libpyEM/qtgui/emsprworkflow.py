@@ -1462,7 +1462,7 @@ class CTFColumns:
 		except: return ""
 			
 	def get_snr(self,name):
-#		ctf = self.get_ctf(name)
+		ctf = self.get_ctf(name)
 		if ctf != None:
 			snr = 0
 			try: snr = sum(ctf.snr)/len(ctf.snr)

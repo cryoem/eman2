@@ -202,6 +202,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			r = Region(self.current_projection,self.current_particle,1,1)
 			e = EMData()
 			d = {}
+			e.read_image(self.simmx_file,0,False,r)
+			simval=e.get(0)
 			e.read_image(self.simmx_file,1,False,r)
 			d["tx"] = e.get(0)
 			e.read_image(self.simmx_file,2,False,r)
@@ -223,6 +225,9 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			tmp=projection.process("threshold.notzero")
 			particle_masked.mult(tmp)
 			
+			projection["cmp"]=0
+			particle["cmp"]=simval
+			particle_masked["cmp"]=0
 			self.mx_display.set_data([projection,particle,particle_masked])
 			
 			if self.frc_display != None :
@@ -238,7 +243,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 				ses=[i*ds for i in range(particle["ny"]/2)]
 				self.frc_display.set_data((ses,snr),"SNR",color=1)
 
-				amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP
+				amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP)
 				self.frc_display.set_data((ses,amp),"CTF",color=2)
 
 		else:
@@ -314,6 +319,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.simmx_dir_tab= QtGui.QWidget()
 		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
 		
+		# This is the combo-box with the list of refine_* directories
 		combo_entries = [d[0] for d in self.data]
 		combo_entries.sort()
 		combo_entries.reverse()
@@ -352,7 +358,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 	def update_target(self,update=False):
 		simmx_file = self.simmx_selection()
 		if simmx_file == None:
-			print "it was None"
 			return
 		
 		dir = str(self.combo.currentText())
@@ -360,7 +365,10 @@ class EMSimmxXplorInspector(EMSymInspector):
 		
 		self.target().set_particle_file(data[1])
 		
-		idx = ( i for i in range(len(data[3])) if data[3][i] == simmx_file ).next()
+		try:
+			idx = ( i for i in range(len(data[3])) if data[3][i] == simmx_file ).next()
+		except:
+			return
 		projection_file = data[2][idx]
 		
 		self.target().set_simmx_file(simmx_file)
@@ -400,6 +408,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 				
 				
 	def on_combo_change(self,s):
+		self.update_simmx_list()
 		self.update_target(True)
 		
 	def list_widget_item_clicked(self,item):
@@ -454,7 +463,7 @@ def simmx_xplore_dir_data():
 			projs.reverse()
 			simxs.reverse()
 			ret.append([dir,inp,projs,simxs])
-			
+	
 	return ret
 	
 if __name__ == '__main__':

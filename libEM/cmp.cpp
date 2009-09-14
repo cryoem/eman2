@@ -925,7 +925,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (!with->is_complex()) { with=with->do_fft(); with->set_attr("free_me",1); }
 
 	int snrweight = params.set_default("snrweight", 0);
-	int ampweight = params.set_default("ampweight", 1);
+	int ampweight = params.set_default("ampweight", 0);
 	int sweight = params.set_default("sweight", 1);
 	int nweight = params.set_default("nweight", 0);
 
