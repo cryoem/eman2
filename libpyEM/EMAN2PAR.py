@@ -1040,7 +1040,7 @@ class EMDCTaskClient(EMTaskClient):
 			retry=True
 			retrycount=0
 			while retry:
-				signal.alarm(60)
+				signal.alarm(120)
 				retry=False
 				retrycount+=1
 				if retrycount>10 :
@@ -1056,7 +1056,7 @@ class EMDCTaskClient(EMTaskClient):
 					retry=True
 					continue
 
-				signal.alarm(60)
+				signal.alarm(120)
 				try:
 					sendobj(sockf,task.taskid)
 				except:
@@ -1065,7 +1065,7 @@ class EMDCTaskClient(EMTaskClient):
 					continue
 
 				for k,v in ret.items():
-					signal.alarm(60)
+					signal.alarm(120)
 					try:
 						sendobj(sockf,k)
 						sendobj(sockf,v)

@@ -182,6 +182,7 @@ def main():
 		for i,j in enumerate(results):
 			out_name = results_name+"_%02d"%(i+1)
 			j[1].write_image(out_name,0)
+			print out_name,j[1]["quality"],j[0]
 			if options.dbls: # database list storage
 				pdb = db_open_dict("bdb:project")
 				old_data = pdb.get(options.dbls,dfl={})

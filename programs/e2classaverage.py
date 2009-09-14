@@ -345,6 +345,17 @@ class EMGenClassAverages:
 		'''
 		Write the results matrix to disk
 		'''
+		
+		# We fill in any missing holes in BDB files with actual zero images
+		if self.options.output[:4].lower()=="bdb:" :
+			d=db_open_dict(self.options.output)
+			im=d[min(d.keys())]
+			im.to_zero()
+			im["ptcl_repr"]=0
+			
+			for i in range(len(d)):
+				if d.get_header(i)==None : d[i]=im
+		
 		if hasattr(self.options, "resultmx") and self.options.resultmx != None:
 			# note the order is important!
 			self.classes.write_image(self.options.resultmx,-1)
