@@ -127,6 +127,7 @@ def main():
 			bslst.reverse()
 			aptcls=[]
 			for i in range(len(ptcls)*3/4):
+				n=ptcls[bslst[i][1]]["match_n"]
 				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"dot",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
