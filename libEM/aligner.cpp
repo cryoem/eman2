@@ -398,8 +398,10 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	float cmp2 = rot_trans_align_flip->cmp(cmp_name, flipped, cmp_params);
 
 	if (delete_flag){
-		delete flipped;
-		flipped = 0;
+		if(flipped) {
+			delete flipped;
+			flipped = 0;
+		}
 	}
 
 	EMData *result = 0;
@@ -1007,7 +1009,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
 
-	
+
 
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
@@ -1050,10 +1052,10 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	float precision = params.set_default("precision",0.04f);
 	int maxiter = params.set_default("maxiter",28);
-	
+
 //	printf("Refine sx=%1.2f sy=%1.2f sa=%1.2f prec=%1.4f maxit=%d\n",stepx,stepy,stepaz,precision,maxiter);
 //	printf("%1.2f %1.2f %1.1f  ->",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
-	
+
 	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;
 		status = gsl_multimin_fminimizer_iterate(s);

@@ -8003,7 +8003,6 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	Transform* t = params["transform"];
 
-
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
@@ -8035,9 +8034,9 @@ EMData* TransformProcessor::process(const EMData* const image) {
 //		update_emdata_attributes(p,image->get_attr_dict(),scale);
 	}
 
-	return p;
-
+	if(t) {delete t; t=0;}
 	EXITFUNC;
+	return p;
 }
 
 void TransformProcessor::process_inplace(EMData* image) {
@@ -8074,6 +8073,8 @@ void TransformProcessor::process_inplace(EMData* image) {
 		image->scale_pixel(1.0f/scale);
 //		update_emdata_attributes(image,image->get_attr_dict(),scale);
 	}
+
+	if(t) {delete t; t=0;}
 
 	EXITFUNC;
 }
@@ -8904,6 +8905,7 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		Transform* t = (Transform*)image->get_attr("xform.projection");
 		Dict d = t->get_params("eman");
 		alt = (float) d["alt"];
+		if(t) {delete t; t=0;}
 	}
 	else alt = params.set_default("angle", 0.0f);
 

@@ -3146,7 +3146,7 @@ c
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
    	if (flag==0) {
 		for (i=1; i<=nring; i++) {
-	
+
 			numr3i = numr(3,i);   // Number of samples of this ring
 			numr2i = numr(2,i);   // The beginning point of this ring
 
@@ -3166,7 +3166,7 @@ c
 	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 	//   			          ----- -----    ----- -----
 	//      			   t1     t2      t3    t4
-	
+
 				c1     = circ1(jc);
 				c2     = circ1(jc+1);
 				d1     = circ2(jc);
@@ -3183,7 +3183,7 @@ c
 		}
 	} else {
 		for (i=1; i<=nring; i++) {
-	
+
 			numr3i = numr(3,i);   // Number of samples of this ring
 			numr2i = numr(2,i);   // The beginning point of this ring
 
@@ -3203,7 +3203,7 @@ c
 	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 	//   			          ----- -----    ----- -----
 	//      			   t1     t2      t3    t4
-	
+
 				c1     = circ1(jc);
 				c2     = circ1(jc+1);
 				d1     = circ2(jc);
@@ -3223,7 +3223,7 @@ c
 
 	qn  = -1.0e20;
 	int psi_pos = int(psi/360.0*maxrin+0.5);
-	
+
 	for (k=-5; k<=5; k++) {
 		j = (psi_pos+maxrin-1)%maxrin+1;
 		if (q(j) >= qn) {
@@ -3978,13 +3978,13 @@ vector<double> Util::cml_weights(const vector<float>& cml){
  *  The position of the line to the image is defined by (postline).
  *  The part of the line paste is defined by (offset), the begin position
  *  and (length) the size.
- */ 
+ */
 void Util::set_line(EMData* img, int posline, EMData* line, int offset, int length)
 {
     	int i;
 	int nx=img->get_xsize();
 	float *img_ptr  = img->get_data();
-	float *line_ptr = line->get_data();	
+	float *line_ptr = line->get_data();
 	for (i=0;i<length;i++) img_ptr[nx*posline + i] = line_ptr[offset + i];
 	img->update();
 }
@@ -3992,7 +3992,7 @@ void Util::set_line(EMData* img, int posline, EMData* line, int offset, int leng
 /* This function prepare the line from sinogram by cutting off some frequencies,
  * and creating the mirror part (complexe conjugate of the first part). Then
  * both lines (mirror and without) are drop to the sinogram.
- * line is in Fourrier space, ilf low frequency, ihf high frequency, nblines 
+ * line is in Fourrier space, ilf low frequency, ihf high frequency, nblines
  * number of lines of the half sinogram (the non miror part), sino the sinogram,
  * pos_line the position of the line in the sino.
  */
@@ -4093,7 +4093,7 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
     int n1=0, n2=0;
     float vmax = 1 - 1.0e-6;
     double r11, r12, r13, r23, r31, r32, r33;
-    
+
     c = 0;
     for (i=0; i<n_prj; ++i){
 	if (i!=i_prj){
@@ -4236,10 +4236,10 @@ vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj,
 	    if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
 	    cml[c] = rad_deg * atan2(nx, ny);
 	    cml[c] = fmod(360 + cml[c], 360);
-	    
+
 	}
     }
-    
+
     return cml;
 }
 
@@ -4268,7 +4268,7 @@ double Util::cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> 
 
 // 2009-03-26 11:37:53 JB. This function spin all angle psi and evaluate the partial discrepancy belong common-lines
 vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, \
-				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){  
+				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){
     // res: [best_disc, best_ipsi]
     // seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
     // iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
@@ -4313,7 +4313,7 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
     }
     res[0] = bdisc;
     res[1] = float(bipsi);
-    
+
     return res;
 }
 
@@ -4463,7 +4463,7 @@ int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long 
 	if (grp1[i] < grp2[0] || grp1[i] > grp2[s2 - 1]) {continue;}
 
 	stop1 = 0;
-	stop2 = 0;    
+	stop2 = 0;
 	while (max--) {
 	    if (grp1[i] == grp2[i1]) {
 		if (flag) {stb[cont] = grp1[i];}
@@ -5024,6 +5024,7 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 
 	Transform * t = B->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
+	if(t) {delete t; t=0;}
 	//  Unsure about sign of shifts, check later PAP 06/28/09
 	float x_shift = d[ "tx" ];
 	float y_shift = d[ "ty" ];
@@ -17222,6 +17223,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
+	if(t) {delete t; t=0;}
 	float phi = d["phi"];
 	float theta = d["theta"];
 	int   ky = int(2*yrng/step+0.5)/2;
@@ -17320,6 +17322,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 
 	Transform* t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
+	if(t) {delete t; t=0;}
 	float phi = d["phi"];
 	float theta = d["theta"];
 	float psi = d["psi"];
@@ -17380,7 +17383,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>(qn);
 						mirror = 1;
-					}					
+					}
 				}
 		    	}
 		}  delete cimage; cimage = 0;

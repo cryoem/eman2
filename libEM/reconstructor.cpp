@@ -492,14 +492,14 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	//
 	// We must use only the rotational component of the transform, scaling, translation and mirroring
 	// are not implemented in Fourier space
-	Transform rotation;
+	Transform * rotation;
 	if ( input_slice->has_attr("xform.projection") ) {
-		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
 	} else {
-		rotation = arg; // assignment operator
+		rotation = new Transform(arg); // assignment operator
 	}
 
-	EMData* slice = preprocess_slice( input_slice, rotation);
+	EMData* slice = preprocess_slice( input_slice, *rotation);
 
 	// Catch the first time a slice is inserted to do some things....
 	if ( slice_insertion_flag == true )
@@ -531,11 +531,12 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	}
 
 	// Finally to the pixel wise slice insertion
-	rotation.set_scale(1.0);
-	rotation.set_mirror(false);
-	rotation.set_trans(0,0,0);
-	do_insert_slice_work(slice, rotation);
+	rotation->set_scale(1.0);
+	rotation->set_mirror(false);
+	rotation->set_trans(0,0,0);
+	do_insert_slice_work(slice, *rotation);
 
+	if(rotation) {delete rotation; rotation=0;}
 	delete slice;
 
 // 	image->update();
@@ -652,14 +653,14 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	Transform rotation;
+	Transform * rotation;
 	if ( input_slice->has_attr("xform.projection") ) {
-		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
 
 	} else {
-		rotation = t3d; // assignment operator
+		rotation = new Transform(t3d); // assignment operator
 	}
-	EMData* slice = preprocess_slice( input_slice, rotation );
+	EMData* slice = preprocess_slice( input_slice, *rotation );
 
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion
@@ -694,9 +695,9 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	float weight = params.set_default("weight",1.0f);
 
 
-	rotation.set_scale(1.0);
-	rotation.set_mirror(false);
-	rotation.set_trans(0,0,0);
+	rotation->set_scale(1.0);
+	rotation->set_mirror(false);
+	rotation->set_trans(0,0,0);
 
 	for (int y = 0; y < slice->get_ysize(); y++) {
 		for (int x = 0; x < slice->get_xsize() / 2; x++) {
@@ -718,7 +719,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 // 			float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
 
 			Vec3f coord(rx,(ry - max_input_dim / 2),0);
-			coord = coord*rotation; // transpose multiplication
+			coord = coord*(*rotation); // transpose multiplication
 			float xx = coord[0];
 			float yy = coord[1];
 			float zz = coord[2];
@@ -777,6 +778,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 
 	quality_scores.push_back(q_scores);
 
+	if(rotation) {delete rotation; rotation=0;}
 	delete slice;
 	return 0;
 }
@@ -1124,13 +1126,13 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 
 int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform & t)
 {
-	Transform rotation;
+	Transform * rotation;
 	if ( input_slice->has_attr("xform.projection") ) {
-		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
 	} else {
-		rotation = t; // assignment operator
+		rotation = new Transform(t); // assignment operator
 	}
-	Transform tmp(rotation);
+	Transform tmp(*rotation);
 	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
 
 	Vec2f trans = tmp.get_trans_2d();
@@ -1171,9 +1173,9 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 // 	float weight = params.set_default("weight",1.0f);
 
-	rotation.set_scale(1.0); rotation.set_mirror(false); rotation.set_trans(0,0,0);
+	rotation->set_scale(1.0); rotation->set_mirror(false); rotation->set_trans(0,0,0);
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
-		Transform t3d = rotation*(*it);
+		Transform t3d = (*rotation)*(*it);
 
 		for (int y = 0; y < tny; y++) {
 			for (int x = 0; x < tnx; x++) {
@@ -1217,6 +1219,7 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 		}
 	}
 
+	if(rotation) {delete rotation; rotation=0;}
 	delete slice;
 
 	return 0;
@@ -1961,11 +1964,11 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 		return 1;
 	}
 
-	Transform transform;
+	Transform * transform;
 	if ( input->has_attr("xform.projection") ) {
-		transform = *((Transform*) input->get_attr("xform.projection")); // assignment operator
+		transform = (Transform*) (input->get_attr("xform.projection")); // assignment operator
 	} else {
-		transform = t; // assignment operator
+		transform = new Transform(t); // assignment operator
 	}
 	EMData* slice = preprocess_slice(input, t);
 
@@ -1984,14 +1987,15 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);
 	}
 
-	transform.set_scale(1.0);
-	transform.set_mirror(false);
-	transform.set_trans(0,0,0);
-	transform.invert();
+	transform->set_scale(1.0);
+	transform->set_mirror(false);
+	transform->set_trans(0,0,0);
+	transform->invert();
 
-	tmp->transform(transform);
+	tmp->transform(*transform);
 	image->add(*tmp);
 
+	if(transform) {delete transform; transform=0;}
 	delete tmp;
 	delete slice;
 

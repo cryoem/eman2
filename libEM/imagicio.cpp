@@ -254,6 +254,8 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	if( ctf_ != 0) {
 		dict["ctf"] = ctf_;
 	}
+	if(trans) {delete trans; trans=0;}
+	if(ctf_) {delete ctf_; ctf_=0;}
 	EXITFUNC;
 	return 0;
 }
@@ -335,6 +337,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 		new_hed.mrc1[1] = (float)d["alt"]*M_PI/180.0f;
 		new_hed.mrc1[2] = (float)d["az"]*M_PI/180.0f;
 		new_hed.mrc1[0] = (float)d["phi"]*M_PI/180.0f;
+		if(t) {delete t; t=0;}
 	}
 	else if(nz>1 && dict.has_key("xform.align3d")) {
 		Transform * t = dict["xform.align3d"];
@@ -342,6 +345,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 		new_hed.mrc1[1] = (float)d["alt"]*M_PI/180.0f;
 		new_hed.mrc1[2] = (float)d["az"]*M_PI/180.0f;
 		new_hed.mrc1[0] = (float)d["phi"]*M_PI/180.0f;
+		if(t) {delete t; t=0;}
 	}
 	else {
 		if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0f;

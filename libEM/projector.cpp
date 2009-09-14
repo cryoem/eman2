@@ -184,6 +184,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 
 	ret->set_attr("xform.projection",t3d);
 	ret->update();
+
+	if(t3d) {delete t3d; t3d=0;}
+
 	return ret;
 }
 
@@ -851,6 +854,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	}
 	ret->update();
 	EMDeleteArray(ipcube);
+	if(rotation) {delete rotation; rotation=0;}
 	return ret;
 }
 
@@ -944,6 +948,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 		}
 		proj->update();
 		proj->set_attr("xform.projection",t3d);
+		if(t3d) {delete t3d; t3d=0;}
 		return proj;
 	}
 	else if ( image->get_ndim() == 2 ) {
@@ -998,6 +1003,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 		}
 		proj->set_attr("xform.projection",t3d);
 		proj->update();
+		if(t3d) {delete t3d; t3d=0;}
 		return proj;
 	}
 	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
@@ -1020,6 +1026,7 @@ EMData *CudaStandardProjector::project3d(EMData * image) const
 	standard_project(m,&tmp);
 	delete [] m;
 	e->set_attr("xform.projection",t3d);
+	if(t3d) {delete t3d; t3d=0;}
 	e->gpu_update();
 	return e;
 }
@@ -1180,6 +1187,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 		anglelist.push_back(theta);
 		anglelist.push_back(psi);
 		nangles = 1;
+		if(t3d) {delete t3d; t3d=0;}
 	}
 
 	// End David Woolford modifications
@@ -1209,6 +1217,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	if (!params.has_key("anglelist")) {
 		Transform* t3d = params["transform"];
 		ret->set_attr("xform.projection",t3d);
+		if(t3d) {delete t3d; t3d=0;}
 	}
 	ret->update();
 	return ret;
@@ -1537,7 +1546,7 @@ int ChaoProjector::ifix(float a) const
 // SPIDER stype transformation
 void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) const
 { // convert Euler angles to transformations, dm is an 9 by nangles array
-	
+
 	float  psi, theta, phi;
 	double cthe, sthe, cpsi, spsi, cphi, sphi;
 	int    j;
@@ -1643,6 +1652,7 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 		// but the framework of the Transform3D allows for a generic implementation
 		// as specified here.
 		Dict p = t3d->get_rotation("spider");
+		if(t3d) {delete t3d; t3d=0;}
 
 		float phi   = p["phi"];
 		float theta = p["theta"];
@@ -1680,6 +1690,7 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 	if (!params.has_key("anglelist")) {
 		Transform* t3d = params["transform"];
 		ret->set_attr("xform.projection",t3d);
+		if(t3d) {delete t3d; t3d=0;}
 	}
 	ret->update();
 	return ret;
@@ -1754,6 +1765,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 		// as specified here.
 		//  This was broken by david.  we need here a loop over all projections and put all angles on stack  PAP 06/28/09
 		Dict p = t3d->get_rotation("spider");
+		if(t3d) {delete t3d; t3d=0;}
 
 		float phi = p["phi"];
 		float theta = p["theta"];
@@ -1985,6 +1997,7 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
 		// but the framework of the Transform3D allows for a generic implementation
 		// as specified here.
 		Dict p = t3d->get_rotation("spider");
+		if(t3d) {delete t3d; t3d=0;}
 
 		string angletype = "SPIDER";
 		float phi = p["phi"];

@@ -282,6 +282,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 		dict["xform.align3d"] = trans;
 	}
 
+	if(trans) {delete trans; trans=0;}
 	EXITFUNC;
 	return 0;
 }
@@ -337,6 +338,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
+		if(t) {delete t; t=0;}
 	}
 	else if(nz>1 && dict.has_key("xform.align3d")) {
 		Transform * t = dict["xform.align3d"];
@@ -347,6 +349,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
+		if(t) {delete t; t=0;}
 	}
 	else if(dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
 		mrch.xorigin = (float)dict["origin_x"];

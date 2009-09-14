@@ -317,6 +317,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		else {
 			dict["xform.align3d"] = trans;
 		}
+		if(trans) {delete trans; trans=0;}
 	}
 
 
@@ -447,7 +448,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		hp->dy = d["ty"];
 		hp->dz = d["tz"];
 		hp->scale = d["scale"];
-
+		if(t) {delete t; t=0;}
 	}
 	else if(nz>1 && dict.has_key("xform.align3d")) {
 		hp->angvalid = 1;
@@ -460,6 +461,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		hp->dy = d["ty"];
 		hp->dz = d["tz"];
 		hp->scale = d["scale"];
+		if(t) {delete t; t=0;}
 	}
 
 	if(nz == 1) {

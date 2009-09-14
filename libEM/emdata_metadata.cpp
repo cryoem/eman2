@@ -1110,7 +1110,7 @@ void EMData::set_attr_python(const string & key, EMObject val)
 		Transform* t = new Transform(*((Transform*) val));
 		EMObject v(t);
 		attr_dict[key] = v;
-
+		delete t; t=0;
 	} else {
 		attr_dict[key] = val;
 	}
