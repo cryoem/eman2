@@ -1,44 +1,44 @@
 /*
  * Author: David Woolford, 06/12/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2007 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
+
  /** Code to test the functioning of EMObject and Dict
-  *  
+  *
   * For EMObject the things tested are
   * 	construction, copy construction and assigment behave as expected for each of the supported types
   * 	operator== behaves as expected for all types
   * 	all of the conversion operators are accurate and true
   * 	get_object_type_name, get_type and get_type_string are all internally consistent, for all types
   * 	the bevavior of is_null is as expected
-  * 	
-  * 
+  *
+  *
   * For Dict things tested are
   * 	const and non const square brackets operators behave as expected
   * 	operator== behaves as expected (the correct behaviour of operator!= is therefore implicit)
@@ -49,9 +49,9 @@
   * Things not tested are
   * 	keys, values, has_key, get, put, erase, set_default
   * 	Not that get and put work implicitly if the operator[] functions work.
-  * 
+  *
   * For EMObject there is also some curiosity tests to see what unsupported types are cast to, and some
-  * commented out code that shows some un-compilable types 
+  * commented out code that shows some un-compilable types
   */
 
 #include "emobject.h"
@@ -90,12 +90,12 @@ template<typename Type>
 void test_emobject_specific_conversion_vector( const vector<Type>& type )
 {
 	vector<Type> converted = EMObject(type);
-	
+
 	bool is_the_same = true;
-	
+
 	if ( converted.size() != type.size() )
 	{
-		is_the_same = false;	
+		is_the_same = false;
 	}
 	else
 	{
@@ -105,11 +105,11 @@ void test_emobject_specific_conversion_vector( const vector<Type>& type )
 			if ( *it1 != *it2 )
 			{
 				is_the_same = false;
-				break;	
+				break;
 			}
 		}
 	}
-	
+
 	if ( !is_the_same )
 		cout << "FAILED" << endl;
 	else
@@ -129,7 +129,7 @@ void test_emobject_specific_conversion( const char* type )
 void test_emobject_assignment_and_equality( const EMObject& object1 )
 {
 	EMObject object2(object1);
-	
+
 	cout << "EMObject testing assignment and equality using " << object1.get_type_string() << " ..... ";
 	// Test both the inequality and equality operators in one go
 	// Though in reality it shouldn't matter, they are both tightly coupled.
@@ -143,7 +143,7 @@ void test_emobject_assignment_and_equality( const EMObject& object1 )
 	}
 	else
 	{
-		cout << "passed";	
+		cout << "passed";
 	}
 	cout << endl;
 }
@@ -153,9 +153,9 @@ void test_emobject_isnull( const vector<EMObject>& objects )
 	// I don't know why I put this test in it is hard to conceive a situation where it fails...
 	// i.e. am I testing against impossible failure and being stupid?
 	cout << "Testing the behavior of EMObject.is_null() for all types ..... ";
-	
+
 	bool this_works = true;
-	
+
 	for( vector<EMObject>::const_iterator it = objects.begin(); it != objects.end(); ++it )
 	{
 		if ( it->get_type() == EMObject::UNKNOWN && !it->is_null() )
@@ -168,11 +168,11 @@ void test_emobject_isnull( const vector<EMObject>& objects )
 			if ( it->get_type() != EMObject::UNKNOWN && it->is_null() )
 			{
 			 	this_works = false;
-				break;	
+				break;
 			}
 		}
 	}
-	
+
 	if ( !this_works )
 		cout << "FAILED" << endl;
 	else
@@ -183,18 +183,18 @@ void test_emobject_object_types_bevaviour( const vector<EMObject>& objects )
 {
 	// Again, I don't know why I put this test in it is hard to conceive of a situation where it fails...
 	// i.e. am I testing against impossible failure and being stupid?
-	
+
 	cout << "Testing the behavior of EMObject.get_type() and EMObject.get_type_string(): " << endl;
-	
+
 	for( vector<EMObject>::const_iterator it = objects.begin(); it != objects.end(); ++it )
 	{
 		cout << "Testing internal consisteny for type " << it->get_type_string() << " ..... ";
-		
+
 		if  ( EMObject::get_object_type_name(it->get_type()) == it->get_type_string() )
 			cout << "passed";
 		else
 			cout << "FAILED";
-			
+
 		cout << endl;
 	}
 
@@ -205,7 +205,7 @@ void test_emobject_unsupported_types()
 	// test cases where the type is not supported by the EMObject
 	char c1 = 'a';
 	cout << "Testing for character behaviour even though it is not supported, this was turned into type ..... " << EMObject(c1).get_type_string() << endl;
-	
+
 	unsigned char c2 = 125;
 	cout << "Testing for unsigned character behaviour even though it is not supported, this was turned into type ..... ";
 	cout << EMObject(c2).get_type_string() << endl;
@@ -218,7 +218,7 @@ void test_emobject_unsupported_types()
 //	long l1 = 0;
 //	cout << "Testing for long (int) behaviour even though it is not supported, this was turned into type ..... ";
 //	cout << EMObject(l1).get_type_string() << endl;
-//	
+//
 //	long double l2 = 0;
 //	cout << "Testing for long double behaviour even though it is not supported, this was turned into type ..... ";
 //	cout << EMObject(l2).get_type_string() << endl;
@@ -227,7 +227,7 @@ void test_emobject_unsupported_types()
 	int i1 = 0;
 	cout << "Testing for int * behaviour even though it is not supported, this was turned into type ..... ";
 	cout << EMObject(&i1).get_type_string() << endl;
-	
+
 	float f1 = 0;
 	cout << "Testing for float * behaviour even though it is not supported, this was turned into type ..... ";
 	cout << EMObject(&f1).get_type_string() << endl;
@@ -235,7 +235,7 @@ void test_emobject_unsupported_types()
 	double d1 = 0;
 	cout << "Testing for double * behaviour even though it is not supported, this was turned into type ..... ";
 	cout << EMObject(&d1).get_type_string() << endl;
-	
+
 	cout << "Currently unsigned ints and longs are not supported... a more rigorous list of unsupported types is probably needed " << endl;
 }
 
@@ -243,39 +243,44 @@ void test_emobject_conversion()
 {
 	cout << "Testing boolean conversion operator ..... ";
 	test_emobject_specific_conversion( (bool) false );
-	
+
 	cout << "Testing integer conversion operator ..... ";
 	test_emobject_specific_conversion( (int) 1235412 );
-	
+
 	cout << "Testing float conversion operator ..... ";
 	test_emobject_specific_conversion( (float) 12.312 );
-	
+
 	cout << "Testing double conversion operator ..... ";
 	test_emobject_specific_conversion( (double) 0.00201 );
-	
+
 	cout << "Testing const char* conversion operator..... ";
 	test_emobject_specific_conversion( "hello world" );
-	
+
 	cout << "Testing float pointer conversion operator..... ";
 	float* pFloat = new float;
 	test_emobject_specific_conversion( pFloat );
+	delete pFloat;
 
 	cout << "Testing xydata pointer conversion operator..... ";
 	XYData* xydata = new XYData;
 	test_emobject_specific_conversion( xydata );
-	
+	delete xydata;
+
 	cout << "Testing Transform pointer conversion operator..... ";
 	Transform* pTransform = new Transform;
 	test_emobject_specific_conversion( pTransform );
-	
+	delete pTransform;
+
 	cout << "Testing Ctf pointer conversion operator..... ";
 	Ctf* pCtf = new EMAN2Ctf();
 	test_emobject_specific_conversion( pCtf );
-	
+	delete pCtf;
+
 	cout << "Testing EMData pointer conversion operator..... ";
 	EMData* pEMData = new EMData;
 	test_emobject_specific_conversion( pEMData );
-	
+	delete pEMData;
+
 	cout << "Testing vector<int> conversion operator..... ";
 	test_emobject_specific_conversion_vector( vector<int>(1000,123) );
 
@@ -295,51 +300,53 @@ void test_emobject_conversion()
 vector<EMObject> get_test_emobjects()
 {
 	vector<EMObject> objects;
-	
+
 	objects.push_back(EMObject());
-	
+
 	bool b = false;
 	objects.push_back(EMObject(b));
-	
+
 	int i = 0;
 	objects.push_back(EMObject(i));
-	
+
 	float f = 12345.2124f;
 	objects.push_back(EMObject(f));
-	
+
 	double d = .00002;
 	objects.push_back(EMObject(d));
-	
+
 	const char* c = "hello from test code";
 	objects.push_back(EMObject(c));
-	
+
 	string s("a string in test code");
 	objects.push_back(EMObject(s));
-	
+
 	XYData* xydata = new XYData;
 	objects.push_back(EMObject(xydata));
-	
+
 	EMData *a = new EMData();
 	objects.push_back(EMObject(a));
 
 	float *fp = new float;
 	objects.push_back(EMObject(fp));
-	
+
 	Transform* pTransform = new Transform;
 	objects.push_back(EMObject(pTransform));
+	delete pTransform;
 
 	Ctf* ctf = new EMAN1Ctf();
 	objects.push_back(EMObject(ctf));
-	
+	delete ctf;
+
 	vector<int> iv(100,2);
 	objects.push_back(EMObject(iv));
-	
+
 	vector<float> fv(1234,2.00);
 	objects.push_back(EMObject(fv));
-	
+
 	vector<string> sv(100000,"empty");
 	objects.push_back(EMObject(sv));
-	
+
 	return objects;
 }
 
@@ -351,24 +358,24 @@ map<string, EMObject> get_test_dict_keys()
 
 	for( vector<EMObject>::const_iterator it = objects.begin(); it != objects.end(); ++it )
 	{
-		return_objects[it->get_type_string()] = *it;	
+		return_objects[it->get_type_string()] = *it;
 	}
-	
+
 	return return_objects;
 }
 
 void test_emobject()
 {
-	
+
 	vector<EMObject> objects = get_test_emobjects();
-	
+
 	cout << "-----------------------------------------------------------------------------" << endl;
-	
+
 	for( vector<EMObject>::const_iterator it = objects.begin(); it != objects.end(); ++it )
 	{
 		test_emobject_assignment_and_equality(*it);
 	}
-	
+
 	cout << "-----------------------------------------------------------------------------" << endl;
 	// Now check to see if copy works irrespective of the current tyoe
 	bool can_copy_irrespective_of_type = true;
@@ -391,7 +398,7 @@ void test_emobject()
 		cout << "passed" << endl;
 	else
 		cout << "FAILED" << endl;
-	
+
 	cout << "-----------------------------------------------------------------------------" << endl;
 	test_emobject_unsupported_types();
 	cout << "-----------------------------------------------------------------------------" << endl;
@@ -417,9 +424,9 @@ bool test_dict_map_constructor()
 	cout << "Testing construction from map" << endl << endl;;
 	map<string, EMObject> objects = get_test_dict_keys();
 	Dict dict(objects);
-	
+
 	bool success = true;
-	
+
 	map<string, EMObject>::const_iterator mapIt = objects.begin();
 	for( ; mapIt != objects.end(); ++mapIt )
 	{
@@ -434,7 +441,7 @@ bool test_dict_map_constructor()
 				break;
 			}
 		}
-		
+
 		if ( found )
 			cout << "passed";
 		else
@@ -442,12 +449,12 @@ bool test_dict_map_constructor()
 			cout << "FAILED";
 			success = false;
 		}
-			
+
 		cout << endl;
 	}
-	
+
 	print_success_message(success);
-	
+
 	return success;
 }
 
@@ -456,12 +463,12 @@ bool test_copy_construction_and_assigment()
 	map<string, EMObject> objects = get_test_dict_keys();
 	Dict dict(objects);
 	Dict dict2 = dict;
-	
+
 	bool success = true;
-	
+
 	cout << "Ierating through two maps, one containing an instance of every EMObject, the other copy constructed from the first," << endl;
 	cout << "to test pair wise equality:" << endl << endl;
-	
+
 	Dict::const_iterator it = dict.begin(), it2 = dict2.begin();
 	for(; it != dict.end(); ++it, ++it2 )
 	{
@@ -477,12 +484,12 @@ bool test_copy_construction_and_assigment()
 		}
 		else
 			cout << "passed";
-			
+
 		cout << endl;
 	}
-	
+
 	print_success_message( success );
-	
+
 	cout << "-----------------------------------------------------------------------------" << endl;
 	cout << "Testing assigment and equality operator==..... ";
 	success = true;
@@ -494,7 +501,7 @@ bool test_copy_construction_and_assigment()
 	else
 		cout << "passed";
 	cout << endl;
-	
+
 	print_success_message( success );
 	return success;
 }
@@ -503,19 +510,19 @@ bool test_dict_non_const_square_brackets_operator()
 {
 	cout << "Testing non const operator[] to ensure it is inserting values as expected" << endl << endl;
 	map<string, EMObject> objects = get_test_dict_keys();
-	
+
 	Dict dict;
-	
+
 	// Here is where the insertion occurs
 	map<string, EMObject>::const_iterator mapIt = objects.begin();
 	for( ; mapIt != objects.end(); ++mapIt )
 	{
 		dict[mapIt->first] = mapIt->second;
 	}
-	
+
 	bool success = true;
-	
-	
+
+
 	for( mapIt = objects.begin(); mapIt != objects.end(); ++mapIt )
 	{
 		bool found = false;
@@ -528,7 +535,7 @@ bool test_dict_non_const_square_brackets_operator()
 				break;
 			}
 		}
-		
+
 		if ( found )
 			cout << "passed";
 		else
@@ -536,10 +543,10 @@ bool test_dict_non_const_square_brackets_operator()
 			cout << "FAILED";
 			success = false;
 		}
-			
+
 		cout << endl;
 	}
-	
+
 	print_success_message(success);
 	return success;
 }
@@ -548,7 +555,7 @@ bool test_dict_find()
 {
 	cout << "Testing find functionality by iterating through a dict containing all of the EMObjects and ensuring they can be found within itself" << endl << endl;
 	Dict dict(get_test_dict_keys());
-	
+
 	bool success = true;
 	for(Dict::const_iterator it = dict.begin();it != dict.end();++it )
 	{
@@ -566,23 +573,23 @@ bool test_dict_find()
 			}
 			else
 				cout << "passed";
-			
+
 		cout << endl;
 	}
-	
+
 	print_success_message(success);
-	
+
 	return success;
 }
 
 bool test_square_brackets_operator()
 {
 	cout << "Testing operator[] functionality by iterating through the Dict and asking if it->second != dict[it->first] " << endl << endl;
-	
+
 	Dict dict(get_test_dict_keys());
-	
+
 	bool success = true;
-	
+
 	for(Dict::const_iterator it = dict.begin();it != dict.end();++it )
 	{
 		cout << "For type " << it->first << " operator[] ..... ";
@@ -590,13 +597,13 @@ bool test_square_brackets_operator()
 		{
 			success = false;
 			cout << "FAILED" << endl;
-		}	
+		}
 		else
 			cout << "passed" << endl;
 	}
-	
+
 	print_success_message(success);
-	
+
 	return success;
 }
 
@@ -616,11 +623,11 @@ void test_dict()
 	{
 		cout << "FOOBAR - WARNING: because construction of a Dict from a map failed, many other tests will fail, aborted" << endl;
 		return;
-	} 
+	}
 
 	cout << "-----------------------------------------------------------------------------" << endl;
 	test_dict_non_const_square_brackets_operator();
-	
+
 }
 
 void test_attr()
@@ -628,15 +635,15 @@ void test_attr()
 	cout << "-----------------------------------------------------------------------------" << endl;
 	bool success = true;
 	EMData * img = new EMData(32,32);
-	float arr[11] = {0.1f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f, 9.9f, 10.1f}; 
+	float arr[11] = {0.1f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f, 9.9f, 10.1f};
 	vector<float> v1(arr, arr+11);
-	
+
 	Ctf* ctf1 = new EMAN1Ctf();
 	ctf1->from_vector(v1);
 	img->set_attr("ctf1", ctf1);
 	delete ctf1;
 	img->write_image("test_image1.hdf");
-	
+
 	EMData* img2 = new EMData("test_image1.hdf");
 	Ctf* ctf11 = img2->get_attr("ctf1");
 	string s1 = ctf11->to_string();
@@ -646,13 +653,13 @@ void test_attr()
 	}
 	delete ctf11;
 	delete img2;
-	
+
 //	Ctf* ctf2  = new EMAN2Ctf();
 //	ctf2->from_vector(v1);
 //	img->set_attr("ctf2", ctf2);
 //	delete ctf2;
 //	img->write_image("test_image2.hdf");
-//	
+//
 //	EMData* img3 = new EMData("test_image2.hdf");
 //	Ctf* ctf22 = img3->get_attr("ctf2");
 //	string s2 = ctf22->to_string();
@@ -661,7 +668,7 @@ void test_attr()
 //		success = false;
 //	}
 //	delete ctf22;
-	
+
 	delete img;
 	if(success) {
 		cout << "Testing set Ctf object as image attribute ............................. passed" << endl;
@@ -669,8 +676,8 @@ void test_attr()
 	else {
 		cout << "Testing set Ctf object as image attribute ............................. failed" << endl;
 	}
-	
-	
+
+
 }
 
 int main(int, char**)
@@ -688,6 +695,6 @@ int main(int, char**)
 	test_attr();
 	cout << endl;
 
-	return 0;	
+	return 0;
 }
 
