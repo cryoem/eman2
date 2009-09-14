@@ -255,9 +255,11 @@ class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
+	queue=EMTaskQueue(None)
 	
 	def __init__(self,path=None):
-		self.queue=EMTaskQueue(path)
+		self.queue=EMTaskHandler.queue
+#		self.queue=EMTaskQueue(path)
 		
 class EMTaskClient:
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
@@ -568,6 +570,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.verbose : print "Removing client %d"%k
 					del EMDCTaskHandler.clients[k]
 			except: continue
+
+		for k in self.queue.active.keys():
+			j=self.queue.active[k]
+			if isinstance(j,int) : continue
+			if time.time()-j.starttime>600 and (j.progtime==None or time.time()-j.progtime>600) :
+				if self.verbose : print "Task %s doesn't seem to be making progress, restarting"%str(j.taskid)
+				self.queue.task_rerun(j.taskid)
 
 	def handle(self):
 		"""Process requests from a client. The exchange is:
