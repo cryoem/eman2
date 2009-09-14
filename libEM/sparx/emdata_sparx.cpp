@@ -39,7 +39,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstring>
- 
+
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
 #include <vector>
@@ -161,7 +161,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //				printf(" %3.1f+ %3.1fi \t",(rhoOfRandmTemp[ss].real()), (rhoOfRandmTemp[ss].imag())   );fflush(stdout);}
 
 // calculate product
-			
+
 			float tempp;
 //			printf("\n m=%d sampledBesselJ" ,m  );fflush(stdout);
 			for (int st=0; st<= Number2Use; st++){
@@ -169,10 +169,10 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 				sampledBesselJ[st] = static_cast<float>(gsl_sf_bessel_Jn(m,tempp));
 //				printf(" %3.2f  \t",sampledBesselJ[st]   );fflush(stdout);
 			} // good so far
-			
+
 //			sampledBesselJ  = BesselJ(m,krVec2Use);
 			float *tempMB = new float [kIntMax*RIntMax];
-			Util::spline_mat(krVec2Use, sampledBesselJ, Number2Use+1,krVec,tempMB,kIntMax*RIntMax ); 
+			Util::spline_mat(krVec2Use, sampledBesselJ, Number2Use+1,krVec,tempMB,kIntMax*RIntMax );
 //			printf("\n tempMB m=%d y2" ,m  );fflush(stdout);
 			std::complex <float> *rowV = new std::complex <float> [kIntMax];
 
@@ -202,7 +202,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 
 		} // ends m loop
-		
+
 		update();
 		rhoOfkmB-> update();
 		rhoOfkmB->set_complex(true);
@@ -268,7 +268,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 		float *Row= new float[kIntMax];
 		float *RowOut= new float[RIntMax];
 		for (int ii=0; ii<kIntMax; ii++){ Row[ii]=(*rhoOfkmB)(mr,ii);}
-		Util::spline_mat(kVec2Use, Row, kIntMax,  RValsSorted, RowOut, RIntMax ); 
+		Util::spline_mat(kVec2Use, Row, kIntMax,  RValsSorted, RowOut, RIntMax );
 		for (int ii=0; ii<RIntMax; ii++){
 			(*rhoOfkandm)(mr,ii) = RowOut[ii];
 //			printf("%3.3f  ",RowOut[ii]);
@@ -288,7 +288,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	int Count =0, kInt, kIntm1;
 	std::complex <float> ImfTemp;
 	float kValue, thetak;
-	
+
 	for (int jkx=0; jkx <Center; jkx++) { // These index the outputted picture
 		for (int jky=0; jky<=jkx; jky++){
 			kInt = PermMatTr[Count];
@@ -458,7 +458,7 @@ float dist(int lnlen, const float* line_1, const float* line_2)
 	}
 	//return static_cast<float>(std::sqrt(dis2));
 	return dis2;
-}   
+}
 
 float dist_r(int lnlen, const float* line_1, const float* line_2)
 {
@@ -530,7 +530,7 @@ EMData* EMData::rotavg() {
 #else
 	//int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	if ( nz == 1 ) {
-		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);	
+		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	} else {
 		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
 	}
@@ -584,7 +584,7 @@ EMData* EMData::rotavg_i() {
 	result->set_size(nx,ny,nz);
 	result->to_zero();
 	result->set_array_offsets(-nx/2, -ny/2, -nz/2);
-	
+
 	if ( nz == 1 ) {
 #ifdef	_WIN32
 		rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
@@ -593,7 +593,7 @@ EMData* EMData::rotavg_i() {
 #else
 		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	} else {
-		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));	
+		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
 #endif	//_WIN32
 	}
 
@@ -608,7 +608,7 @@ EMData* EMData::rotavg_i() {
 			for (i = -nx/2; i < nx/2 + nx%2; i++) {
 				r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
 				ir = int(r);
-				if (ir > rmax || ir < rmax-2 ) continue ;				 
+				if (ir > rmax || ir < rmax-2 ) continue ;
 				else {
 	      				padded_value += (*avg1D)(ir) ;
 	      				number_of_pixels++ ;
@@ -624,10 +624,10 @@ EMData* EMData::rotavg_i() {
 				ir = int(r);
 				if (ir >= rmax) (*result)(i,j,k) = padded_value ;
 				else            (*result)(i,j,k) = (*avg1D)(ir)+((*avg1D)(ir+1)-(*avg1D)(ir))*(r - float(ir));
-				
+
 			}
 		}
-	}				
+	}
 	result->update();
 	result->set_array_offsets(0,0,0);
 	EXITFUNC;
@@ -659,7 +659,7 @@ EMData* EMData::mult_radial(EMData* radial) {
 				if(ir < rmax-1)  (*result)(i,j,k) = (*this)(i,j,k) * ((*radial)(ir)+((*radial)(ir+1)-(*radial)(ir))*(r - float(ir)));
 			}
 		}
-	}			
+	}
 	result->update();
 	result->set_array_offsets(0,0,0);
 	this->set_array_offsets(0,0,0);
@@ -670,12 +670,12 @@ EMData* EMData::mult_radial(EMData* radial) {
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
 #define square(x) ((x)*(x))
 vector<float> EMData::cog() {
-	
+
 	vector<float> cntog;
 	int ndim = get_ndim();
 	int i=1,j=1,k=1;
 	float val,sum1=0.f,MX=0.f,RG=0.f,MY=0.f,MZ=0.f,r=0.f;
-	
+
 	if (ndim == 1) {
 		for ( i = 1;i <= nx; i++) {
 			val   = rdata(i,j,k);
@@ -697,7 +697,7 @@ vector<float> EMData::cog() {
 #else
 		cntog.push_back(round(MX));
 #endif	//_WIN32
-	} else if (ndim == 2) {	
+	} else if (ndim == 2) {
 		for (j=1;j<=ny;j++) {
 			for (i=1;i<=nx;i++) {
 				val = rdata(i,j,k);
@@ -729,7 +729,7 @@ vector<float> EMData::cog() {
 #else
 		cntog.push_back(round(MX));cntog.push_back(round(MY));
 #endif	//_WIN32
-	} else {		
+	} else {
 		for (k = 1;k <= nz;k++) {
 			for (j=1;j<=ny;j++) {
 				for (i=1;i<=nx;i++) {
@@ -768,8 +768,8 @@ vector<float> EMData::cog() {
 		cntog.push_back((float)Util::round(MX));cntog.push_back((float)Util::round(MY));cntog.push_back((float)Util::round(MZ));
 #else
 		cntog.push_back(round(MX));cntog.push_back(round(MY));cntog.push_back(round(MZ));
-#endif	//_WIN32	
-	}	 
+#endif	//_WIN32
+	}
 	return cntog;
 }
 #undef square
@@ -794,7 +794,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with, float w)
 /*
 Fourier Ring/Shell Correlation
 Purpose: Calculate CCF in Fourier space as a function of spatial frequency
-         between a pair of 2-3D images. 
+         between a pair of 2-3D images.
 Method: Calculate FFT (if needed), calculate FSC.
 Input:  f - real or complex 2-3D image
 	g - real or complex 2-3D image
@@ -803,9 +803,9 @@ Output: 2D 3xk real image.
         k - length of FSC curve, depends on dimensions of the image and ring width
 	1 column - FSC,
 	2 column - normalized frequency [0,0.5]
-	3 column - currently n /error of the FSC = 1/sqrt(n), 
+	3 column - currently n /error of the FSC = 1/sqrt(n),
                      where n is the number of Fourier coefficients within given shell
-*/  
+*/
 	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky, ii;
 	float  dx2, dy2, dz2, argx, argy, argz;
 
@@ -813,10 +813,10 @@ Output: 2D 3xk real image.
 		throw NullPointerException("NULL input image");
 	}
 
-	
+
 	EMData *f = this;
 	EMData *g = with;
-	
+
 	nx  = f->get_xsize();
 	ny  = f->get_ysize();
 	nz  = f->get_zsize();
@@ -836,7 +836,7 @@ Output: 2D 3xk real image.
 
 //  Process g if real
 	EMData* gpimage = NULL;
-	if(g->is_complex()) gpimage = g; 
+	if(g->is_complex()) gpimage = g;
 	else {gpimage= g->norm_pad(false, 1); gpimage->do_fft_inplace(); needfree|=2;} // Extend and do the FFT if f is real
 
 
@@ -844,16 +844,16 @@ Output: 2D 3xk real image.
 	float *d2 = gpimage->get_data();
 
 	nx2=nx/2; ny2 = ny/2; nz2 = nz/2;
-	dx2 = 1.0f/float(nx2)/float(nx2); 
+	dx2 = 1.0f/float(nx2)/float(nx2);
 	dy2 = 1.0f/float(ny2)/float(ny2);
 
 #ifdef _WIN32
 	dz2 = 1.0f / _MAX(float(nz2),1.0f)/_MAX(float(nz2),1.0f);
-	
+
 	int inc = Util::round(float( _MAX( _MAX(nx2,ny2),nz2) )/w );
 #else
 	dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
-	
+
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
 #endif	//_WIN32
 
@@ -966,7 +966,7 @@ EMData* EMData::symvol(string symString) {
 EMData* EMData::average_circ_sub() const
 {
 //  this is written as though dimensions could be different, but in fact they should be all equal nx=ny=nz,
-//                                                           no check of this	
+//                                                           no check of this
 	ENTERFUNC;
 	const EMData* const image = this;
 	EMData* newimg = copy_head();
@@ -979,7 +979,7 @@ EMData* EMData::average_circ_sub() const
 	int ncz = nz/2 + 1;
 	int ncy = ny/2 + 1;
 	int ncx = nx/2 + 1;
-	for (int iz = 1; iz <= nz; iz++) { 
+	for (int iz = 1; iz <= nz; iz++) {
 		float yy = static_cast<float>( (iz-ncz)*(iz-ncz) );
 		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-ncy)*(iy-ncy);
 			for (int ix = 1; ix <= nx; ix++) {
@@ -994,8 +994,8 @@ EMData* EMData::average_circ_sub() const
 
 	if( m > 0 ) qs /= m;
 
-	for (int iz = 1; iz <= nz; iz++) 
-		for (int iy = 1; iy <= ny; iy++) 
+	for (int iz = 1; iz <= nz; iz++)
+		for (int iy = 1; iy <= ny; iy++)
 			for (int ix = 1; ix <= nx; ix++)
 					pnewimg(ix,iy,iz) = proj(ix,iy,iz) - qs;
 	newimg->update();
@@ -1008,7 +1008,7 @@ EMData* EMData::average_circ_sub() const
 
 
 void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf)
-{   
+{
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
@@ -1062,7 +1062,7 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 
 
 void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, int mult)
-{   
+{
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
@@ -1112,7 +1112,7 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 	}
 }
 
-void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult) 
+void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult)
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
@@ -1290,17 +1290,17 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 			(*wptr)(0,iya,iza) += (*wptr)(0,n-iya+2,n-iza+2);
 			(*wptr2)(0,iya,iza) += (*wptr2)(0,n-iya+2,n-iza+2);
 			(*wptr3)(0,iya,iza) += (*wptr3)(0,n-iya+2,n-iza+2);
-			
+
 			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
 			(*wptr)(0,n-iya+2,n-iza+2) = (*wptr)(0,iya,iza);
 			(*wptr2)(0,n-iya+2,n-iza+2) = (*wptr2)(0,iya,iza);
 			(*wptr3)(0,n-iya+2,n-iza+2) = (*wptr3)(0,iya,iza);
-						
+
 			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
 			(*wptr)(0,n-iya+2,iza) += (*wptr)(0,iya,n-iza+2);
 			(*wptr2)(0,n-iya+2,iza) += (*wptr2)(0,iya,n-iza+2);
 			(*wptr3)(0,n-iya+2,iza) += (*wptr3)(0,iya,n-iza+2);
-			
+
 			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
 			(*wptr)(0,iya,n-iza+2) = (*wptr)(0,n-iya+2,iza);
 			(*wptr2)(0,iya,n-iza+2) = (*wptr2)(0,n-iya+2,iza);
@@ -1312,7 +1312,7 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 		(*wptr)(0,iya,1) += (*wptr)(0,n-iya+2,1);
 		(*wptr2)(0,iya,1) += (*wptr2)(0,n-iya+2,1);
 		(*wptr3)(0,iya,1) += (*wptr3)(0,n-iya+2,1);
-		
+
 		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
 		(*wptr)(0,n-iya+2,1) = (*wptr)(0,iya,1);
 		(*wptr2)(0,n-iya+2,1) = (*wptr2)(0,iya,1);
@@ -1323,7 +1323,7 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 		(*wptr)(0,1,iza) += (*wptr)(0,1,n-iza+2);
 		(*wptr2)(0,1,iza) += (*wptr2)(0,1,n-iza+2);
 		(*wptr3)(0,1,iza) += (*wptr3)(0,1,n-iza+2);
-		
+
 		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
 		(*wptr)(0,1,n-iza+2) = (*wptr)(0,1,iza);
 		(*wptr2)(0,1,n-iza+2) = (*wptr2)(0,1,iza);
@@ -1360,7 +1360,7 @@ public:
     }
 
 private:
- 
+
     static int m_winsize, m_winsize2, m_vecsize;
     static float m_cs;
     static float m_voltage;
@@ -1379,7 +1379,7 @@ float ctf_store::m_defocus;
 
 
 //  Helper functions for method nn4_ctf
-void EMData::onelinenn_ctf(int j, int n, int n2, 
+void EMData::onelinenn_ctf(int j, int n, int n2,
 		          EMData* w, EMData* bi, const Transform& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
         int remove = bi->get_attr_default( "remove", 0 );
@@ -1444,7 +1444,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 	}
 }
 
-void EMData::onelinenn_ctf_applied(int j, int n, int n2, 
+void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 		          EMData* w, EMData* bi, const Transform& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
         int remove = bi->get_attr_default( "remove", 0 );
@@ -1500,7 +1500,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
                                         if( remove > 0 ) {
                                         	cmplx(-ixn,iyt,izt) -= conj(btq)*float(mult);
 						(*w)(-ixn,iyt,izt) -= mult*ctf*ctf;
-	                                } else {    
+	                                } else {
 						cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
 						(*w)(-ixn,iyt,izt) += mult*ctf*ctf;
                                         }
@@ -1524,6 +1524,7 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult) {
 
         Ctf* ctf = myfft->get_attr("ctf");
         ctf_store::init( ny, ctf );
+        if(ctf) {delete ctf; ctf=0;}
 
 	// loop over frequencies in y
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf, mult);
@@ -1544,6 +1545,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) 
 
         Ctf* ctf = myfft->get_attr( "ctf" );
         ctf_store::init( ny, ctf );
+        if(ctf) {delete ctf; ctf=0;}
 	//}
 
 	// loop over frequencies in y
@@ -1557,15 +1559,15 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) 
 
 void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int)
 {
-	/***   Preparing terms for SSNR 
+	/***   Preparing terms for SSNR
 	      m_wvolume F^3D Wiener volume
 	     wptr   ctf^2
-	    wptr5  ctf^2*|P^2D->3D(F^3D)|^2 
+	    wptr5  ctf^2*|P^2D->3D(F^3D)|^2
 	   wptr4  2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))
-	  wptr2  F_k^2D*conj(F_k^2D) or |F_k^2D|^2 
-	  Kn is counted in the previous routine, and won't be 
-	 calculated any more.   
-	                                            ***/ 
+	  wptr2  F_k^2D*conj(F_k^2D) or |F_k^2D|^2
+	  Kn is counted in the previous routine, and won't be
+	 calculated any more.
+	                                            ***/
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	vector<int> saved_offsets = get_array_offsets();
@@ -1611,14 +1613,14 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 						else          iya = ny + iyn + 1;
 
 						cmplx(ixn,iya,iza)    += btq*ctf;
-						(*wptr)(ixn,iya,iza)  += ctf*ctf;						
+						(*wptr)(ixn,iya,iza)  += ctf*ctf;
 						(*wptr2)(ixn,iya,iza) += std::norm(btq);
 						(*wptr3)(ixn,iya,iza) += 1;
 					} else {
 						int izt, iyt;
 						if (izn > 0)  izt = nz - izn + 1;
 						else          izt = -izn + 1;
- 
+
 						if (iyn > 0) iyt = ny - iyn + 1;
 						else         iyt = -iyn + 1;
 
@@ -1633,13 +1635,14 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	}
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
+	if(ctf) {delete ctf; ctf=0;}
 	EXITFUNC;
 }
 
 /*void EMData::nn_wiener(EMData* wptr, EMData* wptr3, EMData* myfft, const Transform& tf, int)
 {
-     // Wiener volume calculating routine Counting Kn  
-                                        
+     // Wiener volume calculating routine Counting Kn
+
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	vector<int> saved_offsets = get_array_offsets();
@@ -1662,20 +1665,20 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 		int jp = iy >= 0 ? iy+1 : ny+iy+1; //checked, works for both odd and even
 		for (int ix = 0; ix <= nxc; ix++) {
 			int r2 = ix*ix+iy*iy;
-        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) 
+        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) )
 			{
 			        float  ctf = ctf_store::get_ctf( defocus, r2 );
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
 				std::complex<float> btq;
-				if (xnew < 0.0) 
+				if (xnew < 0.0)
 				{
 					xnew = -xnew; // ensures xnew>=0.0
 					ynew = -ynew;
 					znew = -znew;
 					btq = conj(myfft->cmplx(ix,jp));
-				} else 
+				} else
 				{
 					btq = myfft->cmplx(ix,jp);
 				}
@@ -1683,41 +1686,41 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 				int iyn = int(ynew + 0.5 + ny) - ny;
 				int izn = int(znew + 0.5 + nz) - nz;
 				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
-					if (ixn >= 0) 
+					if (ixn >= 0)
 					{
 						int iza, iya;
-						if (izn >= 0) 
+						if (izn >= 0)
 						{
 							iza = izn + 1;
-						} else 
+						} else
 						{
 							iza = nz + izn + 1;
 						}
-						if (iyn >= 0) 
+						if (iyn >= 0)
 						{
 							iya = iyn + 1;
-						} else 
+						} else
 						{
 							iya = ny + iyn + 1;
 						}
-						cmplx(ixn,iya,iza)    += btq*ctf;						
+						cmplx(ixn,iya,iza)    += btq*ctf;
 						(*wptr)(ixn,iya,iza)  += ctf*ctf;
 						(*wptr3)(ixn,iya,iza) += 1.0;
-					} 
-					else 
+					}
+					else
 					{
 						int izt, iyt;
-						if (izn > 0) 
+						if (izn > 0)
 						{
 							izt = nz - izn + 1;
-						} else 
+						} else
 						{
 							izt = -izn + 1;
 						}
-						if (iyn > 0) 
+						if (iyn > 0)
 						{
 							iyt = ny - iyn + 1;
-						} else 
+						} else
 						{
 							iyt = -iyn + 1;
 						}
@@ -1772,7 +1775,7 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (nz<2) { 
+	if (nz<2) {
 		vector<int> saved_offsets = get_array_offsets();
 		set_array_offsets(0,0,0);
 		if (0.0f == scale) scale = 1.0f; // silently fix common user error
@@ -1811,7 +1814,7 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 #define in(i,j,k)          in[i+(j+(k*ny))*nx]
 EMData*
 EMData::rot_scale_trans(const Transform &RA) {
-	
+
 	EMData* ret = copy_head();
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
@@ -1820,7 +1823,7 @@ EMData::rot_scale_trans(const Transform &RA) {
 	Transform RAinv = RA.inverse();
 
 	if (1 >= ny)  throw ImageDimensionException("Can't rotate 1D image");
-	if (nz < 2) { 
+	if (nz < 2) {
 	float  p1, p2, p3, p4;
 	float delx = translations.at(0);
 	float dely = translations.at(1);
@@ -1854,13 +1857,13 @@ EMData::rot_scale_trans(const Transform &RA) {
 					p3 =in[0];
 					p4 =in[xfloor];
 				} else if(xfloor == nx - 1) {
-				
+
 					p1 =in[xfloor   + yfloor*ny];
 					p2 =in[           yfloor*ny];
 					p3 =in[          (yfloor+1)*ny];
 					p4 =in[xfloor   + (yfloor+1)*ny];
 				} else if(yfloor == ny - 1) {
-				
+
 					p1 =in[xfloor   + yfloor*ny];
 					p2 =in[xfloor+1 + yfloor*ny];
 					p3 =in[xfloor+1 ];
@@ -1892,7 +1895,7 @@ EMData::rot_scale_trans(const Transform &RA) {
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
 	float shiftzc = zc + delz;
-		
+
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
 			float xoldz = z*RAinv[0][2]+xc;
@@ -1917,19 +1920,19 @@ EMData::rot_scale_trans(const Transform &RA) {
 					int IOX = int(xold);
 					int IOY = int(yold);
 					int IOZ = int(zold);
-		
+
 					#ifdef _WIN32
 					int IOXp1 = _MIN( nx-1 ,IOX+1);
 					#else
 					int IOXp1 = std::min( nx-1 ,IOX+1);
 					#endif  //_WIN32
-		
+
 					#ifdef _WIN32
 					int IOYp1 = _MIN( ny-1 ,IOY+1);
 					#else
 					int IOYp1 = std::min( ny-1 ,IOY+1);
 					#endif  //_WIN32
-		
+
 					#ifdef _WIN32
 					int IOZp1 = _MIN( nz-1 ,IOZ+1);
 					#else
@@ -1939,7 +1942,7 @@ EMData::rot_scale_trans(const Transform &RA) {
 					float dx = xold-IOX;
 					float dy = yold-IOY;
 					float dz = zold-IOZ;
-						
+
 					float a1 = in(IOX,IOY,IOZ);
 					float a2 = in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZ);
 					float a3 = in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZ);
@@ -1947,7 +1950,7 @@ EMData::rot_scale_trans(const Transform &RA) {
 					float a5 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOYp1,IOZ) + in(IOXp1,IOYp1,IOZ);
 					float a6 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZp1) + in(IOXp1,IOY,IOZp1);
 					float a7 = in(IOX,IOY,IOZ) - in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZp1) + in(IOX,IOYp1,IOZp1);
-					float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1) 
+					float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
 							- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
 							- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
 					(*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
@@ -1980,17 +1983,17 @@ EMData::rot_scale_trans(const Transform &RA) {
 		int yArr[27];
 		int zArr[27];
 		float fdata[27];
-		
+
 		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
 			xArr[iL]  =  (int) (fmod((float)iL,3.0f) - 1.0f);
 			yArr[iL]  =  (int)( fmod( ((float) (iL/3) ),3.0f)- 1.0f);
 			zArr[iL]  = ((int) (iL/9)  ) -1;
 //			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
 		}
-					
+
 //		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
 //		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
-		
+
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
 			float xoldz = z*RAinv[0][2]+xc;
@@ -2032,10 +2035,10 @@ EMData::rot_scale_trans(const Transform &RA) {
 					int IOY = int(yold);
 					int IOZ = int(zold);
 
-					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5 
+					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5
 					float dy = yold-IOY; //remainder(yold,1);
 					float dz = zold-IOZ; //remainder(zold,1);
-					
+
 //					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
 //					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
 //                                      	ROTATED POSITION IS INSIDE OF VOLUME
@@ -2091,7 +2094,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
+	if (1 < nz)
 		throw ImageDimensionException("Volume not currently supported");
 	nxn=nx/2;nyn=ny/2;nzn=nz/2;
 
@@ -2106,7 +2109,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32 
+#endif	//_WIN32
 	ret->to_zero();  //we will leave margins zeroed.
 	delx = fmod(delx, float(nxn));
 	dely = fmod(dely, float(nyn));
@@ -2137,7 +2140,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 			float ysang = -y*sang/scale + xc;
 			for (int ix = 0; ix < nxn; ix++) {
 				float x = float(ix) - shiftxc;
-				float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+				float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 				float yold = x*sang/scale + ycang-iys;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 				     sum=0.0f;    w=0.0f;
@@ -2166,7 +2169,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
+	if (1 < nz)
 		throw ImageDimensionException("Volume not currently supported");
 	nxn=nx/2;nyn=ny/2;nzn=nz/2;
 
@@ -2181,7 +2184,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32 
+#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -2215,7 +2218,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 		float ysang = -y*sang/scale + xc;
 		for (int ix = 0; ix < nxn; ix++) {
 			float x = float(ix) - shiftxc;
-			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 			float yold = x*sang/scale + ycang-iys;
 
 			xold = restrict1(xold, nx);
@@ -2249,14 +2252,14 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 }
 
 // Notes by Yang on 10/02/07
-// This function is at first just a test, but I found it is slightly faster (about 10%) than rot_scale_conv_new(), so I decided to retain it. 
+// This function is at first just a test, but I found it is slightly faster (about 10%) than rot_scale_conv_new(), so I decided to retain it.
 EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 	int nxn, nyn, nzn;
 	float  scale = 0.5f*scale_input;
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
+	if (1 < nz)
 		throw ImageDimensionException("Volume not currently supported");
 	nxn = nx/2; nyn=ny/2; nzn=nz/2;
 
@@ -2271,7 +2274,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32 
+#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -2293,7 +2296,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	
+
 	float   *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
 
 	// trig
@@ -2305,7 +2308,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 		float ysang = -y*sang/scale + xc;
 		for (int ix = 0; ix < nxn; ix++) {
 			float x = float(ix) - shiftxc;
-			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 			float yold = x*sang/scale + ycang-iys;
 
 			xold = restrict1(xold, nx);
@@ -2313,7 +2316,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
-			
+
 			float tablex1 = kb.i0win_tab(xold-inxold+3);
 			float tablex2 = kb.i0win_tab(xold-inxold+2);
 			float tablex3 = kb.i0win_tab(xold-inxold+1);
@@ -2328,10 +2331,10 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 			float tabley4 = kb.i0win_tab(yold-inyold);
 			float tabley5 = kb.i0win_tab(yold-inyold-1);
 			float tabley6 = kb.i0win_tab(yold-inyold-2);
-			float tabley7 = kb.i0win_tab(yold-inyold-3); 
-			
+			float tabley7 = kb.i0win_tab(yold-inyold-3);
+
 			int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7;
-			
+
 			if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 				x1 = (inxold-3+nx)%nx;
 				x2 = (inxold-2+nx)%nx;
@@ -2340,7 +2343,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 				x5 = (inxold+1+nx)%nx;
 				x6 = (inxold+2+nx)%nx;
 				x7 = (inxold+3+nx)%nx;
-			
+
 				y1 = (inyold-3+ny)%ny;
 				y2 = (inyold-2+ny)%ny;
 				y3 = (inyold-1+ny)%ny;
@@ -2356,7 +2359,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 				x5 = inxold+1;
 				x6 = inxold+2;
 				x7 = inxold+3;
-			
+
 				y1 = inyold-3;
 				y2 = inyold-2;
 				y3 = inyold-1;
@@ -2386,10 +2389,10 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 			   	   ( (*this)(x1,y7)*tablex1 + (*this)(x2,y7)*tablex2 + (*this)(x3,y7)*tablex3 +
 			   	     (*this)(x4,y7)*tablex4 + (*this)(x5,y7)*tablex5 + (*this)(x6,y7)*tablex6 +
 			   	     (*this)(x7,y7)*tablex7 ) * tabley7;
-			     
+
 			w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
-			    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
-			
+			    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);
+
 			(*ret)(ix,iy)=sum/w;
 		}
 	}
@@ -2414,9 +2417,9 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32 
+#endif	//_WIN32
 	ret->to_zero();  //we will leave margins zeroed.
-	
+
 	// scan new, find pixels in old
 	for (int iy =0; iy < nyn; iy++) {
 		float y = float(iy)/scale;
@@ -2433,13 +2436,13 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 
 	int nxn, nyn, nzn;
-	
+
 	if (scale_input == 0.0f) scale_input = 1.0f;
 	float  scale = 0.5f*scale_input;
 
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
+	if (1 < nz)
 		throw ImageDimensionException("Volume not currently supported");
 	nxn = nx/2; nyn = ny/2; nzn = nz/2;
 
@@ -2454,7 +2457,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
-#endif	//_WIN32 
+#endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
@@ -2476,9 +2479,9 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	
+
 	float *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
-	
+
 	float* data = this->get_data();
 
 	// trig
@@ -2490,9 +2493,9 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 		float ysang = -y*sang/scale + xc;
 		for (int ix = 0; ix < nxn; ix++) {
 			float x = float(ix) - shiftxc;
-			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 			float yold = x*sang/scale + ycang-iys;
-			
+
 			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
 		}
 	}
@@ -2503,7 +2506,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
-//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 	int K     = kb.get_window_size();
 	int kbmin = -K/2;
@@ -2513,7 +2516,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	float pixel =0.0f;
 	float w=0.0f;
 
-	delx = restrict2(delx, nx);	
+	delx = restrict2(delx, nx);
 	int inxold = int(Util::round(delx));
 	if(ny<2) {  //1D
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
@@ -2528,7 +2531,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	 			pixel += (*this)(inxold+m1)*q; w+=q;
 			}
 	 	}
-	
+
 	} else if(nz<2) {  // 2D
 		dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
@@ -2570,7 +2573,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 
 
 float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb) {
-//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 	int K     = kb.get_sB_size();
 	int kbmin = -K/2;
@@ -2595,14 +2598,14 @@ float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sinc
 	 			pixel += (*this)(inxold+m1)*q; w+=q;
 			}
 	 	}
-	
+
 	} else if(nz<2) {  // 2D*/
 		//dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 	 		//  loop for strips
          		for (int m2 =kbmin; m2 <=kbmax; m2++){
-				float t = kb.sBwin_tab(dely - inyold-m2); 
+				float t = kb.sBwin_tab(dely - inyold-m2);
 				for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 				float q = kb.sBwin_tab(delx - inxold-m1)*t;
 	 				pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q;
@@ -2647,15 +2650,15 @@ float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sinc
 // get_pixel_conv7() is equivalent to get_pixel_conv_new(), however, it is written in this way such that it can be used in python directly
 // By the way, get_pixel_conv_new() is a faster version of get_pixel_conv(), I have done a lot of testing and show that their results are the same.
 float  EMData::get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb) {
-//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 	float *image=(this->get_data());
 	int nx = this->get_xsize();
 	int ny = this->get_ysize();
 	int nz = this->get_zsize();
-	
+
 	float result;
-	
+
 	result = Util::get_pixel_conv_new(nx,ny,nz,delx,dely,delz,image,kb);
 	return result;
 }
@@ -2702,12 +2705,12 @@ float EMData::getconvpt2d_kbi0(float x, float y, Util::KaiserBessel::kbi0_win wi
 std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("extractpoint needs a 2-D image.");
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("extractpoint requires a fourier image");
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	int nhalf = nxreal/2; 
+	int nhalf = nxreal/2;
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
 	int kbmax = -kbmin;
@@ -2811,13 +2814,13 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 	return result;
 }
 
-EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew) 
+EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew)
 {
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("extractline requires a fourier image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractline requires nx to be even");
-	int nxreal = nx - 2; 
+	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractline requires ny == nx");
 	// build complex result image
@@ -2945,7 +2948,7 @@ EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew)
 		else      res->cmplx(jx) = btq;
 	}
 	for (int jx = 0; jx <= nhalf; jx++)  res->cmplx(jx) *= count/wsum;
-	
+
 	delete[] wx0; delete[] wy0;
 	set_array_offsets(saved_offsets);
 	res->set_array_offsets(0,0,0);
@@ -2961,7 +2964,7 @@ inline void swapx(float* a, float* b, float* temp, size_t nbytes) {
 }
 
 void EMData::fft_shuffle() {
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("fft_shuffle requires a fourier image");
 	vector<int> offsets = get_array_offsets();
 	set_array_offsets(); // clear offsets before shuffling
@@ -2970,12 +2973,12 @@ void EMData::fft_shuffle() {
 	int nzhalf = nz/2;
 	int nbytes = nx*sizeof(float);
 	float* temp = new float[nx];
-	for (int iz=0; iz < nz; iz++) 
-		for (int iy=0; iy < nyhalf; iy++) 
+	for (int iz=0; iz < nz; iz++)
+		for (int iy=0; iy < nyhalf; iy++)
 			swapx(&self(0,iy,iz),&self(0,iy+nyhalf,iz),temp,nbytes);
 	if (nz > 1) {
-		for (int iy=0; iy < ny; iy++) 
-			for (int iz=0; iz < nzhalf; iz++) 
+		for (int iy=0; iy < ny; iy++)
+			for (int iz=0; iz < nzhalf; iz++)
 				swapx(&self(0,iy,iz),&self(0,iy,iz+nzhalf),temp,nbytes);
 	}
 	set_shuffled(!is_shuffled()); // toggle
@@ -3007,7 +3010,7 @@ void EMData::shuffle_pad_corner(float *pad_image) {
 EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("fouriergridrot2d requires a fourier image");
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
@@ -3017,7 +3020,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	if (scale == 0.0f) scale = 1.0f;
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
-	
+
 	EMData *pad_this = new EMData();
 	pad_this->set_size(nx+12, ny+6);
 	//pad_this->to_zero();
@@ -3033,7 +3036,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	EMData* result = copy_head();
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
-	
+
 	ang = ang*DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = sin(ang);
@@ -3058,7 +3061,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("fouriergridrot2d requires a fourier image");
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
@@ -3068,13 +3071,13 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	if (scale == 0.0f) scale = 1.0f;
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
-	
+
 	if (!is_shuffled()) fft_shuffle();
 
 	EMData* result = copy_head();
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
-	
+
 	ang = ang*(float)DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = sin(ang);
@@ -3099,7 +3102,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("fouriergridrot_shift2d needs a 2-D image.");
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("fouriergridrot_shift2d requires a fourier image");
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
@@ -3108,7 +3111,7 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 		throw ImageDimensionException("fouriergridrot_shift2d needs an even image.");
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
-	
+
 	if (!is_shuffled()) fft_shuffle();
 
 	EMData* result = copy_head();
@@ -3128,7 +3131,7 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 			result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
 			//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 			float phase_ang = temp*(sx*ix+sy*iy);
-			result->cmplx(ix,iy) *= complex<float>(cos(phase_ang), sin(phase_ang));			
+			result->cmplx(ix,iy) *= complex<float>(cos(phase_ang), sin(phase_ang));
 		}
 	}
 	result->set_array_offsets();
@@ -3191,11 +3194,11 @@ Dict EMData::masked_stats(const EMData* mask) {
 */
 
 EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
-	if (!is_complex()) 
+	if (!is_complex())
 		throw ImageFormatException("extractplane requires a complex image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
-	int nxreal = nx - 2; 
+	int nxreal = nx - 2;
 	if (nxreal != ny || nxreal != nz)
 		throw ImageDimensionException("extractplane requires ny == nx == nz");
 	// build complex result image
@@ -3253,7 +3256,7 @@ EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
 					wy[i] = kb.i0win_tab(ynew - iyp);
 					int ixp = ixn + i;
 					wx[i] = kb.i0win_tab(xnew - ixp);
-					
+
 				}
 				// restrict weight arrays to non-zero elements
 				int lnbz = 0;
@@ -3376,8 +3379,8 @@ EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
 			}
 		}
 	}
-	for (int jy = -nhalf; jy < nhalf; jy++) 
-		for (int jx = 0; jx <= nhalf; jx++) 
+	for (int jy = -nhalf; jy < nhalf; jy++)
+		for (int jx = 0; jx <= nhalf; jx++)
 			res->cmplx(jx,jy) *= count/wsum;
 	delete[] wx0; delete[] wy0; delete[] wz0;
 	set_array_offsets(saved_offsets);
@@ -3399,15 +3402,15 @@ ostream& operator<< (ostream& os, const Pixel& peak) {
 vector<float> EMData::max_search() {
 
 	EMData& buf = *this;
-	
+
 	int nx = buf.get_xsize();
 	int ny = buf.get_ysize();
 	int nz = buf.get_zsize();
-	
+
 	int dim = buf.get_ndim();
-	
+
 	vector<float> result;
-	
+
 	if (dim == 1) {
 		float max = -1e20f;
 		int index = -1;
@@ -4190,9 +4193,9 @@ vector<float> EMData::peak_search(int ml, float invert) {
 	if (peaks.begin() != peaks.end()) {
 	  // yes. sort it
 	  sort(peaks.begin(), peaks.end(), peakcmp);
-	  
+
 	  int count = 0;
-	  
+
 	  float xval = (*peaks.begin()).value;
 	  // loop over all peaks
 	  for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  {
@@ -4203,12 +4206,12 @@ vector<float> EMData::peak_search(int ml, float invert) {
 	      // yes, so append it
 	      res.push_back((*it).value);
 	      res.push_back(static_cast<float>((*it).x));
-	      
+
 	      if(img_dim > 1) {
 		res.push_back(static_cast<float>((*it).y));
 		if(nz > 1) res.push_back(static_cast<float>((*it).z));
 	      }
-	      
+
 	      if(xval != 0.0) res.push_back((*it).value/xval);
 	      else            res.push_back((*it).value);
 	      res.push_back((*it).x-float(int(nx/2)));
@@ -4227,14 +4230,14 @@ vector<float> EMData::peak_search(int ml, float invert) {
 
 	// return results list
 	return res;
-}	
-	  
+}
+
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
 #define X(i) X[i-1]
 #define Y(j) Y[j-1]
 #define Z(k) Z[k-1]
 vector<float> EMData::phase_cog()
-{	
+{
 	vector<float> ph_cntog;
 	int i=1,j=1,k=1;
 	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX;
@@ -4263,7 +4266,7 @@ vector<float> EMData::phase_cog()
 #else
 		float SNY,X[nx],T=0.f;
 #endif	//_WIN32
-		for ( i=1;i<=nx;i++) X(i)=0.0;			
+		for ( i=1;i<=nx;i++) X(i)=0.0;
                 P = 8*atan(1.0f)/ny;
 		for(j=1;j<=ny;j++) {
 			T=0.f;
@@ -4288,7 +4291,7 @@ vector<float> EMData::phase_cog()
 		SNX = F1/P +1.0f;
 		SNX = SNX - ((nx/2)+1);
 		SNY = SNY - ((ny/2)+1);
-		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);      
+		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);
 #ifdef _WIN32
 		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY));
 #else
@@ -4346,10 +4349,10 @@ vector<float> EMData::phase_cog()
 		}
 		F1=atan2(S,C);
 		if(F1<0.0)  F1 += 8*atan(1.0f);
-		SNZ = F1/P +1.0f;      
+		SNZ = F1/P +1.0f;
 		SNX = SNX - ((nx/2)+1);
 		SNY = SNY - ((ny/2)+1);
-		SNZ = SNZ - ((nz/2)+1); 	       
+		SNZ = SNZ - ((nz/2)+1);
 		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
 #ifdef _WIN32
 		ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY)); ph_cntog.push_back((float)Util::round(SNZ));
@@ -4374,7 +4377,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	if(get_ndim()!=3)
 		throw ImageDimensionException("The image should be 3D");
 	/* ===============================================================*/
-	
+
 	/* Calculation of the volume of the voxels */
 	float density_1_mole, vol_1_mole, vol_angstrom;
 	int  vol_voxels;
@@ -4384,19 +4387,19 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	vol_voxels = static_cast<int> (vol_angstrom/(double)pow(pixel_size,3));
 	/* ===============================================================*/
 
-	
+
 	float thr1 = get_attr("maximum");
 	float thr3 = get_attr("minimum");
 	float thr2 = (thr1-thr3)/2 + thr3;
 	int size = nx*ny*nz;
 	float x0 = thr1,x3 = thr3,x1,x2,THR=0;
-	
+
 	#ifdef _WIN32
 		int ILE = _MIN(nx*ny*nx,_MAX(1,vol_voxels));
 	#else
 		int ILE = std::min(nx*ny*nx,std::max(1,vol_voxels));
 	#endif	//_WIN32
-	
+
 	if (abs(thr3-thr2)>abs(thr2-thr1)) {
 		x1=thr2;
 		x2=thr2+C*(thr3-thr2);
@@ -4404,7 +4407,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		x2=thr2;
 		x1=thr2-C*(thr2-thr1);
 	}
-		
+
 	int cnt1=0,cnt2=0;
 	for (int i=0;i<size;i++) {
 		if(rdata[i]>=x1)  cnt1++;
@@ -4414,7 +4417,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	float F1 = LF1*LF1;
 	float LF2 = static_cast<float>( cnt2 - ILE );
 	float F2 = LF2*LF2;
-	
+
 	while ((LF1 != 0 || LF2 != 0) && (fabs(LF1-LF2) >= 1.f) && (abs(x1-x2) > (double)pow(10.0,-5) && abs(x1-x3) > (double)pow(10.0,-5) && abs(x2-x3) > (double)pow(10.0,-5)))
 	{
 		if(F2 < F1) {
@@ -4441,7 +4444,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 			F1 = LF1*LF1;
 		}
 	}
-	
+
 	if(F1 < F2) {
 		ILE = static_cast<int> (LF1 + ILE);
 		THR = x1;
@@ -4450,7 +4453,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		THR = x2;
 	}
 	return THR;
-	
+
 }
 #undef avagadro
 #undef density_protein
@@ -4461,10 +4464,10 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 // reworked peak_ccf uses max queue lenght for peak objects, i.e. lowest
 //    peaks are deleted if queue length is exceeded and a new peak is inserted
 //    instead.
-		
+
 
 vector<float> EMData::peak_ccf(float hf_p)
-{   
+{
 
   // cout << "peak ccf starting up" << endl;
 
@@ -4477,16 +4480,16 @@ vector<float> EMData::peak_ccf(float hf_p)
   int j__1,j__2;
   vector<float>res;
   int nx = buf.get_xsize()-half;
-  int ny = buf.get_ysize()-half; 
+  int ny = buf.get_ysize()-half;
   // iterate over image
   for(i=half; i<=nx; ++i) {
     // static assignment so we don't have to re-evaluate
-    i__1 = i-1;	
+    i__1 = i-1;
     i__2 = i+1;
     for (j=half;j<=ny;++j) {
       j__1 = j-1;
       j__2 = j+1;
-      
+
       if((buf(i,j)>0.0f)&&buf(i,j)>buf(i,j__1)) {
 	if(buf(i,j)>buf(i,j__2)) {
 	  if(buf(i,j)>buf(i__1,j)) {
@@ -4495,19 +4498,19 @@ vector<float> EMData::peak_ccf(float hf_p)
 		if((buf(i,j))> buf(i__1,j__2)) {
 		  if(buf(i,j)>buf(i__2,j__1)) {
 		    if(buf(i,j)> buf(i__2,j__2)) {
-		      
+
 		      // found a peak
 		      // empty list?
 		      if (peaks.size()==0) {
 			// yes, so just push the peak onto the list
 			peaks.push_back(Pixel(i,j,0,buf(i,j)));
-			
+
 		      } else {
 			// not empty list. check neighbourhood for peaks
 			// logical not in the name is awkward. renamed to overlap
 			bool overlap = false;
 			//int  size = peaks.size();
-			
+
 			// list of peaks to be deleted, if the current peak is the largest (see below).
 			//    list contains iterators to the original list, which will have to be processed
 			//    back to front (i.e. LIFO: stl::stack)
@@ -4530,9 +4533,9 @@ vector<float> EMData::peak_ccf(float hf_p)
 			      //    to make sure we cycle through all peaks within the vicinity, and only delete smaller
 			      //    peaks if this new one is the largest in the vicinity.
 			      delete_stack.push(it);
-				
+
 			      //(*it).x = -half; // this marks entry to be deleted, since it's smaller than the new one
-			      
+
 
 			    } else {
 			      overlap = true;
@@ -4542,7 +4545,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 			    }
 			  }
 			}
-			
+
 			// check whether we need to delete anything. this is marked by the flag overlap == false
 			// loop over all peaks and clean out redundant ones
 			if (false == overlap) {
@@ -4558,12 +4561,12 @@ vector<float> EMData::peak_ccf(float hf_p)
 			  //     peaks if necessary.
 			  // XXX: remove hardcoded value!
 			  if (! (peaks.size() < 2000 )) {
-			    
+
 			    //cout << ".";
 			    // we need to delete a peak first.
 			    // - resort list to get lowest peak at the back
 			    sort(peaks.begin(), peaks.end(), peakcmp);
-			    
+
 			    // - remove lowest peak
 			    peaks.pop_back();
 			  }
@@ -4573,7 +4576,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 			  //cout << "done." << endl;
 
 			} else {
-			  // this peak too small and is ignored, so delete_list is ignored as well. make sure delete_list 
+			  // this peak too small and is ignored, so delete_list is ignored as well. make sure delete_list
 			  //    is empty. probably redundant because of scope, but better safe than sorry.....
 			  while (!delete_stack.empty()) delete_stack.pop();
 			}
@@ -4612,7 +4615,7 @@ EMData* EMData::get_pow(float n_pow)
 }
 
 EMData* EMData::conjg()
-{  
+{
 	if(this->is_complex()) {
 		EMData* buf_new = this->copy_head();
  		float *in  = this->get_data();
@@ -4625,7 +4628,7 @@ EMData* EMData::conjg()
 EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 	if (3 != get_ndim())
 		throw ImageDimensionException("delete_disconnected_regions needs a 3-D image.");
-	if (is_complex()) 
+	if (is_complex())
 		throw ImageFormatException("delete_disconnected_regions requires a real image");
 	if ((*this)(ix+nx/2,iy+ny/2,iz+nz/2) == 0)
 		throw ImageDimensionException("delete_disconnected_regions starting point is zero.");
@@ -4665,7 +4668,7 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius) {
 	if (3 != get_ndim())
 		throw ImageDimensionException("helicise needs a 3-D image.");
-	if (is_complex()) 
+	if (is_complex())
 		throw ImageFormatException("helicise requires a real image");
 
 	EMData* result = this->copy_head();
@@ -4712,13 +4715,13 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 					#else
 					int IOXp1 = std::min( nx-1 ,IOX+1);
 					#endif  //_WIN32
-		
+
 					#ifdef _WIN32
 					int IOYp1 = _MIN( ny-1 ,IOY+1);
 					#else
 					int IOYp1 = std::min( ny-1 ,IOY+1);
 					#endif  //_WIN32
-		
+
 					#ifdef _WIN32
 					int IOZp1 = _MIN( nz-1 ,IOZ+1);
 					#else
@@ -4728,7 +4731,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 					float dx = xold-IOX;
 					float dy = yold-IOY;
 					float dz = zold-IOZ;
-						
+
 					float a1 = (*this)(IOX,IOY,IOZ);
 					float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
 					float a3 = (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZ);
@@ -4736,7 +4739,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 					float a5 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) + (*this)(IOXp1,IOYp1,IOZ);
 					float a6 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOXp1,IOY,IOZp1);
 					float a7 = (*this)(IOX,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOX,IOYp1,IOZp1);
-					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1) 
+					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1)
 							- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
 							- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
 					(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
@@ -4760,15 +4763,15 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 
 
 
-/* 
-Purpose: Depad and remove FT extension from a real image. 
-Method: Depad and remove FT extension from a real image.  
-return new image.  
+/*
+Purpose: Depad and remove FT extension from a real image.
+Method: Depad and remove FT extension from a real image.
+return new image.
 Input: f real n-dimensional image
 Output: depadded image
  */
 void EMData::depad() {
-	if (is_complex()) 
+	if (is_complex())
 		throw ImageFormatException("Depadding of complex images not supported");
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -4812,15 +4815,15 @@ void EMData::depad() {
 	EXITFUNC;
 }
 
-/* 
-Purpose: Depad and remove FT extension from a real image. 
-Method: Depad and remove FT extension from a real image.  
-return new image.  
+/*
+Purpose: Depad and remove FT extension from a real image.
+Method: Depad and remove FT extension from a real image.
+return new image.
 Input: f real n-dimensional image
 Output: depadded image
  */
 void EMData::depad_corner() {
-	if(is_complex()) 
+	if(is_complex())
 		throw ImageFormatException("Depadding of complex images not allowed");
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -4927,15 +4930,15 @@ float circumference( EMData* emdata, int npixel )
         return sumf/sumn;
 }
 /*
-Purpose: Create a new [normalized] [zero-padded]  image. 
-Method: Normalize, pad with zero or circumference, extend for fft, 
-return new image.  
+Purpose: Create a new [normalized] [zero-padded]  image.
+Method: Normalize, pad with zero or circumference, extend for fft,
+return new image.
 Input: f real n-dimensional image
-flag specify normalize, pad, and/or extend 
+flag specify normalize, pad, and/or extend
 Output: zero-padded, ft-extended, normalized input image
  */
 EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
-	if (this->is_complex()) 
+	if (this->is_complex())
 		throw ImageFormatException("Padding of complex images not supported");
 	int nx = this->get_xsize();
 	int ny = this->get_ysize();
@@ -4974,7 +4977,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
         	    float* data = fpimage->get_data();
         	    int nxyz = (nxpad+offset)*nypad*nzpad;
         	    for( int i=0; i < nxyz; ++i )  data[i] = val;
-        	}	   
+        	}
         }
 
 
@@ -5000,16 +5003,16 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	}
 	this->set_array_offsets( saved_offsets );
 
-	
+
 	//  Perform the actual normalization (only on the
-	//  non-zero section of the image)	
+	//  non-zero section of the image)
 	if (donorm) { // Normalization requested
 		for (int iz = zstart; iz < nz+zstart; iz++)
 			for (int iy = ystart; iy < ny+ystart; iy++)
 				for (int ix = xstart; ix < nx+xstart; ix++)
 					(*fpimage)(ix,iy,iz) = ((*fpimage)(ix,iy,iz)-mean)/stddev;
 	}
-	
+
 	fpimage->set_fftpad(true);
 	fpimage->set_attr("npad", npad);
 	if (offset == 1) fpimage->set_fftodd(true);
@@ -5077,7 +5080,7 @@ void EMData::center_origin_fft()
 			for (int iy = 1; iy <= ny; iy++) {
 				for (int ix = 0; ix < nxc; ix++) {
 					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
-					float temp = float(iz-1+iy-1+ix)/float(ny)*M_PI; 		
+					float temp = float(iz-1+iy-1+ix)/float(ny)*M_PI;
 					complex<float> temp2 = complex<float>(cos(temp), -sin(temp));
 					cmplx(ix,iy,iz) *= temp2;
 				}
@@ -5105,7 +5108,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j, k;
-	if (is_complex()) 
+	if (is_complex())
 		throw ImageFormatException("Input image has to be real");
 
 	if(ny > 1) {
@@ -5207,7 +5210,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 				int jy=iy-1; if(jy>nyn2) jy=jy-nyn;
 				for (int ix = 1; ix <= lsdn2; ix++) {
 					int jx=ix-1;
-					ret->cmplx(ix,iy,iz) *= 
+					ret->cmplx(ix,iy,iz) *=
 					exp(-float(twopi)*iimag*(xshift*jx/nxn + yshift*jy/nyn+ zshift*jz/nzn));
 				}
 			}
@@ -5223,7 +5226,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 		ret->depad();
 	}
 	ret->update();
-	
+
 	/*Dict d1 = temp_ft->get_attr_dict();
 	Dict d2 = ret->get_attr_dict();
 	printf("-----------------Attribute Dict for temp_ft--------------\n");
@@ -5330,7 +5333,7 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 		ret->depad();
 	}
 	ret->update();
-	
+
 	/*Dict d1 = temp_ft->get_attr_dict();
 	Dict d2 = ret->get_attr_dict();
 	printf("-----------------Attribute Dict for temp_ft--------------\n");
@@ -5431,7 +5434,7 @@ EMData *EMData::FourInterpol_i(int nxn, int nyni, int nzni, bool RetReal) {
 		ret->depad();
 	}
 	ret->update();
-	
+
 	delete temp_ft;
 	temp_ft = 0;
 	return ret;
@@ -5469,7 +5472,7 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
 	for (j=1; j<=nyn; j++)
-		for (i=1; i<=lsdn; i++) 
+		for (i=1; i<=lsdn; i++)
 			fout(i,j,1)=fint((i-1)/2*4+2-i%2,j*2-1,1);
 	ret->set_complex(true);
 	ret->set_ri(1);
@@ -5481,7 +5484,7 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 		ret->depad();
 	}
 	ret->update();
-	
+
 	delete temp_ft;
 	temp_ft = 0;
 	return ret;
@@ -5516,30 +5519,30 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 			if ((g+j)%2 == 0) {
 				fout(i,j,1)=fint(g*4-2-i%2,j*2-1+ny/2,1);
 			} else {
-				fout(i,j,1)=-fint(g*4-2-i%2,j*2-1+ny/2,1);			
+				fout(i,j,1)=-fint(g*4-2-i%2,j*2-1+ny/2,1);
 			}
 		}
-			
+
 	for (j=ny/4+1; j<=ny/4+1; j++)
 		for (i=1; i<=(nx-2)/2+2; i++) {
 			int g = (i-1)/2+1;
 			if ((g+j)%2 == 0) {
 				fout(i,j,1)=fint(g*4-2-i%2,j*2-1-ny/2,1);
-			} else {			
+			} else {
 				fout(i,j,1)=-fint(g*4-2-i%2,j*2-1-ny/2,1);
-			}			
+			}
 		}
-		
+
 	for (j=ny/4+2; j<=ny/2; j++)
 		for (i=1; i<=(nx-2)/2+2; i++) {
 			int g = (i-1)/2+1;
 			if ((g+j)%2 == 0) {
 				fout(i,j+ny/2,1)=fint(g*4-2-i%2,j*2-1-ny/2,1);
-			} else {			
+			} else {
 				fout(i,j+ny/2,1)=-fint(g*4-2-i%2,j*2-1-ny/2,1);
-			}			
+			}
 		}
-	
+
 	if (nx%2 == 0) {
 		for (j=1; j<=nyn; j++) {
 			fout((nx-2)/2+1,j,1) *= sq2;
@@ -5550,7 +5553,7 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 			fout(i,ny/4+1,1) *= sq2;
 		}
 	}
-	
+
 	ret->set_complex(true);
 	ret->set_ri(1);
 
@@ -5560,7 +5563,7 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 		ret->depad();
 	}
 	ret->update();
-	
+
 	delete temp_ft;
 	temp_ft = 0;
 	return ret;
@@ -5638,7 +5641,7 @@ EMData *EMData::replace_amplitudes(EMData* image, bool RetReal) {
 		// fimage must remain pristine
 		fp = this->copy();
 	} else {
-		fp = this->norm_pad( false, 1); 
+		fp = this->norm_pad( false, 1);
 		fp->do_fft_inplace();
 	}
 	float *fout = fp->get_data();
