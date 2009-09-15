@@ -574,7 +574,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		for k in self.queue.active.keys():
 			j=self.queue.active[k]
 			if isinstance(j,int) : continue
-			if time.time()-j.starttime>600 and (j.progtime==None or time.time()-j.progtime>600) :
+			try:
+				if time.time()-j.starttime>360 and (j.progtime==None or time.time()-j.progtime[0]>360) : raise Exception
+			except:
 				if self.verbose : print "Task %s doesn't seem to be making progress, restarting"%str(j.taskid)
 				self.queue.task_rerun(j.taskid)
 
@@ -952,12 +954,14 @@ class EMDCTaskClient(EMTaskClient):
 		ret=True
 		
 		signal.alarm(60)
-		if time.time()-self.lastupdate>60 : 
-			self.lastupdate=time.time()
+		if time.time()-self.lastupdate>120 : 
 			if self.task==None : 
 				signal.alarm(0)
 				return True 
-			ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress),clientid=self.myid)
+			try:
+				ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress),clientid=self.myid)
+				self.lastupdate=time.time()
+			except: pass
 		
 		signal.alarm(0)
 		return ret
