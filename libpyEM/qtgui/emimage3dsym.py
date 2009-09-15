@@ -304,6 +304,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.display_all_syms = False
 #		self.sym_object = None
 		self.update_sphere_points_dl = True # A way to force the update of the display list for the points on the unit sphere
+		self.flatten = 0.0	# animates transition from sphere to plane, 0-1, 0 = sphere
 		
 		self.radius = 50 # the radius of the sphere - important display parameter
 		self.arc_segments = 16 # number of discrete segments in every great arc 
@@ -416,6 +417,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		
 		if event.key() == Qt.Key_F1:
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
+		elif event.key() == Qt.Key_F :
+			if self.flatten>0 : self.flatten=0.0
+			else: self.flatten=1.0
+			self.generate_current_display_list(True)
+			self.updateGL()
 		else:
 			EMImage3DGUIModule.keyPressEvent(self,event)
 			
@@ -630,8 +636,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			prev = self.radius*Vec3f(p1[0],p1[1],p1[2])
 			for t in range(1, self.arc_segments+1):
 				timeangle = float(t)/float(self.arc_segments)*angle
-				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2])
-				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2])
+				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2]*(1.0-self.flatten))
+				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2]*(1.0-self.flatten))
 				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
 				
 				self.cylinder_to_from(next,prev,self.arc_width_scale)
@@ -785,28 +791,27 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 					self.load_mixed_gl_color(self.column_scores[i])
 				else:
 					self.load_basic_gl_color()
-			glPushMatrix()
-			d = p.get_rotation("eman")
-			# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
-			# hence there are no negative signs
-			glRotate(d["az"],0,0,1)
-			glRotate(d["alt"],1,0,0)
-			glRotate(d["phi"],0,0,1)
-	   	   	glTranslate(0,0,self.radius)
-	   	   	if self.column_scores != None:
-	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
-	   	   	else: 
-	   	   		glScalef(self.width_scale,self.width_scale,self.height_scale)
-
-	   	   	glPushName(i+1)
-			glCallList(self.cappedcylinderdl)
-			glPopName()
-			glPopMatrix()
 			
-			if self.mirror_eulers and not self.nomirror:
-				s = p.negate()
+			if self.flatten>0.0 :
 				glPushMatrix()
-				d = s.get_rotation("eman")
+				d = p.get_rotation("eman")
+				# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+				# hence there are no negative signs
+				glRotate(d["az"],0,0,1)
+				glTranslate(0,-(1.0-cos(d["alt"]*pi/180.0))*self.radius,0)
+
+				if self.column_scores != None:
+					glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+				else: 
+					glScalef(self.width_scale,self.width_scale,self.height_scale)
+
+				glPushName(i+1)
+				glCallList(self.cappedcylinderdl)
+				glPopName()
+				glPopMatrix()
+			else:
+				glPushMatrix()
+				d = p.get_rotation("eman")
 				# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
 				# hence there are no negative signs
 				glRotate(d["az"],0,0,1)
@@ -817,11 +822,48 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 					glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
 				else: 
 					glScalef(self.width_scale,self.width_scale,self.height_scale)
-	
+
 				glPushName(i+1)
 				glCallList(self.cappedcylinderdl)
 				glPopName()
 				glPopMatrix()
+			
+			if self.mirror_eulers and not self.nomirror:
+				s = p.negate()
+
+				if self.flatten >0 :
+					glPushMatrix()
+					d = s.get_rotation("eman")
+					glRotate(d["az"],0,0,1)
+					glTranslate(0,(1.0-d["alt"]*2.0/pi)*self.radius,0)
+
+					if self.column_scores != None:
+						glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+					else: 
+						glScalef(self.width_scale,self.width_scale,self.height_scale)
+		
+					glPushName(i+1)
+					glCallList(self.cappedcylinderdl)
+					glPopName()
+					glPopMatrix()
+				else :
+					glPushMatrix()
+					d = s.get_rotation("eman")
+					# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+					# hence there are no negative signs
+					glRotate(d["az"],0,0,1)
+					glRotate(d["alt"],1,0,0)
+					glRotate(d["phi"],0,0,1)
+					glTranslate(0,0,self.radius)
+					if self.column_scores != None:
+						glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+					else: 
+						glScalef(self.width_scale,self.width_scale,self.height_scale)
+		
+					glPushName(i+1)
+					glCallList(self.cappedcylinderdl)
+					glPopName()
+					glPopMatrix()
 				
 			
 		glEndList()

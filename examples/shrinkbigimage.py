@@ -61,7 +61,7 @@ avg.read_image(sys.argv[1],0)
 ref0=avg.process("filter.lowpass.gauss",{"cutoff_abs":.15})
 nx=avg.get_xsize()
 if darkref :
-	darkref.process_inplace("normalize.toimage",{"noisy":avg})
+	darkref.process_inplace("normalize.toimage",{"to":avg})
 	avg-=darkref
 avg-=avg.get_edge_mean()
 #if gamma : avg.process_inplace("math.pow",{"pow":gamma})
@@ -70,7 +70,7 @@ for i in range(1,n):
 	aa=EMData()
 	aa.read_image(sys.argv[1],i)
 	if darkref :
-		darkref.process_inplace("normalize.toimage",{"noisy":a})
+		darkref.process_inplace("normalize.toimage",{"to":a})
 		aa-=darkref
 	aa-=aa.get_edge_mean()
 	

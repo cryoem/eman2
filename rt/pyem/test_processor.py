@@ -1330,7 +1330,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('normalize.rows')
         
     def test_normalize_toimage(self):
-        """test normalize.toimage processor ................."""
+        """test normalize.toimage processor ............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1341,41 +1341,7 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
         
-        e.process_inplace('normalize.toimage', {'noisy':e2, 'keepzero':2, 'invert':1, \
-                                                'mult':2.3, 'add':0.5})
-                                                
-    def test_normalize_tofile(self):
-        """test normalize.tofile processor .................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e2.is_complex(), False)
-        filename = 'noise.mrc'
-        e2.write_image(filename)
-        
-        e.process_inplace('normalize.tofile', {'noisyfile':filename, 'keepzero':2, \
-                   'invert':1, 'mult':2.3, 'add':0.5 })
-                   
-        testlib.safe_unlink(filename)
-        
-    def test_normalize_toimage_lsq(self):
-        """test normalize.toimage.lsq processor ............."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e2.is_complex(), False)
-        
-        e.process_inplace('normalize.toimage.lsq', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
+        e.process_inplace('normalize.toimage', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
     def test_math_radialaverage(self):
 		"""test math.radialaverage processor ................"""

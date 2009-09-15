@@ -170,8 +170,6 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&HistogramBin::NEW);
 
-	force_add(&NormalizeToStdProcessor::NEW);
-	force_add(&NormalizeToFileProcessor::NEW);
 	force_add(&NormalizeToLeastSquareProcessor::NEW);
 
 	force_add(&RadialAverageProcessor::NEW);
@@ -3280,89 +3278,6 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
-void NormalizeToStdProcessor::process_inplace(EMData * image)
-{
-	if (!image) {
-		LOGWARN("NULL Image");
-		return;
-	}
-	EMData *noisy = 0;
-	if (params.has_key("noisy")) {
-		noisy = params["noisy"];
-	}
-	else {
-		noisy = new EMData();
-		noisy->read_image((const char *) params["noisyfile"]);
-	}
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	size_t size = nx * ny * nz;
-
-	if (!EMUtil::is_same_size(image, noisy)) {
-		LOGERR("normalize to on different sized images");
-		return;
-	}
-
-	int keepzero = params["keepzero"];
-	int invert = params["invert"];
-	float mult_factor = params["mult"];
-	float add_factor = params["add"];
-	float sigmax = params["sigmax"];
-
-	float *this_data = image->get_data();
-	float *noisy_data = noisy->get_data();
-	float m = 0;
-	float b = 0;
-
-	if (!invert) {
-		Util::calc_least_square_fit(size, this_data, noisy_data, &m, &b, keepzero,sigmax*(float)noisy->get_attr("sigma"));
-	}
-
-	if (invert || m < 0) {
-		Util::calc_least_square_fit(size, noisy_data, this_data, &m, &b, keepzero,sigmax*(float)image->get_attr("sigma"));
-
-		if (m < 0) {
-			b = 0;
-			m = 1;
-		}
-		else if (m > 0) {
-			b = -b / m;
-			m = 1.0f / m;
-		}
-	}
-
-	(*image) *= m;
-
-	if (keepzero) {
-		float *rdata = image->get_data();
-		for (size_t i = 0; i < size; i++) {
-			if (rdata[i]) {
-				rdata[i] += b;
-			}
-		}
-		image->update();
-	}
-	else {
-		(*image) += b;
-	}
-
-	mult_factor *= m;
-	add_factor *= b;
-
-	params["mult"] = mult_factor;
-	params["add"] = add_factor;
-
-	if (!params.has_key("noisy")) {
-		if( noisy )
-		{
-			delete noisy;
-			noisy = 0;
-		}
-	}
-}
 
 
 void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
@@ -3399,7 +3314,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	int count = 0;
 
 	for (size_t i = 0; i < size; i++) {
-		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0) {
+		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
 			count++;
 			sum_x += refp[i];
 			sum_y += rawp[i];
@@ -3412,7 +3327,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 	float t;
 	for (size_t i = 0; i < size; i++) {
-		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0) {
+		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
 			t = refp[i] - sum_x_mean;
 			sum_tt += t * t;
 			b += t * rawp[i];
@@ -3433,6 +3348,10 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 	params["scale"] = scale;
 	params["shift"] = shift;
+
+	image->set_attr("norm_mult",scale);
+	image->set_attr("norm_add",shift);
+
 }
 
 

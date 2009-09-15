@@ -4077,85 +4077,6 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		void process_inplace(EMData * image);
 	};
 
-	/**multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.
-	 *@param noisy Image to normalize to
-	 *@param keepzero set to 1 to ignore zeroes
-	 *@param invert set to one to invert image
-	 *@param sigmax Values greater or less than sigma from zero will be excluded from the normalization
-	 *@param mult multiply by this factor
-	 *@param add add by this factor
-	 */
-	class NormalizeToStdProcessor:public Processor
-	{
-	  public:
-		void process_inplace(EMData * image);
-
-		string get_name() const
-		{
-			return "normalize.toimage";
-		}
-
-		static Processor *NEW()
-		{
-			return new NormalizeToStdProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.";
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("noisy", EMObject::EMDATA,"Image to normalize to");
-			d.put("keepzero", EMObject::INT,"set to 1 to ignore zeroes");
-			d.put("invert", EMObject::INT,"set to one to invert image");
-			d.put("sigmax",EMObject::FLOAT,"Values greater or less than sigma from zero will be excluded from the normalization");
-			d.put("mult", EMObject::FLOAT, "multiply by this factor");
-			d.put("add", EMObject::FLOAT, "add by this factor");
-			return d;
-		}
-	};
-
-	/**Multiply this image by a constant so it is scaled to the signal in 'noisyfile'
-	 *@param noisyfile Image to normalize to
-	 *@param keepzero  set to 1 to exclude zero values
-	 *@param invert set to 1 to invert image
-	 *@param mult multiply by this factor
-	 *@param add add by this factor
-	 */
-	class NormalizeToFileProcessor:public NormalizeToStdProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return "normalize.tofile";
-		}
-
-		static Processor *NEW()
-		{
-			return new NormalizeToFileProcessor();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("noisyfile", EMObject::STRING, "Image file name to normalize to");
-			d.put("keepzero", EMObject::INT, "set to 1 to ignore zeroes");
-			d.put("invert", EMObject::INT, "set to 1 to invert image");
-			d.put("mult", EMObject::FLOAT, "multiply by this factor");
-			d.put("add", EMObject::FLOAT, "add by this factor");
-			return d;
-		}
-
-		string get_desc() const
-		{
-			return "Multiply this image by a constant so it is scaled to the signal in 'noisyfile'";
-		}
-
-	};
-
 	/**use least square method to normalize
 	 * @param to reference image normalize to
 	 * @param low_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)
@@ -4168,7 +4089,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		string get_name() const
 		{
-			return "normalize.toimage.lsq";
+			return "normalize.toimage";
 		}
 
 		static Processor *NEW()

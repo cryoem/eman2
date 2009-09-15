@@ -141,7 +141,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		for i in range(len(self.projections)):
 			r = Region(i,self.current_particle,1,1)
 			e.read_image(self.simmx_file,0,False,r)
-			self.projections[i].set_attr("cmp",-e.get(0))		# We plot negative values so taller peaks are better...
+			self.projections[i].set_attr("cmp",-e.get(0))		# We plot -1* values so taller peaks are better...
 		
 		self.regen_dl()
 		
@@ -219,7 +219,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			#n = EMUtil.get_image_count(self.particle_file)
 			particle.read_image(self.particle_file,self.current_particle)
 			particle.transform(t)
-			particle.process_inplace("normalize.toimage.lsq",{"to":projection})
+			particle.process_inplace("normalize.toimage",{"to":projection})
+			if particle["norm_mult"]<0 : particle*=-1.0
 			
 			particle_masked=particle.copy()
 			tmp=projection.process("threshold.notzero")
@@ -443,7 +444,7 @@ def simmx_xplore_dir_data():
 		if not db.has_key("cmd_dict"): continue
 		# need to be able to get the input data
 		cmd = db["cmd_dict"]
-		if not cmd.has_key("input"): continue
+		if cmd==None or not cmd.has_key("input"): continue
 		inp = cmd["input"]
 		
 		dcts=db_list_dicts("bdb:"+dir)		# list all databases

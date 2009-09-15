@@ -49,7 +49,7 @@ def fixup(i,d,l):
 	"""Takes an image, a dark reference and a light/flat reference and corrects the image in-place"""
 #	i2=i.copy()
 	if d:
-		d.process_inplace("normalize.toimage",{"noisy":i,"sigmax":1})
+		d.process_inplace("normalize.toimage",{"to":i})
 		i-=d
 	i/=l
 	i.process_inplace("normalize.edgemean",{})

@@ -279,6 +279,8 @@ class EMGenClassAverages:
 				print len(self.tids),"class averaging tasks left in main loop"
 				st_vals = self.etc.check_task(self.tids)
 				for i in xrange(len(self.tids)-1,-1,-1):
+					print "*",
+					sys.stdout.flush()
 					st = st_vals[i]
 					if st==100:
 						tid = self.tids[i] 
@@ -292,6 +294,7 @@ class EMGenClassAverages:
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/(self.class_max+1-self.class_min))
 				
+				print "\n"
 				time.sleep(5)
 				
 		else: # process in the context of the current program
