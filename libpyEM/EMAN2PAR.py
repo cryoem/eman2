@@ -573,7 +573,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 		for k in self.queue.active.keys():
 			j=self.queue.active[k]
-			if isinstance(j,int) : continue
+			if isinstance(j,int) or j.starttime==None : continue
 			try:
 				if time.time()-j.starttime>360 and (j.progtime==None or time.time()-j.progtime[0]>360) : raise Exception
 			except:

@@ -247,7 +247,7 @@ class EMParallelSimMX:
 			blocks = self.__get_blocks()
 #			print blocks
 	
-			self.check_blocks(blocks) # testing function can be removed at some point
+#			self.check_blocks(blocks) # testing function can be removed at some point
 			
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(self.options.parallel)
