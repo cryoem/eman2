@@ -118,13 +118,13 @@ namespace EMAN
 
 		float get_miny()
 		{
-			update();
+//			update();
 			return ymin;
 		}
 
 		float get_maxy()
 		{
-			update();
+//			update();
 			return ymax;
 		}
 

@@ -50,7 +50,7 @@
 using namespace EMAN;
 
 XYData::XYData()
-	: ymin(FLT_MAX), ymax(-FLT_MAX), mean_x_spacing(0)
+	: ymin(FLT_MAX), ymax(-FLT_MAX), mean_x_spacing(1.0)
 {
 }
 
@@ -163,7 +163,12 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 
 float XYData::get_yatx(float x)
 {
-	update();	//update to set the mean_x_spacing value
+// You MUST be kidding. Do you know how expensive update() is !?!?
+// the correct answer is to call update after you change the data, just like with EMData objects. --steve
+//	update();	//update to set the mean_x_spacing value
+
+	if (data.size()==0 || mean_x_spacing==0) return 0.0;
+
 	int s = (int) floor((x - data[0].x) / mean_x_spacing);
 	int nx = (int) data.size();
 
@@ -179,7 +184,7 @@ float XYData::get_yatx(float x)
 	}
 
 	if (s >= nx || s < 0) {
-		return 0;
+		return 0.0;
 	}
 
 	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
