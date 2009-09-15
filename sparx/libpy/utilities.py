@@ -2717,33 +2717,43 @@ def rotation_between_anglesets(agls1, agls2):
 	  Find overall 3D rotation (phi theta psi) between two sets of Eulerian angles.
 	  The two sets have to be of the same length and it is assume that k'th element on the first
 	  list corresponds to the k'th element on the second list.
-	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
-	  Output: overall rotation phi, theta, psi
+	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...].  Second list is considered reference.
+	  Output: overall rotation phi, theta, psi that has to be applied to the first list (agls1) so resulting
+	    angles will agree with the second list.
 	  Note: all angles have to be in spider convention.
 	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
 	"""
 	from math  import sin, cos, pi, sqrt, atan2, acos, atan
 	from numpy import array, linalg, matrix
+	import types
 
 	rad2deg = 180 / pi
 	deg2rad = 1 / rad2deg
 
 	def ori2xyz(ori):
-	    phi, theta, psi = ori	
-	    map = False
-	    if theta > 90:
-		theta = theta - 2 * (theta - 90.0)
-		map   = True
-	    phi   *= deg2rad
-	    theta *= deg2rad
-	    x = sin(theta) * sin(phi)
-	    y = sin(theta) * cos(phi)
-	    val = 1.0 - x*x - y*y
-	    if val < 0.0: val = 0.0
-	    z = sqrt(val)
-	    if map: z = -z
+		if(type(ori) == types.ListType):
+			phi, theta, psi = ori
+		else:
+			# it has to be Transformation object
+			d = ori.get_params("spider")
+			phi = d["phi"]
+			theta = d["theta"]
+			psi = d["psi"]
 
-	    return [x, y, z]
+		map = False
+		if theta > 90:
+			theta = theta - 2 * (theta - 90.0)
+			map   = True
+		phi   *= deg2rad
+		theta *= deg2rad
+		x = sin(theta) * sin(phi)
+		y = sin(theta) * cos(phi)
+		val = 1.0 - x*x - y*y
+		if val < 0.0: val = 0.0
+		z = sqrt(val)
+		if map: z = -z
+
+		return [x, y, z]
 
 	N = len(agls1)
 	if N != len(agls2):
@@ -2779,15 +2789,10 @@ def rotation_between_anglesets(agls1, agls2):
 	val, vec = linalg.eig(N)
 	q0, qx, qy, qz = vec[:, val.argmax()]
 
-        # create quaternion Rot matrix
-	Rot = matrix([[q0*q0+qx*qx-qy*qy-qz*qz, 2*(qx*qy-q0*qz),                 2*(qx*qz+q0*qy)],
-		      [2*(qy*qx+q0*qz),         q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qz-q0*qx)],
-		      [2*(qz*qx-q0*qy),         2*(qz*qy+q0*qx),         q0*q0-qx*qx-qy*qy+qz*qz]])
-
-	r = list(Rot.getA().reshape((9)))
-	r.insert(9, 1)
-	r.insert(6, 0)
-	r.insert(3, 0)
+        # create quaternion Rot matrix 
+	r = [q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qx+q0*qz),          2*(qy*qz-q0*qx),          0.0,
+	     2*(qx*qy-q0*qz),                 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy),          0.0,
+	     2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz,  0.0]
 	
 	R = Transform(r)
 	dictR = R.get_rotation('SPIDER')
