@@ -84,7 +84,8 @@ This program will print out some information about the image.
 			if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not stat: 
 				image_index = -1
 				
-			d=EMData(imagefile, options.number, True)
+			d=EMData()
+			d.read_image(imagefile, options.number, True)
 			if d["nz"]==1 : print "%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"])
 			else : print "%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"])
 			
