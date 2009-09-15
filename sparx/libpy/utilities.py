@@ -2712,7 +2712,16 @@ def enable_bdb_cache():
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
 # return the global rotation (dphi, dtheta, dpsi) between the two systems
-def get_rotation_angles(agls1, agls2):
+def rotation_between_anglesets(agls1, agls2):
+	"""
+	  Find overall 3D rotation (phi theta psi) between two sets of Eulerian angles.
+	  The two sets have to be of the same length and it is assume that k'th element on the first
+	  list corresponds to the k'th element on the second list.
+	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
+	  Output: overall rotation phi, theta, psi
+	  Note: all angles have to be in spider convention.
+	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
+	"""
 	from math  import sin, cos, pi, sqrt, atan2, acos, atan
 	from numpy import array, linalg, matrix
 
@@ -2723,14 +2732,14 @@ def get_rotation_angles(agls1, agls2):
 	    phi, theta, psi = ori	
 	    map = False
 	    if theta > 90:
-		theta = theta - 2 * (theta - 90)
+		theta = theta - 2 * (theta - 90.0)
 		map   = True
 	    phi   *= deg2rad
 	    theta *= deg2rad
 	    x = sin(theta) * sin(phi)
 	    y = sin(theta) * cos(phi)
-	    val = 1 - x*x - y*y
-	    if val < 0: val = 0
+	    val = 1.0 - x*x - y*y
+	    if val < 0.0: val = 0.0
 	    z = sqrt(val)
 	    if map: z = -z
 
@@ -2738,7 +2747,7 @@ def get_rotation_angles(agls1, agls2):
 
 	N = len(agls1)
 	if N != len(agls2):
-		print 'Both lists must be the same size'
+		print 'Both lists must have the same length'
 		return -1
 	if N < 2:
 		print 'At least two orientations are required in each list'
