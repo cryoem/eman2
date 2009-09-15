@@ -545,7 +545,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 #			self.average["nx"]
 			self.average = self.euler_data[i]#
 			self.projection = EMData(self.projection_file,self.average.get_attr("projection_image_idx"))
-			self.average.process_inplace("normalize.toimage.lsq",{"to":self.projection})
+			self.average.process_inplace("normalize.toimage",{"to":self.projection})
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
 			except:
