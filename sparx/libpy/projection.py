@@ -105,19 +105,19 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	"""
         from math         import sin, cos, pi
 	from fundamentals import fft
-	from alignment    import ringwe, normalize_ring, Applyws
+	from alignment    import ringwe, normalize_rings, Applyws
 	from filter       import filt_ctf
 	mode = "F"
 	wr_four  = ringwe(numr, "F")
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
-	qv = pi/180.
+	qv = pi/180.0
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
         for i in xrange( len(prjref) ):
 		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		normalize_ring(cimage, numr)
+		normalize_rings(cimage, numr)
 
 		Util.Frngs(cimage, numr)
 		Applyws(cimage, numr, wr_four)
