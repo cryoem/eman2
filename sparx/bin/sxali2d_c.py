@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --rand_alpha --MPI"
+	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="float",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",    type="float",  default=-1,            help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
@@ -54,7 +54,6 @@ def main():
 	parser.add_option("--snr",   type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,help="compute Fourier variance")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="name of the reference preparation function")
-	parser.add_option("--rand_alpha", action="store_true", default=False, help="start with random alpha")
 	parser.add_option("--MPI", action="store_true", default=False,     help="whether to use MPI version ")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
@@ -77,8 +76,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.function, \
-			options.rand_alpha, options.MPI)
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.function, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
