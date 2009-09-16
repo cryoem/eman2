@@ -2588,9 +2588,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name)
 		return
 
-	from utilities    import model_circle, drop_image, get_image, get_input_from_string
+	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
 	from statistics   import fsc_mask, sum_oe
-	from alignment    import Numrinit, ringwe, ali2d_single_iter
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -2710,7 +2710,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 		for Iter in xrange(max_iter):
-			total_iter += 1 
+			total_iter += 1
+			print_msg("Iteration #%4d\n"%(total_iter))
 			if  Fourvar:  
 				tavg, ave1, ave2, vav, sumsq = add_ave_varf(data, mask, "a", CTF, ctf_2_sum)
 				# write the current average
@@ -2764,13 +2765,36 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				a1 = a1[0]
 			else:
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-			msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter,a1)
+			msg = "criterion = %15.8e\n"%(a1)
 			print_msg(msg)
 			if total_iter == len(xrng)*max_iter: break
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
+
+			old_ali_params = []
+		        for im in xrange(nima):
+		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
+		        	old_ali_params.append([alphan, sxn, syn, mirror, scale])
+
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+
+		        pixel_error = 0.0
+		        mirror_changed = 0
+			pixel_error_bin = [0]*(nx*2)
+		        for im in xrange(nima):
+		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
+		        	if old_ali_params[im][3] == mirror:
+		        		this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
+		        		pixel_error += this_error
+					pixel_error_bin[int(this_error)] += 1
+		        	else:
+		        		mirror_changed += 1
+			print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
+			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(pixel_error/float(nima-mirror_changed)))
+			for p in xrange(len(pixel_error_bin)):
+				if pixel_error_bin[p] > 0: print_msg("      %3d - %8.4f: %5d\n"%(p, p+1-0.0001, pixel_error_bin[p]))
+			print_msg("\n\n\n")
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
