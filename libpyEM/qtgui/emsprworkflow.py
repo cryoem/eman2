@@ -4703,6 +4703,7 @@ class E2Make3DTools:
 		
 		string_args.extend(["m3diter","m3dkeep","recon"])
 		bool_args.append("m3dkeepsig")
+		bool_args.append("m3dsetsf")
 		if hasattr(options,"m3dpreprocess"): string_args.append("m3dpreprocess")
 		if hasattr(options,"m3dpostprocess"): string_args.append("m3dpostprocess")
 		if hasattr(options,"m3dpostprocess2"): string_args.append("m3dpostprocess2")
@@ -4741,12 +4742,20 @@ class E2Make3DTools:
 		options.m3diter = params["m3diter"]
 		options.m3dkeep = params["m3dkeep"]
 		options.m3dkeepsig = params["m3dkeepsig"]
+		options.m3dsetsf = params["m3dsetsf"]
 		
 		options.recon = params["recon"]
 		
 		if params["m3dpreprocess"] != "None":
 			options.m3dpreprocess = params["m3dpreprocess"]
-			
+		
+		if options.m3dsetsf :
+			try:
+				db_misc=db_open_dict("bdb:e2ctf.misc",True)
+				m=db_misc["strucfac"]
+			except:
+				error_message.append("You must determine a structure factor before you can use the setsf option")
+		
 		if params["m3dpostprocess"] != "None":
 			if len(params["m3dpostprocessargs"]) == 0:
 				error_message.append("If you supply a post processor for make3d, you have to supply one of the cutoff_abs, cutoff_freq, or cutoff_pixels parameters")
@@ -4804,8 +4813,12 @@ class E2Make3DTools:
 		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("m3dkeepsig",dfl=True),choices=[])
 		
 		piter = ParamDef(name="m3diter",vartype="int",desc_short="Reconstruction iterations",desc_long="The number of times the reconstruction algorithm is iterated",property=None,defaultunits=db.get("m3diter",dfl=3),choices=[])
-	
+
+		pkeepsig = ParamDef(name="m3dkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("m3dkeepsig",dfl=True),choices=[])
+
 		pnormproc =  ParamDef("m3dpreprocess",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("m3dpreprocess",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
+		
+		psetsf = ParamDef(name="m3dsetsf",vartype="boolean",desc_short="Set SF",desc_long="If checked, this will impose the precomputed structure factor on the model before postprocessing",property=None,defaultunits=db.get("m3dsetsf",dfl=False),choices=[])
 		
 		ppostproc =  ParamDef("m3dpostprocess",vartype="string",desc_short="Post processor",desc_long="A post processor applied to the reconstructed model",property=None,defaultunits=db.get("m3dpostprocess",dfl="None"),choices=self.get_postprocess_filt_options())
 		ppostprocargs =  ParamDef(name="m3dpostprocessargs",vartype="string",desc_short="params",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("m3dpostprocessargs",dfl=""),choices=[])	
@@ -4824,9 +4837,9 @@ class E2Make3DTools:
 		
 		params.append([precon,piter])
 		params.append([pnormproc,ppad])
-		params.append([pkeep,pkeepsig])
+		params.append([pkeep,pkeepsig,psetsf])
 		params.append([ppostproc,ppostprocargs])
-		params.append([ppostproc2,ppostprocargs2])
+#		params.append([ppostproc2,ppostprocargs2])
 		return ["Make3d", params]
 		
 	

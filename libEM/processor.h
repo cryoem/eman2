@@ -386,11 +386,10 @@ The basic design of EMAN Processors: <br>\
 
 	  protected:
 		  virtual void preprocess(EMData * image) {}
-		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
+		  virtual void create_radial_func(vector < float >&radial_mask,EMData *image) const = 0;
 	};
 
 	/** Evaluate individual particle images using a tenchique similar to that used for CTF evaluation
-	 * @param cutoff_abs Processor radius in terms of Nyquist (0-.5).
 	 */
 	class SNREvalProcessor:public Processor
 	{
@@ -886,7 +885,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
+		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 		  virtual void preprocess(EMData * image);
 		  float highpass;
 	};
@@ -5276,21 +5275,21 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/**Sets the structure factor based on a 1D x/y text file.
-	 *@param filename file name for structure factor
+	 *@param strucfac XYData object with the curve to be imposed as intensity as a function of s
+	 *@param apix A/pix value. Overrides and replaces apix_x/y/z in image
 	 */
-	class SetSFProcessor:public Processor
+	class SetSFProcessor:public FourierAnlProcessor
 	{
 	  public:
-		  virtual void process_inplace(EMData * image);
 
 		virtual string get_name() const
 		{
-			return "misc.setpowspec";
+			return "filter.setstrucfac";
 		}
 
 		virtual string get_desc() const
 		{
-			return "Sets the structure factor based on a 1D x/y text file.";
+			return "Filters the image so its 1-D power spectrum matches a supplied X-Y curve";
 		}
 
 		static Processor *NEW()
@@ -5301,9 +5300,12 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("filename", EMObject::STRING, "file name for structure factor");
+			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the curve to be imposed as a function of S");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
+	  protected:
+		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 	};
 
 	/**Smart mask processor

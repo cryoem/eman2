@@ -2349,6 +2349,8 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 
 	int n = static_cast < int >(array.size());
 
+	if (n*step>2.0) printf("Warning, apply_radial_func takes x0 and step with respect to Nyquist (0.5)\n");
+
 //	printf("%f %f %f\n",array[0],array[25],array[50]);
 
 	ap2ri();
@@ -2493,6 +2495,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				r=(r-x0)/dx;
 				int f=int(r);	// safe truncation, so floor isn't needed
 				r-=float(f);	// r is now the fractional spacing between bins
+//				printf("%d\t%d\t%d\t%1.3f\t%d\t%1.3f\t%1.4g\n",x,y,f,r,step,Util::hypot_fast(x/2,y<ny/2?y:ny-y),v);
 				if (f>=0 && f<n) {
 					ret[f]+=v*(1.0f-r);
 					norm[f]+=(1.0f-r);

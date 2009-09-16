@@ -110,8 +110,9 @@ def main():
 	parser.add_option("--tlt", help="An imod tlt containing alignment angles. If specified slices will be inserted using these angles", type="string", default=None)
 	
 	parser.add_option("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
+	parser.add_option("--setsf",type="string",help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
-	
+
 	parser.add_option("--pad", metavar="m or m,n", default=None,type="string", help="This can be a single value or two values. If a single value is specified (m) the input images are padded with zeroes uniformly in both directions so that the dimensions are mxm. If two values are specified (m,n) the images are padded with zeroes such that the dimension are mxn (in x and y, respectively). Padding occurs after preprocessing.")
 	
 	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
@@ -269,8 +270,37 @@ def main():
 		output.set_attr("apix_y",apix)
 		output.set_attr("apix_z",apix)
 	
-	if options.postprocess == None:
-		options.postprocess = ["normalize.circlemean"]
+	# Structure factor setting
+	if options.setsf.lower() != "none" :
+		if options.setsf.lower()!="auto" :
+			sfcurve=XYData()
+			sfcurve.read_file(opt)
+			for i in range(sfcurve.get_size()):
+				v=sfcurve.get_y(i)
+				if v<=0 :
+					print "Warning values <=0 found in structure factor file. Please remove."
+#					sfcurve2.set_y(i,-10.0)
+#				else : sfcurve2.set_y(i,log10(v))
+			sfcurve.update()
+		else:
+			try:
+				db_misc=db_open_dict("bdb:e2ctf.misc",True)
+				m=db_misc["strucfac"]
+				print "Using previously generated structure factor from bdb:e2ctf.misc"
+				sfcurve=XYData()		# this is really slow and stupid
+				for i,j in enumerate(m):
+					sfcurve.set_x(i,j[0])
+					sfcurve.set_y(i,j[1])
+#					sfcurve.set_y(i,log10(j[1]))
+				
+				sfcurve.update()
+			except : sfcurve=None
+		
+		if sfcurve==None:
+			print "ERROR : Structure factor read failed. Not applying structure factor"
+		else:
+			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
+	
 	if options.postprocess != None:
 		for p in options.postprocess:
 			try:
@@ -279,7 +309,9 @@ def main():
 				output.process_inplace(str(processorname), param_dict)
 			except:
 				print "warning - application of the post processor",p," failed. Continuing anyway"
-					
+	
+	output.process_inplace("normalize.circlemean")
+	
 	# write the reconstruction to disk
 	output.write_image(options.output,0)
 	if options.verbose:

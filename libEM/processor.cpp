@@ -395,13 +395,13 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
-		create_radial_func(yarray);
+		create_radial_func(yarray,image);
 		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
 		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
-		create_radial_func(yarray);
+		create_radial_func(yarray,image);
 		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray);
 		EMData *ift = fft->do_ift();
 
@@ -757,7 +757,7 @@ void HighpassAutoPeakProcessor::preprocess(EMData * image)
 	}
 }
 
-void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask) const
+void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask, EMData *image) const
 {
 	unsigned int c;
 
@@ -5654,81 +5654,25 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 	}
 }
 
-
-void SetSFProcessor::process_inplace(EMData * image)
-{
-	if (!image) {
-		LOGWARN("NULL Image");
-		return;
+void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
+	// The radial mask comes in with the existing radial image profile
+	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
+	
+	XYData *sf = params["strucfac"];
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
 	}
 
-	const char *sffile = params["filename"];
-	float apix = params["apix"];
-
-	if (apix <= 0) {
-		LOGERR("Must specify apix with setsf");
-		return;
+	float apix=image->get_attr("apix_x");
+	
+	int n = radial_mask.size();
+	for (int i=0; i<n; i++) {
+		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
 	}
 
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	if (nx != ny || ny != nz) {
-		LOGERR("SetSF processor works only on even cubic images");
-		return;
-	}
-
-	XYData sf;
-	int err = sf.read_file(sffile);
-	if (err) {
-		LOGERR("couldn't read structure factor file!");
-		return;
-	}
-
-	EMData *dataf = image->do_fft();
-
-	vector < float >curve = dataf->calc_radial_dist(nx, 0, 0.5f,1);
-	float step = 1.0f / (apix * 2.0f * nx);
-	Util::save_data(0, step, curve, "proc3d.raddist");
-
-	double sum = 0;
-	for (int i = 0; i < nx; i++) {
-		if (curve[i] > 0) {
-			curve[i] = sqrt(sf.get_yatx(i * step) / curve[i]);
-		}
-		else {
-			curve[i] = 0;
-		}
-		sum += curve[i];
-	}
-
-	float avg = (float) sum / nx;
-	for (int i = 0; i < nx; i++) {
-		curve[i] /= avg;
-	}
-
-	float lv2 = curve[0];
-
-	for (int i = 1; i < nx - 1; i++) {
-		float lv = curve[i];
-		curve[i] = 0.25f * lv2 + 0.5f * curve[i] + 0.25f * curve[i + 1];
-		lv2 = lv;
-	}
-	Util::save_data(0, step, curve, "proc3d.filt");
-
-	dataf->apply_radial_func(0, 0.5f, curve);
-	if( image )
-	{
-		delete image;
-		image = 0;
-	}
-
-	image = dataf->do_ift();
 }
-
-
-
 
 void SmartMaskProcessor::process_inplace(EMData * image)
 {

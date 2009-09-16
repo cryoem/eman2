@@ -235,8 +235,8 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 				frc=projection.calc_fourier_shell_correlation(particle)
 				frcm=projection.calc_fourier_shell_correlation(particle_masked)
 				nf=len(frc)/3
-				self.frc_display.set_data((frc[:nf],frc[nf:nf*2]),"frc")
-				self.frc_display.set_data((frcm[:nf],frcm[nf:nf*2]),"frcm")
+				self.frc_display.set_data(([i/ctf.apix for i in frc[:nf]],frc[nf:nf*2]),"frc")
+				self.frc_display.set_data(([i/ctf.apix for i in frcm[:nf]],frcm[nf:nf*2]),"frcm")
 				
 				ctf=particle["ctf"]
 				ds=1.0/(ctf.apix*particle["ny"])

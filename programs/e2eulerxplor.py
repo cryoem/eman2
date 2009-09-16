@@ -403,7 +403,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		if not db.has_key("cmd_dict"): return {}
 		# need to be able to get the input data
 		cmd = db["cmd_dict"]
-		if not cmd.has_key("input"): return {}
+		if cmd == None or not cmd.has_key("input"): return {}
 		
 		for i in range(0,9):
 			for j in range(0,9):
