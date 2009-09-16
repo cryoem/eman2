@@ -5027,7 +5027,10 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	cs = [0.0]*3
 	# do the projection matching
 	for N_step in xrange(lstp):
- 		for Iter in xrange(max_iter):
+		terminate = 0
+		Iter = -1
+ 		while(Iter < max_iter-1 and terminate == 0):
+			Iter += 1
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f , an = %5.2f\n"%(N_step*max_iter+Iter+1, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step],an[N_step]))
@@ -5054,6 +5057,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
+			terminate = 0
 			if(myid == main_node):
 				recvbuf = recvbuf.tolist()
 				from statistics import hist_list
@@ -5065,8 +5069,16 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				for lhx in xrange(lhist):
 					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
+				# Terminate if 95% within 1 pixel error
+				im = 0
+				for lhx in xrange(lhist):
+					if(region[lhx] > 1.0): break
+					im += histo[lhx]
+				if(im/float(total_nima) > 0.95):  terminate = 1
 				del region, histo
 			del recvbuf
+			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+			terminate = int(terminate[0])
 
 			if(center == -1):
 				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
