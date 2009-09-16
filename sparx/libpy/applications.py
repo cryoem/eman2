@@ -5025,15 +5025,17 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	pixer = [0.0]*nima
 	cs = [0.0]*3
+	total_iter = 0
 	# do the projection matching
 	for N_step in xrange(lstp):
 		terminate = 0
 		Iter = -1
  		while(Iter < max_iter-1 and terminate == 0):
 			Iter += 1
+			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f , an = %5.2f\n"%(N_step*max_iter+Iter+1, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step],an[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f , an = %5.2f\n"%(total_ter, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step],an[N_step]))
 
 			volft,kb = prep_vol( vol )
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
@@ -5090,8 +5092,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%total_iter)), myid, main_node)
 
 			if myid == main_node:
 				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -5100,18 +5102,18 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			#  Compute Fourier variance
 				for im in xrange(nima):
 					original_data.set_param( 'xform.projection', data[im].get_attr('xform.projection') )
-				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(total_iter)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 				if myid == main_node:   varf = 1.0/varf
 			else:  varf = None
 
 			if myid == main_node:
-				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
+				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				ref_data[4] = varf
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				vol, cs = user_func(ref_data)
-				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
