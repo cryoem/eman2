@@ -698,8 +698,8 @@ def constant( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
-	fl = ref_data[4]
-	aa = ref_data[5]
+	fl = 0.4
+	aa = 0.1
 	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	#print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
