@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 176)
+        self.assertEqual(len(processor_names), 174)
         
         if(IS_TEST_EXCEPTION):
             try:
@@ -1330,7 +1330,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('normalize.rows')
         
     def test_normalize_toimage(self):
-        """test normalize.toimage processor ............."""
+        """test normalize.toimage processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
