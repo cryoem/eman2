@@ -169,6 +169,64 @@ def crit2d(args, data):
 	#print  " AMOEBA ",args,mn,v
 	return v
 
+
+def eqproj_cascaded_ccc(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+
+	volft 	= data[0]
+	kb	= data[1]
+	prj	= data[2]
+	mask2D	= data[3]
+	refi	= data[4]
+	shift	= data[5]
+	ts	= data[6]
+
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	refprj = volft.extract_plane(R, kb)
+	refprj.fft_shuffle()
+	refprj.center_origin_fft()
+
+	if(shift[0]!=0. or shift[1]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+				  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+		refprj=Processor.EMFourierFilter(refprj, filt_params)
+
+	refprj.do_ift_inplace()
+	MM = refprj.get_ysize()
+	refprj.set_attr_dict({'npad':2})
+	refprj.depad()
+	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
+	refprj *= mask2D
+
+
+	proj2x = fpol(refprj, MM, MM, 0, False)
+	ws = 2*int(ts+1.5)+1
+	product = Util.window( ccf(proj2x, data[4]), ws, ws, 1, 0, 0, 0)
+	data2 = [product, kb]
+	if ts==0.0:
+		return  twoD_fine_search([0.0,0.0], data2), shift
+
+	pk = peak_search(product)
+
+	ps = amoeba([pk[0][1], pk[0][2]], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+
+	nx = product.get_ysize()
+	sx = nx//2
+	sy = sx
+	if( abs(sx-ps[0][0]) > ts or abs(sy-ps[0][1]) > ts):
+		return  twoD_fine_search([0.0,0.0], data2), shift
+	else:
+		v = ps[1]
+		s2x = sx-ps[0][0]
+		s2y = sy-ps[0][1]
+
+	return v, [s2x, s2y]
+
+def twoD_fine_search(args, data):
+	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
+
 def eqproj(args, data):
 	from projection import prgs
 	#from fundamentals import cyclic_shift
