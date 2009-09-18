@@ -1048,6 +1048,14 @@ class EMDCTaskClient(EMTaskClient):
 #			except Exception,err:
 #				ret={"error (%d)"%task.taskid:err}
 
+			if ret==None :
+				if self.verbose : print "Task aborted %d"%task.taskid
+				sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
+				sockf.write("ABOR")
+				sockf.close()
+				lastjob=time.time()
+				continue
+
 			# Return results
 			if self.verbose : print "Task done %d"%task.taskid
 			if self.verbose>3 : print self.__dict__
