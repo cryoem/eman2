@@ -530,7 +530,9 @@ class EMTaskQueue:
 	def task_progress(self,tid,percent):
 		"""Update task progress, unless task is already complete/aborted. Returns True if progress
 		update successful"""
-		try : task=self.active[tid]
+		try : 
+			task=self.active[tid]
+			if task==None : raise Exception
 		except :
 			try:
 				task=self.complete[tid]
