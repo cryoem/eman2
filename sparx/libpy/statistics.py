@@ -7070,10 +7070,10 @@ def histogram2d( datai, dataj, nbini, nbinj ):
 
 def hist_list( data, nbin = -1 ):
 	"""
-	  Calculate histogram of list elements
-	  nbin will be set scuh that in aveerage there is 10 elements per bin
+	  Calculate histogram of the list elements
+	  nbin will be set such that in average there is 10 elements per bin
 	"""
-	if(nbin < 0):  nbin = len(data)//10
+	if nbin < 0:  nbin = len(data)/10
 	fmaxi = max( data )
 	fmini = min( data )
 
@@ -7090,7 +7090,7 @@ def hist_list( data, nbin = -1 ):
 		i = int( (d-start_i)/binsize_i )
 		hist[i] += 1
 
-	return region,hist
+	return region, hist
 
 def linreg(X, Y):
 	"""
