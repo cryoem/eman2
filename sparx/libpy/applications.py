@@ -2589,7 +2589,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
-	from statistics   import fsc_mask, sum_oe
+	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
@@ -2781,19 +2781,21 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 		        pixel_error = 0.0
 		        mirror_changed = 0
-			pixel_error_bin = [0]*(nx*2)
+			pixel_error_list = [] 
 		        for im in xrange(nima):
 		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
 		        	if old_ali_params[im][3] == mirror:
 		        		this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
 		        		pixel_error += this_error
-					pixel_error_bin[int(this_error)] += 1
+					pixel_error_list.append(this_error)
 		        	else:
 		        		mirror_changed += 1
 			print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
 			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(pixel_error/float(nima-mirror_changed)))
-			for p in xrange(len(pixel_error_bin)):
-				if pixel_error_bin[p] > 0: print_msg("      %3d - %8.4f: %5d\n"%(p, p+1-0.0001, pixel_error_bin[p]))
+			
+			region, hist = hist_list(pixel_error_list, 20)	
+			for p in xrange(20):
+				print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
 			print_msg("\n\n\n")
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
