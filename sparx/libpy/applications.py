@@ -2589,7 +2589,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
-	from statistics   import fsc_mask, sum_oe, hist_list
+	from statistics   import fsc_mask, sum_oe
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
@@ -2781,21 +2781,19 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 		        pixel_error = 0.0
 		        mirror_changed = 0
-			pixel_error_list = [] 
+			pixel_error_bin = [0]*(nx*2)
 		        for im in xrange(nima):
 		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
 		        	if old_ali_params[im][3] == mirror:
 		        		this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
 		        		pixel_error += this_error
-					pixel_error_list.append(this_error)
+					pixel_error_bin[int(this_error)] += 1
 		        	else:
 		        		mirror_changed += 1
 			print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
 			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(pixel_error/float(nima-mirror_changed)))
-			
-			region, hist = hist_list(pixel_error_list, 20)	
-			for p in xrange(20):
-				print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
+			for p in xrange(len(pixel_error_bin)):
+				if pixel_error_bin[p] > 0: print_msg("      %3d - %8.4f: %5d\n"%(p, p+1-0.0001, pixel_error_bin[p]))
 			print_msg("\n\n\n")
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
@@ -6040,7 +6038,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	"""
 		
 	"""
-	from alignment	    import eqprojDot
+	from alignment	    import eqproj_cascaded_ccc
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
@@ -6386,68 +6384,6 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	if myid==main_node:
 		print_end_msg("ali3d_em_MPI")
 
-def eqproj_cascaded_ccc(args, data):
-	from utilities import peak_search, amoeba
-	from fundamentals import fft, ccf, fpol
-	from statistics  import ccc
-
-	volft 	= data[0]
-	kb	= data[1]
-	prj	= data[2]
-	mask2D	= data[3]
-	refi	= data[4]
-	shift	= data[5]
-	ts	= data[6]
-
-	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
-	temp = volft.extract_plane(R, kb)
-	temp.fft_shuffle()
-	temp.center_origin_fft()
-	if ts==0 and (shift[0]!=0. or shift[1]!=0.):
-		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
-			       "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
-		temp=Processor.EMFourierFilter(temp, filt_params)
-	
-	temp.do_ift_inplace()
-	M = temp.get_ysize()/2
-	refprj = temp.window_center(M)
-
-	if ts==0.0:
-		return ccc(prj,refprj,mask2D),shift
-	
-	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
-	refprj *= mask2D
-	
-	nx = refprj.get_ysize()
-	sx = (nx-shift[0]*2)/2
-	sy = (nx-shift[1]*2)/2
-	
-	proj2x = fpol(refprj, 2*M, 2*M, 0, False)
-	product = ccf(proj2x, data[4])
-
-	data2 = [0]*2
-	data2[0] = product
-	data2[1] = kb
-	ps = amoeba([sx, sy], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
-
-	if abs(ps[0][0]-sx) > ts or abs(ps[0][1]-sy) > ts:
-		v = twoD_fine_search([sx,sy], data2)
-		s2x = shift[0]
-		s2y = shift[1]
-	else:
-		v = ps[1]
-		s2x = nx/2-ps[0][0]
-		s2y = nx/2-ps[0][1]
-
-	#params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
-	#temp2 = Processor.EMFourierFilter(temp.window_center(M), params2)
-	#v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	return v, [s2x, s2y]
-
-def twoD_fine_search(args, data):
-	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
-
-
 def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
            CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",
 	     fourvar = True, debug = False, MPI = False):
@@ -6461,15 +6397,16 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 				fourvar, debug)
 		return
 
+	from alignment      import eqproj_cascaded_ccc
 	from projection     import prep_vol
 	from utilities      import model_circle, get_params_proj, set_params_proj
 	from utilities      import get_image, drop_image
 	from utilities      import amoeba_multi_level, rotate_3D_shift, estimate_3D_center
 	from math           import pi
 	from statistics     import fsc_mask
+	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os 
 	import sys
-	from utilities      import print_begin_msg, print_end_msg, print_msg
 
 	print_begin_msg('ali3d_e')
 
@@ -6676,6 +6613,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	"""
 		
 	"""
+	from alignment        import eqproj_cascaded_ccc
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
@@ -6686,9 +6624,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	from reconstruction   import rec3D_MPI, rec3D_MPI_noCTF
 	from statistics       import varf3d_MPI
 	from math             import pi
+	from mpi 	      import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, mpi_bcast, MPI_FLOAT
 	import os
 	import sys
-	from mpi 	      import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, mpi_bcast, MPI_FLOAT
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -6729,7 +6667,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
        		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		print stack
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -6920,17 +6857,19 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi]
-				data[5] = [tx, ty]
-				data[6] = ts
-				data[5][0] *= -1
-				data[5][1] *= -1
-
+				data[5] = [-tx, -ty]
 				if debug:
+					# we have to distiguish between no shift situation, which is done through ccc, and shift, which is done using gridding in 2D
+					if(ts == 0.0):  data[6] = 0.0
+					else:  data[6] = ts#-1.0
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					finfo.write("Image "+str(imn)+"\n")
 					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(phi,theta,psi,tx,ty, initial))
 					finfo.write("\n")
+					from sys import exit
+					exit()
 				# change signs of shifts for projections
+				data[6] = ts
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 

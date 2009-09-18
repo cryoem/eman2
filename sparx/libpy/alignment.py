@@ -174,6 +174,7 @@ def eqproj_cascaded_ccc(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
+	from statistics    import ccc
 
 	volft 	= data[0]
 	kb	= data[1]
@@ -197,35 +198,38 @@ def eqproj_cascaded_ccc(args, data):
 	MM = refprj.get_ysize()
 	refprj.set_attr_dict({'npad':2})
 	refprj.depad()
-	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
-	refprj *= mask2D
 
-
-	proj2x = fpol(refprj, MM, MM, 0, False)
-	ws = 2*int(ts+1.5)+1
-	product = Util.window( ccf(proj2x, data[4]), ws, ws, 1, 0, 0, 0)
-	data2 = [product, kb]
 	if ts==0.0:
-		return  twoD_fine_search([0.0,0.0], data2), shift
+		return ccc(prj, refprj, mask2D), shift
 
-	pk = peak_search(product)
+	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
+	Util.mul_img(refprj, mask2D)
 
-	ps = amoeba([pk[0][1], pk[0][2]], [ts, ts], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
-
+	product = ccf(fpol(refprj, MM, MM, 0, False), data[4])
 	nx = product.get_ysize()
 	sx = nx//2
 	sy = sx
-	if( abs(sx-ps[0][0]) > ts or abs(sy-ps[0][1]) > ts):
-		return  twoD_fine_search([0.0,0.0], data2), shift
-	else:
-		v = ps[1]
-		s2x = sx-ps[0][0]
-		s2y = sy-ps[0][1]
+	# This is for debug purpose
+	if ts == -1.0:
+		return twoD_fine_search([sx, sy], [product, kb, -ts, sx]), shift
 
-	return v, [s2x, s2y]
+	ts2 = 2*ts
+	data2 = [product, kb, ts2, sx]
+
+	pk = peak_search(product)
+	print  pk
+	ps = amoeba([pk[0][1], pk[0][2]], [ts2, ts2], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	print  ps
+	if( ( abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ) and False):
+		return  twoD_fine_search([sx,sy], data2), shift
+	else:
+		s2x = (sx-ps[0][0])/2 + shift[0]
+		s2y = (sy-ps[0][1])/2 + shift[1]
+		return ps[1], [s2x, s2y]
 
 def twoD_fine_search(args, data):
-	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
+	#if(abs(args[0]-data[3]) > data[2] or abs(args[1]-data[3]) > data[2]): return -1.0e22
+	return data[0].get_pixel_conv7(args[0], args[1], 0.0, data[1])
 
 def eqproj(args, data):
 	from projection import prgs

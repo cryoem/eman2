@@ -2234,9 +2234,9 @@ def ali3d_e_G2(stack, ref_vol, maskfile=None, radius=-1, dtheta=2, opti_algorith
 	return total_time, total_time2
 			
 def eqprojG3(args, data):
-	from utilities import amoeba
-	from fundamentals import ccf
-	from applications import twoD_fine_search
+	from utilities     import amoeba
+	from fundamentals  import ccf
+	from alignment     import twoD_fine_search
 	
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	temp = data[0].extract_plane(R, data[1])
@@ -2453,9 +2453,9 @@ def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 
 
 def eqprojG4(args, data):
-	from utilities import peak_search, amoeba
+	from utilities    import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
-	from applications import twoD_fine_search
+	from alignment    import twoD_fine_search
 
 	volft 	= data[0]
 	kb	= data[1]
@@ -2482,9 +2482,7 @@ def eqprojG4(args, data):
 	proj2x = fpol(refprj, 2*M, 2*M, 0, False)
 	product = ccf(proj2x, refi)
 
-	data2 = [0]*2
-	data2[0] = product
-	data2[1] = kb
+	data2 = [product, kb]
 	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 
 	v = ps[1]
