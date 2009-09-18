@@ -964,7 +964,7 @@ class EMDCTaskClient(EMTaskClient):
 			except: pass
 		
 		signal.alarm(0)
-		if ret=="ABOR" return False
+		if ret=="ABOR": return False
 		
 		return True
 
