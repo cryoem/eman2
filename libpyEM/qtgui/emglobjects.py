@@ -1305,62 +1305,72 @@ class Camera2(EventsEmitterAndReciever):
 		
 		if ( x == 0 and y == 0): return
 		
-		theta = atan2(-y,x)
+		if self.allow_phi_rotations:
+			theta = atan2(-y,x)
 
-		plane = self.plane
-		if ( plane == 'xy' ):
-			rotaxis_x = sin(theta)
-			rotaxis_y = cos(theta)
-			rotaxis_z = 0
-		elif ( plane == 'yx' ):
-			rotaxis_x = -sin(theta)
-			rotaxis_y = cos(theta)
-			rotaxis_z = 0
-		elif ( plane == 'xz' ):
-			rotaxis_x = sin(theta)
-			rotaxis_y = 0
-			rotaxis_z = cos(theta)
-		elif ( plane == 'zx' ):
-			rotaxis_x = sin(theta)
-			rotaxis_y = 0
-			rotaxis_z = -cos(theta)
-		elif ( plane == 'yz' ):
-			rotaxis_x = 0
-			rotaxis_y = cos(theta)
-			rotaxis_z = -sin(theta)
-		elif ( plane == 'zy' ):
-			rotaxis_x = 0
-			rotaxis_y = cos(theta)
-			rotaxis_z = sin(theta)
-		
-		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = fac*length/self.motiondull*pi
-		
-		t3d = Transform()
-		quaternion = {}
-		quaternion["Omega"] = angle
-		quaternion["n1"] = rotaxis_x
-		quaternion["n2"] = rotaxis_y
-		quaternion["n3"] = rotaxis_z
-		quaternion["type"] = "spin"
-		t3d.set_params(quaternion)
+			plane = self.plane
+			if ( plane == 'xy' ):
+				rotaxis_x = sin(theta)
+				rotaxis_y = cos(theta)
+				rotaxis_z = 0
+			elif ( plane == 'yx' ):
+				rotaxis_x = -sin(theta)
+				rotaxis_y = cos(theta)
+				rotaxis_z = 0
+			elif ( plane == 'xz' ):
+				rotaxis_x = sin(theta)
+				rotaxis_y = 0
+				rotaxis_z = cos(theta)
+			elif ( plane == 'zx' ):
+				rotaxis_x = sin(theta)
+				rotaxis_y = 0
+				rotaxis_z = -cos(theta)
+			elif ( plane == 'yz' ):
+				rotaxis_x = 0
+				rotaxis_y = cos(theta)
+				rotaxis_z = -sin(theta)
+			elif ( plane == 'zy' ):
+				rotaxis_x = 0
+				rotaxis_y = cos(theta)
+				rotaxis_z = sin(theta)
+			
+			length = sqrt(x*x + y*y)
+			# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+			# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
+			angle = fac*length/self.motiondull*pi
+			
+			t3d = Transform()
+			quaternion = {}
+			quaternion["Omega"] = angle
+			quaternion["n1"] = rotaxis_x
+			quaternion["n2"] = rotaxis_y
+			quaternion["n3"] = rotaxis_z
+			quaternion["type"] = "spin"
+			t3d.set_params(quaternion)
+			if self.emit_events: 
+				self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
+			
+			self.t3d_stack[-1] = t3d*self.t3d_stack[-1]
+		else :
+			# if az is fixed then we rotate in alt/az space, not with quaternions
+			t3d = self.t3d_stack[-1]
+			p = t3d.get_params("eman")
+			p["alt"] = p["alt"] + fac*y/self.motiondull*pi
+			if p["alt"]<0 : p["alt"]=0
+			p["az"]  = p["az"] -  fac*x/self.motiondull*pi
+			p["phi"] = 180.0
+			t3d.set_params(p)
+			
+			if self.emit_events: print "Warning: no events emitted in fixed phi mode"
 		
 		#if not self.allow_phi_rotations:
 			#p = t3d.get_params("eman")
 			#p["phi"] = 0
 			#t3d.set_params(p)
 	
-		if self.emit_events: 
-			self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
-		
-		size = len(self.t3d_stack)
-		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
 		
 	def apply_rotation(self,t3d):
-		size = len(self.t3d_stack)
-		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
+		self.t3d_stack[-1] = t3d*self.t3d_stack[-1]
 		
 	def set_scale(self,val):
 		self.scale = val

@@ -279,10 +279,11 @@ class EMGenClassAverages:
 				print len(self.tids),"class averaging tasks left in main loop"
 				st_vals = self.etc.check_task(self.tids)
 				for i in xrange(len(self.tids)-1,-1,-1):
-					print "*",
-					sys.stdout.flush()
 					st = st_vals[i]
 					if st==100:
+						print "*",
+						sys.stdout.flush()
+
 						tid = self.tids[i] 
 						
 						self.tids.pop(i)

@@ -270,6 +270,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		return "inspector"
 	
 	def __init__(self,target,enable_trace=False,enable_og=False) :
+		from PyQt4 import QtGui,QtCore
+
 		self.ptcl_slider = None
 		self.combo = None
 		
@@ -282,7 +284,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 #		print "simmx xplor died"
 		
 	def add_simmx_options(self):
-		from PyQt4 import QtGui,QtCore
 		self.simmx_tab= QtGui.QWidget()
 		vbl = QtGui.QVBoxLayout(self.simmx_tab)
 		
@@ -301,12 +302,18 @@ class EMSimmxXplorInspector(EMSymInspector):
 		
 		if n == None: n = 0
 		else: n -= 1
-		self.ptcl_slider = ValSlider(None,(0,n),"Particle:")
-		self.ptcl_slider.setValue(self.target().current_particle)
-		self.ptcl_slider.setIntonly(True)
+		#self.ptcl_slider = ValSlider(None,(0,n),"Particle:")
+		#self.ptcl_slider.setValue(self.target().current_particle)
+		#self.ptcl_slider.setIntonly(True)
+		#layout.addWidget(self.ptcl_slider)
+		#self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
+		self.ptcl_slider=QtGui.QSpinBox()
+		self.ptcl_slider.setRange(0,1000)
+		self.ptcl_slider.setSingleStep(1)
+		self.ptcl_slider.setValue(0)
 		layout.addWidget(self.ptcl_slider)
-		from PyQt4 import QtCore
-		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
+		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged(int)"), self.set_ptcl_idx)
+		
 		
 	def set_ptcl_idx(self,val):
 		self.target().set_ptcl_idx(val)
