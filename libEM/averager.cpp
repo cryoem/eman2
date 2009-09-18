@@ -540,6 +540,7 @@ EMData * CtfCWautoAverager::finish()
 	tmp->write_image("ctfcw.hdf",1);
 	delete tmp;*/
 
+//	snrsum->write_image("snrsum.hdf",-1);
 	size_t sz=result->get_xsize()*result->get_ysize();
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();

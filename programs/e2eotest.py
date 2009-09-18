@@ -81,6 +81,7 @@ def main():
 	parser.add_option("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
 	parser.add_option("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py")
 	parser.add_option("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
+	parser.add_option("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")

@@ -1347,10 +1347,10 @@ class Camera2(EventsEmitterAndReciever):
 		quaternion["type"] = "spin"
 		t3d.set_params(quaternion)
 		
-		if not self.allow_phi_rotations:
-			p = t3d.get_params("eman")
-			p["phi"] = 0
-			t3d.set_params(p)
+		#if not self.allow_phi_rotations:
+			#p = t3d.get_params("eman")
+			#p["phi"] = 0
+			#t3d.set_params(p)
 	
 		if self.emit_events: 
 			self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
@@ -1427,6 +1427,7 @@ class Camera2(EventsEmitterAndReciever):
 		return False
 	
 	def mouseReleaseEvent(self, event):
+			
 		if event.button()==Qt.LeftButton:
 			if self.mmode==0:
 				return False

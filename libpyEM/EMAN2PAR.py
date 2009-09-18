@@ -964,7 +964,9 @@ class EMDCTaskClient(EMTaskClient):
 			except: pass
 		
 		signal.alarm(0)
-		return ret
+		if ret=="ABOR" return False
+		
+		return True
 
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after

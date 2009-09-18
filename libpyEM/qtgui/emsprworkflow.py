@@ -5776,7 +5776,7 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 				continue
 			# cmd dictionary needs to be stored
 			db = db_open_dict(register_db_name,ro=True)
-			if not db.has_key("cmd_dict"):
+			if not db.has_key("cmd_dict") or db["cmd_dict"]==None:
 				continue
 	
 			cmd = db["cmd_dict"]

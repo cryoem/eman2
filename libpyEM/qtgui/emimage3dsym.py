@@ -275,7 +275,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		#self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
 		self.cam = Camera2(self) # Stores the camera position
-		#self.cam.allow_phi_rotations = False
+		self.cam.allow_phi_rotations = False
 		self.vdtools = None # VDTools are very import in the context of the e2desktop
 		
 		self.cube = False

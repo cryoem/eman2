@@ -111,7 +111,7 @@ be classified. """
 	if options.fastseed : slowseed=0
 	else : slowseed=1
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma})
+	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":2})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()

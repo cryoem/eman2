@@ -392,7 +392,7 @@ class EMSimTaskDC(EMTask):
 		return data
 	
 	def execute(self,progress_callback):
-		progress_callback(0)
+		if not progress_callback(0) : return None
 		refs,ptcls,shrink = self.__init_memory(self.options)
 		
 		
@@ -406,7 +406,7 @@ class EMSimTaskDC(EMTask):
 				min_ptcl_idx = ptcl_idx 
 			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
 			i+=1
-			if progress_callback(int(100*i/n))<0 : break
+			if not progress_callback(int(100*i/n))<0 : return None
 		
 			
 			
