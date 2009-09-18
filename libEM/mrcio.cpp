@@ -351,7 +351,8 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.zorigin = d["tz"];
 		if(t) {delete t; t=0;}
 	}
-	else if(dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
+
+	if(dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
 		mrch.xorigin = (float)dict["origin_x"];
 		mrch.yorigin = (float)dict["origin_y"];
 
