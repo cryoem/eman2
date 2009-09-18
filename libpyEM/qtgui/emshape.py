@@ -45,7 +45,7 @@ def initCircle():
 	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
 	GL.glBegin(GL.GL_LINE_LOOP)
 	d2r=pi/180.0
-	for i in range(90): 
+	for i in range(90):
 		GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
 	GL.glEnd()
 	GL.glEndList()
@@ -62,17 +62,21 @@ class EMShape:
 	the programmer may create 'invisible' shapes for out-of-band use. Colors
 	are on the range 0-1.0 
 	
-		0            1  2  3  4  5     6     7     8
-		"rect"       R  G  B  x0 y0    x1    y1    linew
-		"line"       R  G  B  x0 y0    x1    y1    linew
-		"label"      R  G  B  x0 y0    text  size	linew
-		"circle"     R  G  B  x0 y0    r     linew
-		"scrrect"    R  G  B  x0 y0    x1    y1    linew
-		"scrline"    R  G  B  x0 y0    x1    y1    linew
-		"scrlabel"   R  G  B  x0 y0    text  size	linew
-		"scrcircle"  R  G  B  x0 y0    r     linew
-		"point"  R  G  B  x0 y0 r
-"""
+		0               1  2  3  4  5     6     7     8
+		"rect"          R  G  B  x0 y0    x1    y1    linew
+		"rectpoint"     R  G  B  x0 y0    x1    y1    linew
+		"rotatebox"     R  G  B  x0 y0    x1    y1    boxw
+		"rcircle"       R  G  B  x0 y0    x1    y1    linew
+		"rcirclepoint"  R  G  B  x0 y0    x1    y1    linew
+		"line"          R  G  B  x0 y0    x1    y1    linew
+		"label"         R  G  B  x0 y0    text  size  linew
+		"circle"        R  G  B  x0 y0    r     linew
+		"scrrect"       R  G  B  x0 y0    x1    y1    linew
+		"scrline"       R  G  B  x0 y0    x1    y1    linew
+		"scrlabel"      R  G  B  x0 y0    text  size  linew
+		"scrcircle"     R  G  B  x0 y0    r     linew
+		"point"         R  G  B  x0 y0    r
+	"""
 	font_renderer = None
 	glutinit = True
 	dlists=-1
@@ -97,7 +101,6 @@ class EMShape:
 				EMShape.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			except:
 				EMShape.font_renderer = 1
-	
 	
 	def draw(self,d2s=None,col=None):
 		"""This function causes the shape to render itself into the current GL context.
@@ -146,10 +149,39 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
 		
+		elif s[0]=="rotatebox":
+			#This makes a rectangle based on a width and two points
+			#The two points are the endpoints for the longer axis of symmetry
+			#Those two points implicity define the length
+			#The width is a parameter and together with the two coordinates, defines the rectangle
+			pt0 = (s[4], s[5]) #first coordinate
+			pt1 = (s[6], s[7]) #second coordinate
+			width = s[8] #width
+			#l_vect = (pt1[0]-pt0[0], pt1[1]-pt2[0]) #vector parallel to a longer side -- length vector
+			w_vect = ( -(pt1[1]-pt0[1]), pt1[0]-pt0[0] ) #vector parallel to a shorter side -- width vector
+			mag = sqrt(w_vect[0]**2 + w_vect[1]**2)
+			w_uvect = (w_vect[0]/mag, w_vect[1]/mag)  #unit vector parallel to a short side
+			
+			#vertices
+			v1 = ( pt0[0]-w_uvect[0]*width/2.0, pt0[1]-w_uvect[1]*width/2.0 )
+			v2 = ( pt0[0]+w_uvect[0]*width/2.0, pt0[1]+w_uvect[1]*width/2.0 )
+			v3 = ( pt1[0]+w_uvect[0]*width/2.0, pt1[1]+w_uvect[1]*width/2.0 )
+			v4 = ( pt1[0]-w_uvect[0]*width/2.0, pt1[1]-w_uvect[1]*width/2.0 )
+			GL.glLineWidth(1)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glColor(*col)
+			#To find a vertex, add/subtract a vector of half the box width with w_uvect direction
+			GL.glVertex(*d2s(*v1))
+			GL.glVertex(*d2s(*v2))
+			GL.glVertex(*d2s(*v3))
+			GL.glVertex(*d2s(*v4))
+			GL.glEnd()
+					
 		elif s[0]=="rectpoint":
 			GL.glLineWidth(s[8])
 			GL.glPointSize(s[8])
 			
+			#rectangle
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
 			GL.glVertex(*d2s(s[4],s[5]))
@@ -158,6 +190,7 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
 			
+			#midpoint
 			GL.glBegin(GL.GL_POINTS)
 			p1 = d2s(s[4],s[5])
 			p2 = d2s(s[6],s[7])
@@ -169,6 +202,7 @@ class EMShape:
 			GL.glLineWidth(s[8])
 			GL.glPointSize(s[8])
 			
+			#midpoint
 			GL.glBegin(GL.GL_POINTS)
 			p1 = d2s(s[4],s[5])
 			p2 = d2s(s[6],s[7])
@@ -178,6 +212,7 @@ class EMShape:
 			GL.glPushMatrix()
 			GL.glColor(*col)
 			
+			#circle inscribed in the rectangle
 			GL.glTranslate((v[0]+v2[0])/2.0,(v[1]+v2[1])/2.0,0)
 			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
 			GL.glCallList(EMShape.dlists)
