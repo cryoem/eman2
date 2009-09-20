@@ -183,7 +183,7 @@ def eqproj_cascaded_ccc(args, data):
 	refi	= data[4]
 	shift	= data[5]
 	ts	= data[6]
-
+	#print  "Input shift ",shift
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	refprj = volft.extract_plane(R, kb)
 	refprj.fft_shuffle()
@@ -214,21 +214,27 @@ def eqproj_cascaded_ccc(args, data):
 		return twoD_fine_search([sx, sy], [product, kb, -ts, sx]), shift
 
 	ts2 = 2*ts
-	data2 = [product, kb, ts2, sx]
-
-	pk = peak_search(product)
-	print  pk
-	ps = amoeba([pk[0][1], pk[0][2]], [ts2, ts2], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
-	print  ps
-	if( ( abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ) and False):
+	data2 = [product, kb, 1.1*ts2, sx]
+	size_of_ccf = 2*int(ts+1.5)+1
+	pk = peak_search(Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
+	# adjust pk to correspond to large ccf
+	pk[0][1] = sx + pk[0][4]
+	pk[0][2] = sy + pk[0][5]
+	#print  " pk ",pk
+	# step in amoeba should be vicinity of the peak, within one pixel or even less.
+	ps = amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	#print  " ps ",ps,[sx,sy], data2, shift
+	#print  " if ",abs(sx-ps[0][0]),abs(sy-ps[0][1]),ts2
+	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
 		return  twoD_fine_search([sx,sy], data2), shift
 	else:
 		s2x = (sx-ps[0][0])/2 + shift[0]
 		s2y = (sy-ps[0][1])/2 + shift[1]
+		#print  " B ",ps[1], [s2x, s2y]
 		return ps[1], [s2x, s2y]
 
 def twoD_fine_search(args, data):
-	#if(abs(args[0]-data[3]) > data[2] or abs(args[1]-data[3]) > data[2]): return -1.0e22
+	if(abs(args[0]-data[3]) > data[2] or abs(args[1]-data[3]) > data[2]): return -1.0e22
 	return data[0].get_pixel_conv7(args[0], args[1], 0.0, data[1])
 
 def eqproj(args, data):

@@ -345,7 +345,7 @@ def reference4( ref_data ):
 	#volf = threshold(volf)
 	#Util.mul_img(volf, ref_data[0])
 	#fl, aa = fit_tanh(ref_data[3])
-	fl = 0.20
+	fl = 0.40
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)

@@ -222,7 +222,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	amoeba refinement because otherwise, upper level refinement will lose the information
 	of lower level refinement.
 	"""
-
+	#print " ENTER AMOEBA MULTI LEVEL"
 	nvar = len(var)       # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
 
@@ -236,7 +236,8 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 
 	fvalue = []
 	for i in xrange(nsimplex):  # set the function values for the simplex
-	    result, passout = func(simplex[i],data=data)
+	    result, passout = func(simplex[i], data=data)
+	    #print  " amoeba setting ",i,simplex[i],result, passout
 	    fvalue.append([result, passout])
 
 	# Ooze the simplex to the maximum
@@ -292,7 +293,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	    		fvalue[i]  = func(simplex[i],data=data)
 		for j in xrange(nvar):
 		    pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]  	    
-		fnew = func(pnew,data=data)
+		fnew = func(pnew, data=data)
 	    elif fnew[0] >= fvalue[ssbest][0]:
 		# the new vertex is better than the best so expand
 		# the simplex.

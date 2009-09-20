@@ -6,7 +6,7 @@
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
+# if you opt to use BSD licensing. The warranty disclaimer below holfds
 # in either instance.
 #
 # This complete copyright notice must be included in any revised version of the
@@ -4910,7 +4910,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_d_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5029,11 +5029,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		finfo.flush()
 	if myid == main_node:
 		# initialize data for the reference preparation function
-		ref_data = []
-		ref_data.append( mask3D )
-		ref_data.append( max(center,0) )  # for method -1, switch off centering in user function
-		ref_data.append( None )
-		ref_data.append( None )
+		ref_data = [ mask3D, max(center,0), None, None, None ]
+		# for method -1, switch off centering in user function
 		ref_data.append( None )
 
 	from time import time	
@@ -5121,13 +5118,17 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 			if myid == main_node:
 				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
+				start_time = time()
 
 			if fourvar:
 			#  Compute Fourier variance
 				for im in xrange(nima):
 					original_data.set_param( 'xform.projection', data[im].get_attr('xform.projection') )
 				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(total_iter)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
-				if myid == main_node:   varf = 1.0/varf
+				if myid == main_node:
+					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
+					start_time = time()
+					varf = 1.0/varf
 			else:  varf = None
 
 			if myid == main_node:
@@ -6248,7 +6249,6 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
 						finfo.flush()
 
-
 				if(peak > peaks[im]):
 					peaks[im] = peak
 					img.set_attr( "group",  krf )
@@ -6624,7 +6624,8 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	from reconstruction   import rec3D_MPI, rec3D_MPI_noCTF
 	from statistics       import varf3d_MPI
 	from math             import pi
-	from mpi 	      import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, mpi_bcast, MPI_FLOAT
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
 	import os
 	import sys
 
@@ -6637,7 +6638,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_e_MPI ", 1)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -6680,17 +6681,17 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	else:
 		nima = 0
 		nx = 0
-	nima = bcast_number_to_all(nima, source_node = main_node)
+	total_nima = bcast_number_to_all(nima, source_node = main_node)
 	nx = bcast_number_to_all(nx, source_node = main_node)
 
 	if myid != main_node:
-		list_of_particles = [-1]*nima
+		list_of_particles = [-1]*total_nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
-
+	nima = len(list_of_particles)
 
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
@@ -6722,9 +6723,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
 
-
-
-
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
@@ -6748,18 +6746,17 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 	if debug:
 		finfo.write("  First image on this processor: "+str(image_start)+"   ")
-		finfo.write("  Last image on this processor:  "+str(image_end)+"   ")
+		finfo.write("  Last  image on this processor: "+str(image_end)+"   ")
 		finfo.write("\n")
 		finfo.flush()
 
 	if myid == main_node:
 		# initialize data for the reference preparation function
-		ref_data = []
-		ref_data.append( mask3D )
-		ref_data.append( center )
+		ref_data = [ mask3D, max(center,0), None, None, None ]
+		# for method -1, switch off centering in user function
 		ref_data.append( None )
-		ref_data.append( None )
-		ref_data.append( None )
+
+	from time import time	
 		
 	M = nx
 	npad = 2
@@ -6770,12 +6767,23 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
+
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+
+	pixer = [0.0]*nima	#  this is needed for gathering of peak_errors
 	data = [None]*7
 	data[3] = mask2D
 	cs = [0.0]*3
 
 	for iteration in xrange(maxit+1):
 		if myid == main_node:
+			start_time = time()
 			print_msg("ITERATION #%3d\n"%(iteration+1))
 		if debug:
 			finfo.write("  iteration = "+str(iteration)+"   ")
@@ -6786,13 +6794,15 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				if debug:
 					finfo.write("  begin centering \n")
 					finfo.flush()
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, nima, myid, number_of_proc, main_node)
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, total_nima, myid, number_of_proc, main_node)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(dataim, cs)
 				if myid == main_node:
 					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)				
+					print_msg("Time to center = %d\n"%(time()-start_time))
+					start_time = time()
 			# compute updated 3D before each chunk
  	    		# resolution
 			if debug:
@@ -6805,6 +6815,8 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
+				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
+				start_time = time()
 			if debug:
 				finfo.write("  done reconstruction = "+str(image_start))
 				finfo.write("\n")
@@ -6813,7 +6825,11 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 			if fourvar:
 			#  Compute Fourier variance
 				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
-				if myid == main_node:   varf = 1.0/varf
+				if myid == main_node:
+					varf = 1.0/varf
+					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
+					start_time = time()
+
 			else:  varf = None
 			if myid == main_node:
 				ref_data[2] = vol
@@ -6824,7 +6840,6 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				ref_data[1] = 0
 				vol, dummy = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
-
 			del varf
 			
 			# in last iteration return here
@@ -6855,21 +6870,22 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
-				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
-				atparams = [phi, theta, psi]
-				data[5] = [-tx, -ty]
+				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
+				t1 = dataim[imn-image_start].get_attr("xform.projection")
+				dp = t1.get_params("spider")
+				atparams = [dp["phi"], dp["theta"], dp["psi"]]
+				data[5] = [dp["tx"], dp["ty"]]
 				if debug:
 					# we have to distiguish between no shift situation, which is done through ccc, and shift, which is done using gridding in 2D
 					if(ts == 0.0):  data[6] = 0.0
-					else:  data[6] = ts#-1.0
+					else:  data[6] = -1.0#ts#-1.0
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					finfo.write("Image "+str(imn)+"\n")
-					finfo.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(phi,theta,psi,tx,ty, initial))
-					finfo.write("\n")
-					from sys import exit
-					exit()
+					finfo.write('Old  %6.1f  %6.1f  %6.1f   %5.2f  %5.2f  %11.4e\n'%(atparams[0],atparams[1],atparams[2], -dummy[0], -dummy[1], initial))
 				# change signs of shifts for projections
 				data[6] = ts
+				#from random import random
+				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
@@ -6880,11 +6896,20 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				optm_params[0][4] *= -1
 
 				if debug:
-					finfo.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
-					finfo.write("\n")
+					finfo.write('New  %6.1f  %6.1f  %6.1f   %5.2f  %5.2f  %11.4e  %4d\n'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
 					finfo.flush()
 
-				set_params_proj(dataim[imn-image_start], optm_params[0])
+				#from sys import exit
+				#exit()
+				t2 = Transform({"type":"spider","phi":optm_params[0][0],"theta":optm_params[0][1],"psi":optm_params[0][2]})
+				t2.set_trans(Vec2f(-optm_params[0][3], -optm_params[0][4]))
+				dataim[imn-image_start].set_attr("xform.projection", t2)
+				from alignment import max_3D_pixel_error
+				pixer[imn-image_start] = max_3D_pixel_error(t1, t2, last_ring)
+				#set_params_proj(dataim[imn-image_start], optm_params[0])
+				if( myid== main_node and (imn>image_start_in_chunk) and ( ((imn-image_start_in_chunk)%(n_in_chunk//2) == 0) or (imn == image_end_in_chunk-1) ) ):
+					print_msg( "Time to process %6d particles : %d\n" % (n_in_chunk//2, time()-start_time) )
+					start_time = time()
 
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
@@ -6898,6 +6923,36 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 					from utilities import recv_attr_dict
 					recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
 			else:	        send_attr_dict(main_node, dataim, par_str, image_start, image_end)
+			if myid == main_node:
+				print_msg("Time to write header information= %d\n"%(time()-start_time))
+				start_time = time()
+
+		#output peak errors after all headers were processed
+		from mpi import mpi_gatherv
+		recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+		terminate = 0
+		if(myid == main_node):
+			recvbuf = recvbuf.tolist()
+			from statistics import hist_list
+			lhist = 20
+			region, histo = hist_list(recvbuf, lhist)
+			if(region[0] < 0.0):  region[0] = 0.0
+			msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
+			print_msg(msg)
+			for lhx in xrange(lhist):
+				msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+				print_msg(msg)
+			# Terminate if 95% within 1 pixel error
+			im = 0
+			for lhx in xrange(lhist):
+				if(region[lhx] > 1.0): break
+				im += histo[lhx]
+			if(im/float(total_nima) > 0.95):  terminate = 1
+			del region, histo
+		del recvbuf
+		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		terminate = int(terminate[0])
 
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
 	"""
