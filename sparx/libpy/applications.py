@@ -5155,7 +5155,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			if fourvar:
 			#  Compute Fourier variance
 				for im in xrange(nima):
-					original_data.set_param( 'xform.projection', data[im].get_attr('xform.projection') )
+					original_data[im].set_attr( 'xform.projection', data[im].get_attr('xform.projection') )
 				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(total_iter)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 				if myid == main_node:
 					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
