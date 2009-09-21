@@ -9460,8 +9460,8 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 	if (z0 < 0 || z0 >= nz)
 		z0 = nz / 2;
 
-	int z_start = round( z0 - 0.5*lengthAngstroms/apix_z );
-	int z_stop = round( z0 + 0.5*lengthAngstroms/apix_z );
+	int z_start = Util::round( z0 - 0.5*lengthAngstroms/apix_z );
+	int z_stop = Util::round( z0 + 0.5*lengthAngstroms/apix_z );
 
 	float * dat = cyl->get_data();
 	double rho_x_sum, rho_y_sum, rho_sum, x_cm, y_cm, radius;
@@ -9495,7 +9495,7 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 					for (int i=0;i<nx;i++,dat++)
 					{
 						radius = hypot( (i-x_cm)*apix_x, (j-y_cm)*apix_y );
-						*dat = radprofile(radius, 2);//Type 2 is the polynomial radial profile.
+						*dat = radprofile((float)radius, 2);//Type 2 is the polynomial radial profile.
 					}
 				}
 			}
