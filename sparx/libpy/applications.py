@@ -12252,8 +12252,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 
 		if myid == main_node:
-			# This N (total number of images of the stack) is different than the previous N (number of active images in the stack)
-			# list ID of each groups need to refert to the absolute ID from the stack not to the relative ID from the list of active images. JB
 			if not TXT:
 				N = EMUtil.get_image_count(stack)
 				glb_assign = k_means_locasg2glbasg(assign, listID, N)
