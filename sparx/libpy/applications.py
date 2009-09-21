@@ -5088,7 +5088,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_ter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 
 			volft,kb = prep_vol( vol )
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
