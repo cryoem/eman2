@@ -4936,6 +4936,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
+	from statistics     import hist_list, varf3d_MPI
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
