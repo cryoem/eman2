@@ -947,7 +947,7 @@ int Nativefft::fmrs_1rb(float *x, float *work, int nsam)
 	for (i=n;i>=n/2+2;i--)  x(i) = x(n-i+2);
 
 	status = fftmcf_(x,work,&n,&n,&n,&inv);
-	/ should put in appropriate exception handling here
+	// should put in appropriate exception handling here
 	if (status == -1) {
 		fprintf(stderr, "Native IFT cannot be performed on images with one of ");
 		fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
