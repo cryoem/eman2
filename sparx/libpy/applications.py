@@ -2589,7 +2589,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
-	from statistics   import fsc_mask, sum_oe
+	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
@@ -2765,7 +2765,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				a1 = a1[0]
 			else:
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-			msg = "criterion = %15.8e\n"%(a1)
+			msg = "Criterion = %15.8e\n"%(a1)
 			print_msg(msg)
 			if total_iter == len(xrng)*max_iter: break
 			if a1 < a0:
@@ -2781,19 +2781,20 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 		        pixel_error = 0.0
 		        mirror_changed = 0
-			pixel_error_bin = [0]*(nx*2)
+			pixel_error_list = []
 		        for im in xrange(nima):
 		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
 		        	if old_ali_params[im][3] == mirror:
 		        		this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
 		        		pixel_error += this_error
-					pixel_error_bin[int(this_error)] += 1
+					pixel_error_list.append(this_error)
 		        	else:
 		        		mirror_changed += 1
 			print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
 			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(pixel_error/float(nima-mirror_changed)))
-			for p in xrange(len(pixel_error_bin)):
-				if pixel_error_bin[p] > 0: print_msg("      %3d - %8.4f: %5d\n"%(p, p+1-0.0001, pixel_error_bin[p]))
+ 			region, hist = hist_list(pixel_error_list, 20)	
+			for p in xrange(20):
+				print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
 			print_msg("\n\n\n")
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
@@ -2802,23 +2803,24 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	write_headers(stack, data, list_of_particles)
 	print_end_msg("ali2d_c")
 
+
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar = False, user_func_name="ref_ali2d"):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI
-	from alignment    import Numrinit, ringwe, ali2d_single_iter
+	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
-	from utilities    import write_text_file
+	from utilities    import write_text_file, get_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_MAX
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -2978,7 +2980,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				reduce_EMData_to_root(ave2, myid, main_node)
 
 			if myid == main_node:
-
+				print_msg("Iteration #%4d\n"%(total_iter))
 				if Fourvar:
 					fft(tavg).write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					tavg    = fft(Util.divn_img(tavg, vav))
@@ -3028,7 +3030,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					a1 = a1[0]
 				else:
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Iteration   #%5d	     criterion = %20.7e\n"%(total_iter, a1)
+				msg = "Criterion = %15.8e\n"%(a1)
 				print_msg(msg)
 				
 				if a1 < a0:
@@ -3047,9 +3049,39 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
+				old_ali_params = []
+			        for im in xrange(len(data)):
+			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
+		        		old_ali_params.append([alphan, sxn, syn, mirror, scale])
+					
 				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
+			        pixel_error = 0.0
+			        mirror_changed = 0
+				pixel_error_list = [-1.0]*nima
+			        for im in xrange(len(data)):
+			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
+			        	if old_ali_params[im][3] == mirror:
+		        			this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
+		        			pixel_error += this_error
+						pixel_error_list[im+image_start] = this_error
+			        	else:
+			        		mirror_changed += 1
+				mirror_changed = mpi_reduce(mirror_changed, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				pixel_error_list = mpi_reduce(pixel_error_list, nima, MPI_FLOAT, MPI_MAX, main_node, MPI_COMM_WORLD)
+				if myid == main_node:
+					print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
+					print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/(nima-mirror_changed)))
+					pixel_error_list_reduced = pixel_error_list.tolist()
+					for i in xrange(nima-1, -1, -1):
+						if pixel_error_list_reduced[i] < 0:  del pixel_error_list_reduced[i]
+	 				region, hist = hist_list(pixel_error_list_reduced, 20)	
+					for p in xrange(20):
+						print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
+					print_msg("\n\n\n")
 
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
