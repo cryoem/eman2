@@ -5572,7 +5572,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		#print 'computing Fourier variance'
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=frec)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
@@ -6110,6 +6109,9 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	else:
 		finfo = None
 
+	from time import time	
+
+
         # refine step define on which step refinement will be carried
         # if set to -1, no (??) refinement only assignment 
 
@@ -6228,6 +6230,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 		iteration = Iter + 1
 		if(myid == main_node) :
+			start_time = time()
 			print_msg( runtype + (" ITERATION #%3d\n"%iteration) )
 
 		peaks = [-1.0e23] * nima
@@ -6296,6 +6299,9 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 				if not(finfo is None):
 					finfo.write( "\n" )
+				if( myid== main_node and (im>0) and ( ((im)%(nima//2) == 0) or (im == nima-1) ) ):
+					print_msg( "Time to process %6d particles : %d\n" % (nima//2, time()-start_time) )
+					start_time = time()
 
 		del peaks
 		#  compute number of particles that changed assignment and how man are in which group
@@ -6367,15 +6373,19 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 			if(myid==main_node):
 				vol.write_image(os.path.join(outdir,"vol%04d.hdf"%iteration),krf)
+				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
+				start_time = time()
 				if fourvar and runtype=="REFINEMENT":
 					sumvol += vol
 
 		if runtype=="REFINEMENT":
 			if fourvar:
-				varf = varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%iteration),None,sumvol, int(ou), 1.0, 1, CTF, 1, sym, myid)
+				varf = varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%iteration), None, sumvol, int(ou), 1.0, 1, CTF, 1, sym, myid)
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%iteration) )
+					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
+					start_time = time()
 
 
 		if(myid == main_node):
@@ -6408,6 +6418,9 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	        		from utilities import recv_attr_dict
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+		if myid == main_node:
+			print_msg("Time to write header information= %d\n"%(time()-start_time))
+			start_time = time()
 		if(terminate == 1):
 			if myid==main_node:
 				print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
@@ -9751,8 +9764,12 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	s2x=0
 	s2y=0
 	for i in xrange(len(angles)):
-		proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
-		set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+		if(len(angles[i]) == 3):
+			proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+			set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+		else:
+			proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+			set_params_proj(proj, angles[i])
 		proj.set_attr_dict({'active':1})
 
 		# add noise, if noise is set. this is two-fold: application of noise before

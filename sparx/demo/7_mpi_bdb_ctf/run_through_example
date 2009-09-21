@@ -6,67 +6,67 @@ gunzip ../tteftu_with_tRNA.pdb.gz
 
 sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 
-e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 || exit
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 
 
-e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.45:fall_off=0.1 || exit
+e2proc3d.py tmp.hdf ../model_structure.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.45:fall_off=0.1 
 
 rm tmp.hdf
 
-../generate_projections.py --CTF --format="bdb"  || exit
+../generate_projections.py --CTF --format="bdb"  
 
 e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=75 --ctf_fstop=1 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
-mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF --MPI || exit
+mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF --MPI 
 
 # K-means clustering of the 2D dataset (MPI version)
-mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --nb_part=2 --CTF --MPI || exit
+mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --nb_part=2 --CTF --MPI 
 # OR K-means clustering of the 2D dataset (CUDA version). This version do not use CTF.
-#mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --rand_seed=10 --F=0.97 --nb_part=2 --CUDA || exit
+#mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --rand_seed=10 --F=0.97 --nb_part=2 --CUDA 
 sxheader.py bdb:data --params=active --one
 
 # Multireference alignment of the 2D dataset
-mpirun -np 4 sxali2d_m.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF --MPI || exit
+mpirun -np 4 sxali2d_m.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF --MPI 
 
 # Determination of the initial structure using class averages and common-lines
-mpirun -np 4 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI || exit
+mpirun -np 4 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
 
 # 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
-mpirun -np 4 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI || exit
+mpirun -np 4 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI 
 
 # Low-pass filtration of the initial structure
-e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 || exit
+e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff_abs=0.15:fall_off=0.2 
 
 # 2D alignment parameters are transformed to 3D alignment parameters
-sxparams_2D_to_3D.py bdb:data || exit
+sxparams_2D_to_3D.py bdb:data 
 
 # 3D projection alignment - refinement of the initial structure
-mpirun -np 4 sxali3d_d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF --MPI || exit
+mpirun -np 4 sxali3d_d.py bdb:data ../model_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF --MPI 
 
 # Refinement of the 3D structure using high accuracy alignment
-mpirun -np 4 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=8 --maxit=1 --chunk=0.25 --function=reference4 --MPI --CTF --debug || exit
+mpirun -np 4 sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function=reference3 --center=0 --MPI --CTF --debug 
 
 # Renormalize the data
-mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --CTF --MPI || exit
+mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --CTF --MPI 
 
 #  The data is overwritten
-sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt || exit
+sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt 
 
 # bootstrap calculations
 #  Calculate weights of projections to account for their uneven distribution
-mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
+mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI 
 
 #  Generate buffer containing 2D projection data
-sxbootstrap_genbuf.py bdb:data BUFFER --CTF || exit
+sxbootstrap_genbuf.py bdb:data BUFFER --CTF 
 
 # Calculate bootstrap volumes
-mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --CTF --MPI || exit
+mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --CTF --MPI 
 
 # Compute real-space variance
-mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --aa=0.20 --radccc=24 --MPI || exit
+mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --aa=0.20 --radccc=24 --MPI 
 
 # generate reference volume using average volume and variance
-../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 || exit
+../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 
 
 # 3D multi reference alignment
-mpirun -np 4 sxali3d_m.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --MPI --CTF || exit
+mpirun -np 4 sxali3d_m.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --MPI --CTF 
