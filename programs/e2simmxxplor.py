@@ -37,6 +37,12 @@ from e2eulerxplor import InputEventsManager
 import os,sys
 from EMAN2 import *
 from optparse import OptionParser
+from PyQt4 import QtGui,QtCore
+from e2eulerxplor import get_eulers_from
+from emimagemx import EMImageMXModule
+from emplot2d import EMPlot2DModule
+from valslider import ValSlider
+
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -122,7 +128,6 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 	
 		self.num_particles = ny
 		
-		from e2eulerxplor import get_eulers_from
 		eulers = get_eulers_from(self.projection_file)
 		
 		self.specify_eulers(eulers)
@@ -162,14 +167,11 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.current_projection = object_number
 		resize_necessary = False
 		if self.mx_display == None:
-			from emimagemx import EMImageMXModule
 			self.mx_display = EMImageMXModule()
-			from PyQt4 import QtCore
 			QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
 
 		if self.frc_display == None:
-			from emplot2d import EMPlot2DModule
 			self.frc_display = EMPlot2DModule()
 #			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
@@ -270,8 +272,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 		return "inspector"
 	
 	def __init__(self,target,enable_trace=False,enable_og=False) :
-		from PyQt4 import QtGui,QtCore
-
 		self.ptcl_slider = None
 		self.combo = None
 		
@@ -292,8 +292,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.tabwidget.setCurrentIndex(0)
 		
 	def __init_ptcl_slider(self,layout):
-		
-		from valslider import ValSlider
 		if self.combo == None: n = self.target().get_num_particles()
 		else:
 			dir = str(self.combo.currentText())
@@ -320,7 +318,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.score_option_changed() # this might be a hack - it forces the cylinder heights to update.
 	
 	def add_simmx_dir_data_widgets(self):
-		from PyQt4 import QtGui,QtCore
 		self.data = simmx_xplore_dir_data()
 		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
 		
@@ -392,7 +389,6 @@ class EMSimmxXplorInspector(EMSymInspector):
 		else: return str(selected_items[0].text())
 		
 	def update_simmx_list(self,first_time=False):
-		from PyQt4 import QtGui,QtCore
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		
 		dir = str(self.combo.currentText())

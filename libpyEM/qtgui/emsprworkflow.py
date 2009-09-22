@@ -3871,9 +3871,10 @@ class EMClassificationTools(ParticleWorkFlowTask):
 
 		db = db_open_dict(self.form_db_name)
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
+		ptwostage = ParamDef(name="twostage",vartype="boolean",desc_short="2 Stage Simmx",desc_long="This will determine the orientation in 2 stages, offering a significant speedup when there are many projections",property=None,defaultunits=db.get("twostage",dfl=False),choices=[])
+
 		
-		
-		params.append(pshrink)
+		params.append([pshrink,ptwostage])
 		params.extend(self.get_cls_simmx_params(parameter_prefix="sim"))
 		
 		#db_close_dict(self.form_db_name)

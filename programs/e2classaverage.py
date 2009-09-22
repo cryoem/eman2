@@ -1141,6 +1141,8 @@ def main():
 	logger=E2init(sys.argv)
 	
 	class_gen = EMGenClassAverages(options,logger)
+	
+	print "Class averaging"
 	class_gen.execute()
 	
 	E2end(logger)
