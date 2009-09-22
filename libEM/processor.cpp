@@ -8987,6 +8987,7 @@ MPICUDA_kmeans::MPICUDA_kmeans() {
     h_AVE2 = NULL;
     h_IM2 = NULL;
     h_NC = NULL;
+    params = NULL;
     d_IM = NULL;
     d_AVE = NULL;
     d_DIST = NULL;
@@ -9000,6 +9001,16 @@ MPICUDA_kmeans::~MPICUDA_kmeans() {
     if (h_AVE2) delete h_AVE2;
     if (h_IM2) delete h_IM2;
     if (h_NC) delete h_NC;
+    if (params) delete params;
+}
+
+#include "sparx/cuda/cuda_mpi_kmeans.h"
+int MPICUDA_kmeans::test(int numdev) {
+    return cuda_inittest(numdev);
+}
+
+int MPICUDA_kmeans::test2() {
+    return cuda_readinit();
 }
 
 int MPICUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd) {
@@ -9016,29 +9027,42 @@ int MPICUDA_kmeans::setup(int extm, int extN, int extK, float extF, float extT0,
     ite = 0;                            // init nb of iterations
     if (F != 0.0) {flag_stop_SA = 0;}   // flag to run SA or not
     else {flag_stop_SA = 1;}
-    flag_stop_part = 0;                 // flag to stop k-means
-    ct_im_mv = 0;                       // DEBUG
     BLOCK_SIZE = 512;
     NB = size_DIST / BLOCK_SIZE;
     ins_BLOCK = NB * BLOCK_SIZE;
 
     // Host memory allocation for images
     h_IM = (float*)malloc(size_IM * sizeof(float));
-    if (h_IM == 0) return 1;
+    if (h_IM == 0) return -1;
     // Host memory allocation for the averages
     h_AVE = (float*)malloc(size_AVE * sizeof(float));
-    if (h_AVE == 0) return 1;
+    if (h_AVE == 0) return -1;
     // Host memory allocation for all assignment
     h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
-    if (h_ASG == 0) return 1;
+    if (h_ASG == 0) return -1;
     // allocate the memory for the sum squared of averages
     h_AVE2 = (float*)malloc(K * sizeof(float));
+    if (h_AVE2 == 0) return -1;
     // allocate the memory for the sum squared of images
     h_IM2 = (float*)malloc(N * sizeof(float));
+    if (h_IM2 == 0) return -1;
     // allocate the memory for the distances
     h_DIST = (float*)malloc(size_DIST * sizeof(float));
+    if (h_DIST == 0) return -1;
     // allocate the memory for the number of images per class
     h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
+    if (h_NC == 0) return -1;
+    // allocate the memory to parameters
+    params = (int*)malloc(8 * sizeof(int));
+    if (params == 0) return -1;
+    params[0] = N;
+    params[1] = m;
+    params[2] = K;
+    params[3] = 0;          // Reserve for flag_stop_iteration
+    params[4] = 0;          // Reserve for ct_im_mv (debug)
+    params[5] = BLOCK_SIZE; // Size of threads block (512)
+    params[6] = NB;         // Number of blocks which fit with BLOCK_SIZE
+    params[7] = ins_BLOCK;  // Number of blocks remaining
 
     return 0;
 }
@@ -9049,9 +9073,19 @@ void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
 }
 
 // cuda init mem device, cublas (get device ptr)
-int MPICUDA_kmeans::init_mem() {
-    //return cuda_mpi_init(h_IM, d_IM, d_AVE, d_DIST, size_IM, size_AVE, size_DIST, rnd);
-    return 0;
+int MPICUDA_kmeans::init_mem(int numdev) {
+    int stat = 1;
+    float** hd_AVE = NULL;
+    float** hd_IM = NULL;
+    float** hd_DIST = NULL;
+    hd_AVE = &d_AVE;
+    hd_IM = &d_IM;
+    hd_DIST = &d_DIST;
+    stat = cuda_mpi_init(h_IM, hd_IM, hd_AVE, hd_DIST, size_IM, size_AVE, size_DIST, rnd, numdev);
+    //printf("C++ get this pointer for d_AVE: %p\n", d_AVE);
+    //printf("C++ get this pointer for d_IM: %p\n", d_IM);
+    //printf("C++ get this pointer for d_DIST: %p\n", d_DIST);
+    return stat;
 }
 
 // precalculate IM2
@@ -9082,7 +9116,7 @@ int MPICUDA_kmeans::init_ASG() {
 		flag = 0;
 		if (ret == 0) {
 		    //printf("Erreur randomize assignment\n");
-		    return 1;
+		    return -1;
 		}
 		for (k = 0; k < K; k++) h_NC[k] = 0;
 	    }
@@ -9090,6 +9124,45 @@ int MPICUDA_kmeans::init_ASG() {
 	}
     }
     return 0;
+}
+
+// get back the assignment
+vector <int> MPICUDA_kmeans::get_ASG() {
+    vector <int> ASG(h_ASG, &h_ASG[N]);
+    return ASG;
+}
+
+// get back number of objects per group
+vector <int> MPICUDA_kmeans::get_NC() {
+    vector <int> NC(h_NC, &h_NC[K]);
+    return NC;
+}
+
+// same founction as get_NC() but compute from ASG (used in MPI case)
+vector <int> MPICUDA_kmeans::get_NC_from_ASG() {
+    for (int i = 0; i < K; ++i) h_NC[i] = 0;
+    for (int i = 0; i < N; ++i) h_NC[h_ASG[i]]++;
+    vector <int> NC(h_NC, &h_NC[K]);
+    return NC;
+}
+
+// set a new assignment
+void MPICUDA_kmeans::set_ASG(const vector <int>& ASG) {
+    for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];   
+}
+
+// set number of objects per group
+void MPICUDA_kmeans::set_NC(const vector <int>& NC) {
+    for (int i = 0; i < K; ++i) h_NC[i] = NC[i];
+}
+
+// get back some information (ite and T0)
+vector <float> MPICUDA_kmeans::get_info() {
+    vector <float> info(3);
+    info[0] = (float)ite;
+    info[1] = T0;
+    info[2] = (float)params[4];  // ct_im_mv
+    return info;
 }
 
 // compute ave and ave2
@@ -9105,7 +9178,7 @@ void MPICUDA_kmeans::compute_ave() {
     }
     for (i = 0; i < K; i++) {
 	buf = 0.0f;
-	for (j= 0 ; j < m; j++) {
+	for (j = 0 ; j < m; j++) {
 	    ind = i * m + j;
 	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average
 	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
@@ -9114,65 +9187,45 @@ void MPICUDA_kmeans::compute_ave() {
     }
 }
 
-// k-means one iteration
-int MPICUDA_kmeans::one_iter() {
-
-    //int err = cuda_mpi_kmeans(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, flag_stop_part, K, N, m);
-    // need to check err
-
-    ite++;
-    if (ite < maxite && !flag_stop_part) {
-	return 0;
-    } else {
-	return 1;
+// compute squared sum of averages
+void MPICUDA_kmeans::compute_ave2() {
+    float buf = 0.0f;
+    int i, j, ind;
+    for (i = 0; i < K; i++) {
+	buf = 0.0f;
+	for (j = 0 ; j < m; j++) {
+	    ind = i * m + j;
+	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
+	}
+	h_AVE2[i] = buf;
     }
-
-    // debug print out
-    printf("ite: %i \n", ite);
-
 }
 
-// k-means SA one iteration
-int MPICUDA_kmeans::one_iter_SA() {
-    //int err = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, flag_stop_part, ct_im_mv, K, N, m, T0, BLOCK_SIZE, NB, ins_BLOCK);
-    // need to check err
-
-    ite++;
-    if (ite < maxite && !flag_stop_part) {
-	return 0;
-    } else {
-	return 1;
+// compute some images in each groups (pre-calculation of averages)
+void MPICUDA_kmeans::compute_sum() {
+    int i, j, c, d;
+    for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;                          // set averages to zero
+    for (i = 0; i < N; ++i) {
+	c = h_ASG[i] * m;
+	d = i * m;
+	for (j = 0; j < m; ++j) h_AVE[c + j] += h_IM[d + j];                 // accumulate images
     }
+}    
 
-    T0 *= F;                                // cooling temperature
-    if (T0 < 0.0001) flag_stop_SA = 1;      // turn off SA, we consider this T value is equivalent to k-means
-
-    // debug print out
-    printf("ite: %i T: %f CRE: %i\n", ite, T0, ct_im_mv);
-}
-
-// get back the assignment for each partition
-vector <int> MPICUDA_kmeans::get_partition() {
-    vector <int> PART(h_ASG, &h_ASG[N]);
-    return PART;
-}
-
-// shutdown cublas and releas device mem
-int MPICUDA_kmeans::shutdown() {
-    //return cuda_mpi_shutdown(d_IM, d_AVE, d_DIST);
-    return 0;
+// set averages
+void MPICUDA_kmeans::set_AVE(EMData* im, int pos) {
+    for (int i = 0; i < m ; ++i) h_AVE[pos * m + i] = (*im)(i);
 }
 
 // get back the averages
-vector<EMData*> MPICUDA_kmeans::get_averages() {
+vector<EMData*> MPICUDA_kmeans::get_AVE() {
     vector<EMData*> ave(K);
 
     for (int k = 0; k < K; ++k) {
 	EMData* im = new EMData();
 	im->set_size(m, 1, 1);
-	for (int i = 0; i < m; ++i) {
-	    im->set_value_at(i, h_AVE[k * m + i]);
-	}
+	float *ptr = im->get_data();
+	for (int i = 0; i < m; ++i) {ptr[i] =  h_AVE[k * m + i];}
 	ave[k] = im->copy();
 	delete im;
     }
@@ -9180,6 +9233,95 @@ vector<EMData*> MPICUDA_kmeans::get_averages() {
     return ave;
 }
 
+// k-means one iteration
+int MPICUDA_kmeans::one_iter() {
+    int status = cuda_mpi_kmeans(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, params);
+
+    // empty cluster or device error
+    if (status != 0) {params[3] = 0;} // flag_stop_iteration
+
+    ite++;
+    if (ite < maxite && !params[3]) { // flag_stop_iteration
+	return 0;
+    } else {
+	return 1;
+    }
+
+}
+
+// k-means SA one iteration
+int MPICUDA_kmeans::one_iter_SA() {
+    int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_DIST, d_DIST, d_IM, h_IM2, h_AVE2, h_ASG, h_NC, T0, params);
+
+    // empty cluster or device error
+    if (status != 0) {params[3] = 0;} // flag_stop_iteration
+
+    ite++;
+    T0 *= F;                          // cooling temperature T
+    if (ite < maxite && !params[3]) { // flag_stop_iteration
+	if (T0 < 0.0001) {            // turn off SA, I consider this T value is equivalent to k-means
+	    return 1;
+	} else {
+	    return 0;
+	}
+    } else {
+	return 1;
+    }
+
+}
+
+// compute averags from image bank and global assignment
+void MPICUDA_kmeans::compute_ave_frombank() {
+    float buf = 0.0f;
+    int i, j, c, d, ind;
+    // compute the averages according ASG
+    for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;                          // set averages to zero
+    for (i = 0; i < GN; ++i) {
+	c = G_ASG[i] * m;
+	d = i * m;
+	for (j = 0; j < m; ++j) h_AVE[c + j] += G_IM[d + j];                 // accumulate images
+    }
+    for (i = 0; i < K; i++) {
+	buf = 0.0f;
+	for (j = 0 ; j < m; j++) {
+	    ind = i * m + j;
+	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average
+	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
+	}
+	h_AVE2[i] = buf;
+    }
+}
+
+// add image pre-process by Util.compress_image_mask to image bank
+void MPICUDA_kmeans::append_flat_image_tobank(EMData* im, int pos) {
+    for (int i = 0; i < m ; ++i) G_IM[pos * m + i] = (*im)(i);
+}
+
+// setyp the image bank
+int MPICUDA_kmeans::setup_bank(int ext_NG) {
+    GN = ext_NG;
+    G_IM = (float*)malloc(m * GN * sizeof(float));
+    if (G_IM == 0) return -1;
+    G_ASG = (unsigned short int*)malloc(GN * sizeof(unsigned short int));
+    if (G_ASG == 0) return -1;
+    return 0;
+}
+
+// compute NC from ASG to the image bank
+void MPICUDA_kmeans::compute_NC_frombank() {
+    for (int i = 0; i < K; ++i) h_NC[i] = 0;
+    for (int i = 0; i < N; ++i) h_NC[G_ASG[i]]++;
+}
+
+// set a new assignment for image bank
+void MPICUDA_kmeans::set_ASG_tobank(const vector <int>& ASG) {
+    for (int i = 0; i < GN ; ++i) G_ASG[i] = ASG[i];   
+}
+
+// shutdown cublas and release device mem
+int MPICUDA_kmeans::shutdown() {
+    return cuda_mpi_shutdown(d_IM, d_AVE, d_DIST);
+}
 
 /* CLASS CUDA_kmeans processor
  *
@@ -9255,9 +9397,8 @@ vector<EMData*> CUDA_kmeans::get_averages() {
     for (int k = 0; k < K; ++k) {
 	EMData* im = new EMData();
 	im->set_size(m, 1, 1);
-	for (int i = 0; i < m; ++i) {
-	    im->set_value_at(i, h_AVE[k * m + i]);
-	}
+	float *ptr = im->get_data();
+	for (int i = 0; i < m; ++i) {ptr[i] =  h_AVE[k * m + i];}
 	ave[k] = im->copy();
 	delete im;
     }
@@ -9267,9 +9408,8 @@ vector<EMData*> CUDA_kmeans::get_averages() {
 
 // get back the assignment for each partition
 vector <int> CUDA_kmeans::get_partition() {
-    vector <int> PART(N);
-    for (int i = 0; i < N; ++i) PART[i] = (int)h_ASG[i];
-    return PART;
+    vector <int> ASG(h_ASG, &h_ASG[N]);
+    return ASG;
 }
 
 // get back informations about the partition for each classification

@@ -6551,18 +6551,33 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	public:
 		MPICUDA_kmeans();
 		~MPICUDA_kmeans();
+		int test(int numdev);
+		int test2();
 		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
 		void append_flat_image(EMData* im, int pos);
-		int init_mem();
+		int init_mem(int numdev);
 		void init_IM2();
 		int init_ASG();
+		vector<int> get_ASG();
+		vector<int> get_NC();
+		vector<int> get_NC_from_ASG();
+		void set_ASG(const vector <int>& ASG);
+		void set_NC(const vector <int>& NC);
 		void compute_ave();
+		void compute_ave2();
+		void compute_sum();
+		void set_AVE(EMData* im, int pos);
+		vector<EMData*> get_AVE();
+		vector<float> get_info();
 		int one_iter();
 		int one_iter_SA();
 		int shutdown();
-		vector<EMData*> get_averages();
-		vector<int> get_partition();
-
+		//
+		void compute_ave_frombank();
+		void compute_NC_frombank();
+		void append_flat_image_tobank(EMData* im, int pos);
+		int setup_bank(int ext_NG);
+		void set_ASG_tobank(const vector <int>& ASG);
 	private:
 		// params
 		int m;
@@ -6571,9 +6586,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int maxite;
 		int nb_part;
 		float F;
-		float T0;
 		int rnd;
-		int ite;
 		int* flag_stop_part;
 		int flag_stop_SA;
 		int size_IM;
@@ -6582,8 +6595,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int BLOCK_SIZE;
 		int NB;
 		int ins_BLOCK;
+		int ite;
+		float T0;		
 		// debug
-		int* ct_im_mv;
+		int ct_im_mv;
 		// host memory
 		float* h_IM;
 		float* h_AVE;
@@ -6592,11 +6607,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		float* h_IM2;
 		unsigned short int* h_ASG;
 		unsigned int* h_NC;
+		int* params;
+		float* G_IM;
+		unsigned short int* G_ASG;
+		int GN;
 		// device memory
 		float* d_IM;
 		float* d_AVE;
 		float* d_DIST;
-
 	};
 
 	/* class CUDA kmeans processor
