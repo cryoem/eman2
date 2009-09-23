@@ -65,7 +65,7 @@ class EMShape:
 		0               1  2  3  4  5     6     7     8
 		"rect"          R  G  B  x0 y0    x1    y1    linew
 		"rectpoint"     R  G  B  x0 y0    x1    y1    linew
-		"rotatebox"     R  G  B  x0 y0    x1    y1    boxw
+		"rectline"      R  G  B  x0 y0    x1    y1    boxw
 		"rcircle"       R  G  B  x0 y0    x1    y1    linew
 		"rcirclepoint"  R  G  B  x0 y0    x1    y1    linew
 		"line"          R  G  B  x0 y0    x1    y1    linew
@@ -149,7 +149,7 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
 		
-		elif s[0]=="rotatebox":
+		elif s[0]=="rectline":
 			#This makes a rectangle based on a width and two points
 			#The two points are the endpoints for the longer axis of symmetry
 			#Those two points implicity define the length
@@ -162,19 +162,26 @@ class EMShape:
 			mag = sqrt(w_vect[0]**2 + w_vect[1]**2)
 			w_uvect = (w_vect[0]/mag, w_vect[1]/mag)  #unit vector parallel to a short side
 			
-			#vertices
+			#vertices - add/subtract a vector of half the box width with w_uvect direction
 			v1 = ( pt0[0]-w_uvect[0]*width/2.0, pt0[1]-w_uvect[1]*width/2.0 )
 			v2 = ( pt0[0]+w_uvect[0]*width/2.0, pt0[1]+w_uvect[1]*width/2.0 )
 			v3 = ( pt1[0]+w_uvect[0]*width/2.0, pt1[1]+w_uvect[1]*width/2.0 )
 			v4 = ( pt1[0]-w_uvect[0]*width/2.0, pt1[1]-w_uvect[1]*width/2.0 )
+
+			#rectangle
 			GL.glLineWidth(1)
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
-			#To find a vertex, add/subtract a vector of half the box width with w_uvect direction
 			GL.glVertex(*d2s(*v1))
 			GL.glVertex(*d2s(*v2))
 			GL.glVertex(*d2s(*v3))
 			GL.glVertex(*d2s(*v4))
+			GL.glEnd()
+			#line
+			GL.glBegin(GL.GL_LINES)
+			GL.glColor(*col)
+			GL.glVertex(*d2s(*pt0))
+			GL.glVertex(*d2s(*pt1))
 			GL.glEnd()
 					
 		elif s[0]=="rectpoint":
