@@ -36,9 +36,9 @@ This is a a really basic version of boxer that can be copied and used as the bas
 Design is meant to be granular and logical, i.e. easy to add to.
 
 To see how it works just run it from the commandline:
-./e2boxerbase.py test.mrc --boxsize=128 # single image handling
+./emboxerbase.py test.mrc --boxsize=128 # single image handling
 -or-
-./e2boxerbase.py test.mrc test2.mrc test3.mrc --boxsize=128 # multiple image handling enabled
+./emboxerbase.py test.mrc test2.mrc test3.mrc --boxsize=128 # multiple image handling enabled
 
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
