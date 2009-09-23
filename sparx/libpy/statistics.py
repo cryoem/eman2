@@ -7040,16 +7040,16 @@ def var_bydef(vol_stack, vol_list, info):
 		info.write( "\n" )
 	return vars/(len(vol_list)-1)
 
-def histogram2d( datai, dataj, nbini, nbinj ):
-	fmaxi = max( datai )
-	fmini = min( datai )
-	fmaxj = max( dataj )
-	fminj = min( dataj )
+def histogram2d(datai, dataj, nbini, nbinj):
+	fmaxi = max(datai)
+	fmini = min(datai)
+	fmaxj = max(dataj)
+	fminj = min(dataj)
 
-	binsize_i = (fmaxi - fmini)/(nbini-1)
-	binsize_j = (fmaxj - fminj)/(nbinj-1)
-	start_i = fmini-binsize_i/2.0
-	start_j = fminj-binsize_j/2.0
+	binsize_i = (fmaxi-fmini)/nbini
+	binsize_j = (fmaxj-fminj)/nbinj
+	start_i = fmini
+	start_j = fminj
 
 	region = [None]*nbini
 	hist = [None]*nbinj
@@ -7062,23 +7062,23 @@ def histogram2d( datai, dataj, nbini, nbinj ):
 
 	assert len(datai)==len(dataj)
 	for k in xrange( len(datai) ):
-		id = int( (datai[k]-start_i)/binsize_i )
-		jd = int( (dataj[k]-start_j)/binsize_j )
-		hist[id][jd]+=1
+		idd = min(int((datai[k]-start_i)/binsize_i), nbini-1) 
+		jdd = min(int((dataj[k]-start_j)/binsize_j), nbinj-1)
+		hist[idd][jdd]+=1
 
 	return region,hist
 
-def hist_list( data, nbin = -1 ):
+def hist_list(data, nbin = -1):
 	"""
 	  Calculate histogram of the list elements
 	  nbin will be set such that in average there is 10 elements per bin
 	"""
 	if nbin < 0:  nbin = len(data)/10
-	fmaxi = max( data )
-	fmini = min( data )
+	fmaxi = max(data)
+	fmini = min(data)
 
-	binsize_i = (fmaxi - fmini)/(nbin-1)
-	start_i = fmini-binsize_i/2.0
+	binsize_i = (fmaxi-fmini)/nbin
+	start_i = fmini
 
 	region = [None]*nbin
 	hist = [None]*nbin
@@ -7087,7 +7087,7 @@ def hist_list( data, nbin = -1 ):
 		hist[i] = 0
 
 	for d in data:
-		i = int( (d-start_i)/binsize_i )
+		i = min(int((d-start_i)/binsize_i), nbin-1)
 		hist[i] += 1
 
 	return region, hist
