@@ -572,6 +572,7 @@ class EMTaskQueue:
 			EMTaskQueue.lock.release()
 			return
 		
+		task.progtime=(time.time(),100)
 		task.endtime=time.time()
 		self.complete[tid]=task
 		del self.active[tid]
@@ -634,7 +635,7 @@ class EMTask:
 	such data requests are remapped into data identifiers (did), then translated back into valid filenames
 	in the remote cache.  When subclassing this class, avoid defining new member variables, as EMTask objects
 	get transmitted over the network. Make use of command, data and options instead. """
-	def __init__(self,user=None,data=None,options=None):
+	def __init__(self,command=None,data=None,options=None,user=None,):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
@@ -644,7 +645,7 @@ class EMTask:
 		self.exechost=None		# hostname where task was executed
 		self.user=None			# Username from customer
 		self.group=None			# group this task is in for task management purposes
-		self.command="Nothing"	# This is a one word description of the purpose of the task, should be set in __init__
+		self.command=command	# This is a one word description of the purpose of the task, should be set in __init__
 		self.data=data			# dictionary of named data specifiers value may be (before transmission):
 								# - actual data object (no caching)
 								# - ['cache',filename,#]

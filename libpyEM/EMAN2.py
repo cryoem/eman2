@@ -31,6 +31,7 @@
 #
 
 import sys
+from math import *
 from sys import exit
 import os
 import time

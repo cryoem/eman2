@@ -412,7 +412,7 @@ class EMClassAveTask(EMTask):
 	As in the case of the EMClassAveTaskDC
 	'''
 
-	def __init__(self,command="e2classaverage",data=None,options=None):
+	def __init__(self,command="e2classaverage.py",data=None,options=None):
 		EMTask.__init__(self,command,data,options)
 		self.averages = [] # will eventually store a list of averages.
 		self.all_alis = [] # will eventually contain all of the alignment parameters of each iteration
@@ -420,7 +420,6 @@ class EMClassAveTask(EMTask):
 		self.final_average = None
 		self.final_alis = None # will be a dictionary of 
 		self.class_idx = data["class_idx"] # so it's easy to tell the calling function which class this is
-		self.command="e2classaverage.py"
 		# options should have these keys:
 		# iter - the total number of iterations. 0 is fine
 		# align - the main aligner, [string,dict]

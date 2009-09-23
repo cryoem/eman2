@@ -239,7 +239,7 @@ class TaskData(QtCore.QAbstractTableModel):
 		self.rows=[]
 		for r in range(self.nrows):
 			task=self.target[keys[r]]
-			self.rows.append([self.col(task,i) for i in range(7)])
+			self.rows.append([self.col(task,i) for i in range(8)])
 		
 	def col(self,task,n):
 		"""gets a single table entry"""
@@ -251,9 +251,9 @@ class TaskData(QtCore.QAbstractTableModel):
 		if n==0 : ret=task.taskid
 		elif n==1: 
 			try: 
-				if task.progtime[1]==-1 : ret = "-"
+				if task.progtime==None or task.progtime[1]==-1 : ret = "-"
 				elif task.progtime[1]==0 : ret= "#"
-				elif task.progtime[1]<100 : ret= "#"*(1+task.progtime[1]/10)
+				elif task.progtime[1]<100 : ret= "#"*(1+task.progtime[1]/5)
 				else : ret = "DONE"
 				if task.progtime[0]-time.time()>300 : ret+=" ?"
 			except: ret="?"
@@ -266,6 +266,13 @@ class TaskData(QtCore.QAbstractTableModel):
 		elif n==6 : 
 			ret=task.exechost
 			if ret==None : ret=task.clientid
+		elif n==7 :
+			try:
+				if   task.command=="e2classaverage.py" : ret= "Class %d"%task.class_idx
+				elif task.command=="e2simmx.py" : ret= "Range: %d - %d : %d - %d"%(task.data["references"][2],task.data["references"][3],task.data["particles"][2],task.data["particles"][3])
+				elif task.command=="e2project3d.py" : ret="Proj: %d - %d"%(min(task.data["indices"]),max(task.data["indices"]))
+				else : ret = task.command
+			except : ret = str(task)
 			
 		return QtCore.QVariant(str(ret))
 
@@ -280,7 +287,7 @@ class TaskData(QtCore.QAbstractTableModel):
 
 	def columnCount(self,parent):
 		if parent.isValid() : return 0
-		return 7
+		return 8
 
 
 if __name__== "__main__":

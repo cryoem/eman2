@@ -320,9 +320,8 @@ class EMSimTaskDC(EMTask):
 	'''
 	Originally added to encapsulate a similarity matrix generation task 
 	'''
-	def __init__(self,command="e2simmx",data=None,options=None):
+	def __init__(self,command="e2simmx.py",data=None,options=None):
 		EMTask.__init__(self,command,data,options)
-		self.command="e2simmx.py"
 		# options should have these keys:
 		# align - the main aligner, a list of two strings
 		# alligncmp - the main align cmp - a list of two strings
