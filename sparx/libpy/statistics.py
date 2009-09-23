@@ -465,6 +465,34 @@ def ave_oe_series(stack):
 	return ave1/(n//2+(n%2)), ave2/(n//2)
 
 
+def ave_oe_series_textfile(stack, textfile):
+	"""
+		Calculate odd and even averages of an image stack using alignment parameters in a text file
+	"""
+	from utilities import model_blank, read_text_file
+	from fundamentals import rot_shift2D
+	
+	n = EMUtil.get_image_count(stack)
+	ima = EMData()
+	ima.read_image(stack, 0, True)
+	nx = ima.get_xsize()
+	ny = ima.get_ysize()
+	ave1 = model_blank(nx, ny)
+	ave2 = model_blank(nx, ny)
+	params = read_text_file(textfile, -1)
+	for i in xrange(n):
+		ima = EMData()
+		ima.read_image(stack, i)
+		alpha = params[0][i]
+		sx = params[1][i]
+		sy = params[2][i]
+		mirror = params[3][i]
+		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
+		if i%2 == 0: Util.add_img(ave1, temp)
+		else:        Util.add_img(ave2, temp)
+	return ave1/(n/2+n%2), ave2/(n/2)
+
+
 def ave_oe_series_indexed(stack, idx_ref):
 	"""
 		Calculate odd and even averages of an image series using current alignment parameters,
