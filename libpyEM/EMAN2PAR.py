@@ -50,7 +50,7 @@ import signal
 import traceback
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=11
+EMAN2PARVER=12
 
 # This is the maximum number of active server threads before telling clients to wait
 DCMAXTHREADS=7
@@ -687,16 +687,19 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				self.sockf.flush()
 				
 				# check for an ACK, if not, requeue
-				r="HUH"
+				r=["HUH",0]
 				try:
-					r=self.sockf.read(4)
-					if r!="ACK " : 
+					r=recvobj(self.sockf)
+					if r[0]!="ACK " : 
 						EMDCTaskHandler.tasklock.release()
 						raise Exception
 				except:
 					if self.verbose: print "Task sent, no ACK"
 					if Task!=None : self.queue.task_rerun(task.taskid)
-				if task!=None : 
+				if task!=None :
+					task.exechost=r[1]
+					try: self.queue.active[task.taskid]=task
+					except: pass
 					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,self.client_address[0],client_id,r,local_datetime()))
 					EMDCTaskHandler.dbugfile.flush()
 				EMDCTaskHandler.tasklock.release()
@@ -987,8 +990,8 @@ class EMDCTaskClient(EMTaskClient):
 				sockf.flush()
 			
 				# Get a task from the server
-				task=recvobj(sockf)
-				sockf.write("ACK ")
+				task=recvobj(sockf)				
+				sendobj(sockf,socket.gethostname())
 				sockf.flush()
 				signal.alarm(0)
 				if task=="EXIT" : break

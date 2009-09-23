@@ -420,6 +420,7 @@ class EMClassAveTask(EMTask):
 		self.final_average = None
 		self.final_alis = None # will be a dictionary of 
 		self.class_idx = data["class_idx"] # so it's easy to tell the calling function which class this is
+		self.command="e2classaverage.py"
 		# options should have these keys:
 		# iter - the total number of iterations. 0 is fine
 		# align - the main aligner, [string,dict]

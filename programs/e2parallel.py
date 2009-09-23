@@ -49,13 +49,13 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients","dcservmon","dcrerunall")
+	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","dcrerunall")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillclients, dcservmon
+<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillclients, servmon
 
 run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 
@@ -91,7 +91,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dcrerunall":
 		rerunalldc()
 
-	elif args[0]=="dcservmon" :
+	elif args[0]=="servmon" :
 		runservmon()
 		
 def rundcserver(port,verbose):
@@ -157,10 +157,12 @@ def runservmon():
 
 	app = QtGui.QApplication([])
 	window = GUIservmon()
-
+	
 #	ui.tableView.setModel(data)
 
 	window.show()
+	window.set_data(queue)
+	
 	app.exec_()
 	
 class GUIservmon(QtGui.QMainWindow):
@@ -193,33 +195,92 @@ class GUIservmon(QtGui.QMainWindow):
 		self.clientview=QtGui.QTableView()
 		self.vblct.addWidget(self.clientview)
 		self.tabs.addTab(self.clienttab,"Clients")
-
+		
+		self.startTimer(10000)
+		
+	def timerEvent(self,event):
+		if self.tabs.currentIndex()==0 :
+			self.actmodel.load()
+			self.actview.setModel(None) 				# suboptimal, but a hack for now
+			self.actview.setModel(self.actmodel)
+			self.actview.resizeColumnsToContents()
+		elif self.tabs.currentIndex()==1 :
+			self.donemodel.load()
+			self.doneview.setModel(None)
+			self.doneview.setModel(self.donemodel)
+			self.doneview.resizeColumnsToContents()
+		
+	def set_data(self,queue):
+		"""This takes an EMTaskQueue object and displays it"""
+		
+		self.actmodel=TaskData(queue.active)
+		self.actview.setModel(self.actmodel)
+		self.donemodel=TaskData(queue.complete)
+		self.doneview.setModel(self.donemodel)
+		
+		self.actmodel.load()
+		self.donemodel.load()
+		
 #		self.vbl.addWidget(self.tabs)
 
 class TaskData(QtCore.QAbstractTableModel):
 	def __init__(self,target):
 		QtCore.QAbstractTableModel.__init__(self)
 		self.target=target
+		self.nrows=0
+		self.rows=[]
+
+	def load(self):
+		"""Updates the cached display from source"""
+		keys=self.target.keys()
+		keys.sort()
+		keys=keys[:-2]
+		self.nrows=len(keys)
+		self.rows=[]
+		for r in range(self.nrows):
+			task=self.target[keys[r]]
+			self.rows.append([self.col(task,i) for i in range(7)])
+		
+	def col(self,task,n):
+		"""gets a single table entry"""
+		if not isinstance(task,EMTask) : 
+			print loc.row(),keys[loc.row()]
+			print self.target[keys[loc.row()]]
+			return QtCore.QVariant("???")
+			
+		if n==0 : ret=task.taskid
+		elif n==1: 
+			try: 
+				if task.progtime[1]==-1 : ret = "-"
+				elif task.progtime[1]==0 : ret= "#"
+				elif task.progtime[1]<100 : ret= "#"*(1+task.progtime[1]/10)
+				else : ret = "DONE"
+				if task.progtime[0]-time.time()>300 : ret+=" ?"
+			except: ret="?"
+		elif n==2 : ret=task.command
+		elif n==3 : ret=local_datetime(task.queuetime)
+		elif n==4 : ret=local_datetime(task.starttime)
+		elif n==5 : 
+			try: ret=difftime(task.endtime-task.starttime)
+			except: ret = "incomplete"
+		elif n==6 : 
+			ret=task.exechost
+			if ret==None : ret=task.clientid
+			
+		return QtCore.QVariant(str(ret))
 
 	def data(self,loc,role):
 		if not loc.isValid() or role != QtCore.Qt.DisplayRole : return QtCore.QVariant()
-		keys=self.target.keys()
-		task=self.target[keys[loc.row()]]
-		if loc.column()==0 : ret=task.taskid
-		elif loc.column()==1 : ret=task.command
-		elif loc.column()==2 : ret=local_datetime(task.queuetime)
-		elif loc.column()==3 : ret=local_datetime(task.starttime)
-		elif loc.column()==4 : ret=difftime(task.endtime-task.starttime)
-		elif loc.column()==5 : ret.task.exechost
-		return QtCore.QVariant(str(ret))
-
+		try : return self.rows[loc.row()][loc.column()]
+		except : return QtCore.QVariant("---")
+		
 	def rowCount(self,parent):
 		if parent.isValid() : return 0
-		return len(target.keys())
+		return self.nrows
 
 	def columnCount(self,parent):
 		if parent.isValid() : return 0
-		return 6
+		return 7
 
 
 if __name__== "__main__":
