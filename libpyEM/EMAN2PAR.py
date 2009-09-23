@@ -695,7 +695,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						raise Exception
 				except:
 					if self.verbose: print "Task sent, no ACK"
-					if Task!=None : self.queue.task_rerun(task.taskid)
+					if task!=None : self.queue.task_rerun(task.taskid)
 				if task!=None :
 					task.exechost=r[1]
 					try: self.queue.active[task.taskid]=task
@@ -991,7 +991,7 @@ class EMDCTaskClient(EMTaskClient):
 			
 				# Get a task from the server
 				task=recvobj(sockf)				
-				sendobj(sockf,socket.gethostname())
+				sendobj(sockf,("ACK ",socket.gethostname()))
 				sockf.flush()
 				signal.alarm(0)
 				if task=="EXIT" : break
