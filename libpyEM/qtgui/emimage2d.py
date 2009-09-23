@@ -1360,10 +1360,6 @@ class EMImage2DModule(EMGUIModule):
 
 		self.origin = (ox,oy)
 
-	def get_shapes(self):
-		return self.shapes
-	
-	
 	def init_circle_list(self):
 		if self.circle_dl == None:
 			self.circle_dl = glGenLists(1)
