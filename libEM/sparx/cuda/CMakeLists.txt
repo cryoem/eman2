@@ -16,7 +16,6 @@
 # Build a shared library
 CUDA_ADD_LIBRARY(EM2SparxCuda
   cuda_ccf.cu
-  cuda_kmeans.cu
   cuda_mpi_kmeans.cu
 )
 
