@@ -2,14 +2,13 @@
 
 #Author: Ross Coleman
 
-from EMAN2 import test_image#,EMData
-from emapplication import EMStandAloneApplication#, get_application
+from EMAN2 import test_image, get_image_directory #,EMData
+from emapplication import EMQtWidgetModule, EMStandAloneApplication#, get_application
 from emimage2d import EMImage2DModule
 from emshape import EMShape
-from math import *
-import weakref
 
-import sys
+from math import *
+import weakref, sys
 from PyQt4 import QtGui, QtCore
 
 def counterGen():
@@ -220,19 +219,103 @@ class Im2DModEventsHandler:
 		"""
 		self.boxwidth = boxwidth
 
+class EMHelixBoxerInspectorModule(EMQtWidgetModule):
+	def __init__(self, target):
+		self.module = EMHelixBoxerInspector(target)
+		EMQtWidgetModule.__init__(self, self.module)
+
+	def get_desktop_hint(self):
+		return "inspector"
+
+class EMHelixBoxerInspector(QtGui.QWidget):
+    def __init__(self,target) :
+        self.busy = True
+        
+        QtGui.QWidget.__init__(self,None)
+        self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
+        self.setWindowTitle("e2helixboxer")
+        self.target=weakref.ref(target)
+        
+        self.create_ui()
+        self.busy = False
+    
+    def create_ui(self):
+        self.boxWidthLabel = QtGui.QLabel(self.tr("Box &Width"))
+        self.boxWidthSpinBox = QtGui.QSpinBox()
+        self.boxWidthSpinBox.setMaximum(1000)
+        self.boxWidthSpinBox.setValue(128)
+        self.boxWidthLabel.setBuddy(self.boxWidthSpinBox)
+        
+        self.imgQualityLabel = QtGui.QLabel(self.tr("Image &Quality"))
+        self.imgQualityComboBox = QtGui.QComboBox()
+        qualities = [str(i) for i in range(5)]
+        self.imgQualityComboBox.addItems(qualities)
+        self.imgQualityComboBox.setCurrentIndex(2)
+        self.imgQualityLabel.setBuddy(self.imgQualityComboBox)
+             
+        self.gen_output_but=QtGui.QPushButton(self.tr("&Write Output"))
+        self.done_but=QtGui.QPushButton(self.tr("&Done"))
+        
+        self.status_bar = QtGui.QStatusBar()
+        self.status_bar.showMessage("Ready",10000)
+        
+        widthLayout = QtGui.QHBoxLayout()
+        widthLayout.addWidget(self.boxWidthLabel)
+        widthLayout.addWidget(self.boxWidthSpinBox)
+        
+        qualityLayout = QtGui.QHBoxLayout()
+        qualityLayout.addWidget(self.imgQualityLabel)
+        qualityLayout.addWidget(self.imgQualityComboBox)
+        
+        self.vbl = QtGui.QVBoxLayout(self)
+        self.vbl.setMargin(0)
+        self.vbl.setSpacing(6)
+        self.vbl.setObjectName("vbl")
+        self.vbl.addLayout(widthLayout)
+        self.vbl.addLayout(qualityLayout)        
+        self.vbl.addWidget(self.gen_output_but)
+        self.vbl.addWidget(self.done_but)
+        self.vbl.addWidget(self.status_bar)
+
+class EMHelixBoxerModule(QtCore.QObject):
+	def __init__(self, app):
+		QtCore.QObject.__init__(self)
+		self.img2d = EMImage2DModule(test_image(), app)
+		self.img2d_events_handler = Im2DModEventsHandler(self.img2d)
+		self.inspector = EMHelixBoxerInspectorModule(self.img2d)
+		#TODO: Should there be a window for image thumbnails???
+		#TODO: Should there be a window for picked paricles???
+
+		from OpenGL import GL
+		print str(GL.glGetIntegerv(GL.GL_LINE_WIDTH_RANGE))
+		#The line width setting seems to have no effect for "rectpoint" shapes
+		rect1 = EMShape(["rectpoint", 1, 0, 0, 10, 10, 30, 30, 1])
+		rect2 = EMShape(["rectpoint", 0, 0, 1, 10, 35, 30, 55, 10])
+		self.img2d.add_shapes({"first": rect1, "second": rect2})
+		self.img2d.show()
+		self.inspector.show()
+
 def main():
 	app = EMStandAloneApplication()
-	module = EMImage2DModule(test_image(), app)
-	eventsHandler = Im2DModEventsHandler(module)
+	#EMHelixBoxerModule(app) #FIXME: mouse doesn't work!
+
+#Code below should be handled in EMHelixBoxerModule
+	img2dmodule = EMImage2DModule(test_image(), app)
+	eventsHandler = Im2DModEventsHandler(img2dmodule)
 
 	from OpenGL import GL
 	print str(GL.glGetIntegerv(GL.GL_LINE_WIDTH_RANGE))
 	#The line width setting seems to have no effect for "rectpoint" shapes
 	rect1 = EMShape(["rectpoint", 1, 0, 0, 10, 10, 30, 30, 1])
 	rect2 = EMShape(["rectpoint", 0, 0, 1, 10, 35, 30, 55, 10])
-	module.add_shapes({"first": rect1, "second": rect2})
+	img2dmodule.add_shapes({"first": rect1, "second": rect2})
 
-	module.show()
+	inspector = EMHelixBoxerInspectorModule(img2dmodule)
+
+	img2dmodule.show()
+	inspector.show()
+#Code above should be handled in EMHelixBoxerModule
+	
 	sys.exit(app.exec_())
 
 if __name__ == '__main__':
