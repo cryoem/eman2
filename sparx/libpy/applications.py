@@ -828,7 +828,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[isav+1]][1], chessboard2)))
 					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard2), Util.muln_img(qt[index[isav+1]][1], chessboard1)))
 					if number_of_ave%2 == 1:
-					        tsavg.append(qt[number_of_ave][1].copy())
+					        tsavg.append(Util.addn_img(Util.muln_img(qt[0][1], chessboard1), Util.muln_img(qt[1][1], chessboard2)))
 					
 					for isav in xrange(number_of_ave):
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
