@@ -228,16 +228,16 @@ namespace EMAN
 		 */
 		EMData *get_top_half() const;
 
-		/** Get the normalization and phase residual values
-		 * Used for normalizaton and error measurement when 2D slices are inserted into a 3D volume of Fourier pixels
-		 * Originally added for use by the FourierReconstructor object
-		 * @return the normalization const (pair.first) and the phase residual (pair.second)
-		 * @param slice -the slice to be inserted into the 3D volume
-		 * @param euler - the euler angle orientation of the slice
-		 * @exception ImageDimensionException If this image is not 3D.ImageFormatException
-		 * @exception ImageFormatException If this image is not complex
-		 * @exception ImageFormatException If the slice not complex
-		 */
+//		/** Get the normalization and phase residual values
+//		 * Used for normalizaton and error measurement when 2D slices are inserted into a 3D volume of Fourier pixels
+//		 * Originally added for use by the FourierReconstructor object
+//		 * @return the normalization const (pair.first) and the phase residual (pair.second)
+//		 * @param slice -the slice to be inserted into the 3D volume
+//		 * @param euler - the euler angle orientation of the slice
+//		 * @exception ImageDimensionException If this image is not 3D.ImageFormatException
+//		 * @exception ImageFormatException If this image is not complex
+//		 * @exception ImageFormatException If the slice not complex
+//		 */
 		//pair<float, float> get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler );
 
 
