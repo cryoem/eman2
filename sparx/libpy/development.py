@@ -1491,11 +1491,11 @@ def ali3d_d_new_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
-	for N_step in xrange(lstp):
+	N_step = max(0, N_step_restart)
+	while N_step < lstp:
 		terminate = 0
-		Iter = -1
- 		while(Iter < max_iter-1 and terminate == 0):
-			Iter += 1
+		Iter = 0
+ 		while Iter < max_iter and terminate == 0:
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
@@ -1583,17 +1583,36 @@ def ali3d_d_new_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs
 
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
-			# write out headers, under MPI writing has to be done sequentially
+			
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection', 'ID']
-	        	if myid == main_node:
-	        		if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+			
+			fout = fopen(os.path.join(outdir, "params%04d_%03d"%(total_iter, myid)), "w")
+			for im in xrange(nima):
+				phi, theta, psi, s2x, s2y = get_params_proj(data[im])
+				fout.write("%20.8f   %20.8f   %20.8f   %20.8f   %20.8f\n"%(phi, theta, psi, s2x, s2y))
+			fout.close()
+			
+			if myid == main_node:
+				fout = fopen(os.path.join(outdir, "stamp%04d"%(total_iter)), "w")
+				fout.write("N_step = %d\n"%(N_step))
+				fout.write("Iter = %d\n"%(Iter))
+				fout.write("terminate = %d\n"%(terminate))
+				fout.close()
+			Iter += 1
+		N_step += 1
+			
+				
+	# write out headers, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+	par_str = ['xform.projection', 'ID']
+       	if myid == main_node:
+       		if(file_type(stack) == "bdb"):
+       			from utilities import recv_attr_dict_bdb
+       			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+       		else:
+       			from utilities import recv_attr_dict
+       			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+       	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali3d_d_MPI")
 
 
