@@ -12894,6 +12894,26 @@ if __name__ == "__main__":
 
 '''
 
+# k_means open and prepare images from text file
+def k_means_open_txt(stack, maskname, N_start, N_stop, N):
+	from utilities import get_image, model_blank
+
+	im_M = [0] * N
+	data = open(stack, 'r').readlines()
+	nx   = len(data[0].split())
+	if maskname is not None: mask = get_image(maskname)
+	else: mask = None
+	for i in xrange(N_start, N_stop):
+		im   = model_blank(nx)
+		line = data[i]
+		line = line.split()
+		for j in xrange(nx):
+			val = float(line[j])
+			im.set_value_at_fast(j, 0, val)
+		if mask is not None: im_M[i] = Util.compress_image_mask(im, mask)
+		else: im_M[i] = im
+
+	return im_M, mask, None, None
 
 
 ## END OLD CODE K-MEANS STABLE ################################################################

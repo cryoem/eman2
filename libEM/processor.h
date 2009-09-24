@@ -6544,111 +6544,73 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/* class MPI CUDA kmeans processor
-	 * 2009-09-02 11:19:10 JB
+	 * 2009-02-13 17:34:45 JB first version 
+	 * 2009-09-02 11:19:10 JB for MPI version
 	 * python wrap for GPU cluster
 	 */
 	class MPICUDA_kmeans {
 	public:
 		MPICUDA_kmeans();
 		~MPICUDA_kmeans();
-		int test(int numdev);
-		int test2();
-		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
+		int setup(int extm, int extN, int extn, int extK, int extrnd, int extn_start);
 		void append_flat_image(EMData* im, int pos);
 		int init_mem(int numdev);
-		void init_IM2();
-		int init_ASG();
+		void compute_im2();
+		int random_ASG();
 		vector<int> get_ASG();
+		vector<int> get_asg();
+		void compute_NC();
 		vector<int> get_NC();
-		vector<int> get_NC_from_ASG();
 		void set_ASG(const vector <int>& ASG);
 		void set_NC(const vector <int>& NC);
-		void compute_ave();
-		void compute_ave2();
-		void compute_sum();
+		int get_ct_im_mv();
+		void set_T(float extT);
+		float get_T();
+		void compute_AVE();
 		void set_AVE(EMData* im, int pos);
 		vector<EMData*> get_AVE();
-		vector<float> get_info();
 		int one_iter();
 		int one_iter_SA();
+		vector<float> compute_ji();
+		vector<float> compute_criterion(const vector <float>& Ji);
 		int shutdown();
-		//
-		void compute_ave_frombank();
-		void compute_NC_frombank();
-		void append_flat_image_tobank(EMData* im, int pos);
-		int setup_bank(int ext_NG);
-		void set_ASG_tobank(const vector <int>& ASG);
 	private:
 		// params
 		int m;
 		int N;
+		int n;
 		int K;
-		int maxite;
 		int nb_part;
-		float F;
+		int n_start;
 		int rnd;
-		int* flag_stop_part;
-		int flag_stop_SA;
+		int size_im;
 		int size_IM;
 		int size_AVE;
-		int size_DIST;
+		int size_dist;
 		int BLOCK_SIZE;
 		int NB;
 		int ins_BLOCK;
 		int ite;
-		float T0;		
+		float T;
 		// debug
 		int ct_im_mv;
 		// host memory
 		float* h_IM;
+		float* h_im;
 		float* h_AVE;
-		float* h_DIST;
+		float* h_dist;
 		float* h_AVE2;
-		float* h_IM2;
+		float* h_im2;
 		unsigned short int* h_ASG;
+		unsigned short int* h_asg;
 		unsigned int* h_NC;
 		int* params;
-		float* G_IM;
-		unsigned short int* G_ASG;
-		int GN;
 		// device memory
-		float* d_IM;
+		float* d_im;
 		float* d_AVE;
-		float* d_DIST;
+		float* d_dist;
 	};
 
-	/* class CUDA kmeans processor
-	* 02/13/2009 JB
-	* python wrap for cuda_kmeans.cu
-	*/
-	class CUDA_kmeans {
-	public:
-		CUDA_kmeans();
-		~CUDA_kmeans();
-		int setup(int  extm, int extN, int extK, float extF, float extT0, int extmaxite, int extrnd);
-		void append_flat_image(EMData* im, int pos);
-		int kmeans();
-		vector<EMData*> get_averages();
-		vector<int> get_partition();
-		void set_K(int valK);
-		void set_rnd(int valrnd);
-		Dict get_info();
-	private:
-		// params
-		int m;
-		int N;
-		int K;
-		int maxite;
-		int nb_part;
-		float F;
-		float T0;
-		int rnd;
-		// host memory
-		float* h_IM;
-		float* h_INFO;
-		float* h_AVE;
-		unsigned short int* h_ASG;
-	};
 #endif //EMAN2_USING_CUDA
 
 #if 0

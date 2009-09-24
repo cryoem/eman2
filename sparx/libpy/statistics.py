@@ -1464,113 +1464,154 @@ def k_means_list_active(stack):
 
 	return LUT, N
 
-# k_means open and prepare images from text file
-def k_means_open_txt(stack, maskname, N_start, N_stop, N):
-	from utilities import get_image, model_blank
+# k-means, prepare to open images later
+def k_means_init_open_im(stack, maskname):
+	from utilities import get_image, get_im, model_blank, file_type
 
-	im_M = [0] * N
-	data = open(stack, 'r').readlines()
-	nx   = len(data[0].split())
-	if maskname is not None: mask = get_image(maskname)
-	else: mask = None
-	for i in xrange(N_start, N_stop):
-		im   = model_blank(nx)
-		line = data[i]
-		line = line.split()
-		for j in xrange(nx):
-			val = float(line[j])
-			im.set_value_at_fast(j, 0, val)
-		if mask is not None: im_M[i] = Util.compress_image_mask(im, mask)
-		else: im_M[i] = im
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
 
-	return im_M, mask, None, None
+	# open mask if defined
+	if maskname != None:
+		mask = get_image(maskname)
+		im   = Util.compress_image_mask(mask, mask)
+		m    = im.get_xsize()
+		del im
+	else:
+		mask = None
+		if TXT:
+			line = open(stack, 'r').readline()
+			m    = len(line.split())
+		else:
+			im = get_im(stack, 0)
+			m  = im.get_xsize() * im.get_ysize() * im.get_zsize()
+			del im
+
+	# get some params
+	if TXT: Ntot = len(open(stack, 'r').readlines())
+	else:   Ntot = EMUtil.get_image_count(stack)
+	
+	# check if the flag active is used, in the case where k-means will run for the stability
+	if TXT:
+		flagactive = False
+	else:
+		image = EMData()
+		image.read_image(stack, 0, True)
+		flagactive = True
+		try:	active = image.get_attr('active')
+		except: flagactive = False
+		del image
+	
+	# if flag active used, prepare the list of images
+	if flagactive:
+		lim  = []
+		ext  = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for n in xrange(Ntot):
+				if DB.get_attr(n, 'active'): lim.append(n)
+			DB.close()
+		else:
+			im = EMData.read_images(stack, range(Ntot), True)
+			for n in xrange(Ntot):
+				if im[n].get_attr('active'): lim.append(n)
+			del im
+		N = len(lim)
+	else:
+		lim = range(Ntot)
+		N = Ntot
+
+	return lim, mask, N, m, Ntot
 
 # k-means open and prepare images
-def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID = None, flagnorm = False):
-	from utilities     import get_params2D, get_image, get_params3D
+def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
+	from utilities     import get_params2D, get_image, get_params3D, file_type, model_blank
 	from fundamentals  import rot_shift2D, rot_shift3D
-	from sys import exit
+	from sys           import exit
 	if CTF:
 		from morphology		import ctf_2, ctf_1d
 		from filter		import filt_ctf, filt_table
 		from fundamentals 	import fftip
 		from utilities          import get_arb_params
 
-	im_M = [None] * N
-	im   = EMData()
-	if(listID == None): listID = range(N)
-	im.read_image(stack, listID[N_start])
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+	N   = len(lim)
+
+	# to manage coord fact in text file format
+	if TXT:
+		IM   = [None] * N  
+		c    = 0
+		data = open(stack, 'r').readlines()
+		nx   = len(data[0].split())
+		for id in lim:
+			line = data[id]
+			im   = model_blank(nx)
+			line = line.split()
+			for i in xrange(nx):
+				val = float(line[i])
+				im.set_value_at_fast(i, 0, val)
+			IM[c] = im.copy()
+			c += 1
+			
+		return IM, None, None
+
+	im = EMData()
+	im.read_image(stack, 0)
 	nx = im.get_xsize()
 	ny = im.get_ysize()
 	nz = im.get_zsize()
-	
 	if CTF:
 		ctf	    = [[] for i in xrange(N)]
 		ctf2        = [[] for i in xrange(N)]
 		ctf_params  = im.get_attr( "ctf" )
 		if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
-	if maskname != None:
-		if isinstance(maskname, basestring):
-			mask = get_image(maskname)
-	else:
-		mask = None
-
-	if listID is None: listim = range(N_start, N_stop)
-	else:              listim = listID[N_start:N_stop]
-
-	DATA = im.read_images(stack, listim)
-	# I deleted DATA, there is no need for the second buffer, PAP 08/11/09
-	#  Well, I had to reinstate it due to incurrect way you handle data in your MPI code.
-	ct   = 0
-	for i in xrange(N_start, N_stop):
-		image = DATA[ct].copy()
-
+	IM = im.read_images(stack, lim)
+	for i in xrange(N):
 		# 3D object
 		if nz > 1:
-			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
+			IM[i]  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+			if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
-			alpha, sx, sy, mirror, scale = get_params2D(image)
-			image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
+			alpha, sx, sy, mirror, scale = get_params2D(IM[i])
+			IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
 
 		# obtain ctf
 		if CTF:
-			ctf_params = image.get_attr( "ctf" )
-			ctf[i]  = ctf_1d(nx, ctf_params)
-			ctf2[i] = ctf_2(nx, ctf_params)
+			ctf_params = IM[i].get_attr( "ctf" )
+			ctf[i]     = ctf_1d(nx, ctf_params)
+			ctf2[i]    = ctf_2(nx, ctf_params)
 
 		if flagnorm:
 			# normalize
-			ave, std, mi, mx = Util.infomask(image, mask, True)
-			image -= ave
-			image /= std
+			ave, std, mi, mx = Util.infomask(IM[i], mask, True)
+			IM[i] -= ave
+			IM[i] /= std
 
 		# apply mask
 		if mask != None:
-			if CTF: Util.mul_img(image, mask)
-			else: image = Util.compress_image_mask(image, mask)
+			if CTF: Util.mul_img(IM[i], mask)
+			else:   IM[i] = Util.compress_image_mask(IM[i], mask)
 
 		# fft
-		if CTF: fftip(image)
+		if CTF: fftip(IM[i])
  
 		# mem the original size
-		if i == N_start:
-			image.set_attr('or_nx', nx)
-			image.set_attr('or_ny', ny)
-			image.set_attr('or_nz', nz)
+		if i == 0:
+			IM[i].set_attr('or_nx', nx)
+			IM[i].set_attr('or_ny', ny)
+			IM[i].set_attr('or_nz', nz)
 
-		# store image
-		im_M[i] = image.copy()
-		ct += 1
-
-	if CTF: return im_M, mask, ctf, ctf2
-	else:   return im_M, mask, None, None
+	if CTF: return IM, ctf, ctf2
+	else:   return IM, None, None
 
 # k-means write the head of the logfile
-def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu):
+def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m):
 	from utilities import print_msg
 
 	if F != 0: SA = True
@@ -1590,6 +1631,7 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	print_msg('Input stack                 : %s\n'     % stackname)
 	print_msg('Number of images            : %i\n'     % N)
 	print_msg('Maskfile                    : %s\n'     % maskname)
+	print_msg('Number of pixels under mask : %i\n'     % m)
 	print_msg('Number of clusters          : %s\n'     % Ks)
 	print_msg('Number of trials            : %i\n'     % trials)
 	print_msg('Maximum iteration           : %i\n'     % maxit)
@@ -1663,12 +1705,12 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 			Cls['var'][k].set_attr('Ji', Cls['Ji'][k])
 			Cls['var'][k].set_attr('Je', Je)
 
-			if part == -1:
-				Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
-				Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
-			else:
-				Cls['ave'][k].write_image(out_seedname + "/averages_%02i.hdf" % part, k)
-				Cls['var'][k].write_image(out_seedname + "/variances_%02i.hdf" % part, k)
+		if part == -1:
+			Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
+			Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
+		else:
+			Cls['ave'][k].write_image(out_seedname + "/averages_%02i.hdf" % part, k)
+			Cls['var'][k].write_image(out_seedname + "/variances_%02i.hdf" % part, k)
 
 # K-means compute criterion in order to validate the number of groups
 def k_means_criterion(Cls, crit_name=''):
@@ -1788,9 +1830,8 @@ def select_kmeans(dJe, T):
 
 	return s
 
-
 # K-means with classical method
-def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
+def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
 	from utilities 		import print_msg
@@ -2583,7 +2624,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 
 # K-means MPI with classical method
-def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, N_start, N_stop, F=0, T0=0):
+def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -2616,8 +2657,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		if isinstance(mask, basestring):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
-	N = len(im_M)
-
+	## TODO change data strucut to works with IM and not im_M format
+	im_M = [None]*N
+	im_M[N_start:N_stop] = IM
+	
 	# [id]   part of code different for each node
 	# [sync] synchronise each node
 	# [main] part of code just for the main node
@@ -2654,10 +2697,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	Cls['k']   =  K	     # value of number of clusters
 	Cls['N']   =  N
 	assign     = [0]*N
-	
+
 	if CTF:
 		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[N_start])
+		len_ctm	    = len(ctf2[0])
 	
 	# TRIALS
 	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
@@ -2726,7 +2769,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
 			
 			# [id] compute local S ctf2 and local S ave	
-			for im in xrange(N_start, N_stop):
+			for im in xrange(N):
 				# ctf2
 				for i in xrange(len_ctm):
 					Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
@@ -3080,7 +3123,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	else:                 return None, None
 
 # K-means MPI with SSE method
-def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
+def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N, ncpu):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -3113,7 +3156,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		if isinstance(mask, basestring):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
-	N = len(im_M)
+	## TODO change data struct to work directly with IM
+	im_M = [None] * N
+	im_M[N_start:N_stop] = IM
 	
 	# [id]   part of code different for each node
 	# [sync] synchronise each node
@@ -3688,6 +3733,175 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	if myid == main_node: return Cls, assign
 	else:                 return None, None
 
+# K-mean CUDA
+def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
+	from statistics import k_means_cuda_error, k_means_cuda_open_im
+	from utilities  import print_msg, running_time
+	from time       import time
+
+	# Init memory
+	Kmeans = MPICUDA_kmeans()
+	status = Kmeans.setup(m, N, N, K, rand_seed, 0)
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
+	Kmeans.compute_im2()
+	status = Kmeans.init_mem(0)
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+
+	# Init averages
+	Kmeans.random_ASG()
+	Kmeans.compute_AVE()
+
+	# K-means iteration
+	t_start = time()
+	if F != 0:
+		switch_SA = True
+		Kmeans.set_T(T0)
+	else:   switch_SA = False
+	ferror = 0
+	ite    = 0
+	while ite < maxit:
+		if switch_SA:
+			status = Kmeans.one_iter_SA()
+			T      = Kmeans.get_T()
+			ct     = Kmeans.get_ct_im_mv()
+			print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+			T *= F
+			if T < 0.00001: switch_SA = False
+			Kmeans.set_T(T)
+		else:   
+			status = Kmeans.one_iter()
+			ct     = Kmeans.get_ct_im_mv()
+			print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+			if status == 255: break
+		ite += 1
+		if status != 0 and status != 255:
+			ferror = 1
+			break
+
+		# update
+		Kmeans.compute_AVE()
+
+	if ferror:
+		k_means_cuda_error(status)
+		exit()
+
+	running_time(t_start)
+	print_msg('Number of iterations        : %i\n' % ite)	
+	Ji = Kmeans.compute_ji()
+	Je, C, H, DB = Kmeans.compute_criterion(Ji)
+	AVE  = Kmeans.get_AVE()
+	ASG  = Kmeans.get_ASG()
+	Kmeans.shutdown()
+	del Kmeans
+
+	return ASG, AVE, [Je, C, H, DB]
+
+# K-mean CUDA
+def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu):
+	from applications import MPI_start_end
+	from statistics   import k_means_cuda_error, k_means_cuda_open_im
+	from mpi          import mpi_bcast, mpi_reduce
+	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
+	from time         import time
+
+	# Init memory
+	Kmeans                = MPICUDA_kmeans()
+	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	lut                   = LUT[N_start:N_stop]
+	n                     = len(LUT)
+	status = Kmeans.setup(m, N, n, K, rand_seed, N_start) 
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
+	Kmeans.compute_im2()
+	NGPU_PER_NODES = 4
+	NB_NODES       = 4
+	id = range(NGPU_PER_NODES)
+	gpuid = []
+	for i in xrange(NB_NODES): gpuid.extend(id)
+	status = Kmeans.init_mem(gpuid[myid])
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+	# Init averages
+	if myid == main_node:
+		Kmeans.random_ASG()
+		ASG = Kmeans.get_ASG()
+	else:   ASG = None
+	mpi_barrier(MPI_COMM_WORLD)
+	ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
+	ASG = ASG.tolist()
+	Kmeans.set_ASG(ASG)
+	Kmeans.compute_NC()
+	Kmeans.compute_AVE()
+	# K-means iterations
+	if myid == main_node: t_start = time()
+	if F  != 0:
+		switch_SA = True
+		Kmeans.set_T(T0)
+	else:   switch_SA = False
+	ite    = 0
+	fsync  = 0
+	ferror = 0
+	while ite < maxit:
+		if swith_SA:
+			status = Kmeans.one_iter_SA()
+			T      = Kmeans.get_T()
+			ct     = Kmeans.get_ct_im_mv()
+			if myid == main_node:
+				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+			T *= F
+			if T < 0.00001: switch_SA = False
+		else:
+			status = Kmeans.one_iter()
+			ct     = Kmeans.get_ct_im_mv()
+			if myid == main_node:
+				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+
+		ite += 1
+		if status != 0 and status != 255: ferror = 1
+		if status == 0:                   fsync  = 1
+		else:                             fsync  = 0
+		flags = mpi_reduce([ferror, fsync], 2, MPI_INT, MPI_LOR, MPI_COMM_WORLD)
+		flags = mpi_bcast(flags, 2, MPI_INT, main_node, MPI_COMM_WORLD)
+		flags = flags.tolist()
+		ferror, fsync = flags
+		if ferror or not fsync: break
+
+		# update
+		asg = Kmeans.get_asg()
+		ASG = [0] * N
+		ASG[N_start:N_stop] = asg
+		ASG = mpi_reduce(ASG, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
+		ASG = ASG.tolist()
+		Kmeans.set_ASG(ASG)
+		Kmeans.compute_NC()
+		Kmeans.compute_AVE()
+
+	if ferror:
+		k_means_cuda_error(status)
+		exit()
+
+	if myid == main_node:
+		running_time(t_start)
+		print_msg('Number of iterations        : %i\n' % ite)
+	ji  = Kmeans.compute_ji()
+	Ji  = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	Ji  = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	Je, C, H, DB = Kmeans.compute_criterion(Ji)
+	AVE = Kmeans.get_AVE()
+	ASG = Kmeans.get_ASG()
+	Kmeans.shutdown()
+	del Kmeans
+	
+	return ASG, AVE, crit
 
 ## K-MEANS GROUPS ######################################################################
 
@@ -3695,7 +3909,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 def k_means_groups_gnuplot(file, src, C, DB, H):
 	out = open(file, 'w')
 	out.write('# Gnuplot script file for plotting result in kmeans groups\n')
-	out.write('# cmd: gnuplot> load \x22%s.p\x22\n' % src)
+	out.write('# $ gnuplot %s.p\n' % src)
 	out.write('reset\n')
 	out.write('set autoscale\n')
 	txt = 'plot'
@@ -3719,8 +3933,9 @@ def k_means_groups_gnuplot(file, src, C, DB, H):
 # to figure out the number of clusters
 def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG = False, flagnorm = False):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
-	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog, k_means_open_txt
-	from statistics  import k_means_classical, k_means_SSE, k_means_list_active, k_means_groups_gnuplot
+	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
+	from statistics  import k_means_cla, k_means_SSE, k_means_groups_gnuplot
+	from statistics  import k_means_init_open_im
 	import os, sys, time
 
 	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
@@ -3732,14 +3947,10 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	ext = file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
-	if TXT:
-		N = len(open(stack, 'r').readlines())
-		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
-	else:
-		listID, N = k_means_list_active(stack)
-		im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, listID, flagnorm)
-
-	k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
+	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
+	k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit,\
+				CTF, T0, F, rand_seed, 1, m)
 	
 	# init
 	KK       = range(K1, K2 + 1)	# Range of works
@@ -3759,8 +3970,8 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 		print_msg('| K=%d |====================================================================\n' % K)
 
 		try:
-			if opt_method   == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
-			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+			if opt_method   == 'cla': [Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 			else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 
 		except SystemExit:
@@ -3787,30 +3998,17 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
 	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
-	from statistics  import k_means_cuda_open_im, k_means_cuda_error, k_means_groups_gnuplot
+	from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	import time, os, sys
 
 	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
 	os.mkdir(out_file)
 	t_start = time.time()
-
-	# instance of CUDA kmeans obj
-	KmeansCUDA = CUDA_kmeans()
-
 	# init to open images
-	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
-		
+	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	# write logfile
 	print_begin_msg('k-means groups')
-	method = 'cla'
-	ncpu   = 1
-	k_means_cuda_headlog(stack, out_file, method, N, [K1, K2], maskname, maxit, T0, F, rand_seed, ncpu, m)
-	
-	# init k-means
-	KmeansCUDA.setup(m, N, K1, F, T0, maxit, rand_seed)
-	
-	# open images and load to C
-	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
+	k_means_cuda_headlog(stack, out_file, 'cla', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
 
 	# init
 	KK       = range(K1, K2 + 1)	# Range of works
@@ -3825,46 +4023,24 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 		
 	# Compute the criterion and format
 	for K in KK:
-		KmeansCUDA.set_K(K)
-		
 		print_msg('\n')
 		print_msg('| K=%d |====================================================================\n' % K)
 
-		ct_rnd   = 0
-		while 1:
-			status = KmeansCUDA.kmeans()
-			if   status == 0:
-				break
-			elif status == 4:
-				k_means_cuda_error(status)
-			else:
-				k_means_cuda_error(status)
-				sys.exit()
+		#try:
+		ASG, AVE, crit = k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed)
+		#except SystemExit:
+		#	ERROR('Empty cluster or device error', 'k_means_groups_CUDA', 1)
 
-			# if here, there are some classes empty
-			rand_seed += 100
-			ct_rnd    += 1
-			print_msg('Empty cluster, restart with random seed: %d\n' % rand_seed)
-			KmeansCUDA.set_rnd(rand_seed)
-			if ct_rnd >= 5:
-				print_msg('\n=== STOP number of groups to high. ===\n\n')
-				sys.exit()
-		
-		# get back informations
-		INFO = KmeansCUDA.get_info()
-		print_msg('Criterion SSE: %11.4e\n' % INFO['Je'])
-		print_msg('Number of iterations: %i\n' % INFO['noi'])
-		print_msg('Running time: %i s\n' % INFO['time'])
-
+		Je, Ci, Hi, DBi = crit
 		# result file
 		file_crit = open(out_file + '/' + out_file, 'a')
-		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, INFO['C'], INFO['DB'], INFO['H'], time.ctime())) 
+		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, Ci, DBi, Hi, time.ctime())) 
 		file_crit.close()
 
 		# mem for latter
-		C.append(INFO['C'])
-		DB.append(INFO['DB'])
-		H.append(INFO['H'])
+		C.append(Ci)
+		DB.append(DBi)
+		H.append(Hi)
 
 	k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
 		
@@ -3882,45 +4058,39 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	import sys, os, time
 
 	sys.argv  = mpi_init(len(sys.argv), sys.argv)
-	nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	mpi_barrier(MPI_COMM_WORLD)
 
 	ext = file_type(stack)
-	if ext == 'bdb':   BDB = True
-	else:              BDB = False
 	if ext == 'txt':   TXT = True
 	else:              TXT = False
+
+	flag = 0
+	if myid == main_node:
+		if os.path.exists(out_file):
+			flag = 1
+			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+
+	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	flag = int(flag[0])
+	if flag != 0: sys.exit()
+
+	mpi_barrier( MPI_COMM_WORLD )
 	
 	if myid == main_node:
-		if os.path.exists(out_file): os.system('rm -rf ' + out_file)
-		os.mkdir(out_file)
 		print_begin_msg('k-means groups')
 		t_start = time.time()
-		
-	if TXT:
-		N = len(open(stack, 'r').readlines())
-		N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
-		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
-	else:
-		if myid == main_node: listID, N = k_means_list_active(stack)
-		mpi_barrier(MPI_COMM_WORLD)
-		if myid != main_node: N = 0
-		N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		N = N.tolist()[0]
-		if myid != main_node: listID = 0
-		listID = mpi_bcast(listID, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		listID = listID.tolist()
-		N_start, N_stop = MPI_start_end(N, nb_cpu, myid)
+		os.mkdir(out_file)
 
-		if BDB:
-			for i in xrange(nb_cpu):
-				if myid == i: im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
-				mpi_barrier(MPI_COMM_WORLD)
-		else:
-			im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, listID, flagnorm)
+	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	lut                   = LUT[N_start:N_stop]
+	n                     = len(lut)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
 
+	if myid == main_node: k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
 	KK = range(K1, K2 + 1)	# Range of works
 	if myid == main_node:
@@ -3934,7 +4104,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
 		file_crit.close()
 
-		k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, nb_cpu)
+		k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
 	# get some criterion
 	for K in KK:
@@ -3944,10 +4114,14 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 
 		try:
 			if   opt_method == 'cla':
-				[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+				[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit,\
+						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
 			elif opt_method == 'SSE':
-				[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
-			else:   ERROR('kind of k-means unknown', 'k_means_groups', 1)
+				[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,\
+						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N, ncpu)
+			else:
+				ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
+				sys.exit()
 
 		except SystemExit:
 			ERROR('Empty cluster, number of groups to high', 'k_means_groups', 1)
@@ -3986,12 +4160,14 @@ def k_means_cuda_error(status):
 	# 3 - error system on device
 	# 4 - init assignment with empty class
 	# 5 - classification return empty class
+	# 6 - error to select the device
 	print_msg('============================================\n')
 	if   status == 1: print_msg('* ERROR: allocation host memory            *\n')
 	elif status == 2: print_msg('* ERROR: allocation device memory          *\n')
 	elif status == 3: print_msg('* ERROR: system device                     *\n')
 	elif status == 4: print_msg('* ERROR: random assignment (empty class)   *\n')
 	elif status == 5: print_msg('* ERROR: classification return empty class *\n')
+	elif status == 6: print_msg('* ERROR: fail to select the device         *\n')
 	print_msg('============================================\n')
 
 # k-means write the head of the logfile for CUDA
@@ -4013,10 +4189,12 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 		txtK = '%i' % K[0]
 
 	# memory estimation
-	#        IM          AVE         DIST
-	device = N * m * 4 + max(K) * m * 4 + N * max(K) * 4
-	#               ASG     NC      IM2     AVE2
-	host = device + N * 2 + max(K) * 4 + N * 4 + max(K) * 4
+	#        IM                         AVE              DIST
+	device = N * m * 4 / float(ncpu) + max(K) * m * 4 + N * max(K) * 4 / float(ncpu)
+	#        IM          AVE              DIST
+	host   = N * m * 4 + max(K) * m * 4 + N * max(K) * 4 / float(ncpu)      
+	#       ASG     NC           IM2                   AVE2
+	host += N * 2 + max(K) * 4 + N * 4 / float(ncpu) + max(K) * 4
 	ie_device  = int(log(device) // log(1e3))
 	ie_host    = int(log(host)   // log(1e3))
 	device    /= (1e3 ** ie_device)
@@ -4072,8 +4250,8 @@ def k_means_cuda_init_open_im(stack, maskname):
 			del im
 
 	# get some params
-	if TXT: N = len(open(stack, 'r').readlines())
-	else:   N = EMUtil.get_image_count(stack)
+	if TXT: Ntot = len(open(stack, 'r').readlines())
+	else:   Ntot = EMUtil.get_image_count(stack)
 	im = Util.compress_image_mask(mask, mask)
 	m  = im.get_xsize()
 	del im
@@ -4095,21 +4273,23 @@ def k_means_cuda_init_open_im(stack, maskname):
 		ext  = file_type(stack)
 		if ext == 'bdb':
 			DB = db_open_dict(stack)
-			for n in xrange(N):
+			for n in xrange(Ntot):
 				if DB.get_attr(n, 'active'): lim.append(n)
 			DB.close()
 		else:
-			im = EMData.read_images(stack, range(N), True)
-			for n in xrange(N):
+			im = EMData.read_images(stack, range(Ntot), True)
+			for n in xrange(Ntot):
 				if im[n].get_attr('active'): lim.append(n)
 			del im
 		N = len(lim)
-	else: lim = range(N)
+	else:
+		lim = range(Ntot)
+		N = Ntot
 
-	return lim, mask, N, m
+	return lim, mask, N, m, Ntot
 
 # k-means open, prepare, and load images for CUDA k-means
-def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
+def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 	from utilities     import get_params2D, get_params3D, get_im, file_type, model_blank
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
@@ -4161,6 +4341,12 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask):
 				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
 			except: pass
 
+		if flagnorm:
+			# normalize
+			ave, std, mi, mx = Util.infomask(image, mask, True)
+			image -= ave
+			image /= std
+
 		# apply mask 
 		image = Util.compress_image_mask(image, mask)
 
@@ -4186,11 +4372,16 @@ def k_means_cuda_info(INFO):
 	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
-def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1, TXT = False):
+def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT = False):
 	from utilities import print_msg
 	import os
-	
 	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
+
+	Je, C, H, DB = crit
+	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % Je)
+	print_msg('Criteria Coleman is         : %11.6e\n' % C)
+	print_msg('Criteria Harabasz is        : %11.6e\n' % H)
+	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % DB)
 
 	# prepare list of images id for each group
 	K   = max(PART) + 1
@@ -4212,10 +4403,10 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, part = -1, TXT = Fals
 
 		# reconstitute averages
 		AVE = Util.reconstitute_image_mask(FLATAVE[k], mask)
-
+		
 		# limitation of hdf format
 		if flagHDF or TXT:
-			outfile = open('grp_%d_kmeans' % (k + 1), 'w')
+			outfile = open(out_seedname + '/grp_%d_kmeans.txt' % (k + 1), 'w')
 			for id in GRP[k]: outfile.write('%i\n' % int(id))
 			outfile.close()
 
