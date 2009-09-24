@@ -158,49 +158,49 @@ namespace EMAN
 		*/
 		EMData& operator=(const EMData& that);
 
-		/**  Do the Fourier Harmonic Transform  PRB
-		 * Takes a real image, returns the FH
-		 * Sets the EMDATA_FH switch to indicate that it is an FH image
-		 * @exception ImageFormatException If the image is not a square real odd image.
-		 * @return the FH image.
-		 */
+//		/**  Do the Fourier Harmonic Transform  PRB
+//		 * Takes a real image, returns the FH
+//		 * Sets the EMDATA_FH switch to indicate that it is an FH image
+//		 * @exception ImageFormatException If the image is not a square real odd image.
+//		 * @return the FH image.
+//		 */
 // 		EMData* do_FH();
 
-		/**   Do the Inverse Fourier Harmonic Transform   PRB
-		 * Takes an FH image, returns a square  complex image with odd sides
-		 * @exception ImageFormatException If the image is not the FH of something
-		 * @return a square complex image with odd sides
-		 */
+//		/**   Do the Inverse Fourier Harmonic Transform   PRB
+//		 * Takes an FH image, returns a square  complex image with odd sides
+//		 * @exception ImageFormatException If the image is not the FH of something
+//		 * @return a square complex image with odd sides
+//		 */
 // 		EMData* do_FH2F();
 
 
 
-		/** Caclulates normalization and phase residual for a slice in
-		 * an already existing volume. phase residual is calculated
-		 * using only the inner 1/2 of the fourier sphere. Both the
-		 * slice image and this image must be in complex image format.
-		 *
-		 * @param slice An slice image to be normalized.
-		 * @param orient Orientation of the slice.
-		 * @exception ImageFormatException If the images are not complex.
-		 * @exception ImageDimensionException If the image is 3D.
-		 * @return A float number pair (result, phase-residual).
-		 */
+//		/** Caclulates normalization and phase residual for a slice in
+//		 * an already existing volume. phase residual is calculated
+//		 * using only the inner 1/2 of the fourier sphere. Both the
+//		 * slice image and this image must be in complex image format.
+//		 *
+//		 * @param slice An slice image to be normalized.
+//		 * @param orient Orientation of the slice.
+//		 * @exception ImageFormatException If the images are not complex.
+//		 * @exception ImageDimensionException If the image is 3D.
+//		 * @return A float number pair (result, phase-residual).
+//		 */
 //		FloatPoint normalize_slice(EMData * slice, const Transform3D & orient);
 
-		/** Caclulates normalization and phase residual for a slice in
-		 * an already existing volume. phase residual is calculated
-		 * using only the inner 1/2 of the fourier sphere. Both the
-		 * slice image and this image must be in complex image format.
-		 *
-		 * @param slice An slice image to be normalized.
-		 * @param alt Orientation euler angle alt (in EMAN convention).
-		 * @param az  Orientation euler angle az  (in EMAN convention).
-		 * @param phi Orientation euler angle phi (in EMAN convention).
-		 * @exception ImageFormatException If the images are not complex.
-		 * @exception ImageDimensionException If the image is 3D.
-		 * @return A float number pair (result, phase-residual).
-		 */
+//		/** Caclulates normalization and phase residual for a slice in
+//		 * an already existing volume. phase residual is calculated
+//		 * using only the inner 1/2 of the fourier sphere. Both the
+//		 * slice image and this image must be in complex image format.
+//		 *
+//		 * @param slice An slice image to be normalized.
+//		 * @param alt Orientation euler angle alt (in EMAN convention).
+//		 * @param az  Orientation euler angle az  (in EMAN convention).
+//		 * @param phi Orientation euler angle phi (in EMAN convention).
+//		 * @exception ImageFormatException If the images are not complex.
+//		 * @exception ImageDimensionException If the image is 3D.
+//		 * @return A float number pair (result, phase-residual).
+//		 */
 //		FloatPoint normalize_slice(EMData * slice, float az, float alt, float phi);
 
 
