@@ -742,7 +742,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			finfo = open(info_file, "w")
 			for nim in xrange(image_start, image_end):
 			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim-image_start])
-			        finfo.write("%20f %20f %20f %1d\n"%(alpha, sx, sy, mirror))
+			        finfo.write("%20f %20f %20f %10d %10.4f\n"%(alpha, sx, sy, mirror, 1.0))
 			        mirror_list[nim+color*nima] = mirror
 			finfo.close()
 		else:
