@@ -5274,7 +5274,40 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	};
 
-	/**Sets the structure factor based on a 1D x/y text file.
+	/**Sets the structure factor To match a second provided image/volume
+	 *@param to EMData object to match to. Make sure apix values are set properly
+	 */
+	class MatchSFProcessor:public FourierAnlProcessor
+	{
+	  public:
+
+		virtual string get_name() const
+		{
+			return "filter.matchto";
+		}
+
+		virtual string get_desc() const
+		{
+			return "Filters the image so its 1-D power spectrum matches a second image";
+		}
+
+		static Processor *NEW()
+		{
+			return new MatchSFProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
+			return d;
+		}
+	  protected:
+		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
+	};
+
+
+	/**Sets the structure factor based on a 1D s/intensity curve as an XYData object.
 	 *@param strucfac XYData object with the curve to be imposed as intensity as a function of s
 	 *@param apix A/pix value. Overrides and replaces apix_x/y/z in image
 	 */

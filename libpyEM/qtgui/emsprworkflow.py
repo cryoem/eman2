@@ -726,7 +726,7 @@ class EMProjectDataDict:
 		'''
 		project_db = db_open_dict(self.db_name)
 		acted = False
-		if not project_db.has_key(self.data_dict_name) or len(project_db[self.data_dict_name]) == 0:
+		if not project_db.has_key(self.data_dict_name) or project_db[self.data_dict_name]==None or len(project_db[self.data_dict_name]) == 0:
 			if project_db.has_key(self.recovery_dict_name):
 				dict = project_db[self.recovery_dict_name]
 				project_db[self.data_dict_name] = dict

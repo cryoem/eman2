@@ -67,6 +67,7 @@ class EMGenClassAverages:
 		'''
 		if self.__task_options == None:
 			d = {}
+			d["setsfref"]=options.setsfref
 			d["iter"] = options.iter
 			d["align"] = parsemodopt(options.align)
 			d["aligncmp"] = parsemodopt(options.aligncmp)
@@ -427,6 +428,7 @@ class EMClassAveTask(EMTask):
 		# ralign - the refine aligner, [string,dict]. May be None which turns it off
 		# raligncmp - the refinealigncmp - [string,dict]. Needs to specified if ralign is not None
 		# averager - the averager - a [string,dict]
+		# setsfref - A bool, if set will impose the 1-D reference structure factor on the average
 		# cmp - the final cmp - [string,dict]
 		# keep - keep argument, interpreted as a percentage or a number of sigmas depending on the keepsig argument
 		# keepsig - if True turns the keep into a sigma based threshold. May be None, False, or unspecified
@@ -536,11 +538,11 @@ class EMClassAveTask(EMTask):
 	   	if self.options.has_key("bootstrap") and self.options["bootstrap"] == True:
 	   		if verbose:
 	   			print "Bootstrapping the initial class average, #ptcls ", len(ptcl_indices)
-	   		average,alis = self.__get_bootstrapped_average(ali_images,norm,sigma)
+	   		average,alis = self.__get_bootstrapped_average(ali_images,norm,sigma,ref)
 	   	else:
 	   		if verbose:
 	   			print "Generating initial class average using input alignment parameters, #ptcls ", len(ptcl_indices)
-	   		average = self.__get_init_average_from_ali(images,norm,sigma)
+	   		average = self.__get_init_average_from_ali(images,norm,sigma,ref)
 	   		if ref_mask != None:
 	   			if verbose: print "ref masking" 
 	   			average.mult(ref_mask)
@@ -574,7 +576,7 @@ class EMClassAveTask(EMTask):
 	   		#print sims,threshold
 	   		
 	   		if sigma_image: sigma = sigma_image.copy()
-	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold,sigma)
+	   		average, inclusions = self.__get_average_with_culling(images,norm,all_alis[-1],sims,threshold,sigma,ref)
 	   		if ref_mask != None:
 	   			if verbose: print "ref masking"
 	   			average.mult(ref_mask)
@@ -616,7 +618,7 @@ class EMClassAveTask(EMTask):
 				ref_alis[ptcl_idx] =  ref_ali*ali 
 			all_alis.append(ref_alis)
 			if sigma_image: sigma = sigma_image.copy()
-			average = self.__get_average(images,norm,all_alis[-1],inclusions,sigma=sigma)
+			average = self.__get_average(images,norm,all_alis[-1],inclusions,sigma=sigma,ref=ref)
 			all_inclusions.append(inclusions) # just for completeness, yes redundant, but again for completeness
 			average.set_attr("xform.projection", ref.get_attr("xform.projection"))
 #			average.set_attr("projection_image",options.ref) # Have to look into this
@@ -807,7 +809,7 @@ class EMClassAveTask(EMTask):
 				
 		return alis
 	
-	def __get_bootstrapped_average(self,images,norm,sigma=None):
+	def __get_bootstrapped_average(self,images,norm,sigma=None,ref=None):
 		'''
 		Get the bootstrapped average
 		@param images a dict. Key is particle index, values are the images that will be aligned to the average. The calling function can hand in the usefilt images. 
@@ -853,12 +855,16 @@ class EMClassAveTask(EMTask):
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			
+			if self.options["setsfref"] and ref!=None :
+				average.process_inplace("filter.matchto",{"to":ref})
+				average.process_inplace("normalize.toimage",{"to":ref})
+				
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",images.keys())
 			#average.set_attr("exc_class_ptcl_idxs",[]) # SEGFAULT
 		return average,alis
 
-	def __get_init_average_from_ali(self,images,norm,sigma=None):
+	def __get_init_average_from_ali(self,images,norm,sigma=None,ref=None):
 		'''
 		Get the initial average using initial alignment parameters
 		You have to call this after calling self.init_memory
@@ -898,6 +904,11 @@ class EMClassAveTask(EMTask):
 #		average.process_inplace("xform.centeracf")
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
+
+		if self.options["setsfref"] and ref!=None :
+			average.process_inplace("filter.matchto",{"to":ref})
+			average.process_inplace("normalize.toimage",{"to":ref})
+
 		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 		average.set_attr("ptcl_repr",np)
 		average.set_attr("class_ptcl_idxs",images.keys())
@@ -905,7 +916,7 @@ class EMClassAveTask(EMTask):
 	
 		return average
 		
-	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh,sigma=None):
+	def __get_average_with_culling(self,images,norm,alis,sims,cullthresh,sigma=None,ref=None):
 		'''
 		get an average using the given alignment parameters, similarity scores, and cull threshold
 		cull threshold can be None, in which case no attention is payed to the sims argument
@@ -949,13 +960,17 @@ class EMClassAveTask(EMTask):
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+			if self.options["setsfref"] and ref!=None :
+				average.process_inplace("filter.matchto",{"to":ref})
+				average.process_inplace("normalize.toimage",{"to":ref})
+
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
 			if len(exc_record) > 0: average.set_attr("exc_class_ptcl_idxs",exc_record) # if prevents a seg fault
 		return average,inclusion
 	
-	def __get_average(self,images,norm,alis,inclusions,sigma=None):
+	def __get_average(self,images,norm,alis,inclusions,sigma=None,ref=None):
 		'''
 		get an average using the given alignment parameters and inclusion flags
 		inclusions may be None, in which case every particle is included
@@ -994,6 +1009,11 @@ class EMClassAveTask(EMTask):
 #				average.process_inplace("xform.centeracf")
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+			if self.options["setsfref"] and ref!=None :
+				print "setsfref"
+				average.process_inplace("filter.matchto",{"to":ref})
+				average.process_inplace("normalize.toimage",{"to":ref})
+			
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
@@ -1102,6 +1122,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="phase")
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
+	parser.add_option("--setsfref",action="store_true",help="This will impose the 1-D structure factor of the reference on the class-average (recommended when a reference is available)",default=False)
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)

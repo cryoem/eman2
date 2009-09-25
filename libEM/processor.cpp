@@ -211,6 +211,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&IndexMaskFileProcessor::NEW);
 	force_add(&CoordinateMaskFileProcessor::NEW);
 	force_add(&SetSFProcessor::NEW);
+	force_add(&MatchSFProcessor::NEW);
 
 	force_add(&SmartMaskProcessor::NEW);
 	force_add(&IterBinMaskProcessor::NEW);
@@ -5652,6 +5653,42 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 		delete msk;
 		msk = 0;
 	}
+}
+
+void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
+	// The radial mask comes in with the existing radial image profile
+	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
+	
+	EMData *to = params["to"];
+	XYData *sf = new XYData();
+	float apixto = to->get_attr("apix_x");
+	
+	
+	if (to->is_complex()) {
+		vector<float> rd=to->calc_radial_dist(to->get_ysize(),0,0.5,1);
+		for (size_t i=0; i<rd.size(); i++) {
+			sf->set_x(i,i/(apixto*2.0f*rd.size()));
+			sf->set_y(i,rd[i]);
+		}
+	}
+	else {
+		EMData *tmp=to->do_fft();
+		vector<float> rd=tmp->calc_radial_dist(to->get_ysize(),0,0.5,1);
+		for (size_t i=0; i<rd.size(); i++) {
+			sf->set_x(i,i/(apixto*2.0f*rd.size()));
+			sf->set_y(i,rd[i]);
+		}
+		delete tmp;
+	}
+	
+	float apix=image->get_attr("apix_x");
+	
+	int n = radial_mask.size();
+	for (int i=0; i<n; i++) {
+		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
+	}
+
+	delete sf;
 }
 
 void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {

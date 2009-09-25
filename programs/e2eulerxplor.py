@@ -41,7 +41,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform, db_check_dict, db_close_dict, get_files_and_directories,get_file_tag,gimme_image_dimensions3D,Region, Vec3f, parsesym, test_image,Symmetries,get_header
+from EMAN2 import *
 from emapplication import get_application
 from emimagemx import EMImageMXModule
 import os
@@ -51,7 +51,6 @@ from emsprworkflow import error
 from emanimationutil import OrientationListAnimation,Animator
 from emimagemx import EMLightWeightParticleCache
 from time import time
-
 
 def get_eulers_from(filename):
 	eulers = []
@@ -564,7 +563,23 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 		disp = []
 		if self.projection != None: disp.append(self.projection)
-		if self.average != None: disp.append(self.average)
+		if self.average != None and self.projection!=None: 
+			# ok, this really should be put into its own processor
+			#dataf = self.projection.do_fft()
+			#apix=self.projection["apix_x"]
+			#curve = dataf.calc_radial_dist(dataf["ny"], 0, 0.5,True)
+			#curve=[i/(dataf["nx"]*dataf["ny"])**2 for i in curve]
+			#xcurve=[i/(apix*2.0*dataf["ny"]) for i in range(len(curve))]
+			#xyd=XYData()
+			#xyd.set_xy_list(xcurve,curve)
+			#filt=self.average.process("filter.setstrucfac",{"apix":apix,"strucfac":xyd})
+			#filt.process_inplace("normalize.toimage",{"to":self.average})
+			filt=self.average.process("filter.matchto",{"to":self.projection})
+
+			disp.append(filt)
+			
+		if self.average!=None:
+			disp.append(self.average)
 
 		self.proj_class_viewer.set_data(disp)
 		
