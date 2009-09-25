@@ -12484,17 +12484,17 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability stream command line
-def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa'):
+def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im, file_type
-	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable, k_means_export
-	from statistics  import k_means_classical, k_means_SSE, k_means_SA_T0, k_means_criterion, k_means_locasg2glbasg
+	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_export, k_means_init_open_im
+	from statistics  import k_means_cla, k_means_SSE, k_means_criterion, k_means_locasg2glbasg, k_means_open_im
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H
 	import sys, logging, os, pickle
 
 	ext = file_type(stack)
-	TXT = False
 	if ext == 'txt': TXT = True
+	else:            TXT = False
 
 	# create a directory
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -12513,44 +12513,33 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 
 	logging.info('Init list random seed: %s' % rnd)
 
 	trials       = 1
-	maxit        = int(1e9)
-	T0           = float(-1) # auto
 	critname     = ''
 	logging.info('K = %03d %s' % (K, 40 * '-'))
 
 	# open unstable images
 	logging.info('... Open images')
-	im_M, mask, ctf, ctf2, LUT, N = k_means_open_unstable(stack, maskname, CTF)
-	if not TXT: Ntot = EMUtil.get_image_count(stack)
-	else:       Ntot = N
+	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT)
+
 	logging.info('... %d unstable images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
 		sys.exit()
-	
-	if F != 0:
-		try:
-			T0, ct_pert = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
-			logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
-		except SystemExit:
-			logging.info('[STOP] Not enough images')
-			sys.exit()
-	else: T0 = 0
 
 	# loop over partition
 	print_begin_msg('k-means')
 	for n in xrange(npart):
 		# info
 		logging.info('...... Start partition: %d' % (n + 1))
-		k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], 1)
+		k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], 1, m)
 		
 		# classification
 		flag_cluster = False
 		if   opt_method == 'cla':
-			try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
+			try:			[Cls, assign] = k_means_cla(IM, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
 			except SystemExit:	flag_cluster  = True
 		elif opt_method == 'SSE':
-			try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
+			try:			[Cls, assign] = k_means_SSE(IM, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, False)
 			except SystemExit:      flag_cluster  = True
 		if flag_cluster:
 			logging.info('[ERROR] Empty cluster')

@@ -1676,6 +1676,10 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 		if(Cls['n'][k] > 1): print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
 		else:               print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
+		lassign = []
+		for i in xrange(len(assign)):
+			if(assign[i] == k):  lassign.append(float(i))
+
 		# limitation of hdf file in the numbers of attributes
 		if Cls['n'][k] > 16000 or TXT:
 			if not TXT: print 'WARNING: limitation of number attributes in hdf file, the results will be exported in separate files \n'
@@ -1689,10 +1693,9 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 					outfile.write(str(i) +'\n')
 			outfile.close()
 			Cls['ave'][k].set_attr_dict({'Class_average':1.0, 'nobjects':float(Cls['n'][k])})
+			Cls['ave'][k].set_attr('members', lassign)
 		else:
-			lassign = []
-			for i in xrange(len(assign)):
-				if(assign[i] == k):  lassign.append(float(i))
+			
 			Cls['ave'][k].set_attr('Class_average', 1.0)
 			Cls['ave'][k].set_attr('nobjects', float(Cls['n'][k]))
 			Cls['ave'][k].set_attr('members', lassign)

@@ -45,10 +45,12 @@ def main():
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for K-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
 	parser.add_option("--F",              type="float",        default=0.0,       help="Cooling factor in simulated annealing, <1.0")
+	parser.add_option("--T0",             type="float",        default=0.0,       help="Simulated annealing first temperature")
 	parser.add_option("--th_nobj",        type="int",          default=1,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
 	parser.add_option("--opt_method",     type='string',       default="SSE",     help="K-means method: SSE (default), cla")
 	parser.add_option("--match",          type='string',       default='hh',      help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')
+	parser.add_option("--maxit",          type="int",          default=1e9,       help="Maximum number of iterations for k-means")
 	parser.add_option("--CTF",            action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
 	parser.add_option("--MPI",            action="store_true", default=False,     help="Use MPI version ")	
@@ -74,17 +76,17 @@ def main():
 		if options.CUDA:
 			from  applications  import  k_means_stab_CUDA_stream
 			global_def.BATCH = True
-			k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.match)
+			k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.match, options.maxit)
 			global_def.BATCH = False
 		elif options.MPI:
 			from  applications  import  k_means_stab_MPI_stream
 			global_def.BATCH = True
-			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match)
+			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match, options.maxit)
 			global_def.BATCH = False
 		else:
 			from  applications  import  k_means_stab_stream
 			global_def.BATCH = True
-			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match)
+			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match, options.maxit)
 			global_def.BATCH = False
 			
 			
