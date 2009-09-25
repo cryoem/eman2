@@ -452,7 +452,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from utilities    import send_EMData, recv_EMData
 	from statistics   import add_ave_varf_MPI, ave_series
-	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error, align2d
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
@@ -796,46 +796,39 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
 					# Collect all averages and align them
-					savg = [real_tavg.copy()]
-					real_tavg.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
 					for isav in xrange(1, number_of_ave):
-					        img = recv_EMData(isav, isav+200)
-					        savg.append(img.copy())
-					        Util.add_img(real_tavg, img)
-					        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
-
-					for isav in xrange(number_of_ave):
-					        savg[isav].set_attr_dict({'active':1})
-					        set_params2D(savg[isav], [0.0, 0.0, 0.0, 0, 1.0])
-					for inp in xrange(5):
-					        sx_sum, sy_sum = ali2d_single_iter(savg, numr, wr, [0.0, 0.0], real_tavg, cnx, cny, 3.0, 3.0, 0.5, mode, False)
-					        real_tavg = ave_series(savg)
-						
-					for isav in xrange(number_of_ave):
 						qt[isav+number_of_ave][0] = qt[isav][0]
 						qt[isav+number_of_ave][1] = qt[isav][1]
-	 				        alpha, sx, sy, mirror, scale = get_params2D(savg[isav])
-					        img = rot_shift2D(savg[isav], alpha, sx, sy, mirror)
+					        if isav == 0:
+							img = real_tavg.copy()
+						        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
+						else:
+							img = recv_EMData(isav, isav+200)
+						        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
+							alpha, sx, sy, mirror, peak = align2d(img, real_tavg, 3.0, 3.0, 0.125, last_ring = last_ring)
+							img = rot_shift2D(img, alpha, sx, sy, mirror)
 					        img.write_image(os.path.join(outdir, "avg_after_ali%02d.hdf"%(ipt)), isav)
 					        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
 						qt[isav][1] = img
+
 					qt.sort(reverse = True)
 
-					tsavg = []
 					index = range(number_of_ave)
 					shuffle(index)
 					for isav in xrange(0, number_of_ave-1, 2):
-					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[isav+1]][1], chessboard2)))
-					        tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard2), Util.muln_img(qt[index[isav+1]][1], chessboard1)))
+					        img1 = Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[isav+1]][1], chessboard2))
+					        img2 = Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard2), Util.muln_img(qt[index[isav+1]][1], chessboard1))
+					        img1.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+					        img2.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav+1)
+						if isav == 0:
+							tavg = img1.copy()
+						else:
+							send_EMData(img1, isav, isav+300)
+						send_EMData(img2, isav+1, isan+1+300)
 					if number_of_ave%2 == 1:
-					        tsavg.append(Util.addn_img(Util.muln_img(qt[0][1], chessboard1), Util.muln_img(qt[1][1], chessboard2)))
-					
-					for isav in xrange(number_of_ave):
-					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
-					for isav in xrange(1, number_of_ave):
-					        send_EMData(tsavg[isav], isav, isav+300)
-					tavg = tsavg[0].copy()
-					del tsavg
+					        img = Util.addn_img(Util.muln_img(qt[index[0]][1], chessboard1), Util.muln_img(qt[index[nunber_of_ave-1]][1], chessboard2))
+					        img.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), number_of_ave-1)
+					        send_EMData(img, number_of_ave-1, number_of_ave-1+300)
 				else:
 					real_tavg.write_image(os.path.join(outdir, "avg%02d.hdf"%(ipt)), 0)
 					tavg = real_tavg.copy()
