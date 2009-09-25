@@ -3896,8 +3896,9 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		
 		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("classkeep",dfl=0.8),choices=[])
 		pkeepsig = ParamDef(name="classkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("classkeepsig",dfl=True),choices=[])
+		prefsf = ParamDef(name="classrefsf",vartype="boolean",desc_short="Set proj SF on avg",desc_long="If checked each class average will be filtered to match the 1-D structure factor of the reference projection",property=None,defaultunits=db.get("classrefsf",dfl=True),choices=[])
 		
-		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the class averages",property=None,defaultunits=db.get("classnormproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
+		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the particles before averaging",property=None,defaultunits=db.get("classnormproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
 		#db_close_dict(self.form_db_name)
 		
@@ -3907,7 +3908,8 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		else: # this happens in the eotest
 			# I made the next row longer because it seemed like there was room
 			params.append([piter,pkeep,pkeepsig])
-		params.append([paverager,pnormproc])
+		params.append([pnormproc])
+		params.append([paverager,prefsf])
 		params.extend(self.get_cls_simmx_params(parameter_prefix="class"))
 
 		return ["Class averaging",params]
@@ -3992,6 +3994,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		string_args.extend(["classiter","classkeep","classnormproc","classaverager"])
 		if include_sep: string_args.append("sep")
 		bool_args.append("classkeepsig")
+		bool_args.append("classrefsf")
 	
 	def check_classaverage_page(self,params,options):
 		error_message = []

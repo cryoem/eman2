@@ -849,15 +849,15 @@ class EMClassAveTask(EMTask):
 	
 		if np != 0:
 			average = averager.finish()
-			if norm != None: average.process_inplace(norm[0],norm[1])
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			
 			if self.options["setsfref"] and ref!=None :
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+			else: average.process_inplace("normalize.edgemean")
 				
 			average.set_attr("ptcl_repr",np)
 			average.set_attr("class_ptcl_idxs",images.keys())
@@ -900,7 +900,7 @@ class EMClassAveTask(EMTask):
 		average = averager.finish()
 		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 		average.mult(1.0/weightsum) # Do the correct division
-		if norm != None: average.process_inplace(norm[0],norm[1])
+		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 #		average.process_inplace("xform.centeracf")
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
@@ -908,8 +908,10 @@ class EMClassAveTask(EMTask):
 		if self.options["setsfref"] and ref!=None :
 			average.process_inplace("filter.matchto",{"to":ref})
 			average.process_inplace("normalize.toimage",{"to":ref})
+		else : average.process_inplace("normalize.edgemean")
 
-		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+#		if norm != None: average.process_inplace(norm[0],norm[1])
+
 		average.set_attr("ptcl_repr",np)
 		average.set_attr("class_ptcl_idxs",images.keys())
 		#average.set_attr("exc_class_ptcl_idxs",[]) # SEG FAULT
@@ -954,7 +956,6 @@ class EMClassAveTask(EMTask):
 			average = None
 		else:
 			average = averager.finish()
-			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass", {"int_shift_only":1})
 #			average.process_inplace("xform.centeracf")
@@ -963,6 +964,8 @@ class EMClassAveTask(EMTask):
 			if self.options["setsfref"] and ref!=None :
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+			else: average.process_inplace("normalize.edgemean")
+			#if norm != None: average.process_inplace(norm[0],norm[1])
 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
@@ -1002,7 +1005,6 @@ class EMClassAveTask(EMTask):
 			average = None
 		else:
 			average = averager.finish()
-			if norm != None: average.process_inplace(norm[0],norm[1])
 			#should this be centeracf?
 			#average.process_inplace("xform.centerofmass")
 #			if center:
@@ -1010,9 +1012,11 @@ class EMClassAveTask(EMTask):
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			if self.options["setsfref"] and ref!=None :
-				print "setsfref"
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+			else : average.process_inplace("normalize.edgemean")
+			
+			if norm != None: average.process_inplace(norm[0],norm[1])
 			
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
