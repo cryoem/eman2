@@ -569,7 +569,7 @@ def ref_ali3dm_new( refdata ):
 	ali50S     = refdata[6]
 
 	if fscc is None:
-		flmin = 0.4
+		flmin = 0.38
 		aamin = 0.1
 		idmin = 0
 	else:
@@ -600,6 +600,7 @@ def ref_ali3dm_new( refdata ):
 	if ali50S:
 		vol = ali_nvol(vol, get_im( "mask-50S.spi" ))
 	for i in xrange(numref):
+		if(not (varf is None) ):   vol[i] = vol[i].filter_by_image( varf )
 		filt_tanl( vol[i], flmin, aamin ).write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):

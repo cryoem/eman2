@@ -1205,7 +1205,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	from morphology import threshold_to_minval
 	return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 
-def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
+def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections
 

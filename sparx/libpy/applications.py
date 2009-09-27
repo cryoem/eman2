@@ -6151,6 +6151,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			if( active[im] ) : list_of_particles.append(im)
 		del active
 		nima = len( list_of_particles )
+		start_time = time()
 	else:
 		nima = 0
 
@@ -6182,15 +6183,17 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		data[im].set_attr('ID', list_of_particles[im])
 
 	if fourvar:
+		#  I am not sure why it is here!  PAP 09/26/09
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		print 'computing Fourier variance'
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=None)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:
 			varf = 1.0/varf
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
+			print_msg("Time to calculate 3D Fourier variance = %d\n"%(time()-start_time))
+			start_time = time()
 	else:  
 		varf = None
 
