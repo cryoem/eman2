@@ -392,6 +392,165 @@ namespace EMAN {
 				}
 			}
 		}
+		
+		
+		// ix < ixmin, iy < iymin
+		for (int ix = 0; ix < ixmin; ix++) {
+			for (int iy = 0; iy < iymin; iy++) {
+				for (int iz = izmin; iz <= izmax; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+		
+		// ix < ixmin, iy > iymax
+		for (int ix = 0; ix < ixmin; ix++) {
+			for (int iy = iymax+1; iy < nyf; iy++) {
+				for (int iz = izmin; iz <= izmax; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+        // ix > ixmax, iy < iymin
+		for (int ix = ixmax+1; ix < nxf; ix++) {
+			for (int iy = 0; iy < iymin; iy++) {
+				for (int iz = izmin; iz <= izmax; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+		
+		// ix > ixmax, iy > iymax
+		for (int ix = ixmax+1; ix < nxf; ix++) {
+			for (int iy = iymax+1; iy < nyf; iy++) {
+				for (int iz = izmin; iz <= izmax; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+
+		
+        // ix < ixmin, iz < izmin
+		for (int ix = 0; ix < ixmin; ix++) {
+			for (int iy = iymin; iy <= iymax; iy++) {
+				for (int iz = 0; iz < izmin; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+		
+		 // ix < ixmin, iz > izmax
+		for (int ix = 0; ix < ixmin; ix++) {
+			for (int iy = iymin; iy <= iymax; iy++) {
+				for (int iz = izmax+1; iz < nzf; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+
+         // ix > ixmin, iz < izmin
+		for (int ix = ixmax+1; ix < nxf; ix++) {
+			for (int iy = iymin; iy <= iymax; iy++) {
+				for (int iz = 0; iz < izmin; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+		
+		 // ix > ixmin, iz > izmax
+		for (int ix = ixmax+1; ix < nxf; ix++) {
+			for (int iy = iymin; iy <= iymax; iy++) {
+				for (int iz = izmax+1; iz < nzf; iz++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+		
+
+       // iy < iymin, iz < izmin
+	   
+	   for (int iz = 0; iz < izmin; iz++) {
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				for (int iy = 0; iy < iymin; iy++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+
+       // iy < iymin, iz > izmax
+	   
+	   for (int iz = izmax+1; iz < nzf; iz++) {
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				for (int iy = 0; iy < iymin; iy++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+		
+		
+		// iy > iymax, iz < izmin
+	   
+	   for (int iz = 0; iz < izmin; iz++) {
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				for (int iy = iymax+1; iy < nyf; iy++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+
+       // iy > iymax, iz > izmax
+	   
+	   for (int iz = izmax+1; iz < nzf; iz++) {
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				for (int iy = iymax+1; iy < nyf; iy++) {
+					(*result)(ix,iy,iz) =
+						mult_circ(*K, *f, kzmin, kzmax, kymin, kymax, 
+								 kxmin, kxmax,
+								 nzf, nyf, nxf, iz, iy, ix);
+				}
+			}
+		}
+
+		
 		K->set_array_offsets(K_saved_offsets);
 		result->update();
 		return result;
