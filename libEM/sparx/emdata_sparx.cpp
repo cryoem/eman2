@@ -1811,6 +1811,46 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 	}
 }
 
+EMData* EMData::rot_scale_trans2D_background(float angDeg, float delx, float dely, float scale) { // quadratic, no background, 2D
+    float ang=angDeg*M_PI/180.0f;
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (nz<2) { 
+		vector<int> saved_offsets = get_array_offsets();
+		set_array_offsets(0,0,0);
+		if (0.0f == scale) scale = 1.0f; // silently fix common user error
+		EMData* ret = copy_head();
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		// center of image
+		int xc = nx/2;
+		int yc = ny/2;
+		// shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		// trig
+		float cang = cos(ang);
+		float sang = sin(ang);
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+				float ycang = y*cang/scale + yc;
+				float ysang = -y*sang/scale + xc;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+					float xold = x*cang/scale + ysang ;
+					float yold = x*sang/scale + ycang ;
+					//  in quadri_background, wrap around is not done circulantly; if (xold,yold) is not in the image, then it's replaced by (ix,iy)
+					(*ret)(ix,iy) = Util::quadri_background(xold+1.0f, yold+1.0f, nx, ny, get_data(),ix+1,iy+1);
+					   //have to add one as quadri uses Fortran counting
+				}
+			}
+		set_array_offsets(saved_offsets);
+		return ret;
+	} else {
+		throw ImageDimensionException("Volume not currently supported");
+	}
+}
+
 #define in(i,j,k)          in[i+(j+(k*ny))*nx]
 EMData*
 EMData::rot_scale_trans(const Transform &RA) {
@@ -2079,11 +2119,167 @@ EMData::rot_scale_trans(const Transform &RA) {
 }
 #undef  in
 
+// new function added for background option
+#define in(i,j,k)          in[i+(j+(k*ny))*nx]
+EMData*
+EMData::rot_scale_trans_background(const Transform &RA) {
+	EMData* ret = copy_head();
+	float *in = this->get_data();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	Vec3f translations = RA.get_trans();
+	Transform RAinv = RA.inverse();
+		
+	if (1 >= ny)  throw ImageDimensionException("Can't rotate 1D image");
+	if (nz < 2) { 
+	float  p1, p2, p3, p4;
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	int xc = nx/2;
+	int yc = ny/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+		for (int iy = 0; iy < ny; iy++) {
+			float y = float(iy) - shiftyc;
+			float ysang = y*RAinv[0][1]+xc;			
+			float ycang = y*RAinv[1][1]+yc;		
+			for (int ix = 0; ix < nx; ix++) {
+				float x = float(ix) - shiftxc;
+				float xold = x*RAinv[0][0] + ysang;
+				float yold = x*RAinv[1][0] + ycang;
+ 
+				// if (xold,yold) is outside the image, then let xold = ix and yold = iy
 
+                if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny)) ){
+				    xold = ix;
+					yold = iy;
+				}	
 
+				int xfloor = int(xold);
+				int yfloor = int(yold);
+				float t = xold-xfloor;
+				float u = yold-yfloor;
+				if(xfloor == nx -1 && yfloor == ny -1) {
+				
+				    p1 =in[xfloor   + yfloor*ny];
+					p2 =in[ yfloor*ny];
+					p3 =in[0];
+					p4 =in[xfloor];
+				} else if(xfloor == nx - 1) {
+				
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[           yfloor*ny];
+					p3 =in[          (yfloor+1)*ny];
+					p4 =in[xfloor   + (yfloor+1)*ny];
+				} else if(yfloor == ny - 1) {
+				
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[xfloor+1 + yfloor*ny];
+					p3 =in[xfloor+1 ];
+					p4 =in[xfloor   ];
+				} else {
+				
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[xfloor+1 + yfloor*ny];
+					p3 =in[xfloor+1 + (yfloor+1)*ny];
+					p4 =in[xfloor   + (yfloor+1)*ny];
+				}
+				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+			} //ends x loop
+		} // ends y loop
+		set_array_offsets(saved_offsets);
+		return ret;
+	} else {
+//		 This begins the 3D version trilinear interpolation.
 
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	float delz = translations.at(2);
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	int xc = nx/2;
+	int yc = ny/2;
+	int zc = nz/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	float shiftzc = zc + delz;
+		
+		for (int iz = 0; iz < nz; iz++) {
+			float z = float(iz) - shiftzc;
+			float xoldz = z*RAinv[0][2]+xc;
+			float yoldz = z*RAinv[1][2]+yc;
+			float zoldz = z*RAinv[2][2]+zc;
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+				float xoldzy = xoldz + y*RAinv[0][1] ;
+				float yoldzy = yoldz + y*RAinv[1][1] ;
+				float zoldzy = zoldz + y*RAinv[2][1] ;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+					float xold = xoldzy + x*RAinv[0][0] ;
+					float yold = yoldzy + x*RAinv[1][0] ;
+					float zold = zoldzy + x*RAinv[2][0] ;
+					
+					// if (xold,yold,zold) is outside the image, then let xold = ix, yold = iy and zold=iz
 
+                    if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
+				         xold = ix;
+					     yold = iy;
+						 zold = iz;
+					}	
+					
+					int IOX = int(xold);
+					int IOY = int(yold);
+					int IOZ = int(zold);
+		
+					#ifdef _WIN32
+					int IOXp1 = _MIN( nx-1 ,IOX+1);
+					#else
+					int IOXp1 = std::min( nx-1 ,IOX+1);
+					#endif  //_WIN32
+		
+					#ifdef _WIN32
+					int IOYp1 = _MIN( ny-1 ,IOY+1);
+					#else
+					int IOYp1 = std::min( ny-1 ,IOY+1);
+					#endif  //_WIN32
+		
+					#ifdef _WIN32
+					int IOZp1 = _MIN( nz-1 ,IOZ+1);
+					#else
+					int IOZp1 = std::min( nz-1 ,IOZ+1);
+					#endif  //_WIN32
 
+					float dx = xold-IOX;
+					float dy = yold-IOY;
+					float dz = zold-IOZ;
+													
+					float a1 = in(IOX,IOY,IOZ);
+					float a2 = in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZ);
+					float a3 = in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZ);
+					float a4 = in(IOX,IOY,IOZp1) - in(IOX,IOY,IOZ);
+					float a5 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOYp1,IOZ) + in(IOXp1,IOYp1,IOZ);
+					float a6 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZp1) + in(IOXp1,IOY,IOZp1);
+					float a7 = in(IOX,IOY,IOZ) - in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZp1) + in(IOX,IOYp1,IOZp1);
+					float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1) 
+							- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
+							- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
+					(*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);	
+				} //ends x loop
+			} // ends y loop
+		} // ends z loop
+
+		set_array_offsets(saved_offsets);
+		return ret;
+
+	}
+}
+#undef  in
 
 
 /*
@@ -2504,6 +2700,76 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	return ret;
 }
 
+EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
+
+	int nxn, nyn, nzn;
+	
+	if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = 0.5f*scale_input;
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	nxn = nx/2; nyn = ny/2; nzn = nz/2;
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
+	//ret->to_zero();  //we will leave margins zeroed.
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	
+	float *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
+	
+	float* data = this->get_data();
+
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	for (int iy = 0; iy < nyn; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nxn; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float yold = x*sang/scale + ycang-iys;
+			
+			(*ret)(ix,iy) = Util::get_pixel_conv_new_background(nx, ny, 1, xold, yold, 1, data, kb, ix,iy);
+		}
+	}
+	if (t) free(t);
+	set_array_offsets(saved_offsets);
+	return ret;
+}
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
