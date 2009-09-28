@@ -478,7 +478,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	return image1
 
-def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, interpolation_method = None):
+def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, interpolation_method = None, mode = "background"):
 	"""
 		rotatet/shift image using
 		1. linear    interpolation
@@ -489,22 +489,38 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 	if(interpolation_method):  use_method = interpolation_method
 	else:  use_method = interpolation_method_2D
 
-	if(use_method == "linear"):
+	if(use_method == "linear" and mode == "cyclic"):
 		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
 		img = img.rot_scale_trans(T)
 		if  mirror: img.process_inplace("mirror", {"axis":'x'})
 		return img
-	elif(use_method == "quadratic"):
+	elif(use_method == "linear" and mode == "background"):
+		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
+		img = img.rot_scale_trans_background(T)
+		if  mirror: img.process_inplace("mirror", {"axis":'x'})
+		return img
+	elif(use_method == "quadratic" and mode == "cyclic"):
 		img = img.rot_scale_trans2D(angle, sx, sy, scale)
 		if  mirror: img.process_inplace("mirror", {"axis":'x'})
 		return img
-	elif(use_method == "gridding"): # previous rtshg
+	elif(use_method == "quadratic" and mode == "background"):
+		img = img.rot_scale_trans2D_background(angle, sx, sy, scale)
+		if  mirror: img.process_inplace("mirror", {"axis":'x'})
+		return img
+	elif(use_method == "gridding" and mode == "cyclic"): # previous rtshg
 		from math import pi
 		o, kb = prepi(img)
 		# gridding rotation
 		o = o.rot_scale_conv_new(angle*pi/180.0, sx, sy, kb, scale)
 		if  mirror: o.process_inplace("mirror", {"axis":'x'})
 		return o
+	elif(use_method == "gridding" and mode == "background"): # previous rtshg
+		from math import pi
+		o, kb = prepi(img)
+		# gridding rotation
+		o = o.rot_scale_conv_new_background(angle*pi/180.0, sx, sy, kb, scale)
+		if  mirror: o.process_inplace("mirror", {"axis":'x'})
+		return o	
 	elif(use_method == "ftgridding"): # previous rtshg
 		from fundamentals import gridrot_shift2D
 		img = gridrot_shift2D(img, angle, sx, sy, scale)
@@ -512,13 +528,14 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		return img
 	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
 
-def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0):
+def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0, mode="background"):
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
 	T  = T1*T2
-	return image.rot_scale_trans(T)
-
+	if (mode == "cyclic"): return image.rot_scale_trans(T)
+	else: return image.rot_scale_trans_background(T)
+	
 def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
 	from math import pi
 	o,kb = prepi(image)
