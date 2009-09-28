@@ -105,7 +105,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	"""
         from math         import sin, cos, pi
 	from fundamentals import fft
-	from alignment    import ringwe, normalize_rings, Applyws
+	from alignment    import ringwe, Applyws
 	from filter       import filt_ctf
 	mode = "F"
 	wr_four  = ringwe(numr, "F")
@@ -117,7 +117,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 
         for i in xrange( len(prjref) ):
 		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		normalize_rings(cimage, numr)
+		Util.Normalize_ring(cimage, numr)
 
 		Util.Frngs(cimage, numr)
 		Applyws(cimage, numr, wr_four)
