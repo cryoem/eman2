@@ -380,32 +380,6 @@ def ringwe(numr, mode="F"):
 	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
-def normalize_rings(circ, numr):
-	"""
-	  Normalize rings (in real space) obtained from resampling to polar coordinates
-	"""
-	from math import sqrt,pi
-	av=0.0
-	sq=0.0
-	nn=0
-	nring = len(numr)/3
-	maxrin = numr[len(numr)-1]
-	for i in xrange(nring):
-		numr3i = numr[2+i*3]
-		numr2i = numr[1+i*3]-1
-		w = numr[3*i]*2*pi/float(numr[3*i+2])
-		for j in xrange(numr3i):
-			jc = j+numr2i
-			av += circ[jc] * w
-			sq += circ[jc] * circ[jc]* w
-			nn += w
-        avg = av/nn
-        sgm = sqrt( (sq-av*av/nn)/nn )
-
-        circ -= avg
-        circ /= sgm
-
-
 def ringw_real(numr, mode="F"):
 	"""Calculate ring weights for rotational alignment
 	   Roughly speaking, this weight is inversely proportional to the radius of the ring.
@@ -972,7 +946,6 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False):
         from math         import sin, cos, pi
 	from applications import MPI_start_end
 	from utilities    import even_angles
-	from alignment    import normalize_rings
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
@@ -1005,7 +978,7 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False):
         for i in xrange(ref_start, ref_end):
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-		normalize_rings(cimage, numr)
+		Util.Normalize_ring(cimage, numr)
 
 		Util.Frngs(cimage, numr)
 		Applyws(cimage, numr, wr_four)
