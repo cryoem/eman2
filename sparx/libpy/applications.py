@@ -796,7 +796,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
 					# Collect all averages and align them
-					for isav in xrange(1, number_of_ave):
+					for isav in xrange(number_of_ave):
 						qt[isav+number_of_ave][0] = qt[isav][0]
 						qt[isav+number_of_ave][1] = qt[isav][1]
 					        if isav == 0:
@@ -824,7 +824,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 							tavg = img1.copy()
 						else:
 							send_EMData(img1, isav, isav+300)
-						send_EMData(img2, isav+1, isan+1+300)
+						send_EMData(img2, isav+1, isav+1+300)
 					if number_of_ave%2 == 1:
 					        img = Util.addn_img(Util.muln_img(qt[index[0]][1], chessboard1), Util.muln_img(qt[index[nunber_of_ave-1]][1], chessboard2))
 					        img.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), number_of_ave-1)
