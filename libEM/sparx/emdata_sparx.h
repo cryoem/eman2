@@ -278,7 +278,24 @@ EMData* mult_radial(EMData* radial);
 		 */
 		EMData* rot_scale_trans2D(float ang, float delx = 0.0f, float dely = 0.0f, float scale = 1.0f);
 		
-
+		/** Rotate-Shift-Scale image 
+		 *
+		 *  In contrast to rot_scale_trans2D, wrap aroud is not done circulantly so as to
+		 *  prevent artifacts from occurring.
+		 *
+		 *  If the image is a volume, then all slices are
+		 *  rotated/translated/scaled.
+		 *  
+		 *  @param[in] ang Rotation angle in degrees.
+		 *  @param[in] delx Amount to shift rotation origin along x
+		 *  @param[in] dely Amount to shift rotation origin along y
+		 *  @param[in] scale Scaling factor (default=1.0)
+		 *  @exception ImageDimensionException can not rotate 1 D image
+		 *  @exception ImageDimensionException can not rotate 3 D image
+		 *  @return New rotated/shifted/scaled image
+		 */
+        EMData* rot_scale_trans2D_background(float ang, float delx = 0.0f, float dely = 0.0f, float scale = 1.0f);
+		
 		/** Rotate-Shift-Scale-Circulantly image 
 		 *
 		 *  If the image is a volume, then all slices are
@@ -289,6 +306,20 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_trans(const Transform &RA);
+		
+		/** Rotate-Shift-Scale image 
+		 *
+		 *  In contrast to rot_scale_trans, wrap around is not done circulantly 
+		 *  so as to prevent artifacts occurring during rotation. 
+		 *
+		 *  If the image is a volume, then all slices are
+		 *  rotated/translated/scaled.
+		 *  
+		 *  @param[in] RA Transform3D object
+		 *  @exception ImageDimensionException can not rotate 1 D image
+		 *  @return New rotated/shifted/scaled image
+		 */
+		EMData* rot_scale_trans_background(const Transform &RA);
 		
 		/*
 				To restrict the value to [0, nx)
@@ -339,7 +370,8 @@ EMData* mult_radial(EMData* radial);
 		
 		EMData* rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
-		
+        EMData* rot_scale_conv_new_background(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
+						
 		/** Get pixel value image using convolution 
 		 *
 		 *  If the image is a volume, then all slices are
