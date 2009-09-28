@@ -343,7 +343,65 @@ class FakeKaiserBessel : public KaiserBessel {
 		 */
 		static float quadri(float x, float y, int nx, int ny, float* image);
 
+        /** Quadratic interpolation (2D).
+		 *
+		 *  This is identical to quadri except the wrap around is not done circulantly.
+		 *
+		 *  Note:  This routine starts counting from 1, not 0!
+		 *
+		 *	This routine uses six image points for interpolation:
+		 *
+		 *@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical
+		 *     Functions (Dover, New York, 1964), Sec. 25.2.67.
+		 *     http://www.math.sfu.ca/~cbm/aands/page_882.htm
+		 *
+		 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
+		 *
+		 *@verbatim
+                f3    fc
+                |
+                | x
+         f2-----f0----f1
+                |
+                |
+                f4
+		 *@endverbatim
+		 *
+		 *	f0 - f4 are image values near the interpolated point X.
+		 *	f0 is the interior mesh point nearest x.
+		 *
+		 *	Coords:
+		 *@li        f0 = (x0, y0)
+		 *@li        f1 = (xb, y0)
+		 *@li        f2 = (xa, y0)
+		 *@li        f3 = (x0, yb)
+		 *@li        f4 = (x0, ya)
+		 *@li        fc = (xc, yc)
+		 *
+		 *	Mesh spacings:
+		 *@li              hxa -- x- mesh spacing to the left of f0
+		 *@li              hxb -- x- mesh spacing to the right of f0
+		 *@li              hyb -- y- mesh spacing above f0
+		 *@li              hya -- y- mesh spacing below f0
+		 *
+		 *	Interpolant:
+		 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
+		 *			 + c3*(y-y0) + c4*(y-y0)*(y-y1)
+		 *			 + c5*(x-x0)*(y-y0)
+		 *
+		 *	@param[in] x x-coord value
+		 *	@param[in] y y-coord value
+		 *  @param nx
+		 *  @param ny
+		 *	@param[in] image Image object (pointer)
+		 *
+		 *	@return Interpolated value
+		 */ 
+		static float quadri_background(float x, float y, int nx, int ny, float* image, int xnew, int ynew);
+
 		static float get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb);
+
+        static float get_pixel_conv_new_background(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb, int xnew, int ynew);
 
 		static std::complex<float> extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb);
 
@@ -399,6 +457,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 	static void  Frngs(EMData* circ, vector<int> numr);
+	static void  Normalize_ring(EMData* ring, const vector<int>& numr);
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	/*
