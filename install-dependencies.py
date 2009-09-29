@@ -16,13 +16,20 @@
 from urllib import urlopen
 from os import *
 
+OS = "LINUX"
+#OS = "MAC"
+
+if OS == "LINUX":
+	DLIB_FILE_EXT = "so"
+elif OS == "MAC":
+	DLIB_FILE_EXT = "dylib"
+
+
 ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 #"png":"http://superb-east.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.28.tar.bz2",
 "jpeg":"http://www.ijg.org/files/jpegsrc.v6b.tar.gz",
 "gpg":"ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.9.tar.bz2",
 "sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.9.tar.gz",
-#"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.6.tar.gz",
-"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-x11-gpl-4.6.tar.gz",
 "fftw":"http://www.fftw.org/fftw-3.2.1.tar.gz",
 "gsl":"http://mirror.anl.gov/pub/gnu/gsl/gsl-1.12.tar.gz",
 "jam":"http://internap.dl.sourceforge.net/sourceforge/boost/boost-jam-3.1.17.tgz",
@@ -31,6 +38,12 @@ ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 "hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.3.tar.gz",
 "tiff":"ftp://ftp.remotesensing.org/pub/libtiff/tiff-3.8.2.tar.gz",
 "pyopengl":"http://downloads.sourceforge.net/project/pyopengl/PyOpenGL/3.0.0/PyOpenGL-3.0.0.tar.gz"}
+
+if OS == "LINUX":
+	ftg["pyqt"] = "http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-x11-gpl-4.6.tar.gz"
+elif OS == "MAC":
+	ftg["pyqt"] = "http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.6.tar.gz"
+
 
 from sys import argv
 if len(argv)<2 : 
@@ -61,14 +74,12 @@ if system("which ipython") :
 	system("easy_install ipython")
 	
 # fftw
-#if not access("%s/lib/libfftw3f.3.dylib"%prefix,R_OK) :
-if not access("%s/lib/libfftw3f.3.so"%prefix,R_OK) :
+if not access("%s/lib/libfftw3f.3.%s"%(prefix, DLIB_FILE_EXT), R_OK) :
 	system("tar xvzf "+fsp["fftw"])
 	system("cd %s; ./configure --enable-float --enable-shared --prefix=%s; make; make install"%(fsp["fftw"][:-7],prefix))
 
 # GSL
-#if not access("%s/lib/libgsl.dylib"%prefix,R_OK):
-if not access("%s/lib/libgsl.so"%prefix,R_OK):
+if not access("%s/lib/libgsl.%s"%(prefix, DLIB_FILE_EXT), R_OK):
 	system("tar xvzf "+fsp["gsl"])
 	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["gsl"][:-7],prefix))
 
@@ -78,31 +89,30 @@ if not access("%s/lib/libjpeg.a"%prefix,R_OK):
 	system("cd jpeg-6b; cp /usr/share/libtool/config.sub .; cp /usr/share/libtool/config.guess .; ./configure --enable-shared --enable-static --prefix=%s; make; make install;ranlib %s/lib/libjpeg.a"%(prefix,prefix))
 
 # tiff
-#if not access("%s/lib/libtiff.dylib"%prefix,R_OK):
-if not access("%s/lib/libtiff.so"%prefix,R_OK):
+if not access("%s/lib/libtiff.%s"%(prefix, DLIB_FILE_EXT), R_OK):
 	system("tar xvzf "+fsp["tiff"])
 	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["tiff"][:-7],prefix))
 
 # boost
-# this version is for OSX
-#if system("which bjam") :
-	#system("tar xvzf "+fsp["jam"])
-	#system("cd %s; ./build.sh; cp bin.macosxx86/bjam %s/bin/"%(fsp["jam"][:-4],prefix))
-#	
-	#system("tar xvjf "+fsp["boost"])
-	#system("cd %s; bjam --toolset=darwin install"%fsp["boost"][:-8])
-
-# This version is for Linux x86_64
-if system("which bjam") :
-	system("tar xvzf "+fsp["jam"])
-	system("cd %s; ./build.sh; cp bin.linuxx86_64//bjam %s/bin/"%(fsp["jam"][:-4],prefix))
-	
-	system("tar xvjf "+fsp["boost"])
-	system("cd %s; bjam --toolset=gcc install"%fsp["boost"][:-8])
+if OS == "MAC":
+	# this version is for OSX
+	if system("which bjam") :
+		system("tar xvzf "+fsp["jam"])
+		system("cd %s; ./build.sh; cp bin.macosxx86/bjam %s/bin/"%(fsp["jam"][:-4],prefix))
+		
+		system("tar xvjf "+fsp["boost"])
+		system("cd %s; bjam --toolset=darwin install"%fsp["boost"][:-8])
+elif OS == "LINUX":
+	# This version is for Linux x86_64
+	if system("which bjam") :
+		system("tar xvzf "+fsp["jam"])
+		system("cd %s; ./build.sh; cp bin.linuxx86_64//bjam %s/bin/"%(fsp["jam"][:-4],prefix))
+		
+		system("tar xvjf "+fsp["boost"])
+		system("cd %s; bjam --toolset=gcc install"%fsp["boost"][:-8])
 
 # HDF5
-#if not access("%s/lib/libhdf5.dylib"%prefix,R_OK):
-if not access("%s/lib/libhdf5.so"%prefix,R_OK):
+if not access("%s/lib/libhdf5.%s"%(prefix, DLIB_FILE_EXT), R_OK):
 	system("tar xvzf "+fsp["hdf5"])
 	system("cd %s; ./configure --prefix=%s --with-default-api-version=v16; make; make install"%(fsp["hdf5"][:-7],prefix))
 
