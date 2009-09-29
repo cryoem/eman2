@@ -20,9 +20,9 @@ ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 #"png":"http://superb-east.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.28.tar.bz2",
 "jpeg":"http://www.ijg.org/files/jpegsrc.v6b.tar.gz",
 "gpg":"ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.9.tar.bz2",
-"sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.7.9.tar.gz",
-#"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.4.4.tar.gz",
-"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-x11-gpl-4.4.4.tar.gz",
+"sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.9.tar.gz",
+#"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.6.tar.gz",
+"pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-x11-gpl-4.6.tar.gz",
 "fftw":"http://www.fftw.org/fftw-3.2.1.tar.gz",
 "gsl":"http://mirror.anl.gov/pub/gnu/gsl/gsl-1.12.tar.gz",
 "jam":"http://internap.dl.sourceforge.net/sourceforge/boost/boost-jam-3.1.17.tgz",
@@ -30,7 +30,7 @@ ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 "cmake":"http://www.cmake.org/files/v2.6/cmake-2.6.4.tar.gz",
 "hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.3.tar.gz",
 "tiff":"ftp://ftp.remotesensing.org/pub/libtiff/tiff-3.8.2.tar.gz",
-"pyopengl":"http://sourceforge.net/project/downloading.php?group_id=5988&filename=PyOpenGL-3.0.0.tar.gz&a=90207034"}
+"pyopengl":"http://downloads.sourceforge.net/project/pyopengl/PyOpenGL/3.0.0/PyOpenGL-3.0.0.tar.gz"}
 
 from sys import argv
 if len(argv)<2 : 
