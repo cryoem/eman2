@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This was designed to install most of the EMAN2 dependencies from source in a specified
 # target directory. If you don't have root permissions, you can specify your home directory,
-# but you will need to install python in your home directory before doing this. The URL links are up to date as of 5/6/2008
+# but you will need to install python in your home directory before doing this. The URL links are up to date as of 9/29/2009
 # In theory if one of the URL's is out of date, you should only need to replace
 # the URL. The rest of the script should still function properly. Note that this
 # script installs dependencies, but not EMAN2 itself. Also, it is safe to rerun
@@ -147,4 +147,3 @@ except:
 if not access("%s/bin/gpg"%prefix,R_OK) :
 	system("tar xvjf "+fsp["gpg"])
 	system("cd %s; ./configure --prefix=%s; make; make install"%(fsp["gpg"][:-8],prefix))
-
