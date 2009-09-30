@@ -89,6 +89,7 @@ class EMShape:
 			EMShape.glutint = False
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
+		
 		initCircle()
 		self.blend = 1.0
 		self.blendinc = 0.2
@@ -130,6 +131,7 @@ class EMShape:
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
 			
 		if s[0]=="rect":
+			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
 			#if  self.isanimated:
 				#v1 = d2s(s[4],s[5])
@@ -154,8 +156,10 @@ class EMShape:
 			#The two points are the endpoints for the longer axis of symmetry
 			#Those two points implicity define the length
 			#The width is a parameter and together with the two coordinates, defines the rectangle
+			
 			pt0 = (s[4], s[5]) #first coordinate
 			pt1 = (s[6], s[7]) #second coordinate
+			assert self.shape[8] >= 0
 			width = s[8] #width
 			#l_vect = (pt1[0]-pt0[0], pt1[1]-pt2[0]) #vector parallel to a longer side -- length vector
 			w_vect = ( -(pt1[1]-pt0[1]), pt1[0]-pt0[0] ) #vector parallel to a shorter side -- width vector
@@ -185,6 +189,7 @@ class EMShape:
 			GL.glEnd()
 					
 		elif s[0]=="rectpoint":
+			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
 			GL.glPointSize(s[8])
 			
@@ -206,6 +211,7 @@ class EMShape:
 			
 			
 		elif s[0]=="rcirclepoint":
+			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
 			GL.glPointSize(s[8])
 			
@@ -227,6 +233,7 @@ class EMShape:
 			
 		elif s[0]=="rcircle":
 			v2=d2s(s[6],s[7])
+			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
 			
 			GL.glPushMatrix()
@@ -248,6 +255,7 @@ class EMShape:
 		elif s[0]=="line":
 #			print "A line ",s[4],s[5],s[6],s[7]
 			GL.glColor(*col)
+			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
 			GL.glBegin(GL.GL_LINES)
 			GL.glVertex(*d2s(s[4],s[5]))
@@ -305,6 +313,7 @@ class EMShape:
 				GL.glEnd()
 			elif s[0]=="scrline":
 				GL.glColor(*col)
+				assert self.shape[8] >= 0
 				GL.glLineWidth(s[8])
 				GL.glBegin(GL.GL_LINES)
 				GL.glVertex(s[4],s[5])
