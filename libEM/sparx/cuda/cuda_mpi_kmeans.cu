@@ -19,6 +19,7 @@
 #define ERROR_INIT (4)
 #define ERROR_EMPTY (5)
 #define ERROR_SETDEVICE (6)
+#define EXIT_DONE (255)
 
 // kernel to calculate the exp
 __global__ void kmeans_exp_kernel(float* DIST, float pw)
@@ -137,7 +138,7 @@ int cuda_mpi_kmeans(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, fl
 	    h_NC[h_ASG[i]]--;                                  // remove one object of the current class
 	    h_ASG[i] = ind;                                    // assign the new object
 	    h_NC[ind]++;                                       // add one object of the new class
-	    params[3] = 0;                                    // if one object moves, ask to continue k-means
+	    params[3] = 0;                                     // if one object moves, ask to continue k-means
 	    params[4]++; // ct_im_mv
 	}
     }
@@ -150,6 +151,9 @@ int cuda_mpi_kmeans(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, fl
 	    return ERROR_EMPTY;
 	}
     }
+
+    // check K-means is done
+    if (params[3] == 1) {return EXIT_DONE;}
 
     return EXIT_OK;
 }
@@ -289,6 +293,38 @@ int cuda_mpi_kmeans_SA(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST,
 
     return EXIT_OK;
 }
+
+// Compute ji
+int cuda_mpi_dist(float *h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, float* d_IM, int N, int K, int m) { 
+    // status vars
+    cublasStatus status;
+
+    // prog vars GPU
+    int size_DIST = N * K;
+    int size_AVE = m * K;
+    float alpha = 1.0f;
+    float beta = 0.0f;
+
+    // load averages to the device memory
+    status = cublasSetVector(size_AVE, sizeof(float), h_AVE, 1, d_AVE, 1);
+    if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
+
+    // compute the distances
+    cublasGetError();
+    cublasSgemm('t', 'n', K, N, m, alpha, d_AVE, m, d_IM, m, beta, d_DIST, K);
+    status = cublasGetError();
+    if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
+
+    // read the results from device to host memory
+    status = cublasGetVector(size_DIST, sizeof(float), d_DIST, 1, h_DIST, 1);
+    if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
+
+    return EXIT_OK;
+}
+
+
+
+
 
 // Shutdown and release memory
 int cuda_mpi_shutdown(float* d_IM, float* d_AVE, float* d_DIST) {
