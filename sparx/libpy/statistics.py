@@ -3804,19 +3804,31 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 
 	return ASG, AVE, [Je, C, H, DB]
 
+## tmp
+def dump_AVE(AVE, mask, myid, ite = 0):
+    #mask = get_im(maskname, 0)
+    K = 256
+    for k in xrange(K):
+        NEWAVE = Util.reconstitute_image_mask(AVE[k], mask)
+        NEWAVE.write_image('ave_from_%02i_ite_%02i.hdf' % (myid, ite), k)
+
 # K-mean CUDA
 def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu):
 	from applications import MPI_start_end
 	from statistics   import k_means_cuda_error, k_means_cuda_open_im
-	from mpi          import mpi_bcast, mpi_reduce
+	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier
 	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
+	from utilities    import print_msg, running_time
 	from time         import time
+	import sys
 
+	if myid == main_node: t1 = time()
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
-	n                     = len(LUT)
+	n                     = len(lut)
+
 	status = Kmeans.setup(m, N, n, K, rand_seed, N_start) 
 	if status:
 		k_means_cuda_error(status)
@@ -3843,40 +3855,53 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 	Kmeans.set_ASG(ASG)
 	Kmeans.compute_NC()
 	Kmeans.compute_AVE()
+
+	if myid == main_node: print 'Init: ', time() - t1, 's'
 	# K-means iterations
 	if myid == main_node: t_start = time()
 	if F  != 0:
 		switch_SA = True
 		Kmeans.set_T(T0)
 	else:   switch_SA = False
+
 	ite    = 0
 	fsync  = 0
 	ferror = 0
+	tite   = time()
+	s1, s2, s3 = 0, 0, 0
+	from utilities import write_text_file
 	while ite < maxit:
-		if swith_SA:
+		if myid == main_node: ts1 = time()
+		if switch_SA:
 			status = Kmeans.one_iter_SA()
 			T      = Kmeans.get_T()
 			ct     = Kmeans.get_ct_im_mv()
-			if myid == main_node:
-				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+			#if myid == main_node:
+			#	print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 			T *= F
+			Kmeans.set_T(T)
 			if T < 0.00001: switch_SA = False
+			
 		else:
 			status = Kmeans.one_iter()
 			ct     = Kmeans.get_ct_im_mv()
-			if myid == main_node:
-				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+			#if myid == main_node:
+			#	print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+		if myid == main_node: s1 += (time() - ts1)
 
 		ite += 1
 		if status != 0 and status != 255: ferror = 1
 		if status == 0:                   fsync  = 1
 		else:                             fsync  = 0
-		flags = mpi_reduce([ferror, fsync], 2, MPI_INT, MPI_LOR, MPI_COMM_WORLD)
+		
+		if myid == main_node: ts2 = time()
+		flags = mpi_reduce([ferror, fsync], 2, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 		flags = mpi_bcast(flags, 2, MPI_INT, main_node, MPI_COMM_WORLD)
 		flags = flags.tolist()
 		ferror, fsync = flags
+		#print myid, ferror, fsync, status, ct
 		if ferror or not fsync: break
-
+		
 		# update
 		asg = Kmeans.get_asg()
 		ASG = [0] * N
@@ -3885,11 +3910,20 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
 		ASG = ASG.tolist()
 		Kmeans.set_ASG(ASG)
+		if myid == main_node: s2 += (time() - ts2)
+
+		if myid == main_node: ts3 = time()
 		Kmeans.compute_NC()
 		Kmeans.compute_AVE()
+		if myid == main_node: s3 += (time() - ts3)
 
+	if myid == main_node:
+		print 'Iteration time:', (time() - tite) / float(maxit), 's'
+		print '      ite cuda:', s1 / float(maxit), 's'
+		print '      com asg :', s2 / float(maxit), 's'
+		print '      new ave :', s3 / float(maxit), 's'
 	if ferror:
-		k_means_cuda_error(status)
+		if myid == main_node: k_means_cuda_error(status)
 		exit()
 
 	if myid == main_node:
@@ -3898,13 +3932,14 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 	ji  = Kmeans.compute_ji()
 	Ji  = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	Ji  = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	Ji  = Ji.tolist()
 	Je, C, H, DB = Kmeans.compute_criterion(Ji)
 	AVE = Kmeans.get_AVE()
 	ASG = Kmeans.get_ASG()
 	Kmeans.shutdown()
 	del Kmeans
 	
-	return ASG, AVE, crit
+	return ASG, AVE, [Je, C, H, DB]
 
 ## K-MEANS GROUPS ######################################################################
 

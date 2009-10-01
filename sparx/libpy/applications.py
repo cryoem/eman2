@@ -12232,7 +12232,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	import sys, os
 	if MPI:
 		from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
-		from mpi        import MPI_COMM_WORLD
+		from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
 	if CUDA:
 		from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog
 		from statistics import k_means_cuda_export
@@ -12259,17 +12259,17 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
-		flag = 0
-		if myid == main_node:
-			if os.path.exists(out_dir):
-				flag = 1
-				ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+		#flag = 0
+		#if myid == main_node:
+		#	if os.path.exists(out_dir):
+		#		flag = 1
+		#		ERROR('Output directory exists, please change the name and restart the program', " ", 0)
 
-		flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
-		flag = int(flag[0])
-		if flag != 0: sys.exit()
+		#flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		#flag = int(flag[0])
+		#if flag != 0: sys.exit()
 
-		mpi_barrier( MPI_COMM_WORLD )
+		#mpi_barrier( MPI_COMM_WORLD )
 	else:
 		if os.path.exists(out_dir):
 			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
@@ -12317,10 +12317,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if myid == main_node:
 			print_begin_msg('k-means')
 			k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
-		ASG, AVE, crit = k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_main_node, ncpu)
+		ASG, AVE, crit = k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu)
 		if myid == main_node:
 			GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
-			K_means_cuda_export(GASG, AVE, out_dir, mask, crit, -1, TXT)
+			k_means_cuda_export(GASG, AVE, out_dir, mask, crit, -1, TXT)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
