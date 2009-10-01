@@ -5023,7 +5023,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		del active
 		nima = len(list_of_particles)
 	else:
-		nima =0
+		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
 
 	if myid != main_node:
@@ -5061,7 +5061,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	from time import time	
 
-	#  this is needed for gathering of peak_errors
+	#  this is needed for gathering of pixel errors
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
