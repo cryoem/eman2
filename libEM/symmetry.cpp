@@ -283,14 +283,19 @@ float EmanOrientationGenerator::get_az_delta(const float& delta,const float& alt
 	float tmp = (float)(EMConsts::deg2rad * altitude);
 
 	// This is taken from EMAN1 project3d.C
-	float h=floor(360.0f/(delta*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
+	// This wasn't working like it was supposed to. Rather than
+	// figuring it out, I'm just replacing it --steve
+/*	float h=floor(360.0f/(delta*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
 	h=(int)floor(h*sin(tmp)+.5f);
 	if (h==0) h=1;
 	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5f);
 	if ( h == 0 ) h = (float)maxcsym;
 	h=2.0f*M_PI/h;
 
-	return (float)(EMConsts::rad2deg*h);
+	return (float)(EMConsts::rad2deg*h);*/
+
+	return altitude==0?360.0:delta/sin(tmp);
+
 }
 
 

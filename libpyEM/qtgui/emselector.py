@@ -1855,9 +1855,11 @@ class EMBDBDelegate(EMBrowseDelegate):
 		return_items = []
 		
 		db = db_open_dict(db_url,ro=True)
-		d = db.get_header(0)
 		n = len(db) 
 		if len(vals) == 1:
+			for i in range(n):
+				d = db.get_header(i)
+				if d!=None and d.has_key("nz") : break
 			if  n > 1:
 				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
@@ -1977,7 +1979,9 @@ class EMBDBDelegate(EMBrowseDelegate):
 			#n = DB[f[0]]["maxrec"]
 			n = len(db)
 			if n > 1:
-				d = db.get_header(0)
+				for i in range(n):
+					d = db.get_header(i)
+					if d!=None and d.has_key("nz") : break
 				if d["nz"] == 1:
 					#a = EM2DStackItem(self,f[0],"bdb:"+db_directory+"#"+f[0])
 					a = EM2DStackItem(self,f[0],folderize(real_directory)+f[0])

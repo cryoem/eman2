@@ -63,6 +63,7 @@ This program will print out some information about the image.
 	parser.add_option("-H", "--header", action="store_true",help="show all header information",default=False)
 	parser.add_option("-N", "--number", type="int", help="Image number for single image info",default=0)
 	parser.add_option("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
+	parser.add_option("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_option("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
 	
 	(options, args) = parser.parse_args()
@@ -111,6 +112,10 @@ This program will print out some information about the image.
 					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)
 				except:
 					print " "
+		if options.euler:
+			for i in imgn:
+				d=EMData(imagefile,i)
+				print "%d. %s"%(i,str(d["xform.projection"]))
 
 		if options.header :
 			for i in imgn:
