@@ -3816,7 +3816,7 @@ def dump_AVE(AVE, mask, myid, ite = 0):
 def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu):
 	from applications import MPI_start_end
 	from statistics   import k_means_cuda_error, k_means_cuda_open_im
-	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier
+	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
 	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
 	from utilities    import print_msg, running_time
 	from time         import time
@@ -3828,6 +3828,15 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
+
+	#  this is needed for gathering of ASG
+	disps     = []
+	recvcount = []
+	for im in xrange(ncpu):
+		if im == main_node:  disps.append(0)
+		else:                disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(N, ncpu, im)
+		recvcount.append(ie - ib)
 
 	status = Kmeans.setup(m, N, n, K, rand_seed, N_start) 
 	if status:
@@ -3885,43 +3894,38 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 		else:
 			status = Kmeans.one_iter()
 			ct     = Kmeans.get_ct_im_mv()
+			#if status != 0 and status != 255: ferror = 1
+			#if status == 0:                   fsync  = 1
+			#else:                             fsync  = 0
+
+			#status = mpi_reduce(status, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			#status = mpi_bcast(status, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			#status = int(status[0])
+			#print myid, ite, ferror, fsync, status, ct
+			#if status: break
+
 			#if myid == main_node:
 			#	print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
-		if myid == main_node: s1 += (time() - ts1)
-
+		if myid == main_node: print 'ite cuda', time() - ts1, 's'
 		ite += 1
-		if status != 0 and status != 255: ferror = 1
-		if status == 0:                   fsync  = 1
-		else:                             fsync  = 0
-		
-		if myid == main_node: ts2 = time()
-		flags = mpi_reduce([ferror, fsync], 2, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-		flags = mpi_bcast(flags, 2, MPI_INT, main_node, MPI_COMM_WORLD)
-		flags = flags.tolist()
-		ferror, fsync = flags
-		#print myid, ferror, fsync, status, ct
-		if ferror or not fsync: break
-		
+
+		if myid == main_node: ts2 = time()		
 		# update
 		asg = Kmeans.get_asg()
-		ASG = [0] * N
-		ASG[N_start:N_stop] = asg
-		ASG = mpi_reduce(ASG, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
 		ASG = ASG.tolist()
 		Kmeans.set_ASG(ASG)
-		if myid == main_node: s2 += (time() - ts2)
+		if myid == main_node: print 'com asg', time() - ts2, 's'
 
 		if myid == main_node: ts3 = time()
 		Kmeans.compute_NC()
 		Kmeans.compute_AVE()
-		if myid == main_node: s3 += (time() - ts3)
+		if myid == main_node: print 'new ave', time() - ts3, 's'
 
 	if myid == main_node:
-		print 'Iteration time:', (time() - tite) / float(maxit), 's'
-		print '      ite cuda:', s1 / float(maxit), 's'
-		print '      com asg :', s2 / float(maxit), 's'
-		print '      new ave :', s3 / float(maxit), 's'
+		print 'Iteration time:', time() - tite, 's'
+
 	if ferror:
 		if myid == main_node: k_means_cuda_error(status)
 		exit()
