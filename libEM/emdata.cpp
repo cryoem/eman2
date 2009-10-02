@@ -679,7 +679,7 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 	if (nz==1) {
 		for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
 			for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
-				Vec3f xv=Vec3f((float)x,(float)y,0.0f)*xform;
+				Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
 				float v = 0;
 
 				if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
@@ -692,7 +692,7 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 		for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
 			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
 				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
-					Vec3f xv=Vec3f((float)x,(float)y,(float)z)*xform;
+					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
 					float v = 0;
 
 					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
