@@ -215,7 +215,8 @@ pca,pca_large or svd_gsl"""
 			im-=mean
 			pca.insert_image(im)
 	else:
-		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":len(images)})
+		n = len(images)
+		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 		
 		mean=images[0]
