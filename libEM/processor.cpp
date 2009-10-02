@@ -9060,7 +9060,7 @@ int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extrnd, in
     // Host memory allocation for images
     h_IM = (float*)malloc(size_IM * sizeof(float));
     if (h_IM == 0) return 1;
-    h_im = &h_IM[n_start]; // for local images
+    h_im = &h_IM[n_start * m]; // for local images
     // Host memory allocation for the averages
     h_AVE = (float*)malloc(size_AVE * sizeof(float));
     if (h_AVE == 0) return 1;
