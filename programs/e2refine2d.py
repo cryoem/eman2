@@ -87,6 +87,7 @@ def main():
 	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
 	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is frc'", default="frc")
 	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
+	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
 	
 	 
 	#options associated with e2basis.py
@@ -120,6 +121,9 @@ def main():
 	if options.normproj :
 		options.normproj="--normproj"
 	else : options.normproj=""
+	
+	if options.classrefsf : 
+		print "Warning: classrefsf option has no effect on e2refine2d.py"
 	
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "

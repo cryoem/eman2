@@ -4018,6 +4018,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		options.classkeepsig = params["classkeepsig"]
 		options.classnormproc = params["classnormproc"]
 		options.classiter = params["classiter"]
+		options.classrefsf=params["classrefsf"]
 		
 		options.classaverager = params["classaverager"] # at the moment there are no extra averager parameter, but if that changes then the parameteres would have to be checked
 		

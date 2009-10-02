@@ -676,15 +676,29 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);
 
-	for (int z=-size[2]/2; z<size[2]/2; z++) {
-		for (int y=-size[1]/2; y<size[1]/2; y++) {
-			for (int x=-size[0]/2; x<size[0]/2; x++) {
-				Vec3f xv=Vec3f((float)x,(float)y,(float)z)*xform;
+	if (nz==1) {
+		for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+			for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+				Vec3f xv=Vec3f((float)x,(float)y,0.0f)*xform;
 				float v = 0;
 
-				if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
-				else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
-				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+				if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
+				else v=sget_value_at_interp(xv[0],xv[1]);
+				result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+			}
+		}
+	}
+	else {
+		for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
+			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+					Vec3f xv=Vec3f((float)x,(float)y,(float)z)*xform;
+					float v = 0;
+
+					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
+					else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
+					result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+				}
 			}
 		}
 	}
