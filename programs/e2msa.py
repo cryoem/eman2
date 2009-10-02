@@ -185,7 +185,7 @@ def get_xform(n,simmx):
 	return ret.inverse()
 
 def msa(images,mask,nbasis,varimax,mode):
-	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
+	"""Perform principal component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMImages or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
 images. input images will be masked and normalized in-place. The mean value is subtracted from each image prior to
