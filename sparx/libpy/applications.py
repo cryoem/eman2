@@ -5102,7 +5102,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
 
-			#output peak errors
+			#output pixel errors
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
@@ -5590,7 +5590,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 
-	#  this is needed for gathering of peak_errors
+	#  this is needed for gathering of pixel errors
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
@@ -5731,7 +5731,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
-			#output peak errors
+			#output pixel errors
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
@@ -5996,7 +5996,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 
-	#  this is needed for gathering of peak_errors
+	#  this is needed for gathering of pixel errors
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
@@ -6206,7 +6206,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		from reconstruction import rec3D_MPI_noCTF
 	
 
-	#  this is needed for gathering of peak_errors
+	#  this is needed for gathering of pixel errors
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
@@ -6339,7 +6339,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
-			#output peak errors
+			#output pixel errors
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
@@ -6818,7 +6818,8 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
-	pixer = [0.0]*nima	#  this is needed for gathering of peak_errors
+	#  this is needed for gathering of pixel errors
+	pixer = [0.0]*nima
 	data = [None]*7
 	data[3] = mask2D
 	cs = [0.0]*3
@@ -6969,7 +6970,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				print_msg("Time to write header information= %d\n"%(time()-start_time))
 				start_time = time()
 
-		#output peak errors after all headers were processed
+		#output pixel errors after all headers were processed
 		from mpi import mpi_gatherv
 		recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12110,7 +12111,6 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		print  myid,ncpu,MPI
 	else:
 		ncpu = 1
 		myid = 0
