@@ -854,6 +854,9 @@ class EMClassAveTask(EMTask):
 #			t = average.get_attr("xform.align2d")
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			
+			average["apix_x"]=image["apix_x"]
+			average["apix_y"]=image["apix_y"]
+			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
@@ -905,6 +908,9 @@ class EMClassAveTask(EMTask):
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
 
+		average["apix_x"]=image["apix_x"]
+		average["apix_y"]=image["apix_y"]
+		average["apix_z"]=image["apix_z"]
 		if self.options["setsfref"] and ref!=None :
 			average.process_inplace("filter.matchto",{"to":ref})
 			average.process_inplace("normalize.toimage",{"to":ref})
@@ -961,6 +967,10 @@ class EMClassAveTask(EMTask):
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+
+			average["apix_x"]=image["apix_x"]
+			average["apix_y"]=image["apix_y"]
+			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
@@ -1011,6 +1021,10 @@ class EMClassAveTask(EMTask):
 #				average.process_inplace("xform.centeracf")
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+
+			average["apix_x"]=image["apix_x"]
+			average["apix_y"]=image["apix_y"]
+			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
