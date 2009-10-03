@@ -2,7 +2,7 @@
 
 #Author: Ross Coleman
 
-from EMAN2 import test_image, get_image_directory, Transform #,EMData
+from EMAN2 import test_image, get_image_directory, Transform, Region #,EMData
 from emapplication import EMQtWidgetModule, EMStandAloneApplication, get_application
 from emimage2d import EMImage2DModule
 from emimagemx import EMImageMXModule
@@ -38,12 +38,12 @@ class Img2DModEventsHandler:
 		self.editmode = None #Can be None, 'n' for new, 'm' for move, 'f' for move first point, or 's' for move second point
 		self.old_box_list = None #Gives the list used to create the old EMShape box
 		self.color = (1, 1, 1)
+		self.particle_list = []
+		self.particles_window=None
 		self.target = weakref.ref(target)
 		QtCore.QObject.connect( self.target().emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
 		QtCore.QObject.connect( self.target().emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
 		QtCore.QObject.connect( self.target().emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
-
-		self.particles=None
 
 	def get_helix_keys(self):
 		"""This returns the keys for the "rectline" EMShape objects
@@ -206,24 +206,47 @@ class Img2DModEventsHandler:
 
 		if self.current_box_key:
 			boxList = self.target().get_shapes()[self.current_box_key].getShape() #The list used to create the box
-			x_min = min(boxList[4], boxList[6])
-			y_min = min(boxList[5], boxList[7])
-			length = abs( (boxList[6]-boxList[4])**2 + (boxList[7]-boxList[5])**2 )
-			width = boxList[8]
-			l_uvect = ( float((boxList[6]-boxList[4]))/length, float(boxList[7]-boxList[5])/length )
-			rot_angle = acos( l_uvect[1] ) #To rotate so the length is parallel to the y axis: l_uvect (dot) j_hat = cos (rot_angle)
-			tr = Transform()
-			tr.set_rotation({"type":"2d", "alpha":rot_angle})
-			#i_size = IntSize(round(width), round(length))
+			box_centroid = ( (boxList[4]+boxList[6])/2, (boxList[5]+boxList[7])/2 )
+			p0 = boxList[4:6]
+			p1 = boxList[6:8]
+			l_vect = (p1[0]-p0[0], p1[1]-p0[1])
+			box_length = sqrt( l_vect[0]**2 + l_vect[1]**2 )
+			box_width = boxList[8]
+			print "box: (" + str(box_length) + ", " + str(box_width) + ")"
+			l_uvect = ( l_vect[0]/box_length, l_vect[1]/box_length )
+			#Rotate so that the length is parallel to the y-axis
+			#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
+			rot_angle = 180/pi*acos( l_uvect[1] )
+			#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+			if l_uvect[0] < 0:
+				rot_angle *= -1 #We want to rotate the box clockwise, so the angle is negative
+			print "rot_angle = " + str(rot_angle)
+
 			em_image = self.target().get_data()
-			boxed_em_data = em_image.get_rotated_clip( tr, [int(round(width)),int(round(length)),1] )
-			print (boxed_em_data["nx"], boxed_em_data["ny"])
+			tr = Transform()
+			tr.set_trans(box_centroid)
+			tr.set_rotation({"type":"2d", "alpha":rot_angle})
+			particle_dimensions = ( int(round(box_width)), int(round(box_length)), 1 )
+			particle = em_image.get_rotated_clip( tr, particle_dimensions )
+			#TODO: Implement moving/editing a box correctly --> this makes a whole new particle.
+			self.particle_list.append(particle)
+			
+			#For testing purposes, creating another EMimage2DModule
+			#particle.write_image("boxed_particle.mrc")
+			#window = EMImage2DModule(particle)
+			#window.show()
+			
+			print (particle["nx"], particle["ny"])
 			#TODO: much more flexible creation and updating of the particles window
-			if not self.particles:
-				self.particles = EMImageMXModule(data=boxed_em_data, application=get_application())
-				self.particles.show()
-				self.particles.updateGL()
-				#TODO: figure out why nothing displays!
+			if not self.particles_window:
+				self.particles_window = EMImageMXModule(application=get_application())
+				self.particles_window.desktop_hint = "rotor" # this is to make it work in the desktop
+				self.particles_window.set_mouse_mode("App")
+				self.particles_window.setWindowTitle("Particles")
+			self.particles_window.set_data(self.particle_list)
+			get_application().show_specific(self.particles_window)
+			self.particles_window.updateGL()
+
 		self.start_point = None
 		self.end_point = None
 		self.current_box_key = None
