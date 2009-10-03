@@ -127,16 +127,16 @@ class EMTaskCustomer:
 		"""Trigger an already submitted task to be re-executed"""
 		
 		if self.servtype=="dc":
-			signal.alarm(60)
-			try: return EMDCsendonecom(self.addr,"RQUE",tid)
-			except:
+			while (1):
 				signal.alarm(60)
-				self.wait_for_server()
-				ret=EMDCsendonecom(self.addr,"RQUE",tid)
-				signal.alarm(0)
-				return ret
-				
-			signal.alarm(0)
+				try: 
+					ret=EMDCsendonecom(self.addr,"RQUE",tid)
+					signal.alarm(0)
+					return ret
+				except :
+					signal.alarm(60)
+					self.wait_for_server()
+					continue
 
 	def send_tasks(self,tasks):
 		"""Send a group of tasks to the server. Returns a taskid."""
