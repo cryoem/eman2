@@ -234,20 +234,25 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			self.mx_display.set_data([projection,particle,particle_masked])
 			
 			if self.frc_display != None :
-				ctf=particle["ctf"]
+				try : apix=particle["ctf"].apix
+				except: apix=particle["apix_x"]
+				
 				frc=projection.calc_fourier_shell_correlation(particle)
 				frcm=projection.calc_fourier_shell_correlation(particle_masked)
 				nf=len(frc)/3
-				self.frc_display.set_data(([i/ctf.apix for i in frc[:nf]],frc[nf:nf*2]),"frc")
-				self.frc_display.set_data(([i/ctf.apix for i in frcm[:nf]],frcm[nf:nf*2]),"frcm")
+				self.frc_display.set_data(([i/apix for i in frc[:nf]],frc[nf:nf*2]),"frc")
+				self.frc_display.set_data(([i/apix for i in frcm[:nf]],frcm[nf:nf*2]),"frcm")
 				
-				ds=1.0/(ctf.apix*particle["ny"])
-				snr=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_SNR)
-				ses=[i*ds for i in range(particle["ny"]/2)]
-				self.frc_display.set_data((ses,snr),"SNR",color=1)
+				try : 
+					ctf=particle["ctf"]
+					ds=1.0/(ctf.apix*particle["ny"])
+					snr=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_SNR)
+					ses=[i*ds for i in range(particle["ny"]/2)]
+					self.frc_display.set_data((ses,snr),"SNR",color=1)
 
-				amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP)
-				self.frc_display.set_data((ses,amp),"CTF",color=2)
+					amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP)
+					self.frc_display.set_data((ses,amp),"CTF",color=2)
+				except : ctf=None
 
 		else:
 			self.mx_display.set_data([projection])

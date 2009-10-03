@@ -254,6 +254,7 @@ class EMShape:
 			
 		elif s[0]=="line":
 #			print "A line ",s[4],s[5],s[6],s[7]
+#			print "A line ",d2s(s[4],s[5]),d2s(s[6],s[7])
 			GL.glColor(*col)
 			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])

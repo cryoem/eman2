@@ -5143,6 +5143,8 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 
 	int int_shift_only = params.set_default("int_shift_only",1);
 
+	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
+	
 	FloatPoint com = image->calc_center_of_mass();
 
 	int nx = image->get_xsize();
