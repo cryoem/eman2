@@ -12110,6 +12110,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		print  myid,ncpu,MPI
 	else:
 		ncpu = 1
 		myid = 0
