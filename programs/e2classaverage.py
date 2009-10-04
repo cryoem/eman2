@@ -854,12 +854,11 @@ class EMClassAveTask(EMTask):
 #			t = average.get_attr("xform.align2d")
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			
-			average["apix_x"]=image["apix_x"]
-			average["apix_y"]=image["apix_y"]
-			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
+				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+				average["apix_x"]=image["apix_x"]
 			else: average.process_inplace("normalize.edgemean")
 				
 			average.set_attr("ptcl_repr",np)
@@ -908,12 +907,11 @@ class EMClassAveTask(EMTask):
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
 
-		average["apix_x"]=image["apix_x"]
-		average["apix_y"]=image["apix_y"]
-		average["apix_z"]=image["apix_z"]
 		if self.options["setsfref"] and ref!=None :
+			average["apix_x"]=ref["apix_x"]
 			average.process_inplace("filter.matchto",{"to":ref})
 			average.process_inplace("normalize.toimage",{"to":ref})
+			average["apix_x"]=image["apix_x"]
 		else : average.process_inplace("normalize.edgemean")
 
 #		if norm != None: average.process_inplace(norm[0],norm[1])
@@ -968,12 +966,11 @@ class EMClassAveTask(EMTask):
 #			t = average.get_attr("xform.align2d")
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 
-			average["apix_x"]=image["apix_x"]
-			average["apix_y"]=image["apix_y"]
-			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
+				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+				average["apix_x"]=image["apix_x"]
 			else: average.process_inplace("normalize.edgemean")
 			#if norm != None: average.process_inplace(norm[0],norm[1])
 
@@ -1022,12 +1019,11 @@ class EMClassAveTask(EMTask):
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 
-			average["apix_x"]=image["apix_x"]
-			average["apix_y"]=image["apix_y"]
-			average["apix_z"]=image["apix_z"]
 			if self.options["setsfref"] and ref!=None :
+				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
+				average["apix_x"]=image["apix_x"]
 			else : average.process_inplace("normalize.edgemean")
 			
 			if norm != None: average.process_inplace(norm[0],norm[1])
