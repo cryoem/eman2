@@ -965,6 +965,7 @@ class EMClassAveTask(EMTask):
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
 			if self.options["setsfref"] and ref!=None :
 				average["apix_x"]=ref["apix_x"]
@@ -974,7 +975,6 @@ class EMClassAveTask(EMTask):
 			else: average.process_inplace("normalize.edgemean")
 			#if norm != None: average.process_inplace(norm[0],norm[1])
 
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
 			if len(exc_record) > 0: average.set_attr("exc_class_ptcl_idxs",exc_record) # if prevents a seg fault
@@ -1018,6 +1018,7 @@ class EMClassAveTask(EMTask):
 #				average.process_inplace("xform.centeracf")
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
 			if self.options["setsfref"] and ref!=None :
 				average["apix_x"]=ref["apix_x"]
@@ -1028,7 +1029,6 @@ class EMClassAveTask(EMTask):
 			
 			if norm != None: average.process_inplace(norm[0],norm[1])
 			
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			average.set_attr("ptcl_repr",np)
 			if len(record) > 0: average.set_attr("class_ptcl_idxs",record) # if prevents a seg fault
 			if len(exc_record) > 0: average.set_attr("exc_class_ptcl_idxs",exc_record) # if prevents a seg fault
