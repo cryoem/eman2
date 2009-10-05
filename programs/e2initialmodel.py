@@ -158,7 +158,7 @@ def main():
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 			threed[-1].process_inplace("normalize.edgemean")
-			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":2.5,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":2.0,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 #			threed[-1]["quality"]=bss
 			threed[-1]["quality"]=qual
 
