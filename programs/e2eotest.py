@@ -74,6 +74,7 @@ def main():
 	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'image\'.",default="image")
 	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
 	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
+	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
 	
 	
 	#options associated with e2make3d.py
@@ -104,6 +105,9 @@ def main():
 		
 	if options.force:
 		remove_output_files(options)
+
+	if options.classrefsf : options.classrefsf=" --setsfref"
+	else : options.classrefsf=" "
 	
 	logid=E2init(sys.argv)
 	

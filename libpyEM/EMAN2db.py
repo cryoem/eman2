@@ -286,7 +286,10 @@ def db_emd_init(self,*parms):
 		return
 	else : 
 #		print "toC:", parms
-		self.__initc(*parms)	
+		if len(parms)>2 and isinstance(parms[0],str) :
+			self.__initc()
+			self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
+		else : self.__initc(*parms)	
 		return
 
 EMData.__initc=EMData.__init__

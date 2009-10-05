@@ -543,11 +543,11 @@ class EMImage2DModule(EMGUIModule):
 		if self.gl_widget != None: self.gl_widget.set_enable_clip(val)
 	
 	def __init_mouse_handlers(self):
-		self.mouse_events_mediator = EMImage2DMouseEventsMediator(self)
+		self.mediator = EMImage2DMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
-		self.mouse_event_handlers["emit"] = EMImage2DEmitMouseMode(self.mouse_events_mediator)
-		self.mouse_event_handlers["measure"] = EMImage2DMeasureMode(self.mouse_events_mediator)
-		self.mouse_event_handlers["draw"] = EMImage2DDrawMouseMode(self.mouse_events_mediator)
+		self.mouse_event_handlers["emit"] = EMImage2DEmitMouseMode(self.mediator)
+		self.mouse_event_handlers["measure"] = EMImage2DMeasureMode(self.mediator)
+		self.mouse_event_handlers["draw"] = EMImage2DDrawMouseMode(self.mediator)
 		self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		
 	def clear_gl_memory(self):
@@ -949,7 +949,7 @@ class EMImage2DModule(EMGUIModule):
 			self.origin=(newscale/self.scale*(self.gl_widget.width()/2.0+self.origin[0])-self.gl_widget.width()/2.0,newscale/self.scale*(self.gl_widget.height()/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 			self.scale=newscale
 			self.updateGL()
-			if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),newscale)
+			self.mediator.emit(QtCore.SIGNAL("set_scale"),newscale)
 		except: pass
 		
 	def set_invert(self,val):
@@ -1654,7 +1654,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			if self.emit_events: self.emit(QtCore.SIGNAL("origin_update"),self.origin)
+			self.mediator.emit(QtCore.SIGNAL("origin_update"),self.origin)
 			try: self.gl_widget.updateGL()
 			except: pass
 		else:
@@ -1731,18 +1731,18 @@ class EMImage2DModule(EMGUIModule):
 		elif event.key() == Qt.Key_Up:
 			if self.list_data != None:
 				self.increment_list_data(1)
-				if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),1)
 				self.updateGL()
-			else:
-				self.__key_mvt_animation(0,self.gl_widget.height()*.1)
+#			else:
+#				self.__key_mvt_animation(0,self.gl_widget.height()*.1)
+			self.mediator.emit(QtCore.SIGNAL("increment_list_data"),1)
 	
 		elif event.key() == Qt.Key_Down:
 			if self.list_data != None:
 				self.increment_list_data(-1)
-				if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),-1)
 				self.updateGL()
-			else:
-				self.__key_mvt_animation(0,-self.gl_widget.height()*.1)
+#			else:
+#				self.__key_mvt_animation(0,-self.gl_widget.height()*.1)
+			self.mediator.emit(QtCore.SIGNAL("increment_list_data"),-1)
 				
 		elif event.key() == Qt.Key_Right:
 			self.__key_mvt_animation(self.gl_widget.width()*.1,0)
