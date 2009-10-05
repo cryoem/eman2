@@ -1,4 +1,4 @@
-#
+#!/exports/home/zyang/EMAN2/python/Python-2.5.4-ucs4/bin/python
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -451,8 +451,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import set_params2D, get_params2D
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_attr_dict, file_type
 	from utilities    import send_EMData, recv_EMData
-	from statistics   import add_ave_varf_MPI, ave_series
-	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error, align2d
+	from statistics   import add_ave_varf_MPI, ave_series, sum_oe, ccc
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
@@ -463,7 +463,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv
 	from mpi 	  import MPI_FLOAT, MPI_SUM, MPI_INT
 	from mpi          import mpi_comm_split
 
@@ -471,7 +471,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 4
+	number_of_ave = 50
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -521,6 +521,33 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print "Invalid file type"
 		return
 
+	# This is for gathering of mirror list
+	disps = [0]
+	disps2 = [0]*number_of_proc
+	recvcount = [0]*number_of_proc
+	recvcount2 = [0]*number_of_proc
+	gn = number_of_proc/number_of_ave
+	gr = number_of_proc%number_of_ave
+	this_group = [0]*number_of_ave
+	for g in xrange(number_of_ave):
+		this_color = g%number_of_ave
+		if this_color < gr:
+			this_group[g] = gn+1
+		else:
+			this_group[g] = gn
+	for im in xrange(number_of_proc):
+		this_color = im%number_of_ave
+		this_key = im/number_of_ave
+		ib, ie = MPI_start_end(nima, this_group[this_color], this_key)
+		recvcount[im] = ie-ib
+		recvcount2[sum(this_group[:this_color])+this_key] = ie-ib
+	for im in xrange(1, number_of_proc):
+		disps.append(disps[im-1] + recvcount2[im-1])
+	for im in xrange(number_of_proc):
+		this_color = im%number_of_ave
+		this_key = im/number_of_ave
+		disps2[im] = disps[sum(this_group[:this_color])+this_key] 
+
 	image_start, image_end = MPI_start_end(nima, group_number_of_proc, key)
 
 	ima = EMData()
@@ -536,11 +563,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if last_ring == -1: last_ring = nx/2-2
 
 	# Some useful parameters
-	grid_size = 4
 	fl = 0.4
 	aa = 0.1
 	Fourvar = False
-	N_merge = 10
+	N_merge = 50
 
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
@@ -559,7 +585,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Number of recombinations    : %d\n"%(N_merge))
 		if restart != -1:
 			print_msg("Restarted from iteration    : %d\n"%(restart))
-		print_msg("Grid size of the chessboard : %d\n"%(grid_size))
 		print_msg("Tangent filter                  \n")
 		print_msg("    cut-off frequency       : %f\n"%(fl))
 		print_msg("    fall-off                : %f\n"%(aa))
@@ -586,43 +611,51 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if CTF:
 		from morphology import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
-		for im in xrange(image_start, image_end):
-			ctf_params = data[im-image_start].get_attr("ctf")
-			st = Util.infomask(data[im-image_start], mask, False)
-			data[im-image_start] -= st[0]
+		for im in xrange(len(data)):
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask, False)
+			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 	else:
+		for im in xrange(len(data)):
+			st = Util.infomask(data[im], mask, False)
+			data[im] -= st[0]
 		ctf_2_sum = None
 
 	for im in data:
 		set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
 	
-	tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
-	
+	if Fourvar:
+		tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
+	else:
+		ave1, ave2 = sum_oe(data, "a", CTF, EMData())
+		reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
+		reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
+
 	if key == group_main_node:
-		SSNR = sumsq.copy()
-		Util.div_filter(SSNR, var)
-
-		tavg = fft(tavg_I)
-		drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
-		drop_image(var, os.path.join(outdir, "initial_var%02d.hdf"%(color)))
-
 		if Fourvar:
+			SSNR = sumsq.copy()
+			Util.div_filter(SSNR, var)
 			tavg = fft(Util.divn_img(tavg_I, var))
-			drop_image(tavg, os.path.join(outdir, "initial_aqf%02d.hdf"%(color)))
-
-		a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
-		sum_SSNR = a0[0]
+			drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
+			drop_image(var, os.path.join(outdir, "initial_var%02d.hdf"%(color)))
+			a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
+			criterion = a0[0]
+		else:
+			if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+			else:	 tavg = (ave1+ave2)/nima
+			drop_image(tavg, os.path.join(outdir, "initial_aqc%02d.hdf"%(color)))
+			criterion = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 
 		if myid == main_node:
-			print_msg("Initial criterion for average %d : %12.3e\n"%(0, sum_SSNR))
+			print_msg("Initial criterion for average %d : %15.8e\n"%(0, criterion))
 			for iave in xrange(1, number_of_ave):
-				sum_SSNR = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
-				sum_SSNR = float(sum_SSNR[0])
-				print_msg("Initial criterion for average %d : %12.3e\n"%(iave, sum_SSNR))
+				criterion = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
+				criterion = float(criterion[0])
+				print_msg("Initial criterion for average %d : %15.8e\n"%(iave, criterion))
 		else:
-			mpi_send(sum_SSNR, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
+			mpi_send(criterion, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
 	else: tavg = model_blank(nx, nx)
 	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
@@ -637,29 +670,22 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ref_data.append(center)
 		ref_data.append(None)
 		ref_data.append(None)
-		ref_data.append(fl)
-		ref_data.append(aa)
 	
 	if myid == main_node:
 		# Generate the chessboard image
-		chessboard1 = model_blank(nx, nx)
-		chessboard2 = model_blank(nx, nx)
+		chessboard = [ [model_blank(nx, nx), model_blank(nx, nx)] for x in xrange(4)]
+		grid_size = [32, 16, 8, 4]
 		for ii in xrange(nx):
-			iii = ii/grid_size
 			for jj in xrange(nx):
-				jjj = jj/grid_size
-				kkk = (iii+jjj)%2
-				chessboard1.set_value_at(ii, jj, kkk)
-				chessboard2.set_value_at(ii, jj, 1-kkk)
+				for p in xrange(4):
+					v = (ii/grid_size[p]+jj/grid_size[p])%2
+					chessboard[p][0].set_value_at(ii, jj, v)
+					chessboard[p][1].set_value_at(ii, jj, 1-v)
 		
-		# Generate the array to store goal value and average
-		# We need two times of averages because we don't want to lose the old ones
-		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave*2)]
-
 	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
-
+	cs = [0.0]*2
 	for ipt in xrange(max(restart, 0), N_merge):
 
 		if key == group_main_node:        msg = ""
@@ -667,9 +693,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if restart==-1 or ipt>restart:
 			total_iter = 0
 
-			for im in data:
-			        set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
-			cs = [0.0]*2
+			#for im in data:   set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+			#cs = [0.0]*2
+			old_criterion = -1.0e22
+			to_break = 0
 			for Iter in xrange(max_iter):
 			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
 			        cs = [float(cs[0]), float(cs[1])]
@@ -691,24 +718,30 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        	else:
 			        		mirror_change += 1
 
-			        tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
-
+			        if Fourvar:
+					tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
+				else:
+					ave1, ave2 = sum_oe(data, "a", CTF, EMData())
+					reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
+					reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
+ 			
+	
 			        mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
 			        pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
 			        if key == group_main_node:
-			        	SSNR = sumsq.copy()
-			        	Util.div_filter(SSNR, var)
-			        	a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
-			        	sum_SSNR = a0[0]
-
-			        	tavg = fft(tavg_I)
-			        	if Iter == max_iter-1:
-			        		drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
-			        		drop_image(var, os.path.join(outdir, "var%02d_%02d.hdf"%(ipt, color)))
-
-			        	real_tavg = tavg.copy()
-					if Fourvar:	tavg = fft(Util.divn_img(tavg_I, var))
+					if Fourvar:	
+				        	SSNR = sumsq.copy()
+				        	Util.div_filter(SSNR, var)
+						tavg = fft(Util.divn_img(tavg_I, var))
+				        	if Iter == max_iter-1:
+				        		drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
+				        		drop_image(var, os.path.join(outdir, "var%02d_%02d.hdf"%(ipt, color)))
+					else:
+						if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+						else:	 tavg = (ave1+ave2)/nima
+			        		if Iter == max_iter-1:
+			        			drop_image(tavg, os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
 
 			        	ref_data[2] = tavg
 			        	#  call user-supplied function to prepare reference image, i.e., center and filter it
@@ -726,115 +759,147 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        	else:
 			        		tavg, cs = user_func(ref_data)
 
-			        	if Iter == max_iter-1 and Fourvar:
+			        	if Iter == max_iter-1:
 			        		drop_image(tavg, os.path.join(outdir, "aqf%02d_%02d.hdf"%(ipt, color)))
+					
+					if Fourvar:
+						a0 = Util.infomask(filt_tophatb(SSNR, 0.01, 0.49), None, True)
+						criterion = a0[0]
+					else:
+				        	criterion = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
+					if criterion < old_criterion: to_break += 1
+					old_criterion = criterion
 
-			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %15.7e\n\n"%(ipt, color, Iter, sum_SSNR)
+			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %15.8e\n\n"%(ipt, color, Iter, criterion)
 			        else:
 			        	tavg = EMData(nx, nx, 1, True)
 			        	cs = [0.0]*2		       
 			        bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 			        total_iter += 1
+				#to_break = mpi_bcast(to_break, 1, MPI_INT, group_main_node, group_comm)
+				#to_break = int(to_break[0])
+				#if to_break >= 3: break
 
 			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
-			mirror_list = [0]*(nima*number_of_ave)
+			mirror_list = [0]*len(data)
 			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
 			finfo = open(info_file, "w")
-			for nim in xrange(image_start, image_end):
-			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim-image_start])
+			for nim in xrange(len(data)):
+			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim])
 			        finfo.write("%20f %20f %20f %10d %10.4f\n"%(alpha, sx, sy, mirror, 1.0))
-			        mirror_list[nim+color*nima] = mirror
+			        mirror_list[nim] = mirror
 			finfo.close()
 		else:
 			if key == group_main_node:
-				real_tavg = get_image(os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
-			mirror_list = [0]*(nima*number_of_ave)
+				tavg = get_image(os.path.join(outdir, "aqc%02d_%02d.hdf"%(ipt, color)))
+			mirror_list = [0]*len(data)
 			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
 			finfo = open(info_file, "r")
-			for nim in xrange(image_start, image_end):
+			for nim in xrange(len(data)):
 				s = finfo.readline()
 				ss = split(s)
 				alpha = atof(ss[0])
 				sx = atof(ss[1])
 				sy = atof(ss[2])
 				mirror = atoi(ss[3])
-				set_params2D(data[nim-image_start], [alpha, sx, sy, mirror, 1.0])
-			        mirror_list[nim+color*nima] = mirror
+				set_params2D(data[nim], [alpha, sx, sy, mirror, 1.0])
+			        mirror_list[nim] = mirror
 			finfo.close()
-		
-		mirror_list = mpi_reduce(mirror_list, nima*number_of_ave, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
+		mirror_list_gathered = mpi_gatherv(mirror_list, len(data), MPI_INT, recvcount, disps2, MPI_INT, main_node, MPI_COMM_WORLD)
 
 		if key == group_main_node:
 			if myid == main_node:
 				# Print the message on the main node
 				print_msg(msg)
 				
-				if number_of_ave > 1:
-					# Print the message received from the group main node
-					for isav in xrange(1, number_of_ave):
-					        msg = mpi_recv(500*max_iter, MPI_INT, isav, isav+100, MPI_COMM_WORLD)
-					        msg_string = ""
-					        index = 0
-					        num = msg[index]
-					        while num != 0:
-					        	msg_string += chr(num)
-					        	index += 1
-					        	num = msg[index]
-					        print_msg(msg_string)
+				# Print the message received from the group main node
+				for isav in xrange(1, number_of_ave):
+				        msg = mpi_recv(500*max_iter, MPI_INT, isav, isav+100, MPI_COMM_WORLD)
+				        msg_string = ""
+				        index = 0
+				        num = msg[index]
+				        while num != 0:
+				        	msg_string += chr(num)
+				        	index += 1
+				        	num = msg[index]
+				        print_msg(msg_string)
 
-					# Calculate and print the stability information
-					avg_mirror_stable = 0
-					for iii in xrange(number_of_ave-1):
-					        for jjj in xrange(iii+1, number_of_ave):
-					        	mirror_change = 0
-					        	for nim in xrange(nima):
-					        		mirror_change += abs(int(mirror_list[iii*nima+nim])-int(mirror_list[jjj*nima+nim]))
-					        	if mirror_change < 0.5*nima:
-					        		mirror_change = nima-mirror_change
-					        	avg_mirror_stable += mirror_change
-					        	print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))  		       
-					print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
+				# Calculate and print the stability information
+				mirror_list_gathered = mirror_list_gathered.tolist()
+				avg_mirror_stable = 0
+				for iii in xrange(number_of_ave-1):
+				        for jjj in xrange(iii+1, number_of_ave):
+				        	mirror_change = 0
+				        	for nim in xrange(nima):
+				        		mirror_change += abs(int(mirror_list_gathered[iii*nima+nim])-int(mirror_list_gathered[jjj*nima+nim]))
+				        	if mirror_change < 0.5*nima:
+				        		mirror_change = nima-mirror_change
+				        	avg_mirror_stable += mirror_change
+				        	print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))  		       
+				print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
-					# Collect all averages and align them
-					for isav in xrange(number_of_ave):
-						qt[isav+number_of_ave][0] = qt[isav][0]
-						qt[isav+number_of_ave][1] = qt[isav][1]
-					        if isav == 0:
-							img = real_tavg.copy()
-						        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), 0)
-						else:
-							img = recv_EMData(isav, isav+200)
-						        img.write_image(os.path.join(outdir, "avg_before_ali%02d.hdf"%(ipt)), isav)
-							alpha, sx, sy, mirror, peak = align2d(img, real_tavg, 3.0, 3.0, 0.125, last_ring = last_ring)
-							img = rot_shift2D(img, alpha, sx, sy, mirror)
-					        img.write_image(os.path.join(outdir, "avg_after_ali%02d.hdf"%(ipt)), isav)
-					        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
-						qt[isav][1] = img
+				# Collect all averages and sort them according to the criterion
+				savg = [tavg.copy()]
+				tavg.write_image(os.path.join(outdir, "avg_before_merge%02d.hdf"%(ipt)), 0)
+				for isav in xrange(1, number_of_ave):
+				        img = recv_EMData(isav, isav+200)
+				        savg.append(img.copy())
+				        img.write_image(os.path.join(outdir, "avg_before_merge%02d.hdf"%(ipt)), isav)
+					
+				# Generate the array to store goal value and index
+				qt = [[0.0, 0] for inp in xrange(number_of_ave)]
 
-					qt.sort(reverse = True)
-
-					index = range(number_of_ave)
-					shuffle(index)
-					for isav in xrange(0, number_of_ave-1, 2):
-					        img1 = Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[isav+1]][1], chessboard2))
-					        img2 = Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard2), Util.muln_img(qt[index[isav+1]][1], chessboard1))
-					        img1.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
-					        img2.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav+1)
-						if isav == 0:
-							tavg = img1.copy()
-						else:
-							send_EMData(img1, isav, isav+300)
-						send_EMData(img2, isav+1, isav+1+300)
-					if number_of_ave%2 == 1:
-					        img = Util.addn_img(Util.muln_img(qt[index[0]][1], chessboard1), Util.muln_img(qt[index[nunber_of_ave-1]][1], chessboard2))
-					        img.write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), number_of_ave-1)
-					        send_EMData(img, number_of_ave-1, number_of_ave-1+300)
-				else:
-					real_tavg.write_image(os.path.join(outdir, "avg%02d.hdf"%(ipt)), 0)
-					tavg = real_tavg.copy()
+				for isav in xrange(number_of_ave):
+				        qt[isav][0] = savg[isav].cmp("dot", savg[isav], dict(negative = 0, mask = ref_data[0]))
+					qt[isav][1] = isav
+	
+				print_msg("-"*100+"\n")
+				for isav in xrange(number_of_ave):
+					print_msg("Criterion for average %2d: %20.8f\n"%(isav, qt[isav][0]))
+				print_msg("-"*100+"\n")
+				
+				# sort and delete the worst half of the particles
+				qt.sort(reverse = True)
+				for isav in xrange(number_of_ave-1, number_of_ave/2, -1):
+					del qt[isav]
+					
+				# delete some of the similiar particles
+				l = 1
+				while l+1 < len(qt):
+					if ccc(savg[qt[l-1][1]], savg[qt[l][1]], mask) < ccc(savg[qt[l][1]], savg[qt[l+1][1]], mask):
+						del qt[l]
+					l += 1
+				
+				# countint the average left and recombine them
+				l = len(qt)/2*2   # ensure it is even
+				print_msg("%d averages left after the selection process.\n"%(l))
+				tsavg = [None]*(l*4) 
+				source = [[0, 0, 0] for i in xrange(l*4)]
+				index = range(l)
+				shuffle(index)
+				
+				for isav in xrange(0, l, 2):
+					for p in xrange(4):
+				        	tsavg[p*l+isav] = Util.addn_img(Util.muln_img(savg[index[isav]], chessboard[p][0]), Util.muln_img(savg[index[isav+1]], chessboard[p][1]))
+				        	tsavg[p*l+isav+1] = Util.addn_img(Util.muln_img(savg[index[isav]], chessboard[p][1]), Util.muln_img(savg[index[isav+1]], chessboard[p][0]))
+						source[p*l+isav][0] = index[isav]
+						source[p*l+isav][1] = index[isav+1]
+						source[p*l+isav][2] = p
+						source[p*l+isav+1][0] = index[isav]
+						source[p*l+isav+1][1] = index[isav+1]
+						source[p*l+isav+1][2] = p
+					
+				for isav in xrange(number_of_ave):
+					print_msg("The new average %2d is merged from average %2d and average %2d using the chessboard of grid size %2d.\n"%(isav, source[isav][0], source[isav][1], grid_size[source[isav][2]]))
+				        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+				for isav in xrange(1, number_of_ave):
+				        send_EMData(tsavg[isav], isav, isav+300)
+				tavg = tsavg[0].copy()
+				del tsavg
 			else:
 				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
-				send_EMData(real_tavg, main_node, color+200)
+				send_EMData(tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		mpi_barrier(MPI_COMM_WORLD)
