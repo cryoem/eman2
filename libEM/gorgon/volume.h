@@ -7,12 +7,15 @@
 #include "priority_que.h"
 #include <vector>
 
+namespace EMAN {
+
 class Volume
 {
 private:
-	PriorityQueue* que;
+	PriorityQueue<int, int>* que;
 public:
 	Volume(int que_max);
 };
 
+}
 #endif

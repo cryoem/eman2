@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstdio>
 
+namespace EMAN {
+
 template < class ValueT, class KeyT >
 class PriorityQueue
 {
@@ -19,10 +21,28 @@ public:
 
 	/// Queue of keys
 	KeyT * keyQueue ;
-	
-	PriorityQueue ( int max );
-	int get_que_length();
-	int get_max_length();
+
+	PriorityQueue ( int max )
+	{
+		this->maxLength = max ;
+		this->queueLength = 0 ;
+		this->valueQueue = new ValueT* [ max ] ;
+		this->keyQueue = new KeyT [ max ] ;
+
+	}
+
+	int get_que_length()
+	{
+		return queueLength;
+	}
+
+	int get_max_length()
+	{
+		return maxLength;
+	}
 };
+
+
+}
 
 #endif

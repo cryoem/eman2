@@ -74,6 +74,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/varimax.cpp
     sparx/lbfgsb.cpp
     sparx/steepest.cpp
+    gorgon/volume.cpp
     )
 
 SET(LIB_GLEM_SOURCE 
