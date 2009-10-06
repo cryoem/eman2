@@ -1553,6 +1553,9 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			for i in xrange(nx):
 				val = float(line[i])
 				im.set_value_at_fast(i, 0, val)
+			
+			if mask != None: im = Util.compress_image_mask(im, mask)
+
 			IM[c] = im.copy()
 			c += 1
 			
