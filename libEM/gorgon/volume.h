@@ -18,14 +18,21 @@ class Volume
 {
 private:
 	EMData* emdata;
-	PriorityQueue<int, int>* que;
+	/* Sizes */
+	int sizex, sizey, sizez ;
+	float spacingX, spacingY, spacingZ;
+	float originX, originY, originZ;
+
+	/* Data array */
+	float * data ;
 public:
 	//I commented out the overloaded versions that aren't used by PerformPureJuSkeletonization().	
 
 	Volume(int que_max);
 
 	Volume()
-	{	emdata = new EMData;
+	{	
+		emdata = new EMData;
 	}
 	Volume(EMData* wrap_this)
 	{	emdata = wrap_this;
@@ -57,8 +64,9 @@ public:
 	void setDataAt(int x, int y, int z, double d )
 	{	emdata->set_value_at(x,y,z, static_cast<float>(d));
 	}
+
 		
-	
+/*
 	void curveSkeleton(float thr, Volume* svol);
 	//void curveSkeleton(Volume* grayvol, float lowthr, float highthr, Volume* svol);
 	void curveSkeleton2D(float thr, Volume * svol);
@@ -71,6 +79,7 @@ public:
 	void skeleton(float thr, Volume* svol, Volume* hvol);
 	//void surfaceSkeletonPres(float thr);
 	void surfaceSkeletonPres(float thr, Volume* svol);
+*/
 };
 
 }
