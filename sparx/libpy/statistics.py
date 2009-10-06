@@ -3767,14 +3767,18 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 	else:   switch_SA = False
 	ferror = 0
 	ite    = 0
+	memct  = 0
+	stopct = 5
 	while ite < maxit:
 		if switch_SA:
 			status = Kmeans.one_iter_SA()
 			T      = Kmeans.get_T()
 			ct     = Kmeans.get_ct_im_mv()
 			print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+			if ct == 0: memct += 1
+			else:       memct  = 0
 			T *= F
-			if T < 0.00001: switch_SA = False
+			if T < 0.00001 or memct >= stopct : switch_SA = False
 			Kmeans.set_T(T)
 		else:   
 			status = Kmeans.one_iter()

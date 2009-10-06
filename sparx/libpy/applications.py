@@ -12399,7 +12399,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 					CTF, T0, F, rand_seed, 1, m)
 		
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_classical(IM, mask, K, rand_seed, maxit, \
+			[Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, \
 					trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 		elif opt_method == 'SSE':
 			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, \
