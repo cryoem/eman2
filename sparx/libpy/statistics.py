@@ -3753,7 +3753,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 		sys.exit()
 	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
 	Kmeans.compute_im2()
-	status = Kmeans.init_mem(0)
+	status = Kmeans.init_mem(-1)
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
@@ -3777,6 +3777,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 			status = Kmeans.one_iter_SA()
 			T      = Kmeans.get_T()
 			ct     = Kmeans.get_ct_im_mv()
+						
 			print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 			if ct == 0: memct += 1
 			else:       memct  = 0
@@ -3788,6 +3789,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 			ct     = Kmeans.get_ct_im_mv()
 			print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 			if status == 255: break
+
 		ite += 1
 		if status != 0 and status != 255:
 			ferror = 1
@@ -5550,10 +5552,9 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 				fftip(AVE[ck])
 				AVE[ck].depad()
 			else:
-
 				for ID in PART[k]:
 					im.read_image(stack, int(ID))
-					if( im.get_ysize() > 1):  # here you should have testing of sizes, as during the input PAP 08/11/09
+					if im.get_ysize() > 1:
 						alpha, sx, sy, mirror, scale = get_params2D(im)
 						im = rot_shift2D(im, alpha, sx, sy, mirror)
 
@@ -5564,7 +5565,7 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 			AVE[ck].set_attr('nobjects', nobjs)
 			AVE[ck].set_attr('members', PART[k])
 			AVE[ck].set_attr('k_ref', k)
-			AVE[ck].write_image(outdir + '/averages.hdf', ck)  # change to proper merging of dir names PAP
+			AVE[ck].write_image(outdir + '/averages.hdf', ck)
 			ck += 1
 		else:
 			lrej.extend(PART[k])

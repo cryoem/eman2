@@ -12437,18 +12437,17 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2009-07-29 14:06:54 new code
 
 # K-means main stability stream command line, CUDA version
-def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, match = 'pwa'):
-	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im, file_type
-	from statistics  import k_means_cuda_init_open_im, k_means_cuda_open_im
-	from statistics  import k_means_cuda_headlog, k_means_cuda_error, k_means_cuda_info
-	from statistics  import k_means_stab_update_tag, k_means_stab_gather, k_means_locasg2glbasg
-	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_cuda_export, k_means_stab_H
-	import sys, logging, os, pickle
+def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
+	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	from statistics import k_means_locasg2glbasg, k_means_stab_asg2part, k_means_stab_export
+	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
+	from statistics import k_means_cuda_export, k_means_stab_pwa, k_means_stab_H
+	from statistics import k_means_CUDA
+	import sys, os, logging, pickle
 
 	ext = file_type(stack)
-	TXT = False
 	if ext == 'txt': TXT = True
+	else:            TXT = False
 
 	# create a directory
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -12465,25 +12464,15 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 	rnd = []
 	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
 	logging.info('Init list random seed: %s' % rnd)
-
-	maxit        = int(1e9)
-	T0           = float(-1) # auto
 	logging.info('K = %03d %s' % (K, 40 * '-'))
-
-	# create k-means obj
-	KmeansCUDA = CUDA_kmeans()
 
 	# open unstable images
 	logging.info('... Open images')
-	LUT, mask, N, m = k_means_cuda_init_open_im(stack, maskname)
-	if not TXT: Ntot = EMUtil.get_image_count(stack)
-	else:       Ntot = N
+	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	logging.info('... %d unstable images found' % N)
 	if N < 2:
 		logging.info('[STOP] Not enough images')
 		sys.exit()
-	KmeansCUDA.setup(m, N, K, F, T0, maxit, 0)
-	k_means_cuda_open_im(KmeansCUDA, stack, LUT, mask)
 
 	# loop over partition
 	print_begin_msg('k-means')
@@ -12496,32 +12485,13 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_no
 		k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
 
 		# classification
-		KmeansCUDA.set_rnd(rnd[n])
-		status = KmeansCUDA.kmeans()
-		if   status == 0:
-			pass
-		elif status == 5 or status == 4:
-			logging.info('[WARNING] Empty cluster')
-			k_means_cuda_error(status)
-			sys.exit()
-		else:
-			k_means_cuda_error(status)
-			logging.info('[ERROR] CUDA status %i' % status)
-			sys.exit()
-
-		# get back the partition and its infos
-		ASG  = KmeansCUDA.get_partition()
-		INFO = KmeansCUDA.get_info()
-		k_means_cuda_info(INFO)
-		AVE  = KmeansCUDA.get_averages()
+		ASG, AVE, crit = k_means_CUDA(stack, mask, LUT, m, N , K, maxit, F, T0, rnd[n])
 		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
-		k_means_cuda_export(GASG, AVE, outdir, mask, n)
+		#logging.info('length gasg: %i' % len(GASG))
+		k_means_cuda_export(GASG, AVE, outdir, mask, crit, n, TXT)
 		
 	# end of classification
 	print_end_msg('k-means')
-
-	# destroy k-means
-	del KmeansCUDA
 
 	# read assignment and convert to partition
 	logging.info('... Matching')

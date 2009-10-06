@@ -46,14 +46,16 @@ int cuda_readinit() {
 
 ////// Init mem device //////////////////
 int cuda_mpi_init(float* h_IM, float** hd_IM, float** hd_AVE, float** hd_DIST, int size_IM, int size_AVE, int size_DIST, int rnd, int numdev) {
-
     int status;
     float* d_AVE = NULL;
     float* d_IM = NULL;
     float* d_DIST = NULL;
 
     // Select a device
-    if (EXIT_OK != cudaSetDevice(numdev)) return ERROR_SETDEVICE;
+    if (numdev != -1) {
+	if (EXIT_OK != cudaSetDevice(numdev)) return ERROR_SETDEVICE;
+    }
+
     // Initialize CUBLAS
     srand(rnd);
     if (CUBLAS_STATUS_SUCCESS != cublasInit()) return ERROR_DEVICE;
