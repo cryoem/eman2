@@ -84,6 +84,7 @@ def exclude( prjccc, nexclude, bothside ):
 
 def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, fh=None, CTF=False, nexclude=0, bothside=False, MPI=False, verbose=True ):
 	from projection import prep_vol,prgs
+	from utilities  import file_type
 
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, mpi_reduce
@@ -103,13 +104,17 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 		finf.write( "begin, end: %d %d\n" %(beg, end) )
 		finf.flush()
 
+	ext = file_type(prjfile)
+	if ext == "bdb": DB = db_open_dict(prjfile)
 	if voronoi:
 		angs = [0.0] * (2*nprj)
 		for iprj in xrange(beg,end):
-			phi,tht,psi,s2x,s2y = get_params_proj( get_im( prjfile, iprj ) )
+			img = EMData()
+			img.read_image(prjfile, iprj, True)
+			phi,tht,psi,s2x,s2y = get_params_proj( img )
 			angs[2*iprj] = phi
 			angs[2*iprj+1] = tht
-		
+
 		if MPI:
 			angs = mpi_reduce( angs, 2*nprj, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
 		if myid == 0:
@@ -137,8 +142,9 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 	for iprj in xrange(beg, end):
 
 		if not voronoi:
-			prj = get_im( prjfile, iprj )
-			phi,tht,psi,s2x,s2y = get_params_proj( prj )
+			img = EMData()
+			img.read_image(prjfile, iprj, True)
+			phi,tht,psi,s2x,s2y = get_params_proj( img )
 			aid = nearest_ang( eve_vecs, phi, tht )
 
 			if verbose:
@@ -150,16 +156,16 @@ def bootstrap_calcwgts( prjfile, wgtfile, voronoi, delta, refvol=None, fl=None, 
 
 		if not(refvol is None):
 			refprj = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y] )
-			if( fl is None or fh is None ):
-				fltprj = prj
-			else:
-				fltprj = filt_tanl( prj, fl, fh )
+			img.read_image(prjfile, iprj)
+			if( not(fl is None or fh is None) ):
+				img = filt_tanl( img, fl, fh )
 
 			if CTF:
 				ctf_params = prj.get_attr( "ctf" )
 				refprj = filt_ctf( refprj, ctf_params )
 
-			prjccc[iprj] =  ccc( refprj, fltprj )
+			prjccc[iprj] =  ccc( refprj, img )
+	if ext == "bdb": DB.close()
 	if MPI:
 		if not(voronoi):
 			occurs = mpi_reduce( occurs, len(occurs), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -227,6 +233,7 @@ def main():
 	parser.add_option("--fh",       type="float",        default=None,  help="before calculate projection apply filtration to projection" )
 	parser.add_option("--nexclude", type="int",          default=None,  help="number of projections (with lowest CCC) to be excluded." )
 	parser.add_option("--exclude_bothside", action="store_true", default=False, help="exclude also projection with highest CCC." )
+	parser.add_option("--verbose",  action="store_true", default=False, help="verbose" )
 
 
 	(options, args) = parser.parse_args( arglist[1:] )
@@ -250,7 +257,7 @@ def main():
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
 
-	bootstrap_calcwgts( prjfile, wgtfile, options.voronoi, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI )
+	bootstrap_calcwgts( prjfile, wgtfile, options.voronoi, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI, options.verbose )
 
 
 if __name__ == "__main__":
