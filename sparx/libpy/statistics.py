@@ -980,21 +980,20 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 	from fundamentals import fft, rot_shift2D, rot_avg_table
 	from morphology   import ctf_img, threshold
 	from filter       import filt_ctf
-	from utilities    import get_arb_params, get_params2D
+	from utilities    import get_params2D
 	import  types
 	
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	if (type(data) is types.StringType):
+	if type(data) is types.StringType:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
-		if(ima.get_attr_default('ctf_applied', 1) == 1):
+		if ima.get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied","ssnr2d",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 		nz = ima.get_zsize()
 	else:
-		if(data[0].get_attr_default('ctf_applied', 1) == 1):
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied","ssnr2d",1)
 		n = len(data)
 		nx = data[0].get_xsize()
@@ -1006,17 +1005,17 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 	var       = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if (type(data) is types.StringType):
+		if type(data) is types.StringType:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
-		ctf_params = get_arb_params(ima, parnames)
-		if(mode == "a"):
+		ctf_params = ima.get_attr('ctf')
+		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		if(mask):  Util.mul_img(ima, mask)
-		ctfimg = ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = ny, nz = nz)
+		if mask:  Util.mul_img(ima, mask)
+		ctfimg = ctf_img(nx, ctf_params)
 		Util.add_img2(ctf_2_sum, ctfimg)
 		ima = fft(ima)
 		Util.add_img2(var, ima)
@@ -1035,7 +1034,7 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 	rsumsq = rot_avg_table(sumsq)
 	rssnr = []
 	for i in xrange(len(rvar)):
-		if(rvar[i] > 0.0): qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
+		if rvar[i] > 0.0: qt = max(0.0, rsumsq[i]/rvar[i] - 1.0)
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
