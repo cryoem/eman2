@@ -389,12 +389,13 @@ class EMShape:
 			print "Invalid color set in shape ",self.shape
 			return
 			
-	def setloc(self,x0,y0,x1=None,y1=None):
-		"""This sets the coordinates of the shape"""
-		self.shape[4]=x0
-		self.shape[5]=y0
-		if x1!=None : self.shape[6]=x1
-		if y1!=None : self.shape[7]=y1
+	def translate(self,dx,dy):
+		"""This translates the shape without resizing it"""
+		self.shape[4]+=dx
+		self.shape[5]+=dy
+		if self.shape[0] in ("rect","rectpoint","rectline","line","rcircle","rcirclepoint","scrrect","scrline") :
+			self.shape[6]+=dx
+			self.shape[7]+=dy
 		
 	def incblend(self):
 		self.blend += self.blendinc

@@ -801,9 +801,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 				glTranslate(0,-(1.0-cos(d["alt"]*pi/180.0))*self.radius,0)
 
 				if self.column_scores != None:
-					glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+					glScalef(self.width_scale*(d["alt"]+5.0)/90.0,self.width_scale*(d["alt"]+5.0)/90.0,self.height_scale*self.column_scores[i])
 				else: 
-					glScalef(self.width_scale,self.width_scale,self.height_scale)
+					glScalef(self.width_scale*(d["alt"]+5.0)/90.0,self.width_scale*(d["alt"]+5.0)/90.0,self.height_scale)
 
 				glPushName(i+1)
 				glCallList(self.cappedcylinderdl)
@@ -838,9 +838,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 					glTranslate(0,(1.0-d["alt"]*2.0/pi)*self.radius,0)
 
 					if self.column_scores != None:
-						glScalef(self.width_scale,self.width_scale,self.height_scale*self.column_scores[i])
+						glScalef(self.width_scale*(d["alt"]+5.0)/90.0,self.width_scale*(d["alt"]+5.0)/90.0,self.height_scale*self.column_scores[i])
 					else: 
-						glScalef(self.width_scale,self.width_scale,self.height_scale)
+						glScalef(self.width_scale*(d["alt"]+5.0)/90.0,self.width_scale*(d["alt"]+5.0)/90.0,self.height_scale)
 		
 					glPushName(i+1)
 					glCallList(self.cappedcylinderdl)
@@ -1198,9 +1198,9 @@ class EMSymViewerWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMat
 #		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.8,.8,.8, 1.0])
 #		glLightfv(GL_LIGHT0, GL_SPECULAR, [.2, .2, .2, 1.0])
 #		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.5,.5,.5, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [.3,.3,.3, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)

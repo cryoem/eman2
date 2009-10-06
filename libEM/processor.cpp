@@ -5235,7 +5235,7 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 
 	Dict params1;
 	params1["intonly"] = 1;
-	params1["maxshift"] = image->get_xsize() / 2;
+	params1["maxshift"] = image->get_xsize() / 4;
 	EMData* aligned = image->align("translational", 0, params1);
 	if ( image->get_ndim() == 3 ) {
 		Transform* t = aligned->get_attr("xform.align3d");

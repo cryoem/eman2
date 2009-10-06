@@ -640,7 +640,7 @@ def EMSelectorBaseTemplate(Type):
 				if delegate.handles_url(url): 
 					items = delegate.get_items(url)
 					for item in items:
-						if ".hed" in item.get_url(): continue
+						if item.get_url()!=None and ".hed" in item.get_url(): continue
 						list_widget.addItem(item)
 					ret = True
 					list_widget.set_url(url)
