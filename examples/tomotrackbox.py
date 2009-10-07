@@ -169,7 +169,7 @@ class TrackerControl(QtGui.QWidget):
 		self.imvol.show()
 		self.imvol.updateGL()
 
-		sz=map3d["nx"]
+		sz=self.map3d["nx"]
 		xsum=self.map3d.process("misc.directional_sum",{"direction":"x"})
 		xsum.set_size(sz,sz,1)
 		ysum=self.map3d.process("misc.directional_sum",{"direction":"y"})
