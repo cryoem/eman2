@@ -423,15 +423,28 @@ class EMStackSaveDialog(EMFileSaver):
 		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
 		progress.show()
 		tally = 0
+		exc_list = None
+		if hasattr(self.__item_list, "excluded_list"):
+			# this is a stop gap - there is probably a better way to do it...
+			exc_list = self.__item_list.excluded_list
 		for i in range(total_images):
+			if exc_list:
+				try:
+					(j for j in exc_list if j == i ).next() 
+					# it's in the exc_list
+					continue
+				except: pass
+			
 			if isinstance(self.__item_list[i],EMData):
 				d = self.__item_list[i]
 			else:
 				try:
 					d = self.__item_list[i].get_data() # this will be case from the selector
 				except:
-					d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
-					if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface
+					print "unknown situation" # contact David Woolford 
+					# this might be redundant now
+					#d = self.__item_list.get_item_from_emsave(i) # this will be the case from emimagemx
+					#if d == None: continue # this will be the case if the image is shown as deleted in the emimagemx interface
 			
 			progress.setValue(tally)
 			tally += 1

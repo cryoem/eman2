@@ -1681,6 +1681,7 @@ class EMImageMXModule(EMGUIModule):
 		file_name = save_data(self.data)
 		if file_name == self.file_name and file_exists(file_name): # the file we are working with was overwritten
 			self.set_data(file_name)
+		self.data.set_excluded_ptcls(None)
 
 	def save_lst(self,fsp):
 		'''
@@ -2435,8 +2436,11 @@ class EMMXDeletionManager:
 		self.deleted_idxs = []
 	def delete_box(self,idx):
 		val = self.target().get_data().delete_box(idx)
-		if val == 0:
-			self.deleted_idxs.append(idx)
+		if val == 0: # value == 0 means responsibility is deferred to the EMMXDeletionManager
+			try:
+				#http://dev.ionous.net/2009/01/python-find-item-in-list.html
+				self.deleted_idxs.remove(idx)
+			except:	self.deleted_idxs.append(idx)
 			
 	def deleted_ptcls(self):
 		return self.deleted_idxs
