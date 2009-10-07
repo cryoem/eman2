@@ -140,17 +140,24 @@ class TrackerControl(QtGui.QWidget):
 		
 		self.show()
 		self.im2d.show()
-
-	def do_cenalign(self,x):
+		
+	def closeEvent(self,event):
+		self.im2d.closeEvent(QtGui.QCloseEvent())
+		self.imboxed.closeEvent(QtGui.QCloseEvent())
+		self.improj.closeEvent(QtGui.QCloseEvent())
+		self.imvol.closeEvent(QtGui.QCloseEvent())
+		event.accept()
+		
+	def do_cenalign(self,x=0):
 		self.cenalign_stack()
 		self.update_stack()
 		
-	def do_projalign(self,x):
+	def do_projalign(self,x=0):
 		self.projection_align()
 		self.update_stack()
-		self.do_reconst()
+#		self.do_reconst()
 
-	def do_reconst(self,x):
+	def do_reconst(self,x=0):
 		stack=self.get_boxed_stack()
 		self.map3d=self.reconstruct(stack,2.0)
 		self.update_3d()
@@ -177,7 +184,7 @@ class TrackerControl(QtGui.QWidget):
 		zsum=self.map3d.process("misc.directional_sum",{"direction":"z"})
 		zsum.set_size(sz,sz,1)
 		
-		self.improj.set_data([xsum,ysum,zsum])
+		self.improj.set_data([zsum,ysum,xsum])
 		self.improj.show()
 		self.improj.updateGL()
 
@@ -336,14 +343,16 @@ class TrackerControl(QtGui.QWidget):
 			trg=EMData(self.imagefile,0,False,Region(curshape[4]-self.maxshift,curshape[5]-self.maxshift,i,curshape[6]-curshape[4]+self.maxshift*2,curshape[7]-curshape[5]+self.maxshift*2,1))
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
+			if self.invert : trg.mult(-1.0)
 			
 			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
 			trans=aln["xform.align2d"].get_trans()
+			print i,trans[0],trans[1]
+			if i==len(stack)-1 : display([ref,trg,aln])
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
 			self.tiltshapes[i].translate(trans[0],trans[1])
 
-			print i,trans[0],trans[1]
 		
 	
 	def find_boxes(self,mainshape):
