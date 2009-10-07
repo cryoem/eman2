@@ -48,9 +48,15 @@ def e2boxer2_check(options,args):
 		if not db_check_dict(db_name): error_message.append("There is no autoboxing information present in the current directory")
 		else:
 			db = db_open_dict(db_name)
-			if not db.has_key(options.autoboxer): error_message.append("There is no autoboxing information present for %s" %options.autoboxer)
-			else:
-				print "yaya"
+			if not db.has_key(options.autoboxer): 
+				s = "There is no autoboxing information present for %s." %options.autoboxer
+				if len(db.keys()) > 0:
+					s+= ("Choose from")
+					for k in db.keys():
+						try: s+=" "+str(k)+";"
+						except: pass
+				error_message.append(s)
+			else: pass #print "yaya"
 #				print db.keys(),options.autoboxer
 #				for k,v in db.items(): print k,v
 #				print db[options.autoboxer]
@@ -1404,7 +1410,7 @@ class SwarmBoxer:
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 			
 		if self.gui_mode: self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
-	
+		else: print "Autoboxed %d Particles" %len(boxes)
 	def update_opt_picking_data(self):
 		'''
 		This is the function that decides on the picking parameters of the SwarmBoxer, based on the reference

@@ -763,8 +763,9 @@ class EMClassAveTask(EMTask):
 			
 			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
 			this.del_attr("xform.align2d")
+			print options["ralign"],options["raligncmp"]
 			aligned = this.align(options["ralign"][0],to,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
-			
+			print aligned["xform.align2d"]
 		return aligned
 	
 	def __cmp_using_ali(self,average,alis,images):
