@@ -1404,7 +1404,6 @@ class EMImage2DModule(EMGUIModule):
 		
 		glPointSize(2)
 		for k,s in self.shapes.items():
-			
 			if k == self.active[0]:
 				vals = s.shape[1:8]
 				vals[0:3] = self.active[1:4]
@@ -1455,7 +1454,9 @@ class EMImage2DModule(EMGUIModule):
 					GL.glPopMatrix()
 				else:
 #					print "shape",s.shape
+					GL.glPushMatrix()
 					s.draw()		# No need for coordinate transform any more
+					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 			

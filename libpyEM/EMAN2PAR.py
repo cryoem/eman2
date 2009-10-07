@@ -591,7 +591,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		if self.verbose>1 : print "Thread %s start"%threading.currentThread().getName()
 		
 		# periodic housekeeping, but not if too busy
-		if threading.active_count()>=DCMAXTHREADS :  EMDCTaskHandler.lasthk = time.time()
+		if threading.activeCount()>=DCMAXTHREADS :  EMDCTaskHandler.lasthk = time.time()
 		if time.time()-EMDCTaskHandler.lasthk>30 :
 			EMDCTaskHandler.lasthk=time.time()
 			self.housekeeping()
@@ -607,7 +607,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 		# if we have too many threads, we trigger the client to sleep a while before even doing a handshake
 		# We'll try not to make localhost wait
-		if threading.active_count()>DCMAXTHREADS and self.client_address!="127.0.0.1":
+		if threading.activeCount()>DCMAXTHREADS and self.client_address!="127.0.0.1":
 			self.sockf.write("WAIT")
 			self.sockf.flush()
 			if self.verbose>1 : print "Telling client to wait ",self.client_address

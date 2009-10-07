@@ -300,7 +300,7 @@ class EMShape:
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		else:
-			mx=GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
+			#mx=GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
 			GL.glPopMatrix()
 			GL.glPushMatrix()
 			if s[0]=="scrrect":
@@ -359,7 +359,7 @@ class EMShape:
 				GL.glTranslate(s[4],s[5],0)
 				GL.glScalef(s[6],s[6],s[6])
 				GL.glCallList(EMShape.dlists)
-			GL.glLoadMatrixf(mx)
+			#GL.glLoadMatrixf(mx)
 		
 		if self.isanimated:
 			GL.glDisable( GL.GL_BLEND);

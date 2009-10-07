@@ -207,11 +207,11 @@ class TrackerControl(QtGui.QWidget):
 		if self.invert : self.curimg.mult(-1.0)
 		self.im2d.set_data(self.curimg)
 
-		s=EMShape(["scrlabel",.7,.7,0,20.0,20.0,"%d"%self.curtilt,200.0,1])
+		s=EMShape(["scrlabel",.7,.3,0,20.0,20.0,"%d"%self.curtilt,200.0,1])
 		self.im2d.add_shape("tilt",s)
 		
 		if self.tiltshapes[self.curtilt]!=None :
-			self.im2d.add_shape("boxset",self.tiltshapes[self.curtilt])
+			self.im2d.add_shape("finalbox",self.tiltshapes[self.curtilt])
 		self.im2d.updateGL()
 
 	def change_tilt(self,direc):
