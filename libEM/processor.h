@@ -6585,11 +6585,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	public:
 		MPICUDA_kmeans();
 		~MPICUDA_kmeans();
-		int setup(int extm, int extN, int extn, int extK, int extrnd, int extn_start);
+		int setup(int extm, int extN, int extn, int extK, int extn_start);
 		void append_flat_image(EMData* im, int pos);
 		int init_mem(int numdev);
 		void compute_im2();
-		int random_ASG();
+		int random_ASG(long int rnd);
 		vector<int> get_ASG();
 		vector<int> get_asg();
 		void compute_NC();
@@ -6615,7 +6615,6 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		int K;
 		int nb_part;
 		int n_start;
-		int rnd;
 		int size_im;
 		int size_IM;
 		int size_AVE;

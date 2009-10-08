@@ -3739,14 +3739,15 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:                 return None, None
 
 # K-mean CUDA
-def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
+def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1):
 	from statistics import k_means_cuda_error, k_means_cuda_open_im
+	from statistics import k_means_locasg2glbasg, k_means_cuda_export
 	from utilities  import print_msg, running_time
 	from time       import time
 
 	# Init memory
 	Kmeans = MPICUDA_kmeans()
-	status = Kmeans.setup(m, N, N, K, rand_seed, 0)
+	status = Kmeans.setup(m, N, N, K, 0)
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
@@ -3757,60 +3758,70 @@ def k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed):
 		k_means_cuda_error(status)
 		sys.exit()
 
-	# Init averages
-	Kmeans.random_ASG()
-	Kmeans.compute_AVE()
+	if isinstance(rand_seed, list): rnd = rand_seed
+	else:                           rnd = [rand_seed]
+	
+	for ipart in xrange(nbpart):
+		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))
 
-	# K-means iteration
-	t_start = time()
-	if F != 0:
-		switch_SA = True
-		Kmeans.set_T(T0)
-	else:   switch_SA = False
-	ferror = 0
-	ite    = 0
-	memct  = 0
-	stopct = 5
-	while ite < maxit:
-		if switch_SA:
-			status = Kmeans.one_iter_SA()
-			T      = Kmeans.get_T()
-			ct     = Kmeans.get_ct_im_mv()
-						
-			print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
-			if ct == 0: memct += 1
-			else:       memct  = 0
-			T *= F
-			if T < 0.00001 or memct >= stopct : switch_SA = False
-			Kmeans.set_T(T)
-		else:   
-			status = Kmeans.one_iter()
-			ct     = Kmeans.get_ct_im_mv()
-			print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
-			if status == 255: break
-
-		ite += 1
-		if status != 0 and status != 255:
-			ferror = 1
-			break
-
-		# update
+		# Init averages
+		Kmeans.random_ASG(rnd[ipart])
 		Kmeans.compute_AVE()
 
-	if ferror:
-		k_means_cuda_error(status)
-		exit()
+		# K-means iteration
+		t_start = time()
+		if F != 0:
+			switch_SA = True
+			Kmeans.set_T(T0)
+		else:   switch_SA = False
+		ferror = 0
+		ite    = 0
+		memct  = 0
+		stopct = 5
+		while ite < maxit:
+			if switch_SA:
+				status = Kmeans.one_iter_SA()
+				T      = Kmeans.get_T()
+				ct     = Kmeans.get_ct_im_mv()
 
-	running_time(t_start)
-	print_msg('Number of iterations        : %i\n' % ite)	
-	Ji = Kmeans.compute_ji()
-	Je, C, H, DB = Kmeans.compute_criterion(Ji)
-	AVE  = Kmeans.get_AVE()
-	ASG  = Kmeans.get_ASG()
+				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				if ct == 0: memct += 1
+				else:       memct  = 0
+				T *= F
+				if T < 0.00001 or memct >= stopct : switch_SA = False
+				Kmeans.set_T(T)
+			else:   
+				status = Kmeans.one_iter()
+				ct     = Kmeans.get_ct_im_mv()
+				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				if status == 255: break
+
+			ite += 1
+			if status != 0 and status != 255:
+				ferror = 1
+				break
+
+			# update
+			Kmeans.compute_AVE()
+
+		if ferror:
+			k_means_cuda_error(status)
+			exit()
+
+		running_time(t_start)
+		print_msg('Number of iterations        : %i\n' % ite)	
+		Ji   = Kmeans.compute_ji()
+		crit = Kmeans.compute_criterion(Ji)
+		AVE  = Kmeans.get_AVE()
+		ASG  = Kmeans.get_ASG()
+		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
+		if nbpart > 1: k_means_cuda_export(GASG, AVE, outdir, mask, crit, ipart, TXT)
+		else:          k_means_cuda_export(GASG, AVE, outdir, mask, crit,    -1, TXT)
+
 	Kmeans.shutdown()
 	del Kmeans
 
-	return ASG, AVE, [Je, C, H, DB]
+	return crit
 
 ## tmp
 def dump_AVE(AVE, mask, myid, ite = 0):
@@ -3821,16 +3832,20 @@ def dump_AVE(AVE, mask, myid, ite = 0):
         NEWAVE.write_image('ave_from_%02i_ite_%02i.hdf' % (myid, ite), k)
 
 # K-mean CUDA
-def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu):
+def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, nbpart, logging = -1):
 	from applications import MPI_start_end
 	from statistics   import k_means_cuda_error, k_means_cuda_open_im
+	from statistics   import k_means_locasg2glbasg, k_means_cuda_export
 	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
 	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
 	from utilities    import print_msg, running_time
 	from time         import time
 	import sys
 
-	if myid == main_node: t1 = time()
+	# CST
+	NGPU_PER_NODES = 4
+
+	#if myid == main_node: t1 = time()
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
@@ -3846,112 +3861,121 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, m
 		ib, ie = MPI_start_end(N, ncpu, im)
 		recvcount.append(ie - ib)
 
-	status = Kmeans.setup(m, N, n, K, rand_seed, N_start) 
+	status = Kmeans.setup(m, N, n, K, N_start) 
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
 	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
 	Kmeans.compute_im2()
-	NGPU_PER_NODES = 4
-	NB_NODES       = 4
-	id = range(NGPU_PER_NODES)
-	gpuid = []
-	for i in xrange(NB_NODES): gpuid.extend(id)
-	status = Kmeans.init_mem(gpuid[myid])
+	status = Kmeans.init_mem(myid % NGPU_PER_NODES)
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
-	# Init averages
+
 	if myid == main_node:
-		Kmeans.random_ASG()
-		ASG = Kmeans.get_ASG()
-	else:   ASG = None
-	mpi_barrier(MPI_COMM_WORLD)
-	ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
-	ASG = ASG.tolist()
-	Kmeans.set_ASG(ASG)
-	Kmeans.compute_NC()
-	Kmeans.compute_AVE()
+		if isinstance(rand_seed, list): rnd = rand_seed
+		else:                           rnd = [rand_seed]
 
-	if myid == main_node: print 'Init: ', time() - t1, 's'
-	# K-means iterations
-	if myid == main_node: t_start = time()
-	if F  != 0:
-		switch_SA = True
-		Kmeans.set_T(T0)
-	else:   switch_SA = False
+	for ipart in xrange(nbpart):
+		if logging != -1 and myid == main_node: logging.info('...... Start partition: %d' % (ipart + 1))
 
-	ite    = 0
-	fsync  = 0
-	ferror = 0
-	tite   = time()
-	s1, s2, s3 = 0, 0, 0
-	from utilities import write_text_file
-	while ite < maxit:
-		if myid == main_node: ts1 = time()
-		if switch_SA:
-			status = Kmeans.one_iter_SA()
-			T      = Kmeans.get_T()
-			ct     = Kmeans.get_ct_im_mv()
-			#if myid == main_node:
-			#	print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
-			T *= F
-			Kmeans.set_T(T)
-			if T < 0.00001: switch_SA = False
-			
-		else:
-			status = Kmeans.one_iter()
-			ct     = Kmeans.get_ct_im_mv()
-			#if status != 0 and status != 255: ferror = 1
-			#if status == 0:                   fsync  = 1
-			#else:                             fsync  = 0
-
-			#status = mpi_reduce(status, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			#status = mpi_bcast(status, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			#status = int(status[0])
-			#print myid, ite, ferror, fsync, status, ct
-			#if status: break
-
-			#if myid == main_node:
-			#	print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
-		if myid == main_node: print 'ite cuda', time() - ts1, 's'
-		ite += 1
-
-		if myid == main_node: ts2 = time()		
-		# update
-		asg = Kmeans.get_asg()
-		ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
+		# Init averages
+		if myid == main_node:
+			Kmeans.random_ASG(rnd[ipart])
+			ASG = Kmeans.get_ASG()
+		else:   ASG = None
+		mpi_barrier(MPI_COMM_WORLD)
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
 		ASG = ASG.tolist()
 		Kmeans.set_ASG(ASG)
-		if myid == main_node: print 'com asg', time() - ts2, 's'
-
-		if myid == main_node: ts3 = time()
 		Kmeans.compute_NC()
 		Kmeans.compute_AVE()
-		if myid == main_node: print 'new ave', time() - ts3, 's'
 
-	if myid == main_node:
-		print 'Iteration time:', time() - tite, 's'
+		#if myid == main_node: print 'Init: ', time() - t1, 's'
+		# K-means iterations
+		if myid == main_node: t_start = time()
+		if F  != 0:
+			switch_SA = True
+			Kmeans.set_T(T0)
+		else:   switch_SA = False
 
-	if ferror:
-		if myid == main_node: k_means_cuda_error(status)
-		exit()
+		ite    = 0
+		fsync  = 0
+		ferror = 0
+		tstart = time()
+		#s1, s2, s3 = 0, 0, 0
+		while ite < maxit:
+			stop = 0
+			#if myid == main_node: ts1 = time()
+			if switch_SA:
+				status = Kmeans.one_iter_SA()
+				T      = Kmeans.get_T()
+				ct     = Kmeans.get_ct_im_mv()
+				if myid == main_node:
+					print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				T *= F
+				Kmeans.set_T(T)
+				if T < 0.00001: switch_SA = False
 
-	if myid == main_node:
-		running_time(t_start)
-		print_msg('Number of iterations        : %i\n' % ite)
-	ji  = Kmeans.compute_ji()
-	Ji  = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	Ji  = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	Ji  = Ji.tolist()
-	Je, C, H, DB = Kmeans.compute_criterion(Ji)
-	AVE = Kmeans.get_AVE()
-	ASG = Kmeans.get_ASG()
+			else:
+				status = Kmeans.one_iter()
+				ct     = Kmeans.get_ct_im_mv()
+				if myid == main_node:
+					print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				if status != 0: stop = 1
+				stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+				stop = mpi_bcast(stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				stop = int(stop[0])
+				if stop: break
+
+			#if myid == main_node: print 'ite cuda', time() - ts1, 's'
+			ite += 1
+
+			#if myid == main_node: ts2 = time()		
+			# update
+			asg = Kmeans.get_asg()
+			ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
+			ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
+			ASG = ASG.tolist()
+			Kmeans.set_ASG(ASG)
+			#if myid == main_node: print 'com asg', time() - ts2, 's'
+
+			#if myid == main_node: ts3 = time()
+			Kmeans.compute_NC()
+			Kmeans.compute_AVE()
+			#if myid == main_node: print 'new ave', time() - ts3, 's'
+
+		#if myid == main_node:
+		#	print 'Iteration time:', time() - tite, 's'
+
+		if status != 255: error = 1
+		else:             error = 0
+		error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+		error = mpi_bcast(error, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		error = int(error[0])
+		if error:
+			k_means_cuda_error(status)
+			exit()
+
+		if myid == main_node:
+			running_time(tstart)
+			print_msg('Number of iterations        : %i\n' % ite)
+		ji   = Kmeans.compute_ji()
+		Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Ji   = Ji.tolist()
+		crit = Kmeans.compute_criterion(Ji)
+		AVE  = Kmeans.get_AVE()
+		ASG  = Kmeans.get_ASG()
+		if myid == main_node:
+			GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
+			if nbpart > 1: k_means_cuda_export(GASG, AVE, outdir, mask, crit, ipart, TXT)
+			else:          k_means_cuda_export(GASG, AVE, outdir, mask, crit,    -1, TXT)
+
 	Kmeans.shutdown()
 	del Kmeans
 	
-	return ASG, AVE, [Je, C, H, DB]
+	return crit
 
 ## K-MEANS GROUPS ######################################################################
 
@@ -4046,7 +4070,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 
 # to figure out the number of clusters CUDA version
 def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0):
-	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
+	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
 	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
 	from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	import time, os, sys
@@ -4054,11 +4078,16 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
 	os.mkdir(out_file)
 	t_start = time.time()
+	
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+
 	# init to open images
 	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	# write logfile
 	print_begin_msg('k-means groups')
-	k_means_cuda_headlog(stack, out_file, 'cla', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
+	k_means_cuda_headlog(stack, out_file, 'cuda', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
 
 	# init
 	KK       = range(K1, K2 + 1)	# Range of works
@@ -4077,7 +4106,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 		print_msg('| K=%d |====================================================================\n' % K)
 
 		#try:
-		ASG, AVE, crit = k_means_CUDA(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed)
+		crit = k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_file, TXT, 1)
 		#except SystemExit:
 		#	ERROR('Empty cluster or device error', 'k_means_groups_CUDA', 1)
 
@@ -4204,13 +4233,15 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 def k_means_cuda_error(status):
 	from utilities import print_msg
 	# status info:
-	# 0 - all is ok
-	# 1 - error to init host memory
-	# 2 - error to init device memory
-	# 3 - error system on device
-	# 4 - init assignment with empty class
-	# 5 - classification return empty class
-	# 6 - error to select the device
+	#   0 - all is ok
+	#   1 - error to init host memory
+	#   2 - error to init device memory
+	#   3 - error system on device
+	#   4 - init assignment with empty class
+	#   5 - classification return empty class
+	#   6 - error to select the device
+	# 255 - k-means done
+	if status == 0 or status == 255: return
 	print_msg('============================================\n')
 	if   status == 1: print_msg('* ERROR: allocation host memory            *\n')
 	elif status == 2: print_msg('* ERROR: allocation device memory          *\n')
@@ -4233,18 +4264,25 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	if ncpu > 1: methodhead = 'CUDA MPI'
 	else:        methodhead = 'CUDA'
 
-	if isinstance(K, list): txtK = '%i to %i' % (K[0], K[1])
+	if isinstance(K, list): 
+		txtK = '%i to %i' % (K[0], K[1])
+		k    = K
+	else:	
+		txtK = str(K)
+		k    = [K]
+	if isinstance(rnd, list):
+		txtrnd = '%i ' * len(rnd)
+		txtrnd = txtrnd % tuple(rnd)
 	else:
-		K = [K]
-		txtK = '%i' % K[0]
+		txtrnd = str(rnd)
 
 	# memory estimation
 	#        IM                         AVE              DIST
-	device = N * m * 4 / float(ncpu) + max(K) * m * 4 + N * max(K) * 4 / float(ncpu)
+	device = N * m * 4 / float(ncpu) + max(k) * m * 4 + N * max(k) * 4 / float(ncpu)
 	#        IM          AVE              DIST
-	host   = N * m * 4 + max(K) * m * 4 + N * max(K) * 4 / float(ncpu)      
+	host   = N * m * 4 + max(k) * m * 4 + N * max(k) * 4 / float(ncpu)      
 	#       ASG     NC           IM2                   AVE2
-	host += N * 2 + max(K) * 4 + N * 4 / float(ncpu) + max(K) * 4
+	host  += N * 2 + max(k) * 4 + N * 4 / float(ncpu) + max(k) * 4
 	ie_device  = int(log(device) // log(1e3))
 	ie_host    = int(log(host)   // log(1e3))
 	device    /= (1e3 ** ie_device)
@@ -4270,7 +4308,7 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 
 	else:
 		print_msg('Simulate annealing          : OFF\n')
-	print_msg('Random seed                 : %i\n'     % rnd)
+	print_msg('Random seed                 : %s\n'     % txtrnd)
 	print_msg('Number of cpus              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n'     % outname)
 	print_msg('Memory on device            : %s\n'     % device)

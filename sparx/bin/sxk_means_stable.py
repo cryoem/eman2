@@ -73,15 +73,20 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		if options.CUDA:
+		if options.CUDA and not options.MPI:
 			from  applications  import  k_means_stab_CUDA_stream
 			global_def.BATCH = True
 			k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.match, options.maxit)
 			global_def.BATCH = False
-		elif options.MPI:
+		elif options.MPI and not options.CUDA:
 			from  applications  import  k_means_stab_MPI_stream
 			global_def.BATCH = True
 			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match, options.maxit)
+			global_def.BATCH = False
+		elif options.MPI and options.CUDA:
+			from  applications  import  k_means_stab_MPICUDA_stream
+			global_def.BATCH = True
+			k_means_stab_MPICUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.match, options.maxit)
 			global_def.BATCH = False
 		else:
 			from  applications  import  k_means_stab_stream

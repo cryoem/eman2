@@ -9044,13 +9044,12 @@ MPICUDA_kmeans::~MPICUDA_kmeans() {
 }
 
 #include "sparx/cuda/cuda_mpi_kmeans.h"
-int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extrnd, int extn_start) {
+int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extn_start) {
     m = extm;				// number of pixels per image
     N = extN;				// Total number of images
     n = extn;                           // Number of images used locally
     K = extK;				// number of classes
     n_start = extn_start;               // Starting point to local images
-    rnd = extrnd;                       // random seed
     size_IM = m * N;                    // nb elements in IM
     size_im = m * n;                    // nb elements in im
     size_AVE = m * K;                   // nb elements in ave
@@ -9111,7 +9110,7 @@ int MPICUDA_kmeans::init_mem(int numdev) {
     hd_AVE = &d_AVE;
     hd_im = &d_im;
     hd_dist = &d_dist;
-    stat = cuda_mpi_init(h_im, hd_im, hd_AVE, hd_dist, size_im, size_AVE, size_dist, rnd, numdev);
+    stat = cuda_mpi_init(h_im, hd_im, hd_AVE, hd_dist, size_im, size_AVE, size_dist, numdev);
     //printf("C++ get this pointer for d_AVE: %p\n", d_AVE);
     //printf("C++ get this pointer for d_im: %p\n", d_im);
     //printf("C++ get this pointer for d_dist: %p\n", d_dist);
@@ -9127,7 +9126,8 @@ void MPICUDA_kmeans::compute_im2() {
 }
 
 // init randomly the first assignment
-int MPICUDA_kmeans::random_ASG() {
+int MPICUDA_kmeans::random_ASG(long int rnd) {
+    srand(rnd);
     int ret = 20;
     int flag = 0;
     int i, k;

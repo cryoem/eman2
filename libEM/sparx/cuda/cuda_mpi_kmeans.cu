@@ -45,7 +45,7 @@ int cuda_readinit() {
 }
 
 ////// Init mem device //////////////////
-int cuda_mpi_init(float* h_IM, float** hd_IM, float** hd_AVE, float** hd_DIST, int size_IM, int size_AVE, int size_DIST, int rnd, int numdev) {
+int cuda_mpi_init(float* h_IM, float** hd_IM, float** hd_AVE, float** hd_DIST, int size_IM, int size_AVE, int size_DIST, int numdev) {
     int status;
     float* d_AVE = NULL;
     float* d_IM = NULL;
@@ -57,7 +57,6 @@ int cuda_mpi_init(float* h_IM, float** hd_IM, float** hd_AVE, float** hd_DIST, i
     }
 
     // Initialize CUBLAS
-    srand(rnd);
     if (CUBLAS_STATUS_SUCCESS != cublasInit()) return ERROR_DEVICE;
     // Allocate device memory for images
     status = cublasAlloc(size_IM, sizeof(float), (void**)&d_IM);
