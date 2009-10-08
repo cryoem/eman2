@@ -3948,7 +3948,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		#if myid == main_node:
 		#	print 'Iteration time:', time() - tite, 's'
 
-		if status != 255: error = 1
+		if status != 255 and status != 0: error = 1
 		else:             error = 0
 		error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 		error = mpi_bcast(error, 1, MPI_INT, main_node, MPI_COMM_WORLD)

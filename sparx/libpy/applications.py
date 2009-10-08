@@ -12360,20 +12360,16 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		ASG, AVE, crit = k_means_CUDA(stack, mask, LUT, m, N , K, maxit, F, T0, rand_seed)
-		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
-		k_means_cuda_export(GASG, AVE, out_dir, mask, crit, -1, TXT)
+		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1)
 		print_end_msg('k-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		if myid == main_node:
 			print_begin_msg('k-means')
-			k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
-		ASG, AVE, crit = k_means_CUDA_MPI(stack, mask, LUT, m, N, K, maxit, F, T0, rand_seed, myid, main_node, ncpu)
+			k_means_cuda_headlog(stack, out_dir, 'cuda', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
+		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1)
 		if myid == main_node:
-			GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
-			k_means_cuda_export(GASG, AVE, out_dir, mask, crit, -1, TXT)
 			print_end_msg('k-means')
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -12426,9 +12422,9 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # K-means main stability stream command line, CUDA version
 def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
 	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics import k_means_locasg2glbasg, k_means_stab_asg2part, k_means_stab_export
+	from statistics import k_means_stab_asg2part, k_means_stab_export
 	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
-	from statistics import k_means_cuda_export, k_means_stab_pwa, k_means_stab_H
+	from statistics import k_means_stab_pwa, k_means_stab_H
 	from statistics import k_means_CUDA
 	import sys, os, logging, pickle
 
@@ -12461,23 +12457,10 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 		logging.info('[STOP] Not enough images')
 		sys.exit()
 
-	# loop over partition
+	# classification
 	print_begin_msg('k-means')
-	for n in xrange(npart):
-		# info
-		logging.info('...... Start partition: %d' % (n + 1))
-		partdir = 'partition %d' % (n + 1)
-		ncpu   = 1
-		method = 'cla'
-		k_means_cuda_headlog(stack, partdir, method, N, K, maskname, maxit, T0, F, rnd[n], ncpu, m)
-
-		# classification
-		ASG, AVE, crit = k_means_CUDA(stack, mask, LUT, m, N , K, maxit, F, T0, rnd[n])
-		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
-		#logging.info('length gasg: %i' % len(GASG))
-		k_means_cuda_export(GASG, AVE, outdir, mask, crit, n, TXT)
-		
-	# end of classification
+	k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, 1, m)
+	k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, outdir, TXT, npart, logging)
 	print_end_msg('k-means')
 
 	# read assignment and convert to partition
@@ -12501,6 +12484,101 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	k_means_stab_update_tag(stack, STB_PART, id_rejected)
 	
 	logging.info('::: END k-means stability :::')
+
+# K-means main stability stream command line, CUDA version
+def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi        import mpi_bcast, MPI_INT
+	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	from statistics import k_means_stab_asg2part, k_means_stab_export
+	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
+	from statistics import k_means_stab_pwa, k_means_stab_H
+	from statistics import k_means_CUDA_MPI
+	import sys, os, logging, pickle
+
+	sys.argv  = mpi_init(len(sys.argv), sys.argv)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	mpi_barrier(MPI_COMM_WORLD)
+
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+
+	nx = 0
+        if myid == main_node:
+		if os.path.exists(outdir):
+			nx = 1
+			ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
+		else:
+			os.system( "mkdir " + outdir )
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = int(nx[0])
+	if(nx != 0):
+		import sys
+		exit()
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+	if myid == main_node:
+		# create main log
+		f = open(outdir + '/main_log.txt', 'w')
+		f.close()
+
+		logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+		logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	rnd = []
+	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	if myid == main_node:
+		logging.info('Init list random seed: %s' % rnd)
+		logging.info('K = %03d %s' % (K, 40 * '-'))
+
+	# open unstable images
+	if myid == main_node: logging.info('... Open images')
+	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
+	if myid == main_node: logging.info('... %d unstable images found' % N)
+	if N < 2:
+		if myid == main_node: logging.info('[STOP] Not enough images')
+		sys.exit()
+
+	# loop over partition
+	if myid == main_node:
+		print_begin_msg('k-means')
+		k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, ncpu, m)
+
+	# classification
+	k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, myid, main_node, ncpu, outdir, TXT, npart, logging)
+	
+	if myid == main_node:
+		# end of classification
+		print_end_msg('k-means')
+
+		# read assignment and convert to partition
+		logging.info('... Matching')
+		ALL_PART = k_means_stab_asg2part(outdir, npart)
+
+		# calculate the stability
+		if match   == 'hh':
+			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+		elif match == 'pwa':
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+
+		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, STB_PART, id_rejected)
+
+		logging.info('::: END k-means stability :::')
+
+	mpi_barrier(MPI_COMM_WORLD)
 
 # K-means main stability stream command line
 def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
@@ -12596,25 +12674,25 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability stream command line
-def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa'):
+def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im, file_type
-	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_open_unstable_MPI
-	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_SA_T0_MPI, k_means_criterion, k_means_locasg2glbasg
+	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_init_open_im, k_means_open_im
+	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_criterion, k_means_locasg2glbasg
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt
 	import sys, logging, os, pickle
 
 	sys.argv  = mpi_init(len(sys.argv), sys.argv)
-	nb_cpu    = mpi_comm_size(MPI_COMM_WORLD)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	mpi_barrier(MPI_COMM_WORLD)
 
 	ext = file_type(stack)
-	TXT = False
 	if ext == 'txt': TXT = True
+	else:            TXT = False
 
 	nx = 0
         if myid == main_node:
@@ -12645,29 +12723,22 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
 
 	trials       = 1
-	maxit        = 100000000  # made changes here PAP
-	T0           = -1.0 # auto
-	critname     = ''
 	if myid == main_node: logging.info('K = %03d %s' % (K, 40 * '-'))
 
 	# open unstable images
 	if myid == main_node: logging.info('... Open images')
-	im_M, mask, ctf, ctf2, LUT, N, N_start, N_stop = k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid)
+
+	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	lut                   = LUT[N_start:N_stop]
+	n                     = len(lut)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut)
+
 	if myid == main_node:
-		if not TXT: Ntot = EMUtil.get_image_count(stack)
-		else:       Ntot = N
 		logging.info('... %d active images found' % N)
 	if N < K:
 		logging.info('[STOP] Not enough images')
 		sys.exit()
-	if F != 0.0:
-		try:
-			T0, ct_pert = k_means_SA_T0_MPI(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, myid, main_node, N_start, N_stop)
-			if myid == main_node: logging.info('... Select first temperature T0: %4.2f (dst %d)' % (T0, ct_pert))
-		except SystemExit:
-			if myid == main_node: logging.info('[STOP] Not enough images')
-			sys.exit()
-	else: T0 = 0.0
 
 	# loop over partition
 	if myid == main_node: print_begin_msg('k-means')
@@ -12675,15 +12746,19 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 		# info
 		if myid == main_node:
 			logging.info('...... Start partition: %d' % (n + 1))
-			k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], nb_cpu)
+			k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, 'CHD', maskname, trials, maxit, CTF, T0, F, rnd[n], ncpu, m)
 
 		flag_cluster = False
 		# classification
 		if   opt_method == 'cla':
-			try:			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
+			try:
+				[Cls, assign] = k_means_cla_MPI(IM, mask, K, rnd[n], maxit,\
+				     trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
 			except SystemExit:	flag_cluster  = True
 		elif opt_method == 'SSE':
-			try:			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], myid, main_node, nb_cpu, N_start, N_stop, F, T0)
+			try:
+				[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rnd[n], maxit,\
+				     trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N, ncpu)
 			except SystemExit:      flag_cluster  = True
 		if flag_cluster:
 			if myid == main_node: logging.info('[ERROR] Empty cluster')
@@ -12691,7 +12766,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, th_nob
 
 		# export partition
 		if myid == main_node:
-			crit       = k_means_criterion(Cls, critname)
+			crit       = k_means_criterion(Cls, 'CHD')
 			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 	
