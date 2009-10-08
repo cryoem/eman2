@@ -649,11 +649,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			criterion = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 
 		if myid == main_node:
-			print_msg("Initial criterion for average %d : %15.8e\n"%(0, criterion))
+			criterion_list = [criterion]
+			print_msg("Initial criterion for average %d : %20.8f\n"%(0, criterion))
 			for iave in xrange(1, number_of_ave):
 				criterion = mpi_recv(1, MPI_FLOAT, iave, iave, MPI_COMM_WORLD)
 				criterion = float(criterion[0])
-				print_msg("Initial criterion for average %d : %15.8e\n"%(iave, criterion))
+				criterion_list.append(criterion)
+				print_msg("Initial criterion for average %d : %20.8f\n"%(iave, criterion))
 		else:
 			mpi_send(criterion, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
 	else: tavg = model_blank(nx, nx)
@@ -682,10 +684,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					chessboard[p][0].set_value_at(ii, jj, v)
 					chessboard[p][1].set_value_at(ii, jj, 1-v)
 		
+		# Generate the array to store goal value and index
+		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave)]
+		for i in xrange(number_of_ave): 	qt[i][0] = criterion_list[i]
+		english = ['first', 'second', 'third']
+		
 	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
 	cs = [0.0]*2
+	to_break = 0
 	for ipt in xrange(max(restart, 0), N_merge):
 
 		if key == group_main_node:        msg = ""
@@ -693,10 +701,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if restart==-1 or ipt>restart:
 			total_iter = 0
 
-			#for im in data:   set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
-			#cs = [0.0]*2
-			old_criterion = -1.0e22
-			to_break = 0
 			for Iter in xrange(max_iter):
 			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
 			        cs = [float(cs[0]), float(cs[1])]
@@ -767,18 +771,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						criterion = a0[0]
 					else:
 				        	criterion = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-					if criterion < old_criterion: to_break += 1
-					old_criterion = criterion
 
-			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %15.8e\n\n"%(ipt, color, Iter, criterion)
+			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %20.8f\n\n"%(ipt, color, Iter, criterion)
 			        else:
 			        	tavg = EMData(nx, nx, 1, True)
 			        	cs = [0.0]*2		       
 			        bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 			        total_iter += 1
-				#to_break = mpi_bcast(to_break, 1, MPI_INT, group_main_node, group_comm)
-				#to_break = int(to_break[0])
-				#if to_break >= 3: break
 
 			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
 			mirror_list = [0]*len(data)
@@ -847,52 +846,37 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				        savg.append(img.copy())
 				        img.write_image(os.path.join(outdir, "avg_before_merge%02d.hdf"%(ipt)), isav)
 					
-				# Generate the array to store goal value and index
-				qt = [[0.0, 0] for inp in xrange(number_of_ave)]
-
 				for isav in xrange(number_of_ave):
-				        qt[isav][0] = savg[isav].cmp("dot", savg[isav], dict(negative = 0, mask = ref_data[0]))
-					qt[isav][1] = isav
+					qt[isav+number_of_ave][0] = qt[isav][0]
+					qt[isav+number_of_ave][1] = qt[isav][1]
+					img = savg[isav].copy()
+				        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
+					qt[isav][1] = img
 	
 				print_msg("-"*100+"\n")
 				for isav in xrange(number_of_ave):
 					print_msg("Criterion for average %2d: %20.8f\n"%(isav, qt[isav][0]))
+				for isav in xrange(number_of_ave):
+					print_msg("Criterion for old average %2d: %20.8f\n"%(isav, qt[isav+number_of_ave][0]))
+				old_criterion = qt[-1][0]
+				qt.sort(reverse = True)
+				if old_criterion == qt[number_of_ave-1][0]:
+					to_break += 1
+					print_msg("This is the %s straight time that there is no improvement in criterion.\n"%(english[to_break-1]))
+				else:
+					to_break = 0
+				for isav in xrange(number_of_ave):
+					print_msg("Sorted criterion %2d: %20.8f\n"%(isav, qt[isav][0]))
 				print_msg("-"*100+"\n")
 				
-				# sort and delete the worst half of the particles
-				qt.sort(reverse = True)
-				for isav in xrange(number_of_ave-1, number_of_ave/2, -1):
-					del qt[isav]
-					
-				# delete some of the similiar particles
-				l = 1
-				while l+1 < len(qt):
-					if ccc(savg[qt[l-1][1]], savg[qt[l][1]], mask) < ccc(savg[qt[l][1]], savg[qt[l+1][1]], mask):
-						del qt[l]
-					l += 1
-
-				# countint the average left and recombine them
-				l = len(qt)/2*2   # ensure it is even
-				print_msg("%d averages left after the selection process.\n"%(l))
-				tsavg = [None]*(l*4) 
-				source = [[0, 0, 0] for i in xrange(l*4)]
-				index = range(l)
-				shuffle(index)
-				
-				for isav in xrange(0, l, 2):
-					for p in xrange(4):
-				        	tsavg[p*l+isav] = Util.addn_img(Util.muln_img(savg[index[isav]], chessboard[p][0]), Util.muln_img(savg[index[isav+1]], chessboard[p][1]))
-				        	tsavg[p*l+isav+1] = Util.addn_img(Util.muln_img(savg[index[isav]], chessboard[p][1]), Util.muln_img(savg[index[isav+1]], chessboard[p][0]))
-						source[p*l+isav][0] = index[isav]
-						source[p*l+isav][1] = index[isav+1]
-						source[p*l+isav][2] = p
-						source[p*l+isav+1][0] = index[isav]
-						source[p*l+isav+1][1] = index[isav+1]
-						source[p*l+isav+1][2] = p
-					
+				index = range(number_of_ave)
+				shuffle(index)				
+				tsavg = []	
 				for isav in xrange(number_of_ave):
-					print_msg("The new average %2d is merged from average %2d and average %2d using the chessboard of grid size %2d.\n"%(isav, source[isav][0], source[isav][1], grid_size[source[isav][2]]))
+					tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2))
+					print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, index[isav], index[(isav+1)%number_of_ave]))
 				        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+					
 				for isav in xrange(1, number_of_ave):
 				        send_EMData(tsavg[isav], isav, isav+300)
 				tavg = tsavg[0].copy()
@@ -901,9 +885,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
 				send_EMData(tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
+		to_break = mpi_bcast(to_break, 1, MPI_INT, group_main_node, group_comm)
+		to_break = int(to_break[0])
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
+		if to_break >= 3: break
 
 	par_str = ["xform.align2d"]
 	if color == 0:    # We can only use one group of alignment as the final results
