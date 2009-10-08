@@ -471,7 +471,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 50
+	number_of_ave = 16
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -567,7 +567,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	aa = 0.1
 	Fourvar = False
 	N_merge = 50
-
+	grid_size = 32
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -588,6 +588,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Tangent filter                  \n")
 		print_msg("    cut-off frequency       : %f\n"%(fl))
 		print_msg("    fall-off                : %f\n"%(aa))
+		print_msg("Grid size of chessboard     : %d\n"%(grid_size))
 		print_msg("Average divided by variance : %s\n"%(Fourvar))
 
 	if maskfile:
@@ -675,17 +676,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		# Generate the chessboard image
-		chessboard = [ [model_blank(nx, nx), model_blank(nx, nx)] for x in xrange(4)]
-		grid_size = [32, 16, 8, 4]
+		chessboard1 = model_blank(nx, nx)
+		chessboard2 = model_blank(nx, nx)
 		for ii in xrange(nx):
 			for jj in xrange(nx):
-				for p in xrange(4):
-					v = (ii/grid_size[p]+jj/grid_size[p])%2
-					chessboard[p][0].set_value_at(ii, jj, v)
-					chessboard[p][1].set_value_at(ii, jj, 1-v)
+				v = (ii/grid_size+jj/grid_size)%2
+				chessboard1.set_value_at(ii, jj, v)
+				chessboard2.set_value_at(ii, jj, 1-v)
 		
 		# Generate the array to store goal value and index
-		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave)]
+		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave*2)]
 		for i in xrange(number_of_ave): 	qt[i][0] = criterion_list[i]
 		english = ['first', 'second', 'third']
 		
