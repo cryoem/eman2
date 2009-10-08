@@ -873,7 +873,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				shuffle(index)				
 				tsavg = []	
 				for isav in xrange(number_of_ave):
-					tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2))
+					tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2)))
 					print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, index[isav], index[(isav+1)%number_of_ave]))
 				        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
 					
