@@ -870,7 +870,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					if ccc(savg[qt[l-1][1]], savg[qt[l][1]], mask) < ccc(savg[qt[l][1]], savg[qt[l+1][1]], mask):
 						del qt[l]
 					l += 1
-				
+
 				# countint the average left and recombine them
 				l = len(qt)/2*2   # ensure it is even
 				print_msg("%d averages left after the selection process.\n"%(l))
