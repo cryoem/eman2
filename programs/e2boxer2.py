@@ -215,7 +215,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 #		ave.add(ta)
 	
 	ave.process_inplace("xform.centeracf")
-	ave.process_inplace("math.radialaverage")
+	ave.process_inplace("math.rotationalaverage")
 	ave.process_inplace("normalize.edgemean")
 	ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 	averages.append(ave)
@@ -231,7 +231,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 			ave.add(t[i])
 			
 		ave.process_inplace("xform.centeracf")
-		ave.process_inplace("math.radialaverage")
+		ave.process_inplace("math.rotationalaverage")
 		ave.process_inplace("normalize.edgemean")
 		
 		# edge normalize here SL before

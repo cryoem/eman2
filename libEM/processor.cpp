@@ -172,8 +172,8 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&NormalizeToLeastSquareProcessor::NEW);
 
-	force_add(&RadialAverageProcessor::NEW);
-	force_add(&RadialSubstractProcessor::NEW);
+	force_add(&RotationalAverageProcessor::NEW);
+	force_add(&RotationalSubstractProcessor::NEW);
 	force_add(&FlipProcessor::NEW);
 	force_add(&TransposeProcessor::NEW);
 	force_add(&MirrorProcessor::NEW);
@@ -3654,7 +3654,7 @@ void BilateralProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void RadialAverageProcessor::process_inplace(EMData * image)
+void RotationalAverageProcessor::process_inplace(EMData * image)
 {
 	if (!image || image->is_complex()) {
 		LOGWARN("only works on real image. do nothing.");
@@ -3729,7 +3729,7 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 
 
 
-void RadialSubstractProcessor::process_inplace(EMData * image)
+void RotationalSubstractProcessor::process_inplace(EMData * image)
 {
 	if (!image || image->is_complex()) {
 		LOGWARN("only works on real image. do nothing.");

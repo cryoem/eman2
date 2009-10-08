@@ -4114,48 +4114,48 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 	/**makes image circularly symmetric.
 	 */
-	class RadialAverageProcessor:public Processor
+	class RotationalAverageProcessor:public Processor
 	{
 	  public:
 		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
-			return "math.radialaverage";
+			return "math.rotationalaverage";
 		}
 
 		static Processor *NEW()
 		{
-			return new RadialAverageProcessor();
+			return new RotationalAverageProcessor();
 		}
 
 		string get_desc() const
 		{
-			return "makes image circularly symmetric.";
+			return "Makes image circularly/spherically symmetric.";
 		}
 
 	};
 
 	/**subtracts circularly symmetric part of an image.
 	 */
-	class RadialSubstractProcessor:public Processor
+	class RotationalSubstractProcessor:public Processor
 	{
 	  public:
 		virtual void process_inplace(EMData * image);
 
 		virtual string get_name() const
 		{
-			return "math.radialsubtract";
+			return "math.rotationalsubtract";
 		}
 
 		static Processor *NEW()
 		{
-			return new RadialSubstractProcessor();
+			return new RotationalSubstractProcessor();
 		}
 
 		virtual string get_desc() const
 		{
-			return "subtracts circularly symmetric part of an image.";
+			return "subtracts circularly/spherically symmetric part of an image.";
 		}
 
 	};

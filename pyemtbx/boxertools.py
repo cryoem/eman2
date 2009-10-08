@@ -2543,7 +2543,7 @@ class SwarmTemplate(Template):
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("xform.centeracf")
-		ave.process_inplace("math.radialaverage")
+		ave.process_inplace("math.rotationalaverage")
 		ave.process_inplace("normalize")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
@@ -2589,7 +2589,7 @@ class SwarmTemplate(Template):
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("xform.centeracf")
-			ave.process_inplace("math.radialaverage")
+			ave.process_inplace("math.rotationalaverage")
 			ave.process_inplace("normalize")
 			
 			# edge normalize here SL before

@@ -105,18 +105,21 @@ class TrackerControl(QtGui.QWidget):
 		self.bcenalign=QtGui.QPushButton("Center Align")
 		self.bprojalign=QtGui.QPushButton("Proj. Realign")
 		self.breconst=QtGui.QPushButton("3D Normal")
+		self.bmagict=QtGui.QPushButton("3D Tomofill")
 		self.bmagics=QtGui.QPushButton("3D Sph")
 		self.bmagicc=QtGui.QPushButton("3D Cyl")
 		
 		self.vbl.addWidget(self.bcenalign)
 		self.vbl.addWidget(self.bprojalign)
 		self.vbl.addWidget(self.breconst)
+		self.vbl.addWidget(self.bmagict)
 		self.vbl.addWidget(self.bmagics)
 		self.vbl.addWidget(self.bmagicc)
 		
 		QtCore.QObject.connect(self.bcenalign,QtCore.SIGNAL("clicked(bool)"),self.do_cenalign)
 		QtCore.QObject.connect(self.bprojalign,QtCore.SIGNAL("clicked(bool)"),self.do_projalign)
 		QtCore.QObject.connect(self.breconst,QtCore.SIGNAL("clicked(bool)"),self.do_reconst)
+		QtCore.QObject.connect(self.bmagict,QtCore.SIGNAL("clicked(bool)"),self.do_magict)
 		QtCore.QObject.connect(self.bmagics,QtCore.SIGNAL("clicked(bool)"),self.do_magics)
 		QtCore.QObject.connect(self.bmagicc,QtCore.SIGNAL("clicked(bool)"),self.do_magicc)		
 
@@ -162,6 +165,13 @@ class TrackerControl(QtGui.QWidget):
 		self.map3d=self.reconstruct(stack,2.0)
 		self.update_3d()
 
+		
+	def do_magict(self,x):
+		stack=self.get_boxed_stack()
+#		self.map3d=self.reconstruct_ca(stack[5:-4],0.5)
+		init=self.reconstruct_ca(stack[5:-4],0.5)
+		self.map3d=self.reconstruct(stack,2.0,init)
+		self.update_3d()
 		
 	def do_magics(self,x):
 		return
@@ -299,26 +309,67 @@ class TrackerControl(QtGui.QWidget):
 		stack=self.get_boxed_stack()
 		self.imboxed.set_data(stack)
 	
-	def reconstruct(self,stack,angstep):
+	def reconstruct_ca(self,stack,angstep):
+		"""Cylindrically averaged tomographic model, generally used for filling empty spaces. Returned volume is padded."""
+		print "Making CA"
+		
 		boxsize=stack[0]["nx"]
-		pad=Util.calc_best_fft_size(int(boxsize*1.4))
+		pad=Util.calc_best_fft_size(int(boxsize*1.5))
+
+		# average all of the slices together
+		av=stack[0].copy()
+		for p in stack[1:]: av+=p
+		av.del_attr("xform.projection")
+		p.mult(1.0/len(stack))
+		av=av.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+
+		recon=Reconstructors.get("fourier", {"quiet":True,"sym":"c1","x_in":pad,"y_in":pad})
+		recon.setup()
+		
+		for ri in range(3):
+			if ri>0 :
+				alt=-180.0
+				while (alt<180.0):
+					recon.determine_slice_agreement(av,Transform({"type":"eman","alt":alt,"az":-90.0,"phi":90.0}),1)
+					alt+=angstep
+			alt=-180.0
+			while (alt<180.0) :
+				recon.insert_slice(av,Transform({"type":"eman","alt":alt,"az":-90.0,"phi":90.0}))
+				alt+=angstep
+		
+		ret=recon.finish()
+#		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+		
+		return ret
+	
+		
+	
+	def reconstruct(self,stack,angstep,initmodel=None):
+		""" Tomographic reconstruction of the current stack """
+		boxsize=stack[0]["nx"]
+		pad=Util.calc_best_fft_size(int(boxsize*1.5))
 		
 		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-90.0,"phi":90.0})
 		
-		recon=Reconstructors.get("fourier", {"quiet":True,"sym":"c1","x_in":pad,"y_in":pad})
+		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"start_model":initmodel,"start_model_weight":0.01})
 		recon.setup()
 		qual=0
+		scores=[]
 		for ri in range(3):
-			if ri>0 :
+			if ri>0 or initmodel!=None :
 				for i,p in enumerate(stack):
 					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 					recon.determine_slice_agreement(p2,p["xform.projection"],1)
-					if ri==2 : qual+=recon.get_score(i)
-					print "%d) %-3d. %f"%(ri,i,recon.get_score(i))  
+					if 1 : 
+						qual+=recon.get_score(i)
+						print "%d) %3d. %f\t%f"%(ri,i,recon.get_score(i),recon.get_norm(i)) 
+						scores.append(recon.get_score(i))
 			for p in stack:
 				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 				recon.insert_slice(p2,p["xform.projection"])
-				
+		
+#		plot(scores)
+		
 		ret=recon.finish()
 		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		print "Quality: ",qual

@@ -1343,21 +1343,21 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('normalize.toimage', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
-    def test_math_radialaverage(self):
-		"""test math.radialaverage processor ................"""
+    def test_math_rotationalaverage(self):
+		"""test math.rotationalaverage processor ................"""
 		e = EMData()
 		e.set_size(32,32,32)
 		e.process_inplace('testimage.noise.uniform.rand')
 		self.assertEqual(e.is_complex(), False)
 		
-		e.process_inplace('math.radialaverage')
+		e.process_inplace('math.rotationalaverage')
 		
 		# test to make sure radial average is centered correctly for 2D
 		# the 4 pixels that are exactly one pixel away from the center should be equal...
 		# odd images
 		e = EMData(5,5)
 		e.set(2,3,1)
-		e.process_inplace("math.radialaverage")
+		e.process_inplace("math.rotationalaverage")
 		self.assertEqual(e.get(2,3), e.get(2,1))
 		self.assertEqual(e.get(2,3), e.get(3,2))
 		self.assertEqual(e.get(2,3), e.get(1,2))
@@ -1365,7 +1365,7 @@ class TestProcessor(unittest.TestCase):
 		# even images
 		e = EMData(4,4)
 		e.set(2,3,1)
-		e.process_inplace("math.radialaverage")
+		e.process_inplace("math.rotationalaverage")
 		self.assertEqual(e.get(2,3), e.get(2,1))
 		self.assertEqual(e.get(2,3), e.get(3,2))
 		self.assertEqual(e.get(2,3), e.get(1,2))
@@ -1374,7 +1374,7 @@ class TestProcessor(unittest.TestCase):
 		# the 6 pixels that are exactly one pixel away from the center should be equal...
 		e = EMData(5,5,5)
 		e.set(2,2,3,1)
-		e.process_inplace("math.radialaverage")
+		e.process_inplace("math.rotationalaverage")
 		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
 		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
 		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
@@ -1383,7 +1383,7 @@ class TestProcessor(unittest.TestCase):
 		
 		e = EMData(4,4,4)
 		e.set(2,2,3,1)
-		e.process_inplace("math.radialaverage")
+		e.process_inplace("math.rotationalaverage")
 		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
 		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
 		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
@@ -1391,14 +1391,14 @@ class TestProcessor(unittest.TestCase):
 		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
 		
 		
-    def test_math_radialsubtract(self):
-        """test math.radialsubtract processor ..............."""	
+    def test_math_rotationalsubtract(self):
+        """test math.rotationalsubtract processor ..............."""	
         e = EMData()
         e.set_size(32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('math.radialsubtract')
+        e.process_inplace('math.rotationalsubtract')
         
         if(IS_TEST_EXCEPTION):
             e.set_size(32,32,32)

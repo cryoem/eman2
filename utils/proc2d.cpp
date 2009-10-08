@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rotav]) {
-				d->process_inplace("math.radialaverage");
+				d->process_inplace("math.rotationalaverage");
 			}
 
 			if (csym > 1) {
@@ -541,7 +541,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rsub]) {
-				d->process_inplace("math.radialsubtract");
+				d->process_inplace("math.rotationalsubtract");
 			}
 
 			if (scl) {
