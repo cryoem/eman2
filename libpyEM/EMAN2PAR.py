@@ -134,8 +134,8 @@ class EMTaskCustomer:
 					signal.alarm(0)
 					return ret
 				except :
-					signal.alarm(60)
-					self.wait_for_server()
+					print "Requeue failure on ",tid
+					time.sleep(10)
 					continue
 
 	def send_tasks(self,tasks):
@@ -846,8 +846,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# and should not ever really be necessary. It is likely indicative of some sort of 
 			# problem with one of the compute nodes
 			elif cmd=="RQUE":
-				self.queue.task_rerun(data)
-				if self.verbose : print "Requeuing ",data
+				if data!= None : 
+					self.queue.task_rerun(data)
+					if self.verbose : print "Requeuing ",data
+					sendobj(self.sockf,"OK")
+					self.sockf.flush()
+				else : print "ERROR: tried to requeue None"
 
 			# Get an estimate of the number of CPUs available to run jobs
 			# At the moment, this is the number of hosts that have communicated with us

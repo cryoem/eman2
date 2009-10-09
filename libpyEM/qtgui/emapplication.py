@@ -136,6 +136,10 @@ class EMGUIModule(EventsEmitterAndReciever):
 	def setWindowTitle(self,title):
 		pass
 	
+	def set_windowid(self,winid):
+		"""This is a unique name for this window for window positioning purposes"""
+		self.winid=winid
+	
 	def enable_inspector(self,val=True): self.disable_inspector = not val
 	def emitter(self):
 		return self.core_object
