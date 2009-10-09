@@ -44,7 +44,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help="Number of classes (default 2)")
 	parser.add_option("--trials",     type="int",          default=1,         help="Number of trials of K-means (default 1)")
-	parser.add_option("--opt_method", type='string',       default="SSE",     help="K-means method: SSE (default), cla")
+	parser.add_option("--opt_method", type='string',       default="cla",     help="K-means method: SSE (default), cla")
 	parser.add_option("--maxit",      type="int",          default=100,       help="Maximum number of iterations within K-means")
 	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--rand_seed",  type="int",          default=-1,        help="random seed of initial (default random)" )
