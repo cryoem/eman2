@@ -3839,7 +3839,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
 	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
 	from utilities    import print_msg, running_time
-	from time         import time
+	from time         import time, sleep
 	import sys
 
 	# CST
@@ -3886,14 +3886,14 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		else:   ASG = None
 		mpi_barrier(MPI_COMM_WORLD)
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		ASG = ASG.tolist()
+		ASG = map(int, ASG)
 		Kmeans.set_ASG(ASG)
 		Kmeans.compute_NC()
 		Kmeans.compute_AVE()
 
 		#if myid == main_node: print 'Init: ', time() - t1, 's'
 		# K-means iterations
-		if myid == main_node: t_start = time()
+		if myid == main_node: tstart = time()
 		if F  != 0:
 			switch_SA = True
 			Kmeans.set_T(T0)
@@ -3902,13 +3902,12 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		ite    = 0
 		fsync  = 0
 		ferror = 0
-		tstart = time()
-		#s1, s2, s3 = 0, 0, 0
 		while ite < maxit:
 			stop = 0
+			
 			#if myid == main_node: ts1 = time()
 			if switch_SA:
-				status = Kmeans.one_iter_SA()
+				Kmeans.one_iter_SA()
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 				if myid == main_node:
@@ -3916,7 +3915,6 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				T *= F
 				Kmeans.set_T(T)
 				if T < 0.00001: switch_SA = False
-
 			else:
 				status = Kmeans.one_iter()
 				ct     = Kmeans.get_ct_im_mv()
@@ -3930,23 +3928,22 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 
 			#if myid == main_node: print 'ite cuda', time() - ts1, 's'
 			ite += 1
-
 			#if myid == main_node: ts2 = time()		
 			# update
 			asg = Kmeans.get_asg()
 			ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
 			ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
-			ASG = ASG.tolist()
+			ASG = map(int, ASG)
 			Kmeans.set_ASG(ASG)
 			#if myid == main_node: print 'com asg', time() - ts2, 's'
-
+			
 			#if myid == main_node: ts3 = time()
 			Kmeans.compute_NC()
 			Kmeans.compute_AVE()
 			#if myid == main_node: print 'new ave', time() - ts3, 's'
-
+			
 		#if myid == main_node:
-		#	print 'Iteration time:', time() - tite, 's'
+		#	print 'Iteration time:', time() - tstart, 's'
 
 		if status != 255 and status != 0: error = 1
 		else:             error = 0
@@ -3963,7 +3960,8 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		ji   = Kmeans.compute_ji()
 		Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Ji   = Ji.tolist()
+		#Ji   = map(float, Ji)
+		Ji = Ji.tolist()
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
 		ASG  = Kmeans.get_ASG()
