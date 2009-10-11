@@ -99,9 +99,9 @@ for single particle analysis."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
+	parser.add_option("--gui",       action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: swarm,gauss",default=[])
+	parser.add_option("--auto","-A",   type="string",action="append",help="Autobox using specified method: swarm, gauss",default=[])
 	parser.add_option("--write_coord_files",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--write_box_images",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
@@ -111,43 +111,44 @@ for single particle analysis."""
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
-	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
-	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
+	parser.add_option("--method",          help="boxer method, Swarm or Gauss", default="Gauss")
+	parser.add_option("--outformat",       help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
 	parser.add_option("--just_output",action="store_true", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
-	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
+	parser.add_option("--normproc",        help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
 	parser.add_option("--invert_output",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
-	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_option("--dbls",            type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
 	#    commandline arguments and will have to be parsed only if auto="cmd" option is specified. note that these parameters
 	#    are applicable only to Gauss...
 	# jl 10-28-08.
-	parser.add_option("--ccf_lo",default=False,help="lower CCF threshold")
-	parser.add_option("--ccf_hi",default=False,help="upper CCF threshold")
+	parser.add_option("--ccf_lo",      type="float", default=-1.0,help="lower CCF threshold")
+	parser.add_option("--ccf_hi",      type="float", default=1.0,help="upper CCF threshold")
 	
-	parser.add_option("--pix_in",default=False,help="input pixel size in Angstrom")
-	parser.add_option("--pix_out",default=False,help="output pixel size in Angstrom")
+	parser.add_option("--pix_in",      type="float", default=1.0,help="input pixel size in Angstrom")
+	parser.add_option("--pix_out",     type="float", default=1.0,help="output pixel size in Angstrom")
 
-	parser.add_option("--width",default=False,help="width of the Gaussian")
-	parser.add_option("--var",action="store_true",default=False,help="Use variance flag (default is False)")
-	parser.add_option("--inv",action="store_true",default=False,help="Invert image flag (default is False)")
+	parser.add_option("--width",       default=False,help="width of the Gaussian")
+	parser.add_option("--var",         action="store_true",default=False,help="Use variance flag (default is False)")
+	parser.add_option("--inv",         action="store_true",default=False,help="Invert image flag (default is False)")
 
-	parser.add_option("--do_ctf",action="store_true",default=False,help="determine CTF (default is False)")
-	parser.add_option("--ctf_fstart",default=False,help="Start frequency for CTF determination")
-	parser.add_option("--ctf_fstop",default=False,help="Stop frequency for CTF determination")
-	parser.add_option("--ctf_window",default=False,help="Window size for CTF determination")
-	parser.add_option("--ctf_edge",default=False,help="Edge for CTF determination")
-	parser.add_option("--ctf_overlap",default=False,help="Overlap value for CTF determination")
-	parser.add_option("--ctf_ampcont",default=False,help="Amplitude contrast for CTF")
-	parser.add_option("--ctf_volt",default=False,help="Voltage for CTF")
-	parser.add_option("--ctf_cs",default=False,help="Cs factor for CTF")
-	parser.add_option("--out_file",default=False,help="File to write particles to")
-	parser.add_option("--out_dir",default=False,help="Directory to write particle files to")
+	parser.add_option("--do_ctf",      action="store_true",default=False,help="determine CTF (default is False)")
+	parser.add_option("--ctf_fstart",  type="float", default=0.02,help="Start frequency for CTF determination")
+	parser.add_option("--ctf_fstop",   type="float", default=0.5,help="Stop frequency for CTF determination")
+	parser.add_option("--ctf_window",  type="int",   default=512,help="Window size for CTF determination")
+	parser.add_option("--ctf_edge",    type="int",   default=0,help="Edge for CTF determination")
+	parser.add_option("--ctf_overlap", type="int",   default=50,help="Overlap value for CTF determination")
+	parser.add_option("--ctf_ampcont", type="float", default=10.0,help="Amplitude contrast for CTF")
+	parser.add_option("--ctf_volt",    type="float", default=200.0,help="Voltage for CTF")
+	parser.add_option("--ctf_cs",      type="float", default=2.0,help="Cs for CTF")
+	parser.add_option("--out_file",    default=False,help="File to write particles to")
+	parser.add_option("--out_dir",     default=False,help="Directory to write particle files to")
 
+	global options
 	(options, args) = parser.parse_args()
 	if options.method == "Swarm":
 		print "Note: Please consider switching to e2boxer2.py"
-	
+
 	filenames = []
 	error_message = []
 	for arg in args:
@@ -155,7 +156,7 @@ for single particle analysis."""
 			if options.merge_boxes_to_db == True:
 				filenames.append(arg)
 			else:
-				
+
 				nx,ny,nz = gimme_image_dimensions3D(arg)
 				if nz != 1:
 					error_message.append("%s is 3D!" %arg)
@@ -177,21 +178,21 @@ for single particle analysis."""
 		nx,ny = gimme_image_dimensions2D(arg)
 		if options.boxsize > nx/2 or options.boxsize > ny/2:
 			error_message.append("boxsize can not be greater than half of either of the image dimensions")
-	
-	
+
+
 	if len(error_message) > 0:
 		for error in error_message:
 			print error
-		
+
 		sys.exit(1)
-	
+
 	if options.gui: options.running_mode = "gui"
 	elif options.auto: options.running_mode = "auto_db"
-	else: 
+	else:
 		options.running_mode = None
 		#print "unknown running mode"
 		# in the new framework there is not need to tell the options parser there is an error, because the boxer module is smart enough to handle it
-	
+
 	logid=E2init(sys.argv)
 	boxes=[]
 	if len(options.auto)>0:
@@ -201,7 +202,7 @@ for single particle analysis."""
 			
 			do_gauss_cmd_line_boxing(options)
 			print "cmdline autoboxer exiting"
-			
+
 			sys.exit(1)
 
 		elif "grid" in options.auto:
@@ -224,7 +225,7 @@ for single particle analysis."""
 			# this is fine the boxer module should be smart enough to handle it
 			pass
 
-	
+
 	if options.running_mode == "auto_db":
 		dab = RawDatabaseAutoBoxer(logid)
 		dab.go(options)
@@ -236,7 +237,7 @@ for single particle analysis."""
 		gui.show_guis()
 	#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 		application.execute()
-	
+
 	E2end(logid)
 	
 	print "Exiting e2boxer"
@@ -408,18 +409,18 @@ def do_gauss_cmd_line_boxing(options):
 
 	# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
 	#    as additional argument....
-	
+
 	autoboxer = PawelAutoBoxer(None,parm_dict)
 
 	# check whether to merge particles from several images into one file. this has to be
 	#    done manually at the very end of the routine; to do this, set up a list of filenames
-	#    and copy partciles from those at the end. create an empty list here...
+	#    and copy particles from those at the end. create an empty list here...
 	if (options.out_file):
 		image_list = []
 
 	normalize=True
 	norm_method="normalize.edgemean"
-		
+
 	for image_name in options.filenames:
 		print "cmd autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
@@ -441,7 +442,7 @@ def do_gauss_cmd_line_boxing(options):
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
-		
+
 		if options.write_coord_files:
 			print "write coords"
 			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
@@ -1318,7 +1319,6 @@ class EMBoxerModule(QtCore.QObject):
 	def __gui_init(self,options):
 		
 		if not hasattr(options,"boxes"): options.boxes = [] # this is a temporary workaround
-		
 		self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,options.method)
 		
 		self.__init_guiim() # initialise the 2D image display
@@ -1328,21 +1328,21 @@ class EMBoxerModule(QtCore.QObject):
 		self.__init_guictl()
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			self.__init_ctl_rotor()
-	
+
 		if isinstance(self.autoboxer,SwarmAutoBoxer):
 			self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update(stop_animation=True) # update displays to show boxes etc
 
 	def get_params(self,options=None):
 		'''
-		Gets the params in order to run the Form mudule. This happens when no filenames have been specified, for example. Only works for the Swarm mode, because the other mode has broken with conventions etc.
+		Gets the params in order to run the Form module. This happens when no filenames have been specified, for example. Only works for the Swarm mode, because the other mode has broken with conventions etc.
 		'''
-		
+
 		if options == None:
 			filenames = None
 			box_size = 128
 			running_mode = "gui"
-			mode = "Swarm"
+			mode = options.method #"Swarm"
 		else:
 			filenames = options.filenames
 			box_size = options.boxsize
@@ -1350,8 +1350,8 @@ class EMBoxerModule(QtCore.QObject):
 			running_mode = options.running_mode
 			if running_mode == None:
 				running_mode = "gui"
-			mode = "Swarm"
-			
+			mode = options.method #"Swarm"
+
 		from emdatastorage import ParamDef
 		from emsprworkflow import ParticleWorkFlowTask,EMRawDataReportTask
 		from emform import EM2DFileTable,EMFileTable
@@ -1365,7 +1365,7 @@ class EMBoxerModule(QtCore.QObject):
 		#params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
 		params.append(table)
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=box_size,choices=[]))
-		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=["Swarm"]))
+		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=[options.method]))
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits=running_mode,choices=["gui","auto_db"]))
 		return params
 
@@ -1377,15 +1377,15 @@ class EMBoxerModule(QtCore.QObject):
 		self.current_image_idx = 0
 		self.box_size = box_size
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE # for now just make sure the fancy stuff isn't used
-		# set self.autoboxer '
+		# set self.autoboxer
 		if len(self.image_names) != 0:
 			self.set_autoboxer(self.image_names[self.current_image_idx], default_method)
-		
+
 		self.eraseradius = 2*self.box_size # this happens after the autoboxer has been loaded, because the boxsize can change
 		self.erasemode = None #stores the erase mode
 		self.shape_string = "rectpoint" # the shape of the picked particles
 		self.in_display_limbo = False	# a flag I am using to solve a problem
-		
+
 		# A boxable is just a class that manages boxes in terms of images
 		if len(self.image_names) != 0:
 			#print self.autoboxer
@@ -1402,6 +1402,7 @@ class EMBoxerModule(QtCore.QObject):
 	
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.guimx = None # widget for displaying matrix of smaller imagespaugay
+
 	def __init_ctl_rotor(self):
 		self.ctl_rotor = EMRotor()
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guictl)
@@ -1417,7 +1418,7 @@ class EMBoxerModule(QtCore.QObject):
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 		#get_application().show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
-			print "Setting GUI for Gauss boxing method"
+			#print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
 			self.guictl.method.setCurrentIndex(gauss_method_id)
 			self.guictl.method_changed( gauss_method_id ) 
@@ -1440,11 +1441,11 @@ class EMBoxerModule(QtCore.QObject):
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
-	
+
 	def guimxit_closed(self):
 		self.guimxit = None
 		self.guictl_module.widget.set_guimxit_visible(False)
-			
+
 	def __init_guimx(self):
 		glflags = EMOpenGLFlagsAndTools()
 		emftgl_supported = True
@@ -1594,7 +1595,7 @@ class EMBoxerModule(QtCore.QObject):
 			
 			self.box_display_update()
 		#except: pass
-			
+
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def set_autoboxer(self,imagename, default_method="Swarm"):
@@ -2435,7 +2436,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.output_task = E2BoxerProgramOutputTask(get_application(),self.image_names,self,exclusions)
 		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
-		
+
 	def on_output_task_idle(self):
 		self.output_task = None
 	
@@ -2510,7 +2511,7 @@ class EMBoxerModule(QtCore.QObject):
 				boxable = Boxable(image_name,self,autoboxer)
 			
 				if boxable.is_excluded():
-					print "Image",image_name,"is excluded and being ignored"
+					print "Image  ",image_name,"   is excluded and being ignored"
 					continue
 			
 				mode = autoboxer.get_mode()
@@ -2928,11 +2929,11 @@ class EMBoxerModulePanelModule(EMQtWidgetModule):
 		
 	def get_desktop_hint(self):
 		return "inspector"
-		
+
 class EMBoxerModulePanel(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
-	
+
 	def __init__(self,module,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
@@ -2998,7 +2999,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	#def centerpushed(self,unused):
 		#self.target.center(str(self.centerooptions.currentText()))
 	def get_target(self): return self.target()
-	
+
 	def insert_main_tab(self):
 		# this is the box layout that will store everything
 		self.main_inspector = QtGui.QWidget()
@@ -3046,7 +3047,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"), "Autobox")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
-	
+
 		self.boxinghbl2=QtGui.QHBoxLayout()
 		self.boxinghbl2.setMargin(2)
 		self.boxinghbl2.setSpacing(6)
@@ -3068,7 +3069,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.eraserad = QtGui.QLineEdit(str(self.target().eraseradius),self)
 		self.boxinghbl2.addWidget(self.eraserad)
 		self.eraserad.setEnabled(False)
-		
+
 		self.boxingvbl.addLayout(self.boxinghbl2)
 
 		self.invert_contrast_mic = QtGui.QCheckBox("Invert Contrast")
@@ -3092,9 +3093,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		#self.imagequalities.setSelection(Boxable.AVERAGE)
 		self.imagequalities.setCurrentIndex(Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE])
 		self.boxinghbl4.addWidget(self.imagequalities)
-		
+
 		self.boxingvbl.addLayout(self.boxinghbl4)
-		
+
 		self.infohbl = QtGui.QHBoxLayout()
 		self.info = QtGui.QLabel("%d Boxes"%len(self.target().get_boxes()),self)
 		#self.ppc = QtGui.QLabel("%f particles per click"%0,self)
@@ -3169,7 +3170,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.autobox.setText("Run")
 				self.setWindowIcon( self.pp_icon )
 				self.invert_contrast_mic.setEnabled(True)
-	
+
 	def method_changed(self, methodid):
 
 		name = self.method.itemText( methodid )
@@ -3199,7 +3200,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.lock = True
 		self.ab_sel_mediator.toggle_frozen(self.col1[self.currentlyselected].text(),bool)
 		self.lock = False
-#	
+
 	def setChecked(self,tag):
 		
 		for i,col in enumerate(self.col1):
@@ -3437,7 +3438,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.advanced_hbl2 = QtGui.QHBoxLayout()
 		
 #		self.advanced_vbl2.addLayout(self.plothbl)
-		
+
 		self.enable_interactive_params  = QtGui.QCheckBox("Enable")
 		self.enable_interactive_params.setChecked(False) #FIXME should this be related to the state of the autoboxer?
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
@@ -3445,8 +3446,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.thr.setEnabled(False)
 		self.advanced_hbl2.addWidget(self.enable_interactive_params)
 		self.advanced_hbl2.addWidget(self.thr)
-		
-		
+
+
 		self.interbox = QtGui.QGroupBox("Interactive Parameters")
 		self.interbox.setLayout(self.advanced_hbl2)
 		self.advanced_vbl.addWidget(self.interbox)
@@ -3455,31 +3456,31 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.selbut = QtGui.QRadioButton(SwarmAutoBoxer.SELECTIVE)
 		self.selbut.setChecked(True)
 		self.morselbut = QtGui.QRadioButton(SwarmAutoBoxer.MORESELECTIVE)
-		
+
 		self.methodhbox = QtGui.QHBoxLayout()
 		self.methodhbox.addWidget(self.thrbut)
 		self.methodhbox.addWidget(self.selbut)
 		self.methodhbox.addWidget(self.morselbut)
-		
+
 		self.groupbox = QtGui.QGroupBox("Auto Box Method")
 		self.groupbox.setLayout(self.methodhbox)
-		
+
 		self.advanced_vbl.addWidget(self.groupbox)
 
 		self.ratiobut = QtGui.QRadioButton("Ratio")
-		
+
 		self.difbut = QtGui.QRadioButton("Difference")
 		self.ratio_average_but = QtGui.QRadioButton("Average Ratio")
 		self.ratio_average_but.setChecked(True)
-		
+
 		self.cmpmethodhbox = QtGui.QHBoxLayout()
 		self.cmpmethodhbox.addWidget(self.ratiobut)
 		self.cmpmethodhbox.addWidget(self.difbut)
 		self.cmpmethodhbox.addWidget(self.ratio_average_but)
-		
-		self.cmpgroupbox = QtGui.QGroupBox("Peak Profile Comparitor")
+
+		self.cmpgroupbox = QtGui.QGroupBox("Peak Profile Comparator")
 		self.cmpgroupbox.setLayout(self.cmpmethodhbox)
-		
+
 
 		self.advanced_vbl.addWidget(self.cmpgroupbox)
 
@@ -3496,7 +3497,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.ab_table.setHorizontalHeaderItem(1,self.abcol1title)
 		self.autoboxerhdbl.addWidget(self.ab_table)
 		self.lock = False
-		
+
 		self.autoboxervbl1 = QtGui.QVBoxLayout()
 		self.abcopy = QtGui.QPushButton("Copy")
 		self.autoboxervbl1.addWidget(self.abcopy)
@@ -3505,78 +3506,81 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.abdelete = QtGui.QPushButton("Delete")
 		self.autoboxervbl1.addWidget(self.abdelete)
 		self.autoboxerhdbl.addLayout(self.autoboxervbl1)
-		
+
 		self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
 		self.abmanagement.setLayout(self.autoboxerhdbl)
 		self.advanced_vbl.addWidget(self.abmanagement)
-			
+
 
 		self.david_option = self.adv_inspector
-		
+
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
 		self.pawel_option_vbox.addWidget(QtGui.QLabel("Gauss Conv's Parameters") )
 		pawel_grid1 = QtGui.QGridLayout( )
 		self.pawel_option_vbox.addLayout(pawel_grid1)
-		
+
 		pawel_grid1.addWidget( QtGui.QLabel("Input Pixel Size:") , 0, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Output Pixel Size:"), 1, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Gauss Width Adjust:"), 2, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
-		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )		
+		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )
 
 		self.use_variance = QtGui.QCheckBox("Use Variance Image")
 		self.use_variance.setChecked(True)
 		pawel_grid1.addWidget( self.use_variance, 3, 0)
-
-		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
-		self.output_pixel_size = QtGui.QLineEdit("1.0", self)
-		self.gauss_width = QtGui.QLineEdit("1.0", self)
-		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+		print " aaaa ",options.pix_in,options.pix_out,"%6.3f"%options.pix_out
+		self.input_pixel_size  = QtGui.QLineEdit("%6.3f"%options.pix_in, self)
+		self.output_pixel_size = QtGui.QLineEdit("%6.3f"%options.pix_out, self)
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
+		print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()
+
+		self.gauss_width = QtGui.QLineEdit("1.0", self)
+		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
 		pawel_grid1.addWidget( self.gauss_width_slider, 2, 1 )
 		pawel_grid1.addWidget( self.gauss_width, 2, 2 )
 
 		self.gauss_width_slider.setRange( -100, 100 )
 		self.gauss_width_slider.setValue( 0 )
 
+
 		# --------------------
 		# XXX CTF button
 		self.ctf_data = None
 		self.i_start = None
 		self.i_stop = None
-		
+
 		pawel_grid1.addWidget( QtGui.QLabel("Window size:"), 4,0 )
-		self.ctf_window_size = QtGui.QLineEdit("512", self)
+		self.ctf_window_size = QtGui.QLineEdit("%d"%options.ctf_window, self)
 		pawel_grid1.addWidget( self.ctf_window_size , 4,1 )		
 
 		pawel_grid1.addWidget( QtGui.QLabel("Edge size:"), 5,0 )
-		self.ctf_edge_size = QtGui.QLineEdit("0", self)	
+		self.ctf_edge_size = QtGui.QLineEdit("%d"%options.ctf_edge, self)	
 		pawel_grid1.addWidget( self.ctf_edge_size , 5,1 )		
 
 		pawel_grid1.addWidget( QtGui.QLabel("Overlap:"), 6,0 )
-		self.ctf_overlap_size = QtGui.QLineEdit("50", self)	
-		pawel_grid1.addWidget( self.ctf_overlap_size , 6,1 )		
+		self.ctf_overlap_size = QtGui.QLineEdit("%d"%options.ctf_overlap, self)
+		pawel_grid1.addWidget( self.ctf_overlap_size , 6,1 )
 
 		pawel_grid1.addWidget( QtGui.QLabel("F_stop:"), 8,0 )
-		self.ctf_f_stop = QtGui.QLineEdit("8", self)	
-		pawel_grid1.addWidget( self.ctf_f_stop , 8,1 )		
+		self.ctf_f_stop = QtGui.QLineEdit("%5.3f"%options.ctf_fstop, self)
+		pawel_grid1.addWidget( self.ctf_f_stop , 8,1 )
 
 		pawel_grid1.addWidget( QtGui.QLabel("F_start:"), 7,0 )
-		self.ctf_f_start = QtGui.QLineEdit("80", self)	
-		pawel_grid1.addWidget( self.ctf_f_start , 7,1 )		
+		self.ctf_f_start = QtGui.QLineEdit("%5.3f"%options.ctf_fstart, self)
+		pawel_grid1.addWidget( self.ctf_f_start , 7,1 )
 
 		pawel_grid1.addWidget( QtGui.QLabel("Cs:"), 4,2 )
-		self.ctf_cs = QtGui.QLineEdit("2.0", self)
-		pawel_grid1.addWidget( self.ctf_cs , 4,3 )		
-		
+		self.ctf_cs = QtGui.QLineEdit("%4.1f"%options.ctf_cs, self)
+		pawel_grid1.addWidget( self.ctf_cs , 4,3 )	
+
 		pawel_grid1.addWidget( QtGui.QLabel("Voltage:"), 5,2 )
-		self.ctf_volt = QtGui.QLineEdit("300", self)
+		self.ctf_volt = QtGui.QLineEdit("%5.1f"%options.ctf_volt, self)
 		pawel_grid1.addWidget( self.ctf_volt , 5,3 )		
 
 		pawel_grid1.addWidget( QtGui.QLabel("Amplitude Contrast:"), 6,2 )
-		self.ctf_ampcont = QtGui.QLineEdit("0.1", self)
+		self.ctf_ampcont = QtGui.QLineEdit("%5.1f"%options.ctf_ampcont, self)
 		pawel_grid1.addWidget( self.ctf_ampcont , 6,3 )		
 
 		self.ctf_button =  QtGui.QPushButton("Estimate CTF")
@@ -3587,7 +3591,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		pawel_grid1.addWidget( self.inspect_button, 9, 1)
 		self.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
 		self.ctf_inspector = None
-		self.ctf_inspector_gone=True
+		self.ctf_inspector_gone = True
 		# XXX
 		# --------------------
 
@@ -3631,7 +3635,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
 		self.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
 		self.connect(self.enable_interactive_params,QtCore.SIGNAL("clicked(bool)"),self.enable_interactive_params_toggled)
-	
+
+
 
 	# --------------------
 	# XXX: calculate ctf and defocus from current image		
@@ -3648,8 +3653,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.ctf_inspector_gone=False
 			else:
 				pass
-		
-		
+	
 	def calc_ctf(self):
 		# calculate power spectrum of image with welch method (welch_pw2)
 		# calculate rotational average of power spectrum (rot_avg_table)
@@ -3662,14 +3666,14 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		# conversion from text necessary
 		try:
-			ctf_window_size = int(self.ctf_window_size.text())
-			ctf_edge_size = int(self.ctf_edge_size.text())
+			ctf_window_size  = int(self.ctf_window_size.text())
+			ctf_edge_size    = int(self.ctf_edge_size.text())
 			ctf_overlap_size = int(self.ctf_overlap_size.text())
-			ctf_f_start = int(self.ctf_f_start.text())
-			ctf_f_stop = int(self.ctf_f_stop.text())
-			ctf_volt = float(self.ctf_volt.text())
-			ctf_cs = float(self.ctf_cs.text())
-			ctf_ampcont = float(self.ctf_ampcont.text())
+			ctf_f_start      = float(self.ctf_f_start.text())
+			ctf_f_stop       = float(self.ctf_f_stop.text())
+			ctf_volt         = float(self.ctf_volt.text())
+			ctf_cs           = float(self.ctf_cs.text())
+			ctf_ampcont      = float(self.ctf_ampcont.text())
 		except ValueError,extras:
 			# conversion of a value failed!
 			print "integer conversion failed."
@@ -3686,9 +3690,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# print "determine power spectrum"
 		from fundamentals import welch_pw2
 		# XXX: check image dimensions, especially box size for welch_pw2!
-		power_sp = welch_pw2(img,win_size=ctf_window_size,overlp_x=ctf_overlap_size,overlp_y=ctf_overlap_size,
-				     edge_x=ctf_edge_size,edge_y=ctf_edge_size)
-		
+		power_sp = welch_pw2(img, win_size=ctf_window_size, overlp_x=ctf_overlap_size, overlp_y=ctf_overlap_size,
+				     edge_x=ctf_edge_size, edge_y=ctf_edge_size)
+
 		# print "averaging power spectrum"
 		from fundamentals import rot_avg_table
 		avg_sp = rot_avg_table(power_sp)
@@ -3696,17 +3700,17 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		# print "determine ctf"
 		from morphology import defocus_gett
-		
+
 		px_size = float(self.output_pixel_size.text())
-		#print px_size
-		
-		defocus = defocus_gett(avg_sp,voltage=ctf_volt,Pixel_size=px_size,Cs=ctf_cs,wgh=ctf_cs,
-				       f_start=ctf_f_start,f_stop=ctf_f_stop,parent=self)
+		print "  pixel   ",px_size
+
+		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
+				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 		del avg_sp
-		
+
 		print "CTF estimation done"
 		print "Defocus: ",defocus
-				
+
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
 			self.ctf_inspector.setData(self.ctf_data)

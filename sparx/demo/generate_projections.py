@@ -8,8 +8,9 @@ from optparse import OptionParser
 
 usage = "generate_projection.py --CTF --format=(bdb|hdf)"
 parser = OptionParser(usage)
-parser.add_option( "--CTF", action="store_true", default=False, help="whether generate CTF images" )
+parser.add_option( "--CTF",    action="store_true", default=False, help="whether generate CTF images" )
 parser.add_option( "--format", type="string",       default="bdb", help="data format: hdf or bdb" )
+parser.add_option( "--apix",  type="float",         default="2.5", help="pixel size" )
 
 (options,args) = parser.parse_args( argv )
 
@@ -29,11 +30,11 @@ nx = modelvol.get_xsize()
 nvol = 10
 volfts = [None]*nvol
 for i in xrange(nvol):
-    sigma = 1.5 + random() # 1.5-2.5
-    addon = model_gauss(sigma, 64, 64, 64, sigma, sigma, 38, 38, 40 )
-    scale = 2500 * (0.5+random())
-    model = modelvol + scale*addon
-    volfts[i],kb = prep_vol(modelvol + scale*addon)
+	sigma = 1.5 + random() # 1.5-2.5
+	addon = model_gauss(sigma, 64, 64, 64, sigma, sigma, 38, 38, 40 )
+	scale = 2500 * (0.5+random())
+	model = modelvol + scale*addon
+	volfts[i],kb = prep_vol(modelvol + scale*addon)
 
 
 if options.format=="bdb":
@@ -41,12 +42,12 @@ if options.format=="bdb":
 	delete_bdb(stack_data)
 else:
 	stack_data = "data.hdf"
-Cs = 2.0
-pixel = 2.5
+Cs      = 2.0
+pixel   = options.apix
 voltage = 120.0
 ampcont = 10.0
-ibd = 4096/2-64
-iprj = 0
+ibd     = 4096/2-64
+iprj    = 0
 
 width = 240
 xstart = 8 + 64/2
@@ -63,16 +64,16 @@ for idef in xrange(3,8):
 	icol = 0
 
 	mic = model_blank(4096, 4096)
-	defocus = idef*0.1
+	defocus = idef*0.2
 	if options.CTF :
 		ctf = EMAN2Ctf()
 		ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
-	
+
 	for i in xrange(nangle):
 		for k in xrange(24):
 			dphi = 8.0*(random()-0.5)
 			dtht = 8.0*(random()-0.5)
-			psi = 360.0*random()
+			psi  = 360.0*random()
 
 			phi = angles[i][0]+dphi
 			tht = angles[i][1]+dtht

@@ -4821,7 +4821,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	print_begin_msg("ali3d_d")
 
-	# DEBUG
 	from alignment      import Numrinit, prepare_refrings
 	from projection     import prep_vol
 
@@ -10804,20 +10803,26 @@ def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose )
 		mask = model_circle( mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize() )
 
 	ana = Analyzers.get( "varimax", {"mask":mask} )
-
+	sumeig =0.0
+	from utilities import info
+	from math import sqrt
 	for i in imglist:
 		data = get_im( input_stack, i)
 		eigval = data.get_attr_default('eigval', 1.0)
-		Util.mul_scalar(data, eigval)
+		sumeig += eigval
+		Util.mul_scalar(data, sqrt(eigval))
+		info(data)
 		ana.insert_image( data )
 		#print "Inserting image %4d" % i
-
+	del data
 	vecs = ana.analyze()
 
-	iout = 0
-	for vec in vecs:
-		vec.write_image( output_stack, iout)
-		iout = iout + 1
+	print  sumeig/len(vecs)
+	sumeig /= len(vecs)
+	for iout in xrange(len(vecs)):
+		info(vecs[iout])
+		vecs[iout].set_attr('eigval', sumeig)
+		vecs[iout].write_image( output_stack, iout)
 
 def bootstrap_genbuf(prj_stack, buf_prefix, npad, verbose, CTF=False):
 	from EMAN2 import newfile_store
@@ -12248,7 +12253,6 @@ def spill_out(ltot, base, d, neigvol, foutput):
 		foutput.write( "\n" )
 	foutput.flush()
 	return  ltot
-
 
 def refvol( vollist, fsclist, output, mask ):
 	from utilities     import get_image, read_fsc

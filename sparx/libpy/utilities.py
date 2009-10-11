@@ -2614,7 +2614,7 @@ def generate_ctf(p):
 	bfactor = p[4]
 	amp_contrast = p[5]
 	
-	if defocus > 100:  # which means it is very likely in Angstrom, therefore it is using old convention
+	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
 		defocus *= 1e-4
 	
 	if amp_contrast < 1.0:
