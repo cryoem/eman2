@@ -258,6 +258,7 @@ class EMParallelSimMX:
 				data = {}
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
+				if options.mask!=None : data["mask"] = ("cache",self.mask,0,0)
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -349,6 +350,11 @@ class EMSimTaskDC(EMTask):
 		ref_data_name=self.data["references"][1]
 		ref_indices = image_range(*self.data["references"][2:])
 		
+		if self.data.has_key("mask") :
+			mask=EMData(self.data["mask"],0)
+			if shrink != None : mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
+		else : mask=None
+		
 #		print self.data["references"][2:]
 		refs = {}
 		for idx in ref_indices:
@@ -365,10 +371,11 @@ class EMSimTaskDC(EMTask):
 			image = EMData(ptcl_data_name,idx)
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
+				if mask!=None : image.mult(mask)
 			ptcls[idx] = image
-		return refs,ptcls,shrink
+		return refs,ptcls,shrink,mask
 			
-	def __cmp_one_to_many(self,ptcl,refs):
+	def __cmp_one_to_many(self,ptcl,refs,mask):
 	
 		options = self.options
 		
@@ -383,6 +390,7 @@ class EMSimTaskDC(EMTask):
 					ref.del_attr("xform.align2d")
 					aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
 			
+				if mask!=None : aligned.mult(mask)
 				t =  aligned.get_attr("xform.align2d")
 				t.invert()
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
@@ -393,7 +401,7 @@ class EMSimTaskDC(EMTask):
 	
 	def execute(self,progress_callback):
 		if not progress_callback(0) : return None
-		refs,ptcls,shrink = self.__init_memory(self.options)
+		refs,ptcls,shrink,mask = self.__init_memory(self.options)
 		
 		
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
@@ -404,7 +412,7 @@ class EMSimTaskDC(EMTask):
 		for ptcl_idx,ptcl in ptcls.items():
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
-			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs)
+			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
 		
@@ -476,6 +484,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--raligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
@@ -597,6 +606,9 @@ def main():
 	#dimages =  EMData.read_images(args[1],range(*rrange))
 	#d = [ image.process_inplace("math.meanshrink",{"n":options.shrink}) for image in dimages]
 	
+	if options.mask==None : mask=None
+	else : mask=EMData(options.mask,0)
+	
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
 		
@@ -608,12 +620,15 @@ def main():
 		rimg.read_image(args[1],r)
 		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
 			rimg.process_inplace("math.meanshrink",{"n":options.shrink})
+			if mask!=None : mask.process_inplace("math.meanshring",{"n":options.shrink})
+
+		if mask!=None : rimg.mult(mask) 		# cimgs are masked in cmponetomany
 #		else:
 #			rimg = rimages[r]
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink)
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask)
 		for c,v in enumerate(row):
 			mxout[0].set_value_at(c,r,0,v[0])
 		
@@ -638,7 +653,7 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
@@ -656,6 +671,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			t = ta.get_attr("xform.align2d")
 			t.invert()
 			p = t.get_params("2d")
+			
+			if mask!=None : ta.mult(mask)
 			
 			scale_correction = 1.0
 			if shrink != None: scale_correction = float(shrink)
