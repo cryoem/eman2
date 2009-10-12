@@ -98,10 +98,12 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 
     cufftHandle plan_subject_image, plan_subject_image_rest, plan_ref_image, plan_ccf, plan_ccf_rest;
     cufftPlan1d(&plan_subject_image, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_PER_BATCH1);
-    cufftPlan1d(&plan_subject_image_rest, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_LEFT_BATCH1);
+    if (IMAGE_LEFT_BATCH1 != 0)
+	cufftPlan1d(&plan_subject_image_rest, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_LEFT_BATCH1);
     cufftPlan1d(&plan_ref_image, RING_LENGTH, CUFFT_R2C, NRING);
     cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POINTS_PER_IMAGE*IMAGE_PER_BATCH2);
-    cufftPlan1d(&plan_ccf_rest, RING_LENGTH, CUFFT_C2R, POINTS_PER_IMAGE*IMAGE_LEFT_BATCH2);
+    if (IMAGE_LEFT_BATCH2 != 0)
+	cufftPlan1d(&plan_ccf_rest, RING_LENGTH, CUFFT_C2R, POINTS_PER_IMAGE*IMAGE_LEFT_BATCH2);
     
     /* Allocate host memory for the coordinates of sampling points */
     points = (float*)malloc(RING_LENGTH*NRING*2*sizeof(float));
@@ -195,7 +197,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     /* Copy the matrix for NIMAGE_LEFT subject images to the video card */
     if (NIMAGE_LEFT != 0) 
        	cudaMemcpyToArray(subject_image_array_left, 0, 0, subject_image+NROW*NIMAGE_ROW*NX*NY, NIMAGE_LEFT*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
-   
+    
     for (i=-KX; i<=KX; i++) {
 	for (j=-KY; j<=KY; j++) {
 		
@@ -218,13 +220,13 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
                 	cudaThreadSynchronize();
     			cudaUnbindTexture(tex);
 		}
-
+		
 		/* Conduct FFT for all subject images */
 		for (k=0; k<IMAGE_BATCH1; k++)
-			cufftExecR2C(plan_subject_image, (cufftReal *)d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2), (cufftComplex *)d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2));
+			cufftExecR2C(plan_subject_image, (cufftReal *)(d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)), (cufftComplex *)(d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)));
 		if (IMAGE_LEFT_BATCH1!=0)
-			cufftExecR2C(plan_subject_image_rest, (cufftReal *)d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2), (cufftComplex *)d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2));
-	
+			cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)));
+		
 		cudaGetTextureReference(&texPtr, "texim_ref");
 		cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, (RING_LENGTH+2)*NRING*sizeof(float));
    	
@@ -246,9 +248,9 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     cudaUnbindTexture(texim_shifts); 
 
     for (i=0; i<IMAGE_BATCH2; i++)
-	    cufftExecR2C(plan_ccf, (cufftReal *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftComplex *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+	    cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
     if (IMAGE_LEFT_BATCH2!=0) 
-	    cufftExecR2C(plan_ccf_rest, (cufftReal *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftComplex *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+	    cufftExecC2R(plan_ccf_rest, (cufftComplex *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
 
 
     cudaMemcpy(ccf, d_ccf, (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
