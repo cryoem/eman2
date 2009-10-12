@@ -885,9 +885,9 @@ EMObject EMData::get_attr(const string & key) const
 	ENTERFUNC;
 
 	size_t size = nx * ny * nz;
+	update_stat();
 
 	if (key == "kurtosis") {
-		update_stat();
 		float mean = attr_dict["mean"];
 		float sigma = attr_dict["sigma"];
 
@@ -904,7 +904,6 @@ EMObject EMData::get_attr(const string & key) const
 		return kurtosis;
 	}
 	else if (key == "skewness") {
-		update_stat();
 		float mean = attr_dict["mean"];
 		float sigma = attr_dict["sigma"];
 
