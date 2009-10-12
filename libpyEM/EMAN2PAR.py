@@ -831,7 +831,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				for task in data:
 					task.group=grp
 					tids.append(self.queue.add_task(task))
-					if self.verbose>1 : print "new TASK %s.%s"%(data.command,str(data.data))
+					if self.verbose>1 : print "new TASK %s.%s"%(task.command,str(data.data))
 				try: 
 					sendobj(self.sockf,tids)
 					self.sockf.flush()

@@ -709,13 +709,6 @@ void EMData::set_size(int x, int y, int z)
 	nz = z;
 	nxy = nx*ny;
 
-	attr_dict["nx"] = x;
-	attr_dict["ny"] = y;
-
-
-	attr_dict["nz"] = z;
-
-
 	if (old_nx == 0) {
 		EMUtil::em_memset(get_data(),0,size);
 	}
@@ -757,10 +750,6 @@ void EMData::set_size_cuda(int x, int y, int z)
 	nz = z;
 
 	nxy = nx*ny;
-
-	attr_dict["nx"] = x;
-	attr_dict["ny"] = y;
-	attr_dict["nz"] = z;
 
 	get_cuda_data();
 
@@ -896,12 +885,12 @@ EMObject EMData::get_attr(const string & key) const
 	ENTERFUNC;
 
 	size_t size = nx * ny * nz;
-	update_stat();
-
-	float mean = attr_dict["mean"];
-	float sigma = attr_dict["sigma"];
 
 	if (key == "kurtosis") {
+		update_stat();
+		float mean = attr_dict["mean"];
+		float sigma = attr_dict["sigma"];
+
 		float *data = get_data();
 		double kurtosis_sum = 0;
 
@@ -912,10 +901,13 @@ EMObject EMData::get_attr(const string & key) const
 		}
 
 		float kurtosis = (float)(kurtosis_sum / size - 3.0);
-		attr_dict["kurtosis"] = kurtosis;
-		return attr_dict["kurtosis"];
+		return kurtosis;
 	}
 	else if (key == "skewness") {
+		update_stat();
+		float mean = attr_dict["mean"];
+		float sigma = attr_dict["sigma"];
+
 		float *data = get_data();
 		double skewness_sum = 0;
 		for (size_t k = 0; k < size; k++) {
@@ -923,8 +915,7 @@ EMObject EMData::get_attr(const string & key) const
 			skewness_sum +=  t * t * t;
 		}
 		float skewness = (float)(skewness_sum / size);
-		attr_dict["skewness"] = skewness;
-		return attr_dict["skewness"];
+		return skewness;
 	}
 	else if (key == "median")
 	{
@@ -938,9 +929,8 @@ EMObject EMData::get_attr(const string & key) const
 		float median;
 		if (n%2==1) median = tmp[n/2];
 		else median = (tmp[n/2-1]+tmp[n/2])/2.0f;
-		attr_dict["median"] = median;
 		delete [] tmp;
-		return attr_dict["median"];
+		return median;
 	}
 	else if (key == "nonzero_median")
 	{
@@ -956,10 +946,12 @@ EMObject EMData::get_attr(const string & key) const
 		float median;
 		if (vsize%2==1) median = tmp[vsize/2];
 		else median = (tmp[vsize/2-1]+tmp[vsize/2])/2.0f;
-		attr_dict["median"] = median;
-		return attr_dict["median"];
+		return median;
 	}
 	else if (key == "changecount") return EMObject(changecount);
+	else if (key == "nx") return nx;
+	else if (key == "ny") return ny;
+	else if (key == "nz") return nz;
 
 	if(attr_dict.has_key(key)) {
 		return attr_dict[key];
@@ -988,12 +980,20 @@ EMObject EMData::get_attr_default(const string & key, const EMObject & em_obj) c
 Dict EMData::get_attr_dict() const
 {
 	update_stat();
-	return Dict(attr_dict);
+	
+   	Dict tmp=Dict(attr_dict);
+	tmp["nx"]=nx;
+	tmp["ny"]=ny;
+	tmp["nz"]=nz;
+	tmp["changecount"]=changecount;
+
+	return tmp;
 }
 
 void EMData::set_attr_dict(const Dict & new_dict)
 {
 	/*set nx, ny nz may resize the image*/
+	// This wasn't supposed to 'clip' the image, but just redefine the size --steve
 	if( ( new_dict.has_key("nx") && nx!=(int)new_dict["nx"] )
 		|| ( new_dict.has_key("ny") && ny!=(int)new_dict["ny"] )
 		|| ( new_dict.has_key("nz") && nz!=(int)new_dict["nz"] ) ) {
@@ -1003,12 +1003,14 @@ void EMData::set_attr_dict(const Dict & new_dict)
 		newy = new_dict.has_key("ny") ? (int)new_dict["ny"] : ny;
 		newz = new_dict.has_key("nz") ? (int)new_dict["nz"] : nz;
 
-		EMData * new_image = get_clip(Region((nx-newx)/2, (ny-newy)/2, (nz=newz)/2, newx, newy, newz));
-		if(new_image) {
-			this->operator=(*new_image);
-			delete new_image;
-			new_image = 0;
-		}
+		set_size(newx,newy,newz);
+
+//		EMData * new_image = get_clip(Region((nx-newx)/2, (ny-newy)/2, (nz=newz)/2, newx, newy, newz));
+//		if(new_image) {
+//			this->operator=(*new_image);
+//			delete new_image;
+//			new_image = 0;
+//		}
 	}
 
 	vector<string> new_keys = new_dict.keys();
@@ -1038,6 +1040,10 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 
 void EMData::set_attr(const string & key, EMObject val)
 {
+	if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
+	if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
+	if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
+
 	/* Ignore 'read only' attribute. */
 	if(key == "sigma" ||
 		key == "sigma_nonzero" ||
@@ -1054,38 +1060,15 @@ void EMData::set_attr(const string & key, EMObject val)
 	attr_dict[key] = val;
 
 
-	/* data attribute nx, ny, nz will resize the image */
-	if(rdata != 0) {
-		EMData * new_image =0;
-		if( key == "nx" ) {
-			int nd = (int) val;
-			if( nx != (int)val ) {
-				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
-			}
-		}
-		else if( key == "ny" ) {
-			int nd = (int) val;
-			if( ny != (int)val ) {
-				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
-			}
-		}
-		else if( key == "nz" ) {
-			int nd = (int) val;
-			if( nz != (int)val ) {
-				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
-			}
-		}
 
-		if(new_image) {
-			this->operator=(*new_image);
-			delete new_image;
-			new_image = 0;
-		}
-	}
 }
 
 void EMData::set_attr_python(const string & key, EMObject val)
 {
+	if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
+	if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
+	if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
+
 	/* Ignore 'read only' attribute. */
 	if(key == "sigma" ||
 		  key == "sigma_nonzero" ||
@@ -1115,45 +1098,6 @@ void EMData::set_attr_python(const string & key, EMObject val)
 		attr_dict[key] = val;
 	}
 
-	float * data = get_data();
-	/* reset attribute nx, ny, nz will resize the image */
-	if(data != 0) {
-		// clip inplace would be more efficient in terms of memory usage
-		//EMData * new_image =0;
-		bool act = false;
-		Region r;
-		if( key == "nx" ) {
-			int nd = (int) val;
-			if( nx != (int)val ) {
-				//new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
-				r = Region((nx-nd)/2, 0, 0, nd, ny, nz);
-				act = true;
-			}
-		}
-		else if( key == "ny" ) {
-			int nd = (int) val;
-			if( ny != (int)val ) {
-				//new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
-				r = Region(0, (ny-nd)/2, 0, nx, nd, nz);
-				act = true;
-			}
-		}
-		else if( key == "nz" ) {
-			int nd = (int) val;
-			if( nz != (int)val ) {
-				//new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
-				r = Region(0, 0, (nz-nd)/2, nz, ny, nd);
-				act = true;
-			}
-		}
-
-		if (act) clip_inplace(r);
-//		if(new_image) {
-//			this->operator=(*new_image);
-//			delete new_image;
-//			new_image = 0;
-//		}
-	}
 }
 
 void EMData::scale_pixel(float scale) const

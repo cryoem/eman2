@@ -258,7 +258,7 @@ class EMParallelSimMX:
 				data = {}
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
-				if options.mask!=None : data["mask"] = ("cache",self.mask,0,0)
+				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -351,7 +351,8 @@ class EMSimTaskDC(EMTask):
 		ref_indices = image_range(*self.data["references"][2:])
 		
 		if self.data.has_key("mask") :
-			mask=EMData(self.data["mask"],0)
+			print "MASK ",self.data["mask"]
+			mask=EMData(self.data["mask"][1],self.data["mask"][2])
 			if shrink != None : mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
 		else : mask=None
 		
@@ -390,7 +391,8 @@ class EMSimTaskDC(EMTask):
 					ref.del_attr("xform.align2d")
 					aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
 			
-				if mask!=None : aligned.mult(mask)
+				if mask!=None : 
+					aligned.mult(mask)
 				t =  aligned.get_attr("xform.align2d")
 				t.invert()
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
