@@ -283,7 +283,7 @@ class EMParallelSimMX:
 						except:
 							print "ERROR storing results for task %d. Rerunning."%tid
 							etc.rerun_task(tid)
-							contintue
+							continue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
 							if self.options.verbose: 
