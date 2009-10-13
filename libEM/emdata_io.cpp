@@ -149,6 +149,12 @@ void EMData::write_image(const string & filename, int img_index,
 	}
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
 
+	//set "nx", "ny", "nz" and "changecount" in attr_dict, since they are taken out of attribute dictionary
+	attr_dict["nx"] = nx;
+	attr_dict["ny"] = ny;
+	attr_dict["nz"] = nz;
+	attr_dict["changecount"] = changecount;
+
 	if (Util::is_file_exist(filename)) {
 		LOGVAR("file exists");
 		if (!header_only && region == 0) {
