@@ -900,8 +900,8 @@ class SwarmBoxer:
 		'''
 		very inefficient, but does the job
 		'''
-		if self.proximity_threshold == None: return # you probably should not have called this function if the proximity threshold is None anyway
-		if len(boxes) < 2: return # can't remove overlapping in this case
+		if self.proximity_threshold == None: return [] # you probably should not have called this function if the proximity threshold is None anyway
+		if len(boxes) < 2: return [] # can't remove overlapping in this case
 		
 		return_idxs = []
 		
@@ -937,7 +937,7 @@ class SwarmBoxer:
 		else:
 			if self.proximity_threshold == None:
 				self.proximity_threshold = self.panel_object.proximal_threshold()
-				self.__remove_proximal_particles_from_target()
+				self.__remove_proximal_particles()
 	def set_proximity_threshold(self,val):
 		'''
 		The SwarmPanel call this function when the user changes the proximity threshold
@@ -948,7 +948,7 @@ class SwarmBoxer:
 		
 		if self.proximity_threshold == None or self.proximity_threshold < val or len(self.proximal_boxes) == 0:
 			self.proximity_threshold = val
-			self.__remove_proximal_particles_from_target()
+			self.__remove_proximal_particles()
 		else:
 			from PyQt4 import QtCore
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -975,7 +975,7 @@ class SwarmBoxer:
 			
 		
 		
-#	def __remove_proximal_particles_from_target(self):
+#	def __remove_proximal_particles(self):
 #		from PyQt4 import QtCore
 #		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 #		boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
@@ -989,7 +989,7 @@ class SwarmBoxer:
 #		self.target().remove_boxes(proximal_boxes_idxs)
 #		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 #		
-	def __remove_proximal_particles_from_target(self):
+	def __remove_proximal_particles(self):
 		if self.gui_mode: 
 			from PyQt4 import QtCore
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -1397,7 +1397,7 @@ class SwarmBoxer:
 		self.target().add_boxes(boxes,self.proximity_threshold == None)
 		
 		if self.proximity_threshold != None:
-			self.__remove_proximal_particles_from_target()
+			self.__remove_proximal_particles()
 		
 		if cache:
 			self.cache_current_state()

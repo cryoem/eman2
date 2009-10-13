@@ -2489,7 +2489,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		box_size=int(self.box_size.text())
 		db = db_open_dict(EMBOXERBASE_DB)
 		db["box_size"] = box_size
-		self.target().set_box_size(box_size)
+		if self.target(): self.target().set_box_size(box_size)
 	
 	def keyPressEvent(self,event):
 		from PyQt4 import QtCore

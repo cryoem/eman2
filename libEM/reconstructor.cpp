@@ -385,7 +385,6 @@ void FourierReconstructor::setup()
 	if ( ny < max_input_dim ) y_scale_factor = (float) ny / (float) max_input_dim;
 	if ( nx < max_input_dim ) x_scale_factor = (float) nx / (float) max_input_dim;
 
-
 	// Odd dimension support is here atm, but not above.
 	image = new EMData();
 	image->set_size(nx, ny, nz);

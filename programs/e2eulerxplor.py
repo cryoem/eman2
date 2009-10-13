@@ -448,7 +448,6 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 				break
 			
 		if len(data) == 0:
-			
 			error("error, no data for %s %s, returning" %(refine_dir,cls))
 #			print "error, no data for",au,cls,"returning"
 			self.events_handlers["inspect"].reset()
