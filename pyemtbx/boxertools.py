@@ -3176,6 +3176,7 @@ class PawelAutoBoxer(AutoBoxer):
 		return name+"_particles.crd"
 
 	def write_box_images( self, boxable, normalize, norm_method ):
+
 		image_name = boxable.get_image_name()
 		parent_img = BigImageCache.get_image_directly( image_name )
 		try:
@@ -3189,6 +3190,12 @@ class PawelAutoBoxer(AutoBoxer):
 			file_name = self.out_file
 		else:
 			file_name = self.get_particle_file_name( image_name )
+			
+		# If the output file exists, append the results to the existing file
+		if os.path.exists(file_name):
+			nima = EMUtil.get_image_count(file_name)
+		else:
+			nima = 0
 
 		for i in xrange( len(boxable.boxes) ):
 			b = boxable.boxes[i]
@@ -3196,24 +3203,27 @@ class PawelAutoBoxer(AutoBoxer):
 			img.set_attr( "Pixel_size", self.pixel_output )
 			img.set_attr( "Micrograph", image_name )
 			img.set_attr( "Score", b.correlation_score )
-
-			# XXX
 			img.set_attr( "ctf", ctf_dict)
-						
-			img.write_image( file_name, i )
+			img.write_image( file_name, i+nima )
 			
-		print "wrote ", len(boxable.boxes), " particles to file ", file_name
+		print "Wrote", len(boxable.boxes), "particles to file", file_name
 
 
 
 	def write_box_coords( self, boxable ):
 
+		image_name = boxable.get_image_name()
 		file_name = self.get_particle_coords_file_name( image_name )
-		f = open( file_name, "w" )
-		for i in xrange( len(boxable.boxes) ):
-			f.write( "xcorner,ycorner,size: %d %d %d " %(b.xcorner, b.ycorner, b.xsize) )
+		if os.path.exists(file_name):
+			f = open(file_name, "a")
+		else:
+			f = open(file_name, "w")
+		for i in xrange(len(boxable.boxes)):
+			b = boxable.boxes[i]
+			f.write("Image %5d: X corner = %5d    Y corner = %5d size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
+		f.close()
 					
-		print "wrote ", len(self.boxable.boxes), " particles to file ", file_name
+		print "Wrote coordinates of", len(boxable.boxes), "particles to file", file_name
 
 
 

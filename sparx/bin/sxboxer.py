@@ -2520,7 +2520,7 @@ class EMBoxerModule(QtCore.QObject):
 				autoboxer.set_mode_explicit(mode)
 				boxable.write_coord_file(box_size,forceoverwrite)
 			else:
-				self.autoboxer.write_box_coords( boxable )
+				self.autoboxer.write_box_coords(self.boxable)
 				
 			if progress.qt_widget.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
@@ -3529,12 +3529,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.use_variance = QtGui.QCheckBox("Use Variance Image")
 		self.use_variance.setChecked(True)
 		pawel_grid1.addWidget( self.use_variance, 3, 0)
-		print " aaaa ",options.pix_in,options.pix_out,"%6.3f"%options.pix_out
+		#print " aaaa ",options.pix_in,options.pix_out,"%6.3f"%options.pix_out
 		self.input_pixel_size  = QtGui.QLineEdit("%6.3f"%options.pix_in, self)
 		self.output_pixel_size = QtGui.QLineEdit("%6.3f"%options.pix_out, self)
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
-		print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()
+		#print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()
 
 		self.gauss_width = QtGui.QLineEdit("1.0", self)
 		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)

@@ -2586,7 +2586,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 	'''
 	This task is called from e2boxer itself. Not from the workflow
 	'''
-	documentation_string = "Use this form for writing output from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is mostly useful if you are using EMAN2. If you plan on using your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
+	documentation_string = "Use this form to write output file from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is most useful if you are using EMAN2. If you plan to use your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
 	def __init__(self,application,filenames,target,exclusions=[]):
 		E2BoxerOutputTask.__init__(self)
 		self.window_title = "Generate e2boxer Output"
@@ -2612,23 +2612,23 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 		return params
 	
 	def on_form_ok(self,params):
-		
+
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
 			self.run_select_files_msg()
 			return
 		
 		error_message = self.check_params(params)
-		if len(error_message) >0: 
+		if len(error_message) > 0: 
 			self.show_error_message(error_message)
 			return
 		else:
-			if params["write_coord_files"]:
+			if params["write_dbbox"]:
 				self.target().write_coord_files(params["filenames"],params["output_boxsize"],params["force"])
-			if params["write_box_images"]:
+			if params["write_ptcls"]:
 				normproc = False
-				if params["normproc"] != "none":
+				if params["norm"] != "none":
 					normproc=True
-				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["outformat"],normproc,params["normproc"],params["invert_output"])
+				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["format"],normproc,params["norm"],params["invert"])
 				
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
