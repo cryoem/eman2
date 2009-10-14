@@ -267,8 +267,10 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     cudaFree(d_points);
     cudaFree(d_shifts);
     cufftDestroy(plan_subject_image);
+    cufftDestroy(plan_subject_image_rest);
     cufftDestroy(plan_ref_image);
     cufftDestroy(plan_ccf);
+    cufftDestroy(plan_ccf_rest);
 
     return;
 }
