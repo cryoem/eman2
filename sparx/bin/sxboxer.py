@@ -144,11 +144,11 @@ for single particle analysis."""
 	parser.add_option("--out_file",    default=False,help="File to write particles to")
 	parser.add_option("--out_dir",     default=False,help="Directory to write particle files to")
 	
-
 	global options
 	(options, args) = parser.parse_args()
 	if options.method == "Swarm":
 		print "Note: Please consider switching to e2boxer2.py"
+
 
 	filenames = []
 	error_message = []
@@ -248,7 +248,6 @@ def on_idle():
 	pass
 
 def do_gauss_cmd_line_boxing(options):
-	
 	# commands to execute follow autbox_multi, except for getting parameters
 	#    from the db
 	project_db = EMProjectDB()
@@ -256,7 +255,7 @@ def do_gauss_cmd_line_boxing(options):
 	# set up a parameter dict for passing arguments to the autoboxer object.
 	#    dict keys will have to follow variable names in autoboxer.
 	parm_dict = {}
-
+	
 	# parse cmd arguments
 	if (options.ccf_lo):
 		try:
@@ -271,7 +270,7 @@ def do_gauss_cmd_line_boxing(options):
 		except ValueError:
 			print "could not convert ccf_hi value. bad value",options.ccf_hi,". exiting!"
 			sys.exit(1)
-
+			
 	if (options.pix_in):
 		try:
 			parm_dict["pixel_input"] = float(options.pix_in)
@@ -285,7 +284,7 @@ def do_gauss_cmd_line_boxing(options):
 		except ValueError:
 			print "could not convert pix_out value. bad value",options.pix_out,". exiting!"
 			sys.exit(1)
-
+	
 	if (options.width):
 		try:
 			parm_dict["gauss_width"] = float(options.width)
@@ -370,8 +369,7 @@ def do_gauss_cmd_line_boxing(options):
 			except ValueError:
 				print "could not convert voltage value. bad value",options.ctf_volt,". exiting!"
 				sys.exit(1)
-				
-		
+
 
 	if (options.out_file):
 		try:
@@ -1408,7 +1406,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictl_module = EMBoxerModulePanelModule(get_application(),self,self.ab_sel_mediator)
 		self.guictl = self.guictl_module.qt_widget
 		self.guictl.set_image_quality(self.boxable.get_quality())
-		self.guictl.setWindowTitle("e2boxer Controller")
+		self.guictl.setWindowTitle("sxboxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 		#get_application().show_specific(self.guictl_module)
@@ -1418,6 +1416,8 @@ class EMBoxerModule(QtCore.QObject):
 			self.guictl.method.setCurrentIndex(gauss_method_id)
 			self.guictl.method_changed( gauss_method_id ) 
 			self.autoboxer.set_params_of_gui(self.boxable)
+			self.guictl.input_pixel_size.setText( str(options.pix_in))
+			self.guictl.output_pixel_size.setText( str(options.pix_out))
 
 	def __init_guimx_thumbs(self):
 		self.itshrink = -1 # image thumb shrink. Default value of -1 means it has to be calculated when it's first needed
@@ -3524,12 +3524,14 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.use_variance = QtGui.QCheckBox("Use Variance Image")
 		self.use_variance.setChecked(True)
 		pawel_grid1.addWidget( self.use_variance, 3, 0)
+		
 		#print " aaaa ",options.pix_in,options.pix_out,"%6.3f"%options.pix_out
 		self.input_pixel_size  = QtGui.QLineEdit("%6.3f"%options.pix_in, self)
 		self.output_pixel_size = QtGui.QLineEdit("%6.3f"%options.pix_out, self)
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
 		#print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()
+		
 
 		self.gauss_width = QtGui.QLineEdit("1.0", self)
 		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
@@ -3698,7 +3700,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from morphology import defocus_gett
 
 		px_size = float(self.output_pixel_size.text())
-		print "  pixel   ",px_size
+		print "  pixel   ",px_size 
 
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
