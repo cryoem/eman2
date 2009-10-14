@@ -143,6 +143,7 @@ for single particle analysis."""
 	parser.add_option("--ctf_cs",      type="float", default=2.0,help="Cs for CTF")
 	parser.add_option("--out_file",    default=False,help="File to write particles to")
 	parser.add_option("--out_dir",     default=False,help="Directory to write particle files to")
+	
 
 	global options
 	(options, args) = parser.parse_args()
@@ -369,6 +370,8 @@ def do_gauss_cmd_line_boxing(options):
 			except ValueError:
 				print "could not convert voltage value. bad value",options.ctf_volt,". exiting!"
 				sys.exit(1)
+				
+		
 
 	if (options.out_file):
 		try:
@@ -3642,7 +3645,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	# XXX: calculate ctf and defocus from current image		
 	def inspect_ctf(self):
 		#display(self.ctf_data)
-		
+			
 		if not(self.ctf_inspector):
 			self.ctf_inspector = CTFInspector(self,self.ctf_data)
 			self.ctf_inspector.show()
@@ -3674,6 +3677,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			ctf_volt         = float(self.ctf_volt.text())
 			ctf_cs           = float(self.ctf_cs.text())
 			ctf_ampcont      = float(self.ctf_ampcont.text())
+			
 		except ValueError,extras:
 			# conversion of a value failed!
 			print "integer conversion failed."
@@ -3706,6 +3710,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
+	 	
+		if ctf_f_start == 0 : 	i_start = 0
+		else: 			i_start = int(px_size*2.*len(avg_sp)*ctf_f_start)
+		if ctf_f_stop <= i_start : 	i_stop  = len(avg_sp)
+		else: 			i_stop  = int(px_size*2.*len(avg_sp)*ctf_f_stop)
+		
 		del avg_sp
 
 		print "CTF estimation done"
@@ -3719,6 +3729,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			if not(self.ctf_inspector_gone):
 				self.ctf_inspector.update()
 
+		else:
+			global i_start_initial
+			global i_stop_initial
+			i_start_initial = i_start
+			i_stop_initial = i_stop
+		
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
 		from utilities import set_ctf
@@ -3909,7 +3925,7 @@ class CTFInspector(QtGui.QWidget):
 
 		self.i_start = None
 		self.i_stop = None
-
+		
 		if (data is None):
 			# test data, to ensure something is displayed even if no data is set yet. this is
 			#    for development only and can be removed later.....
@@ -3917,7 +3933,7 @@ class CTFInspector(QtGui.QWidget):
 		else:
 			# assume we got a triple of lists. assign it for now.
 			self.data=data
-
+		
 
 	def setData(self,data):
 		# check data type is a list and break, if not
@@ -3935,6 +3951,10 @@ class CTFInspector(QtGui.QWidget):
 		# print "update..."
 		
 	def paintEvent(self,event):
+		if (self.i_start is None and i_start_initial > 0):
+			self.i_start = i_start_initial
+		if (self.i_stop is None and i_stop_initial > 0):
+			self.i_stop = i_stop_initial
 		h=self.height()
 		w=self.width()
 
@@ -3988,6 +4008,9 @@ class CTFInspector(QtGui.QWidget):
 			sizeh = float(sizeh)
 			steph = float(h-2*hborder) / float(sizeh) 
 
+			
+			tickspacing = min(int(sizew/30), 5)
+				
 			for list_index in xrange(len(self.data)):
 				
 				p.setPen(color[list_index])
@@ -3996,7 +4019,10 @@ class CTFInspector(QtGui.QWidget):
 				fh = metrics.height()+4
 				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
 				
+			
 				for index in xrange(self.i_start,self.i_stop):
+					
+					
 					p.setPen(color[list_index])
 					# skip first point, since there is no previous point to connect to
 					if (0 == index):
@@ -4012,14 +4038,19 @@ class CTFInspector(QtGui.QWidget):
 						oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
 						#newy = int(h-hborder-steph*self.data[list_index][index])
 						newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
+				 		
 						p.drawLine(oldx,oldy,newx,newy)
-					if (len(self.data)-1 == list_index):
-						p.setPen(Qt.white)
-						p.drawLine(newx, h-hborder, newx, h-hborder-5)
-						metrics = p.fontMetrics()
-						fw = metrics.width(str(index))
-						p.drawText(newx-fw/2, h-hborder-7, str(index))
 						
+						
+					if (len(self.data)-1 == list_index):
+						if index % tickspacing == 0:
+							p.setPen(Qt.white)
+							p.setFont(QtGui.QFont('Times',10))
+							p.drawLine(newx, h-hborder, newx, h-hborder+5)
+							metrics = p.fontMetrics()
+							fw = metrics.width(str(index))
+							p.drawText(newx-fw/2, h-hborder+14, str(index))
+					
 		p.end()
 
 	# closing the window is tricky: we need to notify the parent window we are gone, but
