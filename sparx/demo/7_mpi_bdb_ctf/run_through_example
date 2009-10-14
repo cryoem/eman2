@@ -14,7 +14,7 @@ rm tmp.hdf
 
 ../generate_projections.py --CTF --format="bdb"  --apix=5.2 
 
-e2boxer.py --method=Gauss -A cmd -B 64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=0.02 --ctf_fstop=0.5 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
+sxboxer.py -A cmd --boxsize=64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=0.02 --ctf_fstop=0.5 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
 mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF --MPI 
