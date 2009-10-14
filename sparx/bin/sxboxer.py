@@ -114,7 +114,7 @@ for single particle analysis."""
 	parser.add_option("--method",          help="boxer method, Swarm or Gauss", default="Gauss")
 	parser.add_option("--outformat",       help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
 	parser.add_option("--just_output",action="store_true", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
-	parser.add_option("--normproc",        help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
+	parser.add_option("--normproc",        help="Normalization to apply to particle images. Should be normalize.ramp.normvar, normalize.edgemean or none, DO NOT CHANGE UNLESS NECESSARY", default="normalize.ramp.normvar")
 	parser.add_option("--invert_output",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
 	parser.add_option("--dbls",            type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
@@ -421,9 +421,6 @@ def do_gauss_cmd_line_boxing(options):
 	if (options.out_file):
 		image_list = []
 
-	normalize=True
-	norm_method="normalize.edgemean"
-
 	for image_name in options.filenames:
 		print "cmd autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
@@ -462,7 +459,7 @@ def do_gauss_cmd_line_boxing(options):
 				img_name = abspath(getcwd()) + sep + "particles" + sep + boxable.get_image_file_name(options.outformat)
 				if not(lexists(getcwd()+sep+"particles")):
 				       mkdir(getcwd()+sep+"particles")
-				
+
 			#print "img_name:",img_name
 			if ("bdb" == options.outformat):
 				img_name = boxable.get_image_file_name(options.outformat)
@@ -483,13 +480,9 @@ def do_gauss_cmd_line_boxing(options):
 				
 			print "writing",boxable.num_boxes(),"boxed images to", img_name
 			for single_box in boxable.boxes:
-				img = single_box.get_box_image(normalize,norm_method)
+				img = single_box.get_box_image(normalize,options.normproc)
 				# set all necessary attributes....
-				#img.set_attr( "nx" , img.get_xsize())
-				#img.set_attr( "ny" , img.get_ysize())
-				#img.set_attr( "nz" , img.get_zsize())
 				img.set_attr( "ctf" , this_ctf)
-				img.set_attr( "Pixel_size", autoboxer.pixel_output )
 				img.set_attr( "Micrograph", image_name )
 				img.set_attr( "Score", single_box.correlation_score )
 				img.set_attr( "ctf_applied" ,0 )
@@ -1042,7 +1035,6 @@ class RawDatabaseAutoBoxer:
 		project_db.close()
 
 
-
 def gen_thumbs(image_names,n):
 
 	application = get_application()
@@ -1162,7 +1154,7 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 		try: wb = options.write_box_images
 		except: wb = True
 		try: norm = options.normproc
-		except: norm = "normalize.edgemean"
+		except: norm = "normalize.ramp.normvar"
 		try: output = options.outformat
 		except: output = "hdf"
 		try: jo = options.just_output
@@ -1175,7 +1167,7 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 		pjo = ParamDef(name="just_output",vartype="boolean",desc_short="Just output",desc_long="Bypass autoboxing and just use the boxes that are currently stored in the database",property=None,defaultunits=jo,choices=None)
 		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
-		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgmean",choices=["normalize","normalize.edgemean","none"])
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.ramp.normvar",choices=["normalize.ramp.normvar","normalize.edgemean","none"])
 		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
 		params.append([pbox,pfo,pjo])
 		params.append([pwc,pwb])
@@ -2012,7 +2004,7 @@ class EMBoxerModule(QtCore.QObject):
 				#image = image.process("math.meanshrink",{"n":2})
 				#n /= 2
 			thumb = image.process("math.meanshrink",{"n":n})
-			thumb.process_inplace("normalize.edgemean") # if there are lots than they =should all have the same contrast
+			thumb.process_inplace("normalize.ramp.normvar") # if there are lots than they =should all have the same contrast
 			set_idd_image_entry(self.image_names[i],"image_thumb",thumb)
 			image = None
 			print sys.getrefcount(image)
@@ -2443,10 +2435,10 @@ class EMBoxerModule(QtCore.QObject):
 	def on_output_task_idle(self):
 		self.output_task = None
 	
-	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
+	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.ramp.normvar"):
 		self.write_box_image_files(self.image_names,box_size,forceoverwrite,imageformat,normalize,norm_method)
 		
-	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",invert=False):
+	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.ramp.normvar",invert=False):
 		self.boxable.cache_exc_to_db()
 		progress = EMProgressDialogModule(get_application(),"Writing boxed images", "Abort", 0, len(image_names),None)
 		progress.qt_widget.show()
@@ -2476,10 +2468,10 @@ class EMBoxerModule(QtCore.QObject):
 				self.autoboxer.auto_box(boxable,False)
 				self.autoboxer.set_mode_explicit(mode)
 				
-				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method,invert)
+				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,options.normproc,invert)
 		
 			else: 
-				self.autoboxer.write_box_images(self.boxable, normalize, norm_method)
+				self.autoboxer.write_box_images(self.boxable, normalize, options.normproc)
 				
 			if progress.qt_widget.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...

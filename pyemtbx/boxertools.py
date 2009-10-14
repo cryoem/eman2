@@ -246,7 +246,7 @@ class Box:
 		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
 		#if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
 		#if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
-		
+
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		self.footprint = None
 		if norm:
@@ -254,11 +254,11 @@ class Box:
 				self.image.process_inplace(norm_method)
 				self.image.set_attr("normalization",norm_method)
 				return
-			
+
 		self.image.set_attr("normalization","none")
 
 		# make sure there are no out of date footprints hanging around
-		
+
 
 	def change_box_size(self,box_size):
 		'''
@@ -281,7 +281,7 @@ class Box:
 		elif norm and self.image.get_attr("normalization") != norm_method: #normalization attribute should always exist
 			self.update_box_image(norm,norm_method)
 		return self.image
-	
+
 	def get_small_box_image(self,autoboxer):
 		'''
 		gets a shrunken version of the box by asking the database if the shrunken (entire) image
@@ -293,7 +293,7 @@ class Box:
 		else:
 			shrink = autoboxer.get_subsample_rate()
 			return image.get_clip(Region(int(self.xcorner/shrink),int(self.ycorner/shrink),int(self.xsize/shrink),int(self.ysize/shrink)))
-		
+
 	def get_small_image(self,autoboxer):
 		return  SubsamplerCache.get_image(self.image_name, autoboxer.get_params_mediator())
 	
