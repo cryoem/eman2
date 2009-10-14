@@ -2203,8 +2203,8 @@ class E2BoxerAutoTask(E2BoxerTask):
 			string_args = ["autoboxer"]
 			additional_args = []
 			bool_args = []
-			temp_file_name = "e2boxer2_autobox_stdout.txt"
-			self.spawn_task("e2boxer2.py",options,string_args,bool_args,additional_args,temp_file_name)
+			temp_file_name = "e2boxer_autobox_stdout.txt"
+			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
@@ -2389,7 +2389,7 @@ class E2BoxerGuiTask(E2BoxerTask):
 			options.method = "Swarm"
 			
 			from emboxerbase import EMBoxerModule
-			from e2boxer2 import  SwarmTool
+			from e2boxer import  SwarmTool
 			self.boxer_module = EMBoxerModule(params["filenames"],params["interface_boxsize"])
 															
 			
@@ -2508,8 +2508,8 @@ class E2BoxerOutputTask(E2BoxerTask):
 			string_args = ["norm","format","boxsize"]
 			bool_args = ["force","write_dbbox","write_ptcls","invert"]
 			additional_args = ["--dbls=%s" %spr_ptcls_dict]
-			temp_file_name = "e2boxer2_autobox_stdout.txt"
-			self.spawn_task("e2boxer2.py",options,string_args,bool_args,additional_args,temp_file_name)
+			temp_file_name = "e2boxer_autobox_stdout.txt"
+			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None

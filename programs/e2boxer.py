@@ -40,7 +40,7 @@ from emboxerbase import *
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
 
 
-def e2boxer2_check(options,args):
+def e2boxer_check(options,args):
 	error_message = check(options,args)
 	
 	if options.autoboxer:
@@ -72,7 +72,7 @@ a refactoring of e2boxer
 
 For example:
 
-e2boxer2.py ????.mrc --boxsize=256
+e2boxer.py ????.mrc --boxsize=256
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
@@ -96,7 +96,7 @@ e2boxer2.py ????.mrc --boxsize=256
 		cache_box_size = False
 		options.boxsize = db.get("box_size",dfl=128)
 	
-	error_message = e2boxer2_check(options,args)
+	error_message = e2boxer_check(options,args)
 	if len(error_message) > 0:
 		error = "\n"
 		for e in error_message:
