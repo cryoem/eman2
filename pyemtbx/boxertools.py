@@ -3165,17 +3165,19 @@ class PawelAutoBoxer(AutoBoxer):
 		return boxes, trimboxes, ccfs
 
 
-	def get_particle_file_name( self, image_name ):
+	def get_particle_file_name( self, image_name, format ):
 		from os import path
-		name,suffix = path.splitext( image_name )
-		return name+"_particles.hdf"
+		name, suffix = path.splitext( image_name )
+		if format == "hdf": return name+"_particles.hdf"
+		else: return "bdb:"+name+"_particles"
 
 	def get_particle_coords_file_name( self, image_name ):
 		from os import path
-		name,suffix = path.splitext( image_name )
+		name, suffix = path.splitext( image_name )
 		return name+"_particles.crd"
 
-	def write_box_images( self, boxable, normalize, norm_method ):
+	def write_box_images( self, boxable, normalize, norm_method, format ):
+		from string import replace
 
 		image_name = boxable.get_image_name()
 		parent_img = BigImageCache.get_image_directly( image_name )
@@ -3189,10 +3191,10 @@ class PawelAutoBoxer(AutoBoxer):
 		if not(self.out_file is None):
 			file_name = self.out_file
 		else:
-			file_name = self.get_particle_file_name( image_name )
+			file_name = self.get_particle_file_name( image_name, format )
 			
 		# If the output file exists, append the results to the existing file
-		if os.path.exists(file_name):
+		if (format == "hdf" and os.path.exists(file_name)) or (format == "bdb" and os.path.exists(replace(file_name, "bdb:", "EMAN2DB/")+".bdb")):
 			nima = EMUtil.get_image_count(file_name)
 		else:
 			nima = 0
@@ -3200,7 +3202,6 @@ class PawelAutoBoxer(AutoBoxer):
 		for i in xrange( len(boxable.boxes) ):
 			b = boxable.boxes[i]
 			img = b.get_box_image(normalize, norm_method)
-			img.set_attr( "Pixel_size", self.pixel_output )
 			img.set_attr( "Micrograph", image_name )
 			img.set_attr( "Score", b.correlation_score )
 			img.set_attr( "ctf", ctf_dict)
@@ -3220,7 +3221,7 @@ class PawelAutoBoxer(AutoBoxer):
 			f = open(file_name, "w")
 		for i in xrange(len(boxable.boxes)):
 			b = boxable.boxes[i]
-			f.write("Image %5d: X corner = %5d    Y corner = %5d size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
+			f.write("Image %5d:     X corner = %5d     Y corner = %5d     size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
 		f.close()
 					
 		print "Wrote coordinates of", len(boxable.boxes), "particles to file", file_name

@@ -2471,7 +2471,7 @@ class EMBoxerModule(QtCore.QObject):
 				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,options.normproc,invert)
 		
 			else: 
-				self.autoboxer.write_box_images(self.boxable, normalize, options.normproc)
+				self.autoboxer.write_box_images(self.boxable, normalize, options.normproc, imageformat)
 				
 			if progress.qt_widget.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
