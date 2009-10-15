@@ -3083,23 +3083,23 @@ class PawelAutoBoxer(AutoBoxer):
             del avg_sp
             del img,image_name
             #print "CTF estimation done:"
-            print ctf_tuple
-            print defocus
+            print "CTF tuple:", ctf_tuple
+
             return generate_ctf(ctf_tuple)
             
 
 	def run(self, imgname, boxable=None):
 		from sparx import get_im, filt_gaussl, filt_gaussh
 		print "running Gauss Convolution: "
-		print "     Pixel input  : ", self.pixel_input
-		print "     Pixel output : ", self.pixel_output
-		print "     Gauss width  : ", self.gauss_width
-		print "     Box size     : ", self.box_size
-		print "     image_name   : ", imgname
-		print "     CCF low bound:   ", self.thr_low
-		print "     CCF hgh bound:   ", self.thr_hgh
-		print "     Use variance :   ", self.use_variance
-		print "     Invert Cnst  :   ", self.invert
+		print "     Input pixel size  : ", self.pixel_input
+		print "     Ouput pixel size  : ", self.pixel_output
+		print "     Gauss width       : ", self.gauss_width
+		print "     Box size          : ", self.box_size
+		print "     Image name        : ", imgname
+		print "     CCF low bound     : ", self.thr_low
+		print "     CCF high bound    : ", self.thr_hgh
+		print "     Use variance      : ", self.use_variance
+		print "     Invert Constant   : ", self.invert
 
 		if not(boxable is None):
 			boxable.delete_auto_boxes(True)

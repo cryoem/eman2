@@ -231,7 +231,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	del    Res_roo	
 	return defocus
 			
-def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6,parent=None):
+def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None):
 	"""
 	
 		1. Estimate envelope function and baseline noise using constrained simplex method
@@ -240,7 +240,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 		   defocus which matches the extracted CTF imprints 
 	"""
 	from utilities  import generate_ctf
-	print voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2,parent
+	print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
 	res     = []
 	Res_roo = []
 	Res_TE  = []	
@@ -248,7 +248,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	else: 			i_start = int(Pixel_size*2.*len(roo)*f_start)
 	if f_stop <= i_start : 	i_stop  = len(roo)
 	else: 			i_stop  = int(Pixel_size*2.*len(roo)*f_stop)
-	print f_start, i_start, f_stop, i_stop
+	print "f_start, i_start, f_stop, i_stop", f_start, i_start, f_stop, i_stop
 	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	Pn1 = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	Res_roo = []
@@ -256,8 +256,9 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	for i in xrange(len(roo)):
 		Res_roo.append(roo[i] - Pn1[i])
 		Res_TE.append( TE[i]  - Pn1[i])
-	#
+
 	defocus = defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
+
 	nx  = int(len(Res_roo)*2)
 	ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
 	if (parent is not None):
