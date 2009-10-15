@@ -12426,7 +12426,7 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # K-means main stability stream command line, CUDA version
 def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
 	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics import k_means_stab_asg2part, k_means_stab_export
+	from statistics import k_means_stab_asg2part, k_means_stab_export, k_means_stab_txt
 	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
 	from statistics import k_means_stab_pwa, k_means_stab_H
 	from statistics import k_means_CUDA
@@ -12480,12 +12480,16 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
 	# export the stable class averages
-	count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
-	logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+	if TXT:
+		count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: averages_grp_i (rejected %i images)' % (count_k, len(id_rejected)))
+	else:
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
-	# tag informations to the header
-	logging.info('... Update info to the header')
-	k_means_stab_update_tag(stack, STB_PART, id_rejected)
+	        # tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, STB_PART, id_rejected)
 	
 	logging.info('::: END k-means stability :::')
 
@@ -12574,7 +12578,7 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 
 		# export the stable class averages
 		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
-		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
@@ -12590,7 +12594,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_export, k_means_init_open_im
 	from statistics  import k_means_cla, k_means_SSE, k_means_criterion, k_means_locasg2glbasg, k_means_open_im
-	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H
+	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_exoprt_txt, k_means_stab_H
 	import sys, logging, os, pickle
 
 	ext = file_type(stack)
@@ -12666,10 +12670,13 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
-	if not TXT:
+	if TXT:
+		count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: averages_grp_i.txt (rejected %i images)' % (count_k, len(id_rejected)))
+	else:
 		# export the stable class averages
 		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
-		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
@@ -12791,10 +12798,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 
 		# export the stable class averages
-		if TXT:	count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir)
+		if TXT:	count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
 		else:   count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
 			
-		logging.info('... Export %i stable class averages: average.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
 
 		if not TXT:
 		        # tag informations to the header

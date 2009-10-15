@@ -1661,7 +1661,12 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 
 	# write the report on the logfile
 	Je = 0
-	for k in xrange(Cls['k']): Je += Cls['Ji'][k]
+	flagHDF = False
+	for k in xrange(Cls['k']):
+		Je += Cls['Ji'][k]
+		if Cls['n'][k] > 16000:
+			flagHDF = True
+			print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
 
 	print_msg('\n\n_Details____________________________________________________\n')
 	print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
@@ -1683,11 +1688,11 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 			if(assign[i] == k):  lassign.append(float(i))
 
 		# limitation of hdf file in the numbers of attributes
-		if Cls['n'][k] > 16000 or TXT:
-			if not TXT: print 'WARNING: limitation of number attributes in hdf file, the results will be exported in separate files \n'
-
-			if part != -1: outfile = open(os.path.join(out_seedname, 'kmeans_part_%02i_grp_%03i.txt' % (part, k + 1)), 'w')
-			else:          outfile = open(os.path.join(out_seedname, 'kmeans_grp_%03i.txt' % (k + 1)), 'w')
+		if flagHDF or TXT:
+			if part != -1:
+				outfile = open(os.path.join(out_seedname, 'kmeans_part_%02i_grp_%03i.txt' % (part + 1, k + 1)), 'w')
+			else:
+				outfile = open(os.path.join(out_seedname, 'kmeans_grp_%03i.txt' % (k + 1)), 'w')
 			list_images = []
 			for i in xrange(len(assign)):
 				if assign[i] == k:
@@ -1695,7 +1700,6 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 					outfile.write(str(i) +'\n')
 			outfile.close()
 			Cls['ave'][k].set_attr_dict({'Class_average':1.0, 'nobjects':float(Cls['n'][k])})
-			Cls['ave'][k].set_attr('members', lassign)
 		else:
 			
 			Cls['ave'][k].set_attr('Class_average', 1.0)
@@ -1711,11 +1715,11 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 			Cls['var'][k].set_attr('Je', Je)
 
 		if part == -1:
-			Cls['ave'][k].write_image(out_seedname + "/averages.hdf", k)
-			Cls['var'][k].write_image(out_seedname + "/variances.hdf", k)
+			Cls['ave'][k].write_image(os.path.join(out_seedname, "averages.hdf"), k)
+			Cls['var'][k].write_image(os.path.join(out_seedname, "variances.hdf"), k)
 		else:
-			Cls['ave'][k].write_image(out_seedname + "/averages_%02i.hdf" % part, k)
-			Cls['var'][k].write_image(out_seedname + "/variances_%02i.hdf" % part, k)
+			Cls['ave'][k].write_image(os.path.join(out_seedname, "averages_%02i.hdf" % part), k)
+			Cls['var'][k].write_image(os.path.join(out_seedname, "variances_%02i.hdf" % part), k)
 
 # K-means compute criterion in order to validate the number of groups
 def k_means_criterion(Cls, crit_name=''):
@@ -4492,19 +4496,20 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 		
 		# limitation of hdf format
 		if flagHDF or TXT:
-			outfile = open(out_seedname + '/grp_%d_kmeans.txt' % (k + 1), 'w')
+			if part != -1:
+				outfile = open(os.path.join(out_seedname, 'k_means_part_%02i_grp_%03i.txt' % (part + 1, k + 1)), 'w')
+			else:
+				outfile = open(os.path.join(out_seedname, 'k_means_grp_%03i.txt' % (k + 1)), 'w')
 			for id in GRP[k]: outfile.write('%i\n' % int(id))
 			outfile.close()
-
-			## NEED averages
 			AVE.set_attr_dict({'Class_average':1.0, 'nobjects': len(GRP[k])})
 		else:
 			AVE.set_attr('Class_average', 1.0)
 			AVE.set_attr('nobjects', len(GRP[k]))
 			AVE.set_attr('members', GRP[k])
 
-		if part == -1: AVE.write_image(out_seedname + '/averages.hdf', k)
-		else:          AVE.write_image(out_seedname + '/averages_%02i.hdf' % part, k)
+		if part == -1: AVE.write_image(os.join(out_seedname, 'averages.hdf'), k)
+		else:          AVE.write_image(os.join(out_seedname, 'averages_%02i.hdf' % part), k)
 	print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
@@ -5546,14 +5551,16 @@ def k_means_stab_pwa(PART, lim = -1):
 	return MATCH, STB_PART, CT_s, CT_t, ST, st
 
 # Export stable averages to text file
-def k_means_stab_export_txt(PART, outdir):
-	K = len(PART)
+def k_means_stab_export_txt(PART, outdir, th_nobj):
+	K  = len(PART)
+	RK = 0
 	for k in xrange(K):
-		f = open(outdir + '/averages_grp_%03i.txt' % k, 'w')
-		for id in PART[k]: f.write('%i\n' % id)
-	f.close()
-
-	return K, []
+		if len(PART[k]) >= th_nobj:
+			f = open(outdir + '/averages_grp_%03i.txt' % k, 'w')
+			for id in PART[k]: f.write('%i\n' % id)
+			f.close()
+			RK += 1
+	return RK, []
 
 # Build and export the stable class averages 
 def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
@@ -5730,19 +5737,37 @@ def k_means_open_unstable(stack, maskname, CTF):
 def k_means_stab_asg2part(outdir, npart):
 	from numpy     import array
 	from utilities import get_im
+	from os        import path, listdir
 
+	# first check special case, when membership is export as txt file
+	# due to the limitation of hdf header or the data is TXT file
 	ALL_PART = []
-	for n in xrange(npart):
-		name = outdir + '/averages_%02i.hdf' % n
-		K    = EMUtil.get_image_count(name)
-		part = []
-		for k in xrange(K):
-			im  = get_im(name, k)
-			lid = im.get_attr('members')
-			lid = array(lid, 'int32')
-			lid.sort()
-			part.append(lid.copy())
-		ALL_PART.append(part)
+	if path.isfile(path.join(outdir, 'kmeans_part_01_grp_001.txt')):
+		from utilities import read_text_file
+		lname = listdir(outdir)
+		K     = 0
+		for name in lname:
+			if name.find('kmeans_part_01_grp_') == 0: K += 1
+		for n in xrange(npart):
+			part = []
+			for k in xrange(K):
+				lid = read_text_file(path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
+				lid = array(lid, 'int32')
+				lid.sort()
+				part.append(lid.copy())
+			ALL_PART.append(part)
+	else:
+		for n in xrange(npart):
+			name = path.join(outdir, 'averages_%02i.hdf' % n)
+			K    = EMUtil.get_image_count(name)
+			part = []
+			for k in xrange(K):
+				im  = get_im(name, k)
+				lid = im.get_attr('members')
+				lid = array(lid, 'int32')
+				lid.sort()
+				part.append(lid.copy())
+			ALL_PART.append(part)
 
 	return ALL_PART
 
