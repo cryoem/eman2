@@ -5,40 +5,40 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 /** This file is a part of "emdata.h", to use functions in this file,
  * you should "#include "emdata.h",
- * NEVER directly include this file. */ 
+ * NEVER directly include this file. */
 
 #ifndef emdata__core_h__
-#define emdata__core_h__ 
+#define emdata__core_h__
 
 public:
 /** Make a copy of this image including both data and header.
@@ -51,7 +51,7 @@ EMData *copy() const;
  * @return An image with a copy of the current image's header.
  */
 EMData *copy_head() const;
-		
+
 
 /** add a number to each pixel value of the image. Image may be real or complex.
  * @param f The number added to 'this' image.
@@ -59,7 +59,7 @@ EMData *copy_head() const;
  */
 void add(float f,int keepzero=0);
 
-		
+
 /** add a same-size image to this image pixel by pixel.
  *
  * @param image The image added to 'this' image.
@@ -74,13 +74,13 @@ void add(const EMData & image);
  */
 void addsquare(const EMData & image);
 
-		
+
 /** subtract a number to each pixel value of the image.
- * @param f The number subtracted from 'this' image.		 
+ * @param f The number subtracted from 'this' image.
  */
 void sub(float f);
 
-		
+
 /** subtract a same-size image from this image pixel by pixel.
  * @param image The image subtracted  from 'this' image.
  * @exception ImageFormatException If the 2 images are not same size.
@@ -109,7 +109,7 @@ void mult(int n)
  */
 void mult(float f);
 
-		
+
 /** multiply each pixel of this image with each pixel of some
  * other same-size image.
  *
@@ -134,11 +134,10 @@ void div(float f);
  */
 void div(const EMData & image);
 
-
 /** Set all the pixel value = 0. */
 void to_zero();
 
-		
+
 /** set all the pixel values = 1. */
 void to_one();
 
@@ -207,7 +206,7 @@ inline float get_value_at(int x, int y, int z) const
 	return get_data()[x + y * nx + z * nxy];
 }
 
-		
+
 /** Get the pixel density value at coordinates (x,y). 2D only.
  * The validity of x, y is not checked.
  *
@@ -224,7 +223,7 @@ inline float get_value_at(int x, int y) const
 /** Get the pixel density value given an index 'i' assuming
  * the pixles are stored in a 1D array. The validity of i
  * is not checked.
- * 
+ *
  * @param i  1D data array index.
  * @return The pixel density value
  */
@@ -257,7 +256,7 @@ std::complex<float> get_complex_at(int x,int y);
  */
 float get_value_at_wrap(int x, int y, int z) const;
 float& get_value_at_wrap(int x, int y, int z);
-		
+
 /** Get the pixel density value at coordinates (x,y).
  * Should only be called on 2D images - no errors are thrown
  * Wraps pixel values if they are negative - i.e. is circulant
@@ -306,7 +305,7 @@ float sget_value_at(int x, int y) const;
  * given an index 'i' assuming
  * the pixles are stored in a 1D array. The validity of i
  * is checked. If i is out of range, return 0;
- * 
+ *
  * @param i  1D data array index.
  * @return The pixel density value
  */
@@ -314,7 +313,7 @@ float sget_value_at(size_t i) const;
 
 
 /** Get pixel density value at interpolation of (x,y).
- * The validity of x, y is checked.2D image only. 
+ * The validity of x, y is checked.2D image only.
  *
  * @param x The x cooridinate.
  * @param y The y cooridinate.
@@ -337,7 +336,7 @@ float sget_value_at_interp(float x, float y, float z) const;
 /** Set the pixel density value at coordinates (x,y,z).
  * The validity of x, y, and z is not checked.
  * This implementation does bounds checking.
- * 
+ *
  * @param x The x cooridinate.
  * @param y The y cooridinate.
  * @param z The z cooridinate.
@@ -366,11 +365,11 @@ inline void set_value_at(int x, int y, int z, float v)
 	}
 }
 
-	
+
 /** Set the pixel density value at coordinates (x,y,z).
  * The validity of x, y, and z is not checked.
  * This implementation has no bounds checking.
- * 
+ *
  * @param x The x cooridinate.
  * @param y The y cooridinate.
  * @param z The z cooridinate.
@@ -383,7 +382,7 @@ inline void set_value_at_fast(int x, int y, int z, float v)
 	changecount++;
 }
 
-		
+
 /** Set the pixel density value at coordinates (x,y).
  * 2D image only.
  *
@@ -410,7 +409,7 @@ inline void set_value_at(int x, int y, float v)
 	}
 }
 
-		
+
 /** Set the pixel density value at coordinates (x,y).
  * 2D image only. The validity of x, y, and z is not checked.
  *
@@ -427,7 +426,7 @@ inline void set_value_at_fast(int x, int y, float v)
 
 
 /** Set the pixel density value at coordinate (x).
- * 1D image only. 
+ * 1D image only.
  *
  * @param x The x cooridinate.
  * @param v The pixel density value at coordinate (x).
@@ -448,7 +447,7 @@ inline void set_value_at(int x, float v)
 }
 
 /** Set the pixel density value at coordinate (x).
- * 1D image only. 
+ * 1D image only.
  *
  * @param x The x cooridinate.
  * @param v The pixel density value at coordinate (x).
@@ -509,10 +508,10 @@ inline float& operator()(const int ix) const {
 #endif // BOUNDS_CHECKING
 	return *(get_data() + pos);
 }
-		
+
 
 /** Set the array offsets */
-void set_array_offsets(const int xoff_=0, const int yoff_=0, 
+void set_array_offsets(const int xoff_=0, const int yoff_=0,
 		               const int zoff_=0) {
 	xoff=xoff_; yoff=yoff_; zoff=zoff_;
 }
@@ -525,11 +524,11 @@ void set_array_offsets(vector<int> offsets) {
 
 vector<int> get_array_offsets() {
 	vector<int> offsets;
-	offsets.push_back(xoff); 
-	offsets.push_back(yoff); 
+	offsets.push_back(xoff);
+	offsets.push_back(yoff);
 	offsets.push_back(zoff);
 	return offsets;
-}		
+}
 
 
 /** Return reference to complex elements */
@@ -571,7 +570,7 @@ std::complex<float>& cmplx(const int ix) {
  * @return a image which is the nth power of this image
  * @exception InvalidValueException n must be >= 0
  */
-EMData * power(int n) const;		
+EMData * power(int n) const;
 
 /**return square root of current image
  * @return a image which is the square root of this image
@@ -579,16 +578,16 @@ EMData * power(int n) const;
  * */
 EMData * sqrt() const;
 
-		
-/** return natural logarithm image for a image 
+
+/** return natural logarithm image for a image
  * @return a image which is the natural logarithm of this image
  * @exception InvalidValueException pixel value must be >= 0
  * @exception ImageFormatException real image only
  */
 EMData * log() const;
 
-		
-/** return base 10 logarithm image for a image 
+
+/** return base 10 logarithm image for a image
  * @return a image which is the base 10 logarithm of this image
  * @exception InvalidValueException pixel value must be >= 0
  * @exception ImageFormatException real image only
@@ -602,7 +601,7 @@ EMData * log10() const;
  */
 EMData * real() const;
 
-		
+
 /** return imaginary part of a complex image as a real image format.
  * for a real image, just return itself.
  * @return a real image which is the imaginary part of this image.
@@ -626,11 +625,11 @@ EMData * amplitude() const;
  * */
 EMData * phase() const;
 
-		
+
 /** create a complex image from a real image, this complex image is in real/imaginary format
  * @param img give an artificial imaginary part
  * @return a complex image which is generated from a real image
- * @exception InvalidCallException this function can not be called by complex image 
+ * @exception InvalidCallException this function can not be called by complex image
  */
 EMData * real2complex(float img = 0.0f) const;
 

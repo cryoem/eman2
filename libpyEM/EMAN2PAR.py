@@ -233,7 +233,7 @@ class EMTaskCustomer:
 				k=0
 				rd={}
 				while 1:
-					signal.alarm(240)
+					signal.alarm(360)
 					k=recvobj(sockf)
 					if k==None: break
 					v=recvobj(sockf)

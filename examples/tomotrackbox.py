@@ -105,13 +105,19 @@ class TrackerControl(QtGui.QWidget):
 		self.bcenalign=QtGui.QPushButton("Center Align")
 		self.bprojalign=QtGui.QPushButton("Proj. Realign")
 		self.breconst=QtGui.QPushButton("3D Normal")
+		self.sbmode=QtGui.QSpinBox(self)
+		self.sbmode.setRange(1,7)
+		self.sbmode.setValue(2)
 		self.bmagict=QtGui.QPushButton("3D Tomofill")
 		self.bmagics=QtGui.QPushButton("3D Sph")
 		self.bmagicc=QtGui.QPushButton("3D Cyl")
 		
 		self.vbl.addWidget(self.bcenalign)
 		self.vbl.addWidget(self.bprojalign)
-		self.vbl.addWidget(self.breconst)
+		self.hbl2=QtGui.QHBoxLayout()
+		self.vbl.addLayout(self.hbl2)
+		self.hbl2.addWidget(self.breconst)
+		self.hbl2.addWidget(self.sbmode)
 		self.vbl.addWidget(self.bmagict)
 		self.vbl.addWidget(self.bmagics)
 		self.vbl.addWidget(self.bmagicc)
@@ -162,15 +168,17 @@ class TrackerControl(QtGui.QWidget):
 
 	def do_reconst(self,x=0):
 		stack=self.get_boxed_stack()
-		self.map3d=self.reconstruct(stack,2.0)
+		mode=self.sbmode.value()
+		self.map3d=self.reconstruct(stack,2.0,mode)
 		self.update_3d()
 
 		
 	def do_magict(self,x):
 		stack=self.get_boxed_stack()
 #		self.map3d=self.reconstruct_ca(stack[5:-4],0.5)
-		init=self.reconstruct_ca(stack[5:-4],0.5)
-		self.map3d=self.reconstruct(stack,2.0,init)
+#		init=self.reconstruct_ca(stack[5:-4],0.5)
+		mode=self.sbmode.value()
+		self.map3d=self.reconstruct_wedgefill(stack,2.0,mode)
 		self.update_3d()
 		
 	def do_magics(self,x):
@@ -309,7 +317,64 @@ class TrackerControl(QtGui.QWidget):
 		stack=self.get_boxed_stack()
 		self.imboxed.set_data(stack)
 	
-	def reconstruct_ca(self,stack,angstep):
+	def reconstruct_wedgefill(self,stack,angstep,mode=2):
+		"""Fills the missing wedge with the average of the slices"""
+		print "Making 3D tomofill"
+		
+		boxsize=stack[0]["nx"]
+		pad=Util.calc_best_fft_size(int(boxsize*1.5))
+
+		# average all of the slices together
+		av=stack[0].copy()
+		for p in stack[1:]: av+=p
+		av.del_attr("xform.projection")
+		p.mult(1.0/len(stack))
+		av=av.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		
+		for i,p in enumerate(stack) : 
+			p["alt"]=(i-len(stack)/2)*angstep
+		
+		# Determine a good angular step for filling Fourier space
+		fullsamp=360.0/(boxsize*pi)
+		if angstep/fullsamp>2.0 :
+			samp=1.0/(floor(angstep/fullsamp))
+		else :
+			samp=angstep
+		
+		print "Subsampling = %1.2f"%samp
+
+		# Now the reconstruction
+		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"mode":mode})
+		recon.setup()
+		
+		for ri in range(5):
+			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
+				for ii,p in enumerate(stack):
+					if p["alt"]<a : break
+				else: ii=-1
+				if ii==-1 or ii==len(stack)-1 :
+					# a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
+					p=av
+				else:
+					# We average slices in real space, producing a rotational 'smearing' effect
+					frac=(a-stack[ii]["alt"])/angstep
+					p=stack[ii].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
+				
+				xf=Transform({"type":"eman","alt":a,"az":-90.0,"phi":90.0})
+				p["xform.projection"]=xf
+						
+				if ri%2==1:	
+					recon.determine_slice_agreement(p,xf,1)
+				else :
+					recon.insert_slice(p,xf)
+		
+		ret=recon.finish()
+		ret.process_inplace("normalize.edgemean")
+#		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+		
+		return ret
+	
+	def reconstruct_ca(self,stack,angstep,mode=2):
 		"""Cylindrically averaged tomographic model, generally used for filling empty spaces. Returned volume is padded."""
 		print "Making CA"
 		
@@ -338,20 +403,20 @@ class TrackerControl(QtGui.QWidget):
 				alt+=angstep
 		
 		ret=recon.finish()
+		ret.process_inplace("normalize.edgemean")
 #		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		
 		return ret
-	
 		
 	
-	def reconstruct(self,stack,angstep,initmodel=None):
+	def reconstruct(self,stack,angstep,mode=2,initmodel=None):
 		""" Tomographic reconstruction of the current stack """
 		boxsize=stack[0]["nx"]
 		pad=Util.calc_best_fft_size(int(boxsize*1.5))
 		
 		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-90.0,"phi":90.0})
 		
-		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"start_model":initmodel,"start_model_weight":0.01})
+		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"start_model":initmodel,"start_model_weight":0.01,"mode":mode})
 		recon.setup()
 		qual=0
 		scores=[]
@@ -432,7 +497,7 @@ class TrackerControl(QtGui.QWidget):
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
 			
-			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
+			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5,"masked":1})
 			trans=aln["xform.align2d"].get_trans()
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
@@ -457,7 +522,7 @@ class TrackerControl(QtGui.QWidget):
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
 			
-			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
+			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5,"masked":1})
 			trans=aln["xform.align2d"].get_trans()
 			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 

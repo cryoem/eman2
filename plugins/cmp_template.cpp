@@ -44,6 +44,15 @@ float XYZCmp::cmp(EMData * image, EMData * with) const
 	float param2 = params["param2"];
 	// do something
 #endif
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	
+	double ret=0;
+	for (int i=nx/4; i<nx*3/4; i++) {
+		for (int j=ny/4; j<ny*3/4; j++) {
+			ret+=image->get_value_at(i,j)*with->get_value_at(i,j);
+		}
+	}
 
-	return 0;
+	return (float) ret;
 }

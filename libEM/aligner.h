@@ -201,6 +201,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("intonly", EMObject::INT,"Integer pixel translations only");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels");
+			d.put("masked", EMObject::INT,"Treat zero pixels in 'this' as a mask for normalization (default false)");
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			return d;
 		}

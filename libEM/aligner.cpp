@@ -80,7 +80,11 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		throw ImageDimensionException("Images must be the same size to perform translational alignment");
 
 	EMData *cf = 0;
+	int nx = this_img->get_xsize();
+	int ny = this_img->get_ysize();
+	int nz = this_img->get_zsize();
 
+	int masked = params.set_default("masked",0);
 	bool use_cpu = true;
 #ifdef EMAN2_USING_CUDA
 	if (this_img->gpu_operation_preferred() ) {
@@ -91,10 +95,24 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 #endif // EMAN2_USING_CUDA
 	if (use_cpu) cf = this_img->calc_ccf(to);
 
+	// This is too expensive
+	if (masked) {
+		EMData *msk=this_img->process("threshold.notzero");
+		EMData *sqr=to->process("math.squared");
+		EMData *cfn=msk->calc_ccf(sqr);
+		cfn->process_inplace("math.sqrt");
+		float *d1=cf->get_data();
+		float *d2=cfn->get_data();
+		for (int i=0; i<nx*ny*nz; i++) {
+			if (d2[i]!=0) d1[i]/=d2[i];
+		}
+		cf->update();
+		delete msk;
+		delete sqr;
+		delete cfn;
+	}
+
 //
-	int nx = this_img->get_xsize();
-	int ny = this_img->get_ysize();
-	int nz = this_img->get_zsize();
 
 	int maxshiftx = params.set_default("maxshift",-1);
 	int maxshifty = params["maxshift"];

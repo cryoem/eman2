@@ -32,6 +32,7 @@
 #ifndef eman_cmp_template_h__
 #define eman_cmp_template_h__ 1
 
+#include "emdata.h"
 #include "cmp.h"
 
 namespace EMAN
@@ -51,12 +52,12 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "xyz";
+			return "middle";
 		}
 
 		string get_desc() const
 		{
-			return "XYZ Description";
+			return "dot product using the center of the image";
 		}
 
 		static Cmp *NEW()
@@ -76,7 +77,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("param1", EMObject::INT);
+			  d.put("radius", EMObject::INT);
 			  d.put("param2", EMObject::FLOAT);
 			  return d;
 		}
