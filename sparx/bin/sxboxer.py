@@ -129,7 +129,7 @@ for single particle analysis."""
 	parser.add_option("--pix_in",      type="float", default=1.0,help="input pixel size in Angstrom")
 	parser.add_option("--pix_out",     type="float", default=1.0,help="output pixel size in Angstrom")
 
-	parser.add_option("--width",       type="float", default=1.0,help="width of the Gaussian")
+	parser.add_option("--width",       default=False,help="width of the Gaussian")
 	parser.add_option("--var",         action="store_true",default=False,help="Use variance flag (default is False)")
 	parser.add_option("--inv",         action="store_true",default=False,help="Invert image flag (default is False)")
 
@@ -1427,7 +1427,6 @@ class EMBoxerModule(QtCore.QObject):
 			self.autoboxer.set_params_of_gui(self.boxable)
 			self.guictl.input_pixel_size.setText( str(options.pix_in))
 			self.guictl.output_pixel_size.setText( str(options.pix_out))
-			self.guictl.gauss_width.setText( str(options.width))
 
 	def __init_guimx_thumbs(self):
 		self.itshrink = -1 # image thumb shrink. Default value of -1 means it has to be calculated when it's first needed
@@ -3602,8 +3601,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		#print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()
 		
 
-		#self.gauss_width = QtGui.QLineEdit("1.0", self)
-		self.gauss_width = QtGui.QLineEdit("%.3f"%options.width, self)
+		self.gauss_width = QtGui.QLineEdit("1.0", self)
 		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
 		pawel_grid1.addWidget( self.gauss_width_slider, 2, 1 )
 		pawel_grid1.addWidget( self.gauss_width, 2, 2 )
