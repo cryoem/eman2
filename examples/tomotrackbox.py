@@ -350,7 +350,7 @@ class TrackerControl(QtGui.QWidget):
 		for ri in range(5):
 			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
 				for ii,p in enumerate(stack):
-					if p["alt"]<a : break
+					if p["alt"]>a : break
 				else: ii=-1
 				if ii==-1 or ii==len(stack)-1 :
 					# a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
