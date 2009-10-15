@@ -199,11 +199,11 @@ for single particle analysis."""
 	boxes=[]
 	if len(options.auto)>0:
 		if "cmd" in options.auto:
-			print "Autobox mode ",options.auto[0]
-			print "commandline version"
+			print "Autoboxer mode: ", options.auto[0]
+			print "Command line version"
 			
 			do_gauss_cmd_line_boxing(options)
-			print "cmdline autoboxer exiting"
+			print "Command line autoboxer exiting ..."
 
 			sys.exit(1)
 
@@ -320,13 +320,13 @@ def do_gauss_cmd_line_boxing(options):
 	if (options.do_ctf):
 		if (options.ctf_fstart):
 			try:
-				parm_dict["ctf_fstart"] = int(options.ctf_fstart)
+				parm_dict["ctf_fstart"] = options.ctf_fstart
 			except ValueError:
 				print "could not convert fstart value. bad value",options.ctf_fstart,". exiting!"
 				sys.exit(1)
 		if (options.ctf_fstop):
 			try:
-				parm_dict["ctf_fstop"] = int(options.ctf_fstop)
+				parm_dict["ctf_fstop"] = options.ctf_fstop
 			except ValueError:
 				print "could not convert fstop value. bad value",options.ctf_fstop,". exiting!"
 				sys.exit(1)
@@ -421,7 +421,7 @@ def do_gauss_cmd_line_boxing(options):
 		image_list = []
 
 	for image_name in options.filenames:
-		print "cmd autoboxing",image_name
+		print "\nCommand autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
 		
 		if boxable.is_excluded():
@@ -432,18 +432,18 @@ def do_gauss_cmd_line_boxing(options):
 
 		if (options.do_ctf):
 			# new method to determine ctf...
-			print "starting ctf determination"
+			print "Start CTF determination ..."
 			this_ctf = autoboxer.auto_ctf(boxable)
 		else:
 			# create empty so that del later doesn't raise exceptions
 			this_ctf = None
 
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		print "starting autoboxer"
+		print "Start autoboxer"
 		autoboxer.auto_box(boxable,False)
 
 		if options.write_coord_files:
-			print "write coords"
+			print "write coordinates"
 			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
 		if options.write_box_images:
 			# we don't want to use boxable.write_box_images, since these don't store all information.
@@ -479,7 +479,8 @@ def do_gauss_cmd_line_boxing(options):
 				
 			print "writing",boxable.num_boxes(),"boxed images to", img_name
 			for single_box in boxable.boxes:
-				img = single_box.get_box_image(normalize,options.normproc)
+				if options.normproc!="": normalize = True
+				img = single_box.get_box_image(normalize, options.normproc)
 				# set all necessary attributes....
 				img.set_attr( "ctf" , this_ctf)
 				img.set_attr( "Micrograph", image_name )
@@ -3768,7 +3769,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from morphology import defocus_gett
 
 		px_size = float(self.output_pixel_size.text())
-		print "  pixel   ",px_size 
+		print "Pixel size: ", px_size 
 
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
@@ -3777,7 +3778,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		del avg_sp
 
 		print "CTF estimation done"
-		print "Defocus: ",defocus
+		print "Estimated defocus value: ",defocus
 
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
