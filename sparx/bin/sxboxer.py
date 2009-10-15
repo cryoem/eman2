@@ -3775,10 +3775,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 	 	
-		if ctf_f_start == 0 : 	i_start = 0
-		else: 			i_start = int(px_size*2.*len(avg_sp)*ctf_f_start)
-		if ctf_f_stop <= i_start : 	i_stop  = len(avg_sp)
-		else: 			i_stop  = int(px_size*2.*len(avg_sp)*ctf_f_stop)
 		
 		del avg_sp
 
@@ -3796,8 +3792,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		else:
 			global i_start_initial
 			global i_stop_initial
-			i_start_initial = i_start
-			i_stop_initial = i_stop
+			i_start_initial = self.i_start
+			i_stop_initial = self.i_stop
 		
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
