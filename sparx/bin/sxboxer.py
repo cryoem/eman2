@@ -1414,7 +1414,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictl = self.guictl_module.qt_widget
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("sxboxer Controller")
-		self.guictl.set_dynapix(self.dynapix)
+		#self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 		#get_application().show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
@@ -2465,7 +2465,6 @@ class EMBoxerModule(QtCore.QObject):
 				nima = EMUtil.get_image_count(file_name)
 			else:
 				nima = 0
-			print nima, file_name
 
 			file_name2 = get_particle_coords_file_name(name)
 			if os.path.exists(file_name2):
@@ -2482,7 +2481,7 @@ class EMBoxerModule(QtCore.QObject):
 				img.set_attr( "Score", b.correlation_score )
 				img.set_attr( "ctf", ctf_dict)
 				img.write_image( file_name, i+nima )
-				f.write("Image %5d:     X corner = %5d     Y corner = %5d     size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
+				f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, b.xcorner+b.xsize/2, b.ycorner+b.xsize/2, b.xsize))
 			
 			print "Wrote", new_nima, "particles to file", file_name
 			f.close()						
@@ -3075,10 +3074,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl1.setMargin(0)
 		self.boxinghbl1.setSpacing(2)
 		
-		self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"), "Reference")
-		self.refbutton.setCheckable(1)
-		self.refbutton.setChecked(True)
-		self.boxinghbl1.addWidget(self.refbutton)
+		#self.refbutton=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "black_box.png"), "Reference")
+		#self.refbutton.setCheckable(1)
+		#self.refbutton.setChecked(True)
+		#self.boxinghbl1.addWidget(self.refbutton)
 		
 		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "white_box.png"), "Manual")
 		self.manualbutton.setCheckable(1)
@@ -3096,9 +3095,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxingvbl.addLayout(self.boxinghbl1)
 	
 		self.boxinghbl3=QtGui.QHBoxLayout()
-		self.dynapix = QtGui.QCheckBox("Dynapix")
-		self.dynapix.setChecked(self.target().dynapix)
-		self.boxinghbl3.addWidget(self.dynapix)
+		#self.dynapix = QtGui.QCheckBox("Dynapix")
+		#self.dynapix.setChecked(self.target().dynapix)
+		#self.boxinghbl3.addWidget(self.dynapix)
 
 		self.method=QtGui.QComboBox()
 		#self.swarm_icon = QtGui.QIcon(get_image_directory() + "swarm_icon.png")
@@ -3173,9 +3172,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.gen_output_but=QtGui.QPushButton("Write the output file")
 		self.main_vbl.addWidget(self.gen_output_but)
 
-		self.classifybut=QtGui.QPushButton("Classify")
-		self.main_vbl.addWidget(self.classifybut)
-		
+		#self.classifybut=QtGui.QPushButton("Classify")
+		#self.main_vbl.addWidget(self.classifybut)		
 		
 		self.done=QtGui.QPushButton("Done")
 		self.main_vbl.addWidget(self.done)
@@ -3188,9 +3186,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target().force_autobox)
 		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggle_frozen)
 		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clear_current)
-		self.connect(self.dynapix,QtCore.SIGNAL("clicked(bool)"),self.dynapix_toggled)
+		#self.connect(self.dynapix,QtCore.SIGNAL("clicked(bool)"),self.dynapix_toggled)
 		
-		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.ref_button_toggled)
+		#self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.ref_button_toggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manual_button_toggled)
 		
 		self.connect(self.method, QtCore.SIGNAL("activated(int)"), self.method_changed)
@@ -3198,7 +3196,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 		
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
-		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
+		#self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
 		self.connect(self.gen_output_but,QtCore.SIGNAL("clicked(bool)"),self.target().run_output_dialog)
 
 	def invert_contrast_mic_toggled(self):
