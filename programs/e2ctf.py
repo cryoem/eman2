@@ -89,8 +89,11 @@ images far from focus."""
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
+	parser.add_option("--id_micrograph", type="string", help="Perform CTF estimation only on particles with the id micrograph selected (if id=all read all id). Default not used", default=None)
 	
 	(options, args) = parser.parse_args()
+	from sys import exit
+
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
 		if options.voltage==0 : parser.error("Please specify voltage")
@@ -113,10 +116,34 @@ images far from focus."""
 #	db_misc=db_open_dict("bdb:e2ctf.misc")
 
 	options.filenames = args
+
+	### Process according ID micrograph - command line
+	if options.id_micrograph is not None and not options.gui:
+		idmic      = EMUtil.get_all_attributes(options.filenames[0], 'Micrograph')
+		lid, li, n = [], [], []
+		c = 0
+		for i, id in enumerate(idmic):
+			if id not in lid:
+				lid.append(id)
+				li.append(i)
+				n.append(c)
+				c = 0
+			c += 1
+		n.append(c)
+		n.pop(0)
+		if options.id_micrograph == 'all':
+			options.filenames = lid
+			D = dict(zip(lid, zip(li, n)))
+		else:
+			pos = int(options.id_micrograph)
+			options.filenames = [lid[pos]]
+			D = {lid[pos]: [li[pos], n[pos]]}
+		D['stack'] = args[0]
+		options.id_micrograph = D
+
 	### Power spectrum and CTF fitting
 	if options.autofit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
-		
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -136,6 +163,7 @@ images far from focus."""
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener or options.phasefliphp or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
+		if debug: print 'Write output'
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	if options.computesf :
@@ -229,7 +257,7 @@ def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
 	
-	if options.phaseflip or options.wiener or options.phasefliphp :
+	if options.phaseflip or options.wiener or options.phasefliphp or options.storeparm:
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
@@ -258,7 +286,7 @@ def write_e2ctf_output(options):
 			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
-			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
+			process_stack(filename,options,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
@@ -380,8 +408,12 @@ def pspec_and_ctf_fit(options,debug=False):
 		# compute the power spectra
 		if debug : print "Processing ",filename
 		apix=options.apix
-		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
+		if apix<=0:
+			if options.id_micrograph is not None:
+				apix = EMData(options.id_micrograph['stack'], 0, 1)['apix_x']
+			else:
+				apix=EMData(filename,0,1)["apix_x"] 
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename, options)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 		if options.fixnegbg : 
@@ -440,25 +472,31 @@ def env_cmp(sca,envelopes):
 
 	return ret
 	
-def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
+def process_stack(stackfile,options,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
 	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
 	"""
-	
-	im=EMData(stackfile,0)
+	name = get_file_tag(stackfile)
+	if options.id_micrograph is not None:
+		n_start   = options.id_micrograph[stackfile][0]
+		n_stop    = n_start + options.id_micrograph[stackfile][1]
+		stackfile = options.id_micrograph['stack']
+	else:
+		n_start = 0
+		n_stop  = EMUtil.get_image_count(stackfile)
+
+	im=EMData(stackfile, n_start)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
-	n=EMUtil.get_image_count(stackfile)
 	lctf=None
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 
 	if virtualout: 
 		vin=db_open_dict(stackfile)
 		vout=db_open_dict(virtualout)
-	
-	name = get_file_tag(stackfile)
+
 	if phasehp:
 		p1d=db_parms[name][1]
 		for c in xrange(2,len(p1d)):
@@ -481,14 +519,14 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 #		print hpfilt[:c+4]
 
 	
-	for i in range(n):
-		im1 = EMData(stackfile,i)
+	for i,ind in enumerate(range(n_start, n_stop)):
+		im1 = EMData(stackfile,ind)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
 		if storeparm : 
 			ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 			im1["ctf"]=ctf
-			im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
+			im1.write_image(stackfile,ind,EMUtil.ImageType.IMAGE_UNKNOWN,True)
 		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 
 
@@ -598,7 +636,7 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
+def powspec_with_bg(stackfile, options):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power 
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
@@ -609,13 +647,24 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	"""
 	
 	global masks
-	
+	radius   = options.bgmask
+	edgenorm = not options.nonorm
+	oversamp = options.oversamp
+
 	im = EMData()
-	im.read_image(stackfile,0)
+	if options.id_micrograph is not None:
+		n_start   = options.id_micrograph[stackfile][0]
+		n         = options.id_micrograph[stackfile][1]
+		n_stop    = n_start + n
+		stackfile = options.id_micrograph['stack'] 
+	else:
+		n_start = 0
+		n       = EMUtil.get_image_count(stackfile)
+		n_stop  = n
+	im.read_image(stackfile, n_start)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	if radius<=0 : radius=ys2/2.6
-	n=EMUtil.get_image_count(stackfile)
 	
 	# set up the inner and outer Gaussian masks
 	try:
@@ -634,7 +683,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 #		display((mask1,mask2))
 	
-	for i in range(n):
+	for i in range(n_start, n_stop):
 		im1 = EMData()
 		im1.read_image(stackfile,i)
 #		im1=EMData(stackfile,i)
@@ -650,13 +699,13 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		im1*=mask1
 		imf=im1.do_fft()
 		imf.ri2inten()
-		if i==0: av1=imf
+		if i==n_start: av1=imf
 		else: av1+=imf
 	
 		im2*=mask2
 		imf=im2.do_fft()
 		imf.ri2inten()
-		if i==0: av2=imf
+		if i==n_start: av2=imf
 		else: av2+=imf
 		
 	
