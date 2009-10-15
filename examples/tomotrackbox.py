@@ -80,6 +80,8 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 
 	app.execute()
 	
+	E2end(logid)
+	
 class TrackerControl(QtGui.QWidget):
 	def __init__(self,app,maxshift,invert=False,seqali=False):
 		self.app=app
@@ -130,10 +132,10 @@ class TrackerControl(QtGui.QWidget):
 		QtCore.QObject.connect(self.bmagicc,QtCore.SIGNAL("clicked(bool)"),self.do_magicc)		
 
 		# the single image display widget
-		self.im2d =    EMImage2DModule(application=app)
-		self.imboxed = EMImage2DModule(application=app)
-		self.improj =  EMImage2DModule(application=app)
-		self.imvol =   EMImage3DModule(application=app)
+		self.im2d =    EMImage2DModule(application=app,winid="tomotrackbox.big")
+		self.imboxed = EMImage2DModule(application=app,winid="tomotrackbox.small")
+		self.improj =  EMImage2DModule(application=app,winid="tomotrackbox.proj")
+		self.imvol =   EMImage3DModule(application=app,winid="tomotrackbox.3d")
 	
 		# get some signals from the window. With a regular Qt object this would just
 		# be the window, but with 'Module' objects we must use the emitter
@@ -328,7 +330,7 @@ class TrackerControl(QtGui.QWidget):
 		av=stack[0].copy()
 		for p in stack[1:]: av+=p
 		av.del_attr("xform.projection")
-		p.mult(1.0/len(stack))
+		av.mult(1.0/(len(stack)))
 		av=av.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 		
 		for i,p in enumerate(stack) : 
@@ -348,19 +350,29 @@ class TrackerControl(QtGui.QWidget):
 		recon.setup()
 		
 		for ri in range(5):
+			print "Iteration ",ri
 			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
-				for ii,p in enumerate(stack):
-					if p["alt"]>a : break
+				for ii in range(len(stack)-1):
+					if stack[ii]["alt"]<=a and stack[ii+1]["alt"]>a : break
 				else: ii=-1
-				if ii==-1 or ii==len(stack)-1 :
-					# a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
+				
+				if a<stack[0]["alt"] :
 					p=av
-					print a," avg"
+					#frac=0.5*(a-stack[0]["alt"])/(-90.0-stack[0]["alt"])
+					## a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
+					#p=stack[0].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[-1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
+#					print a," avg ",frac,stack[0]["alt"]
+				elif ii==-1 :
+					p=av
+					#frac=0.5*(a-stack[-1]["alt"])/(90.0-stack[-1]["alt"])+.5
+					## a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
+					#p=stack[-1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[0].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
+#					print a," avg ",frac
 				else:
 					# We average slices in real space, producing a rotational 'smearing' effect
 					frac=(a-stack[ii]["alt"])/angstep
 					p=stack[ii].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
-					print a,ii,ii+1,frac
+#					print a,ii,ii+1,stack[ii]["alt"],frac
 				
 				xf=Transform({"type":"eman","alt":a,"az":-90.0,"phi":90.0})
 				p["xform.projection"]=xf
@@ -371,6 +383,8 @@ class TrackerControl(QtGui.QWidget):
 					recon.insert_slice(p,xf)
 		
 		ret=recon.finish()
+		print "Done"
+		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		ret.process_inplace("normalize.edgemean")
 #		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		

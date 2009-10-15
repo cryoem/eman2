@@ -451,6 +451,7 @@ import weakref
 
 class EMParentWin(QtGui.QWidget,Animator):
 	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
+	
 	def __init__(self,child,enable_timer=False):
 		QtGui.QWidget.__init__(self,None)
 		Animator.__init__(self)
@@ -477,6 +478,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 		self.hbl.setMargin(self.margin)
 		self.setLayout(self.hbl)
 		
+		
 	def __del__(self):
 		pass
 		#print "delete parent win"
@@ -486,6 +488,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 	
 
 	def closeEvent(self, e):
+			
 		try:
 			self.child().closeEvent(e)
 			#self.child.inspector.close()

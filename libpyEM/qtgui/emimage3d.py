@@ -417,9 +417,9 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return "image"
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None,application=None):
+	def __init__(self, image=None,application=None,winid=None):
 		self.viewables = []
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True,winid=winid)
 		EMLightsDrawer.__init__(self)
 		EMImage3DModule.allim[self] = 0
 		self.currentselection = -1

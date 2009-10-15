@@ -434,12 +434,12 @@ class EMImage2DModule(EMGUIModule):
 			return (640,640)
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None,application=get_application()):
+	def __init__(self, image=None,application=get_application(),winid=None):
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
-		EMGUIModule.__init__(self,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True,winid=winid)
 		EMImage2DModule.allim[self] = 0
 		
 		self.init_gl_flag = True

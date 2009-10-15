@@ -37,6 +37,7 @@ import sys
 import platform
 from emimageutil import EMParentWin,EventsEmitterAndReciever
 from EMAN2 import remove_directories_from_name, get_image_directory
+import EMAN2db
 import weakref
 
 
@@ -104,12 +105,14 @@ class ModuleEventsManager:
 class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self,ensure_gl_context=False,application_control=True):
+	
+	def __init__(self,ensure_gl_context=False,application_control=True,winid=None):
 		self.core_object =  QtCore.QObject()
 		self.under_qt_control = False
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
+		self.winid=None # a 'unique' identifier for the window used to restore locations on the screen
 		
 		self.parent = None # EMParentWin
 		
@@ -132,20 +135,26 @@ class EMGUIModule(EventsEmitterAndReciever):
 		
 		EventsEmitterAndReciever.__init__(self)
 		self.disable_inspector = False
+		
+		self.winid=winid
 	
 	def setWindowTitle(self,title):
 		pass
-	
-	def set_windowid(self,winid):
-		"""This is a unique name for this window for window positioning purposes"""
-		self.winid=winid
-	
+		
 	def enable_inspector(self,val=True): self.disable_inspector = not val
 	def emitter(self):
 		return self.core_object
 	
 	def show(self):
 		get_application().show_specific(self)
+		
+		if self.under_qt_control and self.winid!=None:
+			hdb=EMAN2db.EMAN2DB.open_db()
+			hdb.open_dict("window_placement")
+			db=hdb.window_placement
+
+			if db[self.winid]!=None :
+				self.qt_context_parent.restoreGeometry(db[self.winid])
 	
 	def emit(self,*args,**kargs):
 		self.core_object.emit(*args,**kargs)
@@ -211,7 +220,29 @@ class EMGUIModule(EventsEmitterAndReciever):
 		if self.em_qt_inspector_widget != None:
 			self.em_qt_inspector_widget.force_texture_update()
 	
+	def set_winid(self,winid):
+		"""This is a unique name for this window for window positioning purposes"""
+		self.winid=winid
+
+		hdb=EMAN2db.EMAN2DB.open_db()
+		hdb.open_dict("window_placement")
+		db=hdb.window_placement
+
+		if db[self.winid]!=None :
+			self.qt_context_parent.restoreGeometry(db[self.winid])
+		else :
+			db[self.winid]=self.qt_context_parent.saveGeometry()
+
+	
 	def closeEvent(self,event):
+		if self.under_qt_control and self.winid!=None:
+			hdb=EMAN2db.EMAN2DB.open_db()
+			hdb.open_dict("window_placement")
+			db=hdb.window_placement
+
+			db[self.winid]=self.qt_context_parent.saveGeometry()
+
+		
 		if get_application() != None:
 			if self.em_qt_inspector_widget != None: 
 				self.em_qt_inspector_widget.closeEvent(event)

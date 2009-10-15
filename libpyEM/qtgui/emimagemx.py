@@ -623,11 +623,11 @@ class EMImageMXModule(EMGUIModule):
 	def get_desktop_hint(self):
 		return self.desktop_hint
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,application=None):
+	def __init__(self, data=None,application=None,winid=None):
 		self.desktop_hint = "image"
 		self.init_size_flag = True
 		self.data=None
-		EMGUIModule.__init__(self,ensure_gl_context=True)
+		EMGUIModule.__init__(self,ensure_gl_context=True,winid=winid)
 		EMImageMXModule.allim[self] = 0
 		self.file_name = ''
 		self.datasize=(1,1)
