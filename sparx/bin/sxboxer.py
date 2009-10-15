@@ -99,7 +99,7 @@ for single particle analysis."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--gui",       action="store_true",help="Start the GUI for interactive boxing",default=False)
+	parser.add_option("--gui",       action="store_true",help="Start the GUI for interactive boxing",default=True)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--auto","-A",   type="string",action="append",help="Autobox using specified method: swarm, gauss",default=[])
 	parser.add_option("--write_coord_files",action="store_true",help="Write data box files",default=False)
@@ -111,7 +111,8 @@ for single particle analysis."""
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
-	parser.add_option("--method",          help="boxer method, Swarm or Gauss", default="Gauss")
+	# removing the method option, and will assume the method is by default and always Gauss
+	#parser.add_option("--method",          help="boxer method, Swarm or Gauss", default="Gauss")
 	parser.add_option("--outformat",       help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
 	parser.add_option("--just_output",action="store_true", help="Applicable if doing auto boxing using the database. Bypasses autoboxing and just writes boxes that are currently stored in the database. Useful for changing the boxsize, for example", default=False)
 	parser.add_option("--normproc",        help="Normalization to apply to particle images. Should be normalize.ramp.normvar, normalize.edgemean or none, DO NOT CHANGE UNLESS NECESSARY", default="normalize.ramp.normvar")
@@ -146,9 +147,9 @@ for single particle analysis."""
 	
 	global options
 	(options, args) = parser.parse_args()
-	if options.method == "Swarm":
-		print "Note: Please consider switching to e2boxer2.py"
-
+	#if options.method == "Swarm":
+	#	print "Note: Please consider switching to e2boxer2.py"
+  
 
 	filenames = []
 	error_message = []
@@ -1312,7 +1313,8 @@ class EMBoxerModule(QtCore.QObject):
 	def __gui_init(self,options):
 		
 		if not hasattr(options,"boxes"): options.boxes = [] # this is a temporary workaround
-		self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,options.method)
+		#self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,options.method)
+		self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,"Gauss") 
 		
 		self.__init_guiim() # initialise the 2D image display
 		#self.__init_guimx() # intialize the matrix display
@@ -1335,7 +1337,9 @@ class EMBoxerModule(QtCore.QObject):
 			filenames = None
 			box_size = 128
 			running_mode = "gui"
-			mode = options.method #"Swarm"
+			#mode = options.method #"Swarm"
+			# method option has been removed, so mode will always be Gauss
+			mode = "Gauss"
 		else:
 			filenames = options.filenames
 			box_size = options.boxsize
@@ -1343,7 +1347,9 @@ class EMBoxerModule(QtCore.QObject):
 			running_mode = options.running_mode
 			if running_mode == None:
 				running_mode = "gui"
-			mode = options.method #"Swarm"
+			#mode = options.method #"Swarm"
+			# method option has been removed, so mode will always be Gauss
+			mode = "Gauss"
 
 		from emdatastorage import ParamDef
 		from emsprworkflow import ParticleWorkFlowTask,EMRawDataReportTask
@@ -1358,7 +1364,8 @@ class EMBoxerModule(QtCore.QObject):
 		#params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
 		params.append(table)
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=box_size,choices=[]))
-		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=[options.method]))
+		#params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=[options.method]))
+		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=["Gauss"]))
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits=running_mode,choices=["gui","auto_db"]))
 		return params
 
@@ -1412,7 +1419,9 @@ class EMBoxerModule(QtCore.QObject):
 		#get_application().show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			#print "Setting GUI for Gauss boxing method"
-			gauss_method_id = 1
+			#gauss_method_id = 1
+			# change gauss_method_id to 0 since we are no longer showing a swarm option
+			gauss_method_id = 0
 			self.guictl.method.setCurrentIndex(gauss_method_id)
 			self.guictl.method_changed( gauss_method_id ) 
 			self.autoboxer.set_params_of_gui(self.boxable)
@@ -3032,8 +3041,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl3.addWidget(self.dynapix)
 
 		self.method=QtGui.QComboBox()
-		self.swarm_icon = QtGui.QIcon(get_image_directory() + "swarm_icon.png")
-		self.method.addItem( self.swarm_icon, "Swarm" )
+		#self.swarm_icon = QtGui.QIcon(get_image_directory() + "swarm_icon.png")
+		#self.method.addItem( self.swarm_icon, "Swarm" )
 		self.setWindowIcon( QtGui.QIcon(get_image_directory() + "green_boxes.png") )
 		self.pp_icon = QtGui.QIcon(get_image_directory() + "pp_boxer_icon.png");
 		self.method.addItem( self.pp_icon,"Gauss Conv" )
