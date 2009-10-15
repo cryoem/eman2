@@ -2431,6 +2431,64 @@ class EMBoxerModule(QtCore.QObject):
 		self.box_display_update()
 	
 	def run_output_dialog(self):
+		'''
+		zzzzzzzzz
+		'''
+		from utilities import get_image
+		from string import replace
+		
+		def get_particle_file_name(image_name, format):
+			from os import path
+			name, suffix = path.splitext( image_name )
+			if format == "hdf": return name+"_particles.hdf"
+			else: return "bdb:"+name+"_particles"
+
+		def get_particle_coords_file_name(image_name):
+			from os import path
+			name, suffix = path.splitext(image_name)
+			return name+"_particles.crd"
+			
+		format = "bdb"
+		normalize = True
+		norm_method = "normalize.ramp.normvar"
+		
+		for name in self.image_names:
+			parent_img = get_image(name)
+			try:
+				ctf_dict = parent_img.get_attr("ctf")
+			except:
+				ctf_dict = EMAN2Ctf()
+			del parent_img
+			file_name = get_particle_file_name(name, format)
+			if (format == "hdf" and os.path.exists(file_name)) or (format == "bdb" and os.path.exists(replace(file_name, "bdb:", "EMAN2DB/")+".bdb")):
+				nima = EMUtil.get_image_count(file_name)
+			else:
+				nima = 0
+			print nima, file_name
+
+			file_name2 = get_particle_coords_file_name(name)
+			if os.path.exists(file_name2):
+				f = open(file_name2, "a")
+			else:
+				f = open(file_name2, "w")
+			
+			new_nima = len(self.boxable.boxes)
+
+			for i in xrange(new_nima):
+				b = self.boxable.boxes[i]
+				img = b.get_box_image(normalize, norm_method)
+				img.set_attr( "Micrograph", name )
+				img.set_attr( "Score", b.correlation_score )
+				img.set_attr( "ctf", ctf_dict)
+				img.write_image( file_name, i+nima )
+				f.write("Image %5d:     X corner = %5d     Y corner = %5d     size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
+			
+			print "Wrote", new_nima, "particles to file", file_name
+			f.close()						
+			print "Wrote coordinates of", new_nima, "particles to file", file_name2
+
+		return
+		'''
 		from emsprworkflow import E2BoxerProgramOutputTask
 		exclusions = []
 		for name in self.image_names:
@@ -2440,6 +2498,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.output_task = E2BoxerProgramOutputTask(get_application(),self.image_names,self,exclusions)
 		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
+		'''
 
 	def on_output_task_idle(self):
 		self.output_task = None
