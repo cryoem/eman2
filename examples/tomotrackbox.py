@@ -355,10 +355,12 @@ class TrackerControl(QtGui.QWidget):
 				if ii==-1 or ii==len(stack)-1 :
 					# a bit wierd. At the ends (missing wedge) we use the average over all tilts. This could be improved
 					p=av
+					print a," avg"
 				else:
 					# We average slices in real space, producing a rotational 'smearing' effect
 					frac=(a-stack[ii]["alt"])/angstep
 					p=stack[ii].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
+					print a,ii,ii+1,frac
 				
 				xf=Transform({"type":"eman","alt":a,"az":-90.0,"phi":90.0})
 				p["xform.projection"]=xf

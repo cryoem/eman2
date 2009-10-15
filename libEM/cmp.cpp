@@ -921,13 +921,41 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	if (!image->is_complex()) { image=image->do_fft(); image->set_attr("free_me",1); }
-	if (!with->is_complex()) { with=with->do_fft(); with->set_attr("free_me",1); }
-
 	int snrweight = params.set_default("snrweight", 0);
 	int ampweight = params.set_default("ampweight", 0);
 	int sweight = params.set_default("sweight", 1);
 	int nweight = params.set_default("nweight", 0);
+	int zeromask = params.set_default("zeromask",0);
+
+	if (zeromask) {
+		image=image->copy();
+		with=with->copy();
+		
+		int sz=image->get_xsize()*image->get_ysize()*image->get_zsize();
+		float *d1=image->get_data();
+		float *d2=with->get_data();
+		
+		for (int i=0; i<sz; i++) {
+			if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+		}
+		
+		image->update();
+		with->update();
+		image->do_fft_inplace();
+		with->do_fft_inplace();
+		image->set_attr("free_me",1); 
+		with->set_attr("free_me",1); 
+	}
+
+
+	if (!image->is_complex()) {
+		image=image->do_fft(); 
+		image->set_attr("free_me",1); 
+	}
+	if (!with->is_complex()) { 
+		with=with->do_fft(); 
+		with->set_attr("free_me",1); 
+	}
 
 	static vector < float >default_snr;
 
@@ -940,6 +968,8 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int ny2=ny/2+1;
 
 	vector < float >fsc;
+
+		
 
 	fsc = image->calc_fourier_shell_correlation(with,1);
 

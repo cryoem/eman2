@@ -470,6 +470,7 @@ namespace EMAN
 			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=0)");
 			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the number of pixels in each ring (default=1)");
 			d.put("nweight", EMObject::INT, "Downweight similarity based on number of particles in reference (default=0)");
+			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask");
 			return d;
 		}
 	};
