@@ -4068,7 +4068,7 @@ class CTFInspector(QtGui.QWidget):
 			steph = float(h-2*hborder) / float(sizeh) 
 
 			
-			tickspacing = min(int(sizew/30), 5)
+			tickspacing = min(int(sizew/30)+1, 5)
 				
 			for list_index in xrange(len(self.data)):
 				
