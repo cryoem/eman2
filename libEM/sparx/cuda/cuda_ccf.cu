@@ -60,7 +60,7 @@ texture<float, 1, cudaReadModeElementType> texim_points;
 texture<float, 1, cudaReadModeElementType> texim_shifts;
  
 /* Main */
-void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY)
+void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY, int id)
 {    
     float *d_subject_image_polar, *d_ref_image_polar;
     float *d_ccf;
@@ -84,6 +84,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
     int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
+    cudaSetDevice(id); 	
 
     cudaArray *ref_image_array, *subject_image_array[NROW], *subject_image_array_left;
     dim3 GridSize1(NRING, NIMAGE_ROW);

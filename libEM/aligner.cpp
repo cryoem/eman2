@@ -1625,7 +1625,7 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 			image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
+vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, int id) {
 
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
@@ -1639,7 +1639,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em) {
 		for (int x=0; x<NX; x++)
 			ref_image[y*NX+x] = (*ref_image_em)(x, y);
 
-        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY);
+        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY, id);
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
