@@ -199,11 +199,11 @@ for single particle analysis."""
 	boxes=[]
 	if len(options.auto)>0:
 		if "cmd" in options.auto:
-			print "Autoboxer mode: ", options.auto[0]
-			print "Command line version"
+			print "Autobox mode ",options.auto[0]
+			print "commandline version"
 			
 			do_gauss_cmd_line_boxing(options)
-			print "Command line autoboxer exiting ..."
+			print "cmdline autoboxer exiting"
 
 			sys.exit(1)
 
@@ -320,13 +320,13 @@ def do_gauss_cmd_line_boxing(options):
 	if (options.do_ctf):
 		if (options.ctf_fstart):
 			try:
-				parm_dict["ctf_fstart"] = options.ctf_fstart
+				parm_dict["ctf_fstart"] = int(options.ctf_fstart)
 			except ValueError:
 				print "could not convert fstart value. bad value",options.ctf_fstart,". exiting!"
 				sys.exit(1)
 		if (options.ctf_fstop):
 			try:
-				parm_dict["ctf_fstop"] = options.ctf_fstop
+				parm_dict["ctf_fstop"] = int(options.ctf_fstop)
 			except ValueError:
 				print "could not convert fstop value. bad value",options.ctf_fstop,". exiting!"
 				sys.exit(1)
@@ -421,7 +421,7 @@ def do_gauss_cmd_line_boxing(options):
 		image_list = []
 
 	for image_name in options.filenames:
-		print "\nCommand autoboxing",image_name
+		print "cmd autoboxing",image_name
 		boxable = Boxable(image_name,None,autoboxer)
 		
 		if boxable.is_excluded():
@@ -432,18 +432,18 @@ def do_gauss_cmd_line_boxing(options):
 
 		if (options.do_ctf):
 			# new method to determine ctf...
-			print "Start CTF determination ..."
+			print "starting ctf determination"
 			this_ctf = autoboxer.auto_ctf(boxable)
 		else:
 			# create empty so that del later doesn't raise exceptions
 			this_ctf = None
 
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		print "Start autoboxer"
+		print "starting autoboxer"
 		autoboxer.auto_box(boxable,False)
 
 		if options.write_coord_files:
-			print "write coordinates"
+			print "write coords"
 			boxable.write_coord_file(box_size=-1,force=options.force,imageformat=options.outformat)
 		if options.write_box_images:
 			# we don't want to use boxable.write_box_images, since these don't store all information.
@@ -479,8 +479,7 @@ def do_gauss_cmd_line_boxing(options):
 				
 			print "writing",boxable.num_boxes(),"boxed images to", img_name
 			for single_box in boxable.boxes:
-				if options.normproc!="": normalize = True
-				img = single_box.get_box_image(normalize, options.normproc)
+				img = single_box.get_box_image(normalize,options.normproc)
 				# set all necessary attributes....
 				img.set_attr( "ctf" , this_ctf)
 				img.set_attr( "Micrograph", image_name )
@@ -3584,14 +3583,15 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
 		self.pawel_option_vbox.addWidget(QtGui.QLabel("Gauss Conv's Parameters") )
+		global pawel_grid1
 		pawel_grid1 = QtGui.QGridLayout( )
 		self.pawel_option_vbox.addLayout(pawel_grid1)
 
 		pawel_grid1.addWidget( QtGui.QLabel("Input Pixel Size:") , 0, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Output Pixel Size:"), 1, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Gauss Width Adjust:"), 2, 0 )
-		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
-		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )
+		pawel_grid1.addWidget( QtGui.QLabel( QtCore.QString(QtCore.QChar(0x212B))), 0, 2 )
+		pawel_grid1.addWidget( QtGui.QLabel( QtCore.QString(QtCore.QChar(0x212B))), 1, 2 )
 
 		self.use_variance = QtGui.QCheckBox("Use Variance Image")
 		self.use_variance.setChecked(True)
@@ -3637,9 +3637,18 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.ctf_f_stop = QtGui.QLineEdit("%5.3f"%options.ctf_fstop, self)
 		pawel_grid1.addWidget( self.ctf_f_stop , 8,1 )
 
+		pawel_grid1.addWidget( QtGui.QLabel( "1/"+QtCore.QString(QtCore.QChar(0x212B))), 8, 2 )
+
 		pawel_grid1.addWidget( QtGui.QLabel("F_start:"), 7,0 )
 		self.ctf_f_start = QtGui.QLineEdit("%5.3f"%options.ctf_fstart, self)
 		pawel_grid1.addWidget( self.ctf_f_start , 7,1 )
+
+
+		pawel_grid1.addWidget( QtGui.QLabel("Estimated defocus:"), 7,2 )
+		self.estdef = QtGui.QLineEdit("", self)
+		pawel_grid1.addWidget( self.estdef , 7,3 )
+		self.estdef.setEnabled(False)
+		pawel_grid1.addWidget( QtGui.QLabel( QtCore.QString(QtCore.QChar(0x03BC))), 7, 4 )
 
 		pawel_grid1.addWidget( QtGui.QLabel("Cs:"), 4,2 )
 		self.ctf_cs = QtGui.QLineEdit("%4.1f"%options.ctf_cs, self)
@@ -3728,7 +3737,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# calculate power spectrum of image with welch method (welch_pw2)
 		# calculate rotational average of power spectrum (rot_avg_table)
 		# calculate ctf values with ctf_get
-		print "starting CTF estimation"
+		#print "starting CTF estimation"
 
 		# get the current image
 		image_name = self.target().boxable.get_image_name()
@@ -3772,6 +3781,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# print "determine ctf"
 		from morphology import defocus_gett
 
+
 		input_pixel_size = float(self.input_pixel_size.text())
 		output_pixel_size = float(self.output_pixel_size.text())
 		print "Input pixel size: ", input_pixel_size 
@@ -3780,8 +3790,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 	 	
-		print "CTF estimation done"
-		print "Estimated defocus value: ", defocus
+		del avg_sp
+		
+		
+		self.estdef = QtGui.QLineEdit(str(defocus/1000.0), self)
+		pawel_grid1.addWidget( self.estdef , 7,3 )
+		self.estdef.setEnabled(False)
 
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
@@ -4011,10 +4025,11 @@ class CTFInspector(QtGui.QWidget):
 		# print "update..."
 		
 	def paintEvent(self,event):
-		if (self.i_start is None and i_start_initial > 0):
+		if (self.i_start is None and (i_start_initial > 0)):
 			self.i_start = i_start_initial
-		if (self.i_stop is None and i_stop_initial > 0):
+		if (self.i_stop is None and (i_stop_initial > 0)):
 			self.i_stop = i_stop_initial
+			
 		h=self.height()
 		w=self.width()
 
@@ -4059,18 +4074,32 @@ class CTFInspector(QtGui.QWidget):
 			# print "range: ",self.i_start," - ",self.i_stop
 				
 			stepw = float(w-2*wborder) / float(sizew)
+			
+			
 
 			if ((self.i_start is not None) and (self.i_stop is not None)):
-				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data))])
+				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data)-1)])
 			else:
-				sizeh = max([max(self.data[i]) for i in xrange(len(self.data))])
+				sizeh = max([max(self.data[i]) for i in xrange(len(self.data)-1)])
 				
+		
 			sizeh = float(sizeh)
 			steph = float(h-2*hborder) / float(sizeh) 
-
+			
+			import math
+			from utilities import read_text_file
+			ctfdata2 = read_text_file("procpw.txt",3)
+			
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizehctf = max(ctfdata2[self.i_start:self.i_stop])
+				
+			else:
+				sizehctf = max(ctfdata2)
+			
+			sizehctf = float(sizehctf)
 			
 			tickspacing = min(int(sizew/30)+1, 5)
-				
+			
 			for list_index in xrange(len(self.data)):
 				
 				p.setPen(color[list_index])
@@ -4095,10 +4124,16 @@ class CTFInspector(QtGui.QWidget):
 						newx=int(wborder + ((w-2*wborder) / sizew * (index-self.i_start)))
 						
 						#oldy = int(h-hborder-steph*self.data[list_index][index-1])
-						oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
+						if (list_index == 2):
+							oldy=int(h-hborder-(h-2*hborder)*ctfdata2[index-1]/sizehctf)
+						else:
+							oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
 						#newy = int(h-hborder-steph*self.data[list_index][index])
-						newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
-				 		
+						if (list_index == 2):
+							newy=int(h-hborder-(h-2*hborder)*ctfdata2[index]/sizehctf)
+						else:
+							newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
+						
 						p.drawLine(oldx,oldy,newx,newy)
 						
 						
