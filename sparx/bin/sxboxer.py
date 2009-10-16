@@ -3815,7 +3815,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from utilities import set_ctf
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# and rewrite image 
-		img.write_image(image_name)
+		#img.write_image(image_name)
 		
 	def closeEvent(self,event):
 		
