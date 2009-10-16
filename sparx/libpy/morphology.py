@@ -248,7 +248,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	else: 			i_start = int(Pixel_size*2.*len(roo)*f_start)
 	if f_stop <= i_start : 	i_stop  = len(roo)
 	else: 			i_stop  = int(Pixel_size*2.*len(roo)*f_stop)
-	print "f_start, i_start, f_stop, i_stop", f_start, i_start, f_stop, i_stop
+	print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop
 	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	Pn1 = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	Res_roo = []

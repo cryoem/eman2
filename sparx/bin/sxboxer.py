@@ -472,7 +472,7 @@ def do_gauss_cmd_line_boxing(options):
 			elif ("hdf" == options.outformat):	
 				if file_exists(img_name):
 					if not(options.force):
-						print "warning, file already exists - ", img_name, " doing nothing. Use force to override this behavior"
+						print "Warning: file already exists - ", img_name, " doing nothing. Use force to override this behavior"
 						return
 					else:
 						remove_file(img_name)
@@ -506,7 +506,7 @@ def do_gauss_cmd_line_boxing(options):
 	
 	# now check again for output file
 	if (options.out_file):
-		print "merging particles...."
+		print "Merging particles ..."
 		# check if target file exists already. if so, and if force is set, remove it
 		if parm_dict["out_file"].startswith("bdb:"):
 			# check for existing dict
