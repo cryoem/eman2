@@ -167,8 +167,8 @@ class EMPlot2DModule(EMGUIModule):
 			if self.gl_widget != None:
 				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 	
-	def __init__(self,application=None):
-		EMGUIModule.__init__(self)
+	def __init__(self,application=None,winid=None):
+		EMGUIModule.__init__(self,winid=winid)
 		self.axes={}
 		self.pparm={}
 		self.inspector=None

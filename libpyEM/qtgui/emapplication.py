@@ -547,10 +547,10 @@ class EMStandAloneApplication(EMApplication):
 
 		
 class EMQtWidgetModule(EMGUIModule):
-	def __init__(self,qt_widget):
+	def __init__(self,qt_widget,winid=None):
 		self.qt_widget = qt_widget
 		self.gl_widget = None
-		EMGUIModule.__init__(self)
+		EMGUIModule.__init__(self,winid=winid)
 		
 		self.selected = False
 	

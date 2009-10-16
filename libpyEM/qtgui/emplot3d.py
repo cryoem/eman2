@@ -63,8 +63,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, application=None,parent=None):
-		EMImage3DGUIModule.__init__(self,application)
+	def __init__(self, application=None,parent=None,winid=None):
+		EMImage3DGUIModule.__init__(self,application,winid=winid)
 		EMLightsDrawer.__init__(self)
 		self.parent = parent
 		

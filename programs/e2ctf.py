@@ -1281,7 +1281,7 @@ from emapplication import EMQtWidgetModule
 class GUIctfModule(EMQtWidgetModule):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		self.guictf = GUIctf(application,data,self,autohp,nosmooth)
-		EMQtWidgetModule.__init__(self,self.guictf)
+		EMQtWidgetModule.__init__(self,self.guictf,winid="ctf.control")
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
 
@@ -1321,9 +1321,9 @@ class GUIctf(QtGui.QWidget):
 		self.curset=0
 		self.plotmode=0
 		
-		self.guiim=EMImage2DModule(application=self.app())
+		self.guiim=EMImage2DModule(application=self.app(),winid="ctf.powspecimg")
 		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
-		self.guiplot=EMPlot2DModule(application=self.app())
+		self.guiplot=EMPlot2DModule(application=self.app(),winid="ctf.mainplot")
 		
 		# FIXME these "emitters" might be unnecessary.
 		im_qt_target = self.app().get_qt_emitter(self.guiim)
