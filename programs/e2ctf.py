@@ -425,6 +425,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			options.cs      = ctf.cs
 			options.ac      = ctf.ampcont
 			bfactor         = ctf.bfactor
+			if bfactor == 0: bfactor = 500.0
 		except:
 			print 'Estimate CTF from scratch'
 			if options.voltage==0 :
@@ -1156,7 +1157,7 @@ def ctf_cmp(parms,data):
 	
 	mean=a/c
 	sig=b/c-mean*mean
-
+	if mean == 0: mean = 0.001
 	er=sig/fabs(mean)
 #	print er
 
