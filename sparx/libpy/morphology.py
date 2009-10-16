@@ -260,7 +260,8 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	defocus = defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 
 	nx  = int(len(Res_roo)*2)
-	ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
+	#ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
+	ctf = ctf_2(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
 	if (parent is not None):
 		parent.ctf_data=[roo, Res_roo, Res_TE]
 		parent.i_start = i_start
