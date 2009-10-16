@@ -68,7 +68,7 @@ images far from focus."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
+	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=True)
 	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
@@ -89,7 +89,7 @@ images far from focus."""
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
-	parser.add_option("--id_micrograph", type="string", help="Perform CTF estimation only on particles with the id micrograph selected (if id=all read all id). Default not used", default=None)
+	parser.add_option("--id_micrograph", type="string", help="Perform CTF estimation only on particles with the id micrograph selected. Default read all micrograph is attributes Micrograph is set", default=None)
 	
 	(options, args) = parser.parse_args()
 	from sys import exit
@@ -119,8 +119,16 @@ images far from focus."""
 
 	options.filenames = args
 
+	try:
+		idmic = EMUtil.get_all_attributes(options.filenames[0], 'Micrograph')
+		if options.id_micrograph is None: options.id_micrograph = 'all'
+	except:
+		if options.id_micrograph is not None:
+			print 'Impossible to get the attribute Micrograph'
+			sys.exit()
+
 	### Process according ID micrograph - command line
-	if options.id_micrograph is not None and not options.gui:
+	if options.id_micrograph is not None:
 		idmic      = EMUtil.get_all_attributes(options.filenames[0], 'Micrograph')
 		lid, li, n = [], [], []
 		c = 0
@@ -284,7 +292,7 @@ def write_e2ctf_output(options):
 			if phaseout : print "Phase image out: ",phaseout,"\t",
 			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
-			print ""
+			print "write output"
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,options,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
@@ -402,7 +410,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_im2d=db_open_dict("bdb:e2ctf.im2d")
 	db_bg2d=db_open_dict("bdb:e2ctf.bg2d")
-
+	
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
 
