@@ -2436,7 +2436,7 @@ class EMBoxerModule(QtCore.QObject):
 		'''
 		zzzzzzzzz
 		'''
-		from utilities import get_image
+		from utilities import get_image, generate_ctf
 		from string import replace
 		
 		def get_particle_file_name(image_name, format):
@@ -2453,6 +2453,7 @@ class EMBoxerModule(QtCore.QObject):
 		format = "bdb"
 		normalize = True
 		norm_method = "normalize.ramp.normvar"
+		output_pixel_size = float(self.guictl.output_pixel_size.text())
 		
 		for name in self.image_names:
 			parent_img = get_image(name)
@@ -2460,6 +2461,9 @@ class EMBoxerModule(QtCore.QObject):
 				ctf_dict = parent_img.get_attr("ctf")
 			except:
 				ctf_dict = EMAN2Ctf()
+				
+			ctf_dict = generate_ctf([ctf_dict.defocus, ctf_dict.cs, ctf_dict.voltage, output_pixel_size, ctf_dict.bfactor, ctf_dict.ampcont])
+
 			del parent_img
 			file_name = get_particle_file_name(name, format)
 			if (format == "hdf" and os.path.exists(file_name)) or (format == "bdb" and os.path.exists(replace(file_name, "bdb:", "EMAN2DB/")+".bdb")):
@@ -2478,10 +2482,10 @@ class EMBoxerModule(QtCore.QObject):
 			for i in xrange(new_nima):
 				b = self.boxable.boxes[i]
 				img = b.get_box_image(normalize, norm_method)
-				img.set_attr( "Micrograph", name )
-				img.set_attr( "Score", b.correlation_score )
-				img.set_attr( "ctf", ctf_dict)
-				img.write_image( file_name, i+nima )
+				img.set_attr("Micrograph", name)
+				img.set_attr("Score", b.correlation_score)
+				img.set_attr("ctf", ctf_dict)
+				img.write_image(file_name, i+nima)
 				f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, b.xcorner+b.xsize/2, b.ycorner+b.xsize/2, b.xsize))
 			
 			print "Wrote", new_nima, "particles to file", file_name
@@ -3768,17 +3772,16 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# print "determine ctf"
 		from morphology import defocus_gett
 
-		px_size = float(self.output_pixel_size.text())
-		print "Pixel size: ", px_size 
+		input_pixel_size = float(self.input_pixel_size.text())
+		output_pixel_size = float(self.output_pixel_size.text())
+		print "Input pixel size: ", input_pixel_size 
+		print "Output pixel size: ", output_pixel_size 
 
-		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=px_size, Cs=ctf_cs, wgh=ctf_cs,
+		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 	 	
-		
-		del avg_sp
-
 		print "CTF estimation done"
-		print "Estimated defocus value: ",defocus
+		print "Estimated defocus value: ", defocus
 
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
@@ -3787,7 +3790,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			self.ctf_inspector.i_stop = self.i_stop
 			if not(self.ctf_inspector_gone):
 				self.ctf_inspector.update()
-
 		else:
 			global i_start_initial
 			global i_stop_initial
@@ -3797,10 +3799,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
 		from utilities import set_ctf
-		set_ctf(img,[defocus,ctf_cs,ctf_volt,px_size,0,ctf_ampcont])
+		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# and rewrite image 
 		img.write_image(image_name)
-		del img,image_name
 		
 	def closeEvent(self,event):
 		

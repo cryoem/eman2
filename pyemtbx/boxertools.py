@@ -780,7 +780,7 @@ class SincBlackmanSubsampledImage:
 		invert = params_mediator.get_invert()
 
 		image = BigImageCache.get_image_directly(self.image_name)
-		print "info of image we got: ", Util.infomask( image, None, True )		
+		print "Info (mean, variance, minimum, maximum) of image we got: ", Util.infomask( image, None, True )		
 
 
 		image = filt_gaussh( image, gaussh_param ) #1.0/(self.box_size/ratio) )
@@ -791,8 +791,8 @@ class SincBlackmanSubsampledImage:
 		else:
 			self.smallimage = image.copy()
 
-		print "        Filt Gauss  High: ", gaussh_param
-		print "        Down sample rate: ", subsample_rate
+		print "        Filter Gauss High: ", gaussh_param
+		print "        Downsampling rate: ", subsample_rate
 
 		self.smallimage.set_attr("invert", invert)
 		self.smallimage.set_attr("gaussh_param", gaussh_param)
@@ -815,10 +815,10 @@ class SincBlackmanSubsampledImage:
 		Should generally use this approach to getting the image
 		'''
 		if self.smallimage is None or not self.query_params_match(params_mediator):
-			print "regenerating down sampled image"
+			print "Regenerate downsampled image ... "
 			self.__update_image(params_mediator)
 		else: 
-			print "retrieve down sampled image from cache"
+			print "Retrieve downsampled image from cache ..."
 		
 		return self.get_image()
 	
@@ -3054,38 +3054,36 @@ class PawelAutoBoxer(AutoBoxer):
 		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 
         # auto_ctf is meant to be called for batch only...
-        def auto_ctf(self,boxable):
-            
-            # get image
-            image_name = boxable.get_image_name()
-            img = BigImageCache.get_image_directly( image_name )
+	def auto_ctf(self,boxable):
+		    
+		# get image
+		image_name = boxable.get_image_name()
+		img = BigImageCache.get_image_directly( image_name )
 
-	    from fundamentals import welch_pw2
-            # XXX: check image dimensions, especially box size for welch_pw2!
-            power_sp = welch_pw2(img,win_size=self.ctf_window,overlp_x=self.ctf_overlap,overlp_y=self.ctf_overlap,
-                                 edge_x=self.ctf_edge,edge_y=self.ctf_edge)
-            
-            from fundamentals import rot_avg_table
-            avg_sp = rot_avg_table(power_sp)
-            del power_sp
-            from morphology import defocus_gett
-            # XXX: self.pixel_output??
-            defocus = defocus_gett(avg_sp,voltage=self.ctf_volt,Pixel_size=self.pixel_output,Cs=self.ctf_Cs,wgh=self.ctf_ampcont,
-				   f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
+		from fundamentals import welch_pw2
+		# XXX: check image dimensions, especially box size for welch_pw2!
+		power_sp = welch_pw2(img,win_size=self.ctf_window,overlp_x=self.ctf_overlap,overlp_y=self.ctf_overlap,
+				     edge_x=self.ctf_edge,edge_y=self.ctf_edge)
 
-	    # set image properties, in order to save ctf values
-	    from utilities import set_ctf,generate_ctf
-            ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_output,0,self.ctf_ampcont]
-	    set_ctf(img,ctf_tuple)
-	    # and rewrite image 
-	    img.write_image(image_name,0)
+		from fundamentals import rot_avg_table
+		avg_sp = rot_avg_table(power_sp)
+		del power_sp
 
-            del avg_sp
-            del img,image_name
-            #print "CTF estimation done:"
-            print "CTF tuple:", ctf_tuple
+		from morphology import defocus_gett
+		defocus = defocus_gett(avg_sp,voltage=self.ctf_volt,Pixel_size=self.pixel_input,Cs=self.ctf_Cs,wgh=self.ctf_ampcont,
+		    		       f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
 
-            return generate_ctf(ctf_tuple)
+		# set image properties, in order to save ctf values
+		from utilities import set_ctf, generate_ctf
+		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_input,0,self.ctf_ampcont]
+		set_ctf(img, ctf_tuple)
+		img.write_image(image_name, 0)
+		print "CTF tuple for original micrograph:", ctf_tuple
+
+		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_output,0,self.ctf_ampcont]
+		print "CTF tuple for particles", ctf_tuple
+
+		return generate_ctf(ctf_tuple)
             
 
 	def run(self, imgname, boxable=None):
