@@ -96,8 +96,10 @@ images far from focus."""
 
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
-		if options.voltage==0 : parser.error("Please specify voltage")
-		if options.cs==0 : parser.error("Please specify Cs")
+		try: im = EMData(args[0], 0, 1)['ctf']
+		except:
+			if options.voltage==0 : parser.error("Please specify voltage")
+			if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : print "Using A/pix from header"
 		
 	debug=options.debug
@@ -142,7 +144,7 @@ images far from focus."""
 		options.id_micrograph = D
 
 	### Power spectrum and CTF fitting
-	if options.autofit:
+	if options.autofit or options.gui:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
 	### GUI - user can update CTF parameters interactively
@@ -170,7 +172,6 @@ images far from focus."""
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		print "Recomputing structure factor"
 		envelope=compute_envelope(img_sets)
-		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["strucfac"]=envelope
 #		print envelope
@@ -405,14 +406,42 @@ def pspec_and_ctf_fit(options,debug=False):
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
 
+		if options.id_micrograph is not None:
+			n_start   = options.id_micrograph[filename][0]
+			n_stop    = n_start + options.id_micrograph[filename][1]
+			stackfile = options.id_micrograph['stack']
+		else:
+			n_start = 0
+			n_stop  = EMUtil.get_image_count(filename)
+			stackfile = filename
+
+		# use CTF header if exist
+		try:
+			ctf = EMData(stackfile, n_start, 1)['ctf']
+			print 'Use CTF from the header'
+			apix    = ctf.apix
+			defocus = ctf.defocus
+			options.voltage = ctf.voltage
+			options.cs      = ctf.cs
+			options.ac      = ctf.ampcont
+			bfactor         = ctf.bfactor
+		except:
+			print 'Estimate CTF from scratch'
+			if options.voltage==0 :
+				print "Please specify voltage"
+				sys.exit()
+			if options.cs==0 :
+				print "Please specify Cs"
+				sys.exit()
+			apix    = options.apix
+			defocus = -1
+			if apix<=0:
+				try: apix=EMData(stackfile,0,1)["apix_x"] 
+				except: apix = 1.0
+			bfactor = 500.0
+
 		# compute the power spectra
 		if debug : print "Processing ",filename
-		apix=options.apix
-		if apix<=0:
-			if options.id_micrograph is not None:
-				apix = EMData(options.id_micrograph['stack'], 0, 1)['apix_x']
-			else:
-				apix=EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename, options)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
@@ -423,7 +452,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,defocus,bfactor,bgadj=not options.nosmooth,autohp=options.autohp)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
@@ -486,7 +515,6 @@ def process_stack(stackfile,options,phaseflip=None,phasehp=None,wiener=None,edge
 	else:
 		n_start = 0
 		n_stop  = EMUtil.get_image_count(stackfile)
-
 	im=EMData(stackfile, n_start)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
@@ -829,7 +857,7 @@ def sfact(s):
 	## this curve should be pretty valid on the range 0.004 - 0.2934, we limit it a bit more to prevent distractions from the sharp peak
 	#return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None):
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,autohp=False,dfhint=None):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -845,7 +873,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		ac=10.0
 	
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":500.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	ctf.from_dict({"defocus":defocus,"voltage":voltage,"bfactor":bfactor,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = [sfact(i*ds) for i in range(ys)]
 
@@ -862,13 +890,16 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 #	dfbest1=(0,-1.0e20)
 	dfbest1=[]
-	
-	# This implies that we already have a general range for the defocus, so we limit the search
-	if dfhint :
-		dfhint=int(dfhint*20.0)
-		rng=range(dfhint-3,dfhint+4)
-	else :rng=range(8,128)
 
+	if ctf.defocus == -1:
+		ctf.defocus = 1.0
+		# This implies that we already have a general range for the defocus, so we limit the search
+		if dfhint :
+			dfhint=int(dfhint*20.0)
+			rng=range(dfhint-3,dfhint+4)
+		else :rng=range(8,128)
+	else:
+		rng = [int(ctf.defocus * 20)]
 
 	# This loop tries to find the best few possible defocuses
 	for dfi in rng:			# loop over defocus
@@ -958,8 +989,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 			for x in range(1,len(bg2)-1) : 
 				if cc[x]*cc[x+1]<0 :
 					if x<len(bg2)/2 :
+						# the first value of bg2 is zero which raise ZeroDivisionError. JB
+						if bg2[x-1] == 0: continue
+
 						# Below 1/2 nyquist, we work harder to avoid negative values
 						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1],im_1d[x-1]/bg2[x-1],im_1d[x+2]/bg2[x+2]))						
+						
 					else:
 						# we search the two points 'at' the zero for the minimum
 						# if we're too aggressive about this, we will end up exaggerating the high
@@ -1435,7 +1470,7 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,tmp[1].defocus,tmp[1].bfactor,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
 
 		# refit will also write parameters back to the db
 		db_parms=db_open_dict("bdb:e2ctf.parms")
