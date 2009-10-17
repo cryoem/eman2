@@ -714,6 +714,7 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 	def mouse_down(self,event) :
 		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		box_num = self.mediator.detect_box_collision(m)
+		#print "Mouse down", box_num
 		if box_num == -1:
 			#if not self.mediator.within_main_image_bounds(m):	return
 			#if we make it here, that means the user has clicked on an area that is not in any box
@@ -721,9 +722,12 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			
 			# If we get here, we need to add a new reference
-			box_size = self.mediator.get_box_size()
+			#print "Global!!!!!", float(global_output_pixel_size.text()), float(global_input_pixel_size.text())
+			box_size = int(self.mediator.get_box_size()*float(global_output_pixel_size.text())/float(global_input_pixel_size.text()))
 			
 			box = Box(m[0]-box_size/2,m[1]-box_size/2,box_size,box_size,True)
+			if float(global_output_pixel_size.text()) != float(global_input_pixel_size.text()): box.correct_boxsize = False
+
 			box.set_image_name(self.mediator.get_current_image_name())
 
 			box.changed = True # this is so image2D nows to repaint the shape
@@ -1428,7 +1432,7 @@ class EMBoxerModule(QtCore.QObject):
 			self.guictl.input_pixel_size.setText( str(options.pix_in))
 			self.guictl.output_pixel_size.setText( str(options.pix_out))
 			self.guictl.gauss_width.setText( str(options.width))
-
+			
 	def __init_guimx_thumbs(self):
 		self.itshrink = -1 # image thumb shrink. Default value of -1 means it has to be calculated when it's first needed
 		self.imagethumbs = None # image thumbs - will be a list of tiny images
@@ -1783,7 +1787,10 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guiim == None:
 			current_name = self.image_names[self.current_image_idx]
 			global BigImageCache
+			
 			self.__init_guiim(BigImageCache.get_image_directly(current_name),current_name)
+			print "get_2d_gui_image", current_name
+		
 		return self.guiim
 	
 	def get_gui_ctl(self):
@@ -2186,7 +2193,7 @@ class EMBoxerModule(QtCore.QObject):
 		for num in numbers:
 			#sh=self.guiim.get_shapes()
 			k=sh.keys()
-			k.sort()
+			if k != None:	k.sort()
 			#del sh[int(num)]
 			sh.pop(int(num))
 			for j in k:
@@ -2222,7 +2229,7 @@ class EMBoxerModule(QtCore.QObject):
 		"""
 		sh=self.guiim.get_shapes()
 		k=sh.keys()
-		k.sort()
+		if k != None: k.sort()
 		del sh[int(box_num)]
 		for j in k:
 			if isinstance(j,int):
@@ -2433,7 +2440,7 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def run_output_dialog(self):
 		'''
-		zzzzzzzzz
+		Write the windowned particles, called when you clicked "write the output file"
 		'''
 		from utilities import get_image, generate_ctf
 		from string import replace
@@ -2452,7 +2459,10 @@ class EMBoxerModule(QtCore.QObject):
 		format = "bdb"
 		normalize = True
 		norm_method = "normalize.ramp.normvar"
+		input_pixel_size = float(self.guictl.input_pixel_size.text())
 		output_pixel_size = float(self.guictl.output_pixel_size.text())
+		#print input_pixel_size, output_pixel_size
+		subsample_rate = input_pixel_size/output_pixel_size
 		
 		for name in self.image_names:
 			parent_img = get_image(name)
@@ -2477,15 +2487,22 @@ class EMBoxerModule(QtCore.QObject):
 				f = open(file_name2, "w")
 			
 			new_nima = len(self.boxable.boxes)
-
+			smallimage = None
 			for i in xrange(new_nima):
 				b = self.boxable.boxes[i]
-				img = b.get_box_image(normalize, norm_method)
+				b.smallimage = smallimage 
+				img = b.get_box_image(normalize, norm_method, subsample_rate = subsample_rate)
+				smallimage = b.smallimage
 				img.set_attr("Micrograph", name)
 				img.set_attr("Score", b.correlation_score)
 				img.set_attr("ctf", ctf_dict)
 				img.write_image(file_name, i+nima)
-				f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, b.xcorner+b.xsize/2, b.ycorner+b.xsize/2, b.xsize))
+				if b.correct_boxsize:
+					f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, b.xcorner+b.xsize/2, b.ycorner+b.xsize/2, b.xsize))
+				else:
+					f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, int((b.xcorner+b.xsize/2.)*subsample_rate+0.5), 
+					     int((b.ycorner+b.xsize/2.0)*subsample_rate+0.5), int(b.xsize*subsample_rate+0.5)))
+				
 			
 			print "Wrote", new_nima, "particles to file", file_name
 			f.close()						
@@ -3600,6 +3617,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		#print " aaaa ",options.pix_in,options.pix_out,"%6.3f"%options.pix_out
 		self.input_pixel_size  = QtGui.QLineEdit("%6.3f"%options.pix_in, self)
 		self.output_pixel_size = QtGui.QLineEdit("%6.3f"%options.pix_out, self)
+		
+		global global_input_pixel_size
+		global global_output_pixel_size
+		global_input_pixel_size = self.input_pixel_size
+		global_output_pixel_size = self.output_pixel_size
+		#print "Global!!!!!", float(global_input_pixel_size.text()), float(global_output_pixel_size.text())
+		
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
 		#print  " BB ",self.input_pixel_size.text(),self.output_pixel_size.text()

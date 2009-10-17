@@ -157,13 +157,14 @@ class Box:
 		self.isref = isref				# a flag that can be used to tell if the box is being used as a reference
 		self.correlation_score = correlation_score	# the correlation score
 		self.ismanual = False			# a flag to store whether or this box was manually added by the user and was not a reference. It's just a plain box
-		
+		self.correct_boxsize = True             # In interactive mode, we have to increase the box size as we have to work with original image (not downsampled one)
 		self.opt_profile = None			# a correlation worst-case profile, used for selective auto boxing
 		self.changed = False			# a flag signalling the box has changed and display needs updating
 		self.corx = -1			# stores the x coordinate of the correlation peak
 		self.cory = -1			# stores the y coordinate of the correlation peak
-		self.shape = None		# stores the shape used by the image2d widget
+		self.shape = None		# stores the shape used by the image2d widget		
 		self.image = None 		# stores the image itself, an emdata object
+		self.smallimage = None
 		self.r = 0.4			# RGB red
 		self.g = 0.9			# RGB green
 		self.b = 0.4			# RGB blue
@@ -241,13 +242,34 @@ class Box:
 		
 		return 0
 	
-	def update_box_image(self,norm=True,norm_method="normalize.edgemean"):
+	def update_box_image(self,norm=True,norm_method="normalize.edgemean", subsample_rate=1.0):
 		image = BigImageCache.image=BigImageCache.get_object(self.image_name).get_image(use_alternate=True)
 		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
 		#if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
 		#if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
 
-		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
+		if self.correct_boxsize or subsample_rate==1.0:
+			#print "correct"
+			self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
+		else:
+			#print "incorrect"
+			if self.smallimage == None:
+				gaussh_param = 1.0/(self.xsize)
+				template_min = 15
+				frequency_cutoff = 0.5*subsample_rate
+			
+				print "        Filter Gauss High: ", gaussh_param
+				print "        Downsampling rate: ", subsample_rate
+				print "        Minimum Template:  ", template_min
+				print "        Frequency cut-off: ", frequency_cutoff
+			
+				from filter import filt_gaussh
+				
+				image = filt_gaussh(image, gaussh_param) #1.0/(self.box_size/ratio) 
+				sb = Util.sincBlackman(template_min, frequency_cutoff, 1999) # 1999 taken directly from util_sparx.h
+				self.smallimage = image.downsample(sb, subsample_rate)
+			self.image = self.smallimage.get_clip(Region(int(self.xcorner*subsample_rate+0.5),int(self.ycorner*subsample_rate+0.5),int(self.xsize*subsample_rate+0.5),int(self.ysize*subsample_rate+0.5)))
+			
 		self.footprint = None
 		if norm:
 			if self.image.get_attr("sigma") != 0:	
@@ -275,11 +297,11 @@ class Box:
 			self.image = None
 			self.footprint = None
 	
-	def get_box_image(self,norm=True,norm_method="normalize.edgemean",force=False):
+	def get_box_image(self,norm=True,norm_method="normalize.edgemean",force=False, subsample_rate=1.0):
 		if self.image == None or force:
-			self.update_box_image(norm,norm_method)
+			self.update_box_image(norm,norm_method, subsample_rate)
 		elif norm and self.image.get_attr("normalization") != norm_method: #normalization attribute should always exist
-			self.update_box_image(norm,norm_method)
+			self.update_box_image(norm,norm_method, subsample_rate)
 		return self.image
 
 	def get_small_box_image(self,autoboxer):
@@ -793,6 +815,8 @@ class SincBlackmanSubsampledImage:
 
 		print "        Filter Gauss High: ", gaussh_param
 		print "        Downsampling rate: ", subsample_rate
+		print "        Minimum Template:  ", template_min
+		print "        Frequency cut-off: ", frequency_cutoff
 
 		self.smallimage.set_attr("invert", invert)
 		self.smallimage.set_attr("gaussh_param", gaussh_param)
@@ -3108,7 +3132,7 @@ class PawelAutoBoxer(AutoBoxer):
 			img = get_im( imgname )
                         #[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 			#img /= sigma
-
+		
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 
@@ -3126,6 +3150,11 @@ class PawelAutoBoxer(AutoBoxer):
 			from morphology import power
 			img = power(img, 2.0)
 
+		#from utilities import info
+		#print "this"
+		#info(img)
+		#print self.gauss_width, self.box_size
+		
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
