@@ -1,4 +1,4 @@
-#!/exports/home/zyang/EMAN2/python/Python-2.5.4-ucs4/bin/python
+#
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
