@@ -2445,6 +2445,7 @@ class EMBoxerModule(QtCore.QObject):
 		'''
 		from utilities import get_image, generate_ctf
 		from string import replace
+		from os import path
 		
 		def get_particle_file_name(image_name, format):
 			from os import path
@@ -2466,6 +2467,7 @@ class EMBoxerModule(QtCore.QObject):
 		subsample_rate = input_pixel_size/output_pixel_size
 		
 		for name in self.image_names:
+			basename, baseattr = path.splitext(path.basename(name))
 			parent_img = get_image(name)
 			try:
 				ctf_dict = parent_img.get_attr("ctf")
@@ -2494,7 +2496,7 @@ class EMBoxerModule(QtCore.QObject):
 				b.smallimage = smallimage 
 				img = b.get_box_image(normalize, norm_method, subsample_rate = subsample_rate)
 				smallimage = b.smallimage
-				img.set_attr("Micrograph", name)
+				img.set_attr("Micrograph", basename)
 				img.set_attr("Score", b.correlation_score)
 				img.set_attr("ctf", ctf_dict)
 				img.write_image(file_name, i+nima)
@@ -3815,7 +3817,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 	 	
-		self.estdef = QtGui.QLineEdit(str(defocus/1000.0), self)
+		self.estdef = QtGui.QLineEdit(str(defocus/10000.0), self)
 		pawel_grid1.addWidget( self.estdef, 7, 3 )
 		self.estdef.setEnabled(False)
 
