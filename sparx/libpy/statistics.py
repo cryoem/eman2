@@ -4508,8 +4508,8 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 			AVE.set_attr('nobjects', len(GRP[k]))
 			AVE.set_attr('members', GRP[k])
 
-		if part == -1: AVE.write_image(os.join(out_seedname, 'averages.hdf'), k)
-		else:          AVE.write_image(os.join(out_seedname, 'averages_%02i.hdf' % part), k)
+		if part == -1: AVE.write_image(os.path.join(out_seedname, 'averages.hdf'), k)
+		else:          AVE.write_image(os.path.join(out_seedname, 'averages_%02i.hdf' % part), k)
 	print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
