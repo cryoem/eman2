@@ -12426,7 +12426,7 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # K-means main stability stream command line, CUDA version
 def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
 	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics import k_means_stab_asg2part, k_means_stab_export, k_means_stab_txt
+	from statistics import k_means_stab_asg2part, k_means_stab_export, k_means_stab_export_txt
 	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
 	from statistics import k_means_stab_pwa, k_means_stab_H
 	from statistics import k_means_CUDA
