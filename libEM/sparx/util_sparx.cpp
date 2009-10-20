@@ -19314,5 +19314,28 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	return slice;
 }
 
-
-
+void Util::image_mutation(EMData *img, float mutation_rate) {
+	int nx = img->get_xsize();
+	float min = img->get_attr("minimum");
+	float max = img->get_attr("maximum");
+	float range = 255.999/(max-min);
+	float* img_data = img->get_data();
+	int r, p, normalized, mask;
+	int n = int(1./mutation_rate);
+	for (int i=0; i<nx*nx;i++) 
+		for (int j=0; j<8; j++) {
+			r = rand()%n;
+			if (r==0) {
+				mask = 1 << j;
+				normalized = int((img_data[i]-min)*range);
+				p = normalized & mask;
+				if (p == 0) {
+					normalized += mask;
+				} else {
+					normalized -= mask;
+				}
+				img_data[i] = normalized/range+min;		
+			}
+		}
+	return;
+}

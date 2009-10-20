@@ -678,6 +678,7 @@ public:
 	static vector<float> cluster_equalsize(EMData* d);
 	static vector<float> vareas(EMData* d);
 	static EMData* get_slice(EMData *vol, int dim, int index);
+	static void image_mutation(EMData *img, float mutation_rate);
 	/*
 			To restrict the value to [0, nx)
 	*/

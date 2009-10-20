@@ -491,6 +491,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("readarray", &readarray )
 		.def("k_means_cont_table", &pyk_means_cont_table)
 		.def("Normalize_ring", &EMAN::Util::Normalize_ring)
+		.def("image_mutation", &EMAN::Util::image_mutation)
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -638,6 +639,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("readarray")
 		.staticmethod("k_means_cont_table")
 		.staticmethod("Normalize_ring")
+		.staticmethod("image_mutation")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(
