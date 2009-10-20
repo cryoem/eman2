@@ -41,7 +41,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	#usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --randomize --T0=T0 --F=F --MPI"
-	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --restart=0 --MPI"
+	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --number_of_ave=number_of_ave --CTF --function=user_function_name --restart=0 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="float",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",    type="float",  default=-1,            help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -51,6 +51,7 @@ def main():
 	parser.add_option("--ts",    type="string", default="2 1 0.5 0.25",help="step of translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--center",type="float",  default=-1,            help="-1. average center method 0.not centered 1.phase approximation 2.cc with Gaussian function 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--maxit", type="float",  default=0,             help="maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
+	parser.add_option("--number_of_ave", type="int",    default=4,             help="Number of averages for the alignment")
 	parser.add_option("--CTF", action="store_true", default=False,     help="Consider CTF correction during the alignment ")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="name of the reference preparation function")
 	#parser.add_option("--random_method", type="string", default="",    help="SA: Simulated Annealing   ML: Maximum Likelihood")
@@ -59,7 +60,8 @@ def main():
 	parser.add_option("--restart", type="int", default=-1,             help="name of the reference preparation function")
 	parser.add_option("--MPI", action="store_true", default=False,     help="use MPI version ")
 	(options, args) = parser.parse_args()
-	if len(args) < 2 or len(args) >3:
+	
+	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -77,7 +79,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.function, options.restart, options.MPI)
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.number_of_ave, options.CTF, options.function, options.restart, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

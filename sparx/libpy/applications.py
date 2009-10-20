@@ -246,9 +246,9 @@ def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 
 		print_end_msg("ali2d_reduce_MPI")
 """
 
-def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", restart=-1, MPI=False):
+def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, user_func_name="ref_ali2d", restart=-1, MPI=False):
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, restart)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, number_of_ave, CTF, user_func_name, restart)
 		return
 	
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
@@ -441,7 +441,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", restart=-1):
+def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, user_func_name="ref_ali2d", restart=-1):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -471,7 +471,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	number_of_ave = 16
 	color = myid%number_of_ave
 	key = myid/number_of_ave
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
@@ -568,6 +567,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	Fourvar = False
 	N_merge = 50
 	grid_size = 32
+	crossover_rate = 0.8
+	mutation_rate = 0.01
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -583,6 +584,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Number of averages used     : %d\n"%(number_of_ave))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 		print_msg("Number of recombinations    : %d\n"%(N_merge))
+		print_msg("Crossover rate              : %f\n"%(crossover_rate))
+		print_msg("Mutation rate               : %f\n"%(mutation_rate))
 		if restart != -1:
 			print_msg("Restarted from iteration    : %d\n"%(restart))
 		print_msg("Tangent filter                  \n")
@@ -684,9 +687,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				chessboard1.set_value_at(ii, jj, v)
 				chessboard2.set_value_at(ii, jj, 1-v)
 		
-		# Generate the array to store goal value and index
-		qt = [[0.0, model_blank(nx, nx)] for inp in xrange(number_of_ave*2)]
-		for i in xrange(number_of_ave): 	qt[i][0] = criterion_list[i]
+		# Generate the array to store goal value, average image, iteration number and group number
+		qt = [[0.0, model_blank(nx, nx), -1, 0] for inp in xrange(number_of_ave*2)]
+		for i in xrange(number_of_ave):
+			qt[i][0] = criterion_list[i]
+			qt[i][3] = i
 		english = ['first', 'second', 'third']
 		
 	N_step = 0
@@ -849,15 +854,19 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				for isav in xrange(number_of_ave):
 					qt[isav+number_of_ave][0] = qt[isav][0]
 					qt[isav+number_of_ave][1] = qt[isav][1]
+					qt[isav+number_of_ave][2] = qt[isav][2]
+					qt[isav+number_of_ave][3] = qt[isav][3]
 					img = savg[isav].copy()
 				        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
 					qt[isav][1] = img
+					qt[isav][2] = ipt
+					qt[isav][3] = isav
 	
 				print_msg("-"*100+"\n")
 				for isav in xrange(number_of_ave):
-					print_msg("Criterion for average %2d: %20.8f\n"%(isav, qt[isav][0]))
+					print_msg("Criterion for current average %2d: %20.8f\n"%(isav, qt[isav][0]))
 				for isav in xrange(number_of_ave):
-					print_msg("Criterion for old average %2d: %20.8f\n"%(isav, qt[isav+number_of_ave][0]))
+					print_msg("Criterion for previous average %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav+number_of_ave][0], qt[isav+number_of_ave][2], qt[isav+number_of_ave][3]))
 				old_criterion = qt[-1][0]
 				qt.sort(reverse = True)
 				if old_criterion == qt[number_of_ave-1][0]:
@@ -866,19 +875,25 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					to_break = 0
 				for isav in xrange(number_of_ave):
-					print_msg("Sorted criterion %2d: %20.8f\n"%(isav, qt[isav][0]))
+					print_msg("Sorted criterion %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav][0], qt[isav][2], qt[isav][3]))
 				print_msg("-"*100+"\n")
 				
 				index = range(number_of_ave)
 				shuffle(index)				
-				tsavg = []	
+				tsavg = []
 				for isav in xrange(number_of_ave):
-					tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2)))
-					print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, index[isav], index[(isav+1)%number_of_ave]))
-				        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
-					
+					r = random()
+					if r < crossover_rate:
+						tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2)))
+						print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, index[isav], index[(isav+1)%number_of_ave]))
+					else:
+						tsavg.append(qt[index[isav]][1])
+						print_msg("The new average %2d is from average %2d.\n"%(isav, index[isav]))
+					Util.image_mutation(tsavg[isav], mutation_rate)
+					tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+
 				for isav in xrange(1, number_of_ave):
-				        send_EMData(tsavg[isav], isav, isav+300)
+					send_EMData(tsavg[isav], isav, isav+300)
 				tavg = tsavg[0].copy()
 				del tsavg
 			else:
