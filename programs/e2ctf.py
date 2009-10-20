@@ -98,6 +98,16 @@ images far from focus."""
 	if options.autofit:
 		try: im = EMData(args[0], 0, 1)['ctf']
 		except:
+			if options.gui:
+				if db_check_dict('bdb:e2ctf.parm'):
+					db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
+					name = get_file_tag(args[0])
+					if not db_parms.has_key(name):
+						print "error, you must first run auto fit before running the gui - there are no parameters for",name
+						exit()
+				else:
+					print "error, you must first run auto fit before running the gui - there are no parameters for",get_file_tag(args[0])
+					exit()
 			if options.voltage==0 : parser.error("Please specify voltage")
 			if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : print "Using A/pix from header"
@@ -145,9 +155,9 @@ images far from focus."""
 			options.filenames = lid
 			D = dict(zip(lid, zip(li, n)))
 		else:
-			pos = int(options.id_micrograph)
-			options.filenames = [lid[pos]]
-			D = {lid[pos]: [li[pos], n[pos]]}
+			name = options.id_micrograph
+			options.filenames = [name]
+			D = {name: [li[lid.index(name)], n[lid.index(name)]]}
 		D['stack'] = args[0]
 		options.id_micrograph = D
 
@@ -410,10 +420,10 @@ def pspec_and_ctf_fit(options,debug=False):
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_im2d=db_open_dict("bdb:e2ctf.im2d")
 	db_bg2d=db_open_dict("bdb:e2ctf.bg2d")
-	
+
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
-
+		
 		if options.id_micrograph is not None:
 			n_start   = options.id_micrograph[filename][0]
 			n_stop    = n_start + options.id_micrograph[filename][1]
@@ -429,6 +439,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			print 'Use CTF from the header'
 			apix    = ctf.apix
 			defocus = ctf.defocus
+			if defocus == 0: raise AttributeError
 			options.voltage = ctf.voltage
 			options.cs      = ctf.cs
 			options.ac      = ctf.ampcont
