@@ -68,7 +68,7 @@ images far from focus."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=True)
+	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
