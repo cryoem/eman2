@@ -89,27 +89,12 @@ images far from focus."""
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
-	parser.add_option("--id_micrograph", type="string", help="Perform CTF estimation only on particles with the id micrograph selected. Default read all micrograph is attributes Micrograph is set", default=None)
 	
 	(options, args) = parser.parse_args()
-	from sys import exit
-
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
-		try: im = EMData(args[0], 0, 1)['ctf']
-		except:
-			if options.gui:
-				if db_check_dict('bdb:e2ctf.parm'):
-					db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
-					name = get_file_tag(args[0])
-					if not db_parms.has_key(name):
-						print "error, you must first run auto fit before running the gui - there are no parameters for",name
-						exit()
-				else:
-					print "error, you must first run auto fit before running the gui - there are no parameters for",get_file_tag(args[0])
-					exit()
-			if options.voltage==0 : parser.error("Please specify voltage")
-			if options.cs==0 : parser.error("Please specify Cs")
+		if options.voltage==0 : parser.error("Please specify voltage")
+		if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : print "Using A/pix from header"
 		
 	debug=options.debug
@@ -128,42 +113,10 @@ images far from focus."""
 #	db_misc=db_open_dict("bdb:e2ctf.misc")
 
 	options.filenames = args
-
-	try:
-		idmic = EMUtil.get_all_attributes(options.filenames[0], 'Micrograph')
-		if options.id_micrograph is None: options.id_micrograph = 'all'
-	except:
-		if options.id_micrograph is not None:
-			print 'Impossible to get the attribute Micrograph'
-			sys.exit()
-
-	### Process according ID micrograph - command line
-	if options.id_micrograph is not None:
-		idmic      = EMUtil.get_all_attributes(options.filenames[0], 'Micrograph')
-		lid, li, n = [], [], []
-		c = 0
-		for i, id in enumerate(idmic):
-			if id not in lid:
-				lid.append(id)
-				li.append(i)
-				n.append(c)
-				c = 0
-			c += 1
-		n.append(c)
-		n.pop(0)
-		if options.id_micrograph == 'all':
-			options.filenames = lid
-			D = dict(zip(lid, zip(li, n)))
-		else:
-			name = options.id_micrograph
-			options.filenames = [name]
-			D = {name: [li[lid.index(name)], n[lid.index(name)]]}
-		D['stack'] = args[0]
-		options.id_micrograph = D
-
 	### Power spectrum and CTF fitting
-	if options.autofit or options.gui:
+	if options.autofit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+		
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -183,13 +136,13 @@ images far from focus."""
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener or options.phasefliphp or options.virtualout or options.storeparm: # only put this if statement here to make the program flow obvious
-		if debug: print 'Write output'
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	if options.computesf :
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		print "Recomputing structure factor"
 		envelope=compute_envelope(img_sets)
+		
 		db_misc=db_open_dict("bdb:e2ctf.misc")
 		db_misc["strucfac"]=envelope
 #		print envelope
@@ -276,7 +229,7 @@ def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
 	
-	if options.phaseflip or options.wiener or options.phasefliphp or options.storeparm:
+	if options.phaseflip or options.wiener or options.phasefliphp :
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
@@ -302,10 +255,10 @@ def write_e2ctf_output(options):
 			if phaseout : print "Phase image out: ",phaseout,"\t",
 			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
-			print "write output"
+			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
-			process_stack(filename,options,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
+			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
@@ -423,46 +376,12 @@ def pspec_and_ctf_fit(options,debug=False):
 
 	for i,filename in enumerate(options.filenames):
 		name=get_file_tag(filename)
-		
-		if options.id_micrograph is not None:
-			n_start   = options.id_micrograph[filename][0]
-			n_stop    = n_start + options.id_micrograph[filename][1]
-			stackfile = options.id_micrograph['stack']
-		else:
-			n_start = 0
-			n_stop  = EMUtil.get_image_count(filename)
-			stackfile = filename
-
-		# use CTF header if exist
-		try:
-			ctf = EMData(stackfile, n_start, 1)['ctf']
-			print 'Use CTF from the header'
-			apix    = ctf.apix
-			defocus = ctf.defocus
-			if defocus == 0: raise AttributeError
-			options.voltage = ctf.voltage
-			options.cs      = ctf.cs
-			options.ac      = ctf.ampcont
-			bfactor         = ctf.bfactor
-			if bfactor == 0: bfactor = 500.0
-		except:
-			print 'Estimate CTF from scratch'
-			if options.voltage==0 :
-				print "Please specify voltage"
-				sys.exit()
-			if options.cs==0 :
-				print "Please specify Cs"
-				sys.exit()
-			apix    = options.apix
-			defocus = -1
-			if apix<=0:
-				try: apix=EMData(stackfile,0,1)["apix_x"] 
-				except: apix = 1.0
-			bfactor = 500.0
 
 		# compute the power spectra
 		if debug : print "Processing ",filename
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename, options)
+		apix=options.apix
+		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 		if options.fixnegbg : 
@@ -472,7 +391,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,defocus,bfactor,bgadj=not options.nosmooth,autohp=options.autohp)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
@@ -521,30 +440,25 @@ def env_cmp(sca,envelopes):
 
 	return ret
 	
-def process_stack(stackfile,options,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
 	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
 	"""
-	name = get_file_tag(stackfile)
-	if options.id_micrograph is not None:
-		n_start   = options.id_micrograph[stackfile][0]
-		n_stop    = n_start + options.id_micrograph[stackfile][1]
-		stackfile = options.id_micrograph['stack']
-	else:
-		n_start = 0
-		n_stop  = EMUtil.get_image_count(stackfile)
-	im=EMData(stackfile, n_start)
+	
+	im=EMData(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
+	n=EMUtil.get_image_count(stackfile)
 	lctf=None
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 
 	if virtualout: 
 		vin=db_open_dict(stackfile)
 		vout=db_open_dict(virtualout)
-
+	
+	name = get_file_tag(stackfile)
 	if phasehp:
 		p1d=db_parms[name][1]
 		for c in xrange(2,len(p1d)):
@@ -567,14 +481,14 @@ def process_stack(stackfile,options,phaseflip=None,phasehp=None,wiener=None,edge
 #		print hpfilt[:c+4]
 
 	
-	for i,ind in enumerate(range(n_start, n_stop)):
-		im1 = EMData(stackfile,ind)
+	for i in range(n):
+		im1 = EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
 		if storeparm : 
 			ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 			im1["ctf"]=ctf
-			im1.write_image(stackfile,ind,EMUtil.ImageType.IMAGE_UNKNOWN,True)
+			im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
 		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 
 
@@ -684,7 +598,7 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile, options):
+def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power 
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
@@ -695,24 +609,13 @@ def powspec_with_bg(stackfile, options):
 	"""
 	
 	global masks
-	radius   = options.bgmask
-	edgenorm = not options.nonorm
-	oversamp = options.oversamp
-
+	
 	im = EMData()
-	if options.id_micrograph is not None:
-		n_start   = options.id_micrograph[stackfile][0]
-		n         = options.id_micrograph[stackfile][1]
-		n_stop    = n_start + n
-		stackfile = options.id_micrograph['stack'] 
-	else:
-		n_start = 0
-		n       = EMUtil.get_image_count(stackfile)
-		n_stop  = n
-	im.read_image(stackfile, n_start)
+	im.read_image(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	if radius<=0 : radius=ys2/2.6
+	n=EMUtil.get_image_count(stackfile)
 	
 	# set up the inner and outer Gaussian masks
 	try:
@@ -731,7 +634,7 @@ def powspec_with_bg(stackfile, options):
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 #		display((mask1,mask2))
 	
-	for i in range(n_start, n_stop):
+	for i in range(n):
 		im1 = EMData()
 		im1.read_image(stackfile,i)
 #		im1=EMData(stackfile,i)
@@ -747,13 +650,13 @@ def powspec_with_bg(stackfile, options):
 		im1*=mask1
 		imf=im1.do_fft()
 		imf.ri2inten()
-		if i==n_start: av1=imf
+		if i==0: av1=imf
 		else: av1+=imf
 	
 		im2*=mask2
 		imf=im2.do_fft()
 		imf.ri2inten()
-		if i==n_start: av2=imf
+		if i==0: av2=imf
 		else: av2+=imf
 		
 	
@@ -877,7 +780,7 @@ def sfact(s):
 	## this curve should be pretty valid on the range 0.004 - 0.2934, we limit it a bit more to prevent distractions from the sharp peak
 	#return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,autohp=False,dfhint=None):
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -893,7 +796,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 		ac=10.0
 	
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":defocus,"voltage":voltage,"bfactor":bfactor,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":500.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = [sfact(i*ds) for i in range(ys)]
 
@@ -910,16 +813,13 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 
 #	dfbest1=(0,-1.0e20)
 	dfbest1=[]
+	
+	# This implies that we already have a general range for the defocus, so we limit the search
+	if dfhint :
+		dfhint=int(dfhint*20.0)
+		rng=range(dfhint-3,dfhint+4)
+	else :rng=range(8,128)
 
-	if ctf.defocus == -1:
-		ctf.defocus = 1.0
-		# This implies that we already have a general range for the defocus, so we limit the search
-		if dfhint :
-			dfhint=int(dfhint*20.0)
-			rng=range(dfhint-3,dfhint+4)
-		else :rng=range(8,128)
-	else:
-		rng = [int(ctf.defocus * 20)]
 
 	# This loop tries to find the best few possible defocuses
 	for dfi in rng:			# loop over defocus
@@ -977,7 +877,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 		best=[]
 		for b1a in dfbest1a:
 			# our parameter set is (defocus,bfactor)
-			parm=[b1a[1],300.0]
+			parm=[b1a[1],400.0]
 
 	#		print "Initial guess : ",parm
 			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
@@ -1009,12 +909,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 			for x in range(1,len(bg2)-1) : 
 				if cc[x]*cc[x+1]<0 :
 					if x<len(bg2)/2 :
-						# the first value of bg2 is zero which raise ZeroDivisionError. JB
-						if bg2[x-1] == 0: continue
-
 						# Below 1/2 nyquist, we work harder to avoid negative values
 						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1],im_1d[x-1]/bg2[x-1],im_1d[x+2]/bg2[x+2]))						
-						
 					else:
 						# we search the two points 'at' the zero for the minimum
 						# if we're too aggressive about this, we will end up exaggerating the high
@@ -1036,7 +932,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 
 			# rerun the simplex with the new background
 			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
-			best[0][1][1]=250.0		# restart the fit with B=200.0
+			best[0][1][1]=400.0		# restart the fit with B=200.0
 			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
@@ -1046,7 +942,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,defocus,bfactor,bgadj=0,a
 			print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 	else:
 		# rerun the simplex with the new background
-		best[0][1][1]=250.0		# restart the fit with B=200.0
+		best[0][1][1]=200.0		# restart the fit with B=200.0
 		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
@@ -1176,7 +1072,7 @@ def ctf_cmp(parms,data):
 	
 	mean=a/c
 	sig=b/c-mean*mean
-	if mean == 0: mean = 0.001
+
 	er=sig/fabs(mean)
 #	print er
 
@@ -1292,7 +1188,7 @@ from emapplication import EMQtWidgetModule
 class GUIctfModule(EMQtWidgetModule):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		self.guictf = GUIctf(application,data,self,autohp,nosmooth)
-		EMQtWidgetModule.__init__(self,self.guictf,winid="ctf.control")
+		EMQtWidgetModule.__init__(self,self.guictf)
 		self.application = weakref.ref(application)
 		self.setWindowTitle("CTF")
 
@@ -1332,9 +1228,9 @@ class GUIctf(QtGui.QWidget):
 		self.curset=0
 		self.plotmode=0
 		
-		self.guiim=EMImage2DModule(application=self.app(),winid="ctf.powspecimg")
+		self.guiim=EMImage2DModule(application=self.app())
 		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
-		self.guiplot=EMPlot2DModule(application=self.app(),winid="ctf.mainplot")
+		self.guiplot=EMPlot2DModule(application=self.app())
 		
 		# FIXME these "emitters" might be unnecessary.
 		im_qt_target = self.app().get_qt_emitter(self.guiim)
@@ -1490,7 +1386,7 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,tmp[1].defocus,tmp[1].bfactor,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
 
 		# refit will also write parameters back to the db
 		db_parms=db_open_dict("bdb:e2ctf.parms")
