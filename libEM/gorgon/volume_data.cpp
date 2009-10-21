@@ -6,12 +6,9 @@
 
 using namespace wustl_mm::SkeletonMaker;
 
-		VolumeData::VolumeData(EMData* em) //eman2
+		VolumeData::VolumeData(EMData* em)
 		{
 			this->emdata = em;
-			SetSize( emdata->get_attr("nx"), emdata->get_attr("ny"), emdata->get_attr("nz") );
-			SetSpacing( emdata->get_attr("apix_x"), emdata->get_attr("apix_y"), emdata->get_attr("apix_z") );
-			SetOrigin( emdata->get_attr("origin_x"), emdata->get_attr("origin_y"), emdata->get_attr("origin_z") );
 			owns_emdata = false;
 		}
 
@@ -25,15 +22,12 @@ using namespace wustl_mm::SkeletonMaker;
 
 		VolumeData::VolumeData(int sizeX, int sizeY, int sizeZ, int offsetX, int offsetY, int offsetZ, VolumeData * data) {
 			InitializeVolumeData(sizeX, sizeY, sizeZ, data->GetSpacingX(), data->GetSpacingY(), data->GetSpacingZ(), data->GetOriginX(), data->GetOriginY(), data->GetOriginZ(), false, 0);
-			//int ct = 0 ;
-			float value;//eman2
-			for ( int k = offsetZ; k < sizeZ + offsetZ; k++) { //z in outer loop in eman2
+			float value;
+			for ( int k = offsetZ; k < sizeZ + offsetZ; k++) {
 				for (int j = offsetY; j < sizeY + offsetY; j++ ) {
 					for (int i = offsetX; i < sizeX + offsetX; i++) {
-						//this->data[ct] = data->GetDataAt(i, j, k);
-						value = data->GetDataAt(i,j,k);//eman2
+						value = data->GetDataAt(i,j,k);
 						SetDataAt(i-offsetX,j-offsetY,k-offsetZ, value);
-						//ct++;
 					}
 				}
 			}
@@ -41,107 +35,132 @@ using namespace wustl_mm::SkeletonMaker;
 
 		VolumeData::VolumeData(VolumeData& obj)
 		{
-			size[0] = obj.GetSizeX();
-			size[1] = obj.GetSizeY();
-			size[2] = obj.GetSizeZ();
-			spacing[0] = obj.GetSpacingX();
-			spacing[1] = obj.GetSpacingY();
-			spacing[2] = obj.GetSpacingZ();
-			origin[0] = obj.GetOriginX();
-			origin[1] = obj.GetOriginY();
-			origin[2] = obj.GetOriginZ();
 			emdata = new EMData( *obj.get_emdata() );
 			owns_emdata = true;
+			//SetSize( obj.GetSizeX(), obj.GetSizeY(), obj.GetSizeZ() );
+			//SetSpacing( obj.GetSpacingX(), obj.GetSpacingY(), obj.GetSpacingZ() );
+			//SetOrigin( obj.GetOriginX(), GetOriginY(), obj.GetOriginZ() );
 		}
 		VolumeData::~VolumeData() {
 			cout << "~VolumeData()" << endl;
-			//delete [] data;
-			if (owns_emdata) //eman2
+			if (owns_emdata)
 				delete emdata;
 		}
 
 		void VolumeData::InitializeVolumeData(int sizeX, int sizeY, int sizeZ, float spacingX, float spacingY, float spacingZ, float originX, float originY, float originZ, bool initializeData, float val) {
-			emdata = new EMData(sizeX, sizeY, sizeZ); //eman2
+			emdata = new EMData(sizeX, sizeY, sizeZ);
 			owns_emdata = true;
-			SetSize(sizeX, sizeY, sizeZ);
+			//SetSize(sizeX, sizeY, sizeZ);
 			SetSpacing(spacingX, spacingY, spacingZ);
 			SetOrigin(originX, originY, originZ);
-			//int maxIndex = GetMaxIndex();
-			//data = new float [maxIndex];
 			if(initializeData) {
 				emdata->to_value(val);
-				//for(unsigned int i=0; i < maxIndex; i++) {
-					//data[i] = val;
-				//}
 			}
 		}
 
 		int VolumeData::GetSize(int dimension) {
-			return size[dimension];
+			float ret = 0;
+			switch (dimension)
+			{
+				case 0: ret = GetSizeX();
+					break;
+				case 1: ret = GetSizeY();
+					break;
+				case 2: ret = GetSizeZ();
+					break;
+				default:
+					throw InvalidParameterException("VolumeData::GetSize requires an argument of 0, 1, or 2");
+			}
+			
+			return ret;
+
 		}
 
 		int VolumeData::GetSizeX() {
-			return GetSize(0);
+			return emdata->get_xsize();
 		}
 
 		int VolumeData::GetSizeY() {
-			return GetSize(1);
+			return emdata->get_ysize();
 		}
 
 		int VolumeData::GetSizeZ() {
-			return GetSize(2);
+			return emdata->get_zsize();
 		}
 
 		float VolumeData::GetSpacing(int dimension) {
-			return spacing[dimension];
+			float ret = 0;
+			switch (dimension)
+			{
+				case 0: ret = GetSpacingX();
+					break;
+				case 1: ret = GetSpacingY();
+					break;
+				case 2: ret = GetSpacingZ();
+					break;
+				default:
+					throw InvalidParameterException("VolumeData::GetSpacing requires an argument of 0, 1, or 2");
+			}
+			
+			return ret;
 		}
 
 		float VolumeData::GetSpacingX() {
-			return GetSpacing(0);
+			return emdata->get_attr("apix_x");
 		}
 
 		float VolumeData::GetSpacingY() {
-			return GetSpacing(1);
+			return emdata->get_attr("apix_y");
 		}
 
 		float VolumeData::GetSpacingZ() {
-			return GetSpacing(2);
+			return emdata->get_attr("apix_y");
 		}
 
 		float VolumeData::GetOrigin(int dimension) {
-			return origin[dimension];
+			float ret = 0;
+			switch (dimension)
+			{
+				case 0: ret = GetOriginX();
+					break;
+				case 1: ret = GetOriginY();
+					break;
+				case 2: ret = GetOriginZ();
+					break;
+				default:
+					throw InvalidParameterException("VolumeData::GetOrigin requires an argument of 0, 1, or 2");
+			}
+			
+			return ret;
 		}
 
 		float VolumeData::GetOriginX() {
-			return GetOrigin(0);
+			return emdata->get_attr("origin_x");
 		}
 
 		float VolumeData::GetOriginY() {
-			return GetOrigin(1);
+			return emdata->get_attr("origin_y");
 		}
 
 		float VolumeData::GetOriginZ() {
-			return GetOrigin(2);
+			return emdata->get_attr("origin_z");
 		}
 
 
 		float VolumeData::GetDataAt(int x, int y, int z) {
-			//return GetDataAt(GetIndex(x, y, z));
 			return this->emdata->get_value_at(x, y, z);
 		}
 
 		float VolumeData::GetDataAt(int index) {
-			//return data[index];
 			return emdata->get_value_at(index);
 		}
 
 		int VolumeData::GetIndex(int x, int y, int z) {
-			//return (x * GetSizeY() * GetSizeZ() + y * GetSizeZ() + z);
 			return (x + y * GetSizeX() + z * GetSizeX() * GetSizeY());
 		}
 
 		int VolumeData::GetMaxIndex() {
-			return size[0] * size[1] * size[2];
+			return GetSizeX() * GetSizeY() * GetSizeZ();
 		}
 
 		EMData * VolumeData::get_emdata() //eman2
@@ -150,43 +169,27 @@ using namespace wustl_mm::SkeletonMaker;
 		}
 
 		void VolumeData::SetSpacing(float spacingX, float spacingY, float spacingZ) {
-			// eman2 -->
 			emdata->set_attr("apix_x", spacingX);
 			emdata->set_attr("apix_y", spacingY);
 			emdata->set_attr("apix_z", spacingZ);
-			// <-- eman2
-			spacing[0] = spacingX;
-			spacing[1] = spacingY;
-			spacing[2] = spacingZ;
 		}
 
 		void VolumeData::SetOrigin(float originX, float originY, float originZ) {
-			// eman2 -->
 			emdata->set_attr("origin_x", originX);
 			emdata->set_attr("origin_y", originY);
 			emdata->set_attr("origin_z", originZ);
-			// <-- eman2
-			origin[0] = originX;
-			origin[1] = originY;
-			origin[2] = originZ;
 		}
 
 
 		void VolumeData::SetSize(int sizeX, int sizeY, int sizeZ) {
-			emdata->set_size(sizeX, sizeY, sizeZ); //eman2
-
-			size[0] = sizeX;
-			size[1] = sizeY;
-			size[2] = sizeZ;
+			emdata->set_size(sizeX, sizeY, sizeZ);
 		}
 
 		void VolumeData::SetDataAt(int x, int y, int z, float value) {
-			//SetDataAt(GetIndex(x, y, z), value);
-			emdata->set_value_at(x, y, z, value); //eman2
+			emdata->set_value_at(x, y, z, value);
 		}
 
 		void VolumeData::SetDataAt(int index, float value) {
-			//data[index] = value;
 			//TODO: This may be a problem because EMAN and Gorgon do indexing differently --> see if this causes problems
 			emdata->get_data()[index] = value; //eman2
 		}
@@ -227,14 +230,11 @@ using namespace wustl_mm::SkeletonMaker;
 							value = GetDataAt(x-padBy, y-padBy, z-padBy);
 						}
 
-						//newData[x * newSizeY * newSizeZ + y * newSizeZ + z] = (float)value;
 						newData[x + y * newSizeX + z * newSizeX * newSizeY] = static_cast<float>(value); //eman2
 					}
 				}
 			}
 
-			//code below changed for eman2
-			float * data = emdata->get_data();
 			SetSize(newSizeX, newSizeY, newSizeZ);
 			emdata->set_data(newData, newSizeX, newSizeY, newSizeZ);
 			//free(data); //I think this is handled by set_data

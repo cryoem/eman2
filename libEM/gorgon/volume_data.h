@@ -11,13 +11,15 @@ namespace wustl_mm {
 	namespace SkeletonMaker {
 		class VolumeData {
 		public:
+		//Constructors & Destructor
 			VolumeData(EMData* em); //eman2
 			VolumeData(int sizeX, int sizeY, int sizeZ);
 			VolumeData(int sizeX, int sizeY, int sizeZ, float val);
 			VolumeData(int sizeX, int sizeY, int sizeZ, int offsetX, int offsetY, int offsetZ, VolumeData * data);
-			VolumeData(VolumeData& obj);
+			VolumeData(VolumeData& obj); //eman2
 			~VolumeData();
 
+		//Member functions
 			int GetSize(int dimension);
 			int GetSizeX();
 			int GetSizeY();
@@ -40,18 +42,17 @@ namespace wustl_mm {
 			void SetDataAt(int x, int y, int z, float value);
 			void SetDataAt(int index, float value);
 			void Pad(int padBy, double padValue);
+			EMData * get_emdata(); //eman2
 		private:
 			void InitializeVolumeData(int sizeX, int sizeY, int sizeZ, float spacingX, float spacingY, float spacingZ, float originX, float originY, float originZ, bool initializeData, float val);
 			void SetSize(int sizeX, int sizeY, int sizeZ);
-		private:
-			int size[3];
-			float spacing[3];
-			float origin[3];
-			//float * data;
-			EMData * emdata; //eman2
+
+		//Member variables
 		public:
 			bool owns_emdata; //eman2
-			EMData * get_emdata(); //eman2
+		private:
+			EMData * emdata; //eman2
+			
 		};
 
 
