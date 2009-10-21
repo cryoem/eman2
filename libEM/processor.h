@@ -41,6 +41,7 @@
 #include "geometry.h"
 #include "transform.h"
 #include "emdata.h"
+#include "gorgon/skeletonizer.h"
 
 #include <cfloat>
 #include <climits>
@@ -6505,6 +6506,34 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 	};
 
+	class BinarySkeletonizerProcessor : public Processor
+	{
+	public:
+		//virtual EMData* process(EMData * image);
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return "gorgon.binary_skel";
+		}
+		static Processor *NEW()
+		{
+			return new BinarySkeletonizerProcessor();
+		}
+		string get_desc() const
+		{
+			return "Creates a skeleton of the 3D image by considering whether density is above or below a threshold value.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("threshold", EMObject::FLOAT, "Threshold value.");
+			d.put("min_curve_width", EMObject::INT, "Minimum curve width.");
+			d.put("min_surface_width", EMObject::INT, "Minimum surface width.");
+			return d;
+		}
+	};
+
 #ifdef EMAN2_USING_CUDA
 	/** Cuda based constant multiplication processor
 	 * @author David Woolford
@@ -6577,7 +6606,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	};
 
 	/* class MPI CUDA kmeans processor
-	 * 2009-02-13 17:34:45 JB first version 
+	 * 2009-02-13 17:34:45 JB first version
 	 * 2009-09-02 11:19:10 JB for MPI version
 	 * python wrap for GPU cluster
 	 */

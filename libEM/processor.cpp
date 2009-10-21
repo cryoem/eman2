@@ -268,8 +268,10 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&DirectionalSumProcessor::NEW);
 
+	//Gorgon-related processors
 	force_add(&ModelEMCylinderProcessor::NEW);
 	force_add(&ApplyPolynomialProfileToHelix::NEW);
+	force_add(&BinarySkeletonizerProcessor::NEW);
 
 #ifdef EMAN2_USING_CUDA
 	force_add(&CudaMultProcessor::NEW);
@@ -5144,7 +5146,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	int int_shift_only = params.set_default("int_shift_only",1);
 
 	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
-	
+
 	FloatPoint com = image->calc_center_of_mass();
 
 	int nx = image->get_xsize();
@@ -5660,12 +5662,12 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile
 	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
-	
+
 	EMData *to = params["to"];
 	XYData *sf = new XYData();
 	float apixto = to->get_attr("apix_x");
-	
-	
+
+
 	if (to->is_complex()) {
 		vector<float> rd=to->calc_radial_dist(to->get_ysize(),0,0.5,1);
 		for (size_t i=0; i<rd.size(); i++) {
@@ -5682,9 +5684,9 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 		}
 		delete tmp;
 	}
-	
+
 	float apix=image->get_attr("apix_x");
-	
+
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
 		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
@@ -5696,7 +5698,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile
 	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
-	
+
 	XYData *sf = params["strucfac"];
 	if(params.has_key("apix")) {
 		image->set_attr("apix_x", (float)params["apix"]);
@@ -5705,7 +5707,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	}
 
 	float apix=image->get_attr("apix_x");
-	
+
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
 		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
@@ -9182,7 +9184,7 @@ vector <int> MPICUDA_kmeans::get_NC() {
 
 // set a new global assignment
 void MPICUDA_kmeans::set_ASG(const vector <int>& ASG) {
-    for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];   
+    for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];
 }
 
 // set number of objects per group
@@ -9273,7 +9275,7 @@ vector <float> MPICUDA_kmeans::compute_ji() {
     return ji;
 }
 
-// 
+//
 vector <float> MPICUDA_kmeans::compute_criterion(const vector <float>& Ji) {
     float buf = 0.0f;
     float Je = 0.0f;
@@ -9549,4 +9551,50 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 		}
 
 	}
+}
+
+//EMData* BinarySkeletonizerProcessor::process(EMData * image)
+//{
+//	using namespace wustl_mm::GraySkeletonCPP;
+//	using namespace wustl_mm::SkeletonMaker;
+//
+//	Volume * vimage = new Volume(image);
+//	VolumeSkeletonizer vskeletonizer;
+//	float threshold = params["threshold"];
+//	int min_curvew = params.set_default("min_curve_width", 3);
+//	int min_srfcw = params.set_default("min_surface_width", 4);
+//	cout << "PeformPureJuSkeletonization" << endl;
+//	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
+//	cout << "skeletonization done" << endl;
+//	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
+//	EMData* skel = 0;
+//	skel = vskel->get_emdata();
+//	skel->write_image("test-skel.mrc");
+//	EMData* copy = skel->copy();
+//	copy->write_image("test-skel-copy.mrc");
+//	return copy;
+//}
+
+void BinarySkeletonizerProcessor::process_inplace(EMData * image)
+{
+	//EMData* em_skel = this->process(image);
+
+	using namespace wustl_mm::GraySkeletonCPP;
+	using namespace wustl_mm::SkeletonMaker;
+
+	Volume * vimage = new Volume(image);
+	VolumeSkeletonizer vskeletonizer;
+	float threshold = params["threshold"];
+	int min_curvew = params.set_default("min_curve_width", 3);
+	int min_srfcw = params.set_default("min_surface_width", 4);
+	cout << "PeformPureJuSkeletonization" << endl;
+	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
+	cout << "skeletonization done" << endl;
+	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
+	EMData* em_skel = vskel->get_emdata();
+
+	image->free_memory();
+	image = em_skel;
+	image->write_image("test-skel.mrc");
+	//BUG: Although "test-skel.mrc" is fine, the (*image) object becomes corrupt when this function returns
 }
