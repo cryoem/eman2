@@ -1,352 +1,230 @@
 // Copyright (C) 2005-2008 Washington University in St Louis, Baylor College of Medicine.  All rights reserved
-// Author:        Tao Ju (taoju@cse.wustl.edu)
+// Author:        Tao Ju (taoju@cse.wustl.edu), Refactored by Sasakthi Abeysinghe (sasakthi.abeysinghe@wustl.edu)
 // Description:   Volumetric data definition
 
-#ifndef VOLUME_H
-#define VOLUME_H
-
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
+#include "volume_data.h"
+//#include "ThinningTemplate.h"
+#include "grid_queue.h"
+#include "grid_queue2.h"
+//#include <cstdio>
+//#include <cstdlib>
+//#include <cmath>
 #include "priority_queue.h"
-#include <vector>
-#include "emdata.h"
+//#include <vector>
+
+#ifndef SKELETON_MAKER_VOLUME_H
+#define SKELETON_MAKER_VOLUME_H
 
 #define MAX_SHEETS 100000
 #define MAX_QUEUELEN 5000000
-
 #define MAX_ERODE 1000
 
 using namespace std;
 
-namespace EMAN {
+namespace wustl_mm {
+	namespace SkeletonMaker {
 
-const int neighbor6[6][3]={{0,0,1},{0,0,-1},{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}} ;
-const int neighbor4[4][2]={{0,1},{0,-1},{1,0},{-1,0}} ;
-const int neighbor64[6][4][3] = { 
-	{{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}},
-	{{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}},
-	{{0,0,1},{0,0,-1},{1,0,0},{-1,0,0}},
-	{{0,0,1},{0,0,-1},{1,0,0},{-1,0,0}},
-	{{0,0,1},{0,0,-1},{0,1,0},{0,-1,0}},
-	{{0,0,1},{0,0,-1},{0,1,0},{0,-1,0}}} ;
-	
-const int sheetNeighbor[12][4][3] = {
-	{{0,-1,-1},{0,-1,0},{0,0,-1},{0,0,0}},
-	{{0,-1,0},{0,-1,1},{0,0,0},{0,0,1}},
-	{{0,0,-1},{0,0,0},{0,1,-1},{0,1,0}},
-	{{0,0,0},{0,0,1},{0,1,0},{0,1,1}},
+		const int neighbor6[6][3]={{0,0,1},{0,0,-1},{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}} ;
+		const int neighbor4[4][2]={{0,1},{0,-1},{1,0},{-1,0}} ;
+		const int neighbor64[6][4][3] = {
+			{{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}},
+			{{0,1,0},{0,-1,0},{1,0,0},{-1,0,0}},
+			{{0,0,1},{0,0,-1},{1,0,0},{-1,0,0}},
+			{{0,0,1},{0,0,-1},{1,0,0},{-1,0,0}},
+			{{0,0,1},{0,0,-1},{0,1,0},{0,-1,0}},
+			{{0,0,1},{0,0,-1},{0,1,0},{0,-1,0}}} ;
 
-	{{-1,0,-1},{-1,0,0},{0,0,-1},{0,0,0}},
-	{{-1,0,0},{-1,0,1},{0,0,0},{0,0,1}},
-	{{0,0,-1},{0,0,0},{1,0,-1},{1,0,0}},
-	{{0,0,0},{0,0,1},{1,0,0},{1,0,1}},
+		const int sheetNeighbor[12][4][3] = {
+			{{0,-1,-1},{0,-1,0},{0,0,-1},{0,0,0}},
+			{{0,-1,0},{0,-1,1},{0,0,0},{0,0,1}},
+			{{0,0,-1},{0,0,0},{0,1,-1},{0,1,0}},
+			{{0,0,0},{0,0,1},{0,1,0},{0,1,1}},
 
-	{{-1,-1,0},{-1,0,0},{0,-1,0},{0,0,0}},
-	{{-1,0,0},{-1,1,0},{0,0,0},{0,1,0}},
-	{{0,-1,0},{0,0,0},{1,-1,0},{1,0,0}},
-	{{0,0,0},{0,1,0},{1,0,0},{1,1,0}}
-	};
+			{{-1,0,-1},{-1,0,0},{0,0,-1},{0,0,0}},
+			{{-1,0,0},{-1,0,1},{0,0,0},{0,0,1}},
+			{{0,0,-1},{0,0,0},{1,0,-1},{1,0,0}},
+			{{0,0,0},{0,0,1},{1,0,0},{1,0,1}},
 
-const int faceCells[12][2]={{0,4},{1,5},{2,6},{3,7},{0,2},{1,3},{4,6},{5,7},{0,1},{2,3},{4,5},{6,7}};
+			{{-1,-1,0},{-1,0,0},{0,-1,0},{0,0,0}},
+			{{-1,0,0},{-1,1,0},{0,0,0},{0,1,0}},
+			{{0,-1,0},{0,0,0},{1,-1,0},{1,0,0}},
+			{{0,0,0},{0,1,0},{1,0,0},{1,1,0}}
+			};
 
-const int cubeFaces[6][4] = 
-{ {1,5,7,3},{0,2,6,4},{2,3,7,6},{0,4,5,1},{5,4,6,7},{0,1,3,2}};
+		const int faceCells[12][2]={{0,4},{1,5},{2,6},{3,7},{0,2},{1,3},{4,6},{5,7},{0,1},{2,3},{4,5},{6,7}};
 
+		const int cubeFaces[6][4] =
+		{ {1,5,7,3},{0,2,6,4},{2,3,7,6},{0,4,5,1},{5,4,6,7},{0,1,3,2}};
 
-//const int faceEdges[12][2] = {{2,4},{2,5},{3,4},{3,5},
-//{0,4},{0,5},{1,4},{1,5},
-//{0,2},{0,3},{1,2},{1,3}};
+		const int faceEdges[12][2] = {{3,1},{3,0},{2,1},{2,0},
+									  {5,1},{5,0},{4,1},{4,0},
+									  {5,3},{5,2},{4,3},{4,2}};
 
-const int faceEdges[12][2] = {{3,1},{3,0},{2,1},{2,0},
-{5,1},{5,0},{4,1},{4,0},
-{5,3},{5,2},{4,3},{4,2}};
+		const int edgeFaces[6][4] = {{1,3,5,7},{0,2,4,6},{2,3,9,11},{0,1,8,10},{6,7,10,11},{4,5,8,9}} ;
 
-const int edgeFaces[6][4] = {{1,3,5,7},{0,2,4,6},{2,3,9,11},{0,1,8,10},{6,7,10,11},{4,5,8,9}} ;
-
-struct gridPoint
-{
-	int x, y, z;
-};
-
-struct gridQueueEle
-{
-	int x, y, z;
-	int score ;
-	gridQueueEle* next ;
-};
-
-class gridQueue2;
-
-
-
-//**********************************************************************
-// Volume
-//**********************************************************************
-class Volume
-{
-private:
-	/*EMData has a float array named data, and so does this class.
-	 *However, the indexing works differently.
-	 * Volume: index = x*sizey*sizez + y*sizez + z;
-	 * EMData: index = x + y*nx + z*nx*ny; //nx means the same thing as sizex
-	 * Because of this,  we'll define new coordinates (x', y', z') for
-	 * this Volume class such that
-	 * (x', y', z') = (z, y, x)
-	 * where (x,y,z) is the EMData coordinates. We can also think of
-	 * this as moving the density value every point from (x, y, z) to (z, y, x).
-	 * Thus, we are reflecing our density map over the plane x = z.
-	 */
-	EMData* emdata;
-
-	/* Sizes */
-	int sizex, sizey, sizez ;
-	//float spacingX, spacingY, spacingZ;
-	//float originX, originY, originZ;
-
-	/* Data array */
-	float * data ;
-public:
-	//If the Volume object created an EMData object, it owns that object
-	//so it will be deleted when the Volume object is deleted
-	bool owns_emdata; 
-	
-	//I commented out the overloaded versions that aren't used by PerformPureJuSkeletonization().	
-
-	Volume(EMData* wrap_this)
-	{
-		set_emdata(wrap_this);
-	}
-
-	Volume(int nx, int ny, int nz)
-	{
-		emdata = new EMData(nx,ny,nz);
-		owns_emdata = true;
-		sizex = nz;
-		sizey = ny;
-		sizez = nx;
-		data = emdata->get_data();
-	}
-
-	~Volume()
-	{
-		if (owns_emdata)
-			delete_emdata();
-	}
-
-	void update_emdata_dimensions()
-	{
-		emdata->set_size(sizez, sizey, sizex);
-	}
-
-	EMData* get_emdata()
-	{	return emdata;
-	}
-	void set_emdata(EMData* wrap_this)
-	{	emdata = wrap_this;
-		owns_emdata = false;
-		sizex = emdata->get_zsize();
-		sizey = emdata->get_ysize();
-		sizez = emdata->get_xsize();
-		data = emdata->get_data();//Returns a pointer to a 1D float array
-		
-	}
-	void delete_emdata()
-	{	delete emdata;
-	}
-	int getSizeX()
-	{	return emdata->get_xsize();
-	}
-	int getSizeY()
-	{	return emdata->get_ysize();
-	}
-	int getSizeZ()
-	{	return emdata->get_zsize();
-	}
-	//double getDataAt(int index);
-	double getDataAt(int x, int y, int z)
-	{	return emdata->get_value_at(x,y,z);
-	}	
-	void setDataAt(int index, double d)
-	{	emdata->set_value_at(index, float(d));
-	}
-	void setDataAt(int x, int y, int z, double d )
-	{	emdata->set_value_at(x,y,z, static_cast<float>(d));
-	}
-
-	void pad(int padBy, double padValue);
-
-
-
-	void curveSkeleton(float thr, Volume* svol);
-	//void curveSkeleton(Volume* grayvol, float lowthr, float highthr, Volume* svol);
-	void curveSkeleton2D(float thr, Volume * svol);
-	//void erodeHelix();
-	void erodeHelix(int disthr);
-	//int erodeSheet();
-	int erodeSheet(int disthr);
-	void skeleton(float thr, int off);
-	void skeleton(float thr, Volume* svol, Volume* hvol);
-	//void surfaceSkeletonPres(float thr);
-	void surfaceSkeletonPres(float thr, Volume* svol);
-
-
-
-	int countIntEuler( int ox, int oy, int oz );
-	int components6( int vox[3][3][3] );
-	int components26( int vox[3][3][3] );
-	int countInt( double vox[3][3][3] );
-	int countExt( double vox[3][3][3] );
-	int hasCell( int ox, int oy, int oz );
-	int hasCompleteSheet( int ox, int oy, int oz );
-	int getNumNeighbor6( int ox, int oy, int oz );
-	int getNumPotComplex( int ox, int oy, int oz );
-	int getNumPotComplex2( int ox, int oy, int oz );
-	int hasCompleteHelix( int ox, int oy, int oz );
-	//int hasCompleteHelix( int ox, int oy, int oz, Volume* fvol );
-	int isFeatureFace( int ox, int oy, int oz );
-	int isHelixEnd( int ox, int oy, int oz, Volume* nvol );
-	int isHelixEnd( int ox, int oy, int oz );
-	int isSheetEnd( int ox, int oy, int oz );
-	//int isSheetEnd( int ox, int oy, int oz, Volume* nvol );
-	int isSimple( int ox, int oy, int oz );
-	Volume* markCellFace( );
-	/**
-	 * Normalize to a given range 
-	 */
-	void threshold( double thr, int out, int in, int boundary, bool markBoundary);
-	void threshold( double thr )
-	{	threshold( thr, 0, 1, 0, true) ;
-	}
-	void threshold( double thr, int out, int in )
-	{	threshold( thr, out, in, out, true) ;
-	}
-	void threshold( double thr, int out, int in, int boundary)
-	{	threshold(thr, out, in, boundary, true);
-	}
-};
-
-//**********************************************************************
-// GridQueue2
-//**********************************************************************
-class GridQueue2
-{
-	gridQueueEle* head ;
-	gridQueueEle* pre ;
-	gridQueueEle* prepre ;
-	gridQueueEle* cur ;
-	int numEles ;
-
-public:
-
-	GridQueue2( )
-	{
-		head = NULL ;
-		cur = NULL ;
-		pre = NULL ;
-		prepre = NULL ;
-		numEles = 0 ;
-	}
-
-	~GridQueue2()
-	{
-		gridQueueEle* ele;
-		reset();
-		ele=getNext();
-		while ( (ele=remove()) != NULL ){};
-	}
-	gridQueueEle* getNext( )
-	{
-		if ( cur == NULL )
+		struct gridPoint
 		{
-			prepre = NULL ;
-			pre = NULL ;
-			cur = head ;
-		}
-		else
-		{
-			prepre = pre ;
-			pre = cur ;
-			cur = cur->next ;
-		}
+			int x, y, z;
+		};
 
-		return cur ;
+		class Volume {
+		public:
+			Volume(EMData* em);//eman2
+			Volume(int x, int y, int z);
+			Volume(int x, int y, int z, float val);
+			Volume(int x, int y, int z, int offx, int offy, int offz, Volume * vol);
+			~Volume( );
+
+			EMData* get_emdata(); //eman2
+			float getSpacingX();
+			float getSpacingY();
+			float getSpacingZ();
+			float getOriginX();
+			float getOriginY();
+			float getOriginZ();
+			int getSizeX();
+			int getSizeY();
+			int getSizeZ();
+			int getIndex(int x, int y, int z);
+			double getDataAt( int x, int y, int z );
+			double getDataAt( int index );
+			void setSpacing(float spx, float spy, float spz );
+			void setOrigin(float orgX, float orgY, float orgZ);
+			void setDataAt( int x, int y, int z, double d );
+			void setDataAt( int index, double d );
+
+
+			//Volume * getPseudoDensity();
+			//Volume * getDistanceField(int rad, float randf);
+			//int getNonZeroVoxelCount();
+			//void print();
+			//void subtract(Volume * vol);
+			void pad (int padBy, double padValue);
+			//void applyMask(Volume * maskVol, double maskValue, bool keepMaskValue);
+			//double getMin();
+			//double getMax();
+			//double getMaxValuePosition(int& maxX, int& maxY, int& maxZ);
+			//double getLocalMax(int x, int y, int z, int radius);
+			//double getLocalMin(int x, int y, int z, int radius);
+			//void fill(double val);
+			//int isBertrandBorder(int ox, int oy, int oz, int dir);
+			//int isBertrandEndPoint(int ox, int oy, int oz);
+			//int isHelix(int ox, int oy, int oz);
+			//int isSheet(int ox, int oy, int oz);
+			//Volume * getSheets(int minSize);
+			//Volume * getHelices(int minSize);
+			//int isEndPoint(int ox, int oy, int oz);
+			int getNumNeighbor6(int ox, int oy, int oz);
+			//int testIsSheetEnd(int ox, int oy, int oz);
+			//int isNoiseSheetEnd(int ox, int oy, int oz);
+			//int isInternal(int ox, int oy, int oz);
+			//int isInternal2(int ox, int oy, int oz);
+			//int hasIsolatedFace(int ox, int oy, int oz);
+			//int hasIsolatedEdge(int ox, int oy, int oz);
+			//int countFace(int ox, int oy, int oz, int m);
+			int hasCell(int ox, int oy, int oz);
+			Volume * markCellFace();
+			//Volume * markFaceEdge();
+			int hasCompleteSheet(int ox, int oy, int oz, Volume * fvol);
+			int hasCompleteSheet(int ox, int oy, int oz);
+			//int hasCompleteSheetSlow(int ox, int oy, int oz);
+			int hasCompleteHelix(int ox, int oy, int oz);
+			int hasCompleteHelix(int ox, int oy, int oz, Volume * fvol);
+			int isHelixEnd(int ox, int oy, int oz, Volume * nvol);
+			//int isFeature18(int ox, int oy, int oz);
+			//int isEdgeEnd(int ox, int oy, int oz);
+			//int isFaceEnd(int ox, int oy, int oz);
+			//int isNoise(int ox, int oy, int oz, int noise);
+			//int isNoiseHelixEnd(int ox, int oy, int oz);
+			int isHelixEnd(int ox, int oy, int oz);
+			int isSheetEnd(int ox, int oy, int oz, Volume * nvol);
+			//int getNumFaces( int ox, int oy, int oz );
+			//int getNumCells( int ox, int oy, int oz );
+			//int getNumIsolatedEdges( int ox, int oy, int oz );
+			//int getNumIsolatedFaces( int ox, int oy, int oz );
+			//int isFeatureFace2( int ox, int oy, int oz );
+			int isFeatureFace( int ox, int oy, int oz );
+			//int hasFeatureFace( int ox, int oy, int oz );
+			int isSheetEnd( int ox, int oy, int oz );
+			int isSimple( int ox, int oy, int oz );
+			int isPiercable( int ox, int oy, int oz );
+			//int isSimple2( int v[3][3][3] );
+			//int getNumPotComplex3( int ox, int oy, int oz );
+			//int getNumPotComplex4( int ox, int oy, int oz );
+			int getNumPotComplex( int ox, int oy, int oz );
+			int getNumPotComplex2( int ox, int oy, int oz );
+			//int getNumNeighbor( int ox, int oy, int oz );
+			//void setScoreNeighbor( GridQueue* queue );
+			int components6( int vox[3][3][3] );
+			int components26( int vox[3][3][3] );
+			int countExt( double vox[3][3][3] );
+			int countInt( double vox[3][3][3] );
+			int countIntEuler( int ox, int oy, int oz );
+			//void erodeNoTopo( float thr, int wid );
+			//void erodeTopo( float thr, int wid );
+			//void erode2( float thr, int wid );
+			//void erodeShapeTopo( float thr, int wid );
+			//void erodeAtom( float thr, int wid, Volume* avol );
+			void curveSkeleton( Volume* grayvol, float lowthr, float highthr, Volume* svol );
+			void curveSkeleton( float thr, Volume* svol );
+			void curveSkeleton2D( float thr, Volume* svol );
+			void skeleton( float thr, int off );
+			//void skeleton2( float thr, int off );
+			//void pointSkeleton( Volume* grayvol, float lowthr, float highthr, Volume* svol, Volume* hvol );
+			void skeleton( float thr, Volume* svol, Volume* hvol );
+			void erodeHelix( );
+			void erodeHelix( int disthr );
+			int erodeSheet( );
+			int erodeSheet( int disthr );
+			//void erodeSheetOld( int disthr );
+			//void addNoise( float thr, float pos );
+			//void sequentialSkeleton( float thr, int type, int noise );
+			//void dumbsurfaceSkeleton( float thr );
+			//void surfaceSkeleton( Volume* grayvol, float lowthr, float highthr );
+			//void surfaceSkeleton( float thr );
+			//void surfaceSkeleton( float thr, Volume* svol );
+			//void surfaceSkeletonOld( float thr );
+			void surfaceSkeletonPres( float thr, Volume * preserve );
+			//void bertrandSurfaceSkeleton2( float thr );
+			//void bertrandSurfaceSkeleton( float thr );
+			//void palagyiSurfaceSkeleton( float thr );
+			void threshold( double thr );
+			void threshold( double thr, int out, int in );
+			void threshold( double thr, int out, int in, int boundary);
+			void threshold( double thr, int out, int in, int boundary, bool markBoundary);
+			//void threshold2( double thr, int out, int in );
+			//void smooth( float alpha );
+			//void normalize( double min, double max );
+			//void normalize( double min, double max, double thresh, double ithresh );
+			//Volume * getDataRange(int x, int y, int z, int radius);
+			//double getInterpDataAt( double x, double y, double z );
+			//void rotateX ( double a );
+			//void toMathematicaFile( char* fname );
+			//void toMathematicaFile( char* fname, int lx, int hx, int ly, int hy, int lz, int hz );
+			//void toOFFCells( char* fname );
+			//void toOFFCells2( char* fname );
+			//void toOFFCells2( char* fname, float thr );
+			//void toOFFCells( char* fname, float thr );
+			//void segment( float threshold, Volume* lowvol, Volume* highvol, char* mrcfile );
+			//void segment( float threshold, Volume* vol, int maxDis, char* mrcfile );
+			//void writeSegmentation( float threshold, Volume* segvol, char* txtfile, char* mrcfile );
+			//void floodFill( float thr );
+			//void reduceComponent( int size );
+			//void reduceComponent2( int num );
+			//void floodFillPQR( int offset );
+			//void writeDistances( char* fname, int maxDis );
+			//void toPQRFile( char* fname, float spc, float minx, float miny, float minz, int padding );
+			//void toMRCFile( char* fname );
+		//private:
+			VolumeData * getVolumeData();
+
+		private:
+			VolumeData * volData;
+		};
+
+
+
 	}
-
-	void reset( )
-	{
-		prepre = NULL ;
-		pre = NULL ;
-		cur = NULL ;
-	}
-
-	int getNumElements( )
-	{
-		return numEles ;
-	}
-
-	void prepend( int xx, int yy, int zz )
-	{
-		gridQueueEle* ele = new gridQueueEle ;
-		ele->x = xx ;
-		ele->y = yy ;
-		ele->z = zz ;
-		ele->score = 0 ;
-		ele->next = head;
-		head = ele ;
-		numEles ++ ;
-
-		reset() ;
-	}
-
-	/* Remove current element pointed by cur */
-	gridQueueEle* remove( )
-	{
-		gridQueueEle* temp = cur ;
-		if ( cur != NULL )
-		{
-			cur = cur->next ;
-			delete temp ;
-
-			if ( pre != NULL )
-			{
-				pre->next = cur ;
-			}
-			else
-			{
-				head = cur ;
-			}
-			numEles -- ;
-		}
-
-
-		return cur ;
-	}
-
-	/* Switching pre and cur */
-	gridQueueEle* swap( )
-	{
-		if ( prepre != NULL )
-		{
-			pre->next = cur->next ;
-			cur->next = prepre->next ;
-			prepre->next = cur ;
-
-		}
-		else
-		{
-			pre->next = cur->next ;
-			cur->next = pre ;
-			head = cur ;
-		}
-		
-		gridQueueEle* temp = pre ;
-		pre = cur ;
-		cur = temp ;
-
-		return cur ;
-	}
-};
-
 }
+
 #endif
