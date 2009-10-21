@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 175)
+        self.assertEqual(len(processor_names), 176)
         
         if(IS_TEST_EXCEPTION):
             try:
@@ -1344,7 +1344,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('normalize.toimage', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
     def test_math_rotationalaverage(self):
-		"""test math.rotationalaverage processor ................"""
+		"""test math.rotationalaverage processor ............"""
 		e = EMData()
 		e.set_size(32,32,32)
 		e.process_inplace('testimage.noise.uniform.rand')
@@ -1392,7 +1392,7 @@ class TestProcessor(unittest.TestCase):
 		
 		
     def test_math_rotationalsubtract(self):
-        """test math.rotationalsubtract processor ..............."""	
+        """test math.rotationalsubtract processor ..........."""	
         e = EMData()
         e.set_size(32,32)
         e.process_inplace('testimage.noise.uniform.rand')
