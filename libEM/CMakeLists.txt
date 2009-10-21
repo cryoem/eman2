@@ -74,7 +74,11 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/varimax.cpp
     sparx/lbfgsb.cpp
     sparx/steepest.cpp
+    gorgon/grid_queue.cpp
+    gorgon/grid_queue2.cpp
+    gorgon/volume_data.cpp
     gorgon/volume.cpp
+    gorgon/skeletonizer.cpp
     )
 
 SET(LIB_GLEM_SOURCE 
