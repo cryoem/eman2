@@ -257,11 +257,12 @@ class Box:
 				gaussh_param = 1.0/(self.xsize)
 				template_min = 15
 				frequency_cutoff = 0.5*subsample_rate
-			
-				print "        Filter Gauss High: ", gaussh_param
-				print "        Downsampling rate: ", subsample_rate
-				print "        Minimum Template:  ", template_min
-				print "        Frequency cut-off: ", frequency_cutoff
+				
+				print "Generating downsampled image ..."
+				print "        Filter Gauss High : ", gaussh_param
+				print "        Downsampling rate : ", subsample_rate
+				print "        Minimum Template  : ", template_min
+				print "        Frequency cut-off : ", frequency_cutoff
 			
 				from filter import filt_gaussh
 				
@@ -802,7 +803,7 @@ class SincBlackmanSubsampledImage:
 		invert = params_mediator.get_invert()
 
 		image = BigImageCache.get_image_directly(self.image_name)
-		print "Info (mean, variance, minimum, maximum) of image we got: ", Util.infomask( image, None, True )		
+		#print "Info (mean, variance, minimum, maximum) of image we got: ", Util.infomask( image, None, True )		
 
 
 		image = filt_gaussh( image, gaussh_param ) #1.0/(self.box_size/ratio) )
@@ -813,10 +814,10 @@ class SincBlackmanSubsampledImage:
 		else:
 			self.smallimage = image.copy()
 
-		print "        Filter Gauss High: ", gaussh_param
-		print "        Downsampling rate: ", subsample_rate
-		print "        Minimum Template:  ", template_min
-		print "        Frequency cut-off: ", frequency_cutoff
+		print "        Filter Gauss High : ", gaussh_param
+		print "        Downsampling rate : ", subsample_rate
+		print "        Minimum Template  : ", template_min
+		print "        Frequency cut-off : ", frequency_cutoff
 
 		self.smallimage.set_attr("invert", invert)
 		self.smallimage.set_attr("gaussh_param", gaussh_param)
@@ -839,10 +840,10 @@ class SincBlackmanSubsampledImage:
 		Should generally use this approach to getting the image
 		'''
 		if self.smallimage is None or not self.query_params_match(params_mediator):
-			print "Regenerate downsampled image ... "
+			print "Generating downsampled image ... "
 			self.__update_image(params_mediator)
 		else: 
-			print "Retrieve downsampled image from cache ..."
+			print "Retrieving downsampled image from cache ..."
 		
 		return self.get_image()
 	
@@ -1868,8 +1869,8 @@ class Boxable:
 					image.mult(-1)
 				
 				# These attributes are hopefully generic and easily digestible
-				image.set_attr("ptcl_source_coord",[int(box.xcorner+box.xsize/2),int(box.ycorner+box.ysize/2)])
-				image.set_attr("ptcl_source_image",self.get_image_name())
+				image.set_attr("ptcl_source_coord", [int(box.xcorner+box.xsize/2),int(box.ycorner+box.ysize/2)])
+				image.set_attr("ptcl_source_image", self.get_image_name())
 
 				image.write_image(image_name,-1)
 				
@@ -3075,7 +3076,7 @@ class PawelAutoBoxer(AutoBoxer):
 		boxable.write_to_db()
 		boxable.get_auto_selected_from_db() 
 		self.write_to_db( True )
-		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
+		#print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 
         # auto_ctf is meant to be called for batch only...
 	def auto_ctf(self,boxable):
@@ -3102,26 +3103,26 @@ class PawelAutoBoxer(AutoBoxer):
 		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_input,0,self.ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
-		print "CTF tuple for original micrograph:", ctf_tuple
+		print "        CTF parameters for original micrograph:", ctf_tuple
 
 		ctf_tuple = [defocus,self.ctf_Cs,self.ctf_volt,self.pixel_output,0,self.ctf_ampcont]
-		print "CTF tuple for particles", ctf_tuple
+		print "        CTF parameters for particles:", ctf_tuple
 
 		return generate_ctf(ctf_tuple)
             
 
 	def run(self, imgname, boxable=None):
 		from sparx import get_im, filt_gaussl, filt_gaussh
-		print "running Gauss Convolution: "
-		print "     Input pixel size  : ", self.pixel_input
-		print "     Ouput pixel size  : ", self.pixel_output
-		print "     Gauss width       : ", self.gauss_width
-		print "     Box size          : ", self.box_size
-		print "     Image name        : ", imgname
-		print "     CCF low bound     : ", self.thr_low
-		print "     CCF high bound    : ", self.thr_hgh
-		print "     Use variance      : ", self.use_variance
-		print "     Invert Constant   : ", self.invert
+		print "Running Gauss convolution ..."
+		print "        Input pixel size  : ", self.pixel_input
+		print "        Ouput pixel size  : ", self.pixel_output
+		print "        Gauss width       : ", self.gauss_width
+		print "        Box size          : ", self.box_size
+		print "        Image name        : ", imgname
+		print "        CCF low bound     : ", self.thr_low
+		print "        CCF high bound    : ", self.thr_hgh
+		print "        Use variance      : ", self.use_variance
+		print "        Invert constant   : ", self.invert
 
 		if not(boxable is None):
 			boxable.delete_auto_boxes(True)
@@ -3139,7 +3140,7 @@ class PawelAutoBoxer(AutoBoxer):
                 [avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 		img -= avg
 		img /= sigma
-		print "stat: ",avg,sigma
+		#print "stat: ",avg,sigma
 
 
 		if not(self.parent is None):
@@ -3268,7 +3269,7 @@ class PawelAutoBoxer(AutoBoxer):
 		return False
 
 	def write_to_db(self, write_current=False):
-		print "Gauss Auto boxer wrote to db"
+		print "Gauss autoboxer writing to database ..."
 		trim = TrimPawelAutoBoxer(self)
 		data = {}
 		data["autoboxer_type"] = "Gauss"
@@ -3929,7 +3930,6 @@ class SwarmAutoBoxer(AutoBoxer):
 #			box.correct_resolution_centering(self.get_subsample_rate(),False)
 			box.center(Box.CENTERPROPAGATE,template,False,update_image)
 			boxes.append(box)
-		
 		
 	   	boxes.sort(compare_box_correlation)
 		return boxes

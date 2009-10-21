@@ -199,11 +199,11 @@ for single particle analysis."""
 	boxes=[]
 	if len(options.auto)>0:
 		if "cmd" in options.auto:
-			print "Autobox mode: ", options.auto[0]
-			print "Command line version"
+			#print "Autobox mode: ", options.auto[0]
+			print "Command-line autoboxer starting ..."
 			
 			do_gauss_cmd_line_boxing(options)
-			print "Command line autoboxer exiting ..."
+			print "Command-line autoboxer exiting ..."
 
 			sys.exit(1)
 
@@ -421,25 +421,25 @@ def do_gauss_cmd_line_boxing(options):
 		image_list = []
 
 	for image_name in options.filenames:
-		print "\nCommamd autoboxing", image_name
+		print "\nCommamd-line autoboxing", image_name
 		boxable = Boxable(image_name,None,autoboxer)
 		
 		if boxable.is_excluded():
-			print "Image",image_name,"is excluded and being ignored"
+			print "Image", image_name, "is excluded and being ignored"
 			continue
 
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 
 		if (options.do_ctf):
 			# new method to determine ctf...
-			print "Starting CTF determination"
+			print "Starting CTF determination ..."
 			this_ctf = autoboxer.auto_ctf(boxable)
 		else:
 			# create empty so that del later doesn't raise exceptions
 			this_ctf = None
 
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		print "Start autoboxer"
+		print "Starting autoboxer ..."
 		autoboxer.auto_box(boxable,False)
 
 		if options.write_coord_files:
@@ -449,6 +449,8 @@ def do_gauss_cmd_line_boxing(options):
 			# we don't want to use boxable.write_box_images, since these don't store all information.
 			#    do all this manually, then, but the code follows Boxable.write_box_images
 			from utilities import set_params2D
+			from os import path
+			
 			#img_name = boxable.get_image_file_name(options.outformat)
 			if (options.out_dir):
 				img_name = parm_dict["out_dir"] + boxable.get_image_file_name(options.outformat)
@@ -477,18 +479,22 @@ def do_gauss_cmd_line_boxing(options):
 					else:
 						remove_file(img_name)
 				
-			print "writing",boxable.num_boxes(),"boxed images to", img_name
+			basename, baseattr = path.splitext(path.basename(image_name))
+			
+			print "Writing", boxable.num_boxes(), "boxed images to", img_name, "..."
+			
 			for single_box in boxable.boxes:
 				if options.normproc!=None: normalize = True
-				img = single_box.get_box_image(normalize,options.normproc)
+				img = single_box.get_box_image(normalize, options.normproc)
 				# set all necessary attributes....
-				img.set_attr( "ctf" , this_ctf)
-				img.set_attr( "Micrograph", image_name )
-				img.set_attr( "Score", single_box.correlation_score )
-				img.set_attr( "ctf_applied" ,0 )
-				img.set_attr( "active", 1 )
+				img.set_attr("ctf", this_ctf)
+				img.set_attr("ptcl_source_image", basename)
+				img.set_attr("ptcl_source_coord", [single_box.xcorner+single_box.xsize/2, single_box.ycorner+single_box.xsize/2])				
+				img.set_attr("Score", single_box.correlation_score)
+				img.set_attr("ctf_applied" ,0)
+				img.set_attr("active", 1)
 				set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0])
-				img.write_image(img_name,-1)
+				img.write_image(img_name, -1)
 
 			if ("bdb" == options.outformat):
 				db_close_dict(img_name)
@@ -506,7 +512,7 @@ def do_gauss_cmd_line_boxing(options):
 	
 	# now check again for output file
 	if (options.out_file):
-		print "Merging particles ..."
+		print "\nMerging particles ..."
 		# check if target file exists already. if so, and if force is set, remove it
 		if parm_dict["out_file"].startswith("bdb:"):
 			# check for existing dict
@@ -707,7 +713,7 @@ class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 
 	def set_mode(self,mode):
 		if mode not in [EMBoxerModule.REFERENCE_ADDING,EMBoxerModule.MANUALLY_ADDING]:
-			print 'error, that is  an illegal mode'
+			print 'Error: that is an illegal mode'
 			return
 		
 		self.mode = mode
@@ -2443,7 +2449,7 @@ class EMBoxerModule(QtCore.QObject):
 		'''
 		Write the windowned particles, called when you clicked "write the output file"
 		'''
-		from utilities import get_image, generate_ctf
+		from utilities import get_image, generate_ctf, set_params2D
 		from string import replace
 		from os import path
 		
@@ -2453,11 +2459,6 @@ class EMBoxerModule(QtCore.QObject):
 			if format == "hdf": return name+"_particles.hdf"
 			else: return "bdb:"+name+"_particles"
 
-		def get_particle_coords_file_name(image_name):
-			from os import path
-			name, suffix = path.splitext(image_name)
-			return name+"_particles.crd"
-			
 		format = "bdb"
 		normalize = True
 		norm_method = "normalize.ramp.normvar"
@@ -2483,34 +2484,31 @@ class EMBoxerModule(QtCore.QObject):
 			else:
 				nima = 0
 
-			file_name2 = get_particle_coords_file_name(name)
-			if os.path.exists(file_name2):
-				f = open(file_name2, "a")
-			else:
-				f = open(file_name2, "w")
-			
 			new_nima = len(self.boxable.boxes)
+			
+			# Commented by Zhengfan Yang on 10/21/09
+			# The purpose of variable smallimage is to store the downsampled micrograph in the interactive mode so that it only needs to be downsamples once
+			# In the automated mode, this variable had no effect at all.
 			smallimage = None
+			
+			print "Writing", new_nima, "particles to file", file_name, "..."
+
 			for i in xrange(new_nima):
 				b = self.boxable.boxes[i]
 				b.smallimage = smallimage 
 				img = b.get_box_image(normalize, norm_method, subsample_rate = subsample_rate)
 				smallimage = b.smallimage
-				img.set_attr("Micrograph", basename)
+				img.set_attr("ptcl_source_image", basename)
 				img.set_attr("Score", b.correlation_score)
 				img.set_attr("ctf", ctf_dict)
-				img.write_image(file_name, i+nima)
+				img.set_attr("active", 1)
+				set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0])
 				if b.correct_boxsize:
-					f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, b.xcorner+b.xsize/2, b.ycorner+b.xsize/2, b.xsize))
+					img.set_attr("ptcl_source_coord", [b.xcorner+b.xsize/2, b.ycorner+b.xsize/2])
 				else:
-					f.write("Image %5d:     X center = %5d     Y center = %5d     size = %4d \n"%(i+nima, int((b.xcorner+b.xsize/2.)*subsample_rate+0.5), 
-					     int((b.ycorner+b.xsize/2.0)*subsample_rate+0.5), int(b.xsize*subsample_rate+0.5)))
-				
-			
-			print "Wrote", new_nima, "particles to file", file_name
-			f.close()						
-			print "Wrote coordinates of", new_nima, "particles to file", file_name2
-
+					img.set_attr("ptcl_source_coord", [int((b.xcorner+b.xsize/2.0)*subsample_rate+0.5), int((b.ycorner+b.xsize/2.0)*subsample_rate+0.5)])
+				img.write_image(file_name, i+nima)
+			print "Writing finished."
 		return
 		'''
 		from emsprworkflow import E2BoxerProgramOutputTask
@@ -2958,7 +2956,8 @@ class CcfHistogram(QtGui.QWidget):
 				self.cur_ticker = 1
 
 			if not hasattr( self, "shapes" ):
-				self.shapes = self.parent().target.guiim.get_shapes().copy()
+				self.shapes = self.parent().target().guiim.get_shapes().copy()
+				#print "For testing:", self.shapes
 
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton and event.x() > 0 :
@@ -3602,7 +3601,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
-		self.pawel_option_vbox.addWidget(QtGui.QLabel("Gauss Conv's Parameters") )
+		self.pawel_option_vbox.addWidget(QtGui.QLabel("Parameters of Gauss convolution") )
 		global pawel_grid1
 		pawel_grid1 = QtGui.QGridLayout( )
 		self.pawel_option_vbox.addLayout(pawel_grid1)
@@ -3811,8 +3810,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		input_pixel_size = float(self.input_pixel_size.text())
 		output_pixel_size = float(self.output_pixel_size.text())
-		print "Input pixel size: ", input_pixel_size 
-		print "Output pixel size: ", output_pixel_size 
+		#print "Input pixel size: ", input_pixel_size 
+		#print "Output pixel size: ", output_pixel_size 
 
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
@@ -3820,9 +3819,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.estdef = QtGui.QLineEdit(str(defocus/10000.0), self)
 		pawel_grid1.addWidget( self.estdef, 7, 3 )
 		self.estdef.setEnabled(False)
-
- 		print "CTF estimation done"
- 		print "Estimated defocus value: ", defocus
 
 		# update ctf inspector values
 		if (self.ctf_inspector is not None):
@@ -3842,7 +3838,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from utilities import set_ctf
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# and rewrite image 
-		#img.write_image(image_name)
+		img.write_image(image_name)
+
+ 		print "CTF estimation done."
+ 		#print "Estimated defocus value: ", defocus
 		
 	def closeEvent(self,event):
 		
