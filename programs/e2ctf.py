@@ -89,7 +89,7 @@ images far from focus."""
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
-	
+	parser.add_option("--source_image",type="string",default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
@@ -258,7 +258,7 @@ def write_e2ctf_output(options):
 			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
-			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm)
+			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm,source_image=options.source_image)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
 				dbds = pdb.get(options.dbds,dfl={})
@@ -381,7 +381,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if debug : print "Processing ",filename
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 		if options.fixnegbg : 
@@ -440,7 +440,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 	
-def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,virtualout=None,storeparm=False,source_image=None):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -482,6 +482,15 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 
 	
 	for i in range(n):
+		if source_image!=None :
+			im1=EMData()
+			im1.read_image(stackfile,i,True)
+			try:
+				if im1["ptcl_source_image"]!=source_image : continue
+			except:
+				print "Image %d doesn't have the ptcl_source_image parameter. Skipping."%i
+				continue
+		
 		im1 = EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
@@ -571,14 +580,26 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 	
 	return
 
-def powspec(stackfile,mask=None,edgenorm=True,):
+def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	optionally apply a mask then compute the average
-	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
+	2-D power spectrum for the stack. If source_image is provided, then it
+	will only read particles with ptcl_source_image set to the specified value.
+	
+	Results returned as a 2-D FFT intensity/0 image"""
 	
 	n=EMUtil.get_image_count(stackfile)
 	
 	for i in range(n):
+		if source_image!=None :
+			im1=EMData()
+			im1.read_image(stackfile,i,True)
+			try:
+				if im1["ptcl_source_image"]!=source_image : continue
+			except:
+				print "Image %d doesn't have the ptcl_source_image parameter. Skipping."%i
+				continue
+
 		im=EMData(stackfile,i)
 		if edgenorm : im.process_inplace("normalize.edgemean")
 		if mask : im*=mask
@@ -598,12 +619,13 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power 
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
 	apotization to get an appoximate 'background' power spectrum. 2-D results returned as a 2-D FFT 
-	intensity/0 image. 1-D results returned as a list of floats.
+	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
+	will only read particles with ptcl_source_image set to the specified value.
 	
 	returns a 4-tuple with spectra for (1d particle,1d background,2d particle,2d background)
 	"""
@@ -616,6 +638,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	ys2=im.get_ysize()
 	if radius<=0 : radius=ys2/2.6
 	n=EMUtil.get_image_count(stackfile)
+	nn=0
 	
 	# set up the inner and outer Gaussian masks
 	try:
@@ -636,7 +659,16 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	
 	for i in range(n):
 		im1 = EMData()
+		if source_image!=None :
+			im1.read_image(stackfile,i,True)
+			try:
+				if im1["ptcl_source_image"]!=source_image : continue
+			except:
+				print "Image %d doesn't have the ptcl_source_image parameter. Skipping."%i
+				continue
+			
 		im1.read_image(stackfile,i)
+		nn+=1
 #		im1=EMData(stackfile,i)
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
@@ -660,17 +692,17 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		else: av2+=imf
 		
 	
-	av1/=(float(n)*av1.get_ysize()*av1.get_ysize()*ratio1)
+	av1/=(float(nn)*av1.get_ysize()*av1.get_ysize()*ratio1)
 	av1.set_value_at(0,0,0.0)
 	av1.set_complex(1)
 	av1["is_intensity"]=1
-	av1["ptcl_repr"]=n
+	av1["ptcl_repr"]=nn
 
-	av2/=(float(n)*av2.get_ysize()*av2.get_ysize()*ratio2)
+	av2/=(float(nn)*av2.get_ysize()*av2.get_ysize()*ratio2)
 	av2.set_value_at(0,0,0.0)
 	av2.set_complex(1)
 	av2["is_intensity"]=1
-	av2["ptcl_repr"]=n
+	av2["ptcl_repr"]=nn
 
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
@@ -871,13 +903,13 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	print
 
 	if len(dfbest1a)==1 :
-		best=[[0.0,[dfbest1a[0][1],400.0]]]
+		best=[[0.0,[dfbest1a[0][1],300.0]]]
 	else :
 		# Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
 		best=[]
 		for b1a in dfbest1a:
 			# our parameter set is (defocus,bfactor)
-			parm=[b1a[1],400.0]
+			parm=[b1a[1],300.0]
 
 	#		print "Initial guess : ",parm
 			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
@@ -932,7 +964,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 			# rerun the simplex with the new background
 			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
-			best[0][1][1]=400.0		# restart the fit with B=200.0
+			best[0][1][1]=250.0		# restart the fit with B=200.0
 			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
@@ -942,7 +974,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 			print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 	else:
 		# rerun the simplex with the new background
-		best[0][1][1]=200.0		# restart the fit with B=200.0
+		best[0][1][1]=250.0		# restart the fit with B=200.0
 		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
