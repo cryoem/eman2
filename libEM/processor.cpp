@@ -9563,9 +9563,9 @@ EMData* BinarySkeletonizerProcessor::process(EMData * image)
 	float threshold = params["threshold"];
 	int min_curvew = params.set_default("min_curve_width", 3);
 	int min_srfcw = params.set_default("min_surface_width", 4);
-	cout << "PeformPureJuSkeletonization" << endl;
+	//cout << "PeformPureJuSkeletonization" << endl;
 	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
-	cout << "skeletonization done" << endl;
+	//cout << "skeletonization done" << endl;
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
 	EMData* skel = vskel->get_emdata();
 	//skel->write_image("test-skel.mrc");
