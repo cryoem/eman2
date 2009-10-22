@@ -42,7 +42,6 @@ using namespace wustl_mm::SkeletonMaker;
 			//SetOrigin( obj.GetOriginX(), GetOriginY(), obj.GetOriginZ() );
 		}
 		VolumeData::~VolumeData() {
-			cout << "~VolumeData()" << endl;
 			if (owns_emdata)
 				delete emdata;
 		}
@@ -71,7 +70,7 @@ using namespace wustl_mm::SkeletonMaker;
 				default:
 					throw InvalidParameterException("VolumeData::GetSize requires an argument of 0, 1, or 2");
 			}
-			
+
 			return ret;
 
 		}
@@ -101,7 +100,7 @@ using namespace wustl_mm::SkeletonMaker;
 				default:
 					throw InvalidParameterException("VolumeData::GetSpacing requires an argument of 0, 1, or 2");
 			}
-			
+
 			return ret;
 		}
 
@@ -130,7 +129,7 @@ using namespace wustl_mm::SkeletonMaker;
 				default:
 					throw InvalidParameterException("VolumeData::GetOrigin requires an argument of 0, 1, or 2");
 			}
-			
+
 			return ret;
 		}
 

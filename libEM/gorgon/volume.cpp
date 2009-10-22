@@ -25,7 +25,6 @@ using namespace wustl_mm::SkeletonMaker;
 
 		Volume::~Volume( )
 		{
-			cout << "~Volume" << endl;
 			delete volData;
 		}
 
