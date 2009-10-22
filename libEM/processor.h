@@ -6509,7 +6509,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	class BinarySkeletonizerProcessor : public Processor
 	{
 	public:
-		//virtual EMData* process(EMData * image);
+		virtual EMData* process(EMData * image);
 		virtual void process_inplace(EMData * image);
 
 		virtual string get_name() const

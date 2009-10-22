@@ -9553,32 +9553,8 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 	}
 }
 
-//EMData* BinarySkeletonizerProcessor::process(EMData * image)
-//{
-//	using namespace wustl_mm::GraySkeletonCPP;
-//	using namespace wustl_mm::SkeletonMaker;
-//
-//	Volume * vimage = new Volume(image);
-//	VolumeSkeletonizer vskeletonizer;
-//	float threshold = params["threshold"];
-//	int min_curvew = params.set_default("min_curve_width", 3);
-//	int min_srfcw = params.set_default("min_surface_width", 4);
-//	cout << "PeformPureJuSkeletonization" << endl;
-//	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
-//	cout << "skeletonization done" << endl;
-//	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
-//	EMData* skel = 0;
-//	skel = vskel->get_emdata();
-//	skel->write_image("test-skel.mrc");
-//	EMData* copy = skel->copy();
-//	copy->write_image("test-skel-copy.mrc");
-//	return copy;
-//}
-
-void BinarySkeletonizerProcessor::process_inplace(EMData * image)
+EMData* BinarySkeletonizerProcessor::process(EMData * image)
 {
-	//EMData* em_skel = this->process(image);
-
 	using namespace wustl_mm::GraySkeletonCPP;
 	using namespace wustl_mm::SkeletonMaker;
 
@@ -9591,10 +9567,16 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
 	cout << "skeletonization done" << endl;
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
-	EMData* em_skel = vskel->get_emdata();
+	EMData* skel = vskel->get_emdata();
+	//skel->write_image("test-skel.mrc");
+	return skel;
+}
 
-	image->free_memory();
-	image = em_skel;
-	image->write_image("test-skel.mrc");
-	//BUG: Although "test-skel.mrc" is fine, the (*image) object becomes corrupt when this function returns
+void BinarySkeletonizerProcessor::process_inplace(EMData * image)
+{
+	EMData* em_skel = this->process(image);
+	*image = *em_skel;
+	delete em_skel;
+	em_skel = NULL;
+	return;
 }
