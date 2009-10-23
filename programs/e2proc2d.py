@@ -287,7 +287,8 @@ def main():
 
 		if not "outtype" in optionlist:
 			optionlist.append("outtype")
-
+		
+		multi_processors_index = 0
 		for option1 in optionlist:
 			
 			nx = d.get_xsize()
@@ -305,11 +306,10 @@ def main():
 				except: pass
 			
 			if option1 == "process":
-				fi = index_d[option1]
-				(processorname, param_dict) = parsemodopt(options.process[fi])
+				(processorname, param_dict) = parsemodopt(options.process[multi_processors_index])
 				if not param_dict : param_dict={}
 				d.process_inplace(processorname, param_dict)
-				#index_d[option1] += 1
+				multi_processors_index += 1
 
 			elif option1 == "mult" :
 				d.mult(options.mult)
