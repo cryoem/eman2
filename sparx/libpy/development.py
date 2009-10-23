@@ -2519,10 +2519,12 @@ def ali3d_e_G2(stack, ref_vol, maskfile=None, radius=-1, dtheta=2, opti_algorith
 	
 	return total_time, total_time2
 			
+def twoD_fine_search_nobound(args, data):
+	return data[0].get_pixel_conv7(args[0], args[1], 0.0, data[1])
+	
 def eqprojG3(args, data):
 	from utilities     import amoeba
 	from fundamentals  import ccf
-	from alignment     import twoD_fine_search
 	
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	temp = data[0].extract_plane(R, data[1])
@@ -2543,7 +2545,7 @@ def eqprojG3(args, data):
 	data2.append(ccf(temp, data[5]))
 	data2.append(data[6])
 	#  search for shift
-	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search, 1.e-5, 1.e-5, 500, data2)
+	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search_nobound, 1.e-5, 1.e-5, 500, data2)
 	
 	s2x = (nx-ps[0][0]*2)/2
 	s2y = (nx-ps[0][1]*2)/2
@@ -2741,7 +2743,6 @@ def ali3d_e_G4(stack, ref_vol, maskfile=None, radius=-1, dtheta=2):
 def eqprojG4(args, data):
 	from utilities    import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
-	from alignment    import twoD_fine_search
 
 	volft 	= data[0]
 	kb	= data[1]
@@ -2769,7 +2770,7 @@ def eqprojG4(args, data):
 	product = ccf(proj2x, refi)
 
 	data2 = [product, kb]
-	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search_nobound, 1.e-4, 1.e-4, 500, data2)
 
 	v = ps[1]
 	s2x = nx/2-ps[0][0]
