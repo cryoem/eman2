@@ -2520,7 +2520,7 @@ def ali3d_e_G2(stack, ref_vol, maskfile=None, radius=-1, dtheta=2, opti_algorith
 	return total_time, total_time2
 			
 def twoD_fine_search_nobound(args, data):
-	return data[0].get_pixel_conv7(args[0], args[1], 0.0, data[1])
+	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
 	
 def eqprojG3(args, data):
 	from utilities     import amoeba
