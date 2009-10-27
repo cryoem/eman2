@@ -2308,26 +2308,26 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 			yold = y+cnr2;
 
 			Assert( jt+kcirc <= lcirc );
-			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first
+			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first quadrant
 
 			xold = y+cns2;
 			yold = -x+cnr2;
 
 			Assert( jt+lt+kcirc <= lcirc );
-			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the second
+			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the fourth quadrant
 
 			if ( mode == 'f' || mode == 'F' ) {
 				xold = -x+cns2;
 				yold = -y+cnr2;
 
 				Assert( jt+lt+lt+kcirc <= lcirc );
-				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
+				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third quadrant
 
 				xold = -y+cns2;
 				yold = x+cnr2;
 
 				Assert( jt+lt+lt+lt+kcirc <= lcirc );
-				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
+				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the second quadrant
 			}
 		} // end for jt
 	} //end for it
