@@ -762,7 +762,7 @@ namespace EMAN
 
 		void insert_image(EMData *image, int num);
 
-		vector<float> alignment_2d(EMData *ref_image, int id);
+		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int id);
 
 	  private:
 	        float *image_stack;

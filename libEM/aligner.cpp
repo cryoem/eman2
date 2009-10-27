@@ -1625,21 +1625,29 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 			image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, int id) {
+vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_list, vector<float> sy_list, int id) {
 
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
 	float ts, tm;
-	float ang, sx, sy, mirror;
+	float ang, sx, sy, mirror, co, so, sxs, sys;
+	float *sx2, *sy2;
 	vector<float> align_result;
 
         ref_image = (float *)malloc(NX*NY*sizeof(float));
+	sx2 = (float *)malloc(NIMA*sizeof(float));
+	sy2 = (float *)malloc(NIMA*sizeof(float));
 
 	for (int y=0; y<NY; y++)
 		for (int x=0; x<NX; x++)
 			ref_image[y*NX+x] = (*ref_image_em)(x, y);
+	
+	for (int i=0; i<NIMA; i++) {
+		sx2[i] = sx_list[i];
+		sy2[i] = sy_list[i];
+	}
 
-        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY, id);
+        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY, sx2, sy2, id);
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
@@ -1653,24 +1661,29 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, int id) {
 					tm = ccf[base_address+l+ccf_offset];
 					if (ts > max_ccf) {
 						ang = float(l)/RING_LENGTH*360.0;
-						sx = kx*STEP;
-						sy = ky*STEP;
+						sx = -kx*STEP;
+						sy = -ky*STEP;
 						mirror = 0;
 						max_ccf = ts;
 					}
 					if (tm > max_ccf) {
-						ang = float(l)/RING_LENGTH*360.0;
-						sx = kx*STEP;
-						sy = ky*STEP;
+						ang = float(l)/RING_LENGTH*360.0; 
+						sx = -kx*STEP;
+						sy = -ky*STEP;
 						mirror = 1;
 						max_ccf = tm;
 					}
 				}
 			}
 		}
+		co =  cos(ang*M_PI/180.0);
+		so = -sin(ang*M_PI/180.0);
+		sxs = sx*co - sy*so;
+		sys = sx*so + sy*co;
+
 		align_result.push_back(ang);
-		align_result.push_back(sx);
-		align_result.push_back(sy);
+		align_result.push_back(sxs);
+		align_result.push_back(sys);
 		align_result.push_back(mirror);
 	}
 	return align_result;
