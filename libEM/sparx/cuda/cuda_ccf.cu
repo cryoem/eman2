@@ -60,7 +60,7 @@ texture<float, 1, cudaReadModeElementType> texim_points;
 texture<float, 1, cudaReadModeElementType> texim_shifts;
  
 /* Main */
-void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY, float *sx, float *sy, int id)
+void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
 {    
     float *d_subject_image_polar, *d_ref_image_polar;
     float *d_ccf;
@@ -85,7 +85,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
     int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
-    cudaSetDevice(id); 	
+    //cudaSetDevice(id); 	
 
     cudaArray *ref_image_array, *subject_image_array[NROW], *subject_image_array_left;
     dim3 GridSize1(NRING, NIMAGE_ROW);
@@ -127,16 +127,18 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	return;
     }
 
-    printf("Initialization on the host memory done.\n");
+    if (silent == 0) {
+	printf("Initialization on the host memory done.\n");
 
 
-    printf("\nMemory to be allocated on the video card:\n");
-    printf("For %5d subject images                      : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4/1000000.0);
-    printf("For reference image                           : %10.3f KB\n", NX*NY*4/1000.0);
-    printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
-    printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
-    printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*4/1000000.0);
-    printf("Total memory used                             : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE)*4/1000000.0);
+	printf("\nMemory to be allocated on the video card:\n");
+	printf("For %5d subject images                      : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4/1000000.0);
+	printf("For reference image                           : %10.3f KB\n", NX*NY*4/1000.0);
+	printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
+	printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
+	printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*4/1000000.0);
+	printf("Total memory used                             : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE)*4/1000000.0);
+    }
 
 
     /* Allocate the matrix for all NIMAGE subject images on the video card */
@@ -296,7 +298,11 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     cufftDestroy(plan_ref_image);
     cufftDestroy(plan_ccf);
     cufftDestroy(plan_ccf_rest);
-
+    
+    free(points);
+    free(shifts_ref);
+    free(shifts_subject);
+    
     return;
 }
 
