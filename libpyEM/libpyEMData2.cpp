@@ -89,7 +89,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, EMAN::
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_backproject_overloads_1_2, EMAN::EMData::backproject, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, EMAN::EMData::insert_scaled_sum, 2, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_overloads_1_2, add, 1, 2)
 
@@ -333,7 +333,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("ap2ri", &EMAN::EMData::ap2ri)
 	.def("ri2inten", &EMAN::EMData::ri2inten)
 	.def("insert_clip", &EMAN::EMData::insert_clip)
-	.def("insert_scaled_sum", &EMAN::EMData::insert_scaled_sum, EMAN_EMData_insert_scaled_sum_overloads_2_4())
+	.def("insert_scaled_sum", &EMAN::EMData::insert_scaled_sum, EMAN_EMData_insert_scaled_sum_overloads_2_4(args("block", "center", "scale", "mult_factor"), "Add a scaled image into another image at a specified location.\nThis is used, for example, to accumulate gaussians in\nprograms like pdb2mrc.py. The center of 'block' will be positioned at\n'center' with scale factor 'scale'. Densities will be interpolated in\n'block' and multiplied by 'mult'.\n \nblock - The image to inserted.\ncenter - The center of the inserted block in 'this'.\nscale - Scale factor, default to 1.0.\nmult_factor - Number used to multiply the block's densities, default to 1.0.\n \nexception - ImageDimensionException If 'this' image is not 2D/3D."))
 	.def("copy", &EMAN::EMData::copy, return_value_policy< manage_new_object >())
 	.def("copy_head", &EMAN::EMData::copy_head, return_value_policy< manage_new_object >())
 	.def("add", (void (EMAN::EMData::*)(float, int) )&EMAN::EMData::add, EMAN_EMData_add_overloads_1_2())
