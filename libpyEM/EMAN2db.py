@@ -589,6 +589,7 @@ class EMTaskQueue:
 		this and the task will be returned to the queue, unless it has failed MAXTASKFAIL times."""
 		try:
 			task=self.active[taskid]
+			if task==None: raise Exception
 			cpl=False
 		except:
 			try : 
