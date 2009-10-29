@@ -1135,8 +1135,8 @@ class TestImageIO(unittest.TestCase):
 		e.process_inplace('testimage.axes')
 		
 		fmts = get_supported_3d_formats()
-		fmts =  ["spi","mrc","icos","em"]
-		unsupported = ["hdf","img","xplor","pif","emim","vtk"] # so many that we can't use :(
+		fmts =  ["spi","mrc","icos","em", "hdf"]
+		unsupported = ["img","xplor","pif","emim","vtk"] # so many that we can't use :(
 		for fmt in fmts:
 			name = "testregionimage."+fmt
 			e.write_image(name)
