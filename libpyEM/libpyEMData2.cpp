@@ -75,19 +75,19 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_attr_default_overloads_1_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_clip_inplace_overloads_1_2, EMAN::EMData::clip_inplace, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, process_inplace, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, EMAN::EMData::process_inplace, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, process, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, EMAN::EMData::process, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, cmp, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, EMAN::EMData::cmp, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, align, 2, 5)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, EMAN::EMData::align, 2, 5)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, xform_align_nbest, 2, 6)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, EMAN::EMData::xform_align_nbest, 2, 6)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, project, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, EMAN::EMData::project, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_backproject_overloads_1_2, backproject, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_backproject_overloads_1_2, EMAN::EMData::backproject, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
@@ -293,15 +293,15 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("write_data",&EMAN::EMData::write_data,EMAN_EMData_write_data_2_6())
 	.def("read_data",&EMAN::EMData::read_data,EMAN_EMData_read_data_2_6())
 	.def("process_inplace", (void (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::process_inplace, EMAN_EMData_process_inplace_overloads_1_2(args("processorname", "params"), "Apply a processor with its parameters on this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary. default to None.\n \nNotExistingObjectError If the processor doesn't exist."))
-	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace, args("p"), "Call the process_inplace with an instance od Processor, usually this instancecan\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v}).\n \np - the processor pointer")
-	.def("process", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) const )&EMAN::EMData::process, EMAN_EMData_process_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-	.def("process", (EMAN::EMData* (EMAN::EMData::*)(EMAN::Processor*) const )&EMAN::EMData::process, return_value_policy< manage_new_object >())
-	.def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_2_3())
-	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6())
-	.def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5()[ return_value_policy< manage_new_object >() ])
-	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, return_value_policy< manage_new_object >() )
-	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2()[ return_value_policy< manage_new_object >() ])
+	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace, args("p"), "Call the process_inplace with an instance od Processor, usually this instancecan\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v}).\n \np - the processor object")
+	.def("process", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) const )&EMAN::EMData::process, EMAN_EMData_process_overloads_1_2(args("processorname", "params"), "Apply a processor with its parameters on a copy of this image, return result\nas a a new image. The returned image may or may not be the same size as this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary.\n \nreturn the processed result, a new image\n \nexception - NotExistingObjectError If the processor doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("process", (EMAN::EMData* (EMAN::EMData::*)(EMAN::Processor*) const )&EMAN::EMData::process, args("p"), "Call the process with an instance od Processor, usually this instance can\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v})\n \np - the processor object", return_value_policy< manage_new_object >())
+	.def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_2_3(args("cmpname", "with", "params"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist."))
+	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6(args("aligner_name", "to_img", "params", "nsoln", "cmp_name", "cmp_params"), "Align this image with another image, return the parameters of the \"n best\" solutions.\nThis function first added in the context of the 3D aligners used by e2tomohunter:\nwhich wants the n best solutions, as opposed to just the best. Return value is an\nordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in it.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\nnsoln - the number of solutions you want to receive in the return vector, default to 1.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to NUll.\n \nreturn an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys \"score\" (i.e. correlation score) and \"xform.align3d\" (Transform containing the alignment)\nexception - NotExistingObjectError If the alignment algorithm doesn't exist."))
+	.def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5(args("aligner_name", "to_img", "params", "cmp_name", "cmp_params"), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
+	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
 	.def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
 	.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
 	//.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace)
