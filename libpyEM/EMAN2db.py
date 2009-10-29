@@ -596,6 +596,10 @@ class EMTaskQueue:
 				cpl=True
 			except:
 				return
+		
+		if task==None : 
+			print "Warning: tried to requeue task ",taskid," but couldn't find it"
+			return
 
 		if task.failcount==MAXTASKFAIL :
 			self.task_aborted(taskid)
