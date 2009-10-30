@@ -449,7 +449,6 @@ namespace EMAN
 
 
 		/** Calculate Cross-Correlation Function (CCF).
-		 ** @exception ImageDimensionException if nx > 1 and nx < 2*radius + 1
 		 * Calculate the correlation of two 1-, 2-, or 3-dimensional
 		 * images.  Note: this method internally just calls the
 		 * correlation function from fundamentals.h.
@@ -461,6 +460,7 @@ namespace EMAN
 		 * specific flags.
 		 * @param center whether or not to center the image (bring bottom left corner to center)
 		 * @return Real-space image.
+		 * @exception ImageDimensionException if nx > 1 and nx < 2*radius + 1
 		 * @ingroup CUDA_ENABLED
 		 */
 		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT, bool center=false);
