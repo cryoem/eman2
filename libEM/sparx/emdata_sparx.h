@@ -34,7 +34,7 @@
  */
 
 #ifndef emdata__sparx_h__
-#define emdata__sparx_h__ 
+#define emdata__sparx_h__
 
 public:
 /** returns the fourier harmonic transform (FH) image of the current
@@ -45,7 +45,7 @@ public:
  */
 EMData *real2FH(float OverSamplekB);
 
-/** returns the fourier version of the image 
+/** returns the fourier version of the image
  * from the FH version. The current image is not changed. The result is in
  * real/imaginary format. The FH switch is set off.
  * @param Size is the size of the image to be returned
@@ -55,7 +55,7 @@ EMData *real2FH(float OverSamplekB);
  */
 EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
 
-/** returns the real version of the image 
+/** returns the real version of the image
  * from the FH version. The current image is not changed. The result is in
  * real format.
  * @param Size is the size of the image to be returned
@@ -64,36 +64,36 @@ EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
  * @return the real version of the data
  */
 EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
-		
-		
+
+
 /** Create a (1-D) rotationally averaged image.
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 1-D rotationally-averaged image
- */					
+ */
 EMData* rotavg();
 
 /** Create a 2-D or 3-D rotationally averaged image.
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 2-D or 3-D rotationally-averaged image
- */					
+ */
 EMData* rotavg_i();
 
 /** Multiply radially a 2-D or 3-D image by a 1-D image.
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 2-D or 3-D radially multiplied image
- */					
+ */
 EMData* mult_radial(EMData* radial);
 
-/** Calculates the Center of Gravity 
+/** Calculates the Center of Gravity
  *  and the Radius of Gyration of the image.
  *  @returns the mass and the radius as vectors.
- *  
+ *
  */
  vector<float> cog();
 
 
 		/** Calculate CCF in Fourier space as a function of spatial frequency
-                 * between a pair of 2-3D images (corners not included).
+		 * between a pair of 2-3D images (corners not included).
 		 * The input image 'with' must have the same size to 'this' image.
 		 * Input images can be either real or Fourier in arbitrary combination.
 		 *
@@ -113,8 +113,8 @@ EMData* mult_radial(EMData* radial);
 		vector <float> calc_fourier_shell_correlation(EMData * with, float w = 1.0f);
 
 		/** Subtract average outside of a circle
-		 *  
-		 *  
+		 *
+		 *
 		 *  @return image with sbtracted average outside of a circle..
 		 */
 		EMData* average_circ_sub() const;
@@ -148,19 +148,19 @@ EMData* mult_radial(EMData* radial);
 		 *  Modifies the current object.
 		 *
 		 * @param wptr Normalization data.
-		 * @param wptr2 
+		 * @param wptr2
 		 * @param myfft FFT data.
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int mult=1);		
+		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int mult=1);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
 		 *  Modifies the current object.
 		 *
 		 * @param wptr Normalization data.
-		 * @param wptr2 
+		 * @param wptr2
 		 * @param wptr3
 		 * @param myfft
 		 * @param tf Transform reference
@@ -168,16 +168,16 @@ EMData* mult_radial(EMData* radial);
 		 */
 /*   	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1); */
  	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int mult=1);
-   		   
+
    		   /**  Calculate Spectrum signal noise ratio (SSNR) accounting CTF correction
    		    *  a. 3D Wiener volume F_3D has been pre-calculated already. F_3D(k) = sum(k)(CTF_k*F_k)/{sum CTF_k^2 + 1/snr}
-   		    *  b. Terms calculated : |F_k|^2, |CTF_k|^2*||P^2D->3D*F_3D|^2,2*Re(CTF_k*P^2D->3D*F_3D*F_k^*) 
-   		    *  
+   		    *  b. Terms calculated : |F_k|^2, |CTF_k|^2*||P^2D->3D*F_3D|^2,2*Re(CTF_k*P^2D->3D*F_3D*F_k^*)
+   		    *
    		    */
 /*   		 void nn_wiener(EMData* wptr, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult); */
-   		   /** Calculate Wiener summation from the inserted 2D slice 
+   		   /** Calculate Wiener summation from the inserted 2D slice
    		   *   put the summation into 3D grids using nearest neighbour approximation
-   		   *   a. Map the 2D coordinates of the interted slice into 3D grid using 3D transformation  
+   		   *   a. Map the 2D coordinates of the interted slice into 3D grid using 3D transformation
    		   *   b. calculate 2D CTF_K^2  and CTF_K*F_K, and put them on the voxel of 3D volume
    		   *   c. count the number of images entering each boxel wptr3
    		   */
@@ -187,10 +187,10 @@ EMData* mult_radial(EMData* radial);
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
-		 * @param norm2 
+		 * @param norm2
 		 */
 		void symplane1(EMData* norm, EMData* norm2);
-		
+
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *
@@ -199,7 +199,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param norm3
 		 */
 		void symplane2(EMData* norm, EMData* norm2, EMData* norm3);
-		
+
 		/** Helper function for method nn4_ctf.
 		 *
 		 * @param j y fourier index (frequency)
@@ -253,21 +253,21 @@ EMData* mult_radial(EMData* radial);
 		 */
 		void symplane0_ctf(EMData* w);
 
-				
+
 		/** Symmetrize volume in real space.
-		 *  
+		 *
 		 *  @param[in] symmetry Point group of the target volume.
-		 *  
+		 *
 		 *  @return New symmetrized volume object.
 		 */
 		EMData* symvol(string symmetry);
 
-		
-		/** Rotate-Shift-Scale-Circulantly image 
+
+		/** Rotate-Shift-Scale-Circulantly image
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
@@ -277,15 +277,15 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_trans2D(float ang, float delx = 0.0f, float dely = 0.0f, float scale = 1.0f);
-		
-		/** Rotate-Shift-Scale image 
+
+		/** Rotate-Shift-Scale image
 		 *
 		 *  In contrast to rot_scale_trans2D, wrap aroud is not done circulantly so as to
 		 *  prevent artifacts from occurring.
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
@@ -295,32 +295,32 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New rotated/shifted/scaled image
 		 */
         EMData* rot_scale_trans2D_background(float ang, float delx = 0.0f, float dely = 0.0f, float scale = 1.0f);
-		
-		/** Rotate-Shift-Scale-Circulantly image 
+
+		/** Rotate-Shift-Scale-Circulantly image
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] RA Transform3D object
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_trans(const Transform &RA);
-		
-		/** Rotate-Shift-Scale image 
+
+		/** Rotate-Shift-Scale image
 		 *
-		 *  In contrast to rot_scale_trans, wrap around is not done circulantly 
-		 *  so as to prevent artifacts occurring during rotation. 
+		 *  In contrast to rot_scale_trans, wrap around is not done circulantly
+		 *  so as to prevent artifacts occurring during rotation.
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] RA Transform3D object
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_trans_background(const Transform &RA);
-		
+
 		/*
 				To restrict the value to [0, nx)
 		*/
@@ -329,17 +329,17 @@ EMData* mult_radial(EMData* radial);
 			while ( x >= (float)(nx) )  x -= nx;
 			return x;
 		}
-			
+
 		/*
 				To restrict the value to (-nx, nx)
-		*/			
+		*/
 		static inline float restrict2(float x, int nx) {
 			while ( x >=  (float)(nx) )  x -= nx;
 			while ( x <= -(float)(nx) )  x += nx;
 			return x;
 		}
 
-		
+
 
                 /** euclidean distance between two line
 		 *
@@ -347,12 +347,12 @@ EMData* mult_radial(EMData* radial);
 
 		//float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
                 float cm_euc(EMData* sinoj, int n1, int n2);
-                		
-		/** Rotate-Shift-Scale-Circulantly image using convolution 
+
+		/** Rotate-Shift-Scale-Circulantly image using convolution
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
@@ -365,18 +365,18 @@ EMData* mult_radial(EMData* radial);
 		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
 		EMData* downsample(Util::sincBlackman& kb, float scale = 1.0);
-		
+
 		EMData* rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input);
-		
+
 		EMData* rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
         EMData* rot_scale_conv_new_background(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
-						
-		/** Get pixel value image using convolution 
+
+		/** Get pixel value image using convolution
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
-		 *  
+		 *
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
 		 *  @param[in] delz Amount to shift rotation origin along z
@@ -389,9 +389,9 @@ EMData* mult_radial(EMData* radial);
 
 		float  get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb);
 
-	
+
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
-		 *  
+		 *
 		 *  The only requirement for the window function object is that
 		 *  it overload operator()(const float) and return a float.
 		 *
@@ -405,10 +405,10 @@ EMData* mult_radial(EMData* radial);
 		/*template<class Win>
 		float getconvpt2d(float x, float y, Win win, int size = 7);*/
 		float getconvpt2d_kbi0(float x, float y, Util::KaiserBessel::kbi0_win win, int size = 7);
-		
-		
+
+
 		/** 2-D rotation using gridding convolution.
-		 *  
+		 *
 		 *  The only requirement for the window function object is that
 		 *  it overload operator()(const float) and return a float.
 		 *
@@ -430,10 +430,10 @@ EMData* mult_radial(EMData* radial);
 		//	return rotconvtrunc2d(ang, kb.get_kbi0_win(), size);
 		//}
 		EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size);
-		
-		
+
+
 		/** 2-D rotation using gridding convolution and deconvolution.
-		 *  
+		 *
 		 *  This routine does deconvolve out the window function
 		 *  after rotation.
 		 *
@@ -459,12 +459,12 @@ EMData* mult_radial(EMData* radial);
 			return rot;
 		}
 #endif // 0
-		
-		
+
+
 		/** fft_shuffle -- Shuffle a Fourier image to put the origin at (0,ny/2)
-		 *  
+		 *
 		 *  Our usual FFT convention puts the origin at (0,0), but then
-		 *  grid points corresponding to iy > ny/2 correspond to 
+		 *  grid points corresponding to iy > ny/2 correspond to
 		 *  (unnormalized) frequencies iy-ny.  This routine rearranges
 		 *  the columns of the Fourier image so that iy varies from
 		 *  -ny/2 to ny/2 (or ny/2 - 1 for ny even).  This method acts
@@ -472,18 +472,18 @@ EMData* mult_radial(EMData* radial);
 		 *  this method a second time.
 		 */
 		void fft_shuffle();
-		
+
 		void pad_corner(float *pad_image);
-		
+
 		void shuffle_pad_corner(float *pad_image);
-		
+
 		/** extractpoint -- Gridding convolution
 		 *
 		 *  Note: Expected to be used in combination with fouriergridrot2d.
 		 *
 		 *  @param[in] xin x-position
 		 *  @param[in] yin y-position
-		 *  @param[in] kb  Kaiser-Bessel window 
+		 *  @param[in] kb  Kaiser-Bessel window
 		 *
 		 *  @return Complex gridding result
 		 *
@@ -492,15 +492,15 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 		std::complex<float> extractpoint(float xin, float yin, Util::KaiserBessel& kb);
-		
-		
+
+
 		/** extractplane -- Gridding convolution in 3D along a plane
 		 *
 		 *  Note: Expected to be used in combination with fourier gridding
 		 *        projections.
 		 *
 		 *  @param[in] tf  transform matrix defining the intended plane.
-		 *  @param[in] kb  Kaiser-Bessel window 
+		 *  @param[in] kb  Kaiser-Bessel window
 		 *
 		 *  @return Complex gridding plane
 		 *
@@ -509,12 +509,12 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 		EMData* extract_plane(const Transform& tf, Util::KaiserBessel& kb);
-		
+
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 
 		EMData* fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb);
-		
-		
+
+
 		/** divkbsinh -- Divide image by a Kaiser-Bessel sinh window.
 		 *
 		 *  @param[in] kb Kaiser-Bessel window object
@@ -525,8 +525,8 @@ EMData* mult_radial(EMData* radial);
 		 *        EMData::project() interface rather awkward here.
 		 */
 		void divkbsinh(const Util::KaiserBessel& kb);
-		
-		
+
+
 		/** masked_stats -- Compute image statistics under a mask
 		 *
 		 *  Specifically, compute the average and standard deviation
@@ -542,16 +542,16 @@ EMData* mult_radial(EMData* radial);
 
 
 		/** Search specified number peaks in 1D, 2D, or 3D real images.
-		* and output the peaks in descendent order: 
+		* and output the peaks in descendent order:
 		* The numbers coming out are: image dimension, then
 		* 1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
 		* ...
-		* 2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
+		* 2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center)
 		* ...
 		* 3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
 		* The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is constant.
 		* ...
-		* 
+		*
 		* @param[in] ml
 		* @param[in] invert
 		* */
@@ -566,9 +566,9 @@ EMData* mult_radial(EMData* radial);
 
 		float find_3d_threshold(float mass, float pixel_size);
 
-		  
+
 		 /* Peak (with a radius of hf_p) search for particle picking:
-									   */ 
+									   */
 		vector<float> peak_ccf(float hf_p);
 
 		/* pixel power operation function */
@@ -579,26 +579,26 @@ EMData* mult_radial(EMData* radial);
 
 		private:
 		//utility function for peak_search()
-		static bool peakcmp(const Pixel& p1, const Pixel& p2);  
+		static bool peakcmp(const Pixel& p1, const Pixel& p2);
 		public:
 		EMData* extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew);
 
-		/** Delete disconnected regions in a binary image 
+		/** Delete disconnected regions in a binary image
 		 *
 		 *  Works only for a volume.
-		 *  
+		 *
 		 *  @param[in] ix: x coordinate (with respect to the center) from which the search of the compact region begins.
 		 *  @param[in] iy: y coordinate (with respect to the center) from which the search of the compact region begins.
 		 *  @param[in] iz: z coordinate (with respect to the center) from which the search of the compact region begins.
 		 *  @return New binary image
 		 */
-		 
+
 		EMData* delete_disconnected_regions(int ix=0, int iy=0, int iz=0);
 
-		/** Apply helical symmetry 
+		/** Apply helical symmetry
 		 *
 		 *  Works only for a volume.
-		 *  
+		 *
 		 *  @param[in] pixel_size: pixel size in Angstroms.
 		 *  @param[in] dp: repeat in z direction in Angstroms.
 		 *  @param[in] dphi: angular repeat in degrees.
@@ -637,7 +637,7 @@ EMData* mult_radial(EMData* radial);
 	 *
 	 * @par Purpose: Create a new [normalized] [zero-padded] Fourier image.
 	 *
-	 * @par Method: Normalize (if requested), pad with zeros (if 
+	 * @par Method: Normalize (if requested), pad with zeros (if
 	 *      requested), extend along x for fft,
 	 *      and return the new  image.
 	 *
@@ -647,7 +647,7 @@ EMData* mult_radial(EMData* radial);
 	 *  @return [normalized,] [zero-padded,] [ft-extended] input image.
 	 */
 	EMData* norm_pad(bool do_norm, int npad = 1, int valtype=0);
-	
+
 	void center_origin();
 
 	void center_origin_yz();
@@ -661,12 +661,12 @@ EMData* mult_radial(EMData* radial);
 	EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 
 	/** Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).
-	*  
+	*
 	*  @param[in] nxni new x size (has to be larger/equal than the original x size)
 	*  @param[in] nyni new y size (has to be larger/equal than the original y size)
 	*  @param[in] nzni new z size (has to be larger/equal than the original z size)
 	*  @param RetReal
-	*  
+	*
 	*  @return New truncated up image.
 	*/
 	EMData* FourTruncate(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
