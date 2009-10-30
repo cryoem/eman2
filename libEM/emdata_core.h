@@ -95,8 +95,8 @@ void sub(const EMData & image);
 void subsquare(const EMData & image);
 
 
-/** multiply a number to each pixel value of the image.
- * @param n The number multiplied to 'this' image.
+/** multiply an integer number to each pixel value of the image.
+ * @param n The integer multiplied to 'this' image.
  */
 void mult(int n)
 {
@@ -104,8 +104,8 @@ void mult(int n)
 }
 
 
-/** multiply a number to each pixel value of the image.
- * @param f The number multiplied to 'this' image.
+/** multiply a float number to each pixel value of the image.
+ * @param f The float multiplied to 'this' image.
  */
 void mult(float f);
 

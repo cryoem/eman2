@@ -205,9 +205,9 @@ namespace EMAN
 
 
 		/** Get an inclusive clip. Pads to fill if larger than this image.
-		 * area can be 2D/3D.
+		 * .
 		 * @ingroup CUDA_ENABLED
-		 * @param area The clip area.
+		 * @param area The clip area, can be 2D/3D
 		 * @param fill the value to assign new pixels outside the area of the original image
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @return The clip image.
@@ -626,6 +626,8 @@ namespace EMAN
 		 * @param hist_size Histogram array's size.
 		 * @param hist_min Minimum histogram value.
 		 * @param hist_max Maximum histogram value.
+		 * @param brt
+		 * @param cont
 		 * @return histogram array of this image.
 		 */
 		vector <float> calc_hist(int hist_size = 128, float hist_min = 0, float hist_max = 0, const float& brt = 0.0f, const float& cont = 1.0f);
@@ -727,7 +729,7 @@ namespace EMAN
 		 * @param mode Either 0 or 1 or 2. mode 0 is a summed
 		 *   dot-product, larger value means better match; mode 1 is
 		 *   weighted phase residual, lower value means better match.
-		 * @param steps: 1/2 of the resolution of the map.
+		 * @param steps 1/2 of the resolution of the map.
 		 * @param horizontal In horizontal way or not.
 		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
 		 * @exception OutofRangeException If 'mode' is invalid.
@@ -753,7 +755,7 @@ namespace EMAN
 		/** cut a 2D slice out of a real 3D map. Put slice into 'this' image.
 		 *
 		 * @param map The real 3D map.
-		 * @param tr orientation of the slice as encapsulated in a Transform object
+		 * @param tr orientation of the slice as encapsulated in a Transform object.
 		 * @param interpolate Do interpolation or not.
 		 * @exception NullPointerException If map is NULL.
 		 * @exception ImageDimensionException If this image is not 2D.
