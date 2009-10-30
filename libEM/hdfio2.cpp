@@ -623,7 +623,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		dcount[1] = area->get_height();
 		dcount[2] = area->get_depth();
 
-		herr_t status2 = H5Sselect_hyperslab (dataspace, H5S_SELECT_SET, (const hssize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+		herr_t status2 = H5Sselect_hyperslab (dataspace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Define memory dataspace - the memory we will created for the region*/
  		hsize_t     dims[3];              /* size of the region in the memory */
