@@ -357,7 +357,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
 		 *  @param[in] kb convolution kernel
-		 *  @param[in] scale
+		 *  @param[in] scale Scaling factor (default=1.0)
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
