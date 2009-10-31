@@ -94,6 +94,10 @@ inline void set_data(float* data, const int x, const int y, const int z) {
 /** Dump the image pixel data in native byte order to a disk file.
  * @param fsp The filename to write the image data to
  * @param loc Location to seek to in the file before writing (size_t)
+ * @param area The image region you want to read, default 0 means read the whole image
+ * @param file_nx Image x size.
+ * @param file_ny Image y size.
+ * @param file_nz Image z size.
  * @author Steve Ludtke
  * @date Mon Jun 23, 2008
 */
