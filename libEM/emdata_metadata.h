@@ -280,8 +280,8 @@ inline Transform3D get_transform() const
 /** Define the 3D orientation of this particle, also
  * used to indicate relative rotations for reconstructions
  *
- * @param alt 'alt' Euler angle in EMAN convention.
  * @param az  'az' Euler angle in EMAN convention.
+ * @param alt 'alt' Euler angle in EMAN convention.
  * @param phi 'phi' Euler angle in EMAN convention.
  */
 inline void set_rotation(float az, float alt, float phi)
@@ -293,9 +293,9 @@ inline void set_rotation(float az, float alt, float phi)
 }
 
 
-/** Define the 3D orientation of this particle
- * Orientation information is extracted from a Transform3D object and stored internally
- * in EMAN (az,alt,phi) format
+/** Define the 3D orientation of this particle Orientation
+ * information is extracted from a Transform3D object and
+ * stored internally in EMAN (az,alt,phi) format
  * @param t3d a Transform3D object containing the particle orientation
  */
 inline void set_rotation(const Transform3D& t3d)
