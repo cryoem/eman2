@@ -3005,10 +3005,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-
 		ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
 	else:  ctf_2_sum = None
-	#s tartup
+	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 	
