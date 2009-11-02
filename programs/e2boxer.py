@@ -1374,6 +1374,9 @@ class SwarmBoxer:
 			
 			exc_x = box[0]/exclusion_shrink
 			exc_y = box[1]/exclusion_shrink
+			if exc_x >= exclusion_image.get_xsize() or exc_y > exclusion_image.get_ysize():
+				print "Box position (%i,%i) was outside exclusion image boundaries (%i,%i)... ignoring (email this to woolford@bcm.edu)" %(exc_x,exc_y,exclusion_image.get_xsize(),exclusion_image.get_ysize())
+				continue
 			if exclusion_image.get(exc_x,exc_y) != 0: boxes.append(box)
 			#else the particle was re-centered on an excluded region!
 		
