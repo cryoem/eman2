@@ -75,8 +75,8 @@ void add(const EMData & image);
 void addsquare(const EMData & image);
 
 
-/** subtract a number to each pixel value of the image.
- * @param f The number subtracted from 'this' image.
+/** subtract a float number to each pixel value of the image.
+ * @param f The float number subtracted from 'this' image.
  */
 void sub(float f);
 
@@ -121,8 +121,8 @@ void mult(const EMData & image, bool prevent_complex_multiplication=false);
 
 void mult_complex_efficient(const EMData & em, const int radius);
 
-/** make each pixel value divided by a number.
- * @param f The number 'this' image divided by.
+/** make each pixel value divided by a float number.
+ * @param f The float number 'this' image divided by.
  */
 void div(float f);
 
