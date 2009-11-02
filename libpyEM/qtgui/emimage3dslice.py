@@ -138,7 +138,16 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.generate_current_display_list()
 		self.updateGL()
 		
-	
+	def set_default_contrast_settings(self):
+		min = self.data.get_attr("minimum")
+		max = self.data.get_attr("maximum")
+#		
+#		self.data.add(-min)
+#		self.data.mult(1/(max-min))
+		self.bright = -min
+		if max != min:	self.contrast = 1.0/(max-min)
+		else: self.contrast = 1
+		
 	def set_data(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		
@@ -154,13 +163,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		
 		self.data = data
 		
-		min = self.data.get_attr("minimum")
-		max = self.data.get_attr("maximum")
-#		
-#		self.data.add(-min)
-#		self.data.mult(1/(max-min))
-		self.bright = -min
-		if max != min:	self.contrast = 1.0/(max-min)
+		self.set_default_contrast_settings()
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EM3DSliceInspector(self)
@@ -440,6 +443,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 
 class EM3DSliceInspector(QtGui.QWidget):
 	def __init__(self,target) :
+		self.busy = False
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.transform_panel = EMTransformPanel(target,self)
@@ -485,14 +489,22 @@ class EM3DSliceInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
-		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.set_contrast)
-		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.set_brightness)
+		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), self.on_contrast_changed)
+		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), self.on_brightness_changed)
+	
+	def on_contrast_changed(self,val):
+		if self.busy: return
+		self.target().set_contrast(val)
+	
+	def on_brightness_changed(self,val):
+		if self.busy: return
+		self.target().set_brightness(val)
 	
 	def set_contrast_bright(self,c,b):
+		self.busy = True
 		self.contrast.setValue(c)
 		self.bright.setValue(b)
-	
-	
+		self.busy = False
 	def update_rotations(self,t3d):
 		self.transform_panel.update_rotations(t3d)
 	
@@ -509,9 +521,14 @@ class EM3DSliceInspector(QtGui.QWidget):
 		return self.maintab.vbl
 	
 	def set_defaults(self):
+		self.target().set_default_contrast_settings()
+		self.set_contrast_bright(self.target().contrast,self.target().bright)
 		self.glcontrast.setValue(1.0)
 		self.glbrightness.setValue(0.0)
 		self.transform_panel.set_defaults()
+		
+		self.target().generate_current_display_list()
+		self.target().updateGL()
 
 	def get_main_tab(self):
 	

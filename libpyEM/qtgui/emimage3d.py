@@ -494,7 +494,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		glEnable(GL_NORMALIZE)
 	
 	def render(self):
-		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		#self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		glPushMatrix()
 		self.cam.position(True)
 		# the ones are dummy variables atm... they don't do anything
@@ -551,7 +551,7 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			self.data = new_data
 		else: self.data = data
 		
-		self.data.process_inplace("normalize.edgemean")
+		#self.data.process_inplace("normalize.edgemean")
 		
 		nx,ny,nz = self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()
 		
