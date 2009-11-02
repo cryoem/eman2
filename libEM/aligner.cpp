@@ -1597,13 +1597,13 @@ CUDA_Aligner::CUDA_Aligner() {
 	ccf = NULL;
 }
 
-CUDA_Aligner::~CUDA_Aligner() {
+#ifdef EMAN2_USING_CUDA
+void CUDA_Aligner::finish() {
 	if (image_stack) delete image_stack;
 	if (ccf) delete ccf;
 }
 
-#ifdef EMAN2_USING_CUDA
-void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky) {
+void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky) {
 
 	NIMA = nima;
 	NX = nx;
@@ -1613,6 +1613,7 @@ void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, f
 	STEP = step;
 	KX = kx;
 	KY = ky;
+	OU = ou;
 
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
@@ -1647,7 +1648,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 		sy2[i] = sy_list[i];
 	}
 
-        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, STEP, KX, KY, sx2, sy2, id, silent);
+        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 

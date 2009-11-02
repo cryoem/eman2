@@ -397,6 +397,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
 #ifdef EMAN2_USING_CUDA
     class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
+    	.def("finish", &EMAN::CUDA_Aligner::finish)
         .def("setup", &EMAN::CUDA_Aligner::setup)
         .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)

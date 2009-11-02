@@ -2643,9 +2643,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar = False, user_func_name="ref_ali2d", MPI=False):
+		CTF=False, snr=1.0, Fourvar = False, user_func_name="ref_ali2d", CUDA=False, MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, CUDA)
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
@@ -2865,12 +2865,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar = False, user_func_name="ref_ali2d"):
+			Fourvar = False, user_func_name="ref_ali2d", CUDA=False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
-	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, ali2d_single_iter_CUDA, max_pixel_error
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
@@ -2924,7 +2924,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		del active
 		nima = len(list_of_particles)
 	else:
-		nima =0
+		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
 	if myid != main_node:
@@ -3027,6 +3027,12 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	cs = [0.0]*2
 
 	for N_step in xrange(len(xrng)):
+	
+		if CUDA:
+			R = CUDA_Aligner()
+			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5))
+			for im in xrange(len(data)):	R.insert_image(data[im], im)
+					
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
@@ -3112,8 +3118,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        for im in xrange(len(data)):
 			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
 		        		old_ali_params.append([alphan, sxn, syn, mirror, scale])
-					
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+
+				if CUDA:
+					sx_sum, sy_sum = ali2d_single_iter_CUDA(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, R, CTF)
+				else:	
+					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
@@ -3141,6 +3150,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					for p in xrange(20):
 						print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
 					print_msg("\n\n\n")
+		if CUDA: R.finish()
 
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially

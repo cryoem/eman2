@@ -756,9 +756,9 @@ namespace EMAN
 	  public:
 	  	CUDA_Aligner();
 
-		~CUDA_Aligner();
+		void finish();
 
-		void setup(int nima, int nx, int ny, int ring_length, int nring, float step, int kx, int ky);
+		void setup(int nima, int nx, int ny, int ring_length, int nring, int ou,  float step, int kx, int ky);
 
 		void insert_image(EMData *image, int num);
 
@@ -767,7 +767,7 @@ namespace EMAN
 	  private:
 	        float *image_stack;
 		float *ccf;
-		int NIMA, NX, NY, RING_LENGTH, NRING, KX, KY;
+		int NIMA, NX, NY, RING_LENGTH, NRING, OU, KX, KY;
 		float STEP;
 	};
 

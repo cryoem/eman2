@@ -60,7 +60,7 @@ texture<float, 1, cudaReadModeElementType> texim_points;
 texture<float, 1, cudaReadModeElementType> texim_shifts;
  
 /* Main */
-void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
+void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
 {    
     float *d_subject_image_polar, *d_ref_image_polar;
     float *d_ccf;
@@ -173,8 +173,8 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     	for (j = 0; j < RING_LENGTH; j++) {
 		index = i*RING_LENGTH+j;
 		ang = float(j)/RING_LENGTH*PI*2;
- 	      	points[index*2] = (i+1)*sinf(ang);
-		points[index*2+1] = (i+1)*cosf(ang);
+ 	      	points[index*2] = (i+1)*sinf(ang)*float(OU)/float(NRING);
+		points[index*2+1] = (i+1)*cosf(ang)*float(OU)/float(NRING);
     	}
 	
     /* Fill the matrix for the coordinates of shifts for reference images (currently hard-wired to 0.0) */
@@ -337,10 +337,10 @@ __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, i
 	ri_si = ref_imag*sub_imag;
 	rr_si = ref_real*sub_imag;
 	ri_sr = ref_imag*sub_real;
-	ccf_s_real += rr_sr+ri_si;
-	ccf_s_imag += -rr_si+ri_sr;
-	ccf_m_real += rr_sr-ri_si;
-	ccf_m_imag += -rr_si-ri_sr;
+	ccf_s_real += (rr_sr+ri_si)*(i+1);
+	ccf_s_imag += (-rr_si+ri_sr)*(i+1);
+	ccf_m_real += (rr_sr-ri_si)*(i+1);
+	ccf_m_imag += (-rr_si-ri_sr)*(i+1);
     }
 
     ccf_index = (bx*BLOCK_SIZE+tx)*2;
