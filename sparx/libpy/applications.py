@@ -2960,6 +2960,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			print_msg("Stop iteration with         : maxit\n")
 		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
+		print_msg("Using CUDA                  : %s\n"%(CUDA))
+		print_msg("Number of GPUs              : %d\n"%(GPU))
 
 		
 	if maskfile:
