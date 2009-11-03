@@ -2249,14 +2249,18 @@ class EMBoxerModule(QtCore.QObject):
 			self.guiim.add_shapes(sh)
 			self.guiim.set_active(None,.9,.9,.4)
 		
-		if force_image_mx_remove: 
+		#if force_image_mx_remove: 
 			#self.ptcl.pop(box_num)
 			#self.guimx.set_data(self.ptcl)
-			if self.guimx != None:self.guimx.pop_box_image(box_num)
+			#if self.guimx != None:self.guimx.pop_box_image(box_num)
 
 		box = self.boxable.boxes[box_num]
 		
 		self.boxable.delete_box(box_num)
+		
+		if force_image_mx_remove:
+			self.guimx.remove_particle_image(box_num)
+		
 		# if the boxable was a reference then the autoboxer needs to be told. It will remove
 		# it from its own list and potentially do autoboxing
 		if box.isref:
