@@ -268,7 +268,7 @@ float& get_value_at_wrap(int x, int y, int z);
 float get_value_at_wrap(int x, int y) const;
 float& get_value_at_wrap(int x, int y);
 
-/** Get the pixel density value at coordinates (x,y).
+/** Get the pixel density value at coordinates (x).
  * Should only be called on 1D images - no errors are thrown
  * Wraps pixel values if they are negative - i.e. is circulant
  * For example, if x = -1, then the pixel at nx-1  is returned
@@ -334,7 +334,6 @@ float sget_value_at_interp(float x, float y, float z) const;
 
 
 /** Set the pixel density value at coordinates (x,y,z).
- * The validity of x, y, and z is not checked.
  * This implementation does bounds checking.
  *
  * @param x The x cooridinate.
@@ -411,7 +410,7 @@ inline void set_value_at(int x, int y, float v)
 
 
 /** Set the pixel density value at coordinates (x,y).
- * 2D image only. The validity of x, y, and z is not checked.
+ * 2D image only. The validity of x, y, is not checked.
  *
  * @param x The x cooridinate.
  * @param y The y cooridinate.
@@ -566,7 +565,7 @@ std::complex<float>& cmplx(const int ix) {
 
 
 /** return a image to the power of n
- * @param n	the power of this simage
+ * @param n	the power of this image
  * @return a image which is the nth power of this image
  * @exception InvalidValueException n must be >= 0
  */
@@ -603,12 +602,17 @@ EMData * real() const;
 
 
 /** return imaginary part of a complex image as a real image format.
- * for a real image, just return itself.
  * @return a real image which is the imaginary part of this image.
  * @exception InvalidCallException if this image is a real image
+ * @exception InvalidCallException if this image is a complex image in amplitude/phase format
  */
 EMData * imag() const;
 
+/** For a real image, it returns a same size image with abs() of each pixel.
+ * For a complex image, it returns a image in size (nx/2,ny,nz),
+ * the pixel value output[i]=sqrt(input[i]*input[i]+input[i+1]*input[i+1])
+ * @exception InvalidCallException this function call require a complex image in real/imaginary format.
+ * */
 EMData * absi() const;
 
 

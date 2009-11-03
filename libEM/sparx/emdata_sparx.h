@@ -79,6 +79,7 @@ EMData* rotavg();
 EMData* rotavg_i();
 
 /** Multiply radially a 2-D or 3-D image by a 1-D image.
+ * @param radial the 1-D image multiply to
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 2-D or 3-D radially multiplied image
  */
@@ -114,8 +115,7 @@ EMData* mult_radial(EMData* radial);
 
 		/** Subtract average outside of a circle
 		 *
-		 *
-		 *  @return image with sbtracted average outside of a circle..
+		 *  @return image with sbtracted average outside of a circle.
 		 */
 		EMData* average_circ_sub() const;
 
@@ -287,8 +287,8 @@ EMData* mult_radial(EMData* radial);
 		 *  rotated/translated/scaled.
 		 *
 		 *  @param[in] ang Rotation angle in degrees.
-		 *  @param[in] delx Amount to shift rotation origin along x
-		 *  @param[in] dely Amount to shift rotation origin along y
+		 *  @param[in] delx Amount to shift rotation origin along x (default=0.0)
+		 *  @param[in] dely Amount to shift rotation origin along y (default=0.0)
 		 *  @param[in] scale Scaling factor (default=1.0)
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @exception ImageDimensionException can not rotate 3 D image
@@ -341,12 +341,13 @@ EMData* mult_radial(EMData* radial);
 
 
 
-                /** euclidean distance between two line
-		 *
+		/** euclidean distance between two line
+		 * @param sinoj
+		 * @param n1
+		 * @param n2
 		 */
-
 		//float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
-                float cm_euc(EMData* sinoj, int n1, int n2);
+		float cm_euc(EMData* sinoj, int n1, int n2);
 
 		/** Rotate-Shift-Scale-Circulantly image using convolution
 		 *
@@ -567,8 +568,9 @@ EMData* mult_radial(EMData* radial);
 		float find_3d_threshold(float mass, float pixel_size);
 
 
-		 /* Peak (with a radius of hf_p) search for particle picking:
-									   */
+		 /** Peak (with a radius of hf_p) search for particle picking:
+		  * @param hf_p
+		  */
 		vector<float> peak_ccf(float hf_p);
 
 		/* pixel power operation function */

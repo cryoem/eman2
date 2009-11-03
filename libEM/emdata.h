@@ -818,6 +818,8 @@ namespace EMAN
 			return resolution;
 		}
 
+		/** Printing EMData params for debugging purpose.
+		 * */
 		void debug_print_parms()
 		{
 			std::cout << "Printing EMData params" << std::endl;
