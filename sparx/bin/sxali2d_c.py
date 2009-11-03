@@ -54,6 +54,8 @@ def main():
 	parser.add_option("--snr",   type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,help="compute Fourier variance")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="name of the reference preparation function")
+	parser.add_option("--CUDA", action="store_true", default=False,    help="whether to use CUDA program")
+	parser.add_option("--GPU", type="int", default=0,                  help="number of GPU available")
 	parser.add_option("--MPI", action="store_true", default=False,     help="whether to use MPI version ")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
@@ -76,7 +78,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.function, options.MPI)
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.function, options.CUDA, options.GPU, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

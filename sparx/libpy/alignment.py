@@ -81,7 +81,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	return sx_sum, sy_sum
 
 
-def ali2d_single_iter_CUDA(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, R, CTF=False, ali_params="xform.align2d"):
+def ali2d_single_iter_CUDA(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, R, GPUID, CTF, ali_params="xform.align2d"):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -118,7 +118,7 @@ def ali2d_single_iter_CUDA(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step,
 		sx_list.append(sxi)
 		sy_list.append(syi)
 
-	results = R.alignment_2d(tavg, sx_list, sy_list, 0, 1)	
+	results = R.alignment_2d(tavg, sx_list, sy_list, GPUID, 1)	
 
 	for im in xrange(len(data)):
 		[alphan, sxn, syn, mn] = combine_params2(0.0, -sx_list[im], -sy_list[im], 0, results[im*4], results[im*4+1], results[im*4+2], int(results[im*4+3]))
