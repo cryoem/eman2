@@ -85,7 +85,8 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
     int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
-    //cudaSetDevice(id); 	
+    // Unblock this line you have multiple GPU
+    //cudaSetDevice(id); 
 
     cudaArray *ref_image_array, *subject_image_array[NROW], *subject_image_array_left;
     dim3 GridSize1(NRING, NIMAGE_ROW);
