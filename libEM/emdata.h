@@ -359,8 +359,8 @@ namespace EMAN
 
 		/** Rotate then translate the image.
 		 * DEPRECATED USE EMData::Transform
-		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
@@ -371,8 +371,8 @@ namespace EMAN
 
 		/** Rotate then translate the image.
 		 * DEPRECATED USE EMData::Transform
-		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
@@ -412,8 +412,8 @@ namespace EMAN
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
 		 * @param da Rotation euler angle in degrees
-		 * @exception ImageFormatException If the 2 images are not the
-		 * same size.
+		 * @param mirror
+		 * @exception ImageFormatException If the 2 images are not the same size.
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return
 		 */
@@ -600,7 +600,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @return nwedge radial distributions packed into a single vector<float>
 		 */
-		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge,bool inten);
+		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten);
 
 
 		/** Replace the image its complex conjugate.
@@ -830,6 +830,11 @@ namespace EMAN
 			std::cout << "Done printing EMData params" << std::endl;
 		}
 
+		/**Set the x,y,z origin of the image
+		 * @param origin_x  the x origin
+		 * @param origin_y  the y origin
+		 * @param origin_z  the z origin
+		 * */
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 	private:
 		/** This EMDataFlags is deprecated. For anything which is currently handled by setting a
