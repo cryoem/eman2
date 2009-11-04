@@ -430,7 +430,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 			"a matrix  R is called orthogonal if\n"
 			"          R * transpose(R) = 1.\n"
 			"All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant"
-			"therefore equal to  \"\pm 1\"",
+			"therefore equal to  \"\\pm 1\"",
 			init<  >())
 		.def(init< const EMAN::Transform3D& >())
 		.def(init< const float&, const float&, const float& >())
