@@ -49,7 +49,11 @@ namespace  {
 	BOOST_PYTHON_MODULE(libpyBoxingTools2)
 	{
 		scope* EMAN_BoxingTools_scope = new scope(
-		class_< EMAN::BoxingTools>("BoxingTools", init<  >())
+		class_< EMAN::BoxingTools>("BoxingTools",
+				"BoxingTools is class for encapsulating common\n"
+				"boxing operations that may become expensive if\n"
+				"they are implemented in python.",
+				init<  >())
 		.def(init< const EMAN::BoxingTools& >())
 		.def("get_min_delta_profile", &EMAN::BoxingTools::get_min_delta_profile)
 		.def("is_local_maximum", &EMAN::BoxingTools::is_local_maximum)

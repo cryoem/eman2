@@ -78,7 +78,24 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 
 #ifdef EMAN2_USING_FTGL
 	scope* EMAN_FTGL_scope = new scope(
-	class_<EMAN::EMFTGL>("EMFTGL", init<  >())
+	class_<EMAN::EMFTGL>("EMFTGL",
+			"EMFTGL is an interface for rendering fonts in EMAN2 using FTGL\n"
+			"The EMFTGL has an instance of an EMFTGLFontManager which caches FTFonts.\n"
+			"Internally, everytime the EMFTGL is asked to render or obtain bounding boxes,\n"
+			"it asks its EMFTGLFontManager for an FTFont pointer usng the the current state\n"
+			"of all member variables. The EMFTGLFontManager may already have the correct\n"
+			"FTFont, or it may have to construct it (and store it for later use, if necessary).\n\n"
+			"The EMFTGL class is defined in terms of 5 things, them being\n"
+			"the font size, whether or not display lists are being used (in FTGL),\n"
+			"the font file itself (a .ttf file), the mode of font rendering (TEXTURE,\n"
+			"BITMAP etc), and the depth (which is only applicable when the font mode\n"
+			"is EXTRUDE in terms of FTGL). These five parameter act as an index when asking\n"
+			"the EMFTGLFontManager for the FTFont\n\n"
+			"The EMFTGLFontManager is intentionally not static - this is because in EMAN2\n"
+			"it is possible to be rendering accross multiple OpenGL contexts. When the EMFTGL\n"
+			"destructor is called the associated EMFTGLFontsManager is destroyed all with all\n"
+			"of its previously stored FTFont pointers.",
+			init<  >())
 	.def("render_string", &EMAN::EMFTGL::render_string)
 	.def("bounding_box", &EMAN::EMFTGL::bounding_box)
 	.def("set_font_file_name",&EMAN::EMFTGL::set_font_file_name)

@@ -122,7 +122,13 @@ BOOST_PYTHON_MODULE(libpyCmp2)
     ;
 
     scope* EMAN_Log_scope = new scope(
-    class_< EMAN::Log, boost::noncopyable >("Log", no_init)
+    class_< EMAN::Log, boost::noncopyable >("Log",
+    		"Log defines a way to output logging information.\n"
+    		"1) The logs can either go to standard output (default), or go to a user-given file.\n"
+    		"2) 4 verbose log levels are defined. by default, ERROR_LOG is used.\n"
+    		"3) Typical usage:\n"
+    		"Log.logger().set_level(Log.WARNING_LOG)\n",
+    		no_init)
         .def("logger", &EMAN::Log::logger, return_value_policy< reference_existing_object >())
         .def("begin", &EMAN::Log::begin)
         .def("end", &EMAN::Log::end, EMAN_Log_end_overloads_1_3())
@@ -142,7 +148,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
     delete EMAN_Log_scope;
 
     scope* EMAN_XYData_scope = new scope(
-    class_< EMAN::XYData >("XYData", init<  >())
+    class_< EMAN::XYData >("XYData", "XYData defines a 1D (x,y) data set.", init<  >())
         .def(init< const EMAN::XYData& >())
         .def("read_file", &EMAN::XYData::read_file)
         .def("write_file", &EMAN::XYData::write_file)
@@ -163,7 +169,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("get_ylist", &EMAN::XYData::get_ylist)
     );
 
-    class_< EMAN::XYData::Pair >("Pair", init< const EMAN::XYData::Pair& >())
+    class_< EMAN::XYData::Pair >("Pair", "a pair of float x and y", init< const EMAN::XYData::Pair& >())
         .def(init< float, float >())
         .def_readwrite("x", &EMAN::XYData::Pair::x)
         .def_readwrite("y", &EMAN::XYData::Pair::y)

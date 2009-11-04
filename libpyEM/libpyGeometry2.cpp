@@ -45,7 +45,11 @@ using namespace boost::python;
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyGeometry2)
 {
-	class_< EMAN::Region >("Region", init<  >())
+	class_< EMAN::Region >("Region",
+			"Region defines a 2D or 3D rectangular region specified by its\n"
+			"origin coordinates and all edges' sizes. The coordinates and"
+			"edge sizes can be integer or floating numbers.",
+			init<  >())
 		.def(init< int, int >())
 		.def(init< int, int, int, int >())
 		.def(init< int, int, int, int, int, int >())
@@ -81,7 +85,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
 		.def("get_size", &EMAN::Region::get_size)
 	;
 
-	class_< EMAN::Pixel >("Pixel", init< const EMAN::Pixel& >())
+	class_< EMAN::Pixel >("Pixel",
+			"Pixel describes a 3D pixel's coordinates and its intensity value.",
+			init< const EMAN::Pixel& >())
 		.def(init< int, int, int, float >())
 		.def_readwrite("x", &EMAN::Pixel::x)
 		.def_readwrite("y", &EMAN::Pixel::y)

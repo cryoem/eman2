@@ -151,7 +151,19 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	def("dump_symmetries", &EMAN::dump_symmetries);
 	def("dump_symmetries_list", &EMAN::dump_symmetries_list);
 
-	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("Symmetry3D", init<  >())
+	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("Symmetry3D",
+			"A base class for 3D Symmetry objects.\n"
+			"Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and\n"
+			"must also provide all of the rotational symmetric operations (get_sym(const int n)). They must also\n"
+			"provide the total number of unique symmetric operations with get_nsym (except in helical symmetry).\n"
+			"get_delimiter returns a dictionary with 'alt_max' and 'az_max' keys, which correspond to the\n"
+			"encompassing azimuth and altitude angles of the asymmetric unit. These can be interpreted in a\n"
+			"relatively straight forward fashion when dealing with C and D symmetries to demarcate the asymmetric\n"
+			"unit, however when dealing with Platonic symmetries the asymmetric unit is not so trivial.\n"
+			"see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry for figures and description of what we're doing\n"
+			"here, for all the symmetries, and look in the comments of the PlatonicSym classes themselves.\n"
+			"It inherits from a factory base, making it amenable to incorporation in EMAN2 style factories\n",
+			init<  >())
 		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
 		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
@@ -201,7 +213,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	typedef void (EMAN::Vec3f::*set_value_at_float)(int, const float&);
 	typedef void (EMAN::Vec3f::*set_value_float)(const float&, const float&,const float&);
 	typedef float (EMAN::Vec3f::*at_float)(int) const;
-    class_< EMAN::Vec3f >("Vec3f", init<  >())
+    class_< EMAN::Vec3f >("Vec3f", "typedef Vec3<float> Vec3f;", init<  >())
     	.def_pickle(Vec3f_pickle_suite())
         .def(init< float, float, float >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
@@ -251,7 +263,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	typedef EMAN::Vec3i (EMAN::Vec3i::*cross_int)(const EMAN::Vec3i&) const;
 	typedef void (EMAN::Vec3i::*set_value_at_int)(int, const int&);
 	typedef void (EMAN::Vec3i::*set_value_int)(const int&, const int&,const int&);
-    class_< EMAN::Vec3i >("Vec3i", init<  >())
+    class_< EMAN::Vec3i >("Vec3i", "typedef Vec3<int> Vec3i;", init<  >())
         .def(init< int, int,  int  >())
         .def(init< const std::vector<int,std::allocator<int> >& >())
         .def(init< const EMAN::Vec3i& >())
@@ -293,7 +305,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	typedef void (EMAN::Vec2f::*vec2f_set_value_at_float)(int, const float&);
 	typedef void (EMAN::Vec2f::*vec2f_set_value_float)(const float&, const float&);
 	typedef float (EMAN::Vec2f::*vec2f_at_float)(int) const;
-	class_< EMAN::Vec2f >("Vec2f", init<  >())
+	class_< EMAN::Vec2f >("Vec2f", "typedef Vec2<float> Vec2f;", init<  >())
 		.def(init< float, float >())
 		.def(init< const std::vector<float,std::allocator<float> >& >())
 		.def(init< const EMAN::Vec2i& >())
@@ -335,7 +347,23 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def( self /= other< float >() )
 	;
 
-    class_< EMAN::Quaternion >("Quaternion", init<  >())
+    class_< EMAN::Quaternion >("Quaternion",
+    		"Quaternion is used in Rotation and Transformation to replace Euler angles.\n\n"
+    		"Quaternions extend the concept of rotation in three dimensions to\n"
+    		"rotation in four dimensions. This avoids the problem of \"gimbal-lock\"\n"
+    		"and allows for the implementation of smooth and continuous rotation.\n\n"
+    		"Euler angles have the disadvantage of being\n"
+    		"susceptible to \"Gimbal lock\" where attempts to rotate an\n"
+    		"object fail due to the order in which the rotations are performed.\n\n"
+    		"Quaternions are a solution to this problem. Instead of rotating an\n"
+    		"object through a series of successive rotations, a quaternion allows\n"
+    		"the programmer to rotate an object through a single arbitary rotation axis.\n\n"
+    		"Because the rotation axis is specifed as a unit direction vector,\n"
+    		"it may be calculated through vector mathematics or from spherical\n"
+    		"coordinates ie (longitude/latitude).\n\n"
+    		"Quaternions offer another advantage in that they be interpolated.\n"
+    		"This allows for smooth and predictable rotation effects.",
+    		init<  >())
         .def(init< const EMAN::Quaternion& >())
         .def(init< float, float, float, float >())
         .def(init< float, const EMAN::Vec3f& >())
@@ -373,7 +401,37 @@ BOOST_PYTHON_MODULE(libpyTransform2)
     ;
 
 	scope* EMAN_Transform3D_scope = new scope(
-	class_< EMAN::Transform3D >("Transform3D", init<  >())
+	class_< EMAN::Transform3D >("Transform3D",
+			"These are  a collection of transformation tools: rotation, translation,\n"
+			"and construction of symmetric objects\n"
+			"Transform defines a transformation, which can be rotation,\n"
+			"translation, scale, and their combinations.\n\n"
+			"Internally a transformation is stored in a 4x4 matrix.\n"
+			"        a b c d\n"
+			"        e f g h           R        v\n"
+			" M=     j k m n    =      vpre     1    , where R is 3by3, v is 3by1\n"
+			"        p q r 1\n"
+			"The standard computer graphics convention is identical to ours after setting vpre to\n"
+			"zero and can be found in many references including Frackowiak et al; Human Brain Function\n\n"
+			"The left-top 3x3 submatrix\n\n"
+			"       a b c\n"
+			"  R =  e f g\n"
+			"       j k m\n\n"
+			"provides rotation, scaling and skewing (not yet implimented).\n\n"
+			"The cumulative translation is stored in (d, h, n).\n"
+			"We put the post-translation into (p, q, r), since it is convenient\n"
+			"to carry along at times. When matrices are multiplied or printed, these\n"
+			"are hidden to the user. They can only be found by applying the post_translation\n"
+			"method, and these elements are non-zero. Otherwise the post-translation method returns\n"
+			"the cumulative translationmlb\n\n"
+			"If rotations need to be found\n"
+			"around alternate origins, then brief calculations need to be performed\n"
+			"Pre and Post Translations should be kept as separate vectors\n\n"
+			"a matrix  R is called orthogonal if\n"
+			"          R * transpose(R) = 1.\n"
+			"All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant"
+			"therefore equal to  \"\pm 1\"",
+			init<  >())
 		.def(init< const EMAN::Transform3D& >())
 		.def(init< const float&, const float&, const float& >())
 // 		.def(init< const EMAN::Dict&, const string&, optional<const EMAN::Transform3D::EulerType> >())
@@ -450,7 +508,25 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 
 	delete EMAN_Transform3D_scope;
 
-	class_< EMAN::Transform >("Transform", init<  >())
+	class_< EMAN::Transform >("Transform",
+			"A Transform object is a somewhat specialized object designed specifically for EMAN2/Sparx storage of\n"
+			"alignment parameters and euler orientations.\n"
+			"It's designed to store four transformations in a specific order, namely\n"
+			"Transform = MTSR\n"
+			"Where M is a mirroring operation (about the x-axis) or the identity\n"
+			"T is a Translation matrix\n"
+			"S is a uniform scaling matrix\n"
+			"R is a rotation matrix\n"
+			"This means you can call set_scale, set_trans, set_rotation in any order but still have the operations arranged\n"
+			"internally in the order of MTSR. This is somewhat restrictive, for example in the context of how OpenGL handles\n"
+			"transformations, but in practice is nicely suited to the situations that arise in EMAN2 - namely, alignment and\n"
+			"projection orientation characterization.\n\n"
+			"Note that you can fool the Transform object into storing any matrix by using the constructors that take array arguments.\n"
+			"This can useful, for example, for shearing your image.\n\n"
+			"See http://blake.bcm.tmc.edu/emanwiki/Eman2TransformInPython for using it from Python and detailed discussion\n"
+			"See test_transform.py for examples of the way it is unit tested\n"
+			"See http://blake.bcm.tmc.edu/emanwiki/EMAN2/Tutorials/RotateTranslate for examples showing how to transform EMDatas with it.\n",
+			init<  >())
 //	class_< EMAN::Transform, std::auto_ptr<EMAN::Transform>  >("Transform", init<  >())
 		.def(init< const EMAN::Transform& >())
 		.def(init<const EMAN::Dict& >())

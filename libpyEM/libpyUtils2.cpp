@@ -329,7 +329,7 @@ int pyk_means_cont_table(array& grp1, array& grp2, array& stb, long int s1, long
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
 	scope* EMAN_Util_scope = new scope(
-		 class_< EMAN::Util>("Util", init<  >())
+		 class_< EMAN::Util>("Util", "Util is a collection of utility functions.", init<  >())
 		.def(init< const EMAN::Util& >())
 		.def("coveig", &EMAN::Util::coveig)
 		.def("coveig_for_py", &EMAN::Util::coveig_for_py)
@@ -651,7 +651,23 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     delete EMAN_Util_sincBlackman_scope;
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
-    class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
+    class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel",
+    		"1-D Kaiser-Bessel window function class.\n"
+    		"(It's a class so that the windowing parameters may be\n"
+    		"instantiated and held in the instance object.)\n\n"
+    		"The I0 version can be tabulated and interpolated upon\n"
+    		"demand, but the max error needs to be checked.  The\n"
+    		"\"vtable\" parameter corresponds to the maximum value of x\n"
+    		"for which the I0 window is non-zero.  Setting \"vtable\"\n"
+    		"different from \"v\" corresponds to a change in units of x.\n"
+    		"In practice, it is often handy to replace x in some sort\n"
+    		"of absolute units with x described in terms of grid\n"
+    		"intervals.\n\n"
+    		"The get_kbsinh_win and get_kbi0_win functions return\n"
+    		"single-argument function objects, which is what a\n"
+    		"generic routine is likely to want.\n\n"
+    		"see P. A. Penczek, R. Renka, and H. Schomberg, J. Opt. Soc. Am. _21_, 449 (2004)",
+    		init< const EMAN::Util::KaiserBessel& >())
         .def(init< float, int, float, float, int, optional< float, int > >())
         .def("sinhwin", &EMAN::Util::KaiserBessel::sinhwin, &EMAN_Util_KaiserBessel_Wrapper::default_sinhwin)
         .def("i0win", &EMAN::Util::KaiserBessel::i0win, &EMAN_Util_KaiserBessel_Wrapper::default_i0win)
@@ -663,14 +679,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_kbi0_win", &EMAN::Util::KaiserBessel::get_kbi0_win)
     );
 
-    class_< EMAN::Util::KaiserBessel::kbsinh_win >("kbsinh_win", init< const EMAN::Util::KaiserBessel::kbsinh_win& >())
+    class_< EMAN::Util::KaiserBessel::kbsinh_win >("kbsinh_win", "Sinh window function object", init< const EMAN::Util::KaiserBessel::kbsinh_win& >())
         .def(init< EMAN::Util::KaiserBessel& >())
         .def("get_window_size", &EMAN::Util::KaiserBessel::kbsinh_win::get_window_size)
         .def("__call__", &EMAN::Util::KaiserBessel::kbsinh_win::operator ())
     ;
 
 
-    class_< EMAN::Util::KaiserBessel::kbi0_win >("kbi0_win", init< const EMAN::Util::KaiserBessel::kbi0_win& >())
+    class_< EMAN::Util::KaiserBessel::kbi0_win >("kbi0_win", "I0 window function object", init< const EMAN::Util::KaiserBessel::kbi0_win& >())
         .def(init< EMAN::Util::KaiserBessel& >())
         .def("get_window_size", &EMAN::Util::KaiserBessel::kbi0_win::get_window_size)
         .def("__call__", &EMAN::Util::KaiserBessel::kbi0_win::operator ())
@@ -687,7 +703,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     ;
 
 
-    class_< EMAN::Util::Gaussian >("Gaussian", init< const EMAN::Util::Gaussian& >())
+    class_< EMAN::Util::Gaussian >("Gaussian",
+    		"Gaussian function class.\n\n"
+    		"Usage:\n"
+    		"   Gaussian gauss(sigma);\n"
+    		"   float g = gauss(x);",
+    		init< const EMAN::Util::Gaussian& >())
         .def(init< optional< float > >())
         .def("__call__", &EMAN::Util::Gaussian::operator ())
     ;
@@ -796,7 +817,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("size", &EMAN::ImageSort::size)
     ;
 
-    class_< EMAN::TestUtil >("TestUtil", init<  >())
+    class_< EMAN::TestUtil >("TestUtil", "TestUtil defines function assisting testing of EMAN2.", init<  >())
         .def(init< const EMAN::TestUtil& >())
         .def_readonly("EMDATA_HEADER_EXT", &EMAN::TestUtil::EMDATA_HEADER_EXT)
         .def_readonly("EMDATA_DATA_EXT", &EMAN::TestUtil::EMDATA_DATA_EXT)

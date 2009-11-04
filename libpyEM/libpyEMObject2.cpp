@@ -56,7 +56,11 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_TypeDict_put_overloads_2_3, put, 2, 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMObject2)
 {
-    class_< EMAN::TypeDict >("TypeDict", init<  >())
+    class_< EMAN::TypeDict >("TypeDict",
+    		"TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.\n"
+    		"It is mainly used to store processor-like class's parameter\n"
+    		"information: <parameter-name, parameter-type>.\n",
+    		init<  >())
         .def(init< const EMAN::TypeDict& >())
         .def("keys", &EMAN::TypeDict::keys)
         .def("size", &EMAN::TypeDict::size)

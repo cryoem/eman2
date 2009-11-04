@@ -67,7 +67,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_projection_by_nfft_overlo
 BOOST_PYTHON_MODULE(libpyPointArray2)
 {
     scope* EMAN_PointArray_scope = new scope(
-    class_< EMAN::PointArray >("PointArray", init<  >())
+    class_< EMAN::PointArray >("PointArray",
+    		"PointArray defines a double array of points with values in a 3D space.",
+    		init<  >())
         .def(init< const EMAN::PointArray& >())
         .def(init< unsigned int >())
         .def("zero", &EMAN::PointArray::zero)

@@ -414,7 +414,12 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
     scope* EMAN_Ctf_scope = new scope(
-    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", init<  >())
+    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf",
+    		"Ctf is the base class for all CTF model.\n"
+    		"Contrast transfer function (CTF) is the  function that\n"
+    		"describes the transfer of information from the object"
+    		"to the contrast observed in the image for electron microscopy.",
+    		init<  >())
         .def("from_string", pure_virtual(&EMAN::Ctf::from_string))
         .def("to_string", pure_virtual(&EMAN::Ctf::to_string))
         .def("from_dict", pure_virtual(&EMAN::Ctf::from_dict))
@@ -443,7 +448,9 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
     delete EMAN_Ctf_scope;
 
-    class_< EMAN::EMAN1Ctf, bases< EMAN::Ctf > , EMAN_EMAN1Ctf_Wrapper >("EMAN1Ctf", init<  >())
+    class_< EMAN::EMAN1Ctf, bases< EMAN::Ctf > , EMAN_EMAN1Ctf_Wrapper >("EMAN1Ctf",
+				"EMAN1Ctf is the CTF model used in EMAN1.",
+				init<  >())
         .def(init< const EMAN::EMAN1Ctf& >())
         .def(init<const std::vector<float>& >())
         .def_pickle(EMAN1Ctf_pickle_suite())
@@ -474,7 +481,9 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("equal", (bool (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN1Ctf::equal, (bool (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN1Ctf_Wrapper::default_equal)
     ;
 
-    class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf", init<  >())
+    class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf",
+    		"EMAN2Ctf is the default CTF model used in EMAN2",
+    		init<  >())
         .def(init< const EMAN::EMAN2Ctf& >())
         .def(init<const std::vector<float>& >())
         .def_pickle(EMAN2Ctf_pickle_suite())
