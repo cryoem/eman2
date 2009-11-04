@@ -2879,8 +2879,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	import os
 	import sys
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_MAX
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3023,6 +3023,16 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		sx_sum = 0.0
 		sy_sum = 0.0
 		a0 = -1.0e22
+		
+	recvcount = []
+	disp = []
+	for i in xrange(number_of_proc):
+		ib, ie = MPI_start_end(nima, number_of_proc, i)
+		recvcount.append(ie-ib)
+		if i == 0:
+			disp.append(0)
+		else:
+			disp.append(disp[i-1]+recvcount[i-1])
 
 	again = True
 	total_iter = 0
@@ -3111,19 +3121,17 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			cs = [float(cs[0]), float(cs[1])]
+			cs = cs.tolist()
 			if auto_stop:
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
 				old_ali_params = []
-			        for im in xrange(len(data)):
-			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
-		        		old_ali_params.append([alphan, sxn, syn, mirror, scale])
+			        for im in xrange(len(data)):  old_ali_params.append(get_params2D(data[im]))
 
 				if CUDA:
 					GPUID = myid%GPU
-					sx_sum, sy_sum = ali2d_single_iter_CUDA(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, R, GPUID, CTF)
+					sx_sum, sy_sum = ali2d_single_iter_CUDA(data, cs, tavg, R, GPUID, CTF)
 				else:	
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -3131,27 +3139,27 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 			        pixel_error = 0.0
 			        mirror_changed = 0
-				pixel_error_list = [-1.0]*nima
+				pixel_error_list = []
 			        for im in xrange(len(data)):
-			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
-			        	if old_ali_params[im][3] == mirror:
-		        			this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
+			        	ali_params = get_params2D(data[im]) 
+			        	if old_ali_params[im][3] == ali_params[3]:
+		        			this_error = max_pixel_error(*(old_ali_params[im][0:3]+ali_params[0:3]+(last_ring*2,)))
 		        			pixel_error += this_error
-						pixel_error_list[im+image_start] = this_error
+						pixel_error_list.append(this_error)
 			        	else:
 			        		mirror_changed += 1
 				mirror_changed = mpi_reduce(mirror_changed, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				pixel_error_list = mpi_reduce(pixel_error_list, nima, MPI_FLOAT, MPI_MAX, main_node, MPI_COMM_WORLD)
+				pixel_error_list = mpi_gatherv(pixel_error_list, len(data), MPI_FLOAT, recvcount, disp, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				if myid == main_node:
 					print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
 					print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/(nima-mirror_changed)))
-					pixel_error_list_reduced = pixel_error_list.tolist()
+					pixel_error_list = pixel_error_list.tolist()
 					for i in xrange(nima-1, -1, -1):
-						if pixel_error_list_reduced[i] < 0:  del pixel_error_list_reduced[i]
-	 				region, hist = hist_list(pixel_error_list_reduced, 20)	
+						if pixel_error_list[i] < 0:  del pixel_error_list[i]
+	 				region, hist = hist_list(pixel_error_list, 20)	
 					for p in xrange(20):
-						print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
+						print_msg("      %10.6f: %5d\n"%(region[p], hist[p]))
 					print_msg("\n\n\n")
 		if CUDA: R.finish()
 
