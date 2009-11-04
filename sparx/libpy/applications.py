@@ -3043,7 +3043,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if CUDA:
 			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5))
-			for im in xrange(len(data)):	R.insert_image(data[im], im)
+			if CTF:
+				for im in xrange(len(data)):
+					ctf_params = data[im].get_attr('ctf')
+					img = filt_ctf(data[im], ctf_params)
+					R.insert_image(img, im)
+			else:
+				for im in xrange(len(data)):
+					R.insert_image(data[im], im)
 					
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
