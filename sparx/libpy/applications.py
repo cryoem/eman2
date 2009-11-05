@@ -3162,7 +3162,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if myid == main_node:
 					print_msg("Mirror consistent rate = %8.4f%%\n"%(float(mirror_consistent)/nima*100))
 					print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/mirror_consistent))
-					pixel_error_list = map(int, pixel_error_list)
+					pixel_error_list = map(float, pixel_error_list)
 					for i in xrange(nima-1, -1, -1):
 						if pixel_error_list[i] < 0:  del pixel_error_list[i]
 	 				region, hist = hist_list(pixel_error_list, 20)	

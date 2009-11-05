@@ -7453,7 +7453,7 @@ def hist_list(data, nbin = -1):
 	fmaxi = max(data)
 	fmini = min(data)
 
-	binsize_i = (fmaxi-fmini)/nbin
+	binsize_i = (fmaxi-fmini)/float(nbin)
 	start_i = fmini
 
 	region = [None]*nbin
