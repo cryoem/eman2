@@ -10847,21 +10847,21 @@ def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose )
 
 	ana = Analyzers.get( "varimax", {"mask":mask} )
 	sumeig =0.0
-	from utilities import info
-	from math import sqrt
+	#from utilities import info
+	#from math import sqrt
 	for i in imglist:
 		data = get_im( input_stack, i)
 		eigval = data.get_attr_default('eigval', 1.0)
 		sumeig += eigval
-		Util.mul_scalar(data, sqrt(eigval))
-		info(data)
+		#Util.mul_scalar(data, sqrt(eigval))
+		#info(data)
 		ana.insert_image( data )
 		#print "Inserting image %4d" % i
 	del data
 	vecs = ana.analyze()
 
-	print  sumeig/len(vecs)
 	sumeig /= len(vecs)
+	#print  sumeig
 	for iout in xrange(len(vecs)):
 		info(vecs[iout])
 		vecs[iout].set_attr('eigval', sumeig)
