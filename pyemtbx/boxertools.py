@@ -1886,7 +1886,7 @@ class Boxable:
 		
 		box.move(dx,dy)
 
-	def add_box(self,box):	
+	def add_box(self,box):
 		if not isinstance(box,Box):
 			print "You can not add a box to this box set if it is not of type Box"
 			return;
@@ -1900,6 +1900,7 @@ class Boxable:
 			box.r = 0
 			box.g = 0
 			box.b = 0
+			  
 		else: # box.ismanual = True
 			box.rorig = 1			# RGB red
 			box.gorig = 1			# RGB green
@@ -2299,7 +2300,50 @@ class Boxable:
 		#print scores
 		
 		print "received finish signal"
-
+	
+	##################################################################################
+	# procedures for saving boxes and particle images to database so user can start where he left off
+	
+	def save_boxes_to_database(self,image_name):
+		self.set_database_entry(image_name,"boxes",self.get_boxes_for_database())
+		
+		
+	def set_database_entry(self,image_name,key,value,database="bdb:e2boxercache"):
+		'''
+		write a key/object pair to the Image Database Dictionary associat
+		'''
+		
+		db = db_open_dict(database+"#"+key)
+		db[image_name] = value	
+		#db_close_dict(database+"#"+key)
+		
+	def get_boxes_for_database(self):
+		return [[box.xcorner,box.ycorner,box.xsize, box.ysize,box.isref,box.correlation_score,box.image_name] for box in self.boxes]	
+		
+		
+	def load_boxes_from_database(self, image_name):
+		
+		data = self.get_database_entry(image_name,"boxes")
+		if data != None:
+			for x,y,xsize,ysize,isref,correlation_score,imgname in data:
+				newbox = Box(x,y,xsize,ysize,isref,correlation_score,imgname)
+				self.add_box(newbox)
+		
+	
+	
+	def get_database_entry(self,image_name,key,database="bdb:e2boxercache",dfl=None):
+		if not db_check_dict(database+"#"+key) and dfl==None:  return None
+		db = db_open_dict(database+"#"+key)
+	
+		if db.has_key(image_name):
+			return db[image_name]
+		elif dfl != None:
+			db[image_name] = dfl
+			return dfl
+		else: return None
+		#db_close_dict(database+"#"+key)
+	##################################################################################
+	
 def merge_idd_key_entry_memory_to_disk(image_name,key):
 	dbkey = get_idd_key(image_name)
 	
