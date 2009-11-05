@@ -71,6 +71,7 @@ from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication,EMQtWidgetModule
 import weakref
 
+
 if os.name == 'nt':
 	def kill(pid):
 		"""kill function for Win32"""
@@ -150,6 +151,13 @@ for single particle analysis."""
 	#if options.method == "Swarm":
 	#	print "Note: Please consider switching to e2boxer2.py"
   
+  	#########
+	# only let user open one micrograph at a time
+	if len(args) > 1: 
+		print "can't open more than one micrograph file at a time! exiting...."
+		return
+	#########
+		
 
 	filenames = []
 	error_message = []
@@ -1229,6 +1237,21 @@ class EMBoxerModule(QtCore.QObject):
 		self.required_options = ["filenames","running_mode"]
 		
 		self.boxable = None
+		
+		self.filestoprocess=None # this is to deal with the case where file is chosen from form, in which case options.filenames=[]
+		if len(options.filenames) > 0:# file is chosen from cmd line
+			self.filestoprocess = options.filenames
+			# modify each filename so it contains the path. otherwise, if we start from gui mode and choose file from form, and then do
+			# same gui mode and choose same file from cmd line, the file names will be stored in the cache differently, and the previously
+			# picked particles won't be loaded. This is because when file is chosen in form, the file name contains entire directory path, whereas when
+			# file is chosen from cmd line, the file name is simply the name of the file.
+			numfiles = len(self.filestoprocess)
+			for i in xrange(numfiles):
+				fname = self.filestoprocess[i]
+				self.filestoprocess[i] = os.getcwd() + '/' +fname
+				
+			
+		
 		self.guictl_module = None
 		self.guiim = None
 		self.guimx = None
@@ -1252,11 +1275,17 @@ class EMBoxerModule(QtCore.QObject):
 		else: # if the first if statement is false then one of the second must be true
 			print "this shouldn't happen"
 	
+	
 	def show_guis(self):
 		'''
 		Generally called after initialization. 
 		Will emit the module_idle signal if no guis/forms currently exist, this can be useful for closing the module.
 		'''
+			
+		if (self.filestoprocess != None):
+			self.boxable.load_boxes_from_database(self.filestoprocess[0])
+			self.box_display_update_cachedboxes()
+		
 		something_shown = False
 		# guiim should be last so that it's at the front
 		# guimx should come after guimit in the desktop, just because it's a better setup
@@ -1264,7 +1293,7 @@ class EMBoxerModule(QtCore.QObject):
 			if gui != None:
 				something_shown = True
 				get_application().show_specific(gui)
-				
+					
 		if not something_shown:
 			self.emit(QtCore.SIGNAL("module_idle"))
 	
@@ -1280,10 +1309,17 @@ class EMBoxerModule(QtCore.QObject):
 		options = EmptyObject()
 		for key in params.keys():
 			setattr(options,key,params[key])
+			
+		self.filestoprocess = options.filenames
+		
 		
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
 			from emsprworkflow import error
 			error("Please select the files you want to process","")
+			return
+		elif len(options.filenames) > 1:
+			from emsprworkflow import error
+			error("Can only open one micrograph at a time","")
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
@@ -1324,6 +1360,7 @@ class EMBoxerModule(QtCore.QObject):
 	def __gui_init(self,options):
 		
 		if not hasattr(options,"boxes"): options.boxes = [] # this is a temporary workaround
+			
 		#self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,options.method)
 		self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,"Gauss") 
 		
@@ -1530,6 +1567,7 @@ class EMBoxerModule(QtCore.QObject):
 			global BigImageCache
 			self.__init_guiim(BigImageCache.get_image_directly(current_name),current_name)
 			
+		
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		
 		self.guiim.set_frozen(self.boxable.is_frozen())
@@ -1888,6 +1926,8 @@ class EMBoxerModule(QtCore.QObject):
 		
 		self.boxable.add_box(box)
 		
+		self.boxable.save_boxes_to_database(self.filestoprocess[0])
+		
 		# Should this be here?
 		box_num = len(self.get_boxes())
 		#self.guimx.get_core_object().set_selected([box_num])
@@ -1916,6 +1956,8 @@ class EMBoxerModule(QtCore.QObject):
 		if not self.boxable.is_interactive(): return
 		
 		box = self.delete_box(box_num)
+		
+		
 		if not (box.isref or box.ismanual):
 			self.boxable.add_exclusion_particle(box)
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
@@ -2050,6 +2092,7 @@ class EMBoxerModule(QtCore.QObject):
 		return self.itshrink
 		
 	def box_moved(self,event,scale):
+		
 		try:
 			dx = (self.moving_box_data[0] - event.x())/scale
 			dy = (event.y() - self.moving_box_data[1])/scale
@@ -2129,6 +2172,7 @@ class EMBoxerModule(QtCore.QObject):
 			return
 		
 		self.boxable.move_box(box,dx,dy,box_num)
+		self.boxable.save_boxes_to_database(self.filestoprocess[0]) #save the new coordinates to cache
 			# we have to update the reference also
 		self.ptcl[box_num] = box.get_box_image()
 			
@@ -2221,7 +2265,8 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def box_image_deleted(self,event,lc,force_image_mx_remove=True):
 		box = self.delete_box(lc[0],force_image_mx_remove)
-		self.boxable.add_exclusion_particle(box)
+		if not (box.isref or box.ismanual):
+			self.boxable.add_exclusion_particle(box)
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.guictl.num_boxes_changed(len(self.ptcl))
 		self.update_all_image_displays()
@@ -2257,6 +2302,8 @@ class EMBoxerModule(QtCore.QObject):
 		box = self.boxable.boxes[box_num]
 		
 		self.boxable.delete_box(box_num)
+		
+		self.boxable.save_boxes_to_database(self.filestoprocess[0])
 		
 		if force_image_mx_remove:
 			self.guimx.remove_particle_image(box_num)
@@ -2306,6 +2353,37 @@ class EMBoxerModule(QtCore.QObject):
 
 		self.update_all_image_displays()
 		
+	
+	def box_display_update_cachedboxes(self,force=False,stop_animation=False):
+	
+		ns = {}
+		idx = 0
+		
+		# get the boxes
+		boxes =self.get_boxes()
+		register_animation = False
+		for j,box in enumerate(boxes):
+			
+			box.changed=False
+			im=box.get_box_image()
+			
+			box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+			
+			
+			ns[idx]=box.shape
+			if idx>=len(self.ptcl) : self.ptcl.append(im)
+			else : self.ptcl[idx]=im
+			idx += 1
+		
+		if stop_animation: register_animation=False
+		self.guiim.add_shapes(ns,register_animation)
+		self.set_ptcl_mx_data(self.ptcl)
+		
+		self.guictl.num_boxes_changed(len(self.ptcl))
+			
+		
+		self.guictl.num_boxes_changed(len(boxes))
+		self.guiim.updateGL()
 		
 	def box_display_update(self,force=False,stop_animation=False):
 		
