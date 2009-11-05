@@ -3145,7 +3145,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
 			        pixel_error = 0.0
-			        mirror_changed = 0
+			        mirror_consistent = 0
 				pixel_error_list = []
 			        for im in xrange(len(data)):
 			        	ali_params = get_params2D(data[im]) 
@@ -3153,14 +3153,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		        			this_error = max_pixel_error(*(old_ali_params[im][0:3]+ali_params[0:3]+(last_ring*2,)))
 		        			pixel_error += this_error
 						pixel_error_list.append(this_error)
-			        	else:
-			        		mirror_changed += 1
-				mirror_changed = mpi_reduce(mirror_changed, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+						mirror_consistent += 1
+				mirror_consistent = mpi_reduce(mirror_consistent, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error_list = mpi_gatherv(pixel_error_list, len(data), MPI_FLOAT, recvcount, disp, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				if myid == main_node:
-					print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
-					print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/(nima-mirror_changed)))
+					print_msg("Mirror consistent rate = %8.4f%%\n"%(float(mirror_consistent)/nima*100))
+					print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/mirror_consistent))
 					pixel_error_list = pixel_error_list.tolist()
 					for i in xrange(nima-1, -1, -1):
 						if pixel_error_list[i] < 0:  del pixel_error_list[i]
