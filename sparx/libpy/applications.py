@@ -10863,7 +10863,7 @@ def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose )
 	sumeig /= len(vecs)
 	#print  sumeig
 	for iout in xrange(len(vecs)):
-		info(vecs[iout])
+		#info(vecs[iout])
 		vecs[iout].set_attr('eigval', sumeig)
 		vecs[iout].write_image( output_stack, iout)
 
