@@ -12323,7 +12323,8 @@ def refvol( vollist, fsclist, output, mask ):
 
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
-		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False):
+		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False,
+		 d2w = False):
 	# Common
 	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
 	from statistics  import k_means_locasg2glbasg
@@ -12406,7 +12407,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1)
+		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, d2w = d2w)
 		print_end_msg('k-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
@@ -12432,7 +12433,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 					trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 		elif opt_method == 'SSE':
 			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, \
-					trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+					trials, [CTF, ctf, ctf2], F, T0, DEBUG, d2w)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()

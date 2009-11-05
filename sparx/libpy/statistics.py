@@ -1422,6 +1422,65 @@ def im_diff(im1, im2, mask = None):
 ##############################################################################################
 ### K-MEANS ##################################################################################
 
+# init cluster assignment randomly
+def k_means_init_asg_rnd(N, K):
+	from random import randint
+	assign  = [0] * N
+	nc      = [0] * K
+	retrial = 20
+	while retrial > 0:
+		retrial -= 1
+		i = 0
+		for im in xrange(N):
+			assign[im] = randint(0, K-1)
+			nc[assign[im]] += 1
+		flag,k = 1,K
+		while k>0 and flag:
+			k -= 1 
+			if nc[k] <= 1:
+				flag = 0
+				if retrial == 0: ERROR('Empty class in the initialization', 'k_means_SSE', 1)
+				for k in xrange(K): nc[k] = 0
+		if flag == 1:
+			retrial = 0
+
+	return assign, nc
+
+# init cluster assignment by D2 weighting
+def k_means_init_asg_d2w(im, N, K):
+	from random    import randrange, gauss
+	from numpy     import ones
+	from utilities import print_msg
+	from sys       import exit
+	print_msg('\nInitialization with D2 weighting method...\n')
+	C = [im[randrange(N)]]
+	#print_msg('%12s' % str(1))
+	d = ones((N)) * 1e4
+	for k in xrange(K-1):
+		#print_msg('%6s' % str(k+2))
+		#if (k+2) % 10 == 9: print_msg('\n')
+		for n in xrange(N):
+			val = im[n].cmp("SqEuclidean", C[k])
+			if val < d[n]: d[n] = val
+
+		SD2  = d.sum()
+		p    = d / float(SD2)
+		p    = map(float, p)
+		ps   = zip(p, range(N))
+		ps.sort(reverse = True)
+		ind  = gauss(0, n // 6) # 6 is a cst define empirically
+		ind  = int(abs(ind))
+		C.append(im[ps[ind][1]])
+
+	assign = [0] * N
+	nc     = [0] * K
+	for n in xrange(N):
+		res            = Util.min_dist_real(im[n], C)
+		assign[n]      = res['pos']
+		nc[assign[n]] += 1
+
+	return assign, nc
+
 # Convert local assignment to absolute assignment
 def k_means_locasg2glbasg(ASG, LUT, N):
 	Nloc = len(ASG)
@@ -2198,7 +2257,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 
 # K-means with SSE method
-def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
+def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, d2w = False):
 	from utilities    import model_blank, get_im, running_time
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from random       import seed, randint, shuffle
@@ -2290,25 +2349,9 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['n'][k]   = 0
 			Cls['Ji'][k]  = 0
 
-		## Random method
-		retrial = 20
-		while retrial > 0:
-			retrial -= 1
-			i = 0
-			for im in xrange(N):
-				assign[im] = randint(0, K-1)
-				Cls['n'][assign[im]] += 1
-			flag,k = 1,K
-			while k>0 and flag:
-				k -= 1 
-				if Cls['n'][k] <= 1:
-					flag = 0
-					if retrial == 0:
-						ERROR('Empty class in the initialization', 'k_means_SSE', 1)
-					for k in xrange(K):
-						Cls['n'][k] = 0
-			if flag == 1:
-				retrial = 0
+		if d2w: assign, nc = k_means_init_asg_d2w(im_M, N, K)
+		else:	assign, nc = k_means_init_asg_rnd(N, K)
+		for k in xrange(K): Cls['n'][k] = nc[k]
 	
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
@@ -2763,14 +2806,14 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] check if need to exit due to initialization
 		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		FLAG_EXIT = FLAG_EXIT.tolist()[0]
+		FLAG_EXIT = map(int, FLAG_EXIT)[0]
 		if FLAG_EXIT: sys.exit()
 
 		# [all] send assign to the others proc and the number of objects in each clusters
 		assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		assign = assign.tolist()     # convert array gave by MPI to list
+		assign = map(int, assign)     # convert array gave by MPI to list
 		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+		Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
 		
 		## 
 		if CTF:
@@ -2793,7 +2836,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
+				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
 				
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -2832,7 +2875,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] calculate Je global sum and broadcast
 		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Je = Je.tolist()[0]
+		Je = map(float, Je)[0]
 		
 		## Clustering		
 		ite       = 0
@@ -2902,7 +2945,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] sum the number of objects in each node and broadcast
 			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+			Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
 			
 			# [all] init average and ctf2
 			FLAG_EMPTY = 0
@@ -2920,7 +2963,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			mpi_barrier(MPI_COMM_WORLD)
 			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			FLAG_EMPTY = FLAG_EMPTY.tolist()[0]
+			FLAG_EMPTY = map(int, FLAG_EMPTY)[0]
 			if FLAG_EMPTY: break
 			
 			if CTF:
@@ -2940,7 +2983,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for k in xrange(K):
 					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = Cls_ctf2[k].tolist() # convert array gave by MPI to list
+					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
 					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -2979,7 +3022,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] calculate Je global sum and broadcast
 			Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Je = Je.tolist()[0]
+			Je = map(float, Je)[0]
 
 			# threshold convergence control
 			if Je != 0: thd = abs(Je - old_Je) / Je
@@ -3002,8 +3045,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] Need to broadcast this value because all node must run together
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			change = change.tolist()
-			change = change[0]
+			change = map(int, change)[0]
 		
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
@@ -3066,7 +3108,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] global sum Ji and var
 		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = Cls['Ji'].tolist()
+		Cls['Ji'] = map(float, Cls['Ji'])
 		for k in xrange(K):
 			reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 			
@@ -3082,7 +3124,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] global sum ji and im**2
 		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = Cls['Ji'].tolist()
+		Cls['Ji'] = map(float, Cls['Ji'])
 		
 		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
@@ -3108,7 +3150,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		
 	# [all] gather in main_node
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	assign = assign.tolist() # convert array given by MPI to list
+	assign = map(int, assign) # convert array given by MPI to list
 
 	# [main_node] write the result
 	if myid == main_node and CTF:
@@ -3261,14 +3303,14 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] check if need to exit due to initialization
 		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		FLAG_EXIT = FLAG_EXIT.tolist()[0]
+		FLAG_EXIT = map(int, FLAG_EXIT)[0]
 		if FLAG_EXIT: sys.exit()
 		
 		# [all] send assign to the others proc and the number of objects in each cluster
 		assign   = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		assign   = assign.tolist()     # convert array gave by MPI to list
+		assign   = map(int, assign)     # convert array gave by MPI to list
 		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+		Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
 			
 		## 
 		if CTF:
@@ -3291,7 +3333,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
+				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
 				
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -3331,7 +3373,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] calculate Je global sum and broadcast
 		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Je = Je.tolist()[0]
+		Je = map(float, Je)[0]
 	
 		## Clustering
 		ite       = 0
@@ -3427,7 +3469,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					# [all] sum the number of objects in each node and broadcast
 					Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 					Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+					Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
 
 					# [all] init average, Ji and ctf2
 					FLAG_EXIT_UPDATE  = 0
@@ -3444,7 +3486,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					# [all] check if need to exit due to initialization
 					FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 					FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-					FLAG_EXIT_UPDATE = FLAG_EXIT_UPDATE.tolist()[0]
+					FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
 					if FLAG_EXIT_UPDATE: break
 
 					if CTF:
@@ -3464,7 +3506,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						for k in xrange(K):
 							Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 							Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-							Cls_ctf2[k] = Cls_ctf2[k].tolist() # convert array gave by MPI to list
+							Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
 							reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 							bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -3500,7 +3542,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] sum the number of objects in each node and broadcast
 			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+			Cls['n'] = map(float, Cls['n']) # convert array gave by MPI to list
 			
 			# [all] init average, Ji and ctf2, and manage empty cluster
 			FLAG_EMPTY = 0
@@ -3518,7 +3560,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			mpi_barrier(MPI_COMM_WORLD)
 			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			FLAG_EMPTY = FLAG_EMPTY.tolist()[0]
+			FLAG_EMPTY = map(int, FLAG_EMPTY)[0]
 			if FLAG_EMPTY: break
 			
 			if CTF:
@@ -3538,7 +3580,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for k in xrange(K):
 					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = Cls_ctf2[k].tolist() # convert array gave by MPI to list
+					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
 					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -3578,8 +3620,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] calculate Je global sum and broadcast
 			Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Je = Je.tolist()
-			Je = Je[0]
+			Je = map(float, Je)[0]
 
 			# Convergence control: threshold on the criterion value
 			if Je != 0: thd = abs(Je - old_Je) / Je
@@ -3614,7 +3655,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] Need to broadcast this value because all node must run together
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			change = change.tolist()[0]
+			change = map(int, change)[0]
 			
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
@@ -3705,7 +3746,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		
 	# [all] gather in main_node
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	assign = assign.tolist() # convert array gave by MPI to list
+	assign = map(int, assign) # convert array gave by MPI to list
 
 	"""
 	# [main] Watch dog
@@ -3719,7 +3760,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	# compute Ji global
 	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	if myid == main_node:
-		for k in xrange(K): Cls['Ji'][k] = Cls['Ji'][k].tolist()[0]
+		for k in xrange(K): Cls['Ji'][k] = map(float, Cls['Ji'][k])[0]
 
 	# [main_node] write the result
 	if myid == main_node and CTF:
@@ -3743,7 +3784,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:                 return None, None
 
 # K-mean CUDA
-def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1):
+def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, d2w = False):
 	from statistics import k_means_cuda_error, k_means_cuda_open_im
 	from statistics import k_means_locasg2glbasg, k_means_cuda_export
 	from utilities  import print_msg, running_time
@@ -3769,7 +3810,14 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))
 
 		# Init averages
-		Kmeans.random_ASG(rnd[ipart])
+		if d2w:
+			IM, ctf, ctf2 = k_means_open_im(stack, mask, False, LUT, False)
+			ASG, nc = k_means_init_asg_d2w(IM, N, K)
+			Kmeans.set_ASG(ASG)
+			Kmeans.compute_NC()
+			del IM, ctf, ctf2
+		else:
+			Kmeans.random_ASG(rnd[ipart])
 		Kmeans.compute_AVE()
 
 		# K-means iteration
@@ -3964,8 +4012,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		ji   = Kmeans.compute_ji()
 		Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		#Ji   = map(float, Ji)
-		Ji = Ji.tolist()
+		Ji   = map(float, Ji)
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
 		ASG  = Kmeans.get_ASG()
@@ -4792,15 +4839,15 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	mpi_barrier(MPI_COMM_WORLD)
 	FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 	FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	FLAG_EXIT = FLAG_EXIT.tolist()[0]
+	FLAG_EXIT = map(int, FLAG_EXIT)[0]
 	mpi_barrier(MPI_COMM_WORLD)
 	if FLAG_EXIT: sys.exit()
 
 	# [sync] waiting assignment
 	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-	assign = assign.tolist()     # convert array gave by MPI to list
+	assign = map(int, assign)     # convert array gave by MPI to list
 	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
+	Cls['n'] = map(float, Cls['n']) # convert array gave by MPI to list
 
 	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
 	if CTF:
@@ -4820,7 +4867,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		for k in xrange(K):
 			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls_ctf2[k] = Cls_ctf2[k].tolist()    # convert array gave by MPI to list
+			Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
 			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
@@ -4885,7 +4932,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		mpi_barrier(MPI_COMM_WORLD)
 		ct_pert = mpi_reduce(ct_pert, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		ct_pert = mpi_bcast(ct_pert, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		ct_pert = ct_pert.tolist()[0]
+		ct_pert = map(int, ct_pert)[0]
 		ct_pert /= 2.0
 
 		# select the first temperature if > th
@@ -5376,7 +5423,7 @@ def k_means_stab_H(ALL_PART):
 	stability = (float(nb_stb) / float(tot_gbl)) * 100
 
 	STB_PART = []
-	for part in ALL_PART[0]: STB_PART.append(part.tolist())
+	for part in ALL_PART[0]: STB_PART.append(map(int, part))
 
 	return stability, nb_stb, STB_PART
 
@@ -5671,11 +5718,11 @@ def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
 
 	mpi_barrier(MPI_COMM_WORLD)
 	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	N = N.tolist()[0]
+	N = map(int, N)[0]
 	if myid != main_node: lim = [0] * N
 	mpi_barrier(MPI_COMM_WORLD)
 	lim = mpi_bcast(lim, N, MPI_INT, main_node, MPI_COMM_WORLD)
-	lim = lim.tolist()
+	lim = map(int, lim)
 
 	N_start = int(round(float(N) / nb_cpu * myid))  # This is not a canonical way of doing that, there is function in SPARX, please use it PAP
 	N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
