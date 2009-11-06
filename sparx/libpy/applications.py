@@ -830,7 +830,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				        print_msg(msg_string)
 
 				# Calculate and print the stability information
-				mirror_list_gathered = mirror_list_gathered.tolist()
+				mirror_list_gathered = map(float, mirror_list_gathered)
 				avg_mirror_stable = 0
 				for iii in xrange(number_of_ave-1):
 				        for jjj in xrange(iii+1, number_of_ave):
@@ -3128,7 +3128,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			cs = cs.tolist()
+			cs = map(float, cs)
 			if auto_stop:
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
