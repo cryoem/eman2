@@ -71,7 +71,7 @@ static Dict im_diff(EMData* V1, EMData* V2, EMData* mask=0);
  * @param[in] p the x frequency
  * @param[in] q the y frequency
  * @param[in] a the x falloff
- * @param b
+ * @param b the y falloff
  * @param flag
  * @param[in] alphaDeg the projection angle
  * @return The 2D test pattern in real space, fourier space,
@@ -396,7 +396,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *	@param[in] image Image object (pointer)
 		 *
 		 *	@return Interpolated value
-		 */ 
+		 */
 		static float quadri_background(float x, float y, int nx, int ny, float* image, int xnew, int ynew);
 
 		static float get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb);
@@ -507,7 +507,7 @@ class FakeKaiserBessel : public KaiserBessel {
         static vector<double> cml_init_rot(vector<float> Ori);
         static vector<float> cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps);
         static vector<double> cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines);
-        static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj); 
+        static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj);
         static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
         static void set_line(EMData* img, int posline, EMData* line, int offset, int length);
         static void cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines);
@@ -624,12 +624,12 @@ public:
 	static void multiref_peaks_ali2d(EMData* image, EMData* crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm);
-	
-	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng, 
-	     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm, 
+
+	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng,
+	     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm,
 	     EMData *peaks_compress, EMData *peakm_compress);
 
-	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, float xrng, float yrng, 
+	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, float xrng, float yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, double T);
      /*
 	static void multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
