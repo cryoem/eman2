@@ -830,7 +830,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				        print_msg(msg_string)
 
 				# Calculate and print the stability information
-				mirror_list_gathered = map(float, mirror_list_gathered)
+				mirror_list_gathered = map(int, mirror_list_gathered)
 				avg_mirror_stable = 0
 				for iii in xrange(number_of_ave-1):
 				        for jjj in xrange(iii+1, number_of_ave):
