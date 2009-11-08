@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import global_def
-from global_def import *
+from   global_def import *
 
-from EMAN2 import *
-from sparx import *
-from time import time
-from optparse import OptionParser
+from   EMAN2 import *
+from   sparx import *
+from   time import time
+from   optparse import OptionParser
 
 def bootstrap_genbuf( prjfile, bufprefix, beg, end, CTF, npad, info=None ):
 	start_time = time()
