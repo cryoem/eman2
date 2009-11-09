@@ -1452,13 +1452,12 @@ def k_means_init_asg_d2w(im, N, K):
 	from numpy     import ones
 	from utilities import print_msg
 	from sys       import exit
-	print_msg('\nInitialization with D2 weighting method...\n')
+	
 	C = [im[randrange(N)]]
-	#print_msg('%12s' % str(1))
+	print_msg('\n')
 	d = ones((N)) * 1e4
 	for k in xrange(K-1):
-		#print_msg('%6s' % str(k+2))
-		#if (k+2) % 10 == 9: print_msg('\n')
+		print_msg('\rInitialization with D2 weighting method... %i / %i' % (k+2, K))
 		for n in xrange(N):
 			val = im[n].cmp("SqEuclidean", C[k])
 			if val < d[n]: d[n] = val
@@ -1472,12 +1471,15 @@ def k_means_init_asg_d2w(im, N, K):
 		ind  = int(abs(ind))
 		C.append(im[ps[ind][1]])
 
+	print_msg('\n')
 	assign = [0] * N
 	nc     = [0] * K
 	for n in xrange(N):
 		res            = Util.min_dist_real(im[n], C)
 		assign[n]      = res['pos']
 		nc[assign[n]] += 1
+
+	print nc
 
 	return assign, nc
 
@@ -1672,7 +1674,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 	else:   return IM, None, None
 
 # k-means write the head of the logfile
-def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m):
+def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m, init_method):
 	from utilities import print_msg
 
 	if F != 0: SA = True
@@ -1708,6 +1710,7 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	else:
 		print_msg('Simulate annealing          : OFF\n')
 	print_msg('Random seed                 : %i\n'     % rnd)
+	print_msg('Initialization method       : %s\n'     % init_method)
 	print_msg('Number of cpus              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n\n'   % outname)
 
@@ -1899,7 +1902,7 @@ def select_kmeans(dJe, T):
 	return s
 
 # K-means with classical method
-def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
+def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd'):
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
 	from utilities 		import print_msg
@@ -1990,28 +1993,10 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['var'][k] = buf.copy()
 			Cls['n'][k]   = 0
 			Cls['Ji'][k]  = 0
-		
-		## Random method
-		retrial = 20
-		while retrial > 0:
-			retrial -= 1
-			i = 0
-			for im in xrange(N):
-				assign[im] = randint(0, K-1)
-				Cls['n'][assign[im]] += 1
-			
-			flag, k = 1, K
-			while k>0 and flag:
-				k -= 1
-				if Cls['n'][k] <= 1:
-					flag = 0
-					if retrial == 0:
-						ERROR('Empty class in the initialization', 'k_means_classical', 1)
-					for k in xrange(K):
-						Cls['n'][k] = 0
-			
-			if flag == 1:	retrial = 0
-		
+
+		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
+		else:                   assign, Cls['n'] = k_means_init_asg_rnd(N, K)
+
 		## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
 		if CTF:
 			# first init ctf2
@@ -2257,7 +2242,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 
 # K-means with SSE method
-def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, d2w = False):
+def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd'):
 	from utilities    import model_blank, get_im, running_time
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from random       import seed, randint, shuffle
@@ -2349,9 +2334,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['n'][k]   = 0
 			Cls['Ji'][k]  = 0
 
-		if d2w: assign, nc = k_means_init_asg_d2w(im_M, N, K)
-		else:	assign, nc = k_means_init_asg_rnd(N, K)
-		for k in xrange(K): Cls['n'][k] = nc[k]
+		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
+		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
 	
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
@@ -3784,7 +3768,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:                 return None, None
 
 # K-mean CUDA
-def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, d2w = False):
+def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1):
 	from statistics import k_means_cuda_error, k_means_cuda_open_im
 	from statistics import k_means_locasg2glbasg, k_means_cuda_export
 	from utilities  import print_msg, running_time
@@ -3808,16 +3792,8 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 	
 	for ipart in xrange(nbpart):
 		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))
-
-		# Init averages
-		if d2w:
-			IM, ctf, ctf2 = k_means_open_im(stack, mask, False, LUT, False)
-			ASG, nc = k_means_init_asg_d2w(IM, N, K)
-			Kmeans.set_ASG(ASG)
-			Kmeans.compute_NC()
-			del IM, ctf, ctf2
-		else:
-			Kmeans.random_ASG(rnd[ipart])
+		
+		Kmeans.random_ASG(rnd[ipart])
 		Kmeans.compute_AVE()
 
 		# K-means iteration

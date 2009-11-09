@@ -12325,7 +12325,7 @@ def refvol( vollist, fsclist, output, mask ):
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
 		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False,
-		 d2w = False):
+		 init_method = 'rnd'):
 	# Common
 	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
 	from statistics  import k_means_locasg2glbasg
@@ -12360,17 +12360,17 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
-		#flag = 0
-		#if myid == main_node:
-		#	if os.path.exists(out_dir):
-		#		flag = 1
-		#		ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+		flag = 0
+		if myid == main_node:
+			if os.path.exists(out_dir):
+				flag = 1
+				ERROR('Output directory exists, please change the name and restart the program', " ", 0)
 
-		#flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
-		#flag = int(flag[0])
-		#if flag != 0: sys.exit()
+		flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		flag = int(flag[0])
+		if flag != 0: sys.exit()
 
-		#mpi_barrier( MPI_COMM_WORLD )
+		mpi_barrier( MPI_COMM_WORLD )
 	else:
 		if os.path.exists(out_dir):
 			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
@@ -12384,14 +12384,18 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		n                     = len(lut)
 		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
 
-		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
+		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, 
+						      critname, maskname, trials, maxit, CTF, T0, 
+						      F, rand_seed, ncpu, m)
 		
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit,\
-				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
+			[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, 
+							[CTF, ctf, ctf2], F, T0, myid, main_node, 
+							N_start, N_stop, N)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,\
-				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N, ncpu)
+			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,
+				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
+					N_start, N_stop, N, ncpu)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()
@@ -12408,7 +12412,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, d2w = d2w)
+		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, init_method)
 		print_end_msg('k-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
@@ -12426,15 +12430,15 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
 		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
-		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, \
-					CTF, T0, F, rand_seed, 1, m)
+		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, 
+					CTF, T0, F, rand_seed, 1, m, init_method)
 		
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, \
-					trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+			[Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, 
+					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, \
-					trials, [CTF, ctf, ctf2], F, T0, DEBUG, d2w)
+			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, 
+					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()

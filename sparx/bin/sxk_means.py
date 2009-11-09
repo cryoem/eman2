@@ -55,7 +55,8 @@ def main():
 	parser.add_option("--CUDA",       action="store_true", default=False,     help="Use CUDA version")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
 	parser.add_option("--normalize",  action="store_true", default=False,     help="Normalize images under the mask")
-	
+	parser.add_option('--init_method', type='string',    default='rnd',     help='Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rns)')
+
 	(options, args) = parser.parse_args()
     	if len(args) < 2 or len(args) > 3:
 				print "usage: " + usage
@@ -79,7 +80,9 @@ def main():
 			disable_bdb_cache()
 		from  applications  import  k_means_main
 		global_def.BATCH = True
-		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug, options.normalize)
+		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, 
+			     options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, 
+			     options.MPI, options.CUDA, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
