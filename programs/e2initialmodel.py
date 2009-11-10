@@ -173,7 +173,7 @@ def main():
 		#threed[-1].write_image("x.mrc")
 		if verbose : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
 
-		results.append((bss,threed[-1],aptcls,projs))
+		results.append((bss,threed[-1],aptcls,projs,threed[0]))
 		results.sort()
 		
 		#dct=db_open_dict(results_name)
@@ -183,6 +183,7 @@ def main():
 		for i,j in enumerate(results):
 			out_name = results_name+"_%02d"%(i+1)
 			j[1].write_image(out_name,0)
+			j[4].write_image(results_name+"_%02d_init"%(i+1),0)
 			print out_name,j[1]["quality"],j[0]
 			if options.dbls: # database list storage
 				pdb = db_open_dict("bdb:project")
