@@ -1594,16 +1594,18 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
+	image_stack_filtered = NULL;
 	ccf = NULL;
 }
 
 #ifdef EMAN2_USING_CUDA
 void CUDA_Aligner::finish() {
 	if (image_stack) delete image_stack;
+	if (image_stack_filtered) delete image_stack_filtered;
 	if (ccf) delete ccf;
 }
 
-void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky) {
+void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
 
 	NIMA = nima;
 	NX = nx;
@@ -1614,16 +1616,31 @@ void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, i
 	KX = kx;
 	KY = ky;
 	OU = ou;
-
+	CTF = ctf;
+	
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
+	if (CTF == 1) image_stack_filtered = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
 }
 
 void CUDA_Aligner::insert_image(EMData *image, int num) {
+
 	int base_address = num*NX*NY;
+
 	for (int y=0; y<NY; y++)
 		for (int x=0; x<NX; x++)
 			image_stack[base_address+y*NX+x] = (*image)(x, y);
+}
+
+void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
+	
+	float *params;
+	
+	params = (float *)malloc(NIMA*6*sizeof(float));	
+	
+	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];	
+
+	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params);
 }
 
 vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_list, vector<float> sy_list, int id, int silent) {
@@ -1647,8 +1664,12 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 		sx2[i] = sx_list[i];
 		sy2[i] = sy_list[i];
 	}
-
-        calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+	
+	if (CTF == 1) {
+		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+	} else {
+		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+	}
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 

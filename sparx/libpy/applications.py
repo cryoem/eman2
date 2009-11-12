@@ -3042,12 +3042,20 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 		if CUDA:
 			R = CUDA_Aligner()
-			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5))
+			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			if CTF:
+				ctf_params = []
 				for im in xrange(len(data)):
-					ctf_params = data[im].get_attr('ctf')
-					img = filt_ctf(data[im], ctf_params)
-					R.insert_image(img, im)
+					params = data[im].get_attr('ctf')
+					#img = filt_ctf(data[im], ctf_params)
+					R.insert_image(data[im], im)
+					ctf_params.append(params.defocus)
+					ctf_params.append(params.cs)
+					ctf_params.append(params.voltage)
+					ctf_params.append(params.apix)
+					ctf_params.append(params.bfactor)
+					ctf_params.append(params.ampcont)
+				R.filter_stack(ctf_params)
 			else:
 				for im in xrange(len(data)):
 					R.insert_image(data[im], im)

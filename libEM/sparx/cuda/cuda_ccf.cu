@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 /* Includes, cuda, cufft */
 #include <cufft.h>
 
@@ -52,6 +53,7 @@
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
 __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING);
+__global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, float voltage, float apix, float bfactor, float ampcont);
 
 texture<float, 2, cudaReadModeElementType> tex;
 texture<float, 1, cudaReadModeElementType> texim_subject;
@@ -307,6 +309,77 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
     return;
 }
 
+void filter_image(float *image, float *filter_image, int NIMA, int NX, int NY, float *params) {
+	
+	float *image_padded, *d_image_padded;
+	
+	cufftHandle plan_R2C, plan_C2R;
+	cufftPlan2d(&plan_R2C, NX*2, NY*2, CUFFT_R2C);
+	cufftPlan2d(&plan_C2R, NX*2, NY*2, CUFFT_C2R);
+	
+	int padded_size = (NX*2+2)*(NY*2);
+	
+	image_padded = (float *)malloc(padded_size*NIMA*sizeof(float));
+	for (int i=0; i<NIMA*padded_size; i++)   image_padded[i] = 0.0f;
+	
+	cudaMalloc((void **)&d_image_padded, padded_size*NIMA*sizeof(float));
+
+	for (int im=0; im<NIMA; im++) 
+		for (int iy=0; iy<NY; iy++)
+			memcpy(image_padded+im*padded_size+(iy+NY/2)*(NX*2+2)+NX/2, image+im*NX*NY+iy*NX, NX*sizeof(float));
+
+	cudaMemcpy(d_image_padded, image_padded, padded_size*NIMA*sizeof(float), cudaMemcpyHostToDevice);
+	
+	for (int im=0; im<NIMA; im++) {
+		int base_address = im*padded_size;
+		cufftExecR2C(plan_R2C, (cufftReal *)(d_image_padded+base_address), (cufftComplex *)(d_image_padded+base_address));
+		mul_ctf<<<NX+1, NY*2>>>(d_image_padded+base_address, NX*2, NY*2, params[im*6], params[im*6+1], params[im*6+2], params[im*6+3], params[im*6+4], params[im*6+5]);
+		cufftExecC2R(plan_C2R, (cufftComplex *)(d_image_padded+base_address), (cufftReal *)(d_image_padded+base_address));
+	}
+	
+	cudaMemcpy(image_padded, d_image_padded, padded_size*NIMA*sizeof(float), cudaMemcpyDeviceToHost);
+
+	for (int im=0; im<NIMA; im++)
+		for (int iy=0; iy<NY; iy++)
+			memcpy(filter_image+im*NX*NY+iy*NX, image_padded+im*padded_size+(iy+NY/2)*(NX*2+2)+NX/2, NX*sizeof(float));	
+		
+	cufftDestroy(plan_R2C);
+	cufftDestroy(plan_C2R);
+	cudaFree(d_image_padded);
+	
+	free(image_padded);
+
+	return;
+}
+
+__global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, float voltage, float apix, float bfactor, float ampcont) {
+
+    // Block index
+    int bx = blockIdx.x;
+
+    // Thread index
+    int tx = threadIdx.x;
+
+    float x, y;
+    
+    x = float(bx);
+    if (tx >= ny/2) y = float(tx-ny);
+    else y = float(tx);
+
+    float ak = sqrt(x*x+y*y)/nx/apix;
+    float cst = cs*1.0e7f;
+    float wgh = ampcont/100.0;
+    float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
+    float lambda = 12.398f/sqrt(voltage*(1022.f+voltage));
+    float ak2 = ak*ak;
+    float g1 = defocus*1.0e4f*lambda*ak2;
+    float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0f;
+    float ctfv = static_cast<float>(sin(PI*(g1-g2)+phase));
+
+    if (bfactor != 0.0f)  ctfv *= exp(-bfactor*ak2/4.0f);
+    image[(bx+tx*(nx/2+1))*2] *= ctfv;
+    image[(bx+tx*(nx/2+1))*2+1] *= ctfv;
+}
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY) {
 

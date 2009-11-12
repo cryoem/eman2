@@ -758,16 +758,19 @@ namespace EMAN
 
 		void finish();
 
-		void setup(int nima, int nx, int ny, int ring_length, int nring, int ou,  float step, int kx, int ky);
+		void setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf);
 
 		void insert_image(EMData *image, int num);
+
+		void filter_stack(vector<float> ctf_params);
 
 		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int id, int silent);
 
 	  private:
-	        float *image_stack;
+	        float *image_stack, *image_stack_filtered;
 		float *ccf;
 		int NIMA, NX, NY, RING_LENGTH, NRING, OU, KX, KY;
+		bool CTF;
 		float STEP;
 	};
 

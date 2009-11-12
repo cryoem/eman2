@@ -245,7 +245,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 			else:
 				ima = data[i]
 	 		ima_filt = filt_ctf(ima, ctf_params, dopad=True)
-			if(i%2 == 0):	Util.add_img(ave1, ima_filt)
+			if i%2 == 0:	Util.add_img(ave1, ima_filt)
 			else:	        Util.add_img(ave2, ima_filt)
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	else:
@@ -255,7 +255,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i]
-			if(i%2 == 0):	Util.add_img(ave1, ima)
+			if i%2 == 0:	Util.add_img(ave1, ima)
 			else:	        Util.add_img(ave2, ima)
 
 	if  CTF:
