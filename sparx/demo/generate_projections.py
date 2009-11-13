@@ -8,9 +8,9 @@ from optparse import OptionParser
 
 usage = "generate_projection.py --CTF --format=(bdb|hdf)"
 parser = OptionParser(usage)
-parser.add_option( "--CTF",    action="store_true", default=False, help="whether generate CTF images" )
-parser.add_option( "--format", type="string",       default="bdb", help="data format: hdf or bdb" )
-parser.add_option( "--apix",  type="float",         default="2.5", help="pixel size" )
+parser.add_option( "--CTF",    action="store_true", default=False, help="whether generate CTF images")
+parser.add_option( "--format", type="string",       default="bdb", help="data format: hdf or bdb")
+parser.add_option( "--apix",   type="float",        default="2.5", help="pixel size")
 
 (options,args) = parser.parse_args( argv )
 
