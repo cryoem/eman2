@@ -1251,32 +1251,6 @@ def set_seed(sde):
 	e = EMData()
 	e.set_size(1,1,1)
 	e.process_inplace("testimage.noise.gauss", {"sigma":1.0, "seed":int(sde)})
-	
-'''
-def model_electron_density(pdb_filename, pixel_size=1, d_min=2.8, buffer_size=3):
-	"""
-	Create a 3D volume around a molecule in a PDB file.
-	"""
-        import pdb_to_volume
-        from scitbx.array_family import flex
-        import sys
-        map = pdb_to_volume.map_around_molecule(
-        	pdb_file_name=pdb_filename,
-        	pixel_size=pixel_size,
-        	d_min=d_min,
-        	buffer_size=buffer_size,
-        	log=sys.stdout)
-        e = EMData()
-        n = map.focus()
-        e.set_size(n[2],n[1],n[0])
-        print "Entering slow loop...", # should be implemented in C++
-        sys.stdout.flush()
-        for i in flex.nested_loop(map.focus()):
-        	e[i[2],i[1],i[0]] = map[i]
-        print "done."
-        sys.stdout.flush()
-        return e
-'''
 
 ###----P-------
 def parse_spider_fname(mystr, *fieldvals):

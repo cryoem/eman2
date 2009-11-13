@@ -6184,7 +6184,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 	import os
 	import sys
-	
+
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -6193,6 +6193,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
+
 
 
 	if debug:

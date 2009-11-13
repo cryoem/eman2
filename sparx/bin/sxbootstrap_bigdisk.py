@@ -50,7 +50,7 @@ def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 			t = time()
 			info.write("        block %d inserted.\t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
-        
+
 
 	if not(info is None):
 		info.write("    Project inserted.\t time: %10.3f\n" % (time() - overall_start) )
@@ -92,7 +92,7 @@ def bootstrap_prepare( prjfile, nvol, snr, CTF, npad ):
 		else:
 			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
 			rectors[i] = Reconstructors.get( "nn4", params )
-		
+
 		rectors[i].setup()
 
 	return rectors, fftvols, wgtvols
@@ -294,4 +294,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-
