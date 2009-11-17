@@ -611,7 +611,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 	if (area) {
  		/*Get the file dataspace - the region we want to read in the file*/
- 		hid_t dataspace = H5Scopy(spc); //H5Dget_space(ds);
+// 		hid_t dataspace = H5Scopy(spc); //H5Dget_space(ds);
 
  		hsize_t     doffset[3];             /* hyperslab offset in the file */
  		doffset[0] = area->x_origin();
@@ -623,7 +623,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		dcount[1] = area->get_height();
 		dcount[2] = area->get_depth();
 
-		herr_t status2 = H5Sselect_hyperslab (dataspace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+		herr_t status2 = H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Define memory dataspace - the memory we will created for the region*/
  		hsize_t     dims[3];              /* size of the region in the memory */
@@ -632,14 +632,14 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
  		dims[2]  = area->get_depth();
  		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
 
- 		H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,dataspace,H5P_DEFAULT,data);
+ 		H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
  		H5Sclose(memoryspace);
- 		H5Sclose(dataspace);
+// 		H5Sclose(dataspace);
 	} else {
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-		H5Sclose(spc);
 	}
 
+	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
 	return 0;
@@ -753,14 +753,11 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 }
 
 // Writes the actual image data to the corresponding dataset (already created)
-// Region writing has not been implemented yet
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
-//	if (area) {
-//		throw UnexpectedBehaviorException("Writing regions is not supported for HDF images");
-//	}
+
 #ifdef DEBUGHDF
 	printf("write_data %d\n",image_index);
 #endif
@@ -777,14 +774,37 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hid_t ds=H5Dopen(file,ipath);
 	if (ds<0) throw ImageWriteException(filename,"Image dataset does not exist");
 
+	hid_t spc=H5Dget_space(ds);
 	if(area) {
 		throw UnexpectedBehaviorException("Writing regions is not supported for HDF images");
+		hsize_t doffset[3];		/*hyperslab offset in the file*/
+		doffset[0] = area->x_origin();
+		doffset[1] = area->y_origin();
+		doffset[2] = area->z_origin();
+
+		hsize_t dcount[3];		/*size of the hyperslab in the file*/
+		dcount[0] = area->get_width();
+		dcount[1] = area->get_height();
+		dcount[2] = area->get_depth();
+
+		herr_t status2 = H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+
+		/*Create memory space with size of the region.*/
+		hsize_t dims[3];	/*size of the region in the memory*/
+		dims[0] = area->get_width();
+		dims[1] = area->get_height();
+		dims[2] = area->get_depth();
+
+		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
+//		EMData* oimg = EMData(data, );
+
+
 	}
 	else {
-		hid_t spc=H5Dget_space(ds);
 		H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-		H5Sclose(spc);
 	}
+
+	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
 	return 0;
