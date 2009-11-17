@@ -461,10 +461,8 @@ __global__ void add_img(float *image_padded, float *ave1, float *ave2, int nx, i
 	int index = tx+bx*nx;
 	int index2 = tx+nx/2+(bx+ny/2)*(nx*2+2);    
 
-	for (int i=0; i<nima; i++) {
-		if (i%2 == 0)	sum1 += image_padded[index2+i*(nx*2+2)*ny*2];
-		else sum2 += image_padded[index2+i*(nx*2+2)*ny*2];
-	}
+	for (int i=0; i<nima; i+=2) sum1 += image_padded[index2+i*(nx*2+2)*ny*2];
+	for (int i=1; i<nima; i+=2) sum2 += image_padded[index2+i*(nx*2+2)*ny*2];
 	ave1[index] = sum1;
 	ave2[index] = sum2;
 
@@ -494,9 +492,9 @@ __global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, f
 	float ak2 = ak*ak;
 	float g1 = defocus*1.0e4f*lambda*ak2;
 	float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0f;
-	float ctfv = static_cast<float>(sin(PI*(g1-g2)+phase));
-
+	float ctfv = sin(PI*(g1-g2)+phase);
 	if (bfactor != 0.0f)  ctfv *= exp(-bfactor*ak2/4.0f);
+
 	image[(bx+tx*(nx/2+1))*2] *= ctfv;
 	image[(bx+tx*(nx/2+1))*2+1] *= ctfv;
 }
@@ -592,5 +590,5 @@ __global__ void rotate_shift(float* image, int nx, int ny) {
 	float cosa = cos(alpha*PI/180.0);
 	float sina = sin(alpha*PI/180.0);
 	
-	image[img_index] = tex2D(tex, x*cosa-y*sina+nx/2+0.5, x*sina+y*cosa+nx/2+bx*ny+0.5); 
+	image[img_index] = tex2D(tex, x*cosa-y*sina+nx/2+0.5, x*sina+y*cosa+ny/2+bx*ny+0.5); 
 }
