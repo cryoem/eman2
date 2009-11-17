@@ -33,9 +33,6 @@
  * the above Disclaimer and U.S. Government End Users Notice.
  */
 
-/* This example demonstrates how to use the CUBLAS library
- * to realize apmq.
- */
 
 /* Includes, system */
 #include <stdio.h>
@@ -49,7 +46,6 @@
 /* Matrix size */
 #define PI (3.14159265358979)
 #define NIMAGE_ROW (512)
-#define NIMAGE_IN_TEXTURE (15000)
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
 __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING);
@@ -79,6 +75,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	int BLOCK_SIZE = RING_LENGTH/2+1;
 	int NROW = NIMAGE/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
+	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;
 	int NTEXTURE = NIMAGE/NIMAGE_IN_TEXTURE;
 	int NIMAGE_LEFT_TEXTURE = NIMAGE%NIMAGE_IN_TEXTURE;
 
