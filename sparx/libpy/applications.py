@@ -2998,6 +2998,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data = EMData.read_images(stack, list_of_particles)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	
+	if CUDA:
+		all_ali_params = []
+		all_ctf_params = []
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
 		st = Util.infomask(data[im], mask, False)
@@ -3005,6 +3008,20 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+			if CUDA:
+				all_ctf_params.append(ctf_params.defocus)
+				all_ctf_params.append(ctf_params.cs)
+				all_ctf_params.append(ctf_params.voltage)
+				all_ctf_params.append(ctf_params.apix)
+				all_ctf_params.append(ctf_params.bfactor)
+				all_ctf_params.append(ctf_params.ampcont)
+		if CUDA:
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			all_ali_params.append(alpha)
+			all_ali_params.append(sx)
+			all_ali_params.append(sy)
+			all_ali_params.append(mirror)
+
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
@@ -3043,22 +3060,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if CUDA:
 			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
-			if CTF:
-				ctf_params = []
-				for im in xrange(len(data)):
-					params = data[im].get_attr('ctf')
-					#img = filt_ctf(data[im], ctf_params)
-					R.insert_image(data[im], im)
-					ctf_params.append(params.defocus)
-					ctf_params.append(params.cs)
-					ctf_params.append(params.voltage)
-					ctf_params.append(params.apix)
-					ctf_params.append(params.bfactor)
-					ctf_params.append(params.ampcont)
-				R.filter_stack(ctf_params)
-			else:
-				for im in xrange(len(data)):
-					R.insert_image(data[im], im)
+			for im in xrange(len(data)):	R.insert_image(data[im], im)
+			if CTF:  R.filter_stack(all_ctf_params)
 					
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
@@ -3067,7 +3070,12 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if  Fourvar:  
 				tavg, ave1, ave2, vav, sumsq = add_ave_varf_MPI(myid, data, mask, "a", CTF, ctf_2_sum)
 			else:
-				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
+				if CUDA:
+					ave1 = model_blank(nx, nx)
+					ave2 = model_blank(nx, nx)
+					R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
+				else:
+					ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 				reduce_EMData_to_root(ave1, myid, main_node)
 				reduce_EMData_to_root(ave2, myid, main_node)
 
@@ -3155,8 +3163,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        pixel_error = 0.0
 			        mirror_consistent = 0
 				pixel_error_list = []
+				if CUDA:  all_ali_params = []
 			        for im in xrange(len(data)):
 			        	ali_params = get_params2D(data[im]) 
+					if CUDA:
+						all_ali_params.append(ali_params[0])
+						all_ali_params.append(ali_params[1])
+						all_ali_params.append(ali_params[2])
+						all_ali_params.append(ali_params[3])						
 			        	if old_ali_params[im][3] == ali_params[3]:
 		        			this_error = max_pixel_error(*(old_ali_params[im][0:3]+ali_params[0:3]+(last_ring*2,)))
 		        			pixel_error += this_error

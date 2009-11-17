@@ -401,6 +401,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("setup", &EMAN::CUDA_Aligner::setup)
         .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
 	.def("filter_stack", &EMAN::CUDA_Aligner::filter_stack)
+	.def("sum_oe", &EMAN::CUDA_Aligner::sum_oe)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
     ;
 #endif

@@ -1638,9 +1638,32 @@ void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
 	
 	params = (float *)malloc(NIMA*6*sizeof(float));	
 	
-	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];	
+	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];
 
 	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params);
+
+	free(params);
+}
+
+void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2) {
+	
+	float *ctf_p, *ali_p, *av1, *av2;
+	
+	ctf_p = (float *)malloc(NIMA*6*sizeof(float));
+	ali_p = (float *)malloc(NIMA*4*sizeof(float));
+	
+	if (CTF == 1) {
+		for (int i=0; i<NIMA*6; i++)  ctf_p[i] = ctf_params[i];
+	}
+	for (int i=0; i<NIMA*4; i++)   ali_p[i] = ali_params[i];
+	
+	av1 = ave1->get_data();
+	av2 = ave2->get_data();
+	
+	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2);
+	
+	free(ctf_p);
+	free(ali_p);
 }
 
 vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_list, vector<float> sy_list, int id, int silent) {
@@ -1652,13 +1675,10 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 	float *sx2, *sy2;
 	vector<float> align_result;
 
-        ref_image = (float *)malloc(NX*NY*sizeof(float));
 	sx2 = (float *)malloc(NIMA*sizeof(float));
 	sy2 = (float *)malloc(NIMA*sizeof(float));
 
-	for (int y=0; y<NY; y++)
-		for (int x=0; x<NX; x++)
-			ref_image[y*NX+x] = (*ref_image_em)(x, y);
+	ref_image = ref_image_em->get_data();
 	
 	for (int i=0; i<NIMA; i++) {
 		sx2[i] = sx_list[i];
@@ -1709,7 +1729,6 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 		align_result.push_back(mirror);
 	}
 	
-	free(ref_image);
 	free(sx2);
 	free(sy2);
 	
