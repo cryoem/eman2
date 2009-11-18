@@ -742,17 +742,35 @@ class factory_class:
 	def __getitem__(self,index):
 
 		if (type(index) is str):
-			try:
-				return self.contents[index]
-			except KeyError:
-				return None
-			except:
-				return None
+			# we need to consider 2 possible strings: either function name to be
+			#    handled by real factory, or a string-converted list passed by
+			#    --user="[...]" type parameter.
+			# string-type list?
+			if (index.startswith("[") and index.endswith("]")):
+				try:
+					# strip [] and seperate with commas
+					my_path,my_module,my_func=index[1:-1].split(",")
+
+					# and build the user function with it
+					return build_user_function(module_name=my_module,function_name=my_func,
+								   path_name=my_path)
+				except:
+					return None
+			# doesn' seem to be a string-converted list, so try using it as
+			#    function name
+			else:
+				try:
+					return self.contents[index]
+				except KeyError:
+					return None
+				except:
+					return None
+
 		if (type(index) is list):
 			try:
 				# try building with module, function and path
-				return build_user_function(module_name=index[0],function_name=index[1],
-							   path_name=index[2])
+				return build_user_function(module_name=index[1],function_name=index[2],
+							   path_name=index[0])
 			except IndexError:
 				# we probably have a list [module,function] only, no path
 				return build_user_function(module_name=index[0],function_name=index[1])
@@ -761,7 +779,7 @@ class factory_class:
 				#    raise an exception....
 				return None
 
-		print type(index)
+		#print type(index)
 		return None
 	
 
