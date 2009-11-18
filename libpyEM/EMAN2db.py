@@ -720,9 +720,13 @@ class EMAN2DB:
 				
 		# make the shared cache directory in /tmp
 		if(sys.platform != 'win32'):
-			if (not BDB_CACHE_DISABLE) and not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+			if (not BDB_CACHE_DISABLE):
+				if(not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK)):
+					os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 		else:
-			if (not BDB_CACHE_DISABLE) and not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
+			if (not BDB_CACHE_DISABLE):
+				if(not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK)):
+					os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
 
 		if BDB_CACHE_DISABLE:
 			self.dbenv=None
