@@ -2238,7 +2238,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	from mpi 	   import mpi_send
 	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	#  This function is called from a node other than the main node
-	
+
 	if comm == -1: comm = MPI_COMM_WORLD
 	TransType = type(Transform())
 	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, comm)
@@ -2270,11 +2270,13 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	value = get_arb_params(data[0], list_params)
 	ink = []
 	len_list = 0
+	ISID = -1
 	for il in xrange(len(list_params)):
-		if type(value[il]) is types.IntType:     
+		if(list_params[il] == 'ID'):  ISID = il
+		if type(value[il]) is types.IntType:
 			ink.append(1)
 			len_list += 1
-		elif type(value[il]) is types.FloatType:  
+		elif type(value[il]) is types.FloatType:
 			ink.append(0)
 			len_list += 1
 		elif type(value[il]) is TransType:
@@ -2308,8 +2310,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 						t.set_matrix(tmp)
 						ilis += 12
 						nvalue.append(t)
-				ISID = list_params.count('ID')
-				if(ISID == 0):
+				if(ISID == -1):
 					imm = im
 				else:
 					imm = nvalue[ISID]

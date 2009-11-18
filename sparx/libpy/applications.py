@@ -5224,7 +5224,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			mpi_barrier(MPI_COMM_WORLD)
 			terminate = 0
 			if(myid == main_node):
-				recvbuf = recvbuf.tolist()
+				recvbuf = map(float, recvbuf)
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -5819,7 +5819,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 				nchng += 1
 		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		npergroup = mpi_reduce(npergroup, numref, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-		npergroup = npergroup.tolist()
+		npergroup = map(int, npergroup)
 		terminate = 0
 		if( myid == 0 ):
 			nchng = int(nchng[0])
@@ -5852,7 +5852,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
-				recvbuf = recvbuf.tolist()
+				recvbuf = map(float, recvbuf)
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -6278,12 +6278,12 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		list_of_particles = [-1]*nima
 
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
 	total_nima = nima
 	list_of_particles = list_of_particles[image_start: image_end]
-	nima = len(list_of_particles)	
+	nima = len(list_of_particles)
 
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" % (image_start, image_end) )
@@ -6400,12 +6400,12 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 				if(peak > peaks[im]):
 					peaks[im] = peak
-					img.set_attr( "group",  krf )
-					if runtype=="REFINEMENT": 
+					data[im].set_attr( "group",  krf )
+					if runtype=="REFINEMENT":
 						#set_params_proj( img, [ang[0],ang[1],ang[2],-sft[0],-sft[1]] )
 						t2 = Transform({"type":"spider","phi":ang[0],"theta":ang[1],"psi":ang[2]})
 						t2.set_trans(Vec2f(sft[0], sft[1]))
-						img.set_attr("xform.projection", t2)
+						data[im].set_attr("xform.projection", t2)
 						pixer[im] = max_3D_pixel_error(t1, t2, ou)
 
 					if not(finfo is None):
@@ -6429,7 +6429,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 				nchng += 1
 		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		npergroup = mpi_reduce(npergroup, numref, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-		npergroup = npergroup.tolist()
+		npergroup = map(int, npergroup)
 		terminate = 0
 		if( myid == 0 ):
 			nchng = int(nchng[0])
@@ -6461,7 +6461,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
-				recvbuf = recvbuf.tolist()
+				recvbuf = map(float, recvbuf)
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -6517,7 +6517,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		mpi_barrier(MPI_COMM_WORLD)
 		# here we should write header info, just in case the program crashes...
 		# write out headers  and STOP, under MPI writing has to be done sequentially
-	
+
 		if runtype=="REFINEMENT":
 			par_str = ["xform.projection", "group", "ID"]
 		else:
@@ -7093,7 +7093,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 		mpi_barrier(MPI_COMM_WORLD)
 		terminate = 0
 		if(myid == main_node):
-			recvbuf = recvbuf.tolist()
+			recvbuf = map(float, recvbuf)
 			from statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(recvbuf, lhist)
@@ -12029,7 +12029,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		if( myid == 0 ):  refstat = Util.infomask(img, pcamask, True)
 		else:             refstat = [0.0,0.0,0.0,0.0]
 		refstat = mpi_bcast(refstat, 4, MPI_FLOAT, 0, MPI_COMM_WORLD)
-		refstat = refstat.tolist()
+		refstat = map(float, refstat)
 
 	varfile  = os.path.join(outdir, "var.hdf")
 	avgfile  = os.path.join(outdir, "avg.hdf")
