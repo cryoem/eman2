@@ -762,9 +762,9 @@ namespace EMAN
 
 		void insert_image(EMData *image, int num);
 
-		void filter_stack(vector<float> ctf_params);
+		void filter_stack(vector<float> ctf_params, int id);
 		
-		void sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData* ave1, EMData *ave2);
+		void sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData* ave1, EMData *ave2, int id);
 
 		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int id, int silent);
 

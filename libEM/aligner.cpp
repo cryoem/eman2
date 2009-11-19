@@ -1632,7 +1632,7 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 			image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
+void CUDA_Aligner::filter_stack(vector<float> ctf_params, int id) {
 	
 	float *params;
 	
@@ -1640,12 +1640,12 @@ void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
 	
 	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];
 
-	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params);
+	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params, id);
 
 	free(params);
 }
 
-void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2) {
+void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2, int id) {
 	
 	float *ctf_p, *ali_p, *av1, *av2;
 	
@@ -1660,7 +1660,7 @@ void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EM
 	av1 = ave1->get_data();
 	av2 = ave2->get_data();
 	
-	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2);
+	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2, id);
 	
 	free(ctf_p);
 	free(ali_p);

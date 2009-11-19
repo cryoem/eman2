@@ -87,7 +87,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
 	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
-	// Unblock this line you have multiple GPU
+	// Unblock this line if you have multiple GPU
 	//cudaSetDevice(id); 
 
 	cudaArray *ref_image_array, *subject_image_array[NROW], *subject_image_array_left;
@@ -308,10 +308,13 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	return;
 }
 
-void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, float *params) {
+void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, float *params, int id) {
 	
 	float *image_padded, *d_image_padded;
 	int padded_size = (NX*2+2)*(NY*2);
+	
+	// Unblock this line if you have multiple GPU
+	//cudaSetDevice(id);
 	
 	cufftHandle plan_R2C, plan_C2R;
 	cufftPlan2d(&plan_R2C, NX*2, NY*2, CUFFT_R2C);
@@ -351,7 +354,7 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 	return;
 }
 
-void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_params, float *ali_params, float *ave1, float *ave2) {
+void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_params, float *ali_params, float *ave1, float *ave2, int id) {
 
 	float *d_image_padded, *d_ave1, *d_ave2;
 	float *d_ali_params;	
@@ -359,6 +362,9 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 
 	int NROW = NIMA/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMA%NIMAGE_ROW;
+
+	// Unblock this line if you have multiple GPU
+	//cudaSetDevice(id);
 
 	cufftHandle plan_R2C, plan_C2R;
 	cufftPlan2d(&plan_R2C, NX*2, NY*2, CUFFT_R2C);

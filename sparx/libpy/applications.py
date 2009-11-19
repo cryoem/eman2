@@ -2999,6 +2999,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	
 	if CUDA:
+		GPUID = myid%GPU
 		all_ali_params = []
 		all_ctf_params = []
 	for im in xrange(len(data)):
@@ -3061,7 +3062,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
-			if CTF:  R.filter_stack(all_ctf_params)
+			if CTF:  R.filter_stack(all_ctf_params, GPUID)
 					
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
@@ -3073,7 +3074,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if CUDA:
 					ave1 = model_blank(nx, nx)
 					ave2 = model_blank(nx, nx)
-					R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
+					R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
 				else:
 					ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 				reduce_EMData_to_root(ave1, myid, main_node)
@@ -3153,7 +3154,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        for im in xrange(len(data)):  old_ali_params.append(get_params2D(data[im]))
 
 				if CUDA:
-					GPUID = myid%GPU
 					sx_sum, sy_sum = ali2d_single_iter_CUDA(data, cs, tavg, R, GPUID, CTF)
 				else:	
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
