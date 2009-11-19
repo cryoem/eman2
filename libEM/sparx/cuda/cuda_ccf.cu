@@ -44,7 +44,7 @@
 #include <cufft.h>
 
 /* Matrix size */
-#define PI (3.14159265358979)
+#define PI (3.14159265358979f)
 #define NIMAGE_ROW (512)
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
@@ -456,7 +456,7 @@ __global__ void add_img(float *image_padded, float *ave1, float *ave2, int nx, i
 	float sum1 = 0.0;
 	float sum2 = 0.0;
 	int index = tx+bx*nx;
-	int index2 = tx+nx/2+(bx+ny/2)*(nx*2+2);    
+	int index2 = tx+(nx>>1)+(bx+(ny>>1))*(nx*2+2);    
 
 	for (int i=0; i<nima; i+=2) sum1 += image_padded[index2+i*(nx*2+2)*ny*2];
 	for (int i=1; i<nima; i+=2) sum2 += image_padded[index2+i*(nx*2+2)*ny*2];
@@ -478,12 +478,13 @@ __global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, f
 	float x, y;
 
 	x = float(bx);
-	if (tx >= ny/2) y = float(tx-ny);
+	if (tx >= ny>>1) y = float(tx-ny);
 	else y = float(tx);
+	int index = bx*2+tx*(nx+2);
 
 	float ak = sqrt(x*x+y*y)/nx/apix;
 	float cst = cs*1.0e7f;
-	float wgh = ampcont/100.0;
+	float wgh = ampcont/100.0f;
 	float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	float lambda = 12.398f/sqrt(voltage*(1022.f+voltage));
 	float ak2 = ak*ak;
@@ -492,8 +493,8 @@ __global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, f
 	float ctfv = sin(PI*(g1-g2)+phase);
 	if (bfactor != 0.0f)  ctfv *= exp(-bfactor*ak2/4.0f);
 
-	image[(bx+tx*(nx/2+1))*2] *= ctfv;
-	image[(bx+tx*(nx/2+1))*2+1] *= ctfv;
+	image[index] *= ctfv;
+	image[index+1] *= ctfv;
 }
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY) {
@@ -549,8 +550,8 @@ __global__ void resample_to_polar(float* image, float sx, float sy, int NX, int 
 	// Thread index
 	int tx = threadIdx.x;
 
-	float cnx =	  NX/2+sx+0.5;
-	float cny = by*NY+NY/2+sy+0.5;
+	float cnx =	  (NX>>1)+sx+0.5f;
+	float cny = by*NY+(NY>>1)+sy+0.5f;
 
 	int img_index = (by*NRING+bx)*(RING_LENGTH+2)+tx;
 	int index = bx*RING_LENGTH+tx;
@@ -578,14 +579,14 @@ __global__ void rotate_shift(float* image, int nx, int ny) {
 	
 	float x, y;
 	
-	int img_index = bx*(nx*2+2)*(ny*2)+(by+ny/2)*(nx*2+2)+tx+nx/2;
+	int img_index = bx*(nx*2+2)*(ny*2)+(by+(ny>>1))*(nx*2+2)+tx+(nx>>1);
 	
-	if  (mirror > 0.5) x = nx-tx-sx-nx/2;
-	else x = tx-sx-nx/2;
-	y = by-sy-ny/2;
+	if  (mirror > 0.5) x = nx-tx-sx-(nx>>1);
+	else x = tx-sx-(nx>>1);
+	y = by-sy-(ny>>1);
 	
-	float cosa = cos(alpha*PI/180.0);
-	float sina = sin(alpha*PI/180.0);
+	float cosa = __cosf(alpha*PI/180.0f);
+	float sina = __sinf(alpha*PI/180.0f);
 	
-	image[img_index] = tex2D(tex, x*cosa-y*sina+nx/2+0.5, x*sina+y*cosa+ny/2+bx*ny+0.5); 
+	image[img_index] = tex2D(tex, x*cosa-y*sina+(nx>>1)+0.5f, x*sina+y*cosa+(ny>>1)+bx*ny+0.5f); 
 }
