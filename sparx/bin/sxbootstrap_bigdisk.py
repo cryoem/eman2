@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/share/home/01102/pawelpap/EMAN2/python/Python-2.5.4-ucs4/bin/python
 
 import global_def
 from   global_def import *
@@ -167,23 +167,17 @@ def write_mults( fmults, kiter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI, verbose = 0 ) :
+def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI, myid, ncpu, verbose = 0 ) :
 	from random import seed, jumpahead
 	import os
 
 	nprj = EMUtil.get_image_count( prjfile )
 
 	if MPI:
-		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
-	else:
-		myid = 0
-		ncpu = 1
+		from mpi import mpi_barrier, MPI_COMM_WORLD
 
 	# change weights to cummulative probabilities
 	wgts = prepare_wgts( wgts )
-
 
 	if myid==0:
 		if os.path.exists(outdir):
@@ -266,6 +260,8 @@ def main():
 	if options.MPI and options.genbuf:   ERROR('Generation of a buffer does not have MPI version, swith off MPI flag', "sxbootstrap_bigdisk", 1)
 	if options.MPI:
 		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+                from mpi import mpi_init
+                sys.argv = mpi_init( len(sys.argv), sys.argv )
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
 		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	else:
@@ -278,8 +274,6 @@ def main():
 
 
 	if options.MPI:
-		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
 		if(myid == 0):
 			wgts = read_text_file( args[1], 0 )
 			lnw = len(wgts)
@@ -289,7 +283,7 @@ def main():
 		if(myid != 0):  wgts = [-1.0]*lnw
 		from mpi import mpi_bcast, MPI_FLOAT
 		wgts = mpi_bcast(wgts, lnw, MPI_FLOAT, 0, MPI_COMM_WORLD)
-		if(myid != 0):  wgts = map(float, wgts)		
+		wgts = map(float, wgts)
 	else:
 		wgts = read_text_file( args[1], 0 )
 	# set to zero requested percentage of largest weights (this is to prevent streaking in variance).
@@ -306,7 +300,7 @@ def main():
 			wgts[i] = wgts[i][0]
 	outdir = args[2]
 	bufprefix = args[3]
-	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI, options.verbose )
+	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI, myid, ncpu, options.verbose )
 
 
 if __name__ == "__main__":
