@@ -4520,9 +4520,9 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 		# limitation of hdf format
 		if flagHDF or TXT:
 			if part != -1:
-				outfile = open(os.path.join(out_seedname, 'k_means_part_%02i_grp_%03i.txt' % (part + 1, k + 1)), 'w')
+				outfile = open(os.path.join(out_seedname, 'k_means_part_%02i_grp_%03i.txt' % (part, k)), 'w')
 			else:
-				outfile = open(os.path.join(out_seedname, 'k_means_grp_%03i.txt' % (k + 1)), 'w')
+				outfile = open(os.path.join(out_seedname, 'k_means_grp_%03i.txt' % (k)), 'w')
 			for id in GRP[k]: outfile.write('%i\n' % int(id))
 			outfile.close()
 			AVE.set_attr_dict({'Class_average':1.0, 'nobjects': len(GRP[k])})
@@ -5765,16 +5765,16 @@ def k_means_stab_asg2part(outdir, npart):
 	# first check special case, when membership is export as txt file
 	# due to the limitation of hdf header or the data is TXT file
 	ALL_PART = []
-	if path.isfile(path.join(outdir, 'kmeans_part_01_grp_001.txt')):
+	if path.isfile(path.join(outdir, 'k_means_part_00_grp_000.txt')):
 		from utilities import read_text_file
 		lname = listdir(outdir)
 		K     = 0
 		for name in lname:
-			if name.find('kmeans_part_01_grp_') == 0: K += 1
+			if name.find('k_means_part_00_grp_') == 0: K += 1
 		for n in xrange(npart):
 			part = []
 			for k in xrange(K):
-				lid = read_text_file(path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
+				lid = read_text_file(path.join(outdir, 'k_means_part_%02i_grp_%03i.txt' % (n, k)), 0)
 				lid = array(lid, 'int32')
 				lid.sort()
 				part.append(lid.copy())
