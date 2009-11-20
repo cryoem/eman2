@@ -12551,7 +12551,6 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		print_msg('Stability: %5.2f %% (%d / %d objects)\n' % (sum(ST) / float(len(ST)), sum(CT_s), N))
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
-	print_end_msg('k-means')
 	
 	# export the stable class averages
 	if TXT:
@@ -12564,7 +12563,8 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	        # tag informations to the header
 		logging.info('... Update info to the header')
 		k_means_stab_update_tag(stack, STB_PART, id_rejected)
-	
+
+	print_end_msg('k-means')
 	logging.info('::: END k-means stability :::')
 
 # K-means main stability stream command line, CUDA version
