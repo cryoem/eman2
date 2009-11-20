@@ -2077,7 +2077,7 @@ def bcast_number_to_all(number_to_send, source_node = 0):
 		print  " ERROR "
 	
 def bcast_list_to_all(list_to_send, source_node = 0):
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
+	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT
 	import   types
 	list_tmp = mpi_bcast(list_to_send, len(list_to_send), MPI_FLOAT, source_node, MPI_COMM_WORLD)
 	list_to_bcast = []
