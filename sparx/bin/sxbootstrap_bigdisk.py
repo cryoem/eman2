@@ -263,7 +263,14 @@ def main():
 
 	prjfile = args[0]
 
-	if options.MPI and options.genbuf:   ERROR('Generation of buffer does not have MPI version, swith off MPI flag', "sxbootstrap_bigdisk", 1)
+	if options.MPI and options.genbuf:   ERROR('Generation of a buffer does not have MPI version, swith off MPI flag', "sxbootstrap_bigdisk", 1)
+	if options.MPI:
+		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		myid = 0
+		ncpu = 1
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
@@ -273,8 +280,18 @@ def main():
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
-
-	wgts = read_text_file( args[1], 0 )
+		if(myid == 0):
+			wgts = read_text_file( args[1], 0 )
+			lnw = len(wgts)
+		else:
+			lnw = 0
+		lnw = bcast_number_to_all(lnw, source_node = 0)
+		if(myid != 0):  wgts = [-1.0]*lnw
+		from mpi import mpi_bcast, MPI_FLOAT
+		wgts = mpi_bcast(wgts, lnw, MPI_FLOAT, 0, MPI_COMM_WORLD)
+		if(myid != 0):  wgts = map(float, wgts)		
+	else:
+		wgts = read_text_file( args[1], 0 )
 	# set to zero requested percentage of largest weights (this is to prevent streaking in variance).
 	if(options.zero_wgts > 0.0):
 		n = len(wgts)
