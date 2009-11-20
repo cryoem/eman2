@@ -12543,17 +12543,20 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	ALL_PART = k_means_stab_asg2part(outdir, npart)
 
 	# calculate the stability
+	print_msg('\n== STABILITY =========================================\n')
 	if match   == 'hh':
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+		print_msg('Stability: %5.2f %% (%d / %d objects)\n' % (stb, nb_stb, N))
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 	elif match == 'pwa':
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
+		print_msg('Stability: %5.2f %% (%d / %d objects)\n' % (sum(ST) / float(len(ST)), sum(CT_s), N))
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
 	# export the stable class averages
 	if TXT:
 		count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
-		logging.info('... Export %i stable class averages: averages_grp_i (rejected %i images)' % (count_k, len(id_rejected)))
+		logging.info('... Export %i stable class averages: stable_grp_i (rejected %i images)' % (count_k, len(id_rejected)))
 	else:
 		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
 		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
@@ -12623,7 +12626,6 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 		if myid == main_node: logging.info('[STOP] Not enough images')
 		sys.exit()
 
-	# loop over partition
 	if myid == main_node:
 		print_begin_msg('k-means')
 		k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, ncpu, m)

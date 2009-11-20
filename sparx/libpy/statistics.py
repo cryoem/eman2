@@ -5579,7 +5579,7 @@ def k_means_stab_export_txt(PART, outdir, th_nobj):
 	RK = 0
 	for k in xrange(K):
 		if len(PART[k]) >= th_nobj:
-			f = open(outdir + '/stables_grp_%03i.txt' % k, 'w')
+			f = open(outdir + '/stable_grp_%03i.txt' % k, 'w')
 			for id in PART[k]: f.write('%i\n' % id)
 			f.close()
 			RK += 1
