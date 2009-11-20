@@ -70,6 +70,10 @@ def main():
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
 
+		if options.F != 0 and options.T0 == 0:
+			sys.stderr.write('ERROR: is F is set you must also set T0\n\n')
+			sys.exit()
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
