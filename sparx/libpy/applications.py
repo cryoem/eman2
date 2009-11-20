@@ -12536,7 +12536,6 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	print_begin_msg('k-means')
 	k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, 1, m)
 	k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, outdir, TXT, npart, logging)
-	print_end_msg('k-means')
 
 	# read assignment and convert to partition
 	logging.info('... Matching')
@@ -12552,6 +12551,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		print_msg('Stability: %5.2f %% (%d / %d objects)\n' % (sum(ST) / float(len(ST)), sum(CT_s), N))
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	print_end_msg('k-means')
 	
 	# export the stable class averages
 	if TXT:
