@@ -12520,8 +12520,12 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 
 	# manage random seed
 	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
-	logging.info('Init list random seed: %s' % rnd)
+	if(rand_seed > 0):
+		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	else:
+		from random import randint
+		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
+	logging.info('Initial list random seeds: %s' % rnd)
 	logging.info('K = %03d %s' % (K, 40 * '-'))
 
 	# open unstable images
@@ -12612,8 +12616,15 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 		logging.info('::: Start k-means stability :::')
 
 	# manage random seed
+	if(myid != main_node):
+		from random import jumpahead
+		jumpahead(17*myid + 123)
 	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	if(rand_seed > 0):
+		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	else:
+		from random import randint
+		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
 	if myid == main_node:
 		logging.info('Init list random seed: %s' % rnd)
 		logging.info('K = %03d %s' % (K, 40 * '-'))
@@ -12687,7 +12698,11 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 
 	# manage random seed
 	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	if(rand_seed > 0):
+		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	else:
+		from random import randint
+		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
 	logging.info('Init list random seed: %s' % rnd)
 
 	trials       = 1
@@ -12801,9 +12816,16 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
 	if myid == main_node: logging.info('::: Start k-means stability :::')
 
+	if(myid != main_node):
+		from random import jumpahead
+		jumpahead(17*myid + 123)
 	# manage random seed
 	rnd = []
-	for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)  # are you sure the seeds are random when the user does not provide a seed? PAP 08/11/09
+	if(rand_seed > 0):
+		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	else:
+		from random import randint
+		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
 	if myid == main_node: logging.info('Init list random seed: %s' % rnd)
 
 	trials       = 1

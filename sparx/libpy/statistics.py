@@ -2664,7 +2664,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
-	from random       import seed, randint
+	from random       import seed, randint, jumpahead
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
@@ -2725,6 +2725,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	# [all] define parameters
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
+	if(myid != main_node):  jumpahead(17*myid+123)
 	Cls={}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -3162,7 +3163,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
-	from random       import seed, randint, shuffle
+	from random       import seed, randint, shuffle, jumpahead
 	from copy	  import deepcopy
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
@@ -3223,6 +3224,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	# [all] define parameters	
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
+	if(myid != main_node):  jumpahead(17*myid+123)
 	Cls={}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -3789,6 +3791,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 
 	if isinstance(rand_seed, list): rnd = rand_seed
 	else:                           rnd = [rand_seed]
+	
 	
 	for ipart in xrange(nbpart):
 		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))

@@ -49,7 +49,7 @@ def main():
 	parser.add_option("--th_nobj",        type="int",          default=1,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 1)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
 	parser.add_option("--opt_method",     type='string',       default='cla',     help="K-means method: SSE (default), cla")
-	parser.add_option("--match",          type='string',       default='pwa',      help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')
+	parser.add_option("--match",          type='string',       default='pwa',     help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')
 	parser.add_option("--maxit",          type="int",          default=1e9,       help="Maximum number of iterations for k-means")
 	parser.add_option("--CTF",            action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--CUDA",           action="store_true", default=False,     help="CUDA version")
@@ -97,8 +97,6 @@ def main():
 			global_def.BATCH = True
 			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match, options.maxit)
 			global_def.BATCH = False
-			
-			
 
 
 if __name__ == "__main__":
