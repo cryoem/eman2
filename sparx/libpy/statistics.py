@@ -7431,6 +7431,8 @@ def hist_list(data, nbin = -1):
 	if nbin < 0:  nbin = len(data)/10
 	fmaxi = max(data)
 	fmini = min(data)
+	if fmaxi == fmini:
+		return [fmaxi]*nbin, [0]*nbin
 
 	binsize_i = (fmaxi-fmini)/float(nbin)
 	start_i = fmini
