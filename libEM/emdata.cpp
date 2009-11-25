@@ -124,7 +124,7 @@ EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
 		cuda_cache_handle(-1),
 #endif //EMAN2_USING_CUDA
-		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(0), nx(that.nx), ny(that.ny), nz(that.nz),
+		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(that.changecount), nx(that.nx), ny(that.ny), nz(that.nz),
 		nxy(that.nx*that.ny), nxyz(that.nx*that.ny*that.nz), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
@@ -1417,14 +1417,14 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 		return correlation(this, this, fpflag,center);
 	}
 	else {
-		
+
 #ifdef EMAN2_USING_CUDA
 		if (gpu_operation_preferred()) {
 			EXITFUNC;
 			return calc_ccf_cuda(with,false,center);
 		}
 #endif
-		
+
 		// If the argument EMData pointer is not the same size we automatically resize it
 		bool undoresize = false;
 		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize();
