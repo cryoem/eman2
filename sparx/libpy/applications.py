@@ -3162,30 +3162,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						old_ali_params.append(mirror)
 
 				if CUDA:
-					sx_list = []
-					sy_list = []
-
-					for im in xrange(len(data)):
-						alpha, sx, sy, mirror = combine_params2(all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 0.0, -cs[0], -cs[1], 0)
-						alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
-						sx_list.append(sxi)
-						sy_list.append(syi)
-
-					results = R.alignment_2d(tavg, sx_list, sy_list, GPUID, 1)	
-
-					sx_sum = 0.0
-					sy_sum = 0.0
-					
-					all_ali_params = []
-					for im in xrange(len(data)):
-						[alphan, sxn, syn, mn] = combine_params2(0.0, -sx_list[im], -sy_list[im], 0, results[im*4], results[im*4+1], results[im*4+2], int(results[im*4+3]))
-						all_ali_params.append(alphan)
-						all_ali_params.append(sxn)
-						all_ali_params.append(syn)
-						all_ali_params.append(mn)						
-						if mn == 0: sx_sum += sxn
-						else:       sx_sum -= sxn
-						sy_sum += syn
+					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1)
+					sx_sum = all_ali_params[-2]
+					sy_sum = all_ali_params[-1]
+					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 				else:	
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 					

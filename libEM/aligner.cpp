@@ -1750,6 +1750,93 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 	
 	return align_result;
 }
+
+
+vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float> ali_params, float csx, float csy, int id, int silent) {
+
+	float *ref_image, max_ccf;
+	int base_address, ccf_offset;
+	float ts, tm;
+	float ang, sx, sy, mirror, co, so, sxs, sys;
+	float *sx2, *sy2;
+	vector<float> align_result;
+
+	sx2 = (float *)malloc(NIMA*sizeof(float));
+	sy2 = (float *)malloc(NIMA*sizeof(float));
+
+	ref_image = ref_image_em->get_data();
+	
+	for (int i=0; i<NIMA; i++) {
+		ang = ali_params[i*4]/180.0*M_PI;
+		sx = (ali_params[i*4+3] < 0.5)?(ali_params[i*4+1]-csx):(ali_params[i*4+1]+csx);
+		sy = ali_params[i*4+2]-csy;
+		co = cos(ang);
+		so = sin(ang);
+		sx2[i] = -(sx*co-sy*so);
+		sy2[i] = -(sx*so+sy*co);
+	}
+	
+	if (CTF == 1) {
+		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+	} else {
+		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+	}
+
+	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
+
+	float sx_sum = 0.0f;
+	float sy_sum = 0.0f;
+	
+	for (int im=0; im<NIMA; im++) {
+		max_ccf = -1.0e22;
+		for (int kx=-KX; kx<=KX; kx++) {
+			for (int ky=-KY; ky<=KY; ky++) {
+				base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NIMA+im)*(RING_LENGTH+2);
+				for (int l=0; l<RING_LENGTH; l++) {
+					ts = ccf[base_address+l];
+					tm = ccf[base_address+l+ccf_offset];
+					if (ts > max_ccf) {
+						ang = float(l)/RING_LENGTH*360.0;
+						sx = -kx*STEP;
+						sy = -ky*STEP;
+						mirror = 0;
+						max_ccf = ts;
+					}
+					if (tm > max_ccf) {
+						ang = float(l)/RING_LENGTH*360.0; 
+						sx = -kx*STEP;
+						sy = -ky*STEP;
+						mirror = 1;
+						max_ccf = tm;
+					}
+				}
+			}
+		}
+		co =  cos(ang*M_PI/180.0);
+		so = -sin(ang*M_PI/180.0);
+		
+		sxs = (sx-sx2[im])*co-(sy-sy2[im])*so;
+		sys = (sx-sx2[im])*so+(sy-sy2[im])*co;
+
+		align_result.push_back(ang);
+		align_result.push_back(sxs);
+		align_result.push_back(sys);
+		align_result.push_back(mirror);
+		
+		if (mirror == 0)  { sx_sum += sxs; }  else { sx_sum -= sxs; }
+		sy_sum += sys;
+	}
+	
+	align_result.push_back(sx_sum);
+	align_result.push_back(sy_sum);
+	
+	free(sx2);
+	free(sy2);
+	
+	return align_result;
+}
+
+
 #endif
 
 void EMAN::dump_aligners()

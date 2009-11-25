@@ -403,6 +403,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 	.def("filter_stack", &EMAN::CUDA_Aligner::filter_stack)
 	.def("sum_oe", &EMAN::CUDA_Aligner::sum_oe)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
+        .def("ali2d_single_iter", &EMAN::CUDA_Aligner::ali2d_single_iter)
     ;
 #endif
 
