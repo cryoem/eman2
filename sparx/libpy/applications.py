@@ -3202,7 +3202,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						sy = all_ali_params[im*4+2]
 						mirror = all_ali_params[im*4+3]
 					else:
-						alpha, sx, sy, mirror = get_params2D(data[im]) 
+						alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
 			        	if old_ali_params[im*4+3] == mirror:
 		        			this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 		        			pixel_error += this_error
