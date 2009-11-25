@@ -10474,9 +10474,7 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	from mpi       import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from utilities import drop_image
 	nproc = mpi_comm_size( MPI_COMM_WORLD )
-	print  "  NUMBER OF PROCS  ",nproc
 	myid  = mpi_comm_rank( MPI_COMM_WORLD )
-	print  "  STARTED  ",myid
 	
 	if verbose==0:
 		info = None
@@ -10490,23 +10488,20 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 
 	imgdata = EMData.read_images(prj_stack,range(img_node_start, img_node_end))
 
-	print  "  DATA  LOADED  ",myid
+	odd_start = img_node_start % 2
+	eve_start = (odd_start+1)%2
 	if CTF:
 		from reconstruction import rec3D_MPI
-		odd_start = img_node_start % 2
-		eve_start = (odd_start+1)%2
 
 		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, info)
 	else :
 		from reconstruction import rec3D_MPI_noCTF
-		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid)
+		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, info)
 	if myid == 0:
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
 			drop_image(vol, vol_stack)
-
-
 
 def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, reference_structure = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", MPI = False, random_angles = 0):
 	'''

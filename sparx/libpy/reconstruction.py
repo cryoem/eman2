@@ -791,11 +791,11 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		info.flush()
 
 	if myid == main_node_half:
-		import os
-		scratch = os.getenv("SCRATCH", "/tmp")
+		#import os
+		#scratch = os.getenv("SCRATCH", "/tmp")
 		tmpid = randint(0, 1000000)
-		fftvol_half_file = scratch + ("/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = scratch + ("/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = ("fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -868,11 +868,11 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		info.flush()
         
 	if myid == main_node_half:
-		import os
-		scratch = os.getenv("SCRATCH", "/tmp")
+		#import os
+		#scratch = os.getenv("SCRATCH", "/tmp")
 		tmpid = randint(0, 1000000) 
-		fftvol_half_file = scratch + ("/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = scratch + ("/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = ("/fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("/weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -1149,7 +1149,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 
         return model_blank(nx,nx,nx),None
 
-def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, index = -1, info=None, npad = 4):
+def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, info=None, index = -1, npad = 4):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory 
 	  Computes reconstruction and through odd-even, in order to get the resolution
@@ -1219,7 +1219,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 		return volall,fscdat
-  
+
 	if nproc == 2:
 		if myid == main_node_odd:
 			fftvol = get_image( fftvol_odd_file )
@@ -1263,14 +1263,14 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		send_EMData(fftvol, main_node_all, tag_fftvol_odd )
 
 		if not(info is None):
-			info.write("fftvol odd sent")
+			info.write("fftvol odd sent\n")
 			info.flush()
 
 		weight = get_image( weight_odd_file )
 		send_EMData(weight, main_node_all, tag_weight_odd )
 
 		if not(info is None):
-			info.write("weight odd sent")
+			info.write("weight odd sent\n")
 			info.flush()
 
 		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry)
@@ -1293,11 +1293,11 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 
 		return model_blank(nx,nx,nx), None
 
-        
+
 	if myid == main_node_all:
 		fftvol = recv_EMData(main_node_odd, tag_fftvol_odd)
 		if not(info is None):
-			info.write( "fftvol odd recved" )
+			info.write( "fftvol odd received\n" )
 			info.flush()
 		fftvol_tmp = recv_EMData(main_node_eve, tag_fftvol_eve)
 		fftvol += fftvol_tmp
