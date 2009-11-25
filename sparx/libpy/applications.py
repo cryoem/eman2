@@ -3150,18 +3150,23 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if not again: break
 			if total_iter != max_iter*len(xrng):
-				old_ali_params = []
 				if CUDA:
-					for im in xrange(len(data)):  old_ali_params.append(tuple(all_ali_params[im*4:im*4+4]))
+					old_ali_params = all_ali_params[:]
 				else:
-				        for im in xrange(len(data)):  old_ali_params.append(get_params2D(data[im]))
+					old_ali_params = []
+				        for im in xrange(len(data)):  
+						alpha, sx, sy, mirror, scale = get_params2D(data[im])
+						old_ali_params.append(alpha)
+						old_ali_params.append(sx)
+						old_ali_params.append(sy)
+						old_ali_params.append(mirror)
 
 				if CUDA:
 					sx_list = []
 					sy_list = []
 
 					for im in xrange(len(data)):
-						alpha, sx, sy, mirror = combine_params2(all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], int(all_ali_params[im*4+3]), 0.0, -cs[0], -cs[1], 0)
+						alpha, sx, sy, mirror = combine_params2(all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 0.0, -cs[0], -cs[1], 0)
 						alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 						sx_list.append(sxi)
 						sy_list.append(syi)
@@ -3183,6 +3188,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						sy_sum += syn
 				else:	
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+					
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 
@@ -3191,11 +3197,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				pixel_error_list = []
 			        for im in xrange(len(data)):
 			        	if CUDA:
-						ali_params = tuple(all_ali_params[im*4:im*4+4])
+						alpha = all_ali_params[im*4]
+						sx = all_ali_params[im*4+1]
+						sy = all_ali_params[im*4+2]
+						mirror = all_ali_params[im*4+3]
 					else:
-						ali_params = get_params2D(data[im]) 
-			        	if old_ali_params[im][3] == ali_params[3]:
-		        			this_error = max_pixel_error(*(old_ali_params[im][0:3]+ali_params[0:3]+(last_ring*2,)))
+						alpha, sx, sy, mirror = get_params2D(data[im]) 
+			        	if old_ali_params[im*4+3] == mirror:
+		        			this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 		        			pixel_error += this_error
 						pixel_error_list.append(this_error)
 						mirror_consistent += 1
@@ -3218,7 +3227,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if CUDA:
 		for im in xrange(len(data)):
-			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], int(all_ali_params[im*4+3]), 1.0])
+			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
 
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers and STOP, under MPI writing has to be done sequentially
