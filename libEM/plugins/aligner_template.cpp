@@ -29,16 +29,23 @@
  * 
  * */
 
-#include "projector_template.h"
-
+#include "aligner_template.h"
 
 using namespace EMAN;
 
-EMData *XYZProjector::project3d(EMData * ) const
+const string XYZAligner::NAME = "xyz";
+
+EMData *XYZAligner::align(EMData * this_img, EMData *, 
+			const string &, const Dict&) const
 {
-	return 0;
-}
-EMData *XYZProjector::backproject3d(EMData * ) const
-{
+	if (!this_img) {
+		return 0;
+	}
+#if 0
+
+	int param1 = params["param1"];
+	float param2 = params["param2"];
+#endif
+
 	return 0;
 }

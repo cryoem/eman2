@@ -29,29 +29,18 @@
  * 
  * */
 
-#include "reconstructor_template.h"
+#include "projector_template.h"
+
 
 using namespace EMAN;
 
-XYZReconstructor::XYZReconstructor()
-{
-}
+const string XYZProjector::NAME = "xyz";
 
-XYZReconstructor::~XYZReconstructor()
-{
-}
-
-void XYZReconstructor::setup()
-{
-	
-}
-
-int XYZReconstructor::insert_slice(const EMData * const, const Transform3D &)
+EMData *XYZProjector::project3d(EMData * ) const
 {
 	return 0;
 }
-
-EMData *XYZReconstructor::finish()
+EMData *XYZProjector::backproject3d(EMData * ) const
 {
-	return image;
+	return 0;
 }

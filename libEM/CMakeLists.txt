@@ -1,5 +1,6 @@
 SUBDIRS(sparx)
 SUBDIRS(gorgon)
+SUBDIRS(plugins)
 
 SET(LIB_EM_SOURCE byteorder.cpp
     boxingtools.cpp

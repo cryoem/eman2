@@ -2,7 +2,7 @@ CC = mpicxx
 
 CFLAGS = -fPIC -ftemplate-depth-120 -w -DBOOST_DISABLE_THREADS  -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DHAVE_FSEEKO -DHAVE_FTELLO -DFFTW2 -DEM_TIFF -DEM_PNG -DEM_BOOST -DUSE_MPI -DEM2_EXPORTS -Wall -O3 
 
-LIBS    = -L../../../../install/lib -lEM2 -lEMext -L../../../../../usr/lib \
+LIBS    = -L../../../../install/lib -lEM2 -L../../../../../usr/lib \
          -lgsl -lgslcblas -lhdf5 -lm
 
 EMAN2INCLUDE = -I. -I../ -I../../ -I../../../ -I../../../../../usr/include 

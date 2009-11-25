@@ -594,6 +594,28 @@ namespace EMAN
 		{
 			return sqrtf(x * x + y * y);
 		}
+		
+		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @param[in] z The third number.
+		 * @return (int)(x*x + y*y + z*z);
+		 */
+		static inline int hypot3sq(int x, int y, int z)
+		{
+			return ((x * x + y * y + z * z));
+		}
+
+		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @param[in] z The third number.
+		 * @return (x*x + y*y + z*z);
+		 */
+		static inline float hypot3sq(float x, float y, float z)
+		{
+			return (x * x + y * y + z * z);
+		}
 
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
 		 * @param[in] x The first number.
@@ -655,13 +677,19 @@ namespace EMAN
 			}
 			return (int) x;
 		}
+		/** Returns an approximate of exp(x) using a cached table and linear interpolation
+		 * uses actual exp(x) outside the cached range
+		 * @param[in] f argument to exp(f)
+		 * @return (float)exp(x)
+		*/
+		static float fast_exp(const float &f) ;
 
-		/** Calculate Gaussian value.
-		 * @param[in] a
-		 * @param[in] dx
-		 * @param[in] dy
-		 * @param[in] dz
-		 * @param[in] d
+		/** Calculate Gaussian value.  a * exp(-(dx * dx + dy * dy + dz * dz) / d)
+		 * @param[in] a  amplitude
+		 * @param[in] dx x center
+		 * @param[in] dy y center
+		 * @param[in] dz z center
+		 * @param[in] d  width of gaussian
 		 * @return The Gaussian value.
 		 */
 		static inline float agauss(float a, float dx, float dy, float dz, float d)

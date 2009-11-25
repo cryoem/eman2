@@ -159,7 +159,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "ccc";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -181,6 +181,7 @@ namespace EMAN
 			return d;
 		}
 
+		static const string NAME;
 	};
 
 	/** Squared Euclidean distance normalized by n between 'this' and 'with'*/
@@ -197,7 +198,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "sqeuclidean";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -218,6 +219,7 @@ namespace EMAN
 			return d;
 		}
 
+		static const string NAME;
 	};
 
 
@@ -235,7 +237,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "dot";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -256,6 +258,8 @@ namespace EMAN
 			d.put("mask", EMObject::EMDATA, "image mask");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** Use dot product but normalize based on characteristics of the missing wedge
@@ -270,7 +274,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "dot.tomo";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -295,7 +299,8 @@ namespace EMAN
 
 			return d;
 		}
-
+		
+		static const string NAME;
 	};
 
 	/** This will calculate the dot product for each quadrant of the image and
@@ -312,7 +317,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "quadmindot";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -332,7 +337,8 @@ namespace EMAN
 			d.put("normalize", EMObject::INT, "If set, returns normalized dot product -1.0 - 1.0.");
 			return d;
 		}
-
+		
+		static const string NAME;
 	};
 
 
@@ -357,7 +363,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "optvariance";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -391,6 +397,8 @@ namespace EMAN
 		{
 			return shift;
 		}
+		
+		static const string NAME;
 
 	private:
 		mutable float scale;
@@ -413,7 +421,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "phase";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -431,6 +439,8 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
+		
+		static const string NAME;
 
 #ifdef EMAN2_USING_CUDA
 		 float cuda_cmp(EMData * image, EMData *with) const;
@@ -450,7 +460,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "frc";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -473,6 +483,8 @@ namespace EMAN
 			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	template <> Factory < Cmp >::Factory();

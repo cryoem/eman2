@@ -243,7 +243,120 @@ inline float get_value_at(size_t i) const
  * @param y	y coordinate
  * @return The complex pixel at x,y
  */
-std::complex<float> get_complex_at(int x,int y);
+std::complex<float> get_complex_at(const int &x,const int &y) const;
+
+/** Get complex<float> value at x,y,z. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny x nz image, a nx+2 x ny x nz image will be produced, and
+ * values using this function can go from -nx/2 to nx/2 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. This function
+ * differs from cmplx() which will interpret x,y directly as pixel coordinates
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @return The complex pixel at x,y
+ */
+std::complex<float> get_complex_at(const int &x,const int &y,const int &z) const;
+
+/** Get complex<float> index for coords x,y,z. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny x nz image, a nx+2 x ny x nz image will be produced, and
+ * values using this function can go from -nx/2 to nx/2 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. Note that if a pixel
+ * is accessed at this location, a complex conjugate may be required if x<0, and this fact is not returned.
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @return The complex pixel at x,y
+ */
+size_t get_complex_index(const int &x,const int &y,const int &z) const;
+
+size_t get_complex_index(int x,int y,int z,const int &subx0,const int &suby0,const int &subz0,const int &fullnx,const int &fullny,const int &fullnz) const;
+
+inline size_t get_complex_index_fast(const int &x,const int &y,const int &z) const {
+//	if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
+	if (x<0) {
+		return -x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	}
+	return x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+}
+
+/** Set complex<float> value at x,y. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny image, a nx+2 x ny image will be produced, and
+ * values using this function can go from -nx/2-1 to nx/2+1 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. This function
+ * differs from cmplx() which will interpret x,y directly as pixel coordinates
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param val complex<float> value to set
+ * @return The complex pixel at x,y
+ */
+void set_complex_at(const int &x,const int &y,const std::complex<float> &val);
+
+/** Set complex<float> value at x,y,z. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny x nz image, a nx+2 x ny x nz image will be produced, and
+ * values using this function can go from -nx/2 to nx/2 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. This function
+ * differs from cmplx() which will interpret x,y directly as pixel coordinates
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @param val complex<float> value to set
+ * @return The complex pixel at x,y
+ */
+void set_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val);
+
+/** Add complex<float> value at x,y,z. This assumes the image is
+ * a standard real/imaginary image with the complex origin in the first memory location.
+ * If you take the fft of a real nx x ny x nz image, a nx+2 x ny x nz image will be produced, and
+ * values using this function can go from -nx/2 to nx/2 and -ny/2 to ny/2. It will
+ * automatically deal with wraparound and complex conjugate issues for -x. It will return the
+ * index into the float array at which the complex began, or nx*ny*nz if out of range
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @param val complex<float> value to set
+ * @return The complex pixel at x,y
+ */
+size_t add_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val);
+
+inline size_t add_complex_at_fast(const int &x,const int &y,const int &z,const std::complex<float> &val) {
+//if (x>=nx/2 || y>ny/2 || z>nz/2 || x<=-nx/2 || y<-ny/2 || z<-nz/2) return nxyz;
+
+size_t idx;
+if (x<0) {
+	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	rdata[idx]+=(float)val.real();
+	rdata[idx+1]-=(float)val.imag();
+	return idx;
+}
+
+idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+rdata[idx]+=(float)val.real();
+rdata[idx+1]+=(float)val.imag();
+
+return idx;
+}
+
+/** Add complex<float> value at x,y,z assuming that 'this' is a subvolume from a larger virtual volume. Requires
+ * that parameters often stored in the header as: subvolume_x0,y0,z0 and subvolume_full_nx,ny,nz be passed in as
+ * parameters. Otherwise similar to add_complex_at.
+ * It will return the index into the subvolume float array at which the complex began, or nx*ny*nz if out of range
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @param val complex<float> value to set
+ * @return The complex pixel at x,y
+ */
+size_t add_complex_at(int x,int y,int z,const int &subx0,const int &suby0,const int &subz0,const int &fullnx,const int &fullny,const int &fullnz,const std::complex<float> &val);
 
 /** Get the pixel density value at coordinates (x,y,z).
  * Should only be called on 3D images - no errors are thrown

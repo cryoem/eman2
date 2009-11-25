@@ -97,7 +97,7 @@ def main():
 
 	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
 	parser.add_option("--average", action="store_true",
-					help="Averages all input images (without alignment) and writes a single (normalized) output image")
+					help="Averages all input images (without alignment) and writes a single output image")
 	parser.add_option("--calcsf", metavar="n outputfile", type="string", nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
 	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
@@ -507,7 +507,8 @@ def main():
 		
 	if average:
 		average["ptcl_repr"]=(n1-n0+1)
-		average.process_inplace("normalize");
+		average.mult(1.0/(n1-n0+1.0));
+#		average.process_inplace("normalize");
 		average.append_image(outfile);
 
 	if options.fftavg:

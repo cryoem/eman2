@@ -442,6 +442,7 @@ EMData* EMData::column_sum_cuda() const {
 void EMData::set_gpu_rw_data(float* data, const int x, const int y, const int z) {
 	nx = x; ny = y; nz = z;
 	nxy = nx*ny;
+	nxyz = nx*ny*nz;
 	if (cuda_cache_handle!=-1) {
 		cuda_cache.replace_gpu_rw(cuda_cache_handle,data);
 	} else {

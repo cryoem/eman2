@@ -199,11 +199,12 @@ EMData* EMData::get_fft_phase()
 }
 #ifdef EMAN2_USING_CUDA
 #include <cuda_runtime_api.h>
-#endif
+
 float* EMData::get_data() const
 {
-	size_t num_bytes = nx*ny*nz*sizeof(float);
-	if (num_bytes > 0 && rdata == 0) {
+// This is inappropriate, should ONLY be in set_size. Was added by David for CUDA work
+// I'm taking it back out again  --steve 11/03/2009
+/*	if (num_bytes > 0 && rdata == 0) {
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
 		if ( rdata == 0 )
 		{
@@ -215,8 +216,9 @@ float* EMData::get_data() const
 			throw BadAllocException(message);
 		}
 		if (rdata == 0) throw BadAllocException("The allocation of the raw data failed");
-	}
+	}*/
 #ifdef EMAN2_USING_CUDA
+	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The device to host cudaMemcpy failed : " + string(cudaGetErrorString(error)));
@@ -229,6 +231,8 @@ float* EMData::get_data() const
 	return rdata;
 
 }
+#endif
+
 
 #include <sys/stat.h>
 
@@ -708,6 +712,7 @@ void EMData::set_size(int x, int y, int z)
 	ny = y;
 	nz = z;
 	nxy = nx*ny;
+	nxyz = nx*ny*nz;
 
 	if (old_nx == 0) {
 		EMUtil::em_memset(get_data(),0,size);

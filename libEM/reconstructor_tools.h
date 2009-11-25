@@ -75,19 +75,16 @@ namespace EMAN
 	 * 
      *  - How to get all the FourierPixelInserter3D names:
 	 *@code
-	 *    vector<string> all_pixel_inserters = Factory<FourierPixelInserter3D>::get_list();
+	 *    vector<string> all_pixel_inserters = Factory<FourierPixeldtInserter3D>::get_list();
 	@endcode
 	 *
 	 *  - How to use a FourierPixelInserter3D in your code
 	 *@code
 	 *  // First set up the params correctly this is essential - setting up the params requires
-	 *  // these 5 parameters (only and always these 5). nx,ny, and nz are the dims of rdata and
-	 *  // norm, rdata is the real (Fourier) data, and norm is the associated normalization matrix.
-	 *	parms["rdata"] = image->get_data();
+	 *  // these 5 parameters (only and always these 5). nx,ny, and nz are the dims of data and
+	 *  // norm, data is the (Fourier) EMData object, and norm is the associated normalization matrix.
+	 *	parms["data"] = image;
 	 *	parms["norm"] = tmp_data->get_data();
-	 *	parms["nx"] = nx;
-	 *	parms["ny"] = ny;
-	 *	parms["nz"] = nz;
 	 *  // The two is the ID of the FourierInserter3DMode2 in this case.
 	 *  FourierPixelInserter3D* r = Factory<FourierPixelInserter3D>::get("2", params);
 	 *  // Then call init - this causes all of the internal data to be stored correctly
@@ -102,7 +99,7 @@ namespace EMAN
 		public:
 		/** Construct a FourierPixelInserter3D
 		 */
-		FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
+		FourierPixelInserter3D() : norm(0), data(0), nx(0), ny(0), nz(0), nxyz(0)
 		{}
 		
 		/** Desctruct a FourierPixelInserter3D
@@ -115,10 +112,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("nx", EMObject::INT);
-			d.put("ny", EMObject::INT);
-			d.put("nz", EMObject::INT);
-			d.put("rdata", EMObject::FLOAT_POINTER);
+			d.put("data", EMObject::EMDATA);
 			d.put("norm", EMObject::FLOAT_POINTER);
 			return d;
 		}
@@ -131,29 +125,23 @@ namespace EMAN
 		* @param weight the weight to given to this complex pixel
 		* @return A boolean that indicates the pixel has been inserted (or not)
 		 */
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0) = 0;
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0) = 0;
 	
 
 		virtual void init();
 		
-		/** A function added for testing purposes only
-		* Called with the given floating point coordinate [xx,yy,zz] checks to see if 
-		* the pixels that the FourierPixelInserter3D's insert_pixel function would
-		* have effected (or changed) are near enough to zero.
-		 */
-		virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) = 0;
 		
 		protected:
 			/// A pointer to the constructor argument normalize_values
 			float * norm;
 			/// A pointer to the constructor argument real_data
-			float * rdata;
+			EMData * data;
 		
-			/// Image volume data sizes, and nxy a convenience variable used here and there
-			int nx, ny, nz, nxy;
+			/// Image volume data sizes a convenience variable used here and there
+			int nx, ny, nz,nxyz;
+			int nx2,ny2,nz2;
+			int subx0,suby0,subz0,fullnx,fullny,fullnz;
 		
-			/// A measure of tolerance used when testing to see if pixels are zero when calling effected_pixels_are_zero
-			static float tolerance;
 		private:
 		// Disallow copy and assignment by default
 			FourierPixelInserter3D( const FourierPixelInserter3D& );
@@ -173,7 +161,7 @@ namespace EMAN
 			FourierInserter3DMode1() {}
 			virtual ~FourierInserter3DMode1() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 
 			static FourierPixelInserter3D *NEW()
 			{
@@ -182,16 +170,16 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "1";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
 				return "Fourier pixel insertion using nearest neighbor";
 			}
+			
+			static const string NAME;
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-
 		private:
 		// Disallow copy and assignment by default
 			FourierInserter3DMode1( const FourierInserter3DMode1& );
@@ -207,7 +195,7 @@ namespace EMAN
 			FourierInserter3DMode2() {}
 			virtual ~FourierInserter3DMode2() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -216,21 +204,16 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "2";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
 				return "Fourier pixel insertion using interpolation and the nearest 8 voxels";
 			}
-		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
-			virtual void init();
-		private:
-			int off[8];
-			float g[8];
-		
+
+			static const string NAME;
+					
 		// Disallow copy and assignment by default
 			FourierInserter3DMode2( const FourierInserter3DMode2& );
 			FourierInserter3DMode2& operator=( const FourierInserter3DMode2& );
@@ -245,7 +228,7 @@ namespace EMAN
 			FourierInserter3DMode3() {}
 			virtual ~FourierInserter3DMode3() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 				
 			static FourierPixelInserter3D *NEW()
 			{
@@ -254,54 +237,20 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "3";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
-				return "Fourier pixel insertion mode 3";
+				return "Fourier pixel insertion using a 3x3x3 Gaussian kernel";
 			}
 
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
+			static const string NAME;
+			
 		private:
 		// Disallow copy and assignment by default
 			FourierInserter3DMode3( const FourierInserter3DMode3& );
 			FourierInserter3DMode3& operator=( const FourierInserter3DMode3& );
-	};
-	
-	/** FourierPixelInserter3DMode4  - encapsulates "method 4" for inserting a 2D Fourier slice into a 3D volume
-	 * See comments in FourierPixelInserter3D for explanations
-	 */
-	class FourierInserter3DMode4 : public FourierPixelInserter3D
-	{
-		public:
-			FourierInserter3DMode4() {}
-			virtual ~FourierInserter3DMode4() {}
-		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
-		
-			static FourierPixelInserter3D *NEW()
-			{
-				return new FourierInserter3DMode4();
-			}
-
-			virtual string get_name() const
-			{
-				return "4";
-			}
-		
-			virtual string get_desc() const
-			{
-				return "Fourier pixel insertion mode 4";
-			}
-
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
-		private:
-		// Disallow copy and assignment by default
-			FourierInserter3DMode4( const FourierInserter3DMode4& );
-			FourierInserter3DMode4& operator=( const FourierInserter3DMode4& );
 	};
 	
 	/** FourierPixelInserter3DMode5  - encapsulates "method 5" for inserting a 2D Fourier slice into a 3D volume
@@ -312,7 +261,7 @@ namespace EMAN
 		public:
 			FourierInserter3DMode5()
 			{
-				gimx = EMAN::Interp::get_gimx();
+//				gimx = EMAN::Interp::get_gimx();
 			}
 		
 			virtual ~FourierInserter3DMode5()
@@ -325,7 +274,7 @@ namespace EMAN
 // 				}
 			}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -334,7 +283,7 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "5";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
@@ -342,14 +291,14 @@ namespace EMAN
 				return "Fourier pixel insertion mode 5";
 			}
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
+			static const string NAME;
+			
 		private:
 		// Disallow copy and assignment by default
 			FourierInserter3DMode5( const FourierInserter3DMode5& );
 			FourierInserter3DMode5& operator=( const FourierInserter3DMode5& );
 		
-			float * gimx;
+//			float * gimx;
 	};
 	
 	/** FourierPixelInserter3DMode6  - encapsulates "method 6" for inserting a 2D Fourier slice into a 3D volume
@@ -361,7 +310,7 @@ namespace EMAN
 			FourierInserter3DMode6() {}
 			virtual ~FourierInserter3DMode6() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -370,16 +319,16 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "6";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
-				return "Fourier pixel insertion mode 6";
+				return "More exact version of gauss_5";
 			}
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
+			static const string NAME;
+			
 		private:
 		// Disallow copy and assignment by default
 			FourierInserter3DMode6( const FourierInserter3DMode6& );
@@ -395,7 +344,7 @@ namespace EMAN
 			FourierInserter3DMode7() {}
 			virtual ~FourierInserter3DMode7() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -404,16 +353,16 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "7";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
-				return "Fourier pixel insertion mode 7";
+				return "Hypergeometric kernel 5x5x5";
 			}
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz);
-		
+			static const string NAME;
+			
 		private:
 		// Disallow copy and assignment by default
 			FourierInserter3DMode7( const FourierInserter3DMode7& );
@@ -436,7 +385,7 @@ namespace EMAN
 					delete [] W;
 			}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1.0);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -445,17 +394,18 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "8";
+				return NAME;
 			}
 		
 			virtual string get_desc() const
 			{
 				return "Fourier pixel insertion mode 8";
 			}
-		
-			virtual bool effected_pixels_are_zero(const float&, const float&, const float&) { throw; }
-			
+					
 			virtual void init();
+			
+			static const string NAME;
+			
 		private:
 			int mFreqCutoff;
 			float mDFreq;
@@ -467,535 +417,8 @@ namespace EMAN
 	};
 	
 	
-
-	/** InterpolationFunctoid is an abstract base class, having basically one function which is "operate(float radius)"
-	* It simplifies the implementation of InterpolatedFRC::continue_frc_calc? (where ? = 3,4,6 or 7)
-	* The other cases (1,2 and 5) must be handled case by case. Note InterpolationFunctoidMode5 is declared 
-	* below but it does not derive from InterpolationFunctoid, i.e. it is a special case.
-	* Each of these modes corresponds tightly with the FourierInserter3DMode? method of the same number and this
-	* is intentional
-	*/
-	class InterpolationFunctoid
-	{
-	public:
-		InterpolationFunctoid() {}
-		virtual ~InterpolationFunctoid() {}
-		
-		virtual float operate( const float radius ) const = 0;
-	};
-	
-	/** InterpolationFunctoidMode3
-	 * see comments for abstract base class InterpolationFunctoid
-	*/
-	class InterpolationFunctoidMode3 : public InterpolationFunctoid
-	{
-	public:
-		InterpolationFunctoidMode3() {}
-		virtual ~InterpolationFunctoidMode3() {}
-		
-		virtual float operate( const float radius ) const
-		{
-			return  exp(-radius / EMConsts::I3G);
-		}
-	};
-	
-	/** InterpolationFunctoidMode4
-	* see comments for abstract base class InterpolationFunctoid
-	*/
-	class InterpolationFunctoidMode4 : public InterpolationFunctoid
-	{
-	public:
-		InterpolationFunctoidMode4() {}
-		virtual ~InterpolationFunctoidMode4() {}
-		
-		virtual float operate( const float radius ) const
-		{
-			return  exp(-radius / EMConsts::I4G);
-		}
-	};
-	
-	/** InterpolationFunctoidMode5
-	* Handles the special case of mode5 interpolation - see FourierInserter3DMode5
-	*/
-	class InterpolationFunctoidMode5
-	{
-		public:
-			InterpolationFunctoidMode5() { gimx = EMAN::Interp::get_gimx(); }
-			virtual ~InterpolationFunctoidMode5()
-			{
-				if ( gimx != 0 )
-				{
-// 					delete gimx;
-// 					gimx = 0;
-				}
-			}
-		
-			virtual float operate( const int mmx, const int mmy, const int mmz ) const
-			{
-				return gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-			}
-		private:
-			float * gimx;
-	};
-
-	/** InterpolationFunctoidMode6
-	* see comments for abstract base class InterpolationFunctoid
-	*/
-	class InterpolationFunctoidMode6 : public InterpolationFunctoid
-	{
-	public:
-		InterpolationFunctoidMode6() {}
-		virtual ~InterpolationFunctoidMode6() {}
-		
-		virtual float operate( const float radius ) const
-		{
-			return  exp(-radius / EMConsts::I5G);
-		}
-	};
-	
-	/** InterpolationFunctoidMode7
-	* see comments for abstract base class InterpolationFunctoid
-	*/
-	class InterpolationFunctoidMode7 : public InterpolationFunctoid
-	{
-	public:
-		InterpolationFunctoidMode7() {}
-		virtual ~InterpolationFunctoidMode7() {}
-		
-		virtual float operate( const float radius ) const
-		{
-			return  EMAN::Interp::hyperg(radius);
-		}
-	};
-	
-	
-	/** Interpolated FRC - oversees calculation of the FRC and normalization values in Fourier Reconstruction (compares a slice (in some orientation) to a volume)
-	* This class works in a similar fashion to FourierPixelInserter3D objects in that the class is first initialized,
-	* all of the pixels are "inserted" iteratively, and finally a "finish" is called which calculates the quality scores
-	* and returns them in an approprate data object (QualityScores).
-	* Typical programmatic usage of this class is as follows
-	*
-	* InterpatedFRC ifrc(rdata,norm, xsize,ysize,zsize)
-	* for pixels in slice
-	*		// Figure out x,y and z of each pixel using its Euler angle (InterpatedFRC doesn't do this for you)
-	*		// Store the complex pixel value in dt[2]
-	*		ifrc.continue_frc_calc2(x,y,z,dt)
-	* end
-	* QualityScores qualityScores = ifrc.finish(slice->get_attr["ptcl_repr"])
-	*
-	* Note that the qualityScores objects contains the FRC integral, the SNR weighted FRC integral (which is the new EMAN2 similarity metric), the SNR integral,
-	* and the slice normalization score. SNR weighted FRC integral is elaborated upon in the FourierReconstructor comments (reconstructor.h) and will be described and tested
-	* online in the EMAN2 wiki (http://blake.bcm.edu/emanwiki/e2make3d). Further, the slice normalization score is the (inverse of the) constant to be applied
-	* to the image slice (comprised of all the pixels that were part of the calculation) to achieve normalization with respect to the pixels in the volume it intersects.
-	*
-	* As you can see from the above example, in order for this approach to work you must initialize the InterpatedFRC
-	* object with pointers to 3D volumes containing the true pixel data (rdata) and the associated normalization volume (norm).
-	* Note that the norm volume should be half the size of the rdata volume - this is because InterpolatedFRC assumes the real data
-	* is complex, and that for each complex pixel there is only one normalization value.
-	*
-	* Note also that I used continue_frc_calc2 in the above example but could have substituted the "2" with any number
-	* from 1 through 7, and in doing so a different technique for approximating the FRC (and normalization) would be used. Each of these 7
-	* techniques is meant to be used in conjunction with the associated FourierInserter3DMode? that was used to insert
-	* the pixels into the 3D volume in the first place. Because mode 2 is quite often the best method for inserting pixels,
-	* it is the mode I used in the example above. Testing showed that, for modes 1 and 2, the FRC scores were in the high 0.8's 
-	* to low 0.9s when inserting a noisey image into a 3D volume and then testing it's own FRC. For the other 
-	* methods the results weren't as high, varying from 0.7 to 0.5, where mode 7 seemed to give the next best results. Also note that when a 
-	* a slice is inserted into a 3D volume and, following this, if the normalization constant is calculated it is usually greater than 1, and this is
-	* a consequence of voxels being contributed to by more than one pixel (from the slice) in the 3D volume.
-	*/
-	class InterpolatedFRC : public FactoryBase
-	{
-		public:
-			/** Normal constructor
-			* @param new_params 
-			*/
-			InterpolatedFRC();
-			
-			/** Destructor
-			*/
-			virtual ~InterpolatedFRC()
-			{
-				free_memory();
-			}
-	
-			void set_params(const Dict & new_params);
-			
-			TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("nx", EMObject::INT);
-				d.put("ny", EMObject::INT);
-				d.put("nz", EMObject::INT);
-				d.put("rdata", EMObject::FLOAT_POINTER);
-				d.put("norm", EMObject::FLOAT_POINTER);
-				d.put("z_scale", EMObject::FLOAT_POINTER);
-				d.put("y_scale", EMObject::FLOAT_POINTER);
-				d.put("x_scale", EMObject::FLOAT_POINTER);
-				d.put("sampling", EMObject::FLOAT_POINTER);
-				return d;
-			}
-			
-			/** continue_frc_calc1 - function for including an additional pixel in the calculation of the FRC
-			* FRC calculated using nearest neighbor. Meant for use in conjunction with FourierInserter3DMode1
-			* @param xx the floating point x location of the incoming pixel 
-			* @param yy the floating point y location of the incoming pixel
-			* @param zz the floating point z location of the incoming pixel
-			* @param dt the complex pixel value stored in a float array of length 2
-			* @param weight the weight that this pixel has - corresponds to the weight with which the pixel was original inserted into the 3D volume
-			*/
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0) = 0;
-			
-			unsigned int get_size() { return size; }
-	
-			float operator[](const unsigned int& idx) { return frc[idx]; }
-
-// 			QualityScores finish(const unsigned int num_particles);
-	
-			void reset();
-		
-		protected:
-			mutable Dict params;
-			// Disallow copy construction
-			InterpolatedFRC( const InterpolatedFRC& that );
-			// Disallow assigment
-			InterpolatedFRC& operator=( const InterpolatedFRC& that);
-			
-			/** continue_frc_calc_functoid
-		 	* Meant for convenience in continue_frc_calc3, continue_frc_calc4, continue_frc_calc6, and continue_frc_calc7
-		 	* See comments in continue_frc_calc1 for parameter details.
-			*/
-			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctoid& functoid, const float& weight = 1.0 );
-			
-			/** free_memory - frees all associated memory
-			*/
-			void free_memory();
-			
-			/** Loads all information from parms into private variables
-			* Called in the constructor only.
-			*/
-			void init();
-			
-			// Pointers to the 3D (complex) data 
-			float* threed_rdata, *norm_data;
-
-			// I wish I could make these unsigned but everything else is ints, so these are too.
-			int nx, ny, nz, nxy;
-			
-			// scale factors are stored when dimensions are being stretched or shrunken in the Fourier reconstructor
-			float x_scale, y_scale, z_scale;
-	
-			float bin;
-	
-			// The maximum dimension (radius) of a considered pixel
-			int size;
-			int pixel_radius_max;
-			int pixel_radius_max_square;
-			
-			
-			// values used for calculating the normalization value
-			float r, rn;
-			
-			float* frc;
-			float* frc_norm_rdata;
-			float* frc_norm_dt;
-			
-			int off[8];
-			float g[8];
-		public:
-			/** QualityScores class is used by the FourierReconstructor and InterpolatedFRC for storing useful quality information.
-		 	* It's basically a data storage object that has a whole heap of getter and setter methods, and nothing more.
-			 */
-			class QualityScores
-			{
-				public:
-				/** Default constructor
-				*/
-				QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0), norm(0) {}
-				
-				/** Copy constructor
-				* @param that the quality scores to be constructed from
-				*/
-				QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
-					snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
-				
-				/** Assignment operator 
-				* @param that the quality scores to be constructed from
-				*/
-				QualityScores& operator=( const QualityScores& that );
-				/** Deconstructor
-				* no memory is alloced by this object, but 4 private variables fall out of scope
-				*/
-				~QualityScores() {}
-	
-				/// Various setter and getter methods are below
-				
-				float get_frc_integral() const { return frc_integral; }
-				float get_snr_normed_frc_integral() const { return snr_normed_frc_intergral; }
-				float get_normed_snr_integral() const { return normed_snr_integral; }
-				float get_norm() const { return norm; }
-	
-				void set_frc_integral( const float& score ) { frc_integral = score; }
-				void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
-				void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
-				void set_norm( const float& score ) { norm = score; }
-	
-				void debug_print()
-				{
-					cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << " norm " << norm << endl;
-				}
-				private:
-	
-				float frc_integral, snr_normed_frc_intergral, normed_snr_integral, norm;
-			
-			};
-			
-		QualityScores finish(const unsigned int num_particles);
-	};
-	
-	class InterpolatedFRCMode1 : public InterpolatedFRC
-	{
-		public:
-		InterpolatedFRCMode1() {};
-			
-			/** Destructor
-			 */
-		virtual ~InterpolatedFRCMode1() {}
-		
-		virtual string get_name() const
-		{
-			return "1";
-		}
-		
-		static InterpolatedFRC *NEW()
-		{
-			return new InterpolatedFRCMode1();
-		}
-		
-		virtual string get_desc() const
-		{
-			return "Corresponds to Fourier pixel inserter mode 1";
-		}
-		
-		virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-	private:
-		// Disallow copy construction
-		InterpolatedFRCMode1( const InterpolatedFRCMode1& that );
-		// Disallow assigment
-		InterpolatedFRCMode1& operator=( const InterpolatedFRCMode1& that);
-
-	};
-	
-	
-	class InterpolatedFRCMode2 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode2() {};
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode2() {}
-		
-			virtual string get_name() const
-			{
-				return "2";
-			}
-			
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode2();
-			}
-		
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 2";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode2( const InterpolatedFRCMode2& that );
-		// Disallow assigment
-			InterpolatedFRCMode2& operator=( const InterpolatedFRCMode2& that);
-
-	};
-	
-	class InterpolatedFRCMode3 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode3() {};
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode3() {}
-			
-			virtual string get_name() const
-			{
-				return "3";
-			}
-		
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode3();
-			}
-			
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 3";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode3( const InterpolatedFRCMode3& that );
-		// Disallow assigment
-			InterpolatedFRCMode3& operator=( const InterpolatedFRCMode3& that);
-
-	};
-	
-	
-	class InterpolatedFRCMode4 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode4( ) {};
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode4() {}
-		
-			virtual string get_name() const
-			{
-				return "4";
-			}
-		
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode4();
-			}
-			
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 4";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode4( const InterpolatedFRCMode4& that );
-		// Disallow assigment
-			InterpolatedFRCMode4& operator=( const InterpolatedFRCMode4& that);
-
-	};
-	
-	
-	class InterpolatedFRCMode5 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode5() {};
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode5() {}
-		
-			virtual string get_name() const
-			{
-				return "5";
-			}
-			
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode5();
-			}
-		
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 5";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode5( const InterpolatedFRCMode5& that );
-		// Disallow assigment
-			InterpolatedFRCMode5& operator=( const InterpolatedFRCMode5& that);
-
-	};
-	
-	class InterpolatedFRCMode6 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode6() {};
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode6() {}
-		
-			virtual string get_name() const
-			{
-				return "6";
-			}
-			
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode6();
-			}
-		
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 6";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode6( const InterpolatedFRCMode6& that );
-		// Disallow assigment
-			InterpolatedFRCMode6& operator=( const InterpolatedFRCMode6& that);
-
-	};
-	
-	class InterpolatedFRCMode7 : public InterpolatedFRC
-	{
-		public:
-			InterpolatedFRCMode7() {}
-			
-			/** Destructor
-			 */
-			virtual ~InterpolatedFRCMode7() {}
-		
-			virtual string get_name() const
-			{
-				return "7";
-			}
-			
-			static InterpolatedFRC *NEW()
-			{
-				return new InterpolatedFRCMode7();
-			}
-
-			virtual string get_desc() const
-			{
-				return "Corresponds to Fourier pixel inserter mode 7";
-			}
-		
-			virtual bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-		
-		private:
-		// Disallow copy construction
-			InterpolatedFRCMode7( const InterpolatedFRCMode7& that );
-		// Disallow assigment
-			InterpolatedFRCMode7& operator=( const InterpolatedFRCMode7& that);
-
-	};
-	
 	// Factory for FourierPixelInserter3D
 	template <> Factory < FourierPixelInserter3D >::Factory();
-	template <> Factory < InterpolatedFRC >::Factory();
 	
 } // namespace EMAN
 

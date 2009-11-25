@@ -36,19 +36,30 @@
 #include "cmp.h"
 #include "emdata.h"
 #include "ctf.h"
+#include "plugins/cmp_template.h"
 
 using namespace EMAN;
 
+const string CccCmp::NAME = "ccc";
+const string SqEuclideanCmp::NAME = "sqeuclidean";
+const string DotCmp::NAME = "dot";
+const string TomoDotCmp::NAME = "dot.tomo";
+const string QuadMinDotCmp::NAME = "quadmindot";
+const string OptVarianceCmp::NAME = "optvariance";
+const string PhaseCmp::NAME = "phase";
+const string FRCCmp::NAME = "frc";
+
 template <> Factory < Cmp >::Factory()
 {
-	force_add(&CccCmp::NEW);
-	force_add(&SqEuclideanCmp::NEW);
-	force_add(&DotCmp::NEW);
-	force_add(&TomoDotCmp::NEW);
-	force_add(&QuadMinDotCmp::NEW);
-	force_add(&OptVarianceCmp::NEW);
-	force_add(&PhaseCmp::NEW);
-	force_add(&FRCCmp::NEW);
+	force_add<CccCmp>();
+	force_add<SqEuclideanCmp>();
+	force_add<DotCmp>();
+	force_add<TomoDotCmp>();
+	force_add<QuadMinDotCmp>();
+	force_add<OptVarianceCmp>();
+	force_add<PhaseCmp>();
+	force_add<FRCCmp>();
+//	force_add<XYZCmp>();
 }
 
 void Cmp::validate_input_args(const EMData * image, const EMData *with) const

@@ -35,6 +35,7 @@
 
 #include "processor.h"
 #include "sparx/processor_sparx.h"
+#include "plugins/processor_template.h"
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
@@ -57,226 +58,419 @@
 using namespace EMAN;
 using std::reverse;
 
-template <> Factory < Processor >::Factory()
-{
-	force_add(&LowpassSharpCutoffProcessor::NEW);
-	force_add(&HighpassSharpCutoffProcessor::NEW);
-	force_add(&LowpassGaussProcessor::NEW);
-	force_add(&HighpassGaussProcessor::NEW);
-	force_add(&HighpassAutoPeakProcessor::NEW);
-	force_add(&LinearRampFourierProcessor::NEW);
-
-	force_add(&LowpassTanhProcessor::NEW);
-	force_add(&HighpassTanhProcessor::NEW);
-	force_add(&HighpassButterworthProcessor::NEW);
-	force_add(&AmpweightFourierProcessor::NEW);
-	force_add(&Wiener2DFourierProcessor::NEW);
-
-	force_add(&LinearPyramidProcessor::NEW);
-	force_add(&LinearRampProcessor::NEW);
-	force_add(&AbsoluateValueProcessor::NEW);
-	force_add(&BooleanProcessor::NEW);
-	force_add(&ValuePowProcessor::NEW);
-	force_add(&ValueSquaredProcessor::NEW);
-	force_add(&ValueSqrtProcessor::NEW);
-	force_add(&Rotate180Processor::NEW);
-	force_add(&TransformProcessor::NEW);
-	force_add(&ScaleTransformProcessor::NEW);
-	force_add(&IntTranslateProcessor::NEW);
-	force_add(&InvertCarefullyProcessor::NEW);
-
-	force_add(&ClampingProcessor::NEW);
-	force_add(&NSigmaClampingProcessor::NEW);
-
-	force_add(&ToZeroProcessor::NEW);
-	force_add(&ToMinvalProcessor::NEW);
-	force_add(&CutToZeroProcessor::NEW);
-	force_add(&BinarizeProcessor::NEW);
-	force_add(&BinarizeFourierProcessor::NEW);
-	force_add(&CollapseProcessor::NEW);
-	force_add(&LinearXformProcessor::NEW);
-
-	force_add(&ExpProcessor::NEW);
-	force_add(&RangeThresholdProcessor::NEW);
-	force_add(&SigmaProcessor::NEW);
-	force_add(&LogProcessor::NEW);
-	force_add(&FiniteProcessor::NEW);
-
-	force_add(&BinaryOperateProcessor<MaxPixelOperator>::NEW);
-	force_add(&BinaryOperateProcessor<MinPixelOperator>::NEW);
-
-	force_add(&PaintProcessor::NEW);
-	force_add(&WatershedProcessor::NEW);
-	force_add(&MaskSharpProcessor::NEW);
-	force_add(&MaskEdgeMeanProcessor::NEW);
-	force_add(&MaskNoiseProcessor::NEW);
-	force_add(&MaskGaussProcessor::NEW);
-	force_add(&MaskGaussNonuniformProcessor::NEW);
-	force_add(&MaskGaussInvProcessor::NEW);
-
-	force_add(&MaxShrinkProcessor::NEW);
-	force_add(&MinShrinkProcessor::NEW);
-	force_add(&MeanShrinkProcessor::NEW);
-	force_add(&MedianShrinkProcessor::NEW);
-	force_add(&FFTResampleProcessor::NEW);
-
-	force_add(&MakeRadiusSquaredProcessor::NEW);
-	force_add(&MakeRadiusProcessor::NEW);
-
-	force_add(&ComplexNormPixel::NEW);
-
-	force_add(&LaplacianProcessor::NEW);
-	force_add(&ZeroConstantProcessor::NEW);
-
-	force_add(&BoxMedianProcessor::NEW);
-	force_add(&BoxSigmaProcessor::NEW);
-	force_add(&BoxMaxProcessor::NEW);
-
-	force_add(&MinusPeakProcessor::NEW);
-	force_add(&PeakOnlyProcessor::NEW);
-	force_add(&DiffBlockProcessor::NEW);
-
-	force_add(&CutoffBlockProcessor::NEW);
-	force_add(&GradientRemoverProcessor::NEW);
-	force_add(&GradientPlaneRemoverProcessor::NEW);
-	force_add(&FlattenBackgroundProcessor::NEW);
-	force_add(&VerticalStripeProcessor::NEW);
-	force_add(&RealToFFTProcessor::NEW);
-	force_add(&SigmaZeroEdgeProcessor::NEW);
-	force_add(&RampProcessor::NEW);
-
-	force_add(&BeamstopProcessor::NEW);
-	force_add(&MeanZeroEdgeProcessor::NEW);
-	force_add(&AverageXProcessor::NEW);
-	force_add(&DecayEdgeProcessor::NEW);
-	force_add(&ZeroEdgeRowProcessor::NEW);
-	force_add(&ZeroEdgePlaneProcessor::NEW);
-
-	force_add(&BilateralProcessor::NEW);
-
-	force_add(&ConvolutionProcessor::NEW);
-
-	force_add(&NormalizeStdProcessor::NEW);
-	force_add(&NormalizeUnitProcessor::NEW);
-	force_add(&NormalizeUnitSumProcessor::NEW);
-	force_add(&NormalizeMaskProcessor::NEW);
-	force_add(&NormalizeEdgeMeanProcessor::NEW);
-	force_add(&NormalizeCircleMeanProcessor::NEW);
-	force_add(&NormalizeLREdgeMeanProcessor::NEW);
-	force_add(&NormalizeMaxMinProcessor::NEW);
-	force_add(&NormalizeByMassProcessor::NEW);
-	force_add(&NormalizeRowProcessor::NEW);
-	force_add(&NormalizeRampNormVar::NEW);
-
-	force_add(&HistogramBin::NEW);
-
-	force_add(&NormalizeToLeastSquareProcessor::NEW);
-
-	force_add(&RotationalAverageProcessor::NEW);
-	force_add(&RotationalSubstractProcessor::NEW);
-	force_add(&FlipProcessor::NEW);
-	force_add(&TransposeProcessor::NEW);
-	force_add(&MirrorProcessor::NEW);
-
-	force_add(&AddNoiseProcessor::NEW);
-	force_add(&AddSigmaNoiseProcessor::NEW);
-	force_add(&AddRandomNoiseProcessor::NEW);
-
-	force_add(&PhaseToCenterProcessor::NEW);
-	force_add(&PhaseToCornerProcessor::NEW);
-	force_add(&FourierToCenterProcessor::NEW);
-	force_add(&FourierToCornerProcessor::NEW);
-	force_add(&AutoMask2DProcessor::NEW);
-	force_add(&AutoMask3DProcessor::NEW);
-	force_add(&AutoMask3D2Processor::NEW);
-	force_add(&AddMaskShellProcessor::NEW);
-	force_add(&AutoMaskAsymUnit::NEW);
-
-	force_add(&CTFSNRWeightProcessor::NEW);
-
-	force_add(&ToMassCenterProcessor::NEW);
-	force_add(&PhaseToMassCenterProcessor::NEW);
-	force_add(&ACFCenterProcessor::NEW);
-	force_add(&SNRProcessor::NEW);
-
-	force_add(&XGradientProcessor::NEW);
-	force_add(&YGradientProcessor::NEW);
-	force_add(&ZGradientProcessor::NEW);
-
-	force_add(&FileFourierProcessor::NEW);
-
-	force_add(&SymSearchProcessor::NEW);
-	force_add(&LocalNormProcessor::NEW);
-
-	force_add(&IndexMaskFileProcessor::NEW);
-	force_add(&CoordinateMaskFileProcessor::NEW);
-	force_add(&SetSFProcessor::NEW);
-	force_add(&MatchSFProcessor::NEW);
-
-	force_add(&SmartMaskProcessor::NEW);
-	force_add(&IterBinMaskProcessor::NEW);
-
-	force_add(&TestImageGaussian::NEW);
-	force_add(&TestImagePureGaussian::NEW);
-	force_add(&TestImageSinewave::NEW);
-	force_add(&TestImageSphericalWave::NEW);
-	force_add(&TestImageSinewaveCircular::NEW);
-	force_add(&TestImageSquarecube::NEW);
-	force_add(&TestImageCirclesphere::NEW);
-	force_add(&TestImageAxes::NEW);
-	force_add(&TestImageNoiseUniformRand::NEW);
-	force_add(&TestImageNoiseGauss::NEW);
-	force_add(&TestImageScurve::NEW);
-	force_add(&TestImageCylinder::NEW);
-	force_add(&TestImageGradient::NEW);
-	force_add(&TestTomoImage::NEW);
-	force_add(&TestImageLineWave::NEW);
-	force_add(&TestImageEllipse::NEW);
-	force_add(&TestImageHollowEllipse::NEW);
-	force_add(&TestImageFourierNoiseGaussian::NEW);
-	force_add(&TestImageFourierNoiseProfile::NEW);
-
-	force_add(&TomoTiltEdgeMaskProcessor::NEW);
-	force_add(&TomoTiltAngleWeightProcessor::NEW);
-
-	force_add(&NewLowpassTopHatProcessor::NEW);
-	force_add(&NewHighpassTopHatProcessor::NEW);
-	force_add(&NewBandpassTopHatProcessor::NEW);
-	force_add(&NewHomomorphicTopHatProcessor::NEW);
-	force_add(&NewLowpassGaussProcessor::NEW);
-	force_add(&NewHighpassGaussProcessor::NEW);
-	force_add(&NewBandpassGaussProcessor::NEW);
-	force_add(&NewHomomorphicGaussProcessor::NEW);
-	force_add(&NewInverseGaussProcessor::NEW);
-	force_add(&NewLowpassButterworthProcessor::NEW);
-	force_add(&NewHighpassButterworthProcessor::NEW);
-	force_add(&NewHomomorphicButterworthProcessor::NEW);
-	force_add(&NewLowpassTanhProcessor::NEW);
-	force_add(&NewHighpassTanhProcessor::NEW);
-	force_add(&NewBandpassTanhProcessor::NEW);
-	force_add(&NewHomomorphicTanhProcessor::NEW);
-	force_add(&NewRadialTableProcessor::NEW);
-	force_add(&InverseKaiserI0Processor::NEW);
-	force_add(&InverseKaiserSinhProcessor::NEW);
-	force_add(&CCDNormProcessor::NEW);
-	force_add(&CTF_Processor::NEW);
-	force_add(&SHIFTProcessor::NEW);
-
-	force_add(&WaveletProcessor::NEW);
-	force_add(&FFTProcessor::NEW);
-	force_add(&RadialProcessor::NEW);
-
-	force_add(&DirectionalSumProcessor::NEW);
-
-	//Gorgon-related processors
-	force_add(&ModelEMCylinderProcessor::NEW);
-	force_add(&ApplyPolynomialProfileToHelix::NEW);
-	force_add(&BinarySkeletonizerProcessor::NEW);
+const string SNREvalProcessor::NAME = "eval.maskedsnr";
+const string AmpweightFourierProcessor::NAME = "filter.ampweight";
+const string ConvolutionProcessor::NAME = "math.convolution";
+const string XGradientProcessor::NAME = "math.edge.xgradient";
+const string YGradientProcessor::NAME = "math.edge.ygradient";
+const string ZGradientProcessor::NAME = "math.edge.zgradient";
+const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
+const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
+const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
+const string LowpassSharpCutoffProcessor::NAME = "eman1.filter.lowpass.sharp";
+const string HighpassSharpCutoffProcessor::NAME = "eman1.filter.highpass.sharp";
+const string LowpassGaussProcessor::NAME = "eman1.filter.lowpass.gaussian";
+const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
+const string HighpassGaussProcessor::NAME = "eman1.filter.highpass.gaussian";
+const string LowpassTanhProcessor::NAME = "eman1.filter.lowpass.tanh";
+const string HighpassTanhProcessor::NAME = "eman1.filter.highpass.tanh";
+const string HighpassButterworthProcessor::NAME = "eman1.filter.highpass.butterworth";
+const string LinearRampProcessor::NAME = "eman1.filter.ramp";
+const string AbsoluateValueProcessor::NAME = "math.absvalue";
+const string BooleanProcessor::NAME = "threshold.notzero";
+const string InvertCarefullyProcessor::NAME = "math.invert.carefully";
+const string ValuePowProcessor::NAME = "math.pow";
+const string ValueSquaredProcessor::NAME = "math.squared";
+const string ValueSqrtProcessor::NAME = "math.sqrt";
+const string ToZeroProcessor::NAME = "threshold.belowtozero";
+const string Rotate180Processor::NAME = "math.rotate.180";
+const string TransformProcessor::NAME = "math.transform";
+const string IntTranslateProcessor::NAME = "math.translate.int";
+const string ScaleTransformProcessor::NAME = "math.transform.scale";
+const string ClampingProcessor::NAME = "threshold.clampminmax";
+const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
+const string ToMinvalProcessor::NAME = "threshold.belowtominval";
+const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
+const string BinarizeProcessor::NAME = "threshold.binary";
+const string BinarizeFourierProcessor::NAME = "threshold.binary.fourier";
+const string CollapseProcessor::NAME = "threshold.compress";
+const string LinearXformProcessor::NAME = "math.linear";
+const string ExpProcessor::NAME = "math.exp";
+const string FiniteProcessor::NAME = "math.finite";
+const string RangeThresholdProcessor::NAME = "threshold.binaryrange";
+const string SigmaProcessor::NAME = "math.sigma";
+const string LogProcessor::NAME = "math.log";
+const string MaskSharpProcessor::NAME = "mask.sharp";
+const string MaskEdgeMeanProcessor::NAME = "mask.ringmean";
+const string MaskNoiseProcessor::NAME = "mask.noise";
+const string MaskGaussProcessor::NAME = "mask.gaussian";
+const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
+const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
+const string LinearPyramidProcessor::NAME = "math.linearpyramid";
+const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
+const string MakeRadiusProcessor::NAME = "math.toradius";
+const string ComplexNormPixel::NAME = "complex.normpixels";
+const string LaplacianProcessor::NAME = "math.laplacian";
+const string ZeroConstantProcessor::NAME = "mask.contract";
+const string BoxMedianProcessor::NAME = "eman1.filter.median";
+const string BoxSigmaProcessor::NAME = "math.localsigma";
+const string BoxMaxProcessor::NAME = "math.localmax";
+const string MinusPeakProcessor::NAME = "math.submax";
+const string PeakOnlyProcessor::NAME = "mask.onlypeaks";
+const string DiffBlockProcessor::NAME = "eman1.filter.blockrange";
+const string CutoffBlockProcessor::NAME = "eman1.filter.blockcutoff";
+const string MaxShrinkProcessor::NAME = "math.maxshrink";
+const string MinShrinkProcessor::NAME = "math.minshrink";
+const string MeanShrinkProcessor::NAME = "math.meanshrink";
+const string MedianShrinkProcessor::NAME = "math.medianshrink";
+const string FFTResampleProcessor::NAME = "math.fft.resample";
+const string GradientRemoverProcessor::NAME = "math.lineargradientfix";
+const string GradientPlaneRemoverProcessor::NAME = "filter.gradientPlaneRemover";
+const string FlattenBackgroundProcessor::NAME = "filter.flattenbackground";
+const string RampProcessor::NAME = "filter.ramp";
+const string VerticalStripeProcessor::NAME = "math.verticalstripefix";
+const string RealToFFTProcessor::NAME = "math.realtofft";
+const string SigmaZeroEdgeProcessor::NAME = "mask.zeroedgefill";
+const string BeamstopProcessor::NAME = "mask.beamstop";
+const string MeanZeroEdgeProcessor::NAME = "mask.dampedzeroedgefill";
+const string AverageXProcessor::NAME = "math.averageovery";
+const string DecayEdgeProcessor::NAME = "mask.decayedge2d";
+const string ZeroEdgeRowProcessor::NAME = "mask.zeroedge2d";
+const string ZeroEdgePlaneProcessor::NAME = "mask.zeroedge3d";
+const string BilateralProcessor::NAME = "bilateral";
+const string NormalizeUnitProcessor::NAME = "normalize.unitlen";
+const string NormalizeUnitSumProcessor::NAME = "normalize.unitsum";
+const string NormalizeStdProcessor::NAME = "normalize";
+const string NormalizeMaskProcessor::NAME = "normalize.mask";
+const string NormalizeRampNormVar::NAME = "normalize.ramp.normvar";
+const string NormalizeByMassProcessor::NAME = "normalize.bymass";
+const string NormalizeEdgeMeanProcessor::NAME = "normalize.edgemean";
+const string NormalizeCircleMeanProcessor::NAME = "normalize.circlemean";
+const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
+const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
+const string NormalizeRowProcessor::NAME = "normalize.rows";
+const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
+const string RotationalAverageProcessor::NAME = "math.rotationalaverage";
+const string RotationalSubstractProcessor::NAME = "math.rotationalsubtract";
+const string TransposeProcessor::NAME = "xform.transpose";
+const string FlipProcessor::NAME = "xform.flip";
+const string AddNoiseProcessor::NAME = "math.addnoise";
+const string AddSigmaNoiseProcessor::NAME = "math.addsignoise";
+const string AddRandomNoiseProcessor::NAME = "addspectralnoise";
+const string FourierToCornerProcessor::NAME = "xform.fourierorigin.tocorner";
+const string FourierToCenterProcessor::NAME = "xform.fourierorigin.tocenter";
+const string PhaseToCenterProcessor::NAME = "xform.phaseorigin.tocenter";
+const string PhaseToCornerProcessor::NAME = "xform.phaseorigin.tocorner";
+const string AutoMask2DProcessor::NAME = "mask.auto2d";
+const string AutoMaskAsymUnit::NAME = "mask.asymunit";
+const string AutoMask3DProcessor::NAME = "mask.auto3d.thresh";
+const string AutoMask3D2Processor::NAME = "mask.auto3d";
+const string AddMaskShellProcessor::NAME = "mask.addshells";
+const string PhaseToMassCenterProcessor::NAME = "xform.phasecenterofmass";
+const string ToMassCenterProcessor::NAME = "xform.centerofmass";
+const string ACFCenterProcessor::NAME = "xform.centeracf";
+const string SNRProcessor::NAME = "eman1.filter.snr";
+const string FileFourierProcessor::NAME = "eman1.filter.byfile";
+const string SymSearchProcessor::NAME = "misc.symsearch";
+const string LocalNormProcessor::NAME = "misc.localnorm";
+const string IndexMaskFileProcessor::NAME = "mask.fromfile";
+const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
+const string PaintProcessor::NAME = "mask.paint";
+const string DirectionalSumProcessor::NAME = "misc.directional_sum";
+const string WatershedProcessor::NAME = "watershed";
+template<> const string BinaryOperateProcessor<MaxPixelOperator>::NAME = "operate.max";
+template<> const string BinaryOperateProcessor<MinPixelOperator>::NAME = "operate.min";
+const string MaxPixelOperator::NAME = "operate.max";
+const string MinPixelOperator::NAME = "operate.min";
+const string MatchSFProcessor::NAME = "filter.matchto";
+const string SetSFProcessor::NAME = "filter.setstrucfac";
+const string SmartMaskProcessor::NAME = "mask.smart";
+const string IterBinMaskProcessor::NAME = "mask.addshells.gauss";
+const string TestImagePureGaussian::NAME = "testimage.puregaussian";
+const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
+const string TestImageFourierNoiseProfile::NAME = "testimage.noise.fourier.profile";
+const string CTFSNRWeightProcessor::NAME = "ctf.snr.weight";
+const string TestImageLineWave::NAME = "testimage.linewave";
+const string TestTomoImage::NAME = "testimage.tomo.objects";
+const string TestImageGradient::NAME = "testimage.gradient";
+const string TestImageAxes::NAME = "testimage.axes";
+const string TestImageGaussian::NAME = "testimage.gaussian";
+const string TestImageScurve::NAME = "testimage.scurve";
+const string TestImageSphericalWave::NAME = "testimage.sphericalwave";
+const string TestImageSinewave::NAME = "testimage.sinewave";
+const string TestImageSinewaveCircular::NAME = "testimage.sinewave.circular";
+const string TestImageSquarecube::NAME = "testimage.squarecube";
+const string TestImageEllipse::NAME = "testimage.ellipsoid";
+const string TestImageHollowEllipse::NAME = "testimage.ellipsoid.hollow";
+const string TestImageCirclesphere::NAME = "testimage.circlesphere";
+const string TestImageNoiseUniformRand::NAME = "testimage.noise.uniform.rand";
+const string TestImageNoiseGauss::NAME = "testimage.noise.gauss";
+const string TestImageCylinder::NAME = "testimage.cylinder";
+const string CCDNormProcessor::NAME = "filter.ccdnorm";
+const string WaveletProcessor::NAME = "basis.wavelet";
+const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
+const string TomoTiltAngleWeightProcessor::NAME = "tomo.tiltangleweight";
+const string FFTProcessor::NAME = "basis.fft";
+const string RadialProcessor::NAME = "mask.radialprofile";
+const string HistogramBin::NAME = "histogram.bin";
+const string ModelEMCylinderProcessor::NAME = "math.model_em_cylinder";
+const string ApplyPolynomialProfileToHelix::NAME = "math.poly_radial_profile";
+const string BinarySkeletonizerProcessor::NAME="gorgon.binary_skel";
+const string MirrorProcessor::NAME = "mirror";
+const string NewLowpassTopHatProcessor::NAME = "filter.lowpass.tophat";
+const string NewHighpassTopHatProcessor::NAME = "filter.highpass.tophat";
+const string NewBandpassTopHatProcessor::NAME = "filter.bandpass.tophat";
+const string NewHomomorphicTopHatProcessor::NAME = "filter.homomorphic.tophat";
+const string NewLowpassGaussProcessor::NAME = "filter.lowpass.gauss";
+const string NewHighpassGaussProcessor::NAME = "filter.highpass.gauss";
+const string NewBandpassGaussProcessor::NAME = "filter.bandpass.gauss";
+const string NewHomomorphicGaussProcessor::NAME = "filter.homomorphic.gauss";
+const string NewInverseGaussProcessor::NAME = "filter.gaussinverse";
+const string SHIFTProcessor::NAME = "filter.shift";
+const string InverseKaiserI0Processor::NAME = "filter.kaiser_io_inverse";
+const string InverseKaiserSinhProcessor::NAME = "filter.kaisersinhinverse";
+const string NewRadialTableProcessor::NAME = "filter.radialtable";
+const string NewLowpassButterworthProcessor::NAME = "filter.lowpass.butterworth";
+const string NewHighpassButterworthProcessor::NAME = "filter.highpass.butterworth";
+const string NewHomomorphicButterworthProcessor::NAME = "filter.homomorphic.butterworth";
+const string NewLowpassTanhProcessor::NAME = "filter.lowpass.tanh";
+const string NewHighpassTanhProcessor::NAME = "filter.highpass.tanh";
+const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
+const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
+const string CTF_Processor::NAME = "filter.CTF_";
 
 #ifdef EMAN2_USING_CUDA
-	force_add(&CudaMultProcessor::NEW);
-	force_add(&CudaCorrelationProcessor::NEW);
+const string CudaMultProcessor::NAME = "cuda.math.mult";
+const string CudaCorrelationProcessor::NAME = "cuda.correlate";
+#endif //EMAN2_USING_CUDA
+
+#if 0
+//const string XYZProcessor::NAME = "XYZ";
+#endif	//0
+
+
+template <> Factory < Processor >::Factory()
+{
+	force_add< LowpassSharpCutoffProcessor >();
+	force_add<HighpassSharpCutoffProcessor>();
+	force_add<LowpassGaussProcessor>();
+	force_add<HighpassGaussProcessor>();
+	force_add<HighpassAutoPeakProcessor>();
+	force_add<LinearRampFourierProcessor>();
+
+	force_add<LowpassTanhProcessor>();
+	force_add<HighpassTanhProcessor>();
+	force_add<HighpassButterworthProcessor>();
+	force_add<AmpweightFourierProcessor>();
+	force_add<Wiener2DFourierProcessor>();
+
+	force_add<LinearPyramidProcessor>();
+	force_add<LinearRampProcessor>();
+	force_add<AbsoluateValueProcessor>();
+	force_add<BooleanProcessor>();
+	force_add<ValuePowProcessor>();
+	force_add<ValueSquaredProcessor>();
+	force_add<ValueSqrtProcessor>();
+	force_add<Rotate180Processor>();
+	force_add<TransformProcessor>();
+	force_add<ScaleTransformProcessor>();
+	force_add<IntTranslateProcessor>();
+	force_add<InvertCarefullyProcessor>();
+
+	force_add<ClampingProcessor>();
+	force_add<NSigmaClampingProcessor>();
+
+	force_add<ToZeroProcessor>();
+	force_add<ToMinvalProcessor>();
+	force_add<CutToZeroProcessor>();
+	force_add<BinarizeProcessor>();
+	force_add<BinarizeFourierProcessor>();
+	force_add<CollapseProcessor>();
+	force_add<LinearXformProcessor>();
+
+	force_add<ExpProcessor>();
+	force_add<RangeThresholdProcessor>();
+	force_add<SigmaProcessor>();
+	force_add<LogProcessor>();
+	force_add<FiniteProcessor>();
+
+	force_add< BinaryOperateProcessor<MaxPixelOperator> >();
+	force_add< BinaryOperateProcessor<MinPixelOperator> >();
+
+	force_add<PaintProcessor>();
+	force_add<WatershedProcessor>();
+	force_add<MaskSharpProcessor>();
+	force_add<MaskEdgeMeanProcessor>();
+	force_add<MaskNoiseProcessor>();
+	force_add<MaskGaussProcessor>();
+	force_add<MaskGaussNonuniformProcessor>();
+	force_add<MaskGaussInvProcessor>();
+
+	force_add<MaxShrinkProcessor>();
+	force_add<MinShrinkProcessor>();
+	force_add<MeanShrinkProcessor>();
+	force_add<MedianShrinkProcessor>();
+	force_add<FFTResampleProcessor>();
+
+	force_add<MakeRadiusSquaredProcessor>();
+	force_add<MakeRadiusProcessor>();
+
+	force_add<ComplexNormPixel>();
+
+	force_add<LaplacianProcessor>();
+	force_add<ZeroConstantProcessor>();
+
+	force_add<BoxMedianProcessor>();
+	force_add<BoxSigmaProcessor>();
+	force_add<BoxMaxProcessor>();
+
+	force_add<MinusPeakProcessor>();
+	force_add<PeakOnlyProcessor>();
+	force_add<DiffBlockProcessor>();
+
+	force_add<CutoffBlockProcessor>();
+	force_add<GradientRemoverProcessor>();
+	force_add<GradientPlaneRemoverProcessor>();
+	force_add<FlattenBackgroundProcessor>();
+	force_add<VerticalStripeProcessor>();
+	force_add<RealToFFTProcessor>();
+	force_add<SigmaZeroEdgeProcessor>();
+	force_add<RampProcessor>();
+
+	force_add<BeamstopProcessor>();
+	force_add<MeanZeroEdgeProcessor>();
+	force_add<AverageXProcessor>();
+	force_add<DecayEdgeProcessor>();
+	force_add<ZeroEdgeRowProcessor>();
+	force_add<ZeroEdgePlaneProcessor>();
+
+	force_add<BilateralProcessor>();
+
+	force_add<ConvolutionProcessor>();
+
+	force_add<NormalizeStdProcessor>();
+	force_add<NormalizeUnitProcessor>();
+	force_add<NormalizeUnitSumProcessor>();
+	force_add<NormalizeMaskProcessor>();
+	force_add<NormalizeEdgeMeanProcessor>();
+	force_add<NormalizeCircleMeanProcessor>();
+	force_add<NormalizeLREdgeMeanProcessor>();
+	force_add<NormalizeMaxMinProcessor>();
+	force_add<NormalizeByMassProcessor>();
+	force_add<NormalizeRowProcessor>();
+	force_add<NormalizeRampNormVar>();
+
+	force_add<HistogramBin>();
+
+	force_add<NormalizeToLeastSquareProcessor>();
+
+	force_add<RotationalAverageProcessor>();
+	force_add<RotationalSubstractProcessor>();
+	force_add<FlipProcessor>();
+	force_add<TransposeProcessor>();
+	force_add<MirrorProcessor>();
+
+	force_add<AddNoiseProcessor>();
+	force_add<AddSigmaNoiseProcessor>();
+	force_add<AddRandomNoiseProcessor>();
+
+	force_add<PhaseToCenterProcessor>();
+	force_add<PhaseToCornerProcessor>();
+	force_add<FourierToCenterProcessor>();
+	force_add<FourierToCornerProcessor>();
+	force_add<AutoMask2DProcessor>();
+	force_add<AutoMask3DProcessor>();
+	force_add<AutoMask3D2Processor>();
+	force_add<AddMaskShellProcessor>();
+	force_add<AutoMaskAsymUnit>();
+
+	force_add<CTFSNRWeightProcessor>();
+
+	force_add<ToMassCenterProcessor>();
+	force_add<PhaseToMassCenterProcessor>();
+	force_add<ACFCenterProcessor>();
+	force_add<SNRProcessor>();
+
+	force_add<XGradientProcessor>();
+	force_add<YGradientProcessor>();
+	force_add<ZGradientProcessor>();
+
+	force_add<FileFourierProcessor>();
+
+	force_add<SymSearchProcessor>();
+	force_add<LocalNormProcessor>();
+
+	force_add<IndexMaskFileProcessor>();
+	force_add<CoordinateMaskFileProcessor>();
+	force_add<SetSFProcessor>();
+	force_add<MatchSFProcessor>();
+
+	force_add<SmartMaskProcessor>();
+	force_add<IterBinMaskProcessor>();
+
+	force_add<TestImageGaussian>();
+	force_add<TestImagePureGaussian>();
+	force_add<TestImageSinewave>();
+	force_add<TestImageSphericalWave>();
+	force_add<TestImageSinewaveCircular>();
+	force_add<TestImageSquarecube>();
+	force_add<TestImageCirclesphere>();
+	force_add<TestImageAxes>();
+	force_add<TestImageNoiseUniformRand>();
+	force_add<TestImageNoiseGauss>();
+	force_add<TestImageScurve>();
+	force_add<TestImageCylinder>();
+	force_add<TestImageGradient>();
+	force_add<TestTomoImage>();
+	force_add<TestImageLineWave>();
+	force_add<TestImageEllipse>();
+	force_add<TestImageHollowEllipse>();
+	force_add<TestImageFourierNoiseGaussian>();
+	force_add<TestImageFourierNoiseProfile>();
+
+	force_add<TomoTiltEdgeMaskProcessor>();
+	force_add<TomoTiltAngleWeightProcessor>();
+
+	force_add<NewLowpassTopHatProcessor>();
+	force_add<NewHighpassTopHatProcessor>();
+	force_add<NewBandpassTopHatProcessor>();
+	force_add<NewHomomorphicTopHatProcessor>();
+	force_add<NewLowpassGaussProcessor>();
+	force_add<NewHighpassGaussProcessor>();
+	force_add<NewBandpassGaussProcessor>();
+	force_add<NewHomomorphicGaussProcessor>();
+	force_add<NewInverseGaussProcessor>();
+	force_add<NewLowpassButterworthProcessor>();
+	force_add<NewHighpassButterworthProcessor>();
+	force_add<NewHomomorphicButterworthProcessor>();
+	force_add<NewLowpassTanhProcessor>();
+	force_add<NewHighpassTanhProcessor>();
+	force_add<NewBandpassTanhProcessor>();
+	force_add<NewHomomorphicTanhProcessor>();
+	force_add<NewRadialTableProcessor>();
+	force_add<InverseKaiserI0Processor>();
+	force_add<InverseKaiserSinhProcessor>();
+	force_add<CCDNormProcessor>();
+	force_add<CTF_Processor>();
+	force_add<SHIFTProcessor>();
+
+	force_add<WaveletProcessor>();
+	force_add<FFTProcessor>();
+	force_add<RadialProcessor>();
+
+	force_add<DirectionalSumProcessor>();
+
+	//Gorgon-related processors
+	force_add<ModelEMCylinderProcessor>();
+	force_add<ApplyPolynomialProfileToHelix>();
+	force_add<BinarySkeletonizerProcessor>();
+
+#ifdef EMAN2_USING_CUDA
+	force_add<CudaMultProcessor>();
+	force_add<CudaCorrelationProcessor>();
 #endif // EMAN2_USING_CUDA
+	
+//	force_add<XYZProcessor>();
 }
 
 void FiniteProcessor::process_pixel(float *x) const
@@ -5024,7 +5218,8 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	for (int h = 0; h < nz; h++) {
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
-				r = sqrt(Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz));
+				r = (Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz));
+//				r = sqrt(Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz)); // I don't think this sqrt was supposed to be here --steve
 				r = (r - x0) / dx;
 				int l = 0;
 				if (interpolation) {

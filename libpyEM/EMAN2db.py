@@ -327,6 +327,7 @@ def db_read_image(self,fsp,*parms):
 		else: key=parms[0]
 		
 		x=db.get(key,target=self,nodata=nodata,region=region)
+		if x==None : raise Exception("Could not access "+str(fsp)+" "+str(key))
 #		except: 
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
@@ -625,14 +626,14 @@ class EMTaskQueue:
 		"""Mark a Task as being aborted, by shifting a task to the tasks_complete queue"""
 		EMTaskQueue.lock.acquire()
 		try:
-			task=self.active[tid]
+			task=self.active[taskid]
 		except:
 			EMTaskQueue.lock.release()
 			return
 		
 		#if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
-		self.complete[tid]=task
-		self.active[tid]=None
+		self.complete[taskid]=task
+		self.active[taskid]=None
 		EMTaskQueue.lock.release()
 
 class EMTask:

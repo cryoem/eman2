@@ -51,12 +51,12 @@ const string OptimumOrientationGenerator::NAME = "opt";
 
 template <> Factory < Symmetry3D >::Factory()
 {
-	force_add(&CSym::NEW);
-	force_add(&DSym::NEW);
-	force_add(&HSym::NEW);
-	force_add(&TetrahedralSym::NEW);
-	force_add(&OctahedralSym::NEW);
-	force_add(&IcosahedralSym::NEW);
+	force_add<CSym>();
+	force_add<DSym>();
+	force_add<HSym>();
+	force_add<TetrahedralSym>();
+	force_add<OctahedralSym>();
+	force_add<IcosahedralSym>();
 }
 
 void EMAN::dump_symmetries()
@@ -124,11 +124,11 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 
 template <> Factory < OrientationGenerator >::Factory()
 {
-	force_add(&EmanOrientationGenerator::NEW);
-	force_add(&RandomOrientationGenerator::NEW);
-	force_add(&EvenOrientationGenerator::NEW);
-	force_add(&SaffOrientationGenerator::NEW);
-	force_add(&OptimumOrientationGenerator::NEW);
+	force_add<EmanOrientationGenerator>();
+	force_add<RandomOrientationGenerator>();
+	force_add<EvenOrientationGenerator>();
+	force_add<SaffOrientationGenerator>();
+	force_add<OptimumOrientationGenerator>();
 }
 
 

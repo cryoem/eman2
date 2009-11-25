@@ -29,25 +29,75 @@
  * 
  * */
 
-#include "averager_template.h"
+#ifndef eman_cmp_template_h__
+#define eman_cmp_template_h__ 1
+
 #include "emdata.h"
+#include "cmp.h"
 
-using namespace EMAN;
-
-XYZAverager::XYZAverager() : result(0)
+namespace EMAN
 {
+
+	/** XYZCmp is a cmp template for defining new
+     * cmps. Please add your own code at the proper place.
+     *
+     * 1) Replace all 'XYZ' with your new cmp name.
+     * 2) Define the cmp parameter names and types in get_param_types().
+     * 3) Implement the cmp in XYZCmp::cmp().
+     */
+	class XYZCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "dot product using the center of the image";
+		}
+
+		static Cmp *NEW()
+		{
+			return new XYZCmp();
+		}
+
+		/** Add your cmp parameter names and types in
+		 * get_param_types(). For available parameter types, please
+		 * refer class EMObject.
+		 * 
+		 * As an example, XYZCmp has 3 parameters:
+		 *    EMData *with;
+		 *    int param1;
+		 *    float param2;
+		 */
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("radius", EMObject::INT);
+			  d.put("param2", EMObject::FLOAT);
+			  return d;
+		}
+		
+		static const string NAME;
+	};
+
+	/** Add your new cmp to CmpFactoryExt().
+     */
+//	class CmpFactoryExt
+//	{
+//	  public:
+//		CmpFactoryExt()
+//		{
+//			Factory < Cmp >::add<XYZCmp>();
+//		}
+//	};
+//
+//	static CmpFactoryExt cf_ext;
+
 }
 
-void XYZAverager::add_image(EMData * image)
-{
-	if (!image) {
-		return;
-	}
-	result = new EMData();
-}
-
-
-EMData *XYZAverager::finish()
-{
-	return result;
-}
+#endif

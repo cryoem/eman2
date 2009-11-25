@@ -1370,7 +1370,9 @@ def test_image_3d(type=0,size=(128,128,128)):
 		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
 		return None
 	if type != 2: ret.set_size(*size)
-	else: ret.set_size(256,256,64)
+	else:
+		if size!=(256,256,64) : print "Warning, size set to 256x256x64"
+		ret.set_size(256,256,64)
 	if type==0 :
 		ret.process_inplace("testimage.axes")
 	elif type==1:

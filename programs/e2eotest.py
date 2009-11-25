@@ -147,8 +147,8 @@ def main():
 			mask = EMData(mask_file,0)
 			a.mult(mask)
 			b.mult(mask)
-			a.write_image("bdb:"+options.path+"#threed_mask_"+options.iteration+"_even",0)
-			b.write_image("bdb:"+options.path+"#threed_mask_"+options.iteration+"_odd",0)
+			a.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_even",0)
+			b.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_odd",0)
 		
 		fsc = a.calc_fourier_shell_correlation(b)
 		third = len(fsc)/3

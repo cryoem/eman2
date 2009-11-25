@@ -58,7 +58,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "pca";
+			return NAME;
 		}	  	
 		
 		string get_desc() const
@@ -88,6 +88,8 @@ namespace EMAN
 			return d;
 		}
 		
+		static const string NAME;
+		
 	  protected:
 		EMData * mask;
 		int nvec;	//number of desired principal components
@@ -112,7 +114,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "pca_large";
+			return NAME;
 		}	  	
 		
 		string get_desc() const
@@ -140,6 +142,8 @@ namespace EMAN
 			return d;
 		}
 		
+		static const string NAME;
+		
 	  protected:
 		EMData * mask;
 		int nvec;	//number of desired principal components
@@ -161,7 +165,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "varimax";
+			return NAME;
 		}	  	
 		
 		string get_desc() const
@@ -183,12 +187,14 @@ namespace EMAN
 			return d;
 		}
 		
-          private:
-	        int m_nlen;
+		static const string NAME;
+		
+	  private:
+		int m_nlen;
 		int m_nfac;
 		EMData *m_mask;
 		vector<float> m_data;
-         }; 
+	}; 
 }
 
 #endif	//eman_analyzer_sparx_h__ 

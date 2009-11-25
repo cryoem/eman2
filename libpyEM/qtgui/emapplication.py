@@ -146,9 +146,12 @@ class EMGUIModule(EventsEmitterAndReciever):
 		return self.core_object
 	
 	def show(self):
+		try:
+			vis=self.qt_context_parent.isVisible()
+		except : vis=False
 		get_application().show_specific(self)
 		
-		if self.under_qt_control and self.winid!=None:
+		if self.under_qt_control and self.winid!=None and not vis  :
 			hdb=EMAN2db.EMAN2DB.open_db()
 			hdb.open_dict("window_placement")
 			db=hdb.window_placement
@@ -235,7 +238,7 @@ class EMGUIModule(EventsEmitterAndReciever):
 
 	
 	def closeEvent(self,event):
-		if self.under_qt_control and self.winid!=None:
+		if self.under_qt_control and self.winid!=None and self.qt_context_parent.isVisible():
 			hdb=EMAN2db.EMAN2DB.open_db()
 			hdb.open_dict("window_placement")
 			db=hdb.window_placement

@@ -103,6 +103,7 @@ class EMErrorMessageDisplay:
 		msg.setWindowTitle(title)
 		msg.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		mes = ""
+		if isinstance(error_message,tuple): error_message=list(error_message)
 		if isinstance(error_message,list):
 			for error in error_message:
 				mes += error

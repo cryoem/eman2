@@ -183,7 +183,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "translational";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -205,6 +205,8 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational alignment using angular correlation
@@ -224,7 +226,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rotational";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -245,6 +247,8 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational alignment assuming centers are correct
@@ -262,7 +266,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rotate_precenter";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -280,6 +284,8 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational, translational alignment
@@ -301,7 +307,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rotate_translate";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -323,6 +329,8 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational, translational alignment
@@ -342,7 +350,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rotate_translate_best";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -363,7 +371,7 @@ namespace EMAN
 			return d;
 		}
 
-
+		static const string NAME;
 	};
 
 	/** rotational and flip alignment
@@ -382,7 +390,7 @@ namespace EMAN
 		}
 		virtual string get_name() const
 		{
-			return "rotate_flip";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -408,6 +416,7 @@ namespace EMAN
 			return d;
 		}
 
+		static const string NAME;
 	};
 
 	/** rotational, translational and flip alignment
@@ -429,7 +438,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rotate_translate_flip";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -456,6 +465,8 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational, translational and flip alignment using real-space methods. slow
@@ -474,7 +485,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "rtf_exhaustive";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -495,6 +506,8 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** rotational, translational and flip alignment using exhaustive search. This is very slow
@@ -515,7 +528,7 @@ namespace EMAN
 		}
 		virtual string get_name() const
 		{
-			return "rtf_slow_exhaustive";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -537,6 +550,8 @@ namespace EMAN
 			d.put("angstep", EMObject::FLOAT,"The angular step (in degrees) to take in the exhaustive search for the solution angle. Typically very small i.e. 3 or smaller.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** refine alignment. Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.
@@ -554,7 +569,7 @@ namespace EMAN
 
 		virtual string get_name() const
 		{
-			return "refine";
+			return NAME;
 		}
 
 		virtual string get_desc() const
@@ -581,6 +596,8 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 
@@ -605,7 +622,7 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "refine.3d";
+				return NAME;
 			}
 
 			virtual string get_desc() const
@@ -632,6 +649,8 @@ namespace EMAN
 				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 				return d;
 			}
+			
+			static const string NAME;
 	};
 
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
@@ -661,7 +680,7 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "rt.3d.grid";
+				return NAME;
 			}
 
 			virtual string get_desc() const
@@ -690,6 +709,8 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
+			
+			static const string NAME;
 	};
 
 	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
@@ -719,7 +740,7 @@ namespace EMAN
 
 			virtual string get_name() const
 			{
-				return "rt.3d.sphere";
+				return NAME;
 			}
 
 			virtual string get_desc() const
@@ -748,6 +769,8 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
+			
+			static const string NAME;
 	};
 
 

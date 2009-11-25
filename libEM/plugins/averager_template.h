@@ -29,79 +29,78 @@
  * 
  * */
 
-#ifndef eman_aligner_template_h__
-#define eman_aligner_template_h__ 1
+#ifndef eman_averager_template_h__
+#define eman_averager_template_h__ 1
 
-#include "aligner.h"
+#include "averager.h"
 
 namespace EMAN
 {
 
-	/** XYZAligner is an aligner  template for defining new
-     * aligners. Please add your own code at the proper place.
-     *
-     * 1) Replace all 'XYZ' with your new aligner name.
-     * 2) Define the aligner parameter names and types in get_param_types().
-     * 3) Implement the aligner in XYZAligner::align().
-     */
-	class XYZAligner:public Aligner
+	/** XYZAverager is an averager  template for defining new
+	 * averagers. Please add your own code at the proper place.
+	 *
+	 * 1) Replace all 'XYZ' with your new averager name.
+	 * 2) Define the averager parameter names and types in get_param_types().
+	 * 3) Implement the averager in XYZAverager::align().
+	 */
+	class XYZAverager:public Averager
 	{
-	  public:
- 		EMData * align(EMData * this_img, EMData * to_img, 
- 					const string & cmp_name, const Dict& cmp_params) const;
-
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img);
-		}
+	public:
+		XYZAverager();
+		void add_image( EMData * image);
+		EMData * finish();
 
 		string get_name() const
 		{
-			return "xyz";
+			return NAME;
 		}
-		
+
 		string get_desc() const
 		{
 			return "XYZ description";
 		}
 
-		static Aligner *NEW()
+		static Averager *NEW()
 		{
-			return new XYZAligner();
+			return new XYZAverager();
 		}
 
-		/** Add your aligner parameter names and types in
+		/** Add your averager parameter names and types in
 		 * get_param_types(). For available parameter types, please
 		 * refer class EMObject.
 		 * 
-		 * As an example, XYZAligner has 3 parameters:
-		 *    EMData *with;
-		 *    int param1;
-		 *    float param2;
+		 * As an example, XYZAverager has 3 parameters:
+		 *    EMData *param1;
+		 *    int param2;
+		 *    float param3;
 		 */
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-
-			d.put("param1", EMObject::INT);
-			d.put("param2", EMObject::FLOAT);
+			d.put("param1", EMObject::EMDATA);
+			d.put("param2", EMObject::INT);
+			d.put("param3", EMObject::FLOAT);
 			return d;
 		}
+		
+		static const string NAME;
+	private:
+		EMData *result;
 	};
 
-
-	/** Add your new aligner to AlignerFactoryExt().
+	/** Add your new averager to AveragerFactoryExt().
      */
-	class AlignerFactoryExt
-	{
-	  public:
-		AlignerFactoryExt()
-		{
-			Factory < Aligner >::add(&XYZAligner::NEW);
-		}
-	};
-
-	static AlignerFactoryExt aligner_factory_ext;
+//	class AveragerFactoryExt
+//	{
+//	public:
+//		AveragerFactoryExt()
+//		{
+//			Factory < Averager >::add<XYZAverager>();
+//		}
+//	};
+//
+//	static AveragerFactoryExt averager_factory_ext;
 }
 
 #endif

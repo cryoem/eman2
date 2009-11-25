@@ -37,6 +37,7 @@ from EMAN2 import *
 from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
 from emimage2d import EMImage2DModule
 from emimage3d import EMImage3DModule
+from valslider import ValSlider
 import weakref
 from emshape import EMShape
 from PyQt4 import QtCore, QtGui
@@ -44,6 +45,8 @@ from PyQt4.QtCore import Qt
 import math
 #import EMAN2db
 import time
+
+reconmodes=["gauss_2","gauss_3","gauss_5"]
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -92,44 +95,39 @@ class TrackerControl(QtGui.QWidget):
 		# the control panel
 		QtGui.QWidget.__init__(self,None)
 
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(0)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
+		self.gbl = QtGui.QGridLayout(self)
+		self.gbl.setMargin(0)
+		self.gbl.setSpacing(6)
+		self.gbl.setObjectName("hbl")
 		
-		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		self.hbl.addLayout(self.vbl)
-
 		# action buttons
 		self.bcenalign=QtGui.QPushButton("Center Align")
 		self.bprojalign=QtGui.QPushButton("Proj. Realign")
 		self.breconst=QtGui.QPushButton("3D Normal")
 		self.sbmode=QtGui.QSpinBox(self)
-		self.sbmode.setRange(1,7)
-		self.sbmode.setValue(2)
+		self.sbmode.setRange(0,2)
+		self.sbmode.setValue(0)
 		self.bmagict=QtGui.QPushButton("3D Tomofill")
 		self.bmagics=QtGui.QPushButton("3D Sph")
 		self.bmagicc=QtGui.QPushButton("3D Cyl")
+		self.vslpfilt=ValSlider(self,(0,.5),"Filter",0.5,50)
 		
-		self.vbl.addWidget(self.bcenalign)
-		self.vbl.addWidget(self.bprojalign)
-		self.hbl2=QtGui.QHBoxLayout()
-		self.vbl.addLayout(self.hbl2)
-		self.hbl2.addWidget(self.breconst)
-		self.hbl2.addWidget(self.sbmode)
-		self.vbl.addWidget(self.bmagict)
-		self.vbl.addWidget(self.bmagics)
-		self.vbl.addWidget(self.bmagicc)
+		self.gbl.addWidget(self.bcenalign,0,0)
+		self.gbl.addWidget(self.bprojalign,0,1)
+		self.gbl.addWidget(self.breconst,1,0)
+		self.gbl.addWidget(self.sbmode,2,0,1,1)
+		self.gbl.addWidget(self.vslpfilt,3,0,1,4)
+		self.gbl.addWidget(self.bmagict,1,1)
+		self.gbl.addWidget(self.bmagics,1,2)
+		self.gbl.addWidget(self.bmagicc,1,3)
 		
 		QtCore.QObject.connect(self.bcenalign,QtCore.SIGNAL("clicked(bool)"),self.do_cenalign)
 		QtCore.QObject.connect(self.bprojalign,QtCore.SIGNAL("clicked(bool)"),self.do_projalign)
 		QtCore.QObject.connect(self.breconst,QtCore.SIGNAL("clicked(bool)"),self.do_reconst)
 		QtCore.QObject.connect(self.bmagict,QtCore.SIGNAL("clicked(bool)"),self.do_magict)
 		QtCore.QObject.connect(self.bmagics,QtCore.SIGNAL("clicked(bool)"),self.do_magics)
-		QtCore.QObject.connect(self.bmagicc,QtCore.SIGNAL("clicked(bool)"),self.do_magicc)		
+		QtCore.QObject.connect(self.bmagicc,QtCore.SIGNAL("clicked(bool)"),self.do_magicc)
+		QtCore.QObject.connect(self.vslpfilt,QtCore.SIGNAL("valueChanged"),self.do_filter)
 
 		# the single image display widget
 		self.im2d =    EMImage2DModule(application=app,winid="tomotrackbox.big")
@@ -148,6 +146,7 @@ class TrackerControl(QtGui.QWidget):
 		self.imageparm=None
 		self.tiltshapes=None
 		self.curtilt=0
+		self.map3d=None
 		
 		self.show()
 		self.im2d.show()
@@ -160,15 +159,18 @@ class TrackerControl(QtGui.QWidget):
 		event.accept()
 		
 	def do_cenalign(self,x=0):
+		"""In response to the center align button. Just a wrapper"""
 		self.cenalign_stack()
 		self.update_stack()
 		
 	def do_projalign(self,x=0):
+		"""In response to the projection align button. Just a wrapper"""
 		self.projection_align()
 		self.update_stack()
 #		self.do_reconst()
 
 	def do_reconst(self,x=0):
+		"""In response to the normal reconstruction button. Just a wrapper"""
 		stack=self.get_boxed_stack()
 		mode=self.sbmode.value()
 		self.map3d=self.reconstruct(stack,2.0,mode)
@@ -176,6 +178,7 @@ class TrackerControl(QtGui.QWidget):
 
 		
 	def do_magict(self,x):
+		"""In response to tomographic filling reconstruction button. Just a wrapper"""
 		stack=self.get_boxed_stack()
 #		self.map3d=self.reconstruct_ca(stack[5:-4],0.5)
 #		init=self.reconstruct_ca(stack[5:-4],0.5)
@@ -184,24 +187,34 @@ class TrackerControl(QtGui.QWidget):
 		self.update_3d()
 		
 	def do_magics(self,x):
+		"""In response to the 3D Sph button. Just a wrapper"""
 		return
 		
 	def do_magicc(self,x):
+		"""In response to the 3D cyl button. Just a wrapper"""
 		return
 		
+	def do_filter(self,v):
+		"""In response to the filter ValSlider"""
+		if self.map3d==None : return
+		self.lpfilt=v
+		self.update_3d()
+	
 	def update_3d(self):
 		if self.map3d==None : return
 		
-		self.imvol.set_data(self.map3d)
+		self.filt3d=self.map3d.process("filter.lowpass.gauss",{"cutoff_abs":self.vslpfilt.getValue()})
+		
+		self.imvol.set_data(self.filt3d)
 		self.imvol.show()
 		self.imvol.updateGL()
 
 		sz=self.map3d["nx"]
-		xsum=self.map3d.process("misc.directional_sum",{"direction":"x"})
+		xsum=self.filt3d.process("misc.directional_sum",{"direction":"x"})
 		xsum.set_size(sz,sz,1)
-		ysum=self.map3d.process("misc.directional_sum",{"direction":"y"})
+		ysum=self.filt3d.process("misc.directional_sum",{"direction":"y"})
 		ysum.set_size(sz,sz,1)
-		zsum=self.map3d.process("misc.directional_sum",{"direction":"z"})
+		zsum=self.filt3d.process("misc.directional_sum",{"direction":"z"})
 		zsum.set_size(sz,sz,1)
 		
 		self.improj.set_data([zsum,ysum,xsum])
@@ -425,35 +438,60 @@ class TrackerControl(QtGui.QWidget):
 		return ret
 		
 	
-	def reconstruct(self,stack,angstep,mode=2,initmodel=None):
+	def reconstruct(self,stack,angstep,mode=0,initmodel=None):
 		""" Tomographic reconstruction of the current stack """
+		if initmodel!=None : print "Using initial model"
+		
 		boxsize=stack[0]["nx"]
 		pad=Util.calc_best_fft_size(int(boxsize*1.5))
 		
 		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-90.0,"phi":90.0})
 		
-		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"start_model":initmodel,"start_model_weight":0.01,"mode":mode})
-		recon.setup()
-		qual=0
+		recon=Reconstructors.get("fourier", {"sym":"c1","size":(pad,pad,pad),"mode":reconmodes[mode],"verbose":True})
+		if initmodel!=None : recon.setup(initmodel,.01)
+		else : recon.setup()
 		scores=[]
-		for ri in range(3):
-			if ri>0 or initmodel!=None :
-				for i,p in enumerate(stack):
-					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-					recon.determine_slice_agreement(p2,p["xform.projection"],1)
-					if 1 : 
-						qual+=recon.get_score(i)
-						print "%d) %3d. %f\t%f"%(ri,i,recon.get_score(i),recon.get_norm(i)) 
-						scores.append(recon.get_score(i))
-			for p in stack:
-				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-				recon.insert_slice(p2,p["xform.projection"])
 		
+		# First pass to assess qualities and normalizations
+		for p in stack:
+			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=recon.preprocess_slice(p2,p["xform.projection"])
+			recon.insert_slice(p2,p["xform.projection"],1.0)
+
+		# after building the model once we can assess how well everything agrees
+		for p in stack:
+			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=recon.preprocess_slice(p2,p["xform.projection"])
+			recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
+			scores.append((p2["reconstruct_absqual"],p2["reconstruct_norm"]))
+
+		# clear out the first reconstruction (probably no longer necessary)
+#		ret=recon.finish(True)
+#		ret=None
+		
+		# setup for the second run
+		if initmodel!=None : recon.setup(initmodel,.01)
+		else : recon.setup()
+
+		thr=0.7*(scores[len(scores)/2][0]+scores[len(scores)/2-1][0]+scores[len(scores)/2+1][0])/3;		# this is rather arbitrary
+		# First pass to assess qualities and normalizations
+		for i,p in enumerate(stack):
+			if scores[i][0]<thr : 
+				print "%d. %1.3f *"%(i,scores[i][0])
+				continue
+			
+			print "%d. %1.2f \t%1.3f\t%1.3f"%(i,p["xform.projection"].get_rotation("eman")["alt"],scores[i][0],scores[i][1])
+			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=recon.preprocess_slice(p2,p["xform.projection"])
+			p2.mult(scores[i][1])
+			recon.insert_slice(p2,p["xform.projection"],1.0)
+
 #		plot(scores)
 		
-		ret=recon.finish()
+		recon.set_param("savenorm","norm.mrc")
+		ret=recon.finish(True)
 		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
-		print "Quality: ",qual
+#		print "Quality: ",qual
 		
 		return ret
 	
@@ -480,7 +518,7 @@ class TrackerControl(QtGui.QWidget):
 			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
 			trans=aln["xform.align2d"].get_trans()
 			print i,trans[0],trans[1]
-			if i==len(stack)-1 : display([ref,trg,aln])
+			if i>len(stack)-4 : display([ref,trg,aln])
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 
 			self.tiltshapes[i].translate(trans[0],trans[1])

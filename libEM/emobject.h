@@ -271,8 +271,9 @@ namespace EMAN
 		 */
 		void printInfo() const;
 
-		void init();
-
+//		void init();
+		
+		static map< ObjectType, string> init();
 		static map< ObjectType, string> type_registry;
 
 	};
@@ -702,7 +703,7 @@ namespace EMAN
 	public:
 		typedef T *(*InstanceType) ();
 
-		static void add(InstanceType i);
+		template <class ClassType> static void add();
 		static T *get(const string & instance_name);
 		static T *get(const string & instance_name, const Dict & params);
 		static vector < string > get_list();
@@ -712,7 +713,7 @@ namespace EMAN
 		Factory(const Factory < T > &);
 		~Factory();
 		static void init();
-		void force_add(InstanceType i);
+		template <class ClassType> void force_add();
 
 		static Factory < T > *my_instance;
 		map < string, InstanceType > my_dict;
@@ -727,35 +728,27 @@ namespace EMAN
 		}
 	}
 
-	template < class T > void Factory < T >::force_add(InstanceType new_instance)
+	template < class T > 
+	template < class ClassType > 
+	void Factory < T >::force_add()
 	{
-		T *i = new_instance();
-		string name = i->get_name();
-		my_dict[name] = new_instance;
-		if( i )
-		{
-			delete i;
-			i = 0;
-		}
+		string name = ClassType::NAME;
+		my_dict[name] = &ClassType::NEW;
 	}
 
 
-	template < class T > void Factory < T >::add(InstanceType new_instance)
+	template < class T > 
+	template < class ClassType >
+	void Factory < T >::add()
 	{
 		init();
 
-		T *i = new_instance();
-		string name = i->get_name();
+		string name = ClassType::NAME;
 		typename map < string, InstanceType >::iterator fi =
 			my_instance->my_dict.find(name);
 
 		if (fi == my_instance->my_dict.end()) {
-			my_instance->my_dict[name] = new_instance;
-		}
-		if( i )
-		{
-			delete i;
-			i = 0;
+			my_instance->my_dict[name] = &ClassType::NEW;
 		}
 	}
 
@@ -899,8 +892,10 @@ namespace EMAN
 			params.clear();
 			insert_params(new_params);
 		}
-
-		/** @return a TypeDict defining and describing the feasible parameters of this class
+		
+		inline void set_param(const string key,const EMObject val) { params[key]=val; }
+		
+		/** @return a TypeDict defining and describing the feasible parameters of this class 
 		 */
 		virtual TypeDict get_param_types() const = 0;
 

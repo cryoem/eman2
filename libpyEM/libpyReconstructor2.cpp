@@ -64,16 +64,21 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
         call_method< void >(py_self, "setup");
     }
 
-    int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform3D& p1) {
-        return call_method< int >(py_self, "insert_slice", p0, p1);
+    void setup_seed(const EMAN::EMData* seed,float seed_weight) {
+        call_method< void >(py_self, "setup_seed",seed,seed_weight);
     }
 
-	int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform& p1) {
-		return call_method< int >(py_self, "insert_slice", p0, p1);
-	}
 
-    EMAN::EMData* finish() {
-        return call_method< EMAN::EMData* >(py_self, "finish");
+ 	int insert_slice(const EMAN::EMData* const slice, const EMAN::Transform& euler) {
+ 		return call_method< int >(py_self, "insert_slice", slice,euler,1.0);
+ 	}
+
+ 	int insert_slice(const EMAN::EMData* const slice, const EMAN::Transform& euler,float weight) {
+ 		return call_method< int >(py_self, "insert_slice", slice,euler,weight);
+ 	}
+
+    EMAN::EMData* finish(bool doift) {
+        return call_method< EMAN::EMData* >(py_self, "finish", doift);
     }
 
     std::string get_name() const {
@@ -123,21 +128,20 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
     def("dump_reconstructors_list", &EMAN::dump_reconstructors_list);
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
-//		.def("insert_slice",  pure_virtual((int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&))&EMAN::Reconstructor::insert_slice))
+		.def("setup_seed", (int (EMAN::Reconstructor::*)(const EMAN::EMData*, const float))&EMAN::Reconstructor::setup_seed)
+		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN::Reconstructor::insert_slice)
 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
-		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)
-		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)
-		.def("insert_slice_weights", &EMAN::Reconstructor::insert_slice_weights)
-        .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())
+		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(EMAN::EMData* , const EMAN::Transform&, const float, bool))&EMAN::Reconstructor::determine_slice_agreement)
+        .def("preprocess_slice", (EMAN::EMData* (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::preprocess_slice, return_internal_reference< 1 >())
+        .def("finish", (EMAN::EMData* (EMAN::Reconstructor::*)(bool))&EMAN::Reconstructor::finish, return_internal_reference< 1 >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
-		.def("get_score", pure_virtual(&EMAN::Reconstructor::get_score))
-		.def("get_norm", pure_virtual(&EMAN::Reconstructor::get_norm))
         .def("get_desc", pure_virtual(&EMAN::Reconstructor::get_desc))
 // 		.def("get_emdata", (&EMAN::Reconstructor::get_emdata),  return_internal_reference< 1 >())
         //.def("get_params", &EMAN::Reconstructor::get_params, &EMAN_Reconstructor_Wrapper::default_get_params)
 		.def("get_params", &EMAN::Reconstructor::get_params)
 		.def("insert_params", &EMAN::Reconstructor::insert_params)
         .def("set_params", &EMAN::Reconstructor::set_params, &EMAN_Reconstructor_Wrapper::default_set_params)
+        .def("set_param", &EMAN::Reconstructor::set_param)
 		.def("print_params",  &EMAN::Reconstructor::print_params) // Why is this different to set_params and get_params? Why is the wrapper needed? d.woolford May 2007
         .def("get_param_types", pure_virtual(&EMAN::Reconstructor::get_param_types))
     ;

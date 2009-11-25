@@ -29,30 +29,27 @@
  * 
  * */
 
-#include "cmp_template.h"
-#include "transform.h"
-
+#include "averager_template.h"
+#include "emdata.h"
 
 using namespace EMAN;
 
-float XYZCmp::cmp(EMData * image, EMData * with) const
+const string XYZAverager::NAME = "xyz";
+
+XYZAverager::XYZAverager() : result(0)
 {
-	validate_input_args(image, with);
+}
 
-#if 0
-	int param1 = params["param1"];
-	float param2 = params["param2"];
-	// do something
-#endif
-	int nx=image->get_xsize();
-	int ny=image->get_ysize();
-	
-	double ret=0;
-	for (int i=nx/4; i<nx*3/4; i++) {
-		for (int j=ny/4; j<ny*3/4; j++) {
-			ret+=image->get_value_at(i,j)*with->get_value_at(i,j);
-		}
+void XYZAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
 	}
+	result = new EMData();
+}
 
-	return (float) ret;
+
+EMData *XYZAverager::finish()
+{
+	return result;
 }

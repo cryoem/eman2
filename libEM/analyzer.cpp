@@ -48,13 +48,19 @@ using namespace EMAN;
 
 namespace EMAN {
 
+	const string PCAsmall::NAME = "pca";
+	const string PCAlarge::NAME = "pca_large";
+	const string varimax::NAME = "varimax";
+	const string KMeansAnalyzer::NAME = "kmeans";
+	const string SVDAnalyzer::NAME = "svd_gsl";
+
 	template <> Factory < Analyzer >::Factory()
 	{
-		force_add(&PCAsmall::NEW);
-		force_add(&PCAlarge::NEW);
-		force_add(&varimax::NEW);
- 		force_add(&KMeansAnalyzer::NEW);
- 		force_add(&SVDAnalyzer::NEW);
+		force_add<PCAsmall>();
+		force_add<PCAlarge>();
+		force_add<varimax>();
+ 		force_add<KMeansAnalyzer>();
+ 		force_add<SVDAnalyzer>();
 	}
 
 }

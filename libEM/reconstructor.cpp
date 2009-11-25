@@ -34,6 +34,7 @@
  * */
 
 #include "reconstructor.h"
+#include "plugins/reconstructor_template.h"
 #include "ctf.h"
 #include "emassert.h"
 #include "symmetry.h"
@@ -69,18 +70,27 @@ template < typename T > void checked_delete( T*& x )
     x = NULL;
 }
 
+const string FourierReconstructor::NAME = "fourier";
+const string FourierReconstructorSimple2D::NAME = "fouriersimple2D";
+const string WienerFourierReconstructor::NAME = "wiener_fourier";
+const string BackProjectionReconstructor::NAME = "back_projection";
+const string nn4Reconstructor::NAME = "nn4";
+const string nnSSNR_Reconstructor::NAME = "nnSSNR";
+const string nn4_ctfReconstructor::NAME = "nn4_ctf";
+const string nnSSNR_ctfReconstructor::NAME = "nnSSNR_ctf";
 
 template <> Factory < Reconstructor >::Factory()
 {
-	force_add(&FourierReconstructor::NEW);
-	force_add(&FourierReconstructorSimple2D::NEW);
-	force_add(&BaldwinWoolfordReconstructor::NEW);
-	force_add(&WienerFourierReconstructor::NEW);
-	force_add(&BackProjectionReconstructor::NEW);
-	force_add(&nn4Reconstructor::NEW);
-	force_add(&nnSSNR_Reconstructor::NEW);
-	force_add(&nn4_ctfReconstructor::NEW);
-	force_add(&nnSSNR_ctfReconstructor::NEW);
+	force_add<FourierReconstructor>();
+	force_add<FourierReconstructorSimple2D>();
+//	force_add(&BaldwinWoolfordReconstructor::NEW);
+//	force_add(&WienerFourierReconstructor::NEW);
+	force_add<BackProjectionReconstructor>();
+	force_add<nn4Reconstructor>();
+	force_add<nnSSNR_Reconstructor>();
+	force_add<nn4_ctfReconstructor>();
+	force_add<nnSSNR_ctfReconstructor>();
+//	force_add<XYZReconstructor>();
 }
 
 void FourierReconstructorSimple2D::setup()
@@ -104,7 +114,7 @@ void FourierReconstructorSimple2D::setup()
 	tmp_data->set_size(nx/2, nx);
 }
 
-int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform & euler)
+int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform & euler, const float weight)
 {
 
 	// Are these exceptions really necessary? (d.woolford)
@@ -221,7 +231,7 @@ int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const 
 
 }
 
-EMData *FourierReconstructorSimple2D::finish()
+EMData *FourierReconstructorSimple2D::finish(bool doift)
 {
 	normalize_threed();
 
@@ -234,38 +244,75 @@ EMData *FourierReconstructorSimple2D::finish()
 }
 
 void ReconstructorVolumeData::normalize_threed()
+// normalizes the 3-D Fourier volume. Also imposes appropriate complex conjugate relationships
 {
 	float* norm = tmp_data->get_data();
 	float* rdata = image->get_data();
+
+//	printf("%d %d %d %d %d %d\n",subnx,subny,subnz,image->get_xsize(),image->get_ysize(),image->get_zsize());
 
 	// FIXME should throw a sensible error
 	if ( 0 == norm ) throw NullPointerException("The normalization volume was null!");
 	if ( 0 == rdata ) throw NullPointerException("The complex reconstruction volume was null!");
 
-	for (int i = 0; i < nx * ny * nz; i += 2) {
+	for (int i = 0; i < subnx * subny * subnz; i += 2) {
 		float d = norm[i/2];
 		if (d == 0) {
 			rdata[i] = 0;
 			rdata[i + 1] = 0;
 		}
 		else {
+//			rdata[i]=1.0/d;
+//			rdata[i+1]=0.0;		// for debugging only
 			rdata[i] /= d;
 			rdata[i + 1] /= d;
+		}
+	}
+
+	// enforce complex conj, only works on subvolumes if the complete conjugate plane is in the volume
+	if (subx0==0 && subnx>1 && subny==ny && subnz==nz) {
+		for (int z=0; z<=nz/2; z++) {
+			for (int y=1; y<=ny; y++) {
+				if (y==0 && z==0) continue;
+				// x=0
+				int i=(y%ny)*subnx+(z%nz)*subnx*subny;
+				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny;
+				float ar=(rdata[i]+rdata[i2])/2.0;
+				float ai=(rdata[i+1]-rdata[i2+1])/2.0;
+				rdata[i]=ar;
+				rdata[i2]=ar;
+				rdata[i+1]=ai;
+				rdata[i2+1]=-ai;
+			}
+		}
+	}
+
+	if (subx0+subnx==nx && subnx>1 && subny==ny && subnz==nz) {
+		for (int z=0; z<=nz/2; z++) {
+			for (int y=1; y<=ny; y++) {
+				if (y==0 && z==0) continue;
+				// x=0
+				int i=(y%ny)*subnx+(z%nz)*subnx*subny+subnx-2;
+				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny+subnx-2;
+				float ar=(rdata[i]+rdata[i2])/2.0;
+				float ai=(rdata[i+1]-rdata[i2+1])/2.0;
+				rdata[i]=ar;
+				rdata[i2]=ar;
+				rdata[i+1]=ai;
+				rdata[i2+1]=-ai;
+			}
 		}
 	}
 }
 
 void FourierReconstructor::free_memory()
 {
+	if (image) { delete image; image=0; }
+	if (tmp_data) { delete tmp_data; tmp_data=0; }
 	if ( inserter != 0 )
 	{
 		delete inserter;
 		inserter = 0;
-	}
-	if ( interp_FRC_calculator != 0 )
-	{
-		delete interp_FRC_calculator;
-		interp_FRC_calculator = 0;
 	}
 }
 
@@ -273,104 +320,42 @@ void FourierReconstructor::free_memory()
 
 void FourierReconstructor::load_inserter()
 {
-	// ints get converted to strings byt the Dict object here
-
-	stringstream ss;
-	ss << (int)params["mode"];
-	string mode;
-	ss >> mode;
 //	ss
 //	string mode = (string)params["mode"];
 	Dict parms;
-	parms["rdata"] = image->get_data();
+	parms["data"] = image;
 	parms["norm"] = tmp_data->get_data();
-	parms["nx"] = nx;
-	parms["ny"] = ny;
-	parms["nz"] = nz;
+	// These aren't necessary because we deal with them before calling the inserter
+// 	parms["subnx"] = nx;
+// 	parms["subny"] = ny;
+// 	parms["subnx"] = nz;
+// 	parms["subx0"] = x0;
+// 	parms["suby0"] = y0;
+// 	parms["subz0"] = z0;
 
 	if ( inserter != 0 )
 	{
 		delete inserter;
 	}
 
-	inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
+	inserter = Factory<FourierPixelInserter3D>::get((string)params["mode"], parms);
 	inserter->init();
-}
-
-
-
-void FourierReconstructor::load_interp_FRC_calculator()
-{
-	Dict init_parms;
-	init_parms["rdata"] = image->get_data();
-	init_parms["norm"] = tmp_data->get_data();
-	init_parms["nx"] = nx;
-	init_parms["ny"] = ny;
-	init_parms["nz"] = nz;
-
-	if ( x_scale_factor != 0 ) init_parms["x_scale"] = 1.0/x_scale_factor;
-	if ( y_scale_factor != 0 ) init_parms["y_scale"] = 1.0/y_scale_factor;
-	if ( z_scale_factor != 0 ) init_parms["z_scale"] = 1.0/z_scale_factor;
-
-	if ( interp_FRC_calculator != 0 )
-	{
-		delete interp_FRC_calculator;
-	}
-
-	stringstream ss;
-	ss << (int)params["mode"];
-	string mode;
-	ss >> mode;
-
-	interp_FRC_calculator = Factory<InterpolatedFRC>::get(mode, init_parms);
 }
 
 void FourierReconstructor::setup()
 {
 	// default setting behavior - does not override if the parameter is already set
-	params.set_default("mode",2);
+	params.set_default("mode","gauss_2");
 
-	int x_size = params["x_in"];
-	if ( x_size < 0 ) throw InvalidValueException(x_size, "x size of images must be greater than 0");
-	int y_size = params["y_in"];
-	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
+	vector<int> size=params["size"];
 
-	if ( x_size > y_size ) max_input_dim = x_size;
-	else max_input_dim = y_size;
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nx2=nx/2-1;
+	ny2=ny/2;
+	nz2=nz/2;
 
-	// This is a helical adaptation - FIXME explain
-	bool helical_special_behavior = false;
-	if ( helical_special_behavior )
-	{
-		if ( x_size > y_size )
-		{
-			if ( (int) params["xsample"] == 0 ) params["xsample"] = y_size;
-			if ( (int) params["zsample"] == 0 ) params["zsample"] = x_size;
-		}
-		if ( y_size > x_size )
-		{
-			if ( (int) params["ysample"] == 0 ) params["ysample"] = x_size;
-			if ( (int) params["zsample"] == 0 ) params["zsample"] = y_size;
-		}
-	}
-
-	if ( (int) params["xsample"] != 0  ) output_x = (int) params["xsample"];
-	else output_x = x_size;
-
-	if ( (int) params["ysample"] != 0  ) output_y = (int) params["ysample"];
-	else output_y = y_size;
-
-	if ( (int) params["zsample"] != 0  ) output_z = (int) params["zsample"];
-	else
-	{
-		if ( x_size == y_size ) output_z = x_size;
-		else if ( x_size > y_size ) output_z = x_size;
-		else output_z = y_size;
-	}
-
-	nx = output_x;
-	ny = output_y;
-	nz = output_z;
 
 	// Adjust nx if for Fourier transform even odd issues
 	bool is_fftodd = (nx % 2 == 1);
@@ -379,547 +364,486 @@ void FourierReconstructor::setup()
 	// real components
 	nx += 2-is_fftodd;
 
-	if ( (int) params["zsample"] == 0  ) nz = max_input_dim;
+	if (params.has_key("subvolume")) {
+		vector<int> sub=params["subvolume"];
+		subx0=sub[0];
+		suby0=sub[1];
+		subz0=sub[2];
+		subnx=sub[3];
+		subny=sub[4];
+		subnz=sub[5];
 
-	if ( nz < max_input_dim ) z_scale_factor = (float) nz / (float) max_input_dim;
-	if ( ny < max_input_dim ) y_scale_factor = (float) ny / (float) max_input_dim;
-	if ( nx < max_input_dim ) x_scale_factor = (float) nx / (float) max_input_dim;
+		if (subx0<0 || suby0<0 || subz0<0 || subx0+subnx>nx || suby0+subny>ny || subz0+subnz>nz)
+			throw ImageDimensionException("The subvolume cannot extend outside the reconstructed volume");
+
+	}
+	else {
+		subx0=suby0=subz0=0.0;
+		subnx=nx;
+		subny=ny;
+		subnz=nz;
+	}
+
 
 	// Odd dimension support is here atm, but not above.
+	if (image) delete image;
 	image = new EMData();
-	image->set_size(nx, ny, nz);
+	image->set_size(subnx, subny, subnz);
 	image->set_complex(true);
 	image->set_fftodd(is_fftodd);
 	image->set_ri(true);
+	image->to_zero();
 
+	if (params.has_key("subvolume")) {
+		image->set_attr("subvolume_x0",subx0);
+		image->set_attr("subvolume_y0",suby0);
+		image->set_attr("subvolume_z0",subz0);
+		image->set_attr("subvolume_full_nx",nx);
+		image->set_attr("subvolume_full_ny",ny);
+		image->set_attr("subvolume_full_nz",nz);
+	}
+	
+	if (tmp_data) delete tmp_data;
 	tmp_data = new EMData();
-	tmp_data->set_size(nx/2, ny, nz);
+	tmp_data->set_size(subnx/2, subny, subnz);
 	tmp_data->to_zero();
 	tmp_data->update();
 
 	load_inserter();
-	load_interp_FRC_calculator();
 
 	if ( (bool) params["quiet"] == false )
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
-		cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
-		cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
-		cout << "Max input dim is " << max_input_dim << endl;
+		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
+		cout << "You will require approximately " << setprecision(3) << (subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
 	}
 }
+
+void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
+	// default setting behavior - does not override if the parameter is already set
+	params.set_default("mode","gauss_2");
+
+	vector<int> size=params["size"];
+
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nx2=nx/2-1;
+	ny2=ny/2;
+	nz2=nz/2;
+
+
+	// Adjust nx if for Fourier transform even odd issues
+	bool is_fftodd = (nx % 2 == 1);
+	// The Fourier transform requires one extra pixel in the x direction,
+	// which is two spaces in memory, one each for the complex and the
+	// real components
+	nx += 2-is_fftodd;
+
+	if (params.has_key("subvolume")) {
+		vector<int> sub=params["subvolume"];
+		subx0=sub[0];
+		suby0=sub[1];
+		subz0=sub[2];
+		subnx=sub[3];
+		subny=sub[4];
+		subnz=sub[5];
+
+		if (subx0<0 || suby0<0 || subz0<0 || subx0+subnx>nx || suby0+subny>ny || subz0+subnz>nz)
+			throw ImageDimensionException("The subvolume cannot extend outside the reconstructed volume");
+
+	}
+	else {
+		subx0=suby0=subz0=0.0;
+		subnx=nx;
+		subny=ny;
+		subnz=nz;
+	}
+
+	if (seed->get_xsize()!=subnx || seed->get_ysize()!=subny || seed->get_zsize()!=subnz || !seed->is_complex())
+		throw ImageDimensionException("The dimensions of the seed volume do not match the reconstruction size");
+
+	// Odd dimension support is here atm, but not above.
+	image = seed;
+	if (params.has_key("subvolume")) {
+		image->set_attr("subvolume_x0",subx0);
+		image->set_attr("subvolume_y0",suby0);
+		image->set_attr("subvolume_z0",subz0);
+		image->set_attr("subvolume_full_nx",nx);
+		image->set_attr("subvolume_full_ny",ny);
+		image->set_attr("subvolume_full_nz",nz);
+	}
+
+	if (tmp_data) delete tmp_data;
+	tmp_data = new EMData();
+	tmp_data->set_size(subnx/2, subny, subnz);
+	tmp_data->to_value(seed_weight);
+
+	load_inserter();
+
+	if ( (bool) params["quiet"] == false )
+	{
+		cout << "Seeded direct Fourier inversion";
+		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
+		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
+		cout << "You will require approximately " << setprecision(3) << (subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+	}
+}
+
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t )
 {
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
 	EMData* return_slice = 0;
 	Transform tmp(t);
-	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
+	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly, this way we only do 2d translation,scaling and mirroring
 
-	Vec2f trans = tmp.get_trans_2d();
-	float scale = tmp.get_scale();
-	bool mirror = tmp.get_mirror();
-	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
-		return_slice = slice->process("math.transform",Dict("transform",&tmp));
-	} else if ( mirror == true ) {
-		return_slice = slice->process("xform.flip",Dict("axis","x"));
-	}
+	if (tmp.is_identity()) return_slice=slice->copy();
+	else return_slice = slice->process("math.transform",Dict("transform",&tmp));
 
-	if (return_slice == 0) {
-		return_slice = slice->process("xform.phaseorigin.tocorner");
-	} else {
-		return_slice->process_inplace("xform.phaseorigin.tocorner");
-	}
+	return_slice->process_inplace("xform.phaseorigin.tocorner");
 
-// 	EMData* return_slice = slice->process("normalize.edgemean");
-// 	return_slice->process_inplace("xform.phaseorigin.tocorner");
-
+//	printf("@@@ %d\n",(int)return_slice->get_attr("nx"));
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
+
+//	printf("%d\n",(int)return_slice->get_attr("nx"));
 
 	return_slice->mult((float)sqrt(1.0f/(return_slice->get_ysize())*return_slice->get_xsize()));
 
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
-	return_slice->process_inplace("xform.fourierorigin.tocenter");
+//	return_slice->process_inplace("xform.fourierorigin.tocenter");
 
+	return_slice->set_attr("reconstruct_preproc",(int)1);
 	return return_slice;
 }
 
-void FourierReconstructor::zero_memory()
-{
-	if (tmp_data != 0 ) tmp_data->to_zero();
-	if (image != 0 ) image->to_zero();
 
-	EMData* start_model = params.set_default("start_model",(EMData*)0);
-
-	if (start_model != 0) {
-		if (!start_model->is_complex()) {
-			start_model->do_fft_inplace();
-			start_model->process_inplace("xform.phaseorigin.tocenter");
-		}
-
-		if (start_model->get_xsize() != nx || start_model->get_ysize() != ny || start_model->get_zsize() != nz ) {
-			throw ImageDimensionException("The dimensions of the start_model are incorrect");
-		}
-
-		if (!start_model->is_shuffled()) {
-			start_model->process_inplace("xform.fourierorigin.tocenter");
-		}
-
-		memcpy(image->get_data(),start_model->get_data(),nx*ny*nz*sizeof(float));
-
-		float start_model_weight =  params.set_default("start_model_weight",1.0f);
-
-		if (start_model_weight != 1.0) {
-			image->mult(start_model_weight);
-		}
-
-		tmp_data->add(start_model_weight);
-	}
-}
-
-int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg)
+int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg, const float weight)
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
 
-	// I could also test to make sure the image is the right dimensions...
-	if (input_slice->is_complex()) throw ImageFormatException("The image is complex, expecting real");
-
-	// Get the proprecessed slice - there are some things that always happen to a slice,
-	// such as as Fourier conversion and optional padding etc.
-	//
-	// We must use only the rotational component of the transform, scaling, translation and mirroring
-	// are not implemented in Fourier space
 	Transform * rotation;
-	if ( input_slice->has_attr("xform.projection") ) {
+/*	if ( input_slice->has_attr("xform.projection") ) {
 		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
-	} else {
-		rotation = new Transform(arg); // assignment operator
-	}
+	} else {*/
+	rotation = new Transform(arg); // assignment operator
+// 	}
 
-	EMData* slice = preprocess_slice( input_slice, *rotation);
+	EMData *slice;
+	if (input_slice->get_attr_default("reconstruct_preproc",(int) 0)) slice=input_slice->copy();
+	else slice = preprocess_slice( input_slice, *rotation);
 
-	// Catch the first time a slice is inserted to do some things....
-	if ( slice_insertion_flag == true )
-	{
-		// Zero the memory in the associated EMData objects
-		zero_memory();
-		// Reset the image_idx to zero
-		image_idx = 0;
-		// Set flags appropriately
-		slice_agreement_flag = true;
-		slice_insertion_flag = false;
 
-		// should be a if verbose here
-		//if ( prev_quality_scores.size() != 0 ) print_stats( prev_quality_scores );
-	}
-
-	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
-	// place until after the first round of slice insertion
-	if ( quality_scores.size() != 0 )
-	{
-		if ( quality_scores[image_idx].get_snr_normed_frc_integral() < (float) params["hard"] )
-		{
-			image_idx++;
-			return 1;
-		}
-		slice->mult(1.f/quality_scores[image_idx].get_norm());
-// 		cout << "Norm multiplied by " << 1.f/quality_scores[image_idx].get_norm() << endl;
-		image_idx++;
-	}
-
-	// Finally to the pixel wise slice insertion
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space, but are in preprocess_slice
 	rotation->set_scale(1.0);
 	rotation->set_mirror(false);
 	rotation->set_trans(0,0,0);
-	do_insert_slice_work(slice, *rotation);
 
-	if(rotation) {delete rotation; rotation=0;}
+	// Finally to the pixel wise slice insertion
+	do_insert_slice_work(slice, *rotation, weight);
+
+	delete rotation; rotation=0;
 	delete slice;
 
 // 	image->update();
 	return 0;
 }
 
-void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg)
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight)
 {
 	// Reload the inserter if the mode has changed
-	string mode = (string) params["mode"];
-	if ( mode != inserter->get_name() )	load_inserter();
+// 	string mode = (string) params["mode"];
+// 	if ( mode != inserter->get_name() )	load_inserter();
 
-	int rl = Util::square( max_input_dim / 2);
+// 	int y_in = input_slice->get_ysize();
+// 	int x_in = input_slice->get_xsize();
+// 	// Adjust the dimensions to account for odd and even ffts
+// 	if (input_slice->is_fftodd()) x_in -= 1;
+// 	else x_in -= 2;
 
-	float dt[2];
-
-	float y_scale = 0, x_scale = 0;
-
-	int y_in = input_slice->get_ysize();
-	int x_in = input_slice->get_xsize();
-	// Adjust the dimensions to account for odd and even ffts
-	if (input_slice->is_fftodd()) x_in -= 1;
-	else x_in -= 2;
-
-	if ( y_in != x_in )
-	{
-		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
-		else x_scale = (float) y_in / (float) x_in;
-	}
-
-	float *dat = input_slice->get_data();
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
-	float weight = params.set_default("weight",1.0f);
+
+	float inx=input_slice->get_xsize();		// x/y dimensions of the input image
+	float iny=input_slice->get_ysize();
 
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
-		for (int y = 0; y < input_slice->get_ysize(); y++) {
-			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
+		for (int y = -iny/2; y < iny/2; y++) {
+			for (int x = 0; x <=  inx/2; x++) {
 
-				float rx = (float) x;
-				float ry = (float) y;
+				float rx = (float) x/(inx-2.0);	// coords relative to Nyquist=.5
+				float ry = (float) y/iny;
 
-				if ( y_in != x_in )
-				{
-					if ( x_in > y_in ) ry *= y_scale;
-					else rx *= x_scale;
-				}
-
-				if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
-					continue;
-
-				Vec3f coord(rx,(ry - max_input_dim / 2),0);
+				Vec3f coord(rx,ry,0);
 				coord = coord*t3d; // transpose multiplication
-				float xx = coord[0];
+				float xx = coord[0]; // transformed coordinates in terms of Nyquist
 				float yy = coord[1];
 				float zz = coord[2];
 
-				float cc = 1;
+				// Map back to real pixel coordinates in output volume
+				xx=xx*(nx-2);
+				yy=yy*ny;
+				zz=zz*nz;
 
-				if (xx < 0) {
-					xx = -xx;
-					yy = -yy;
-					zz = -zz;
-					cc = -1.0;
-				}
+// 				if (x==10 && y==0) printf("10,0 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f) %1.0f %d\n",
+// 					xx,yy,zz,t3d.at(0,0),t3d.at(0,1),t3d.at(0,2),t3d.at(1,0),t3d.at(1,1),t3d.at(1,2),t3d.at(2,0),t3d.at(2,1),t3d.at(2,2),inx,nx);
+// 				if (x==0 && y==10) printf("0,10 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f)\n",
+// 					xx,yy,zz,t3d.at(0,0),t3d.at(0,1),t3d.at(0,2),t3d.at(1,0),t3d.at(1,1),t3d.at(1,2),t3d.at(2,0),t3d.at(2,1),t3d.at(2,2));
 
-				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-
-				yy += ny / 2;
-				zz += nz / 2;
-
-				int idx = x * 2 + y * (input_slice->get_xsize());
-				dt[0] = dat[idx];
-				dt[1] = cc * dat[idx+1];
-
-				inserter->insert_pixel(xx,yy,zz,dt,weight);
+				//printf("%3.1f %3.1f %3.1f\t %1.4f %1.4f\t%1.4f\n",xx,yy,zz,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
+//				if (floor(xx)==45 && floor(yy)==45 &&floor(zz)==0) printf("%d. 45 45 0\t %d %d\t %1.4f %1.4f\t%1.4f\n",(int)input_slice->get_attr("n"),x,y,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
+//				if (floor(xx)==21 && floor(yy)==21 &&floor(zz)==0) printf("%d. 21 21 0\t %d %d\t %1.4f %1.4f\t%1.4f\n",(int)input_slice->get_attr("n"),x,y,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
+				inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),weight);
 			}
 		}
 	}
 }
 
-int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform & t3d, const unsigned int num_particles_in_slice)
+int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub)
 {
 	// Are these exceptions really necessary? (d.woolford)
-	if (!input_slice) {
-		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
-		throw NullPointerException("EMData pointer (input image) is NULL");
-	}
+	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
 
-	// I could also test to make sure the image is the right dimensions...
-	if (input_slice->is_complex()) {
-		LOGERR("Do not Fourier transform the image before it is passed to determine_slice_agreement in FourierReconstructor, this is performed internally");
-		throw ImageFormatException("The image is complex, expecting real");
-	}
-
-	// The first time determine_slice_agreement is called (in each iteration) some things need to happen...
-	if ( slice_agreement_flag == true )
-	{
-		// Normalize the real data using the normalization values in the normalization volume
-		// This is important because the InterpolatedFRC objects assumes this behaviour
-		normalize_threed();
-		// Reset the image_idx to index into prev_quality_scores correctly
-		image_idx = 0;
-		// Make a copy of the previous quality scores - the first time around this will be like copying nothing
-		prev_quality_scores = quality_scores;
-		// Now clear the old scores so they can be redetermined
-		quality_scores.clear();
-		// Reset the flags
-		slice_insertion_flag = true;
-		slice_agreement_flag = false;
-	}
-
-	// Get the proprecessed slice - there are some things that always happen to a slice,
-	// such as as Fourier conversion and optional padding etc.
 	Transform * rotation;
-	if ( input_slice->has_attr("xform.projection") ) {
-		rotation = (Transform*) (input_slice->get_attr("xform.projection")); // assignment operator
+	rotation = new Transform(arg); // assignment operator
 
-	} else {
-		rotation = new Transform(t3d); // assignment operator
-	}
-	EMData* slice = preprocess_slice( input_slice, *rotation );
-
-	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
-	// place until after the first round of slice insertion
-	if (  prev_quality_scores.size() != 0 )
-	{
-		// The slice must be multiplied by the normalization value used in insert or else the calculations will
-		// be inconsistent
-		slice->mult(1.f/prev_quality_scores[image_idx].get_norm());
-	}
-
-	// Reset zeros the associated memory in the ifrc
-	interp_FRC_calculator->reset();
-
-	int rl = Util::square( max_input_dim / 2);
-
-	float dt[2];
-
-	float y_scale = 0, x_scale = 0;
-
-	int y_in = slice->get_ysize();
-	int x_in = slice->get_xsize();
-	if (input_slice->is_fftodd()) x_in -= 1;
-	else x_in -= 2;
-
-	if ( y_in != x_in )
-	{
-		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
-		else x_scale = (float) y_in / (float) x_in;
-	}
-	float *dat = slice->get_data();
-
-	float weight = params.set_default("weight",1.0f);
+ 	EMData *slice;
+ 	if (input_slice->get_attr_default("reconstruct_preproc",(int) 0)) slice=input_slice->copy();
+ 	else slice = preprocess_slice( input_slice, *rotation);
 
 
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space, but are in preprocess_slice
 	rotation->set_scale(1.0);
 	rotation->set_mirror(false);
 	rotation->set_trans(0,0,0);
 
-	for (int y = 0; y < slice->get_ysize(); y++) {
-		for (int x = 0; x < slice->get_xsize() / 2; x++) {
+	// Remove the current slice first (not threadsafe, but otherwise performance would be awful)
+	if (sub) do_insert_slice_work(slice, *rotation, -weight);
 
-			float rx = (float) x;
-			float ry = (float) y;
+	// Compare
+	do_compare_slice_work(slice, *rotation,weight);
 
-			if ( y_in != x_in )
-			{
-				if ( x_in > y_in ) ry *= y_scale;
-				else rx *= x_scale;
+	input_slice->set_attr("reconstruct_norm",slice->get_attr("reconstruct_norm"));
+	input_slice->set_attr("reconstruct_absqual",slice->get_attr("reconstruct_absqual"));
+//	input_slice->set_attr("reconstruct_qual",slice->get_attr("reconstruct_qual"));
+	input_slice->set_attr("reconstruct_weight",slice->get_attr("reconstruct_weight"));
+
+	// Now put the slice back
+	if (sub) do_insert_slice_work(slice, *rotation, weight);
+
+
+	delete rotation;
+	delete slice;
+
+// 	image->update();
+	return 0;
+
+}
+
+void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Transform & arg,float weight)
+{
+
+	float dt[3];	// This stores the complex and weight from the volume
+	float dt2[2];	// This stores the local image complex
+	float *dat = input_slice->get_data();
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+
+	float inx=input_slice->get_xsize();		// x/y dimensions of the input image
+	float iny=input_slice->get_ysize();
+
+	double dot=0;		// summed pixel*weight dot product
+	double vweight=0;		// sum of weights
+	double power=0;		// sum of inten*weight from volume
+	double power2=0;		// sum of inten*weight from image
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+		Transform t3d = arg*(*it);
+		for (int y = -iny/2; y < iny/2; y++) {
+			for (int x = 0; x <=  inx/2; x++) {
+				if (x==0 && y==0) continue;		// We don't want to use the Fourier origin
+
+				float rx = (float) x/(inx-2);	// coords relative to Nyquist=.5
+				float ry = (float) y/iny;
+
+// 				if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
+// 					continue;
+
+				Vec3f coord(rx,ry,0);
+				coord = coord*t3d; // transpose multiplication
+				float xx = coord[0]; // transformed coordinates in terms of Nyquist
+				float yy = coord[1];
+				float zz = coord[2];
+
+
+				if (fabs(xx)>0.5 || fabs(yy)>=0.5 || fabs(zz)>=0.5) continue;
+
+				// Map back to actual pixel coordinates in output volume
+				xx=xx*(nx-2);
+				yy=yy*ny;
+				zz=zz*nz;
+
+
+				int idx = x * 2 + inx*(y<0?iny+y:y);
+				dt2[0] = dat[idx];
+				dt2[1] = dat[idx+1];
+
+				// value returned indirectly in dt
+				if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
+
+//				printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
+				dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
+				vweight+=dt[2];
+				power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
+				power2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
 			}
+		}
+	}
 
-			if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
-				continue;
+	dot/=sqrt(power*power2);		// normalize the dot product
+	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
+	input_slice->set_attr("reconstruct_absqual",(float)dot);
+	float rw=weight<=0?1.0:1.0/weight;
+	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
+	input_slice->set_attr("reconstruct_weight",(float)vweight/(float)(subnx*subny*subnz));
+//	printf("** %g\t%g\t%g\t%g ##\n",dot,vweight,power,power2);
+	//printf("** %f %f %f ##\n",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)),(float)dot,(float)(dot*weight/((weight-1.0)*dot+1.0)));
+}
 
-// 			float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
-// 			float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
-// 			float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
+bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt)
+{
+	int x0 = (int) floor(xx);
+	int y0 = (int) floor(yy);
+	int z0 = (int) floor(zz);
+	
+	float *rdata=image->get_data();
+	float *norm=tmp_data->get_data();
+	float normsum=0;
 
-			Vec3f coord(rx,(ry - max_input_dim / 2),0);
-			coord = coord*(*rotation); // transpose multiplication
-			float xx = coord[0];
-			float yy = coord[1];
-			float zz = coord[2];
+	dt[0]=dt[1]=dt[2]=0.0;
 
-			float cc = 1;
+	if (nx==subnx) {			// normal full reconstruction
+		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
 
-			if (xx < 0) {
-				xx = -xx;
-				yy = -yy;
-				zz = -zz;
-				cc = -1.0;
-			}
-
-			if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-			if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-			if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-
-			yy += ny / 2;
-			zz += nz / 2;
-
-			int idx = x * 2 + y * (slice->get_xsize());
-			dt[0] = dat[idx];
-			dt[1] = cc * dat[idx+1];
-
-
-			if ( prev_quality_scores.size() != 0 )
-			{
-				// If the slice was not inserted into the 3D volume in the previous round of slice insertion
-				// then the weight must be set to zero, or else the result produced by the InterpolatedFRC will be wrong.
-				// This is because the InterpolatedFRC subtracts the incoming pixels from the 3D volume in order
-				// to estimate quality using only data from the other slices in the volume. If the slice was not previously inserted
-				// then it should not be subtracted prior to quality estimation....
-				if ( prev_quality_scores[image_idx].get_snr_normed_frc_integral() < (float) params["hard"] )
-				{
-					weight = 0;
+		// no error checking on add_complex_fast, so we need to be careful here
+		int x1=x0+1;
+		int y1=y0+1;
+		int z1=z0+1;
+		if (x0<-nx2) x0=-nx2;
+		if (x1>nx2) x1=nx2;
+		if (y0<-ny2) y0=-ny2;
+		if (y1>ny2) y1=ny2;
+		if (z0<-nz2) z0=-nz2;
+		if (z1>nz2) z1=nz2;
+		
+		size_t idx;
+		float r, gg;
+		for (int k = z0 ; k <= z1; k++) {
+			for (int j = y0 ; j <= y1; j++) {
+				for (int i = x0; i <= x1; i ++) {
+					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+					idx=image->get_complex_index_fast(i,j,k);
+					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
+					
+					dt[0]+=gg*rdata[idx];
+					dt[1]+=(i<0?-1.0:1.0)*gg*rdata[idx+1];
+					dt[2]+=norm[idx/2];
+					normsum+=gg;				
 				}
 			}
-			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the
-			// inserter in the Fourier reconstructor do_insert_slice_work method
-
-			interp_FRC_calculator->continue_frc_calc(xx, yy, zz, dt, weight);
 		}
-	}
-
-	InterpolatedFRC::QualityScores q_scores = interp_FRC_calculator->finish( num_particles_in_slice );
-	// Print the quality scores here for debug information
-	//q_scores.debug_print();
-
-	if (prev_quality_scores.size() != 0 )
-	{
-		// If a previous normalization value has been calculated then average it with the one that
-		// was just calculated, this will cause the normalization values to converge more rapidly.
-		q_scores.set_norm((q_scores.get_norm() + prev_quality_scores[image_idx].get_norm())/2.0f);
-		image_idx++;
-	}
-
-	quality_scores.push_back(q_scores);
-
-	if(rotation) {delete rotation; rotation=0;}
-	delete slice;
-	return 0;
-}
-
-void FourierReconstructor::print_stats( const vector<InterpolatedFRC::QualityScores>& scores )
-{
-	if ( prev_quality_scores.size() == 0 )
-	{
-		//cout << "No quality scores present in FourierReconstructor::print_stats, nothing to print" << endl;
-		return;
-	}
-
-	unsigned int size = scores.size();
-
-	unsigned int contributing_images = 0;
-	for( unsigned int i = 0; i < size; ++ i )
-	{
-		if (scores[i].get_snr_normed_frc_integral() < (float) params["hard"])
-			continue;
-		else contributing_images++;
-	}
-
-	double* norm_frc = new double[contributing_images];
-	double* frc = new double[contributing_images];
-	double* norm_snr = new double[contributing_images];
-
-	unsigned int idx = 0;
-	for( unsigned int i = 0; i < size; ++ i )
-	{
-		if (scores[i].get_snr_normed_frc_integral() < (float) params["hard"])
-			continue;
-
-		norm_frc[idx] = scores[i].get_snr_normed_frc_integral();
-		frc[idx] = scores[i].get_frc_integral();
-		norm_snr[idx] = scores[i].get_normed_snr_integral();
-
-		++idx;
-	}
-
-	double mean = gsl_stats_mean(norm_frc, 1, contributing_images);
-	double variance = gsl_stats_variance_m(norm_frc, 1, contributing_images, mean);
-
-	cout << "Normalized FRC mean " << mean << " std dev " << sqrt(variance) << endl;
-
-	mean = gsl_stats_mean(frc, 1, contributing_images);
-	variance = gsl_stats_variance_m(frc, 1, contributing_images, mean);
-
-	cout << "FRC mean " << mean << " std dev " << sqrt(variance) << endl;
-
-	mean = gsl_stats_mean(norm_snr, 1, contributing_images);
-	variance = gsl_stats_variance_m(norm_snr, 1, contributing_images, mean);
-	cout << "SNR mean " << mean << " std dev " << sqrt(variance) << endl;
-
-	double c0, c1, cov00, cov01, cov11, sumsq;
-	gsl_fit_linear (norm_frc, 1, frc, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-	cout << "The correlation between frc and norm_frc is " << c0 << " + " << c1 << "x" << endl;
-
-	gsl_fit_linear (norm_frc, 1, norm_snr, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-	cout << "The correlation between norm_snr and norm_frc is " << c0 << " + " << c1 << "x" << endl;
-
-	gsl_fit_linear (norm_snr, 1, frc, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-	cout << "The correlation between frc and norm_snr is " << c0 << " + " << c1 << "x" << endl;
-
-	delete [] norm_frc;
-	delete [] frc;
-	delete [] norm_snr;
-}
-
-EMData *FourierReconstructor::finish()
-{
-	float *norm = tmp_data->get_data();
-	float *rdata = image->get_data();
-
-	if (params["dlog"]) {
-		size_t size = nx*ny*nz;
-		for (size_t i = 0; i < size; i += 2) {
-			float d = norm[i];
-			if (d == 0) {
-				rdata[i] = 0;
-				rdata[i + 1] = 0;
-			}
-			else {
-				float in = norm[i + 1] / norm[i];
-				float cin = Util::square_sum(rdata[i], rdata[i + 1]);
-				rdata[i] *= sqrt(in / cin);
-				rdata[i + 1] *= sqrt(in / cin);
+		dt[0]/=normsum;
+		dt[1]/=normsum;
+//		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2]);
+		return true;
+	} 
+	else {					// for subvolumes, not optimized yet
+		size_t idx;
+		float r, gg;
+		for (int k = z0 ; k <= z0 + 1; k++) {
+			for (int j = y0 ; j <= y0 + 1; j++) {
+				for (int i = x0; i <= x0 + 1; i ++) {
+					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+					idx=image->get_complex_index(i,j,k,subx0,suby0,subz0,nx,ny,nz);
+					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
+					
+					dt[0]+=gg*rdata[idx];
+					dt[1]+=(i<0?-1.0:1.0)*gg*rdata[idx+1];
+					dt[2]+=norm[idx/2];
+					normsum+=gg;				
+				}
 			}
 		}
+		
+		if (normsum==0)  return false;
+		return true;
 	}
-	else {
-		normalize_threed();
-	}
+}
+
+
+EMData *FourierReconstructor::finish(bool doift)
+{
+// 	float *norm = tmp_data->get_data();
+// 	float *rdata = image->get_data();
+
+	normalize_threed();
 
 // 	tmp_data->write_image("density.mrc");
 
 	// we may as well delete the tmp data now... it saves memory and the calling program might
 	// need memory after it gets the return volume.
-	// If this delete didn't happen now, it would happen when the deconstructor was called,
-	if ( tmp_data != 0 )
-	{
-		delete tmp_data;
-		tmp_data = 0;
+	// If this delete didn't happen now, it would happen when the deconstructor was called --david
+	// no longer a good idea with the new iterative scheme -- steve
+// 	if ( tmp_data != 0 )
+// 	{
+// 		delete tmp_data;
+// 		tmp_data = 0;
+// 	}
+
+/*	image->process_inplace("xform.fourierorigin.tocorner");*/
+
+	if (doift) {
+		image->do_ift_inplace();
+		image->depad();
+		image->process_inplace("xform.phaseorigin.tocenter");
 	}
-
-
-	if ( params["3damp"]) {
-		EMData* fftimage = image->get_fft_amplitude ();
-		fftimage->write_image("threed_fft_amp.mrc");
-		delete fftimage;
-	}
-
-	//
-	image->process_inplace("xform.fourierorigin.tocorner");
-	image->do_ift_inplace();
-	image->depad();
-	image->process_inplace("xform.phaseorigin.tocenter");
-
 	// If the image was padded it should be the original size, as the client would expect
 	//  I blocked the rest, it is almost certainly incorrect  PAP 07/31/08
 	// No, it's not incorrect. You are wrong. You have the meaning of nx mixed up. DSAW 09/23/cd
-	bool is_fftodd = (nx % 2 == 1);
-	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
-	{
-		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
-		FloatSize region_size( output_x, output_y, output_z);
-		Region clip_region( origin, region_size );
-		image->clip_inplace( clip_region );
-	}
+	// This should now be handled in the calling program --steve 11/03/09
+// 	bool is_fftodd = (nx % 2 == 1);
+// 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
+// 	{
+// 		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
+// 		FloatSize region_size( output_x, output_y, output_z);
+// 		Region clip_region( origin, region_size );
+// 		image->clip_inplace( clip_region );
+// 	}
 
 	// Should be an "if (verbose)" here or something
 	//print_stats(quality_scores);
 
 	image->update();
+	
+	if (params.has_key("savenorm") and strlen((const char *)params["savenorm"])>0) {
+		tmp_data->write_image((const char *)params["savenorm"]);
+	}
 
-	return image;
+	delete tmp_data;
+	tmp_data=0;
+	EMData *ret=image;
+	image=0;
+	
+	return ret;
 }
 
-
+/*
 void BaldwinWoolfordReconstructor::setup()
 {
 	//This is a bit of a hack - but for now it suffices
-	params.set_default("mode",1);
+	params.set_default("mode","nearest_neighbor");
 	FourierReconstructor::setup();
 	// Set up the Baldwin Kernel
 	int P = (int)((1.0+0.25)*max_input_dim+1);
@@ -930,7 +854,7 @@ void BaldwinWoolfordReconstructor::setup()
 	W = Util::getBaldwinGridWeights(maskwidth, (float)P, r,dfreq,0.5f,0.2f);
 }
 
-EMData* BaldwinWoolfordReconstructor::finish()
+EMData* BaldwinWoolfordReconstructor::finish(bool doift)
 {
 	tmp_data->write_image("density.mrc");
 	image->process_inplace("xform.fourierorigin.tocorner");
@@ -971,63 +895,63 @@ EMData* BaldwinWoolfordReconstructor::finish()
 
 #include <iomanip>
 
-int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform& t3d)
-{
-	bool fftodd = image->is_fftodd();
-	int rnx = nx-2*!fftodd;
-
-	float y_scale = 1.0, x_scale = 1.0;
-
-	if ( ny != rnx  )
-	{
-		if ( rnx > ny ) y_scale = (float) rnx / (float) ny;
-		else x_scale = (float) ny / (float) rnx;
-	}
-
-	int tnx = tmp_data->get_xsize();
-	int tny = tmp_data->get_ysize();
-	int tnz = tmp_data->get_zsize();
-
-	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
-	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
-		Transform n3d = t3d*(*it);
-
-		for (int y = 0; y < tny; y++) {
-			for (int x = 0; x < tnx; x++) {
-
-				float rx = (float) x;
-				float ry = (float) y;
-
-				if ( ny != rnx )
-				{
-					if ( rnx > ny ) ry *= y_scale;
-					else rx *= x_scale;
-				}
-// 				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
-// 				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
-// 				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
-
-				Vec3f coord(rx,(ry - tny/2),0);
-				coord = coord*n3d; // transpose multiplication
-				float xx = coord[0];
-				float yy = coord[1];
-				float zz = coord[2];
-
-				if (xx < 0 ){
-					xx = -xx;
-					yy = -yy;
-					zz = -zz;
-				}
-
-				yy += tny/2;
-				zz += tnz/2;
-				insert_density_at(xx,yy,zz);
-			}
-		}
-	}
-
-	return 0;
-}
+// int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform& t3d)
+// {
+// 	bool fftodd = image->is_fftodd();
+// 	int rnx = nx-2*!fftodd;
+//
+// 	float y_scale = 1.0, x_scale = 1.0;
+//
+// 	if ( ny != rnx  )
+// 	{
+// 		if ( rnx > ny ) y_scale = (float) rnx / (float) ny;
+// 		else x_scale = (float) ny / (float) rnx;
+// 	}
+//
+// 	int tnx = tmp_data->get_xsize();
+// 	int tny = tmp_data->get_ysize();
+// 	int tnz = tmp_data->get_zsize();
+//
+// 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+// 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+// 		Transform n3d = t3d*(*it);
+//
+// 		for (int y = 0; y < tny; y++) {
+// 			for (int x = 0; x < tnx; x++) {
+//
+// 				float rx = (float) x;
+// 				float ry = (float) y;
+//
+// 				if ( ny != rnx )
+// 				{
+// 					if ( rnx > ny ) ry *= y_scale;
+// 					else rx *= x_scale;
+// 				}
+// // 				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
+// // 				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
+// // 				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+//
+// 				Vec3f coord(rx,(ry - tny/2),0);
+// 				coord = coord*n3d; // transpose multiplication
+// 				float xx = coord[0];
+// 				float yy = coord[1];
+// 				float zz = coord[2];
+//
+// 				if (xx < 0 ){
+// 					xx = -xx;
+// 					yy = -yy;
+// 					zz = -zz;
+// 				}
+//
+// 				yy += tny/2;
+// 				zz += tnz/2;
+// 				insert_density_at(xx,yy,zz);
+// 			}
+// 		}
+// 	}
+//
+// 	return 0;
+// }
 
 void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float& y, const float& z)
 {
@@ -1061,7 +985,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int tnz = tmp_data->get_zsize();
 	size_t tnxy = tnx*tny;
 
-	int mode = params.set_default("mode",1);
+	int mode = params.set_default("mode","nearest_neighbor");
 
 	for(int k = zl-wmoz; k <= zl+w; ++k ) {
 		for(int j = yl-wmoy; j <= yl+w; ++j) {
@@ -1123,7 +1047,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	}
 }
 
-int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform & t)
+int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform & t, const float weight)
 {
 	Transform * rotation;
 	if ( input_slice->has_attr("xform.projection") ) {
@@ -1256,7 +1180,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	int rnx = 2*tnx;
 	int rnxy = 2*tnxy;
 
-	int mode = params.set_default("mode",1);
+	int mode = params.set_default("mode","nearest_neighbor");
 
 	float* d = image->get_data();
 	for(int k = zl-wmoz; k <= zl+w; ++k ) {
@@ -1473,7 +1397,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 // 		}
 // 	}
 // }
-
+*/
 
 void WienerFourierReconstructor::setup()
 {
@@ -1502,7 +1426,7 @@ void WienerFourierReconstructor::setup()
 }
 
 
-EMData *WienerFourierReconstructor::finish()
+EMData *WienerFourierReconstructor::finish(bool doift)
 {
 	float *norm = tmp_data->get_data();
 	float *rdata = image->get_data();
@@ -1530,7 +1454,7 @@ EMData *WienerFourierReconstructor::finish()
 }
 
 
-int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Transform3D & euler)
+int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Transform & euler, const float weight)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1686,7 +1610,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = l; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
+							float r = Util::hypot3sq((float) i / 2 - xx, j - yy, k - zz);
 							float gg = exp(-r / EMConsts::I3G);
 
 							idx = i + j * nx + k * nxy;
@@ -1717,7 +1641,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				for (int k = z0 - 1; k <= z0 + 2; ++k) {
 					for (int j = y0 - 1; j <= y0 + 2; ++j) {
 						for (int i = l; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
+							float r = Util::hypot3sq((float) i / 2 - xx, j - yy, k - zz);
 							float gg = exp(-r / EMConsts::I4G);
 
 							idx = i + j * nx + k * nxy;
@@ -1814,7 +1738,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					for (int j = y0 - 2; j <= y0 + 2; ++j) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							size_t ii = i + j * nx + k * nxy;
-							float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
+							float r = Util::hypot3sq((float) i / 2 - xx, (float) j - yy,
 												   (float) k - zz);
 							float gg = weight * exp(-r / EMConsts::I5G);
 
@@ -1840,7 +1764,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 						for (int j = y0 - 2; j <= y0 + 2; ++j) {
 							for (int i = 0; i <= x0 + 4; i += 2) {
 								size_t ii = i + j * nx + k * nxy;
-								float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
+								float r = Util::hypot3sq((float) i / 2 - xx, (float) j - yy,
 													   (float) k - zz);
 								float gg = weight * exp(-r / EMConsts::I5G);
 
@@ -1869,7 +1793,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							size_t ii = i + j * nx + k * nxy;
-							float r = (float)sqrt(Util::hypot3((float) i / 2 - xx,
+							float r = (float)sqrt(Util::hypot3sq((float) i / 2 - xx,
 															   (float) j - yy,
 															   (float) k - zz));
 							float gg = weight * Interp::hyperg(r);
@@ -1896,7 +1820,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 						for (int j = y0 - 2; j <= y0 + 2; ++j) {
 							for (int i = 0; i <= x0 + 4; i += 2) {
 								size_t ii = i + j * nx + k * nxy;
-								float r = sqrt(Util::hypot3((float) i / 2 - xx, (float) j - yy,
+								float r = sqrt(Util::hypot3sq((float) i / 2 - xx, (float) j - yy,
 															(float) k - zz));
 								float gg = weight * Interp::hyperg(r);
 
@@ -1951,7 +1875,7 @@ EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice,
 	return return_slice;
 }
 
-int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform &t)
+int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform &t, const float sliceweight)
 {
 	if (!input) {
 		LOGERR("try to insert NULL slice");
@@ -2001,7 +1925,7 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 	return 0;
 }
 
-EMData *BackProjectionReconstructor::finish()
+EMData *BackProjectionReconstructor::finish(bool doift)
 {
 
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
@@ -2247,7 +2171,7 @@ void printImage( const EMData* line )
 
 
 
-int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2364,7 +2288,7 @@ void circumference( EMData* win )
 }
 
 
-EMData* nn4Reconstructor::finish()
+EMData* nn4Reconstructor::finish(bool doift)
 {
         if( m_ndim==3 ) {
 		m_volume->symplane0(m_wptr);
@@ -2588,7 +2512,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2630,7 +2554,7 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nnSSNR_Reconstructor::finish()
+EMData* nnSSNR_Reconstructor::finish(bool doift)
 {
 /*
   I changed the code on 05/15 so it only returns variance.
@@ -2913,7 +2837,7 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t)
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
 {
 	// sanity checks
 	if (!slice) {
@@ -2993,7 +2917,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nn4_ctfReconstructor::finish()
+EMData* nn4_ctfReconstructor::finish(bool doift)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3250,7 +3174,7 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->set_array_offsets(0,1,1);
 }
 
-int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -3292,7 +3216,7 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nnSSNR_ctfReconstructor::finish()
+EMData* nnSSNR_ctfReconstructor::finish(bool doift)
 {
 /*
   I changed the code on 05/15 so it only returns variance.

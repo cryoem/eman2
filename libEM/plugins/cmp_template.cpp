@@ -29,21 +29,32 @@
  * 
  * */
 
-#include "aligner_template.h"
+#include "cmp_template.h"
+#include "transform.h"
+
 
 using namespace EMAN;
 
-EMData *XYZAligner::align(EMData * this_img, EMData *, 
-			const string &, const Dict&) const
-{
-	if (!this_img) {
-		return 0;
-	}
-#if 0
+const string XYZCmp::NAME = "middle";
 
+float XYZCmp::cmp(EMData * image, EMData * with) const
+{
+	validate_input_args(image, with);
+
+#if 0
 	int param1 = params["param1"];
 	float param2 = params["param2"];
+	// do something
 #endif
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	
+	double ret=0;
+	for (int i=nx/4; i<nx*3/4; i++) {
+		for (int j=ny/4; j<ny*3/4; j++) {
+			ret+=image->get_value_at(i,j)*with->get_value_at(i,j);
+		}
+	}
 
-	return 0;
+	return (float) ret;
 }

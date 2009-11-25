@@ -140,7 +140,7 @@ namespace EMAN
 	  public:
 		KMeansAnalyzer() : ncls(0),verbose(0),minchange(0),maxiter(100),mininclass(2),slowseed(0) {}
 
-		virtual int insert_image(EMData * image) {
+		virtual int insert_image(EMData *image) {
 			images.push_back(image);
 			return 0;
 		}
@@ -149,7 +149,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "kmeans";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -177,7 +177,9 @@ namespace EMAN
 			return d;
 		}
 
-		protected:
+		static const string NAME;
+		
+	  protected:
 		void update_centers(int sigmas=0);
 		void reclassify();
 		void reseed();
@@ -218,7 +220,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "svd_gsl";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -242,7 +244,9 @@ namespace EMAN
 			return d;
 		}
 
-		protected:
+		static const string NAME;
+		
+	  protected:
 		EMData * mask;
 		int nvec;	//number of desired principal components
 		int pixels;	// pixels under the mask

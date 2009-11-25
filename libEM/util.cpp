@@ -760,6 +760,21 @@ if (x>=dim || y>=dim) {
 return mem[x+y*dim];
 }
 
+// Uses a precached table to return a good approximate to exp(x)
+// if outside the cached range, uses regular exp
+float Util::fast_exp(const float &f) {
+static float *mem = (float *)malloc(sizeof(float)*1000);
+static bool needinit=true;
+
+if (needinit) {
+	needinit=false;
+	for (int i=0; i<1000; i++) mem[i]=(float)exp(-i/50.0);
+}
+if (f>0 || f<-19.98) return exp(f);
+int g=(int)(-f*50.0+0.5);
+
+return mem[g];
+}
 
 float Util::get_gauss_rand(float mean, float sigma)
 {

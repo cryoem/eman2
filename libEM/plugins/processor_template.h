@@ -52,7 +52,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "xyz";
+			return NAME;
 		}
 
 		static Processor *NEW()
@@ -80,6 +80,8 @@ namespace EMAN
 			d.put("value2", EMObject::FLOAT);
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	
@@ -113,17 +115,17 @@ namespace EMAN
 
 	/** Add your new processor to FilterFactoryExt().
      */
-	class FilterFactoryExt
-	{
-	public:
-		FilterFactoryExt()
-		{
-			//Factory < Processor >::add(&XYZProcessor::NEW);
-// 			Factory < Processor >::add(&SubstituteZeroPixelsProcessor::NEW);
-		}
-	};
-
-	static FilterFactoryExt filter_factory_ext;
+//	class FilterFactoryExt
+//	{
+//	public:
+//		FilterFactoryExt()
+//		{
+//			Factory < Processor >::add<XYZProcessor>();
+//// 			Factory < Processor >::add(&SubstituteZeroPixelsProcessor::NEW);
+//		}
+//	};
+//
+//	static FilterFactoryExt filter_factory_ext;
 
 }
 

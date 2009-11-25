@@ -66,7 +66,12 @@ EMData *get_fft_phase();
 /** Get the image pixel density data in a 1D float array.
  * @return The image pixel density data.
  */
+#ifdef EMAN2_USING_CUDA
 float *get_data() const;
+#else
+inline float *get_data() const { return rdata; }
+#endif
+
 /** Get the image pixel density data in a 1D float array - const version of get_data
  * @return The image pixel density data.
  */
@@ -87,6 +92,7 @@ inline void set_data(float* data, const int x, const int y, const int z) {
 	rdata = data;
 	nx = x; ny = y; nz = z;
 	nxy = nx*ny;
+	nxyz = nx*ny*nz;
 	update();
 }
 

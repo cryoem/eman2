@@ -815,6 +815,7 @@ namespace EMAN
 		int changecount;
 		/** image size */
 		int nx, ny, nz, nxy;
+		size_t nxyz;
 		/** array index offsets */
 		int xoff, yoff, zoff;
 

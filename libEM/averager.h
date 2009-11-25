@@ -177,7 +177,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "mean";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -200,6 +200,8 @@ namespace EMAN
 
 		virtual void mult(const float&) { }
 
+		static const string NAME;
+		
 	private:
 		EMData *sigma_image;
 		int *nimg_n0;
@@ -221,7 +223,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "minmax";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -242,7 +244,9 @@ namespace EMAN
 		}
 
 		virtual void mult(const float&) { }
-
+		
+		static const string NAME;
+		
 	private:
 		int max;
 		int nimg;
@@ -259,7 +263,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "iteration";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -271,6 +275,9 @@ namespace EMAN
 		{
 			return new IterationAverager();
 		}
+		
+		static const string NAME;
+		
 	private:
 		EMData * sigma_image;
 		int nimg;
@@ -325,7 +332,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "snr_weight";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -352,6 +359,8 @@ namespace EMAN
 			d.put("sf", EMObject::XYDATA);
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/** CtfCAverager averages the images with CTF correction.
@@ -361,7 +370,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "ctfc";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -373,6 +382,8 @@ namespace EMAN
 		{
 			return new CtfCAverager();
 		}
+		
+		static const string NAME;
 	};
 
 	/** CtfCWAverager averages the images with CTF correction.
@@ -382,7 +393,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "ctfcw";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -405,6 +416,8 @@ namespace EMAN
 				need_snr = false;
 			}
 		}
+		
+		static const string NAME;
 	};
 
 	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
@@ -420,7 +433,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "ctf.auto";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -438,6 +451,9 @@ namespace EMAN
 			params = new_params;
 //			outfile = params["outfile"];
 		}
+		
+		static const string NAME;
+		
 	  protected:
 		EMData *snrsum;   // contains the summed SNR for the average
 		int nimg;

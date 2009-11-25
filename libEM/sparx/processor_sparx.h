@@ -53,7 +53,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "mirror";
+			return NAME;
 		}
 
 		static Processor *NEW()
@@ -72,7 +72,8 @@ namespace EMAN
 		{
 			return "mirror an image.";
 		}
-
+		
+		static const string NAME;
 	};
 
 
@@ -134,7 +135,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.lowpass.tophat"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewLowpassTopHatProcessor(); }
 		string get_desc() const
@@ -146,6 +147,8 @@ namespace EMAN
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
+		
+		static const string NAME;
 	};
 
 	/** Highpass top-hat filter applied in Fourier space.
@@ -155,7 +158,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.highpass.tophat"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHighpassTopHatProcessor(); }
 		string get_desc() const
@@ -167,6 +170,8 @@ namespace EMAN
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
+		
+		static const string NAME;
 	};
 
 	/**Bandpass top-hat filter processor applied in Fourier space.
@@ -177,7 +182,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.bandpass.tophat"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewBandpassTopHatProcessor(); }
 		string get_desc() const
@@ -195,6 +200,8 @@ namespace EMAN
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Homomorphic top-hat filter processor applied in Fourier space.
@@ -206,7 +213,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.homomorphic.tophat"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHomomorphicTopHatProcessor(); }
 		string get_desc() const
@@ -225,6 +232,8 @@ namespace EMAN
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Lowpass Gauss filter processor applied in Fourier space.
@@ -234,7 +243,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.lowpass.gauss"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewLowpassGaussProcessor(); }
 		string get_desc() const
@@ -246,6 +255,8 @@ namespace EMAN
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
+		
+		static const string NAME;
 	};
 
 	/**Highpass Gauss filter processor applied in Fourier space.
@@ -255,7 +266,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.highpass.gauss"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHighpassGaussProcessor(); }
 		string get_desc() const
@@ -267,6 +278,8 @@ namespace EMAN
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
+		
+		static const string NAME;
 	};
 
 	/**Bandpass Gauss filter processor applied in Fourier space.
@@ -277,7 +290,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.bandpass.gauss"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewBandpassGaussProcessor(); }
 		string get_desc() const
@@ -295,6 +308,8 @@ namespace EMAN
 			d.put("center", EMObject::FLOAT, "Gaussian center.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Homomorphic Gauss filter processor applied in Fourier space.
@@ -305,7 +320,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.homomorphic.gauss"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHomomorphicGaussProcessor(); }
 		string get_desc() const
@@ -323,6 +338,8 @@ namespace EMAN
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Divide by a Gaussian in Fourier space.
@@ -332,7 +349,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.gaussinverse"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewInverseGaussProcessor(); }
 		string get_desc() const
@@ -344,6 +361,8 @@ namespace EMAN
 			preprocess(image);
 			EMFourierFilterInPlace(image, params);
 		}
+		
+		static const string NAME;
 	};
 
 	/**Shift by phase multiplication in Fourier space.
@@ -352,7 +371,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.shift"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new SHIFTProcessor(); }
 		string get_desc() const
@@ -371,6 +390,8 @@ namespace EMAN
 			d.put("z_shift", EMObject::FLOAT, "Shift z");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Divide by a Kaiser-Bessel I0 func in Fourier space.
@@ -379,7 +400,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.kaiser_io_inverse"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new InverseKaiserI0Processor(); }
 		string get_desc() const
@@ -395,6 +416,8 @@ namespace EMAN
 			TypeDict d = NewFourierProcessor::get_param_types();
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Divide by a Kaiser-Bessel Sinh func in Fourier space.
@@ -403,7 +426,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.kaisersinhinverse"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new InverseKaiserSinhProcessor(); }
 		string get_desc() const
@@ -419,6 +442,8 @@ namespace EMAN
 			TypeDict d = NewFourierProcessor::get_param_types();
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Filter with tabulated data in Fourier space.
@@ -428,7 +453,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.radialtable"; }
+		{ return NAME; }
 		
 		static Processor *NEW()
 		{ return new NewRadialTableProcessor(); }
@@ -448,6 +473,8 @@ namespace EMAN
 			d.put("table", EMObject::FLOATARRAY, "Radial data array. 1 value per Fourier image pixel.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Lowpass Butterworth filter processor applied in Fourier space.
@@ -458,7 +485,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.lowpass.butterworth"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewLowpassButterworthProcessor(); }
 		string get_desc() const
@@ -476,6 +503,8 @@ namespace EMAN
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Highpass Butterworth filter processor applied in Fourier space.
@@ -486,7 +515,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.highpass.butterworth"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHighpassButterworthProcessor(); }
 		string get_desc() const
@@ -504,6 +533,8 @@ namespace EMAN
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Homomorphic Butterworth filter processor applied in Fourier space.
@@ -515,7 +546,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.homomorphic.butterworth"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHomomorphicButterworthProcessor(); }
 		string get_desc() const
@@ -534,6 +565,8 @@ namespace EMAN
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Lowpass tanh filter processor applied in Fourier space.
@@ -544,7 +577,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.lowpass.tanh"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewLowpassTanhProcessor(); }
 		string get_desc() const
@@ -563,6 +596,8 @@ namespace EMAN
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Highpass tanh filter processor applied in Fourier space.
@@ -573,7 +608,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.highpass.tanh"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHighpassTanhProcessor(); }
 		string get_desc() const
@@ -592,6 +627,8 @@ namespace EMAN
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Homomorphic Tanh processor applied in Fourier space
@@ -603,7 +640,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.homomorphic.tanh"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewHomomorphicTanhProcessor(); }
 		string get_desc() const
@@ -623,6 +660,8 @@ namespace EMAN
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	/**Bandpass tanh processor applied in Fourier space.
@@ -636,7 +675,7 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "filter.bandpass.tanh"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new NewBandpassTanhProcessor(); }
 		string get_desc() const
@@ -657,13 +696,15 @@ namespace EMAN
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 	class CTF_Processor:public NewFourierProcessor
 	{
 	  public:
 		string get_name() const
-		{ return "filter.CTF_"; }
+		{ return NAME; }
 		static Processor *NEW()
 		{ return new CTF_Processor(); }
 		string get_desc() const
@@ -687,6 +728,8 @@ namespace EMAN
 			d.put("npow", EMObject::FLOAT, "power of transfer function.");
 			return d;
 		}
+		
+		static const string NAME;
 	};
 }
 

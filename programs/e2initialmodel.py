@@ -144,12 +144,12 @@ def main():
 				if ri>0 :
 					for i,p in enumerate(aptcls):
 						p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-						recon.determine_slice_agreement(p2,p["xform.projection"],1)
-						if ri==2 : qual+=recon.get_score(i)
+						recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
+						#if ri==2 : qual+=recon.get_score(i)
 				for p in aptcls:
 					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-					recon.insert_slice(p2,p["xform.projection"])
-			threed.append(recon.finish())
+					recon.insert_slice(p2,p["xform.projection"],1.0)
+			threed.append(recon.finish(False))
 			
 			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
 			

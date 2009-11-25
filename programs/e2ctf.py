@@ -312,6 +312,10 @@ def compute_envelope(img_sets,smax=.06):
 				
 		envelope.sort()
 
+		out=file("strucfac.allpoints.txt","w")
+		for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+		out.close()
+
 		# this averages together all of the points at the same spatial frequency
 		# not perfect, since different spatial frequencies may have contributions from
 		# different curves
@@ -534,7 +538,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 				out["apix_z"] = ctf.apix
 				out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
-				print fft2.get_ysize(),len(hpfilt)
+#				print fft2.get_ysize(),len(hpfilt)
 
 				out.process_inplace("normalize.edgemean")
 				#process_inplace("filter.highpass.autopeak")

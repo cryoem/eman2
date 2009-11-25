@@ -40,6 +40,7 @@
 #include "util.h"
 #include "symmetry.h"
 #include <gsl/gsl_multimin.h>
+#include "plugins/aligner_template.h"
 
 #ifdef EMAN2_USING_CUDA
 	#include <sparx/cuda/cuda_ccf.h>
@@ -49,20 +50,35 @@
 
 using namespace EMAN;
 
+const string TranslationalAligner::NAME = "translational";
+const string RotationalAligner::NAME = "rotational";
+const string RotatePrecenterAligner::NAME = "rotate_precenter";
+const string RotateTranslateAligner::NAME = "rotate_translate";
+const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
+const string RotateFlipAligner::NAME = "rotate_flip";
+const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
+const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
+const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
+const string RefineAligner::NAME = "refine";
+const string Refine3DAligner::NAME = "refine.3d";
+const string RT3DGridAligner::NAME = "rt.3d.grid";
+const string RT3DSphereAligner::NAME = "rt.3d.sphere";
+
 template <> Factory < Aligner >::Factory()
 {
-	force_add(&TranslationalAligner::NEW);
-	force_add(&RotationalAligner::NEW);
-	force_add(&RotatePrecenterAligner::NEW);
-	force_add(&RotateTranslateAligner::NEW);
-	force_add(&RotateFlipAligner::NEW);
-	force_add(&RotateTranslateFlipAligner::NEW);
-	force_add(&RTFExhaustiveAligner::NEW);
-	force_add(&RTFSlowExhaustiveAligner::NEW);
-	force_add(&RefineAligner::NEW);
-	force_add(&Refine3DAligner::NEW);
-	force_add(&RT3DGridAligner::NEW);
-	force_add(&RT3DSphereAligner::NEW);
+	force_add<TranslationalAligner>();
+	force_add<RotationalAligner>();
+	force_add<RotatePrecenterAligner>();
+	force_add<RotateTranslateAligner>();
+	force_add<RotateFlipAligner>();
+	force_add<RotateTranslateFlipAligner>();
+	force_add<RTFExhaustiveAligner>();
+	force_add<RTFSlowExhaustiveAligner>();
+	force_add<RefineAligner>();
+	force_add<Refine3DAligner>();
+	force_add<RT3DGridAligner>();
+	force_add<RT3DSphereAligner>();
+//	force_add<XYZAligner>();
 }
 
 // Note, the translational aligner assumes that the correlation image

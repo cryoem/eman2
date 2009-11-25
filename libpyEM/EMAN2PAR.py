@@ -217,7 +217,7 @@ class EMTaskCustomer:
 		print self.servtype
 		raise Exception,"Unknown server type"
 	
-	def get_results(self,taskid):
+	def get_results(self,taskid,retry=True):
 		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
 		if self.servtype=="dc":
 			try:
@@ -247,9 +247,12 @@ class EMTaskCustomer:
 				return (task,rd)
 			except:
 				traceback.print_exc()
+				if not retry :
+					print "************************* Failed to retrieve results, aborting attempt"
+					raise Exception,"Unable to retrieve results for %s"%str(taskid)
 				print "***************************  ERROR RETRIEVING RESULTS - retrying"
 				self.wait_for_server()
-				return self.get_results(taskid)
+				return self.get_results(taskid,False)
 
 class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution

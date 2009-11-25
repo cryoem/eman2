@@ -38,19 +38,29 @@
 #include "xydata.h"
 #include "ctf.h"
 #include <cstring>
+#include "plugins/averager_template.h"
 
 using namespace EMAN;
 
+const string ImageAverager::NAME = "mean";
+const string MinMaxAverager::NAME = "minmax";
+const string IterationAverager::NAME = "iteration";
+const string WeightingAverager::NAME = "snr_weight";
+const string CtfCAverager::NAME = "ctfc";
+const string CtfCWAverager::NAME = "ctfcw";
+const string CtfCWautoAverager::NAME = "ctf.auto";
+
 template <> Factory < Averager >::Factory()
 {
-	force_add(&ImageAverager::NEW);
-	force_add(&MinMaxAverager::NEW);
-	force_add(&IterationAverager::NEW);
-	force_add(&WeightingAverager::NEW);
+	force_add<ImageAverager>();
+	force_add<MinMaxAverager>();
+	force_add<IterationAverager>();
+	force_add<WeightingAverager>();
 	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
 //	force_add(&CtfCAverager::NEW);
 //	force_add(&CtfCWAverager::NEW);
-	force_add(&CtfCWautoAverager::NEW);
+	force_add<CtfCWautoAverager>();
+//	force_add<XYZAverager>();
 }
 
 void Averager::mult(const float& s)

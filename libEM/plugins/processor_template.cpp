@@ -34,6 +34,8 @@
 using namespace EMAN;
 
 
+const string XYZProcessor::NAME = "xyz";
+
 /** define your Processor operation
  */
 void XYZProcessor::process_inplace(EMData * image)

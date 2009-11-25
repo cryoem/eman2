@@ -49,13 +49,13 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","dcrerunall")
+	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","dcrerunall","dckillall")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillclients, servmon
+<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillall, dckillclients, servmon
 
 run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 
@@ -91,6 +91,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dcrerunall":
 		rerunalldc()
 
+	elif args[0]=="dckillall":
+		killalldc()
+
 	elif args[0]=="servmon" :
 		runservmon()
 		
@@ -118,9 +121,21 @@ def rerunalldc():
 	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
 	e=q.active.keys()
-	e=[i for i in e if isinstance(i,int)]
+	e=[i for i in e if isinstance(i,int) and q.active[i]!=None]
 	
 	for i in e: q.task_rerun(i)
+	
+	print "Requeued %d tasks"%len(e)
+
+def killalldc():
+	"""Requeues all active (incomplete) tasks"""
+	q=EMTaskQueue()
+	e=q.active.keys()
+	e=[i for i in e if isinstance(i,int) and q.active[i]!=None]
+	
+	for i in e: q.task_aborted(i)
+
+	print "Killed %d tasks"%len(e)
 
 def killdcserver(server,port,verbose):
 	EMDCsendonecom(server,port,"QUIT")

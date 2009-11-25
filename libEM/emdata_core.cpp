@@ -116,13 +116,146 @@ EMData *EMData::copy_head() const
 	return ret;
 }
 
-std::complex<float> EMData::get_complex_at(int x,int y) {
-	if (abs(x)>nx || abs(y)>ny) return std::complex<float>(0,0);
+std::complex<float> EMData::get_complex_at(const int &x,const int &y) const{
+	if (abs(x)>=nx/2 || abs(y)>ny/2) return std::complex<float>(0,0);
 	if (x>=0 && y>=0) return std::complex<float>(rdata[ x*2+y*nx],      rdata[x*2+y*nx+1]);
 	if (x>0 && y<0) return std::complex<float>(  rdata[ x*2+(ny+y)*nx], rdata[x*2+(ny+y)*nx+1]);
 	if (x<0 && y>0) return std::complex<float>(  rdata[-x*2+(ny-y)*nx],-rdata[-x*2+(ny-y)*nx+1]);
 	return std::complex<float>(rdata[-x*2-y*nx],-rdata[-x*2+-y*nx+1]);
 }
+
+std::complex<float> EMData::get_complex_at(const int &x,const int &y,const int &z) const{
+	if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return std::complex<float>(0,0);
+
+	if (x<0) {
+		int idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+		return std::complex<float>(rdata[idx],rdata[idx+1]);
+	}
+
+	int idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+	return std::complex<float>(rdata[idx],rdata[idx+1]);
+}
+
+size_t EMData::get_complex_index(const int &x,const int &y,const int &z) const {
+	if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
+	if (x<0) {
+		return -x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	}
+	return x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+}
+
+size_t EMData::get_complex_index(int x,int y,int z,const int &subx0,const int &suby0,const int &subz0,const int &fullnx,const int &fullny,const int &fullnz) const {
+if (abs(x)>=fullnx/2 || abs(y)>fullny/2 || abs(z)>fullnz/2) return nxyz;
+
+if (x<0) {
+	x*=-1;
+	y*=-1;
+	z*=-1;
+}
+if (y<0) y=fullny+y;
+if (z<0) z=fullnz+z;
+
+if (x<subx0||y<suby0||z<subz0||x>=subx0+nx||y>=suby0+ny||z>=subz0+nz) return nxyz;
+
+return (x-subx0)*2+(y-suby0)*nx+(z-subz0)*nx*ny;
+}
+
+
+void EMData::set_complex_at(const int &x,const int &y,const std::complex<float> &val) {
+	if (abs(x)>=nx/2 || abs(y)>ny/2) return;
+	if (x>=0 && y>=0) { rdata[ x*2+y*nx]=val.real(); rdata[x*2+y*nx+1]=val.imag(); }
+	else if (x>0 && y<0) { rdata[ x*2+(ny+y)*nx]=val.real(); rdata[x*2+(ny+y)*nx+1]=val.imag(); }
+	else if (x<0 && y>0) { rdata[-x*2+(ny-y)*nx]=val.real(); rdata[-x*2+(ny-y)*nx+1]=-val.imag(); }
+	else { rdata[-x*2-y*nx]=val.real(); rdata[-x*2+-y*nx+1]=-val.imag(); }
+	return;
+}
+
+void EMData::set_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val) {
+if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return;
+//if (x==0 && (y!=0 || z!=0)) set_complex_at(0,-y,-z,conj(val));
+
+// for x=0, we need to insert the value in 2 places
+// complex conjugate insertion. Removed due to ambiguity with returned index
+/*if (x==0 && (y!=0 || z!=0)) {
+	size_t idx=(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nx*ny;
+	rdata[idx]=(float)val.real();
+	rdata[idx+1]=(float)-val.imag();
+}*/
+
+size_t idx;
+if (x<0) {
+	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	rdata[idx]=(float)val.real();
+	rdata[idx+1]=-(float)val.imag();
+	return;
+}
+
+idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+rdata[idx]=(float)val.real();
+rdata[idx+1]=(float)val.imag();
+
+return;
+}
+
+size_t EMData::add_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val) {
+//if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
+if (x>=nx/2 || y>ny/2 || z>nz/2 || x<=-nx/2 || y<-ny/2 || z<-nz/2) return nxyz;
+
+// for x=0, we need to insert the value in 2 places
+// complex conjugate insertion. Removed due to ambiguity with returned index
+/*if (x==0 && (y!=0 || z!=0)) {
+	size_t idx=(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nx*ny;
+	rdata[idx]+=(float)val.real();
+	rdata[idx+1]-=(float)val.imag();
+}*/
+
+size_t idx;
+if (x<0) {
+	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	rdata[idx]+=(float)val.real();
+	rdata[idx+1]-=(float)val.imag();
+	return idx;
+}
+
+idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+rdata[idx]+=(float)val.real();
+rdata[idx+1]+=(float)val.imag();
+
+return idx;
+}
+
+size_t EMData::add_complex_at(int x,int y,int z,const int &subx0,const int &suby0,const int &subz0,const int &fullnx,const int &fullny,const int &fullnz,const std::complex<float> &val) {
+if (abs(x)>=fullnx/2 || abs(y)>fullny/2 || abs(z)>fullnz/2) return nxyz;
+//if (x==0 && (y!=0 || z!=0)) add_complex_at(0,-y,-z,subx0,suby0,subz0,fullnx,fullny,fullnz,conj(val));
+// complex conjugate insertion. Removed due to ambiguity with returned index
+/*if (x==0&& (y!=0 || z!=0)) {
+	int yy=y<=0?-y:fullny-y;
+	int zz=z<=0?-z:fullnz-z;
+
+	if (yy<suby0||zz<subz0||yy>=suby0+ny||zz>=subz0+nz) return nx*ny*nz;
+
+	size_t idx=(yy-suby0)*nx+(zz-subz0)*nx*ny;
+	rdata[idx]+=(float)val.real();
+	rdata[idx+1]+=(float)-val.imag();
+}*/
+float cc=1.0;
+if (x<0) {
+	x*=-1;
+	y*=-1;
+	z*=-1;
+	cc=-1.0;
+}
+if (y<0) y=fullny+y;
+if (z<0) z=fullnz+z;
+
+if (x<subx0||y<suby0||z<subz0||x>=subx0+nx||y>=suby0+ny||z>=subz0+nz) return nxyz;
+
+size_t idx=(x-subx0)*2+(y-suby0)*nx+(z-subz0)*nx*ny;
+rdata[idx]+=(float)val.real();
+rdata[idx+1]+=cc*(float)val.imag();
+return idx;
+}
+
 
 void EMData::add(float f,int keepzero)
 {
@@ -143,7 +276,7 @@ void EMData::add(float f,int keepzero)
 				return;
 			}
 #endif // EMAN2_USING_CUDA
-			size_t size = nxy * nz;
+			size_t size = nxyz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
 					if (data[i]) data[i] += f;
@@ -202,7 +335,7 @@ void EMData::add(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 
 		for (size_t i = 0; i < size; i++) {
@@ -227,7 +360,7 @@ void EMData::addsquare(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 
 		for (size_t i = 0; i < size; i++) {
@@ -252,7 +385,7 @@ void EMData::subsquare(const EMData & image)
 	else {
 
 		const float *src_data = image.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 
 		for (size_t i = 0; i < size; i++) {
@@ -281,7 +414,7 @@ void EMData::sub(float f)
 			return;
 		}
 #endif // EMAN2_USING_CUDA
-			size_t size = nxy * nz;
+			size_t size = nxyz;
 			for (size_t i = 0; i < size; i++) {
 				data[i] -= f;
 			}
@@ -292,7 +425,7 @@ void EMData::sub(float f)
 	{
 		if( f != 0 )
 		{
-			size_t size = nxy * nz;
+			size_t size = nxyz;
 			for( size_t i=0; i<size; i+=2 )
 			{
 				data[i] -= f;
@@ -323,7 +456,7 @@ void EMData::sub(const EMData & em)
 	}
 	else {
 		const float *src_data = em.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 
 		for (size_t i = 0; i < size; i++) {
@@ -354,7 +487,7 @@ void EMData::mult(float f)
 		}
 #endif // EMAN2_USING_CUDA
 		float* data = get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		for (size_t i = 0; i < size; i++) {
 			data[i] *= f;
 		}
@@ -378,7 +511,7 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 	else
 	{
 		const float *src_data = em.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 		if( is_real() || prevent_complex_multiplication )
 		{
@@ -431,7 +564,7 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 	int s_nx = em.get_xsize();
 	int s_nxy = s_nx*em.get_ysize();
 
-	int r_size = nxy*nz;
+	size_t r_size = nxyz;
 	int s_size = s_nxy*em.get_zsize();
 	float* data = get_data();
 
@@ -476,7 +609,7 @@ void EMData::div(const EMData & em)
 	}
 	else {
 		const float *src_data = em.get_data();
-		size_t size = nxy * nz;
+		size_t size = nxyz;
 		float* data = get_data();
 
 		if( is_real() )
@@ -825,7 +958,7 @@ EMData * EMData::sqrt() const
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
-	size_t size = nxy * nz;
+	size_t size = nxyz;
 	for (size_t i = 0; i < size; ++i) {
 		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
@@ -855,7 +988,7 @@ EMData * EMData::log() const
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
-	size_t size = nxy * nz;
+	size_t size = nxyz;
 	for (size_t i = 0; i < size; ++i) {
 		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
@@ -885,7 +1018,7 @@ EMData * EMData::log10() const
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
 	float * data = get_data();
-	size_t size = nxy * nz;
+	size_t size = nxyz;
 	for (size_t i = 0; i < size; ++i) {
 		if(data[i] < 0) {
 			throw InvalidValueException(data[i], "pixel value must be non-negative for logrithm");
@@ -1206,7 +1339,7 @@ void EMData::to_zero()
 		set_ri(false);
 	}
 
-	//EMUtil::em_memset(get_data(), 0, nxy * nz * sizeof(float));
+	//EMUtil::em_memset(get_data(), 0, nxyz * sizeof(float));
 	to_value(0.0);
 	update();
 	EXITFUNC;
@@ -1243,7 +1376,7 @@ void EMData::to_value(const float& value)
 #endif // EMAN2_USING_CUDA
 	float* data = get_data();
 	if ( value != 0 ) std::fill(data,data+get_size(),value);
-	else EMUtil::em_memset(data, 0, nxy * nz * sizeof(float)); // This might be faster, I don't know
+	else EMUtil::em_memset(data, 0, nxyz * sizeof(float)); // This might be faster, I don't know
 
 	update();
 	EXITFUNC;

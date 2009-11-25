@@ -169,7 +169,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "gauss_fft";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -189,6 +189,8 @@ namespace EMAN
 			d.put("mode", EMObject::INT);
 			return d;
 		}
+		
+		static const string NAME;
 
 	  private:
 		float alt, az, phi;
@@ -211,7 +213,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "fourier_gridding";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -236,6 +238,8 @@ namespace EMAN
 			d.put("npad", EMObject::INT);
 			return d;
 		}
+		
+		static const string NAME;
 	};
 
 
@@ -249,7 +253,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "pawel";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -276,6 +280,8 @@ namespace EMAN
 			d.put("psi", EMObject::FLOAT);
 			return d;
 		}
+		
+		static const string NAME;
 
 	  private:
 		// Same structure as the IPCUBE structure in Spider
@@ -310,7 +316,7 @@ namespace EMAN
 
 			string get_name() const
 			{
-				return "cuda_standard";
+				return NAME;
 			}
 
 			string get_desc() const
@@ -322,6 +328,9 @@ namespace EMAN
 			{
 				return new CudaStandardProjector();
 			}
+			
+			static const string NAME;
+			
 		  private:
 			  float matrix[12];
 		};
@@ -346,7 +355,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "standard";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -358,6 +367,8 @@ namespace EMAN
 		{
 			return new StandardProjector();
 		}
+		
+		static const string NAME;
 	};
 
 	/** Fast real space projection using Bi-Linear interpolation. (C. Yang)
@@ -370,7 +381,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "chao";
+			return NAME;
 		}
 
 		string get_desc() const
@@ -394,6 +405,8 @@ namespace EMAN
 			d.put("radius",    EMObject::FLOAT);
 			return d;
 		}
+		
+		static const string NAME;
 
 	  private:
         	int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nray, int *nnz) const;

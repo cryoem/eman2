@@ -29,92 +29,75 @@
  * 
  * */
 
-#ifndef eman_reconstructor_template_h__
-#define eman_reconstructor_template_h__ 1
+#ifndef eman_projector_template_h__
+#define eman_projector_template_h__ 1
 
-#include "reconstructor.h"
+#include "projector.h"
+
 
 namespace EMAN
 {
 
-	/** XYZReconstructor is a reconstructor template for defining new
-     * reconstructors. Please add your own code at the proper place.
+	/** XYZProjector is an projector template for defining new
+     * projectors. Please add your own code at the proper place.
      *
-     * 1) Replace all 'XYZ' with your new reconstructor name.
-     * 2) Define the reconstructor parameter names and types in get_param_types().
-     * 3) Implement the reconstructor in setup(), insert_slice(), and finish();
+     * 1) Replace all 'XYZ' with your new projector name.
+     * 2) Define the projector parameter names and types in get_param_types().
+     * 3) Implement the projector in XYZProjector::project3d().
      */
-	class XYZReconstructor:public Reconstructor
+	class XYZProjector:public Projector
 	{
 	  public:
-		XYZReconstructor();
-		~XYZReconstructor();
-
-	/** initialize the reconstructor
-	 */
-		void setup();
-
-	/** insert each image slice to the reconstructor. You may call
-	 * this function multiple times.
-	 */
-		int insert_slice(const EMData * const slice, const Transform3D & euler);
-
-	/** finish reconstruction and return the complete model.
-	 */
-		EMData *finish();
+		EMData * project3d(EMData * em) const;
+// chao added
+		EMData * backproject3d(EMData * em) const;
 
 		string get_name() const
 		{
-			return "xyz";
+			return NAME;
 		}
+
 		string get_desc() const
 		{
 			return "XYZ Description";
 		}
 
-		static Reconstructor *NEW()
+		static Projector *NEW()
 		{
-			return new XYZReconstructor();
+			return new XYZProjector();
 		}
-
-	/** Add your reconstructor parameter names and types in
+	/** Add your projector parameter names and types in
 	 * get_param_types(). For available parameter types, please
 	 * refer class EMObject.
 	 * 
-	 * As an example, XYZReconstructor has 3 parameters:
-	 *    int size;
-	 *    float patratio;
-	 *    vector<float> snr;
+	 * As an example, XYZProjector has 2 parameters:
+	 *    float param1;
+	 *    int param2;
 	 */
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("size", EMObject::INT);
-			  d.put("padratio", EMObject::FLOAT);
-			  d.put("snr", EMObject::FLOATARRAY);
+			  d.put("param1", EMObject::FLOAT);
+			  d.put("param2", EMObject::INT);
 			  return d;
 		}
-
-	  private:
-		  EMData * image;
-		int nx;
-		int ny;
-		int nz;
+		
+		static const string NAME;
 	};
 
-	/** Add your new reconstructor to ReconstructorFactoryExt().
+	/** Add your new projector to ProjectorFactoryExt().
      */
-	class ReconstructorFactoryExt
-	{
-	  public:
-		ReconstructorFactoryExt()
-		{
-			Factory < Reconstructor >::add(&XYZReconstructor::NEW);
-		}
-	};
-
-	static ReconstructorFactoryExt rf_ext;
+//	class ProjectorFactoryExt
+//	{
+//	  public:
+//		ProjectorFactoryExt()
+//		{
+//			Factory < Projector >::add<XYZProjector>();
+//		}
+//	};
+//
+//
+//	static ProjectorFactoryExt pf_ext;
 }
-
 
 #endif

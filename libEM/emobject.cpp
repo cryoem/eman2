@@ -71,34 +71,37 @@ using std::stringstream;
 #include "ctf.h"
 
 // Static init
-map< EMObject::ObjectType, string>  EMObject::type_registry;
+map< EMObject::ObjectType, string>  EMObject::type_registry = init();;
 
 //-------------------------------EMObjectTypes-----------------------------------------
-void EMObject::init()
+map< EMObject::ObjectType, string> EMObject::init()
 {
+	map< EMObject::ObjectType, string> mymap;
 	static bool first_construction = true;
 	if ( first_construction )
 	{
 		// Initialize the the type registry once and for all
-		type_registry[BOOL] = "BOOL";
-		type_registry[INT] = "INT";
-		type_registry[UNSIGNEDINT] = "UNSIGNEDINT";
-		type_registry[FLOAT] = "FLOAT";
-		type_registry[DOUBLE] = "DOUBLE";
-		type_registry[STRING] = "STRING";
-		type_registry[EMDATA] = "EMDATA";
-		type_registry[XYDATA] = "XYDATA";
-		type_registry[INTARRAY] = "INTARRAY";
-		type_registry[FLOATARRAY] = "FLOATARRAY";
-		type_registry[STRINGARRAY] = "STRINGARRAY";
-		type_registry[TRANSFORM] = "TRANFORM";
-		type_registry[CTF] = "CTF";
-		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
-		type_registry[INT_POINTER] = "INT_POINTER";
-		type_registry[UNKNOWN] = "UNKNOWN";
-		type_registry[VOID_POINTER] = "VOID_POINTER";
+		mymap[BOOL] = "BOOL";
+		mymap[INT] = "INT";
+		mymap[UNSIGNEDINT] = "UNSIGNEDINT";
+		mymap[FLOAT] = "FLOAT";
+		mymap[DOUBLE] = "DOUBLE";
+		mymap[STRING] = "STRING";
+		mymap[EMDATA] = "EMDATA";
+		mymap[XYDATA] = "XYDATA";
+		mymap[INTARRAY] = "INTARRAY";
+		mymap[FLOATARRAY] = "FLOATARRAY";
+		mymap[STRINGARRAY] = "STRINGARRAY";
+		mymap[TRANSFORM] = "TRANFORM";
+		mymap[CTF] = "CTF";
+		mymap[FLOAT_POINTER] = "FLOAT_POINTER";
+		mymap[INT_POINTER] = "INT_POINTER";
+		mymap[UNKNOWN] = "UNKNOWN";
+		mymap[VOID_POINTER] = "VOID_POINTER";
 		first_construction = false;
 	}
+	
+	return mymap;
 }
 
 //-------------------------------EMObject--------------------------------------------
@@ -119,27 +122,19 @@ EMObject::~EMObject() {}
 
 EMObject::EMObject() :
 	d(0), type(UNKNOWN)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(bool boolean) :
 	b(boolean), type(BOOL)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(int num) :
 	n(num), type(INT)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(unsigned int num) :
 	ui(num), type(UNSIGNEDINT)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(float ff) :
 	type(FLOAT)
@@ -150,7 +145,6 @@ EMObject::EMObject(float ff) :
 	else{
 		f = 0.0f;
 	}
-	init();
 }
 
 EMObject::EMObject(double dd) :
@@ -162,79 +156,55 @@ EMObject::EMObject(double dd) :
 	else{
 		d = 0.0;
 	}
-	init();
 }
 
 EMObject::EMObject(const char *s) :
 	str(s), type(STRING)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(const string & s) :
 	str(s), type(STRING)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(float *f) :
 	fp(f), type(FLOAT_POINTER)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(int *i) :
 	ip(i), type(INT_POINTER)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(void *v) :
 	vp(v), type(VOID_POINTER)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(EMData * em)	:
 	emdata(em), type(EMDATA)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(XYData * xy) :
 	xydata(xy), type(XYDATA)
-{
-	init();
-}
+{}
+
 EMObject::EMObject(Transform* t) :
 	farray(t->get_matrix()), type(TRANSFORM)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(Ctf * ctf) :
 	str(ctf->to_string()), type(CTF)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(const vector< int >& v ) :
 	iarray(v), type(INTARRAY)
-{
-	init();
-}
+{}
 
 EMObject::EMObject(const vector < float >&v) :
 	farray(v), type(FLOATARRAY)
-{
-	init();
-}
+{}
 
 EMObject:: EMObject(const vector <string>& sarray) :
 	strarray(sarray), type(STRINGARRAY)
-{
-	init();
-}
+{}
 
 EMObject::operator bool () const
 {

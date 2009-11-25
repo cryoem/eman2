@@ -75,25 +75,29 @@ improved with time."""
         
     print 'Initializing'
     
-    pat = EMData();
-    pat.set_size(SIZE, SIZE, 1)
-    for i in xrange(-SIZE/2, SIZE/2):
-        for j in xrange(-SIZE/2, SIZE/2):
-            value = -3.0 * math.exp(-Util.square(math.fabs(i)+math.fabs(j)) / 10.0) + math.exp(-Util.square( (math.fabs(i)+math.fabs(j))/2.0 )/100.0) * 2.0 if abs(i)<2 else 1.0  
-            pat.set_value_at(i+SIZE/2, j+SIZE/2, value)
-    pat.update()
+#    pat = EMData();
+#    pat.set_size(SIZE, SIZE, 1)
+#    for i in xrange(-SIZE/2, SIZE/2):
+#        for j in xrange(-SIZE/2, SIZE/2):
+#            value = -3.0 * math.exp(-Util.square(math.fabs(i)+math.fabs(j)) / 10.0) + math.exp(-Util.square( (math.fabs(i)+math.fabs(j))/2.0 )/100.0) * 2.0 if abs(i)<2 else 1.0  
+#            pat.set_value_at(i+SIZE/2, j+SIZE/2, value)
+#    pat.update()
+    pat=test_image(size=(SIZE,SIZE))
     pat.process_inplace('normalize.circlemean')
     pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0});
     
     data = [None for i in xrange(NTT)]
     
     for i in xrange(NTT):
-        data[i] = pat.copy()
+#        data[i] = test_image
+#	pat.copy()
         
-        for j in xrange(SIZE):
-            for k in xrange(SIZE):
-                data[i].set_value_at_fast(j, k, Util.get_gauss_rand(0, 1.0))
-        data[i].update()
+#        for j in xrange(SIZE):
+#            for k in xrange(SIZE):
+#                data[i].set_value_at_fast(j, k, Util.get_gauss_rand(0, 1.0))
+#        data[i].update()
+        data[i]=test_image(0,size=(SIZE,SIZE))
+	data[i].add(test_image(1,size=(SIZE,SIZE)))
         data[i].process_inplace('normalize.circlemean')
         data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2});
         
