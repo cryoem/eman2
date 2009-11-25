@@ -2870,11 +2870,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
-	from alignment    import Numrinit, ringwe, ali2d_single_iter, ali2d_single_iter_CUDA, max_pixel_error
+	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
-	from utilities    import write_text_file, get_params2D
+	from utilities    import write_text_file, get_params2D, set_params2D, combine_params2, inverse_transform2
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -3151,10 +3151,36 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if not again: break
 			if total_iter != max_iter*len(xrng):
 				old_ali_params = []
-			        for im in xrange(len(data)):  old_ali_params.append(get_params2D(data[im]))
+				if CUDA:
+					for im in xrange(len(data)):  old_ali_params.append(tuple(all_ali_params[im*4:im*4+4]))
+				else:
+				        for im in xrange(len(data)):  old_ali_params.append(get_params2D(data[im]))
 
 				if CUDA:
-					sx_sum, sy_sum = ali2d_single_iter_CUDA(data, cs, tavg, R, GPUID, CTF)
+					sx_list = []
+					sy_list = []
+
+					for im in xrange(len(data)):
+						alpha, sx, sy, mirror = combine_params2(all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], int(all_ali_params[im*4+3]), 0.0, -cs[0], -cs[1], 0)
+						alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+						sx_list.append(sxi)
+						sy_list.append(syi)
+
+					results = R.alignment_2d(tavg, sx_list, sy_list, GPUID, 1)	
+
+					sx_sum = 0.0
+					sy_sum = 0.0
+					
+					all_ali_params = []
+					for im in xrange(len(data)):
+						[alphan, sxn, syn, mn] = combine_params2(0.0, -sx_list[im], -sy_list[im], 0, results[im*4], results[im*4+1], results[im*4+2], int(results[im*4+3]))
+						all_ali_params.append(alphan)
+						all_ali_params.append(sxn)
+						all_ali_params.append(syn)
+						all_ali_params.append(mn)						
+						if mn == 0: sx_sum += sxn
+						else:       sx_sum -= sxn
+						sy_sum += syn
 				else:	
 					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -3163,14 +3189,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        pixel_error = 0.0
 			        mirror_consistent = 0
 				pixel_error_list = []
-				if CUDA:  all_ali_params = []
 			        for im in xrange(len(data)):
-			        	ali_params = get_params2D(data[im]) 
-					if CUDA:
-						all_ali_params.append(ali_params[0])
-						all_ali_params.append(ali_params[1])
-						all_ali_params.append(ali_params[2])
-						all_ali_params.append(ali_params[3])						
+			        	if CUDA:
+						ali_params = tuple(all_ali_params[im*4:im*4+4])
+					else:
+						ali_params = get_params2D(data[im]) 
 			        	if old_ali_params[im][3] == ali_params[3]:
 		        			this_error = max_pixel_error(*(old_ali_params[im][0:3]+ali_params[0:3]+(last_ring*2,)))
 		        			pixel_error += this_error
@@ -3193,8 +3216,12 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					print_msg("\n\n\n")
 		if CUDA: R.finish()
 
+	if CUDA:
+		for im in xrange(len(data)):
+			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], int(all_ali_params[im*4+3]), 1.0])
+
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
-	# write out headers  and STOP, under MPI writing has to be done sequentially
+	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
