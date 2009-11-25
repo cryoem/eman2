@@ -871,8 +871,8 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		#import os
 		#scratch = os.getenv("SCRATCH", "/tmp")
 		tmpid = randint(0, 1000000) 
-		fftvol_half_file = ("/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = ("/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = ("fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
