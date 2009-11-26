@@ -57,7 +57,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 	for i in idrange:
 		r.insert_slice( lines[i], t )
 
-	return r.finish()
+	return r.finish(True)
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
@@ -119,7 +119,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			if(active == 1):
 				xform_proj = stack_name[list_proj[i]].get_attr( "xform.projection" )
 				r.insert_slice(stack_name[list_proj[i]], xform_proj )
-	return r.finish()
+	return r.finish(True)
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 	from utilities import reduce_EMData_to_root
@@ -158,7 +158,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 	reduce_EMData_to_root(fftvol, myid)
 	reduce_EMData_to_root(weight, myid)
 
-	if myid == 0 :  vol = r.finish()
+	if myid == 0 :  vol = r.finish(True)
 	else:
 		from utilities import model_blank
 		vol = model_blank(imgsize,imgsize,imgsize)
@@ -208,7 +208,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		info.flush()
 
 	if myid == 0 :
-		vol = r.finish()
+		vol = r.finish(True)
 	else:
 		from utilities import model_blank
 		vol = model_blank(imgsize,imgsize,imgsize)
@@ -272,7 +272,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 			if(active == 1):
 				xform_proj = stack_name[i].get_attr( "xform.projection" )
 				r.insert_slice(stack_name[i], xform_proj )
-	return r.finish()
+	return r.finish(True)
 
 def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	
@@ -354,7 +354,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 				proj -= stats[0]
 				proj *= mask2D
 			r.insert_slice(proj, xform_proj)
-	vol_ssnr = r.finish()
+	vol_ssnr = r.finish(True)
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
 	for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
@@ -425,7 +425,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	reduce_EMData_to_root(weight2, myid, 0)
 	if CTF: reduce_EMData_to_root(weight3, myid, 0)
 	if myid == 0 :
-		vol_ssnr = r.finish()
+		vol_ssnr = r.finish(True)
 		outlist = [[] for i in xrange(6)]
 		nn = SSNR.get_xsize()
 		for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
@@ -550,7 +550,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 			output.write( "Finishing... " )
 			output.flush( )
 
-		vol = r.finish()
+		vol = r.finish(True)
 
 		if not(output is None):
 			output.write( "Writing... " )
@@ -880,14 +880,14 @@ def recons_from_fftvol(size, fftvol, weight, symmetry):
 	params = {"size":size, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get("nn4", params)
 	r.setup()
-	return r.finish()
+	return r.finish(True)
 
 
 def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1):
 	params = {"size":size, "npad":4, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
 	r = Reconstructors.get("nn4_ctf", params)
 	r.setup()
-	return r.finish()
+	return r.finish(True)
 
 
 def get_image_size( imgdata, myid ):

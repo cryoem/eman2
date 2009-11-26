@@ -6221,7 +6221,7 @@ def rec3D_MPI_noCTF_index(data, index, symmetry, myid, main_node = 0):
 	reduce_EMData_to_root(fftvol, myid, main_node)
 	reduce_EMData_to_root(weight, myid, main_node)
 
-	if myid == main_node:   return rec.finish()
+	if myid == main_node:   return rec.finish(True)
 	else:                   return model_blank(nx,nx,nx)
 '''
 	
