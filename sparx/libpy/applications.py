@@ -5142,7 +5142,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if CTF:
 		from reconstruction import rec3D_MPI
 		from filter         import filt_ctf
-	else:	from reconstruction import rec3D_MPI_noCTF
+	else:	 from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
        		if(file_type(stack) == "bdb"):
@@ -6434,6 +6434,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 					start_time = time()
 
 		del peaks
+		del vol, volft
 		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
 		npergroup = [0]*numref
@@ -7086,6 +7087,9 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				if( myid== main_node and (imn>image_start_in_chunk) and ( ((imn-image_start_in_chunk)%(n_in_chunk//2) == 0) or (imn == image_end_in_chunk-1) ) ):
 					print_msg( "Time to process %6d particles : %d\n" % (n_in_chunk//2, time()-start_time) )
 					start_time = time()
+
+			# release memory of volft
+			data[0] = None
 
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
