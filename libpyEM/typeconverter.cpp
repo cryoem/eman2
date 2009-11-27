@@ -78,8 +78,8 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
 {
 	float * data = image->get_data();
 	int nx = image->get_xsize();
-    int ny = image->get_ysize();
-    int nz = image->get_zsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
 
 	vector<npy_intp> dims;
 
@@ -136,16 +136,16 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	image->set_size(nx, ny, nz);
 
 	char* array_data = array_ptr->data;
-    float* data = image->get_data();
+	float* data = image->get_data();
 
-    if(data_type == 'f') {
-    	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
-    }
-    else {
-    	PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
-    	char* array_data2 = array_ptr2->data;
-    	memcpy(data, array_data2, sizeof(float) * nx * ny * nz);
-    }
+	if(data_type == 'f') {
+    		memcpy(data, array_data, sizeof(float) * nx * ny * nz);
+	}
+	else {
+		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
+		char* array_data2 = array_ptr2->data;
+		memcpy(data, array_data2, sizeof(float) * nx * ny * nz);
+	}
 
 	image->update();
 }
