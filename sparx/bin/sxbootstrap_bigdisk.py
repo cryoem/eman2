@@ -64,7 +64,7 @@ def bootstrap_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None
 		start_time = time()
 		iwrite = nvol*niter + ivol
 
-		vol = rectors[ivol].finish()
+		vol = rectors[ivol].finish(True)
 		# Here add multiplication by the number of projections
 		Util.mul_scalar( vol, float(nprj) )
 		vol.write_image( volfile, iwrite )

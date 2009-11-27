@@ -84,7 +84,7 @@ def bootstrap_finish( rectors, fftvols, wgtvols, idingrp, grpsize, grpcomm, volf
 		iwrite = nround*iter + iround
 
 		ivol = grpsize*iround + idingrp
-		vol = rectors[ivol].finish()
+		vol = rectors[ivol].finish(True)
 		vol.write_image( volfile, nround*iter+iround )
 		if not(info is None):
 			t = time()
