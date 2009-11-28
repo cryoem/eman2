@@ -6352,7 +6352,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 	maxit = maxit*(nassign+nrefine)
 	Iter = -1
-	iteratio = 0
+	iteration = 0
 	while(Iter < maxit - 1):
 		#for Iter in xrange(maxit):
 		Iter += 1
