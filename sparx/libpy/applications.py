@@ -6566,7 +6566,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 					runtype = "ASSIGNMENT"
 				else:
 					runtype = "REFINEMENT"
-			Iter = -1
+			Iter += -1
 	if myid==main_node:
 		print_end_msg("ali3d_em_MPI")
 
