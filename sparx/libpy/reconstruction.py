@@ -945,9 +945,10 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		tag_fftvol_eve = 1001
 		tag_weight_eve = 1002
 	else:
+		#spread CPUs between different nodes to save memory
 		main_node_odd = main_node
-		main_node_eve = (int(main_node)+1)%int(nproc)
-		main_node_all = (int(main_node)+2)%int(nproc)
+		main_node_eve = (int(main_node)+nproc-1)%int(nproc)
+		main_node_all = (int(main_node)+nproc//2)%int(nproc)
 
 		tag_voleve     = 1000
 		tag_fftvol_eve = 1001
@@ -1069,8 +1070,8 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		return volall,fscdat
 
 	if myid == main_node_eve:
-		fftvol = get_image( fftvol_eve_file )
 		ftmp = recv_EMData(main_node_odd, tag_fftvol_odd)
+		fftvol = get_image( fftvol_eve_file )
 		Util.add_img( ftmp, fftvol )
 		send_EMData(ftmp, main_node_all, tag_fftvol_eve )
 		del ftmp
@@ -1114,9 +1115,10 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		tag_fftvol_eve = 1001
 		tag_weight_eve = 1002
 	else:
+		#spread CPUs between different nodes to save memory
 		main_node_odd = main_node
-		main_node_eve = (int(main_node)+1)%int(nproc)
-		main_node_all = (int(main_node)+2)%int(nproc)
+		main_node_eve = (int(main_node)+nproc-1)%int(nproc)
+		main_node_all = (int(main_node)+nproc//2)%int(nproc)
 
 		tag_voleve     = 1000
 		tag_fftvol_eve = 1001
@@ -1218,8 +1220,8 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		return volall,fscdat
 
 	if myid == main_node_eve:
-		fftvol = get_image( fftvol_eve_file )
 		ftmp = recv_EMData(main_node_odd, tag_fftvol_odd)
+		fftvol = get_image( fftvol_eve_file )
 		Util.add_img( ftmp, fftvol )
 		send_EMData(ftmp, main_node_all, tag_fftvol_eve )
 		del ftmp

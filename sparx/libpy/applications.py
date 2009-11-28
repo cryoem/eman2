@@ -6351,8 +6351,10 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
         refiparams = get_refiparams(nx)
 
 	maxit = maxit*(nassign+nrefine)
-	for Iter in xrange(maxit):
-
+	Iter = -1
+	while(Iter < maxit - 1):
+		#for Iter in xrange(maxit):
+		Iter += 1
 		if Iter%(nassign+nrefine) < nassign :
 			runtype = "ASSIGNMENT"
 		else:
@@ -6552,11 +6554,19 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		if myid == main_node:
 			print_msg("Time to write header information= %d\n"%(time()-start_time))
 			start_time = time()
-		if(terminate == 1):
+		if(terminate == 1  and runtype=="ASSIGNMENT"):
 			if myid==main_node:
-				print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
-			from sys import exit
-			exit()
+				#print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
+				print_end_msg("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments")
+			#from sys import exit
+			#exit()
+			while(runtype == "ASSIGNMENT"):
+				Iter += 1
+				if Iter%(nassign+nrefine) < nassign :
+					runtype = "ASSIGNMENT"
+				else:
+					runtype = "REFINEMENT"
+			Iter = -1
 	if myid==main_node:
 		print_end_msg("ali3d_em_MPI")
 
