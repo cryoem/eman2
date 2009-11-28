@@ -1085,6 +1085,23 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 
 		return model_blank(nx,nx,nx), None
 
+
+	if myid == main_node_all:
+		fftvol = recv_EMData(main_node_eve, tag_fftvol_eve)
+		if not(info is None):
+			info.write( "fftvol odd received\n" )
+			info.flush()
+
+		weight = recv_EMData(main_node_odd, tag_weight_odd)
+		weight_tmp = recv_EMData(main_node_eve, tag_weight_eve)
+		Util.add_img( weight, weight_tmp )
+		weight_tmp = None
+
+		volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		send_EMData(volall, main_node_odd, tag_volall)
+
+		return model_blank(nx,nx,nx),None
+
         return model_blank(nx,nx,nx),None
 
 def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, info=None, index = -1, npad = 4):
