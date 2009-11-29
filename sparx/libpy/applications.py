@@ -6202,7 +6202,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	from projection     import prep_vol, prgs, project
 	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
-	from utilities      import get_params_proj, set_params_proj, print_msg, read_spider_doc, get_im
+	from utilities      import get_params_proj, set_params_proj, print_msg, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
@@ -6558,7 +6558,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		if(terminate == 1  and runtype=="ASSIGNMENT"):
 			if myid==main_node:
 				#print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
-				print_end("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments")
+				print_msg("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments")
 
 			while(runtype == "ASSIGNMENT"):
 				Iter += 1
