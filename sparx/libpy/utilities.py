@@ -764,7 +764,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 		if (symmetryLower[0:3] =="tet"):  m=3.0; fudge=0.9 # fudge is a factor used to adjust phi steps
 		elif (symmetryLower[0:3] =="oct"):  m=4.0; fudge=0.8
 		elif (symmetryLower[0:3] =="ico"):  m=5.0; fudge=0.95
-		else: ERROR("allowable symmetries are cn, dn, tet, oct, icos","sample3D",1)
+		else: ERROR("allowable symmetries are cn, dn, tet, oct, icos","even_angles",1)
 
 		n=3.0
 		OmegaR = 2.0*pi/m; cosOmega= cos(OmegaR)
@@ -2436,31 +2436,6 @@ def copy_attr( pin, name, pot ):
 	pass
 
 
-def resample_prj( prj_in, ratio ):
-	from fundamentals import resample
-	prj_ot = resample( prj_in, ratio )
-	copy_attr( prj_in, "ctf_applied", prj_ot )
-	copy_attr( prj_in, "B_factor", prj_ot )
-	copy_attr( prj_in, "Cs", prj_ot )
-	copy_attr( prj_in, "phi", prj_ot )
-	copy_attr( prj_in, "theta", prj_ot )
-	copy_attr( prj_in, "psi", prj_ot )
-	copy_attr( prj_in, "amp_contrast", prj_ot )
-	copy_attr( prj_in, "ctf_applied", prj_ot )
-	copy_attr( prj_in, "defocus", prj_ot )
-	copy_attr( prj_in, "voltage", prj_ot )
-	copy_attr( prj_in, "active", prj_ot )
-
-	pixel = prj_in.get_attr( "Pixel_size" )
-	s2x = prj_in.get_attr( "s2x" )
-	s2y = prj_in.get_attr( "s2y" )
-
-
-	prj_ot.set_attr( "Pixel_size", pixel/ratio )
-	prj_ot.set_attr( "s2x", s2x*ratio )
-	prj_ot.set_attr( "s2y", s2y*ratio )
-	return prj_ot
-
 def write_headers(filename, data, lima):
 	"""
 	  write headers from files in data into a disk file called filename.
@@ -2774,3 +2749,34 @@ def rotation_between_anglesets(agls1, agls2):
 	dictR = R.get_rotation('SPIDER')
 
 	return dictR['phi'], dictR['theta'], dictR['psi']
+
+
+def get_pixel_size(img):
+	"""
+	  Retrieve pixel size from the header.
+	  We check attribute Pixel_size and also pixel size from ctf object, if exisits.
+	  If the two are different or if the pixel size is not set, return -1.0 and print a warning.
+	"""
+	p1 = img.get_attr_default("Pixel_size", -1.0)
+	cc = img.get_attr_default("ctf", None)
+	if(cc == None):
+		p2 = -1.0
+	else:
+		p2 = c.apix
+	if( (p1 != p2) or ( (p1 == -1.0) and (p2 == -1.0)) ):
+		ERROR("Pixel size not set or set incorrectly","get_pixel_size",0)
+		return -1.0
+	else:
+		# pixel size is positive, so what follows ommits -1 problem
+		return  max(p1,p2)
+
+def set_pixel_size(img, pixel_size):
+	"""
+	  Set pixel size in the header.
+	  Set attribute Pixel_size and also pixel size in ctf object, if exists.
+	"""
+	img.set_attr("Pixel_size", pixel_size)
+	cc = img.get_attr_default("ctf", None)
+	if(cc):
+		cc.apix = pixel_size
+		img.set_attr("ctf", cc)
