@@ -12919,3 +12919,1863 @@ def k_means_open_txt(stack, maskname, N_start, N_stop, N):
 
 ## END OLD CODE K-MEANS STABLE ################################################################
 ###############################################################################################
+
+
+
+'''
+def ali3d_f(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = None, chunk = -1.0, MPI=False):
+	if MPI:
+		ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius, snr, dtheta, max_it,symmetry, CTF, chunk)
+		return
+	print 'non-MPI version not implemented!'
+			
+def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = None, chunk = -1.0):
+	"""
+		
+	"""
+	from alignment	    import eqproj
+	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc2, filt_btwl
+	from fundamentals   import fshift
+	from projection     import prep_vol
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, get_im
+	from utilities      import read_spider_doc
+	from reconstruction import rec3D_MPI,rec3D_MPI_index
+	from morphology     import refine_with_mask
+	from math           import pi
+	from random         import randint
+	from string         import replace
+	import os
+	import sys
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	if(myid == main_node):
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nima = EMUtil.get_image_count(stack)
+
+	#nimage_per_node = nima/number_of_proc
+	#image_start = myid * nimage_per_node
+	#if(myid == number_of_proc-1):             image_end = nima
+	#else:                                     image_end = image_start + nimage_per_node
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)	
+
+	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
+	if(chunk <= 0.0):  chunk = 1.0
+
+	outf = file(replace("progress%4d"%myid,' ','0'), "w")
+	outf.write("  chunk = "+str(chunk)+"   ")
+	outf.write("\n")
+	outf.flush()
+	refvols = []
+	nrefvol = EMUtil.get_image_count(ref_vol)
+	for iref in xrange(nrefvol):
+	    vol = get_im(ref_vol, iref)
+	    refvols.append(vol)
+
+	nx  = refvols[0].get_xsize()
+	if(radius <= 0):  radius = nx/2-1
+	if(myid == main_node):
+	    for i in xrange(nrefvol):
+	        filename = "ref_volf%4d.hdf" % i
+		filename = replace(filename, ' ', '0')
+	        refvols[i].write_image(os.path.join(outdir,filename))
+
+	if maskfile:
+		import  types
+		if(type(maskfile) is types.StringType):  mask3D=get_image(maskfile)
+		else: mask3D = maskfile
+	else:
+		mask3D = model_circle(radius, nx, nx, nx)
+
+        if ali_maskfile:
+            ali_mask = get_image( ali_maskfile )
+        else:
+            print "Error: no alignment mask"
+            exit(-1)
+
+
+	mask2D = model_circle(radius, nx, nx)
+	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	#                  0         1           2       3           4             5                 6
+	dataim = EMData.read_images(image_start, image_end)
+	for im in xrange(image_start, image_end):
+		dataim[im].set_attr('ID', im)
+		if(CTF):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if(data[im].get_attr("ctf_applied") == 0):
+				st = Util.infomask(data[im], mask2D, False)
+				data[im] -= st[0]
+				from filter import filt_ctf
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+
+
+	jtep = 0
+	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	from math import exp, tanh, pi
+	a = 0.08
+	ldef = -1
+	for iteration in xrange(max_it):
+                for imn in xrange(image_start, image_end):
+                        igroup = randint(0, 1)
+                        dataim[imn-image_start].set_attr( 'group', igroup )
+                        if nrefvol==2:
+                            dataim[imn-image_start].set_attr( 'refid', 0 )
+                """
+                if iteration==0 :
+                    n_in_chunk  = (image_end-image_start)
+                    n_of_chunks = 1
+                else :
+                    n_in_chunk  = max( int( chunk*(image_end-image_start+1) ), 1 )
+	            n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+                """
+
+	        n_in_chunk  = max( int( chunk*(image_end-image_start+1) ), 1 )
+	        n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+        
+
+                outf.write( "nchunk, chunksize: %d %d\n" % (n_of_chunks,n_in_chunk) ) 
+                outf.flush()
+
+		for  ic  in xrange(n_of_chunks):
+			image_start_in_chunk = image_start + ic*n_in_chunk
+			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"\n")
+			outf.write("\n")
+			outf.write("image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+			outf.write("\n")
+			outf.flush()
+			jtep += 1
+
+                        volfts = []
+			kbs = []
+                        for i in xrange(nrefvol):
+			    vol = refvols[i]
+
+			    Util.mul_img(vol, mask3D)
+			    volft,kb  = prep_vol(vol)
+
+                            volfts.append(volft)
+			    kbs.append(kb)
+
+			new_params = []
+			current_defocus = [-1.0]*nrefvol
+			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
+                                igroup = dataim[imn-image_start].get_attr('group')
+               			data = [None]*4
+			        data[0] = None
+			        data[1] = None
+				data[2] = dataim[imn-image_start]
+			        data[3] = mask2D
+				defocus = dataim[imn-image_start].get_attr('defocus')
+        			atparams = get_arb_params(dataim[imn-image_start], par_str)
+				atparams[3] *= -1
+				atparams[4] *= -1
+
+
+                                best_ref = None
+                                best_score = None
+				outf.write("Image "+str(imn)+"\n")
+                                for iref in xrange(nrefvol/2):
+                                    data[0] = volfts[2*iref+igroup]
+                                    data[1] = kbs[2*iref+igroup]
+           			    initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				    outf.write('Old %6.2f  %6.2f  %6.2f  %6.2f  %6.2f   %7.4f %d '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial,iref))
+				    outf.write("\n")
+				    outf.flush()
+                                    if best_score is None or best_score < initial :
+                                        best_ref = iref
+                                        best_score = initial
+                                
+                                if iteration%4 == 5 :
+                                    atparams.append( best_ref )
+                                    new_params.append( atparams )
+                                    dataim[imn-image_start].set_attr( 'refid', best_ref )
+                                    outf.write( "Image %d assigned to vol %d on iter %d\n\n" % (imn, best_ref, iteration) )
+                                    outf.flush()
+                                    continue
+                                 
+
+                                weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))
+                               
+                                best_ref = None
+                                best_score = None
+                                best_params = None
+                                for iref in xrange(nrefvol/2):
+                                    data[0] = volfts[2*iref+igroup]
+                                    data[1] = kbs[2*iref+igroup]
+	 			    optm_params,curt_score,niter =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqproj, 1.e-4,1.e-4,500,data)
+				    #  change signs of shifts for header
+				    optm_params[3] *= -1
+				    optm_params[4] *= -1
+				    optm_params.append(imn)
+				    outf.write('New %6.2f  %6.2f  %6.2f  %6.2f  %6.2f   %7.4f   %7.1f\n'%(optm_params[0],optm_params[1],optm_params[2],optm_params[3],optm_params[4],curt_score,defocus))
+				    outf.flush()
+                                    if(best_score is None or best_score < curt_score):
+                                        best_ref = iref
+                                        best_score = curt_score
+                                        best_params = optm_params
+
+                                best_params.append(best_ref)
+
+				new_params.append(best_params)
+
+                                dataim[imn-image_start].set_attr( 'refid', best_ref )
+                                outf.write( "Image %d assigned to vol %d on iter %d\n\n" % (imn, best_ref, iteration) )
+                                outf.flush()
+
+				set_arb_params(dataim[imn-image_start], [best_params[0], best_params[1], best_params[2], best_params[3], best_params[4]], par_str)
+
+			drop_spider_doc(os.path.join(outdir, replace("new_params%6d_%3d"%(jtep, myid),' ','0')), new_params," phi, theta, psi, s2x, s2y, refid, image number")
+			# compute updated 3D after each chunk
+ 	    		# resolution
+                        if(nrefvol==1):
+ 	                    refvols[0], fscc, oddvol, evevol = rec3D_MPI(dataim, snr, symmetry, mask3D, os.path.join(outdir, replace("resolution%6d"%jtep,' ','0')), myid, main_node)
+			    if(myid == main_node):
+				drop_image(refvols[0], os.path.join(outdir, replace("vol%6d.spi"%jtep,' ','0')), "s")
+				#filt = filt_from_fsc(fscc, 0.05)
+				#vol  = filt_table(vol, filt)
+				lowfq,highfq = filt_params(fscc)
+				refvols[0] = filt_btwl(refvols[0], lowfq, highfq)
+				#  center!
+				cs = vol.phase_cog()
+				refvols[0] = fshift(refvols[0], -cs[0], -cs[1] -cs[2])
+				drop_image(refvols[0],os.path.join(outdir, replace("volf%6d.spi"%jtep,' ','0')), "s")
+			    bcast_EMData_to_all(refvols[0], myid, main_node)
+                        elif nrefvol==2:
+                            iref = 0
+                            fscfile = os.path.join(outdir, replace("resolution%4d%2d"%(jtep,iref), ' ', '0'))
+                            totvol, fscc, refvols[0], refvols[1] = rec3D_MPI_index( dataim, iref, snr, symmetry, mask3D, myid, main_node, fscfile )
+  	                    if myid==main_node:
+                                drop_image(totvol, os.path.join(outdir, replace("vol%4d%2d.spi"%(jtep,iref),' ','0')), "s")
+                                #filt = filt_from_fsc2(fscc, 0.05)
+                                #totvol = filt_table(totvol, filt)
+                                if(fscc[1][0]<0.5) : fscc[1][0] = 1.0
+                                lowfq,hghfq = filt_params(fscc)
+                                totvol = filt_btwl(totvol, lowfq, hghfq)
+                                cs = totvol.phase_cog()
+                                vol = fshift(totvol, -cs[0], -cs[1], -cs[2])
+                                refvols[0] = vol
+                                refvols[1] = vol
+                                drop_image(refvols[0],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, 0),' ','0')), "s")
+                                drop_image(refvols[1],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, 1),' ','0')), "s")
+
+                            bcast_EMData_to_all(refvols[0], myid, main_node)
+                            bcast_EMData_to_all(refvols[1], myid, main_node)
+
+                        else:
+                            fscs =[None]*(nrefvol/2)
+		 	    for iref in xrange(nrefvol/2):
+                                fscfile = os.path.join(outdir, replace("resolution%4d%2d"%(jtep,iref), ' ', '0'))
+                                totvol,fscs[iref],refvols[2*iref],refvols[2*iref+1]  = rec3D_MPI_index( dataim, iref, snr, symmetry, mask3D, myid, main_node, fscfile ) 
+                                outf.write( '%d reconstructed\n' % iref )
+                                outf.flush( )
+
+                                if myid==main_node:
+			   	    drop_image(totvol, os.path.join(outdir, replace("vol%4d%2d.spi"%(jtep,iref),' ','0')), "s")
+                                    [mean,sigma,fmin,fmax] = Util.infomask( totvol, None, True )
+                                    outf.write( 'vol after reconstruction, myid,iref: %d %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, iref, mean, sigma, fmin, fmax ) )
+                                    outf.flush()
+
+
+			    if(myid == main_node):
+                                minlowfq = 1.0
+                                minhghfq = 1.0
+                                for iref in xrange(nrefvol/2):
+                                    fscc = fscs[iref]  
+                                    if(fscc[1][0] < 0.5) : fscc[1][0] = 1.0
+			            lowfq, hghfq = filt_params(fscc)
+                                    outf.write( "iref, lowfq, hghfq: %4d %10.3f %10.3f\n" % (iref, lowfq, hghfq) )
+                                    if minlowfq > lowfq :
+                                       minlowfq = lowfq
+
+                                    if minhghfq > hghfq :
+                                       minhghfq = hghfq
+
+                                outf.write( "minlowfq, minhghfq: %10.3f %10.3f\n" %(minlowfq, minhghfq) )
+
+                                for irefvol in xrange(nrefvol):
+				    refvols[irefvol] = filt_btwl(refvols[irefvol], minlowfq, minhghfq)
+			            cs = refvols[irefvol].phase_cog()
+			            refvols[irefvol] = fshift(refvols[irefvol], -cs[0], -cs[1] -cs[2])
+                                    refvols[irefvol] = refine_with_mask(refvols[irefvol])
+ 
+                                    '''
+                                    if iref > 0 :
+                                        refvols[2*iref  ] = ali_with_mask(refvols[2*iref  ], refvols[0], ali_mask)
+                                        outf.write( "%4d aligned\n" % (2*iref) )
+                                        outf.flush()
+
+                                        refvols[2*iref+1] = ali_with_mask(refvols[2*iref+1], refvols[1], ali_mask) 
+                                        outf.write( "%4d aligned\n" % (2*iref+1) )
+                                        outf.flush()
+                                    '''
+
+			    	    drop_image(refvols[irefvol],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, irefvol),' ','0')), "s")
+
+
+			    for iref in xrange(nrefvol):
+                                bcast_EMData_to_all(refvols[iref], myid, main_node)
+                                [mean,sigma,fmin,fmax] = Util.infomask( refvols[iref], None, True )
+                                outf.write( 'after bcast, myid,iref: %d %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, iref, mean, sigma, fmin, fmax ) )
+
+		#  here we should write header info, just in case the program crashes...
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+	#  ID should be added
+	if myid == main_node:
+		from utilities import file_type
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+	else:           send_attr_dict(main_node, dataim, par_str, image_start, image_end)
+
+
+def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
+	"""
+		Version 03/20/08, all particles used
+	"""
+	from alignment	    import eqprojEuler
+	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
+	from fundamentals   import fshift, rot_avg_image
+	from projection     import prep_vol, prgs
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
+	from utilities      import read_spider_doc, get_im
+	from reconstruction import rec3D_MPI
+	from statistics     import ccc
+	from math           import pi, sqrt
+	from string         import replace
+	import os
+	import sys
+	#from development    import ali_G3
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_gatherv, mpi_scatterv
+	from mpi 	    import MPI_FLOAT, MPI_INT, MPI_SUM
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	#                  0                 1            2            3            4                 5                 6
+	if(myid == main_node):
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+		#  ERROR if ctf applied
+		ima = EMData()
+		ima.read_image(stack)
+		ctf_params = get_arb_params(ima, parnames)
+		if(ctf_params[6] == 1):
+			ERROR("ali3d_e does not work for CTF-applied data","ali3d_eB_MPI",1)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nima = EMUtil.get_image_count(stack)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+
+	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
+	if(chunk <= 0.0):  chunk = 1.0
+	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
+	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+	
+	outf = file(replace("progress%4d"%myid,' ','0'), "w")
+	outf.write("  chunk = "+str(chunk)+"   ")
+	outf.write("\n")
+	outf.flush()
+	outf.write("  n_in_chunk = "+str(n_in_chunk)+"   ")
+	outf.write("  n_of_chunks = "+str(n_of_chunks)+"   ")
+	outf.write("\n")
+	outf.flush()
+	#  Here we assume that reference volume exists
+	vol = EMData()
+	vol.read_image(ref_vol)
+	nx  = vol.get_xsize()
+	#ima = EMData()
+	#ima.read_image(stack)
+	#nx  = ima.get_xsize()
+	if(ou <= 0):  ou = nx//2-2
+	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
+	if maskfile:
+		import  types
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
+		else:                                   mask3D = maskfile
+	else:
+		mask3D = model_circle(ou, nx, nx, nx)
+	mask2D = model_circle(ou, nx, nx)
+
+	dataim = []
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
+	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
+	prm_dict = ["phi", "theta", "psi"]
+	#from random import seed,gauss
+	#seed()
+	dataim = EMData.read_images(image_start, image_end)
+	for im in xrange(image_start, image_end):
+		dataim[im].set_attr('ID', im)
+		#angn = get_arb_params(ima, prm_dict)
+		#for ian in xrange(3):  angn[ian] += gauss(0.0, 1.0)
+		#set_arb_params(ima, angn, prm_dict)
+		#set_arb_params(ima, prm[im], prm_dict)
+		"""
+		if(CTF):
+			ctf_params = get_arb_params(ima, parnames)
+			if(im == image_start): data_had_ctf = ctf_params[6]
+			if(ctf_params[6] == 0):
+				st = Util.infomask(ima, mask2D, False)
+				ima -= st[0]
+				from filter import filt_ctf
+				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima.set_attr('ctf_applied', 1)
+		"""
+	outf.write("  data read = "+str(image_start)+"   ")
+	outf.write("\n")
+	outf.flush()
+
+	if (myid == main_node):
+		# initialize data for the reference preparation function
+		from utilities import read_text_file
+		ref_data = []
+		ref_data.append( mask3D )
+		ref_data.append( read_text_file("pwpdb.txt", 1) )
+
+
+	from utilities      import bcast_number_to_all
+	from morphology     import threshold, threshold_to_minval
+
+	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+
+	#  this is needed for gathering and scattering of cccfs
+	"""
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+	"""
+	#from filter import  filt_tophatb, filt_gaussl
+	#volftb = vol.copy()
+
+	for iteration in xrange(maxit):
+		outf.write("  iteration = "+str(iteration)+"   ")
+		outf.write("\n")
+		outf.flush()
+		for  ic  in xrange(n_of_chunks):
+			# compute updated 3D after each chunk
+			"""
+			outf.write("  generate projections = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			# SORT PROJECTIONS
+			volftb,kb  = prep_vol( filt_tophatb(volftb, 0.28, 0.44, False) )
+
+			qcc = []
+			for imn in xrange(image_start, image_end):
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				projt = prgs(volftb, kb, [atparams[0], atparams[1], atparams[2], -atparams[3], -atparams[4]])
+				qcc.append(ccc(projt, dataim[imn-image_start], mask2D))
+				#qqcc=ccc(projt, dataim[imn-image_start], mask2D)
+				#dataim[imn-image_start] /= (1.0-qqcc*qqcc)
+			del projt
+			del volftb
+
+			recvbuf = mpi_gatherv(qcc, len(dataim), MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			del qcc
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				templ = []
+				for im in xrange(len(recvbuf)):    templ.append([float(recvbuf[im]), im])
+				del recvbuf
+				"""
+				for im in xrange(len(templ)):
+					outf.write('ccc, image %12.5f  %07d'%( templ[im][0], templ[im][1]  ))
+					outf.write("\n")
+				outf.flush()
+				"""
+				
+				templ.sort()
+				ilow = int(0.25*len(templ))  # reject 25% worst images.
+				for im in xrange(ilow):  templ[im] = [templ[im][1], 0]
+				for im in xrange(ilow, len(templ)):  templ[im] = [templ[im][1], 1]
+				templ.sort()
+				sendbuf = []
+				for im in xrange(len(templ)):	sendbuf.append(templ[im][1])
+				del templ
+				"""
+				qb = -1.0
+				qs = 10.0
+				for im in xrange(len(recvbuf)):
+					qt = float(recvbuf[im])
+					qb = max(qb,qt)
+					qs = min(qs,qt)
+				qs -= 1.0e-3
+				qb -= qs
+				sendbuf = []
+				for im in xrange(len(recvbuf)):
+					sendbuf.append((float(recvbuf[im])-qs)/qb)
+				del recvbuf
+				"""
+			else:
+				sendbuf = []
+			mpi_barrier(MPI_COMM_WORLD)
+			#recvbuf = mpi_scatterv(sendbuf, recvcount, disps, MPI_FLOAT, recvcount[myid], MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			recvbuf = mpi_scatterv(sendbuf, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
+			del sendbuf
+
+			for imn in xrange(image_start, image_end):
+				dataim[imn-image_start].set_attr_dict({'active': int(recvbuf[imn-image_start])})
+				#dataim[imn-image_start] /= float(recvbuf[imn-image_start])
+			"""
+			"""
+			nact = 0
+			for imn in xrange(image_start, image_end):
+				nact += dataim[imn-image_start].get_attr('active')
+			nact = float(nact)
+			tn = mpi_reduce(nact, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			if(myid == main_node):
+				outf.write('total number of used images %12.2f  '%(float(tn)))
+				outf.write("\n")
+				outf.flush()
+			"""
+			# resolution
+			outf.write("  begin reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, replace("resolution%3d_%3d"%(iteration, ic),' ','0') ), myid, main_node)
+			outf.write("  done reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			#volftb = vol.copy()
+
+			#  restore original normalization
+			#for imn in xrange(image_start, image_end):
+			#	#dataim[imn-image_start].set_attr_dict({'active': int(recvbuf[imn-image_start])})
+			#	dataim[imn-image_start] *= float(recvbuf[imn-image_start])
+			#del recvbuf
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				drop_image(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				ref_data.append( vol )
+				ref_data.append( fscc )
+				#  call user-supplied function to prepare reference image, i.e., filter it
+				vol = user_func( ref_data )
+				#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS PARAMETERS  !!!
+				del ref_data[2]
+				del ref_data[2]
+				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+			from sys import exit
+			exit()
+
+			#bcast_EMData_to_all(volftb, myid, main_node)
+			bcast_EMData_to_all(vol, myid, main_node)
+			#volft,kb  = prep_vol(vol)
+			data = []
+			# Only Euler angles
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(mask2D)
+
+			image_start_in_chunk = image_start + ic*n_in_chunk
+			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
+			outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+			outf.flush()
+			if(CTF):  previous_defocus = -1.0
+			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
+				if(CTF):
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params))
+				data[2] = dataim[imn-image_start]
+
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				
+				#optm_params = ali_G3(data, atparams, dtheta)
+				#  Align only Euler angles
+				#  change signs of shifts for projections
+				data[3] = -atparams[3]
+				data[4] = -atparams[4]
+
+				#initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				#outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write('Old %8.3f  %8.3f  %8.3f  '%(atparams[0],atparams[1],atparams[2]))
+				outf.write("\n")
+				#outf.flush()
+
+				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				optm_params =  amoeba(atparams[0:3], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4,1.e-4,500, data)
+				optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+
+				#outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write('New %8.3f  %8.3f  %8.3f  %8.5f  %6.1f   '%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[1], optm_params[2]))
+				outf.write("\n")
+				outf.flush()
+
+				set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2]], par_str[0:3])
+
+				"""
+
+				#  change signs of shifts for projections
+				#atparams[3] *= -1
+				#atparams[4] *= -1
+
+				initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write("\n")
+				outf.flush()
+
+				#weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				#optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 0.05, 0.05], eqproj, 1.e-4,1.e-4,500,data)
+				#  change signs of shifts for header
+				#optm_params[0][3] *= -1
+				#optm_params[0][4] *= -1
+				#optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+
+				outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write("\n")
+				outf.flush()
+				
+				#del  data[2]
+				#set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4]], par_str)
+				#t4 = finish_time(t3)
+				"""
+			del data
+			soto = []
+			for imn in xrange(image_start, image_end):
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
+				soto.append([phi,theta,psi,s2x,s2y,imn])
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			del soto
+
+			#from sys import exit
+			#exit()
+		#  here we should write header info, just in case the program crashes...
+	del vol
+	del volft
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+
+
+def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
+	"""
+		Version 03/20/08, to test how many particles to use.
+	"""
+	from alignment	    import eqprojEuler
+	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
+	from fundamentals   import fshift, rot_avg_image
+	from projection     import prep_vol, prgs
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
+	from utilities      import read_spider_doc, get_im
+	from reconstruction import rec3D_MPI
+	from statistics     import ccc
+	from math           import pi, sqrt
+	from string         import replace
+	import os
+	import sys
+	#from development    import ali_G3
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_gatherv, mpi_scatterv
+	from mpi 	    import MPI_FLOAT, MPI_INT, MPI_SUM
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	#                  0                 1            2            3            4                 5                 6
+	if(myid == main_node):
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+		#  ERROR if ctf applied
+		ima = EMData()
+		ima.read_image(stack)
+		ctf_params = get_arb_params(ima, parnames)
+		if(ctf_params[6] == 1):
+			ERROR("ali3d_e does not work for CTF-applied data","ali3d_eB_MPI",1)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nima = EMUtil.get_image_count(stack)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+
+	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
+	if(chunk <= 0.0):  chunk = 1.0
+	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
+	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+	
+	outf = file(replace("progress%4d"%myid,' ','0'), "w")
+	outf.write("  chunk = "+str(chunk)+"   ")
+	outf.write("\n")
+	outf.flush()
+	outf.write("  n_in_chunk = "+str(n_in_chunk)+"   ")
+	outf.write("  n_of_chunks = "+str(n_of_chunks)+"   ")
+	outf.write("\n")
+	outf.flush()
+	#  Here we assume that reference volume exists
+	vol = EMData()
+	vol.read_image(ref_vol)
+	nx  = vol.get_xsize()
+	#ima = EMData()
+	#ima.read_image(stack)
+	#nx  = ima.get_xsize()
+	if(ou <= 0):  ou = nx//2-2
+	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
+	if maskfile:
+		import  types
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
+		else:                                   mask3D = maskfile
+	else:
+		mask3D = model_circle(ou, nx, nx, nx)
+	mask2D = model_circle(ou, nx, nx)
+
+	dataim = []
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
+	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
+	prm_dict = ["phi", "theta", "psi"]
+	#from random import seed,gauss
+	#seed()
+	dataim = EMData.read_images(image_start, image_end)
+	for im in xrange(image_start, image_end):
+		dataim[im].set_attr('ID', im)
+		#angn = get_arb_params(ima, prm_dict)
+		#for ian in xrange(3):  angn[ian] += gauss(0.0, 1.0)
+		#set_arb_params(ima, angn, prm_dict)
+		#set_arb_params(ima, prm[im], prm_dict)
+		"""
+		if(CTF):
+			ctf_params = get_arb_params(ima, parnames)
+			if(im == image_start): data_had_ctf = ctf_params[6]
+			if(ctf_params[6] == 0):
+				st = Util.infomask(ima, mask2D, False)
+				ima -= st[0]
+				from filter import filt_ctf
+				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima.set_attr('ctf_applied', 1)
+		"""
+	outf.write("  data read = "+str(image_start)+"   ")
+	outf.write("\n")
+	outf.flush()
+
+	if (myid == main_node):
+		# initialize data for the reference preparation function
+		from utilities import read_text_file
+		ref_data = []
+		ref_data.append( mask3D )
+		ref_data.append( read_text_file("pwpdb.txt", 1) )
+
+
+	from utilities      import bcast_number_to_all
+	from morphology     import threshold, threshold_to_minval
+
+	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+
+	#  this is needed for gathering and scattering of cccfs
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+
+	from filter import  filt_tophatb, filt_gaussl
+	volftb = vol.copy()
+
+	for iteration in xrange(maxit):
+		outf.write("  iteration = "+str(iteration)+"   ")
+		outf.write("\n")
+		outf.flush()
+		for  ic  in xrange(n_of_chunks):
+			# compute updated 3D after each chunk
+
+			outf.write("  generate projections = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			# SORT PROJECTIONS
+			volftb,kb  = prep_vol( filt_tophatb(volftb, 0.28, 0.44, False) )
+
+			qcc = []
+			for imn in xrange(image_start, image_end):
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				projt = prgs(volftb, kb, [atparams[0], atparams[1], atparams[2], -atparams[3], -atparams[4]])
+				qcc.append(ccc(projt, dataim[imn-image_start], mask2D))
+				#qqcc=ccc(projt, dataim[imn-image_start], mask2D)
+				#dataim[imn-image_start] /= (1.0-qqcc*qqcc)
+			del projt
+			del volftb
+
+			recvbuf = mpi_gatherv(qcc, len(dataim), MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			del qcc
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				templ = []
+				for im in xrange(len(recvbuf)):    templ.append([float(recvbuf[im]), im])
+				del recvbuf
+				"""
+				for im in xrange(len(templ)):
+					outf.write('ccc, image %12.5f  %07d'%( templ[im][0], templ[im][1]  ))
+					outf.write("\n")
+				outf.flush()
+				"""
+				
+				templ.sort()
+				ilow = int(chunk*len(templ))  # reject 25% worst images.
+				for im in xrange(ilow):  templ[im] = [templ[im][1], 0]
+				for im in xrange(ilow, len(templ)):  templ[im] = [templ[im][1], 1]
+				templ.sort()
+				sendbuf = []
+				for im in xrange(len(templ)):	sendbuf.append(templ[im][1])
+				del templ
+				"""
+				qb = -1.0
+				qs = 10.0
+				for im in xrange(len(recvbuf)):
+					qt = float(recvbuf[im])
+					qb = max(qb,qt)
+					qs = min(qs,qt)
+				qs -= 1.0e-3
+				qb -= qs
+				sendbuf = []
+				for im in xrange(len(recvbuf)):
+					sendbuf.append((float(recvbuf[im])-qs)/qb)
+				del recvbuf
+				"""
+			else:
+				sendbuf = []
+			mpi_barrier(MPI_COMM_WORLD)
+			#recvbuf = mpi_scatterv(sendbuf, recvcount, disps, MPI_FLOAT, recvcount[myid], MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			recvbuf = mpi_scatterv(sendbuf, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
+			del sendbuf
+
+			for imn in xrange(image_start, image_end):
+				dataim[imn-image_start].set_attr_dict({'active': int(recvbuf[imn-image_start])})
+				#dataim[imn-image_start] /= float(recvbuf[imn-image_start])
+
+			"""
+			nact = 0
+			for imn in xrange(image_start, image_end):
+				nact += dataim[imn-image_start].get_attr('active')
+			nact = float(nact)
+			tn = mpi_reduce(nact, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			if(myid == main_node):
+				outf.write('total number of used images %12.2f  '%(float(tn)))
+				outf.write("\n")
+				outf.flush()
+			"""
+			# resolution
+			outf.write("  begin reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, replace("resolution%3d_%3d"%(iteration, ic),' ','0') ), myid, main_node)
+			outf.write("  done reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			#volftb = vol.copy()
+
+			#  restore original normalization
+			#for imn in xrange(image_start, image_end):
+			#	#dataim[imn-image_start].set_attr_dict({'active': int(recvbuf[imn-image_start])})
+			#	dataim[imn-image_start] *= float(recvbuf[imn-image_start])
+			#del recvbuf
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				drop_image(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				ref_data.append( vol )
+				ref_data.append( fscc )
+				#  call user-supplied function to prepare reference image, i.e., filter it
+				vol = user_func( ref_data )
+				#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS' PARAMETERS  !!!
+				del ref_data[2]
+				del ref_data[2]
+				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+			from sys import exit
+			exit()
+
+			#bcast_EMData_to_all(volftb, myid, main_node)
+			bcast_EMData_to_all(vol, myid, main_node)
+			#volft,kb  = prep_vol(vol)
+			data = []
+			# Only Euler angles
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(None)
+			data.append(mask2D)
+
+			image_start_in_chunk = image_start + ic*n_in_chunk
+			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
+			outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+			outf.flush()
+			if(CTF):  previous_defocus = -1.0
+			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
+				if(CTF):
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params))
+				data[2] = dataim[imn-image_start]
+
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				
+				#optm_params = ali_G3(data, atparams, dtheta)
+				#  Align only Euler angles
+				#  change signs of shifts for projections
+				data[3] = -atparams[3]
+				data[4] = -atparams[4]
+
+				#initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				#outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write('Old %8.3f  %8.3f  %8.3f  '%(atparams[0],atparams[1],atparams[2]))
+				outf.write("\n")
+				#outf.flush()
+
+				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				optm_params =  amoeba(atparams[0:3], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4,1.e-4,500, data)
+				optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+
+				#outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write('New %8.3f  %8.3f  %8.3f  %8.5f  %6.1f   '%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[1], optm_params[2]))
+				outf.write("\n")
+				outf.flush()
+
+				set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2]], par_str[0:3])
+
+				"""
+
+				#  change signs of shifts for projections
+				#atparams[3] *= -1
+				#atparams[4] *= -1
+
+				initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write("\n")
+				outf.flush()
+
+				#weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				#optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 0.05, 0.05], eqproj, 1.e-4,1.e-4,500,data)
+				#  change signs of shifts for header
+				#optm_params[0][3] *= -1
+				#optm_params[0][4] *= -1
+				#optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+
+				outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write("\n")
+				outf.flush()
+				
+				#del  data[2]
+				#set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4]], par_str)
+				#t4 = finish_time(t3)
+				"""
+			del data
+			soto = []
+			for imn in xrange(image_start, image_end):
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
+				soto.append([phi,theta,psi,s2x,s2y,imn])
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			del soto
+
+			#from sys import exit
+			#exit()
+		#  here we should write header info, just in case the program crashes...
+	del vol
+	del volft
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+
+def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0):
+	"""
+		
+	"""
+	from alignment	    import eqprojEuler
+	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
+	from fundamentals   import fshift, rot_avg_image
+	from projection     import prep_vol, prgs
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict
+	from utilities      import read_spider_doc, get_im
+	from reconstruction import rec3D_MPI
+	from math           import pi
+	from string         import replace
+	import os
+	import sys
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_gatherv, mpi_scatterv
+	from mpi 	    import MPI_FLOAT, MPI_INT, MPI_SUM
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	#  chose a random node as a main one...
+	main_node = 0
+	if(myid == main_node):
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nima = EMUtil.get_image_count(stack)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+
+	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
+	if(chunk <= 0.0):  chunk = 1.0
+	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
+	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+	
+	outf = file(replace("progress%4d"%myid,' ','0'), "w")
+	outf.write("  chunk = "+str(chunk)+"   ")
+	outf.write("\n")
+	outf.flush()
+	outf.write("  n_in_chunk = "+str(n_in_chunk)+"   ")
+	outf.write("  n_of_chunks = "+str(n_of_chunks)+"   ")
+	outf.write("\n")
+	outf.flush()
+	vol = EMData()
+	vol.read_image(ref_vol)
+	nx  = vol.get_xsize()
+	if(ou <= 0):  ou = nx//2-2
+	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
+	if maskfile:
+		import  types
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
+		else:                                   mask3D = maskfile
+	else:
+		mask3D = model_circle(ou, nx, nx, nx)
+	mask2D = model_circle(ou, nx, nx)
+
+	dataim = []
+
+	for im in xrange(image_start, image_end):
+		dataim.append(im - image_start)
+
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+	recvbuf = mpi_gatherv(dataim, len(dataim), MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	if(myid == main_node):
+		print  "recvcount", recvcount
+		print  "disps", disps
+		print  "len(recvbuf)",len(recvbuf)
+		print  recvbuf
+		templ = []
+		for im in xrange(len(recvbuf)):	   templ.append([float(recvbuf[im]), im])
+		del recvbuf
+		print  " templ ",templ
+		templ.sort()
+		ilow = int(0.3*len(templ))  # skip 30%
+		for im in xrange(ilow):  templ[im] = [templ[im][1], 0]
+		for im in xrange(ilow, len(templ)):  templ[im] = [templ[im][1], 1]
+		templ.sort()
+		print  " templ 2",templ
+		sendbuf = []
+		for im in xrange(len(templ)):   sendbuf.append(templ[im][1])
+		del templ
+	else:
+		sendbuf = []
+	mpi_barrier(MPI_COMM_WORLD)
+	recvbuf = mpi_scatterv(sendbuf, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
+	del sendbuf
+	print  " MY ID ", myid, image_start, image_end, len(dataim), len(recvbuf)
+	print  " MY ID ", myid, recvbuf
+	from sys import exit
+	exit()
+
+	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	#                  0                 1            2            3            4                 5                 6
+	from utilities import read_spider_doc, set_arb_params
+	prm = read_spider_doc("params_new.doc")
+	prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
+	dataim = EMData.read_images(image_start, image_end)
+	for im in xrange(image_start, image_end):
+		dataim[im].set_attr('ID', im)
+		set_arb_params(ima, prm[im], prm_dict)
+		if(CTF):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if(data[im].get_attr("ctf_applied") == 0):
+				st = Util.infomask(data[im], mask2D, False)
+				data[im] -= st[0]
+				from filter import filt_ctf
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+	outf.write("  data read = "+str(image_start)+"   ")
+	outf.write("\n")
+	outf.flush()
+
+	from  string        import replace
+	from utilities      import bcast_number_to_all
+	from morphology     import adaptive_mask, threshold, threshold_to_minval
+	from statistics     import histogram
+	from reconstruction import recons3d_nn_SSNR_MPI
+
+	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	"""
+	#  Berlin
+	adam = adaptive_mask(vol, 3000, 2.22)
+	vol = threshold( adam*vol)
+	h = histogram( vol )
+	vol *= get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
+	vol = filt_btwl(vol, 0.3, 0.4)
+	"""
+
+	ldef = -1
+	for iteration in xrange(maxit):
+		outf.write("  iteration = "+str(iteration)+"   ")
+		outf.write("\n")
+		outf.flush()
+		for  ic  in xrange(n_of_chunks):
+			# compute updated 3D after each chunk
+ 	    		# resolution
+			"""
+			outf.write("  begin ssnr = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			if myid == 0:
+				[ssnr1, vol_ssnr] = recons3d_nn_SSNR_MPI(myid, dataim, model_circle(ou, nx, nx), ctf = CTF)
+				del ssnr1
+				#  change volume to fsc
+				vol_ssnr /= vol_ssnr + 1.0
+				#  filter it somewhat
+				vol_ssnr = threshold(filt_gaussl(vol_ssnr, 0.1))
+			else:    recons3d_nn_SSNR_MPI(myid, dataim, model_circle(ou, nx, nx), ctf = CTF)
+			outf.write("  begin reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			"""
+			volo, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, replace("resolution%3d_%3d"%(iteration, ic),' ','0') ), myid, main_node)
+			outf.write("  done reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				drop_image(volo, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				from filter import fit_tanh, filt_tanl
+				fl, aa = fit_tanh(fscc)
+				vol = filt_tanl(vol, fl, aa)
+				from math import exp, sqrt, tanh, pi
+				#parameters of tanh filter are in absolute units.
+				nct = int(1.8*nx)
+				fl = 0.45
+				aa = 0.1
+				envt = []
+				for i in xrange(nct):
+					# e(x)*h(x)/(bckg(x)+e(x)**2*ctf(x)**2/20)
+					xs = float(i)/2.22/nx
+					et = exp(-100.0*xs**2)
+					bckgt = exp(-0.8-100.0*xs**2)+0.01
+					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
+					fmt = H*ht/bckgt
+					envt.append(fmt)
+				from filter import filt_table
+				vhlf = threshold(filt_table(vol, envt))
+				Util.mul_img(vhlf, mask3D)
+				drop_image(vol, os.path.join(outdir, replace("vhlf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				"""
+				from fundamentals import rot_avg
+				filt = filt_from_fsc(fscc, 0.1)
+				# This is a cheat - it moves the resolution curve to the right making the filter more lenient
+				#filt = [ 1.0, 1.0, 1.0] + filt
+				#filt = [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] + filt
+				rfsc = rot_avg(vol_ssnr)
+				rfsc.set_value_at(0, 1.0)
+				nrfsc = rfsc.get_xsize()
+				for irf in xrange(nrfsc):
+					qtq = rfsc.get_value_at(irf)
+					if(qtq > 0.0):
+						lqtq = filt[irf]/qtq
+						rfsc.set_value_at(irf, lqtq)
+					else:            rfsc.set_value_at(irf, lqtq)
+				vol_ssnr = vol_ssnr.mult_radial(rfsc)  # adjust radially fsc filter to fsc curve
+				drop_image(vol_ssnr,  os.path.join(outdir, replace("filter%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				#  Filter by volume
+				vol = volo.filter_by_image(vol_ssnr)
+				#vol  = filt_table(volo, filt)
+				#if(center == 1):
+				#	cs   = vol.phase_cog()
+				#	vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
+				#	volo = fshift(volo, -cs[0], -cs[1] -cs[2])
+				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				adam = adaptive_mask(vol, 4000, 2.22)
+				vol = threshold( adam*vol )
+				h = histogram( vol )
+				vol = threshold( adam*volo ) * get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
+				del volo
+				#  Filter by volume
+				vol = vol.filter_by_image(vol_ssnr)
+				#vol  = filt_table(vol, filt)
+				#vol = filt_btwl(vol, fl, fh)
+				drop_image(vol, os.path.join(outdir, replace("vhlf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				del adam, vol_ssnr, rfsc, filt
+				del h
+				"""
+			bcast_EMData_to_all(vol,  myid, main_node)
+			bcast_EMData_to_all(vhlf, myid, main_node)
+			from filter import  filt_tophatb
+			volft,kb  = prep_vol( filt_tophatb(vhlf, 0.20, 0.40, False))
+			from statistics import ccc
+			qcc = []
+			for imn in xrange(image_start, image_end):
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				projt = prgs(volft, kb, [atparams[0], atparams[1], atparams[2], -atparams[3], atparams[4]])
+				qcc.append(ccc(projt, dataim[imn-image_start], mask2D))
+			del projt
+
+
+
+
+			volft,kb  = prep_vol(vol)
+			data = []
+			data.append(volft)
+			data.append(kb)
+			data.append(mask2D)
+
+
+
+			image_start_in_chunk = image_start + ic*n_in_chunk
+			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
+			outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+			outf.flush()
+			#new_params = []
+
+			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
+				ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+				from morphology import ctf_2
+				ctf2 = ctf_2(nx, ctf_params)
+				nct = len(ctf2)
+				from math import exp, sqrt, tanh, pi
+				#parameters of tanh filter are in absolute units.
+				fl = 0.45
+				aa = 0.1
+				envt = []
+				for i in xrange(nct):
+					# e(x)*h(x)/(bckg(x)+e(x)**2*ctf(x)**2/20)
+					xs = float(i)/2.22/nx
+					et = exp(-100.0*xs**2)
+					bckgt = exp(-0.8-100.0*xs**2)+0.01
+					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
+					fmt = H*ht/(bckgt + ctf2[i]*et**2/5.0)
+					envt.append(fmt)
+				from filter import filt_table
+				ima = filt_table(dataim[imn-image_start], envt)
+				data.insert(2, ima)
+
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				#  Align only Euler angles
+				#  change signs of shifts for projections
+				data.insert(3, -atparams[3])
+				data.insert(4, -atparams[4])
+				"""
+				initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write("\n")
+				outf.flush()
+				"""
+				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				optm_params =  amoeba(atparams[0:3], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4,1.e-4,500, data)
+				optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+				"""
+				outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write("\n")
+				outf.flush()
+				"""
+				del  data[2]
+				del  data[2]
+				del  data[2]
+				set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2]], par_str[0:3])
+				#t4 = finish_time(t3)
+			soto = []
+			for imn in xrange(image_start, image_end):
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
+				soto.append([phi,theta,psi,s2x,s2y,imn])
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			del soto
+
+			'''
+			#filt = filt_from_fsc(fscc, 0.05)
+			#vol  = filt_table(vol, filt)
+			lowfq,highfq = filt_params(fscc)
+			vol  = filt_btwl(vol, lowfq, highfq)
+			#  center!
+			cs = vol.phase_cog()
+			vol = fshift(vol, -cs[0], -cs[1] -cs[2])
+			'''
+
+			#from sys import exit
+			#exit()
+		#  here we should write header info, just in case the program crashes...
+	del vol
+	del volft
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+     
+	#if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	#else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+
+
+def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0):
+	"""
+		
+	"""
+	from alignment	    import eqproj
+	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
+	from fundamentals   import fshift, rot_avg_image
+	from projection     import prep_vol
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import read_spider_doc, get_im
+	from reconstruction import rec3D_MPI
+	from math           import pi
+	from string         import replace
+	import os
+	import sys
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_gatherv, mpi_scatterv
+	from mpi 	    import MPI_FLOAT, MPI_INT, MPI_SUM
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	#  chose a random node as a main one...
+	main_node = 0
+	if(myid == main_node):
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nima = EMUtil.get_image_count(stack)
+
+	#nimage_per_node = nima/number_of_proc
+	#image_start = myid * nimage_per_node
+	#if(myid == number_of_proc-1):  image_end = nima
+	#else:                          image_end = image_start + nimage_per_node
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+
+	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
+	if(chunk <= 0.0):  chunk = 1.0
+	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
+	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
+	
+	outf = file(replace("progress%4d"%myid,' ','0'), "w")
+	outf.write("  chunk = "+str(chunk)+"   ")
+	outf.write("\n")
+	outf.flush()
+	outf.write("  n_in_chunk = "+str(n_in_chunk)+"   ")
+	outf.write("  n_of_chunks = "+str(n_of_chunks)+"   ")
+	outf.write("\n")
+	outf.flush()
+	vol = EMData()
+	vol.read_image(ref_vol)
+	nx  = vol.get_xsize()
+	if(ou <= 0):  ou = nx//2-2
+	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
+	if maskfile:
+		import  types
+		if(type(maskfile) is types.StringType):  mask3D=get_image(maskfile)
+		else:                                   mask3D = maskfile
+	else:
+		mask3D = model_circle(ou, nx, nx, nx)
+	mask2D = model_circle(ou, nx, nx)
+
+	dataim = []
+	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+	#                  0                 1            2            3            4                 5                 6
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
+	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
+	for im in xrange(image_start, image_end):
+		ima = EMData()
+		ima.read_image(stack, im)
+		#set_arb_params(ima, prm[im], prm_dict)
+		if(CTF):
+			ctf_params = ima.get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = ima.get_attr( "ctf_applied" )
+			if(ima.get_attr("ctf_applied") == 0):
+				st = Util.infomask(ima, mask2D, False)
+				ima -= st[0]
+				from filter import filt_ctf
+				ima = filt_ctf(ima, ctf_params)
+				ima.set_attr('ctf_applied', 1)
+		dataim.append(ima)
+	outf.write("  data read = "+str(image_start)+"   ")
+	outf.write("\n")
+	outf.flush()
+
+	from  string        import replace
+	from utilities      import bcast_number_to_all
+	from morphology     import adaptive_mask, threshold, threshold_to_minval
+	from statistics     import histogram
+	from reconstruction import recons3d_nn_SSNR_MPI
+
+	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	"""
+	#  Berlin
+	adam = adaptive_mask(vol, 3000, 2.22)
+	vol = threshold( adam*vol)
+	h = histogram( vol )
+	vol *= get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
+	vol = filt_btwl(vol, 0.3, 0.4)
+	"""
+
+	ldef = -1
+	for iteration in xrange(maxit):
+		outf.write("  iteration = "+str(iteration)+"   ")
+		outf.write("\n")
+		outf.flush()
+		for  ic  in xrange(n_of_chunks):
+			# compute updated 3D after each chunk
+ 	    		# resolution
+			outf.write("  begin ssnr = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			if myid == 0:
+				[ssnr1, vol_ssnr] = recons3d_nn_SSNR_MPI(myid, dataim, model_circle(ou, nx, nx), ctf = CTF)
+				del ssnr1
+				#  change volume to fsc
+				vol_ssnr /= vol_ssnr + 1.0
+				#  filter it somewhat
+				vol_ssnr = threshold(filt_gaussl(vol_ssnr, 0.1))
+			else:    recons3d_nn_SSNR_MPI(myid, dataim, model_circle(ou, nx, nx), ctf = CTF)
+			outf.write("  begin reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			volo, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, replace("resolution%3d_%3d"%(iteration, ic),' ','0') ), myid, main_node)
+			outf.write("  done reconstruction = "+str(image_start)+"   ")
+			outf.write("\n")
+			outf.flush()
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				drop_image(volo, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				from fundamentals import rot_avg
+				filt = filt_from_fsc(fscc, 0.1)
+				# This is a cheat - it moves the resolution curve to the right making the filter more lenient
+				#filt = [ 1.0, 1.0, 1.0] + filt
+				#filt = [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] + filt
+				rfsc = rot_avg(vol_ssnr)
+				rfsc.set_value_at(0, 1.0)
+				nrfsc = rfsc.get_xsize()
+				for irf in xrange(nrfsc):
+					qtq = rfsc.get_value_at(irf)
+					if(qtq > 0.0):
+						lqtq = filt[irf]/qtq
+						rfsc.set_value_at(irf, lqtq)
+					else:            rfsc.set_value_at(irf, lqtq)
+				vol_ssnr = vol_ssnr.mult_radial(rfsc)  # adjust radially fsc filter to fsc curve
+				drop_image(vol_ssnr,  os.path.join(outdir, replace("filter%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				#  Filter by volume
+				vol = volo.filter_by_image(vol_ssnr)
+				#vol  = filt_table(volo, filt)
+				#if(center == 1):
+				#	cs   = vol.phase_cog()
+				#	vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
+				#	volo = fshift(volo, -cs[0], -cs[1] -cs[2])
+				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				adam = adaptive_mask(vol, 4000, 2.22)
+				vol = threshold( adam*vol )
+				h = histogram( vol )
+				vol = threshold( adam*volo ) * get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
+				del volo
+				#  Filter by volume
+				vol = vol.filter_by_image(vol_ssnr)
+				#vol  = filt_table(vol, filt)
+				#vol = filt_btwl(vol, fl, fh)
+				drop_image(vol, os.path.join(outdir, replace("vhlf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				del adam, vol_ssnr, rfsc, filt
+				del h
+			bcast_EMData_to_all(vol, myid, main_node)
+
+			volft,kb  = prep_vol(vol)
+			data = []
+			data.append(volft)
+			data.append(kb)
+			data.append(mask2D)
+
+			image_start_in_chunk = image_start + ic*n_in_chunk
+			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
+			outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+			outf.flush()
+
+			#new_params = []
+
+			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
+				"""
+				defocus = dataim[imn-image_start].get_attr('defocus')
+
+				if(defocus != current_defocus):
+					#maft = dataim[imn-image_start].get_attr('matched_filter')
+					ldef += 1
+					if(ldef == 221): ldef = 0
+					c1 = mafi_params[ldef][0]
+					c2 = mafi_params[ldef][1]
+					c3 = mafi_params[ldef][2]
+					c4 = mafi_params[ldef][3]
+					maft = []
+					for j in xrange(150):
+						x = j/2.22/2.0/75.0
+						B  = exp(c1*x**2+c2)
+						E  = (1.-exp(-(x+c3)**2/2./.01**2))/(1.+c4*x**2.2)
+						ffil =  E/B*.5*(tanh(pi*(x+fl)/2./fl/a)-tanh(pi*(x-fl)/2./fl/a))
+						maft.append(ffil)
+
+					from filter import filt_table
+					vol_maft = filt_table(vol, maft)
+					volft,kb  = prep_vol(vol_maft)
+					#volft,kb  = prep_vol(vol)
+					data = []
+					data.append(volft)
+					data.append(kb)
+					data.append(mask2D)
+					current_defocus = defocus
+				"""
+				ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+				from morphology import ctf_2
+				ctf2 = ctf_2(nx, ctf_params)
+				nct = len(ctf2)
+				from math import exp, sqrt, tanh, pi
+				#parameters of tanh filter are in absolute units.
+				fl = 0.45
+				aa = 0.1
+				envt = []
+				for i in xrange(nct):
+					# e(x)*h(x)/(bckg(x)+e(x)**2*ctf(x)**2/20)
+					xs = float(i)/2.22/nx
+					et = exp(-100.0*xs**2)
+					bckgt = exp(-0.8-100.0*xs**2)+0.01
+					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
+					fmt = H*ht/(bckgt + ctf2[i]*et**2/5.0)
+					envt.append(fmt)
+				from filter import filt_table
+				ima = filt_table(dataim[imn-image_start], envt)
+				data.insert(2, ima)
+
+				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				#  change signs of shifts for projections
+				atparams[3] *= -1
+				atparams[4] *= -1
+				"""
+				initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+				outf.write("Image "+str(imn)+"\n")
+				outf.write('Old %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f '%(atparams[0],atparams[1],atparams[2],-atparams[3],-atparams[4], initial))
+				outf.write("\n")
+				outf.flush()
+				"""
+				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
+				#from utilities import start_time, finish_time
+				#t3=start_time()
+				optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 0.05, 0.05], eqproj, 1.e-4,1.e-4,500,data)
+				#  change signs of shifts for header
+				optm_params[0][3] *= -1
+				optm_params[0][4] *= -1
+				optm_params[0].append(imn)
+				#new_params.append(optm_params[0])
+				"""
+				outf.write('New %6.1f  %6.1f  %6.1f  %6.1f  %6.1f   %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+				outf.write("\n")
+				outf.flush()
+				"""
+				del  data[2]
+				set_arb_params(dataim[imn-image_start], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4]], par_str)
+				#t4 = finish_time(t3)
+			soto = []
+			for imn in xrange(image_start, image_end):
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj(dataim[imn-image_start])
+				soto.append([phi,theta,psi,s2x,s2y,imn])
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			del soto
+
+			"""
+			#filt = filt_from_fsc(fscc, 0.05)
+			#vol  = filt_table(vol, filt)
+			lowfq,highfq = filt_params(fscc)
+			vol  = filt_btwl(vol, lowfq, highfq)
+			#  center!
+			cs = vol.phase_cog()
+			vol = fshift(vol, -cs[0], -cs[1] -cs[2])
+			"""
+
+			#from sys import exit
+			#exit()
+		#  here we should write header info, just in case the program crashes...
+	del vol
+	del volft
+	# write out headers  and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+     
+	#if(CTF and data_had_ctf == 0):
+	#	for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
+	#if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	#else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+'''
+
+
+"""
+def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", randomize = False):
+	from fundamentals import resample
+	from utilities    import model_circle, get_arb_params, set_arb_params, get_image, get_params2D, set_params2D
+	from applications import ali2d_a
+	import os
+	
+	from utilities import print_begin_msg, print_end_msg, print_msg
+	import	types
+
+	print_begin_msg("ali2d_reduce")
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+
+	nima = EMUtil.get_image_count(stack)
+	ima = EMData()
+	ima.read_image(stack, 0, True)
+	if CTF:
+		if(ima.get_attr_default('ctf_applied', 2) > 0):
+			ERROR("data cannot be ctf-applied","ali2d_ar",1)
+		pixel_size = ima.get_attr('Pixel_size')
+	nx = ima.get_xsize()
+
+	downsmpl = []
+	qt = max(min(nx//2-ou, nx//32), 1)
+	downsmpl.append(qt)
+	if(qt > 2):
+		while qt > 0:
+			qt = qt//2
+			downsmpl.append(qt)
+		del downsmpl[len(downsmpl)-1]
+	if(downsmpl[len(downsmpl)-1] > 1):  downsmpl.append(1)
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Inner radius                : %i\n"%(first_ring))
+	# default value for the last ring
+	if (last_ring == -1):  last_ring = nx//2-2
+
+	print_msg("Outer radius                : %i\n"%(last_ring))
+	print_msg("Ring step                   : %i\n"%(rstep))
+	print_msg("Center type                 : %i\n"%(center))
+	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Data with CTF               : %s\n"%(CTF))
+
+	if os.path.exists(outdir):
+		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	os.mkdir(outdir)
+
+	if maskfile:
+		if(type(maskfile) is types.StringType):
+			print_msg("Maskfile                    : %s\n\n"%(maskfile))
+			mask=get_image(maskfile)
+		else:
+			print_msg("Maskfile                    : user provided in-core mask\n\n")
+			mask = maskfile
+	else :
+		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		mask = model_circle(last_ring, nx, nx)
+
+	if(len(downsmpl) == 1):
+		outdir_temp = os.path.join(outdir,"001")
+		ali2d_a(stack, outdir_temp, maskfile, ir, ou, rs, xr="1.0", yr="1.0", ts="0.2", center=center, maxit=maxit, CTF=CTF, user_func_name=user_func_name)
+	else:
+		attributes = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
+
+		for nd in downsmpl:
+			outdir_temp = os.path.join(outdir,"%03d"%(downsmpl.index(nd)))
+			os.mkdir(outdir_temp)
+			if(nd > 1):
+				sub_rate = 1.0/float(nd)
+				ou_temp = max(int(ou*sub_rate),2)
+				if CTF:  npx = pixel_size/sub_rate
+				print_msg("New level of reduction	  x: %i\n"%(nd))
+				print_msg("Pixel size used		   : %f\n"%(npx))
+				maskfile_temp = resample(mask, sub_rate, fit_to_fft = True, num_prime = 5)
+				tnx = maskfile_temp.get_xsize()
+				print_msg("Image size used		   : %i\n"%(tnx))
+				stack_temp = os.path.join(outdir,"temp%03d.hdf"%(downsmpl.index(nd)))
+				for im in xrange(nima):
+					ima = EMData()
+					ima.read_image(stack, im)
+					t = get_params2D(ima)
+					if CTF:
+						prm = get_arb_params(ima, attributes)
+						prm[0] = npx
+					ima = resample(ima, sub_rate, fit_to_fft=True, num_prime=5)
+					if(nd == downsmpl[0]):
+						t[1] *= sub_rate
+						t[2] *= sub_rate
+						set_params2D(ima, t)
+					else:
+						imold = EMData()
+						imold.read_image(stack_previous ,im, True)
+						prm_previous = get_params2D(imold)
+						prm_previous[1] *= sub_rate/sub_rate_previous
+						prm_previous[2] *= sub_rate/sub_rate_previous
+						set_params2D(ima, prm_previous)
+					if CTF: set_arb_params(ima, prm, attributes)
+					ima.write_image(stack_temp, im)
+				if(nd != downsmpl[0]):  os.system('rm -rf '+stack_previous)
+			else:
+				print_msg("Original image size     : %i\n"%(nx))
+				print_msg("Pixel size              : %f\n"%(pixel_size))
+				stack_temp = stack
+				sub_rate = 1.0
+				maskfile_temp = maskfile
+				ou_temp = ou
+				if(sub_rate_previous != 1.0):
+					for im in xrange(nima):
+						ima = EMData()
+						ima.read_image(stack, im, True)
+						imold = EMData()
+						imold.read_image(stack_previous ,im, True)
+						prm_previous = get_params2D(imold)
+						prm_previous[1] *= sub_rate_previous
+						prm_previous[2] *= sub_rate_previous
+						set_params2D(ima, prm_previous)
+						ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+					os.system('rm -rf '+stack_previous)
+
+			ali2d_a(stack_temp, outdir_temp, maskfile_temp, ir, ou_temp, rs, xr="1.0", yr="1.0", ts="0.2", center=center, maxit=maxit, CTF=CTF, user_func_name=user_func_name)
+			stack_previous = stack_temp
+			sub_rate_previous = sub_rate
+
+	print_end_msg("ali2d_reduce")
+
+
+def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, gradient=True, opti_method="LBFGSB", MPI=False):
+		
+	if MPI:
+		ali2d_reduce_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, \
+		CTF, snr, Fourvar, user_func_name, rand_alpha, decimation, gradient, opti_method)
+		return
+
+def ali2d_reduce_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0,\
+		CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", rand_alpha=False, decimation=4, gradient=True, opti_method="LBFGSB"):
+
+	from utilities    import get_im, file_type, get_params2D, set_params2D, get_image, model_circle
+	from fundamentals import image_decimate
+	from utilities    import print_msg, print_begin_msg, print_end_msg
+	from string       import replace
+	from development  import ali_SSNR
+	import os
+	import sys
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	if myid == main_node:   
+		print_begin_msg("ali2d_reduce_MPI")
+
+	ftp = file_type(stack)
+	if ftp == "hdf":
+		small_stack = replace(stack, ".hdf", "_small.hdf")
+	elif ftp == "bdb":
+		small_stack = stack+"_small"
+	else:
+		print "Invalid file type!"
+		return
+
+	last_ring = int(ou)
+	nima = EMUtil.get_image_count(stack)
+	img = get_im(stack, myid)
+	nx = img.get_xsize()
+	if nx/decimation < 32:	decimation = nx/32
+	if last_ring == -1:  last_ring = nx/2-2	
+
+	if myid == main_node:   
+		for i in xrange(nima):
+			img.read_image(stack, i)
+			img_small = image_decimate(img, decimation)
+			active = img.get_attr("active")
+			alpha, sx, sy, mirror, scale = get_params2D(img)
+			img_small.set_attr_dict({"active": active})
+			set_params2D(img_small, [alpha, sx/float(decimation), sy/float(decimation), mirror, scale])
+			img_small.write_image(small_stack, i)
+			
+	if maskfile:
+		import  types
+		if type(maskfile) is types.StringType:  mask = get_image(maskfile)
+		else:	mask = maskfile
+	else: mask = model_circle(last_ring, nx, nx)
+
+	mask_small = image_decimate(mask, decimation)
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	ali2d_c(small_stack, outdir, mask_small, ir, last_ring/decimation, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, rand_alpha, True)
+
+	if myid == main_node:   
+		for i in xrange(nima):
+			img.read_image(stack, i)
+			img_small.read_image(small_stack, i)
+			alpha, sx, sy, mirror, scale = get_params2D(img_small)
+			set_params2D(img, [alpha, sx*decimation, sy*decimation, mirror, scale])
+			img.write_image(stack, i)
+		os.system("rm -f "+small_stack)
+	
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if gradient:	
+		ali_SSNR(stack, mask, last_ring, maxit=10, CTF=CTF, opti_method=opti_method, MPI=True)
+		
+	if myid == main_node:
+		print_end_msg("ali2d_reduce_MPI")
+"""

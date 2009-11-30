@@ -1097,7 +1097,6 @@ def varfctf(data, mask = None, mode=""):
 	from utilities    import get_arb_params, get_params2D
 	import  types
 
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	if (type(data) is types.StringType):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()

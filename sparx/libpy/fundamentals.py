@@ -237,7 +237,7 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and subsample 2D image
 		sub_rate < 1.0, subsampling rate
-		fit_to_fft will channge the ouput image size
+		fit_to_fft will change the ouput image size to an fft_friendly size
 	"""
 
 	from filter       import filt_btwl
@@ -291,12 +291,10 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 			e = rtshg(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"), scale = sub_rate)
 	
 	# Automatically adjust pixel size for ctf parameters
-	attr_list = img.get_attr_dict()
-	if attr_list.has_key("ctf"):
-		from utilities import set_ctf, get_ctf
-		defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
-		apix /= sub_rate
-   		set_ctf(e, [defocus, cs, voltage, apix, bfactor, ampcont])
+	from utilities import get_pixel_size, set_pixel_size
+	apix = get_pixel_size(e)
+	apix /= sub_rate
+	set_pixel_size(e, apix)
 		
 	return 	e
 

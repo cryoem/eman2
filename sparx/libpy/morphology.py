@@ -477,7 +477,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 				mic_name  = os.path.join(micdir,"micrograph"+ fnam_root+ ".hdf")
 				if os.path.exists(mic_name) :
 					e = get_image (mic_name)
-					set_arb_params(e, ctf_param, ctf_dicts)
+					U______set_arb_params(e, ctf_param, ctf_dicts)  # THIS IS INCORRECT< PLEASE CHANGE
 					e.write_image(mic_name,0, EMUtil.ImageType.IMAGE_HDF, True)
 					print "ctf parameters is written back into headers of ", mic_name
 				#else :  print  mic_name, " Not found"
