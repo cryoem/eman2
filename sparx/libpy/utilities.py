@@ -2762,12 +2762,16 @@ def get_pixel_size(img):
 	if(cc == None):
 		p2 = -1.0
 	else:
-		p2 = cc.apix
-	if( (p1 != p2) or ( (p1 == -1.0) and (p2 == -1.0)) ):
-		ERROR("Pixel size not set or set incorrectly","get_pixel_size",0)
+		p2 = int(cc.apix*1000000)/1.e6
+	if( ( (p1 == -1.0) and (p2 == -1.0) ) ):
+		ERROR("Pixel size not set","get_pixel_size",0)
 		return -1.0
-	else:
+	elif(p1 > -1.0 and p2 > -1.0):
+		if(p1 != p2):
+			ERROR("Conflict between pixel size in attribute and in ctf object","get_pixel_size",0)
 		# pixel size is positive, so what follows ommits -1 problem
+		return  max(p1,p2)
+	else:
 		return  max(p1,p2)
 
 def set_pixel_size(img, pixel_size):
