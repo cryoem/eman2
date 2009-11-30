@@ -10842,6 +10842,113 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 
 	mpi_barrier(MPI_COMM_WORLD)
 
+# K-means main stability stream command line, CUDA version
+def k_means_stab_MPICUDA_stream_DEV(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi        import mpi_bcast, MPI_INT, mpi_split
+	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	from statistics import k_means_stab_asg2part, k_means_stab_export
+	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
+	from statistics import k_means_stab_pwa, k_means_stab_H
+	from statistics import k_means_CUDA_MPI
+	import sys, os, logging, pickle
+
+	sys.argv  = mpi_init(len(sys.argv), sys.argv)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	grpid     = myid  % number_grps_MPI
+	subid     = myid // number_grps_MPI
+	SUB_COMM  = mpi_comm_split(MPI_COMM_WORLD, subid, grpid)
+	ngrp      = mpi_comm_size(SUB_COMM)
+	main_grp  = 0
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+
+	nx = 0
+        if myid == main_node:
+		if os.path.exists(outdir):
+			nx = 1
+			ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
+		else:
+			os.system( "mkdir " + outdir )
+	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = int(nx[0])
+	if(nx != 0):
+		import sys
+		exit()
+
+	mpi_barrier( MPI_COMM_WORLD )
+
+	if myid == main_node:
+		# create main log
+		f = open(outdir + '/main_log.txt', 'w')
+		f.close()
+
+		logging.basicConfig(filename = outdir + '/main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+		logging.info('::: Start k-means stability :::')
+
+	# manage random seed
+	if(myid != main_node):
+		from random import jumpahead
+		jumpahead(17*myid + 123)
+	rnd = []
+	if(rand_seed > 0):
+		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+	else:
+		from random import randint
+		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
+	if myid == main_node:
+		logging.info('Init list random seed: %s' % rnd)
+		logging.info('K = %03d %s' % (K, 40 * '-'))
+
+	# open unstable images
+	if myid == main_node: logging.info('... Open images')
+	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
+	if myid == main_node: logging.info('... %d unstable images found' % N)
+	if N < 2:
+		if myid == main_node: logging.info('[STOP] Not enough images')
+		sys.exit()
+
+	if myid == main_node:
+		print_begin_msg('k-means')
+		k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, ncpu, m)
+
+	# classification
+	k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, myid, main_node, ncpu, outdir, TXT, npart, logging)
+	
+	if myid == main_node:
+		# end of classification
+		print_end_msg('k-means')
+
+		# read assignment and convert to partition
+		logging.info('... Matching')
+		ALL_PART = k_means_stab_asg2part(outdir, npart)
+
+		# calculate the stability
+		if match   == 'hh':
+			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+		elif match == 'pwa':
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+
+		# export the stable class averages
+		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
+		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
+
+		# tag informations to the header
+		logging.info('... Update info to the header')
+		k_means_stab_update_tag(stack, STB_PART, id_rejected)
+
+		logging.info('::: END k-means stability :::')
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+
 # K-means main stability stream command line
 def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
@@ -11082,14 +11189,16 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 # Plot angles distribution on a hemisphere from a list of given projection
 def plot_projs_distrib(stack, outplot):
 	from projection import plot_angles
-	from utilities  import get_params_proj
+	from utilities  import get_params_proj, file_type
 	import sys
 
 	N    = EMUtil.get_image_count(stack)
-	im   = EMData()
+	ext  = file_type(stack)
+	if ext == 'bdb': DB = db_open_dict(stack)
 	agls = []
 	for n in xrange(N):
-		im.read_image(stack, n)
+		im = EMData()
+		im.read_image(stack, n, True)
 		try:
 			p = get_params_proj(im)
 		except RuntimeError:
@@ -11100,6 +11209,8 @@ def plot_projs_distrib(stack, outplot):
 
 	im = plot_angles(agls)
 	im.write_image(outplot, 0)
+
+	if ext == 'bdb': DB.close()
 
 # 2008-12-08 12:46:46 JB
 # Wrap for the HAC part of py_cluster in the statistics.py file
