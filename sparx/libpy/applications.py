@@ -6254,7 +6254,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 	else:
 		mask3D = model_circle(ou, nx, nx, nx)
 
-	mask2D = model_circle(ou, nx, nx)
+	mask2D  = model_circle(ou, nx, nx)
 	fscmask = model_circle(ou,nx, nx, nx)
 
 	numref = EMUtil.get_image_count(refvol)
@@ -6320,14 +6320,14 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=None)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:
 			varf = 1.0/varf
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
 			print_msg("Time to calculate 3D Fourier variance = %d\n"%(time()-start_time))
 			start_time = time()
-	else:  
+	else:
 		varf = None
 
 
