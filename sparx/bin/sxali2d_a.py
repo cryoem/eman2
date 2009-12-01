@@ -80,7 +80,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.number_of_ave, options.CTF, options.SNR, options.function, options.restart, options.MPI)
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.number_of_ave, options.CTF, options.snr, options.function, options.restart, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
