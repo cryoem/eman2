@@ -2661,7 +2661,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
-	from utilities    import write_text_file, get_params2D, set_params2D, combine_params2, inverse_transform2
+	from utilities    import write_text_file, get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
