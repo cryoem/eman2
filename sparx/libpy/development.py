@@ -13208,7 +13208,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 			            refvols[irefvol] = fshift(refvols[irefvol], -cs[0], -cs[1] -cs[2])
                                     refvols[irefvol] = refine_with_mask(refvols[irefvol])
  
-                                    '''
+                                    """
                                     if iref > 0 :
                                         refvols[2*iref  ] = ali_with_mask(refvols[2*iref  ], refvols[0], ali_mask)
                                         outf.write( "%4d aligned\n" % (2*iref) )
@@ -13217,7 +13217,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
                                         refvols[2*iref+1] = ali_with_mask(refvols[2*iref+1], refvols[1], ali_mask) 
                                         outf.write( "%4d aligned\n" % (2*iref+1) )
                                         outf.flush()
-                                    '''
+                                    """
 
 			    	    drop_image(refvols[irefvol],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, irefvol),' ','0')), "s")
 
@@ -14245,7 +14245,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
 
-			'''
+			"""
 			#filt = filt_from_fsc(fscc, 0.05)
 			#vol  = filt_table(vol, filt)
 			lowfq,highfq = filt_params(fscc)
@@ -14253,7 +14253,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 			#  center!
 			cs = vol.phase_cog()
 			vol = fshift(vol, -cs[0], -cs[1] -cs[2])
-			'''
+			"""
 
 			#from sys import exit
 			#exit()
