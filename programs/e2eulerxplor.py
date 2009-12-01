@@ -578,7 +578,12 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			#xyd.set_xy_list(xcurve,curve)
 			#filt=self.average.process("filter.setstrucfac",{"apix":apix,"strucfac":xyd})
 			#filt.process_inplace("normalize.toimage",{"to":self.average})
-			filt=self.average.process("filter.matchto",{"to":self.projection})
+			self.projection["apix_x"]=self.average["apix_x"]
+			self.projection["apix_y"]=self.average["apix_y"]
+			self.projection["apix_z"]=self.average["apix_z"]
+			filt=self.projection.process("threshold.notzero")
+			filt.mult(self.average)
+			filt.process_inplace("filter.matchto",{"to":self.projection})
 
 			disp.append(filt)
 			

@@ -500,8 +500,8 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 
 	try:
 		output.set_attr("ptcl_repr",ptcl)
-		if len(included>0) : output.set_attr("threed_ptcl_idxs",included)
-		if len(excluded>0) : output.set_attr("threed_excl_ptcl_idxs",excluded)
+		if len(included)>0 : output.set_attr("threed_ptcl_idxs",included)
+		if len(excluded)>0 : output.set_attr("threed_excl_ptcl_idxs",excluded)
 		output.set_attr("threed_ptcl_src",data[0]["filename"])
 	except:
 		print "Warning, error setting reconstruction attributes"

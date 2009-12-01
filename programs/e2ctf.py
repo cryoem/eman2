@@ -843,6 +843,10 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	s0=int(.04/ds)
 	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
 	print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
+
+	if s1<=s0 :
+		print "Error: couldn't fit this data set due to inability to locate appropriate minima"
+		return ctf	# This way we can still proceed to the GUI... a bit of a bad hack...
 	
 	if debug:
 		dfout=file("ctf.df.txt","w")
