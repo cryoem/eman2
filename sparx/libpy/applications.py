@@ -2990,7 +2990,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					for p in xrange(20):
 						print_msg("      %10.6f: %5d\n"%(region[p], hist[p]))
 					print_msg("\n\n\n")
-		if CUDA: R.finish(True)
+		if CUDA: R.finish()
 
 	if CUDA:
 		for im in xrange(len(data)):
