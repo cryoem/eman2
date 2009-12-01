@@ -31,9 +31,9 @@
 from EMAN2_cppwrap import *
 from global_def import *
 
-def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, user_func_name="ref_ali2d", restart=-1, MPI=False):
+def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, MPI=False):
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, number_of_ave, CTF, user_func_name, restart)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, number_of_ave, CTF, snr, user_func_name, restart)
 		return
 	
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
@@ -226,7 +226,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, user_func_name="ref_ali2d", restart=-1):
+def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, snr=1.0, user_func_name="ref_ali2d", restart=-1):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -363,6 +363,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Data with CTF               : %s\n"%(CTF))
+		print_msg("Signal-to-noise ratio       : %f\n"%(snr))
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
 		else:         print_msg("Stop iteration with         : maxit\n")
 		print_msg("User function               : %s\n"%(user_func_name))
@@ -406,6 +407,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
+		ctf_2_sum += 1/snr
 	else:
 		for im in xrange(len(data)):
 			st = Util.infomask(data[im], mask, False)
