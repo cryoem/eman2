@@ -1873,8 +1873,8 @@ def k_means_criterion(Cls, crit_name=''):
 	# return the results
 	return Crit
 
-# K-means SA selection, modification of the function alignment.py/select_K which don't work
-# very well for k-means, error of selection, not enough smooth, ... JB 2009-01-16 12:30:43
+# K-means SA selection, modification of the function alignment.py/select_K which didn't work
+# very well for k-means, error of selection, insufficiently smooth, ... JB 2009-01-16 12:30:43
 def select_kmeans(dJe, T):
 	from random import random
 	from math   import exp
@@ -1884,11 +1884,10 @@ def select_kmeans(dJe, T):
 	pw   = 1.0 / T
 	sump = 0.0
 	for k in xrange(K):
-	    arg = -dJe[k] * pw
-	    if arg < -30: arg = -30
-	    if arg >  30: arg =  30
+	    arg    = -dJe[k] * pw
+	    arg    = min( max(arg, -30.0), 30.0)
 	    p[k][0] = exp(arg)
-	    sump    += p[k][0]
+	    sump  += p[k][0]
 
 	for k in xrange(K): p[k][0] /= sump
 	p.sort()
