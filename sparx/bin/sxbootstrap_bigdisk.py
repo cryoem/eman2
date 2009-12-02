@@ -1,4 +1,4 @@
-#!/share/home/01102/pawelpap/EMAN2/python/Python-2.5.4-ucs4/bin/python
+#!/usr/bin/env python
 
 import global_def
 from   global_def import *
@@ -36,7 +36,7 @@ def bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
         		pbeg = iblock*blocksize
         		pend = pbeg + blocksize
 
-		start_time = time()		
+		start_time = time()
 		ostore.read( pend - pbeg )
  		if not(info is None):
 			t = time()
@@ -167,7 +167,9 @@ def write_mults( fmults, kiter, mults ):
 	fmults.flush()
 
 
-def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, genbuf, ngroup, CTF, npad, MPI, myid, ncpu, verbose = 0 ) :
+def bootstrap( prjfile, accup, outdir, bufprefix, nbufvol, nvol, seedbase,\
+		snr, genbuf, ngroup, CTF, npad,\
+		MPI, myid, ncpu, core, boot, keep, verbose = 0 ) :
 	from random import seed, jumpahead
 	import os
 
@@ -176,8 +178,6 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	if MPI:
 		from mpi import mpi_barrier, MPI_COMM_WORLD
 
-	# change weights to cummulative probabilities
-	wgts = prepare_wgts( wgts )
 
 	if myid==0:
 		if os.path.exists(outdir):
@@ -193,6 +193,8 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 	groupsize = ncpu/ngroup
 	if genbuf and (myid%groupsize==0):
 		bootstrap_genbuf( prjfile, bufprefix, 0, nprj, CTF, npad, finfo )
+		from sys import exit
+		exit()
 
 	if genbuf and MPI:
 		mpi_barrier( MPI_COMM_WORLD )
@@ -213,8 +215,18 @@ def bootstrap( prjfile, wgts, outdir, bufprefix, nbufvol, nvol, seedbase, snr, g
 			finfo.flush()
 
 		iter_start = time()
-		mults = bootstrap_mults(wgts, nbufvol, 0, nprj)
-
+		if( core ):
+			mus = bootstrap_mults(accup, nbufvol, 0, len(accup))
+			mults = []
+			for j in xrange(len(mus)):
+				mults.append([0]*(len(boot)+len(keep)))
+				for i in xrange(len(keep)):
+					mults[j][keep[i]] = 1
+				for i in xrange(len(boot)):
+					mults[j][boot[i]] = mus[j][i]
+			del mus
+		else:
+			mults = bootstrap_mults(accup, nbufvol, 0, len(accup))
 		assert len(mults)==nbufvol
 		rectors, fftvols, wgtvols = bootstrap_prepare( prjfile, nbufvol, snr, CTF, npad )
 		bootstrap_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, finfo )
@@ -247,6 +259,7 @@ def main():
 	parser.add_option("--npad",     type="int",          default=2,     help="times of padding")
 	parser.add_option("--seedbase", type="int",          default=-1,    help="random seed base")
 	parser.add_option("--MPI",      action="store_true", default=False, help="use MPI")
+	parser.add_option("--core",     action="store_true", default=False, help="keep projections with high weights without resampling")
 	parser.add_option("--verbose",  type="int",          default=0,     help="verbose level: 0 no, 1 yes")
 
 	(options, args) = parser.parse_args( arglist[1:] )
@@ -293,14 +306,34 @@ def main():
 			wgts[i] = [wgts[i], i]
 		import operator
 		wgts.sort(key=operator.itemgetter(0))
-		for i in xrange(int(n*(1.0-options.zero_wgts)),n):
-			wgts[i][0]=0.0
-		wgts.sort(key=operator.itemgetter(1))
-		for i in xrange(n):
-			wgts[i] = wgts[i][0]
+
+		if( options.core ):
+			keep = []
+			for i in xrange(int(n*(1.0-options.zero_wgts)),n):
+				keep.append(wgts[i][1])
+			keep.sort()
+			del wgts[int(n*(1.0-options.zero_wgts)):]
+			# unsort the remainder
+			wgts.sort(key=operator.itemgetter(1))
+			boot = []
+			for i in xrange(len(wgts)):
+				boot.append(wgts[i][1])
+				wgts[i] = wgts[i][0]
+		else:
+			for i in xrange(int(n*(1.0-options.zero_wgts)),n):
+				wgts[i][0]=0.0
+			wgts.sort(key=operator.itemgetter(1))
+			for i in xrange(n):
+				wgts[i] = wgts[i][0]
+			boot = None
+			keep = None
+	# change weights to cummulative probabilities
+	wgts = prepare_wgts( wgts )
 	outdir = args[2]
 	bufprefix = args[3]
-	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase, options.snr, options.genbuf, options.ngroup, options.CTF, options.npad, options.MPI, myid, ncpu, options.verbose )
+	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase,\
+	           options.snr, options.genbuf, options.ngroup, options.CTF, options.npad,\
+		   options.MPI, myid, ncpu, options.core, boot, keep, options.verbose )
 
 
 if __name__ == "__main__":
