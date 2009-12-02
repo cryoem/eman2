@@ -961,6 +961,10 @@ EMData *StandardProjector::project3d(EMData * image) const
 		}
 		proj->update();
 		proj->set_attr("xform.projection",t3d);
+		proj->set_attr("apix_x",(float)image->get_attr("apix_x"));
+		proj->set_attr("apix_y",(float)image->get_attr("apix_y"));
+		proj->set_attr("apix_z",(float)image->get_attr("apix_z"));
+		
 		if(t3d) {delete t3d; t3d=0;}
 		return proj;
 	}

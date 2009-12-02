@@ -39,11 +39,6 @@ from math import *
 import os
 import sys
 from e2simmx import cmponetomany
-from e2make3d import fourier_reconstruction
-
-class silly:
-	"""This class exists so we can pass an object in to fourier_reconstruction"""
-	pass
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -137,20 +132,40 @@ def main():
 			# 3-D reconstruction
 			pad=(boxsize*3/2)
 			pad-=pad%8
-			recon=Reconstructors.get("fourier", {"quiet":True,"sym":options.sym,"x_in":pad,"y_in":pad})
-			recon.setup()
-			qual=0
-			for ri in range(3):
-				if ri>0 :
-					for i,p in enumerate(aptcls):
-						p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-						recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
-						#if ri==2 : qual+=recon.get_score(i)
-				for p in aptcls:
-					p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-					recon.insert_slice(p2,p["xform.projection"],1.0)
-			threed.append(recon.finish(False))
+			recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad]})
 			
+			# insert slices into initial volume
+			recon.setup()
+			for p in aptcls:
+				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				p3=recon.preprocess_slice(p2,p["xform.projection"])
+				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
+				
+			# check particle qualities
+			quals=[]
+			for i,p in enumerate(aptcls):
+				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				p3=recon.preprocess_slice(p2,p["xform.projection"])
+				recon.determine_slice_agreement(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0),True)
+				p.mult(p3["reconstruct_norm"])
+				p["reconstruct_absqual"]=p3["reconstruct_absqual"]
+				quals.append(p3["reconstruct_absqual"])
+				
+			quals.sort()
+			qual_cutoff=quals[len(quals)/8]		#not using this right now
+			qual=sum(quals)
+			
+			mdl=recon.finish(True)
+
+			# insert normalized slices
+			recon.setup()
+			for p in aptcls:
+				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				p3=recon.preprocess_slice(p2,p["xform.projection"])
+				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
+
+			threed.append(recon.finish(True))
+		
 			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
 			
 			threed[-1].process_inplace("xform.centerofmass")
