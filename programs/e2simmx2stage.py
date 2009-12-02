@@ -67,8 +67,9 @@ def main():
 #	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
-	parser.add_option("--shrinks1", type="int",default=None,help="Shrinking performed for first stage classification, default=2",default=2)
+	parser.add_option("--shrinks1", type="int",help="Shrinking performed for first stage classification, default=2",default=2)
 	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
+	parser.add_option("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
 	
@@ -79,37 +80,59 @@ def main():
 
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
-	clen_stg1=sqrt(clen*3)
+	clen_stg1=int(sqrt(clen*3))
 
 	print "%d references, using %d stage 1 averaged references"%(clen,clen_stg1)
 
 	############### Step 1 - classify the reference images
+
+	# compute the reference self-similarity matrix
 	cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali"%(args[0],args[0],args[3],options.shrinks1)
 	if options.parallel!=None : cmd+=" --parallel="+options.parallel
 	print "executing ",cmd
 	os.system(cmd)
 	
 	# Go through the reference self-simmx and determine the most self-dissimilar set of references
+	print "Finding dissimilar classification centers"
 	ref_simmx=EMData(args[3],0)
+	ref_orts=EMData.read_images(args[3],(1,2,3,4))
 	centers=[0]		# start with the first (generally a top view) image regardless 
 	for i in xrange(clen_stg1-1) :
 		best=(0,-1)
 		for j in xrange(clen):
 			if j in centers : continue
 			simsum=0
-			for k in refs: 
+			for k in centers: 
 				simsum+=ref_simmx[j,k]
 			if best[1]<0 or simsum>best[0] : best=(simsum,j)
 		centers.append(best[1])
+		
+	print centers
 
 	# now associate each reference with the closest 3 centers
-	centers=[[i] for i in centers]		# each center becomes a list to start the process
+	print "Associating references with centers"
+	classes=[[] for i in centers]	# each center becomes a list to start the process
 	for i in xrange(clen):
-		quals=[(ref_simmx[i,k[0]],j) for j,k in enumerate(centers)]
+		quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 		quals.sort()
-		for j in xrange(3):
+		for j in xrange(3): classes[quals[j][1]].append(i)
+	
+	# now generate an averaged reference for each center
+	print "Averaging for each center"
+	for ii,i in enumerate(classes):
+		print "%d.  %d"%(ii,len(i)),i[:6]
+		avg=EMData(args[0],i[0])
+		for j in i[1:]:
+			tmp=EMData(args[0],j)
+#			print ref_orts[0][i[0],j],"\t",ref_orts[1][i[0],j],"\t",ref_orts[2][i[0],j],"\t",int(ref_orts[3][i[0],j])
+			xf=Transform({"type":"2d","tx":ref_orts[0][i[0],j],"ty":ref_orts[1][i[0],j],"alpha":ref_orts[2][i[0],j],"mirror":bool(ref_orts[3][i[0],j])})
+			tmp.process_inplace("math.transform",{"transform":xf})
+			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
+			avg.add(tmp)
+		avg.write_image(args[4],-1)
+			
 
-	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
+#	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 	
 	E2end(E2n)
 	
