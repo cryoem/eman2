@@ -107,7 +107,7 @@ def main():
 			if best[1]<0 or simsum>best[0] : best=(simsum,j)
 		centers.append(best[1])
 		
-	print centers
+#	print centers
 
 	# now associate each reference with the closest 3 centers
 	print "Associating references with centers"
@@ -120,17 +120,32 @@ def main():
 	# now generate an averaged reference for each center
 	print "Averaging for each center"
 	for ii,i in enumerate(classes):
-		print "%d.  %d"%(ii,len(i)),i[:6]
+#		print "%d.  %d"%(ii,len(i)),i[:6]
 		avg=EMData(args[0],i[0])
 		for j in i[1:]:
 			tmp=EMData(args[0],j)
 #			print ref_orts[0][i[0],j],"\t",ref_orts[1][i[0],j],"\t",ref_orts[2][i[0],j],"\t",int(ref_orts[3][i[0],j])
 			xf=Transform({"type":"2d","tx":ref_orts[0][i[0],j],"ty":ref_orts[1][i[0],j],"alpha":ref_orts[2][i[0],j],"mirror":bool(ref_orts[3][i[0],j])})
 			tmp.process_inplace("math.transform",{"transform":xf})
-			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
+#			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
 			avg.add(tmp)
+
+		avg.mult(1.0/len(i))
+		avg["class_ptcl_idxs"]=i
+		avg["class_ptcl_src"]=args[0]
 		avg.write_image(args[4],-1)
 			
+	############### Step 2 - classify the particles against the averaged references
+	print "First stage particle classification"
+	cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s --exclude=%s --force --saveali"%(args[4],args[1],args[5],options.shrinks1,
+		options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp,options.exclude)
+	if options.parallel!=None : cmd+=" --parallel="+options.parallel
+	print "executing ",cmd
+	os.system(cmd)
+	
+	# Now we need to convert this small classification into a 'seed' for the large classification matrix for simplicity
+	print "Seeding full classification matrix"
+
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 	
