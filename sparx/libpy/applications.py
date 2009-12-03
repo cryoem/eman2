@@ -6605,8 +6605,8 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		ami =  1.e23
 		for im in xrange(nima):
 			for krf in xrange(numref):
-				ama = max(all_peaks[im][krf])
-				ami = min(all_peaks[im][krf])
+				ama = max(all_peaks[im][krf], ama)
+				ami = min(all_peaks[im][krf], ami)
 		scale = 1.0/(ama-ami)
 		for im in xrange(nima):
 			for krf in xrange(numref):
