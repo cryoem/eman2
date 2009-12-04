@@ -104,6 +104,7 @@ EMData* EMNumPy::numpy2em(python::numeric::array& array)
 	}
 
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
+	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
 	int ndim = array_ptr->nd;
 	char data_type = array_ptr->descr->type;
 
