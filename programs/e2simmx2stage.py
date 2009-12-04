@@ -64,7 +64,7 @@ def main():
 	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
-#	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
+#	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
 	parser.add_option("--shrinks1", type="int",help="Shrinking performed for first stage classification, default=2",default=2)
@@ -137,7 +137,7 @@ def main():
 			
 	############### Step 2 - classify the particles against the averaged references
 	print "First stage particle classification"
-	cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s --exclude=%s --force --saveali"%(args[4],args[1],args[5],options.shrinks1,
+	cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s --exclude=%s --saveali"%(args[4],args[1],args[5],options.shrinks1,
 		options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp,options.exclude)
 	if options.parallel!=None : cmd+=" --parallel="+options.parallel
 	print "executing ",cmd
@@ -145,7 +145,19 @@ def main():
 	
 	# Now we need to convert this small classification into a 'seed' for the large classification matrix for simplicity
 	print "Seeding full classification matrix"
+	mxstg1=EMData(args[5],0)
+	mx=EMData(clen,rlen,1)
+	if options.saveali:
+		mx.to_zero()
+		for i in range(1,5): mx.write_image(args[3],i)		# seed alignment data with nothing
 
+	for ptcl in range(rlen):
+		for cls1 in range(clen_stg1):
+			val=mxstg1(cls1,ptcl)
+			for i in classes[cls1]: mx[i,ptcl]=val
+			
+	mx.update()
+	mx.write_image(args[2],0)
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 	
