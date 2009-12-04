@@ -2784,3 +2784,58 @@ def set_pixel_size(img, pixel_size):
 	if(cc):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
+
+def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
+	"""
+	This function estimate the stability of two datasets
+	It returns three values, the first is the mirror consistent rate
+	The second is the average pixel error among the mirror consistent images
+	The third is the cross_correltion coefficient of two averages
+	"""
+
+	from statistics import sum_oe, ccc
+	from fundamentals import fft, rot_shift2D
+	from alignment import align2d
+	from utilities import get_params2D, combine_params2
+	from math import sin, pi, sqrt
+
+	PI_180 = pi/180
+	nima = len(data1)
+	nx = data1[0].get_xsize()
+	if last_ring == -1: last_ring = nx/2-2
+	if CTF:
+		ctf_2_sum = EMData(nx, nx, 1, False)
+		for im in xrange(nima):
+			ctf_params = data1[im].get_attr("ctf")
+			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+		ctf_2_sum += 1/snr
+
+	av1, av2 = sum_oe(data1, "a", CTF, EMData())
+	if CTF:
+		ave1 = fft(Util.divn_img(fft(Util.addn_img(av1, av2)), ctf_2_sum))
+	else:
+		ave1 = (av1+av2)/nima
+
+	av1, av2 = sum_oe(data2, "a", CTF, EMData())
+	if CTF:
+		ave2 = fft(Util.divn_img(fft(Util.addn_img(av1, av2)), ctf_2_sum))
+	else:
+		ave2 = (av1+av2)/nima
+
+	alpha21, sx21, sy21, mirror21, peak21 = align2d(ave2, ave1, 3.0, 3.0, 0.125, last_ring=last_ring)
+	ave21 = rot_shift2D(ave2, alpha21, sx21, sy21, mirror21)
+		
+	consistent = 0
+	pixel_error = []	
+	for im in xrange(nima):
+		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[im])
+		alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[im])
+
+		alpha2n, sx2n, sy2n, mirror2n = combine_params2(alpha2, sx2, sy2, mirror2, alpha21, sx21, sy21, mirror21)
+
+		if mirror1 == mirror2n:
+			consistent += 1
+			this_pixel_error = abs(sin((alpha1-alpha2n)*PI_180/2))*last_ring*2+sqrt((sx1-sx2n)**2+(sy1-sy2n)**2)
+			pixel_error.append(this_pixel_error)
+
+	return consistent/float(nima), pixel_error, ccc(ave21, ave1)
