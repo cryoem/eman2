@@ -159,8 +159,7 @@ import numpy
 n= 100
 numbers= range(2*n*n)
 array= numpy.reshape(numpy.ndarray(numbers,numpy.Float32),(2*n,n))
-e= EMData()
-Wrapper.numpy2em(array, e)
+e = Wrapper.numpy2em(array)
 e.write_image("numpy.mrc")\end{verbatim}}
     \end{itemize}
 
