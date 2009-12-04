@@ -49,7 +49,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
     class_< EMAN::EMNumPy >("EMNumPy", init<  >())
         .def(init< const EMAN::EMNumPy& >())
         .def("em2numpy", &EMAN::EMNumPy::em2numpy)
-        .def("numpy2em", &EMAN::EMNumPy::numpy2em)
+        .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >())
         .staticmethod("em2numpy")
         .staticmethod("numpy2em")
     ;

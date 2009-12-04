@@ -96,11 +96,11 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
 	return make_numeric_array(data, dims);
 }
 
-void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
+EMData* EMNumPy::numpy2em(python::numeric::array& array)
 {
 	if (!PyArray_Check(array.ptr())) {
 		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
-		return;
+		return 0;
 	}
 
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
@@ -117,7 +117,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 
 	if (ndim <= 0 || ndim > 3) {
 		LOGERR("%dD numpy array to EMData is not supported.", ndim);
-		return;
+		return 0;
 	}
 
 	if (ndim == 1) {
@@ -133,21 +133,19 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 		nx = dims_ptr[2];
 	}
 
-	image->set_size(nx, ny, nz);
-
-	char* array_data = array_ptr->data;
-	float* data = image->get_data();
-
+	EMData* image = 0;
 	if(data_type == 'f') {
-    		memcpy(data, array_data, sizeof(float) * nx * ny * nz);
+		char* array_data = array_ptr->data;
+		image = new EMData((float*)array_data, nx, ny, nz);
 	}
 	else {
 		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
 		char* array_data2 = array_ptr2->data;
-		memcpy(data, array_data2, sizeof(float) * nx * ny * nz);
+		image = new EMData((float*)array_data2, nx, ny, nz);
 	}
 
 	image->update();
+	return image;
 }
 
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
