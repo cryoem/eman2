@@ -399,7 +399,6 @@ char *aptr;
 	ierr=MPI_Recv( aptr,  count, (MPI_Datatype)datatype,source,tag, (MPI_Comm)comm, &status );
 //  	return PyArray_Return(result);
 	PyObject* ret_obj = PyArray_Return(result);
-	Py_INCREF(ret_obj);	//this is for letting EMData take the ownership of the data array
 	return ret_obj;
 }
 
