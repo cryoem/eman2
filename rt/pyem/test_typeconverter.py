@@ -271,8 +271,8 @@ class TestTypeConverter(unittest.TestCase):
 
         testlib.check_emdata(e, sys.argv[0])
         
-        e2 = EMData()
-        EMNumPy.numpy2em(a, e2)
+        b = a.copy()
+        e2 = EMNumPy.numpy2em(b)
         testlib.check_emdata(e2, sys.argv[0])
 
         os.unlink(imgfile1)
@@ -286,9 +286,7 @@ class TestTypeConverter(unittest.TestCase):
         self.assertEqual(a.shape, (2*n, n))
         self.assertEqual(a.dtype, "float32")
 
-        e = EMData()
-        e.set_size(n, 2*n)
-        EMNumPy.numpy2em(a, e)
+        e = EMNumPy.numpy2em(a)
         testlib.check_emdata(e, sys.argv[0])
 
         for i in range(n):
@@ -298,8 +296,8 @@ class TestTypeConverter(unittest.TestCase):
     def test_numpy2em2(self):
         """test numpy2em for float64 ........................"""
         n1 = numpy.random.ranf( (5,3) )
-        e1 = EMData()
-        EMNumPy.numpy2em(n1, e1)
+        #e1 = EMData()
+        e1 = EMNumPy.numpy2em(n1)
         n2 = EMNumPy.em2numpy(e1)
         diff = numpy.max(numpy.max(n2 - n1))
         self.assertAlmostEqual(diff, 0, 3)
