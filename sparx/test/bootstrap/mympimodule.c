@@ -40,15 +40,15 @@ $Source$
 
 /* if NUMPY is defined then we look for arrayobject.h
    in <arrayobject.h>.  If not then in <Numeric/arrayobject.h>
-   
+
    The second case would be the norm if you are linking against
    Numeric instead of numpy.
-   
+
    We default to Numeric but this might change in the future.
-   
+
    You can see the which was used at run time by printing
    mpi.ARRAY_LIBRARY.
-   
+
 */
 
 /************** numpy or Numeric **************/
@@ -83,7 +83,7 @@ char DATE_SRC[]="$Date$";
 #include <stdio.h>
 #include <stdlib.h>
 #ifndef PyMODINIT_FUNC
-#define PyMODINIT_FUNC void 
+#define PyMODINIT_FUNC void
 #endif
 
 #include <string.h>
@@ -135,7 +135,7 @@ void eh( MPI_Comm *comm, int *err, ... )
 char string[256];
 int len;
 
-/* 
+/*
  if (*err != MPI_ERR_OTHER) {
  errs++;
  printf( "Unexpected error code\n" );fflush(stdout);
@@ -241,7 +241,7 @@ PyArrayObject *array;
 	memcpy((void*)ranks,(void *)(array->data),  (size_t) (n*sizeof(int)));
 	ierr=MPI_Group_incl ( (MPI_Group )group, n, ranks, &out_group);
 	free(ranks);
-	Py_DECREF(array);	
+	Py_DECREF(array);
 	return VERT_FUNC((CAST)out_group);
 }
 
@@ -312,7 +312,7 @@ int choice;
 		ierr= MPI_Comm_set_errhandler( (MPI_Comm)incomm, MPI_ERRORS_RETURN );
     if(choice == 2)
 		ierr= MPI_Comm_set_errhandler( (MPI_Comm)incomm, newerr );
-	
+
 	return PyInt_FromLong((long)ierr);
 }
 
@@ -368,7 +368,7 @@ char *aptr;
 		return NULL;
 /*
 	n=1;
-	for(i=0;i<array->nd;i++) 
+	for(i=0;i<array->nd;i++)
 		n = n* array->dimensions[i];
 	if(array->nd == 0)n=1;
 	if (n < count)
@@ -393,11 +393,14 @@ char *aptr;
 
 	if (!PyArg_ParseTuple(args, "iliil", &count,&datatype,&source,&tag,&comm))
         return NULL;
-    dimensions[0]=count;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));        
+    dimensions[0]=count;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));
 	aptr=(char*)(result->data);
 	ierr=MPI_Recv( aptr,  count, (MPI_Datatype)datatype,source,tag, (MPI_Comm)comm, &status );
-  	return PyArray_Return(result);
+//  	return PyArray_Return(result);
+	PyObject* ret_obj = PyArray_Return(result);
+	Py_INCREF(ret_obj);	//this is for letting EMData take the ownership of the data array
+	return ret_obj;
 }
 
 static PyObject *mpi_status(PyObject *self, PyObject *args)
@@ -406,8 +409,8 @@ static PyObject *mpi_status(PyObject *self, PyObject *args)
 PyArrayObject *result;
 int dimensions[1],statray[3];
 
-    dimensions[0]=3;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, PyArray_INT);        
+    dimensions[0]=3;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, PyArray_INT);
 	statray[0]=status.MPI_SOURCE;
 	statray[1]=status.MPI_TAG;
 	statray[2]=status.MPI_ERROR;
@@ -437,26 +440,26 @@ static PyObject * mpi_attr_get(PyObject *self, PyObject *args) {
 Input Parameters
         comm    communicator to which attribute is attached (handle)
         keyval  key value (integer)
-                                                                                
+
 Output Parameters
         attr_value      attribute value, unless flag = false
         flag    true if an attribute value was extracted; false if no attribute is associated with the key
 */
-                                                                                
+
         int keyval, *attr_value;
         int flag;
         COM_TYPE comm;
         if (!PyArg_ParseTuple(args, "li", &comm, &keyval))
         return NULL;
-                                                                                
+
 /*        printf("mpi_attr_get:  keyval:%d\n",keyval); */
-                                                                                
+
         /* get the keyval for the specified attribute */
         ierr = MPI_Attr_get((MPI_Comm)comm, keyval, &attr_value,&flag);
         if ( !flag ) {
                 return NULL;
         }
-                                                                                
+
 /*        printf("mpi_attr_get:  attr_val: %d  %d\n",*attr_value,flag); */
         return( PyInt_FromLong((long)*attr_value));
 }
@@ -521,7 +524,7 @@ COM_TYPE  incomm;
 
 static PyObject *mpi_comm_spawn(PyObject *self, PyObject *args)
 {
-/* int MPI_Comm_spawn(char *command, char *argv[], int maxprocs, MPI_Info info, 
+/* int MPI_Comm_spawn(char *command, char *argv[], int maxprocs, MPI_Info info,
                   int root, MPI_Comm comm, MPI_Comm *intercomm,
                   int array_of_errcodes[])                    */
 #ifdef DO_UNSIGED
@@ -565,7 +568,7 @@ if (!PyArg_ParseTuple(args, "sOiiii", &command,&input,&maxprocs,&info,&root,&com
 			}
 		}
 	}
-		
+
 	if(strncmp("list",input->ob_type->tp_name,4)==0){
 		printf("is list\n");
 		argv=(char**)malloc((maxprocs+2)*sizeof(char*));
@@ -588,14 +591,14 @@ if (!PyArg_ParseTuple(args, "sOiiii", &command,&input,&maxprocs,&info,&root,&com
 	array_of_errcodes=(int*)malloc(maxprocs*sizeof(int));
 	array_of_errcodes_size=maxprocs;
 
-/* int MPI_Comm_spawn(char *command, char *argv[], int maxprocs, MPI_Info info, 
+/* int MPI_Comm_spawn(char *command, char *argv[], int maxprocs, MPI_Info info,
                   int root, MPI_Comm comm, MPI_Comm *intercomm,
                   int array_of_errcodes[])                    */
 /*	printf("launching %s from %d\n",command,root); */
 	ierr=MPI_Comm_spawn(command,
-	                    argv, 
-	                    maxprocs,  
-	                    (MPI_Info)info, 
+	                    argv,
+	                    maxprocs,
+	                    (MPI_Info)info,
 	                    root,
 	                    (MPI_Comm)comm,
 	                    &outcomm,
@@ -834,7 +837,7 @@ static PyObject * mpi_init(PyObject *self, PyObject *args) {
 			strncpy(argv[i],PyString_AsString(PyList_GetItem(input,i)),(size_t)len);
 			/* printf("%s ",argv[i]); */
 		}
-		
+
 		/* printf("\n"); */
 		Py_DECREF(input);
 #ifdef LAM_MPI
@@ -846,18 +849,18 @@ static PyObject * mpi_init(PyObject *self, PyObject *args) {
 /*
 for(i=0;i<argc;i++) {
 		   printf("from %d init %d %s\n",myid,i,argv[i]);
-		   
+
 		}
-*/		
-#endif		
-		
+*/
+#endif
+
 #ifdef MPI2
 		MPI_Comm_create_errhandler( eh, &newerr );
 #endif
-		
+
 /*		free(argv); */
 	}
-	
+
 /*  this returns the command line as a string */
 #ifdef ARG_STR
 		arglen=0;
@@ -866,7 +869,7 @@ for(i=0;i<argc;i++) {
 		for(i=0;i<argc;i++) {
 			arglen=arglen+strlen(argv[i])+1;
 			strides[i+1]=strides[i]+strlen(argv[i])+1;
-		}	
+		}
 		argstr=(char*)malloc(arglen*sizeof(char));
 		for(i=0;i<argc;i++) {
 		    for(n=0;n<strlen(argv[i]);n++) {
@@ -883,7 +886,7 @@ for(i=0;i<argc;i++) {
 		result = PyTuple_New(argc);
 		for(i=0;i<argc;i++) {
 			PyTuple_SetItem(result,i,PyString_FromString(argv[i]));
-		}	
+		}
 /*
 for(i=0;i<argc;i++) {
 			free(argv[i]);
@@ -921,8 +924,8 @@ static PyObject * mpi_start(PyObject *self, PyObject *args) {
         return NULL;
 	ierr=MPI_Initialized(&did_it);
     if(!did_it){
-		/* MPI_Init(0,0); */ /* lam mpi will start with this line 
-		                        mpich requires us to build a real 
+		/* MPI_Init(0,0); */ /* lam mpi will start with this line
+		                        mpich requires us to build a real
 		                        command line */
 		/* MPI_Init(0,0); */
 		argv=(char**)malloc((argc+2)*sizeof(char*));
@@ -939,15 +942,15 @@ static PyObject * mpi_start(PyObject *self, PyObject *args) {
 		ierr=MPI_Init(NULL,NULL);
 #else
 		ierr=MPI_Init(&argc,&argv);
-#endif		
+#endif
 	}
 	ierr=MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
     ierr=MPI_Comm_rank(MPI_COMM_WORLD,&myid);
 #ifdef MPI2
 		MPI_Comm_create_errhandler( eh, &newerr );
 #endif
-    
-    
+
+
 	dimensions[0]=2;
 	result = (PyArrayObject *)PyArray_FromDims(1, dimensions, PyArray_INT);
 	if (result == NULL)
@@ -973,14 +976,14 @@ PyArrayObject *array;
 PyObject *input;
 int dimensions[1];
 char *aptr;
-	
+
 	if (!PyArg_ParseTuple(args, "Oilil", &input, &count,&datatype,&root,&comm))
         return NULL;
-    dimensions[0]=count;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));        
+    dimensions[0]=count;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));
 	aptr=(char*)(result->data);
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -998,8 +1001,8 @@ char *aptr;
 
 
 static PyObject * mpi_scatterv(PyObject *self, PyObject *args) {
-/* int MPI_Scatterv(void *sendbuf, int *sendcnts, int *displs, MPI_Datatype sendtype, 
-                    void *recvbuf, int recvcnt,                MPI_Datatype recvtype, 
+/* int MPI_Scatterv(void *sendbuf, int *sendcnts, int *displs, MPI_Datatype sendtype,
+                    void *recvbuf, int recvcnt,                MPI_Datatype recvtype,
                     int root, MPI_Comm comm ) */
 int root;
 COM_TYPE comm;
@@ -1014,18 +1017,18 @@ int dimensions[1];
 
 	sendcnts=0;
 	displs=0;
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "OOOlilil", &sendbuf_obj, &sendcnts_obj,&displs_obj,&sendtype,&recvcnt,&recvtype,&root,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
     ierr=MPI_Comm_size((MPI_Comm)comm,&numprocs);
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-    
 
-#ifdef MPI2    
+
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1047,14 +1050,14 @@ int dimensions[1];
 			return NULL;
 		sptr=(char*)(array->data);
 	}
-    
-    dimensions[0]=recvcnt;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));   
+
+    dimensions[0]=recvcnt;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
     rptr=(char*)(result->data);
 
 	ierr=MPI_Scatterv(sptr, sendcnts, displs, (MPI_Datatype)sendtype,rptr,recvcnt,(MPI_Datatype)recvtype, root, (MPI_Comm )comm );
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1067,9 +1070,9 @@ int dimensions[1];
 }
 
 static PyObject * mpi_gatherv(PyObject *self, PyObject *args) {
-/* 
-int MPI_Gatherv ( void *sendbuf, int sendcnt,                MPI_Datatype sendtype, 
-                  void *recvbuf, int *recvcnts, int *displs, MPI_Datatype recvtype, 
+/*
+int MPI_Gatherv ( void *sendbuf, int sendcnt,                MPI_Datatype sendtype,
+                  void *recvbuf, int *recvcnts, int *displs, MPI_Datatype recvtype,
                   int root, MPI_Comm comm )
  */
 int root;
@@ -1083,10 +1086,10 @@ int numprocs,myid;
 int dimensions[1];
 
 	displs=0;
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "OilOOlil", &sendbuf_obj, &sendcnt,&sendtype,&recvcnts_obj,&displs_obj,&recvtype,&root,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
@@ -1095,22 +1098,22 @@ int dimensions[1];
     rtot=0;
     recvcnts=0;
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
 #endif
-    /* printf("  get the recv_counts array \n"); */ 
+    /* printf("  get the recv_counts array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(recvcnts_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
 		recvcnts=(int*)malloc((size_t) (sizeof(int)*numprocs));
 		memcpy((void *)recvcnts, (void*)array->data, (size_t) (sizeof(int)*numprocs));
 		rtot=0;
-		for(i=0;i<numprocs;i++) 
+		for(i=0;i<numprocs;i++)
 			rtot=rtot+recvcnts[i];
 		Py_DECREF(array);
-    /* printf("  get the offset array \n"); */ 
+    /* printf("  get the offset array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(displs_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
@@ -1119,20 +1122,20 @@ int dimensions[1];
 		Py_DECREF(array);
 	}
 	/* printf("  allocate the recvbuf \n"); */
-		dimensions[0]=rtot;    
-		result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));   
+		dimensions[0]=rtot;
+		result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
 		rptr=(char*)(result->data);
-   /* printf("  get sendbuf\n"); */ 
+   /* printf("  get sendbuf\n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(sendbuf_obj, getptype(sendtype), 1, 3);
 		if (array == NULL)
 			return NULL;
 		sptr=array->data;
-    
+
 
    /* printf("   do the call %d \n",recvcnt); */
 	ierr=MPI_Gatherv(sptr, sendcnt, (MPI_Datatype)sendtype,rptr,recvcnts,displs,(MPI_Datatype)recvtype, root, (MPI_Comm )comm );
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1146,10 +1149,10 @@ int dimensions[1];
 }
 
 static PyObject * mpi_gather(PyObject *self, PyObject *args) {
-/* 
-int MPI_Gather ( void *sendbuf, int sendcnt, MPI_Datatype sendtype, 
-                  void *recvbuf, int recvcnts, 
-                  MPI_Datatype recvtype, 
+/*
+int MPI_Gather ( void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcnts,
+                  MPI_Datatype recvtype,
                   int root, MPI_Comm comm )
  */
 int root;
@@ -1161,23 +1164,23 @@ int sendcnt,recvcnt,rtot;
 char *sptr,*rptr;
 int numprocs,myid;
 int dimensions[1];
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "Oililil", &sendbuf_obj, &sendcnt,&sendtype,&recvcnt,&recvtype,&root,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
     ierr=MPI_Comm_size((MPI_Comm)comm,&numprocs);
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
     rtot=0;
-   /* printf("  get sendbuf\n"); */ 
+   /* printf("  get sendbuf\n"); */
 	array = (PyArrayObject *) PyArray_ContiguousFromObject(sendbuf_obj, getptype(sendtype), 0, 3);
 	if (array == NULL)
 		return NULL;
 	sptr=array->data;
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1185,8 +1188,8 @@ int dimensions[1];
 		rtot=recvcnt*numprocs;
     }
 	/* printf("  allocate the recvbuf \n"); */
-	dimensions[0]=rtot;    
-	result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));   
+	dimensions[0]=rtot;
+	result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
 	rptr=(char*)(result->data);
 
 
@@ -1199,8 +1202,8 @@ int dimensions[1];
 
 static PyObject * mpi_scatter(PyObject *self, PyObject *args) {
 /*
-  int MPI_Scatter ( void *sendbuf, int sendcnt, MPI_Datatype sendtype, 
-                    void *recvbuf, int recvcnt, MPI_Datatype recvtype, 
+  int MPI_Scatter ( void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                    void *recvbuf, int recvcnt, MPI_Datatype recvtype,
                     int root, MPI_Comm comm )
 */
 int root;
@@ -1214,17 +1217,17 @@ int dimensions[1];
 char *sptr,*rptr;
 
 	sendcnts=0;
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "Oililil", &sendbuf_obj, &sendcnts,&sendtype,&recvcnt,&recvtype,&root,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
     ierr=MPI_Comm_size((MPI_Comm)comm,&numprocs);
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
 
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1236,16 +1239,16 @@ char *sptr,*rptr;
 		    sptr=(char*)(array->data);
 
     }
-    
+
     /* allocate the recvbuf */
-    dimensions[0]=recvcnt;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype)); 
+    dimensions[0]=recvcnt;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
     rptr=(char*)(result->data);
 
    /*  do the call */
 	ierr=MPI_Scatter(sptr, sendcnts, (MPI_Datatype)sendtype,rptr,recvcnt,(MPI_Datatype)recvtype, root, (MPI_Comm )comm );
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
@@ -1267,24 +1270,24 @@ PyArrayObject *array;
 PyObject *input;
 int dimensions[1];
 char *sptr,*rptr;
-	
+
 	if (!PyArg_ParseTuple(args, "Oillil", &input, &count,&datatype,&op,&root,&comm))
         return NULL;
     MPI_Comm_rank((MPI_Comm)comm,&myid);
     ierr=MPI_Comm_rank((MPI_Comm)comm,&myid);
-#ifdef MPI2    
+#ifdef MPI2
     if(myid == root || root == MPI_ROOT) {
 #else
     if(myid == root) {
 #endif
-    	dimensions[0]=count;    
+    	dimensions[0]=count;
 	}
 	else {
-		dimensions[0]=0;  
+		dimensions[0]=0;
 	}
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));        
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));
 	rptr=(char*)(result->data);
-	
+
 	array = (PyArrayObject *) PyArray_ContiguousFromObject(input, getptype(datatype), 0, 3);
 	if (array == NULL)
 		return NULL;
@@ -1301,9 +1304,9 @@ static PyObject * mpi_finalize(PyObject *self, PyObject *args) {
     return PyInt_FromLong((long)MPI_Finalize());
 }
 static PyObject * mpi_alltoall(PyObject *self, PyObject *args) {
-/* 
-   int MPI_Alltoall( void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-                     void *recvbuf, int recvcnt,   MPI_Datatype recvtype, 
+/*
+   int MPI_Alltoall( void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                     void *recvbuf, int recvcnt,   MPI_Datatype recvtype,
                      MPI_Comm comm )
  */
 COM_TYPE comm;
@@ -1315,10 +1318,10 @@ int numprocs,myid;
 int dimensions[1];
 char *sptr,*rptr;
 sendcnts=0;
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "Oilill", &sendbuf_obj, &sendcnts,&sendtype,&recvcnt,&recvtype,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
@@ -1331,10 +1334,10 @@ sendcnts=0;
 			return NULL;
 		    sptr=(char*)(array->data);
 
-    
+
     /* allocate the recvbuf */
-    dimensions[0]=recvcnt*numprocs;    
-    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype)); 
+    dimensions[0]=recvcnt*numprocs;
+    result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
     rptr=(char*)(result->data);
 
    /*  do the call */
@@ -1343,9 +1346,9 @@ sendcnts=0;
   	return PyArray_Return(result);
 }
 static PyObject * mpi_alltoallv(PyObject *self, PyObject *args) {
-/* 
-  int MPI_Alltoallv ( void *sendbuf, int *sendcnts, int *sdispls, MPI_Datatype sendtype, 
-                      void *recvbuf, int *recvcnts, int *rdispls, MPI_Datatype recvtype, 
+/*
+  int MPI_Alltoallv ( void *sendbuf, int *sendcnts, int *sdispls, MPI_Datatype sendtype,
+                      void *recvbuf, int *recvcnts, int *rdispls, MPI_Datatype recvtype,
                       MPI_Comm comm )
 */
 COM_TYPE comm;
@@ -1358,10 +1361,10 @@ int numprocs;
 int dimensions[1];
 
 	rdispls=0;
-	
+
 	array=NULL;
 	sptr=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "OOOlOOll", &sendbuf_obj, &sendcnts_obj,&sdispls_obj,&sendtype,&recvcnts_obj,&rdispls_obj,&recvtype,&comm))
         return NULL;
     /* ! get the number of processors in this comm */
@@ -1369,18 +1372,18 @@ int dimensions[1];
     rtot=0;
     recvcnts=0;
 
-    /* printf("  get the recvcnts array \n"); */ 
+    /* printf("  get the recvcnts array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(recvcnts_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
 		recvcnts=(int*)malloc((size_t) (sizeof(int)*numprocs));
 		memcpy((void *)recvcnts, (void*)array->data, (size_t) (sizeof(int)*numprocs));
 		rtot=0;
-		for(i=0;i<numprocs;i++) 
+		for(i=0;i<numprocs;i++)
 			rtot=rtot+recvcnts[i];
 		Py_DECREF(array);
-		
-    /* printf("  get the recv offset array \n"); */ 
+
+    /* printf("  get the recv offset array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(rdispls_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
@@ -1389,21 +1392,21 @@ int dimensions[1];
 		Py_DECREF(array);
 
 	/* printf("  allocate the recvbuf \n"); */
-		dimensions[0]=rtot;    
-		result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));   
+		dimensions[0]=rtot;
+		result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(recvtype));
 		rptr=(char*)(result->data);
-		
-		
-		
-    /* printf("  get the sendcnts array \n"); */ 
+
+
+
+    /* printf("  get the sendcnts array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(sendcnts_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
 		sendcnts=(int*)malloc((size_t) (sizeof(int)*numprocs));
 		memcpy((void *)sendcnts, (void*)array->data, (size_t) (sizeof(int)*numprocs));
 		Py_DECREF(array);
-    
-    /* printf("  get the send offset array \n"); */ 
+
+    /* printf("  get the send offset array \n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(sdispls_obj, PyArray_INT, 1, 1);
 		if (array == NULL)
 			return NULL;
@@ -1411,7 +1414,7 @@ int dimensions[1];
 		memcpy((void *)sdispls, (void*)array->data, (size_t) (sizeof(int)*numprocs));
 		Py_DECREF(array);
 
-   /* printf("  get sendbuf\n"); */ 
+   /* printf("  get sendbuf\n"); */
 		array = (PyArrayObject *) PyArray_ContiguousFromObject(sendbuf_obj, getptype(sendtype), 1, 3);
 		if (array == NULL)
 			return NULL;
@@ -1421,21 +1424,21 @@ int dimensions[1];
    /*
         MPI_Comm_rank((MPI_Comm)comm,&myid);
    		printf("myid =%d ",myid);
-   		for(i=0;i<numprocs;i++) 
+   		for(i=0;i<numprocs;i++)
    			printf("%d ",sendcnts[i]);
    		printf(" | ");
-   		for(i=0;i<numprocs;i++) 
+   		for(i=0;i<numprocs;i++)
    			printf("%d ",sdispls[i]);
    		printf(" | ");
-   		for(i=0;i<numprocs;i++) 
+   		for(i=0;i<numprocs;i++)
    			printf("%d ",recvcnts[i]);
    		printf(" | ");
-   		for(i=0;i<numprocs;i++) 
+   		for(i=0;i<numprocs;i++)
    			printf("%d ",rdispls[i]);
    		printf("\n");
    */
-       ierr=MPI_Alltoallv(sptr, sendcnts, sdispls, (MPI_Datatype)sendtype, 
-                          rptr, recvcnts, rdispls, (MPI_Datatype)recvtype, 
+       ierr=MPI_Alltoallv(sptr, sendcnts, sdispls, (MPI_Datatype)sendtype,
+                          rptr, recvcnts, rdispls, (MPI_Datatype)recvtype,
                           (MPI_Comm)comm);
 
 		Py_DECREF(array);
@@ -1526,8 +1529,8 @@ static PyMethodDef mpiMethods[] = {
     {"mpi_wtime",		mpi_wtime,			METH_VARARGS,     	 mpi_wtime__},
     {"mpi_wtick",		mpi_wtick,			METH_VARARGS,     	 mpi_wtick__},
     {"mpi_attr_get",	mpi_attr_get,		METH_VARARGS,     	 mpi_attr_get__},
-    
-    
+
+
 #ifdef MPI2
     {"mpi_comm_spawn",		    mpi_comm_spawn,			METH_VARARGS,     	 mpi_comm_spawn__},
     {"mpi_array_of_errcodes",	mpi_array_of_errcodes,	METH_VARARGS,     	 mpi_array_of_errcodes__},
@@ -1540,7 +1543,7 @@ static PyMethodDef mpiMethods[] = {
     {"mpi_comm_connect",		mpi_comm_connect,		METH_VARARGS,     	 mpi_comm_connect__},
     {"mpi_comm_disconnect",		mpi_comm_disconnect,	METH_VARARGS,     	 mpi_comm_disconnect__},
     {"mpi_comm_set_errhandler",	mpi_comm_set_errhandler,METH_VARARGS,     	 mpi_comm_set_errhandler__},
-    
+
 #endif
     {"copywrite",		copywrite,			METH_VARARGS,     	COPYWRITE_STR__},
     {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -1679,16 +1682,16 @@ PyMODINIT_FUNC initmpi(void)
     tmp = VERT_FUNC((CAST)MPI_BOTTOM);
     PyDict_SetItemString(d,   "MPI_BOTTOM", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_COMM_WORLD);
-    PyDict_SetItemString(d,   "MPI_COMM_WORLD", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_COMM_WORLD", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_TAG_UB);
-    PyDict_SetItemString(d,   "MPI_TAG_UB", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_TAG_UB", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_HOST);
-    PyDict_SetItemString(d,   "MPI_HOST", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_HOST", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_IO);
-    PyDict_SetItemString(d,   "MPI_IO", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_IO", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_WTIME_IS_GLOBAL);
-    PyDict_SetItemString(d,   "MPI_WTIME_IS_GLOBAL", tmp);  Py_DECREF(tmp);  
-    
+    PyDict_SetItemString(d,   "MPI_WTIME_IS_GLOBAL", tmp);  Py_DECREF(tmp);
+
     tmp = PyString_FromString(LIBRARY);
     PyDict_SetItemString(d,   "ARRAY_LIBRARY", tmp);  Py_DECREF(tmp);
 
@@ -1699,13 +1702,13 @@ PyMODINIT_FUNC initmpi(void)
 
 #ifdef MPI2
     tmp = VERT_FUNC((CAST)MPI_UNIVERSE_SIZE);
-    PyDict_SetItemString(d,   "MPI_UNIVERSE_SIZE", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_UNIVERSE_SIZE", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_ROOT);
-    PyDict_SetItemString(d,   "MPI_ROOT", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_ROOT", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_ARGV_NULL);
-    PyDict_SetItemString(d,   "MPI_ARGV_NULL", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_ARGV_NULL", tmp);  Py_DECREF(tmp);
     tmp = VERT_FUNC((CAST)MPI_INFO_NULL);
-    PyDict_SetItemString(d,   "MPI_INFO_NULL", tmp);  Py_DECREF(tmp);  
+    PyDict_SetItemString(d,   "MPI_INFO_NULL", tmp);  Py_DECREF(tmp);
 #endif
 }
 void myerror(char *s) {
