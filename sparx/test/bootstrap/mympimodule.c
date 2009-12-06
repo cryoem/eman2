@@ -397,9 +397,7 @@ char *aptr;
     result = (PyArrayObject *)PyArray_FromDims(1, dimensions, getptype(datatype));
 	aptr=(char*)(result->data);
 	ierr=MPI_Recv( aptr,  count, (MPI_Datatype)datatype,source,tag, (MPI_Comm)comm, &status );
-//  	return PyArray_Return(result);
-	PyObject* ret_obj = PyArray_Return(result);
-	return ret_obj;
+  	return PyArray_Return(result);
 }
 
 static PyObject *mpi_status(PyObject *self, PyObject *args)
