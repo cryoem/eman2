@@ -2135,10 +2135,9 @@ def recv_EMData(src, tag):
 	ntot = nx*ny*nz
 
 	#construct a EMData by taking the ownership of numpy array, no memory copying  --Grant Tang
-	numpy_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-	img = EMNumPy.numpy2em(numpy_data)
+	#numpy_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	#img = EMNumPy.numpy2em(numpy_data)
 
-	'''
 	#comment out Wei's original code, which makes memory copy to construct EMData from numpy array  --Grant Tang
 	img = EMData()
 	img.set_size(nx, ny, nz)
@@ -2149,8 +2148,7 @@ def recv_EMData(src, tag):
 
 	data1d = reshape( get_image_data(img), (ntot,) )
 	tmp_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-        data1d[0:ntot] = tmp_data[0:ntot]
-    '''   
+        data1d[0:ntot] = tmp_data[0:ntot] 
         
         '''
 	count = 100000
