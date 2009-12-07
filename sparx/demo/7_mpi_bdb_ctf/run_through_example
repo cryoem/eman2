@@ -20,7 +20,7 @@ sxboxer.py -A cmd --boxsize=64 --write_box_images --var --do_ctf --ctf_cs=2 --ct
 mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF --MPI 
 
 # K-means clustering of the 2D dataset (MPI version)
-mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --nb_part=2 --CTF --MPI 
+mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --T0=0.2 --nb_part=2 --CTF --MPI 
 # OR K-means clustering of the 2D dataset (CUDA version). This version do not use CTF.
 #mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --rand_seed=10 --F=0.97 --nb_part=2 --CUDA 
 sxheader.py bdb:data --params=active --one
