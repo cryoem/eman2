@@ -777,23 +777,29 @@ return mem[g];
 }
 
 // Uses a precached table to return a good approximate to acos(x)
-// tolerates values slightly outside the -1 - 1 domain
+// tolerates values outside the -1 - 1 domain by clamping to PI,0
 float Util::fast_acos(const float &f) {
-static float *mem = (float *)malloc(sizeof(float)*1003);
+if (f>=1.0) return 0.0;
+if (f<=-1.0) return M_PI;
+
+static float *mem = (float *)malloc(sizeof(float)*2001);
 static bool needinit=true;
+
 
 if (needinit) {
 	needinit=false;
-	for (int i=0; i<=1000; i++) mem[i]=(float)acos(i/1000.0);
-	mem[1001]=0.0;
-	mem[1002]=0.0;
+	for (int i=0; i<=2000; i++) mem[i]=(float)acos(i/1000.0-1.0);
 }
-float f2=fabs(f);
+float f2=f*1000.0+1000.0;
 
-if (f2>1.0015) return acos(1.1);		// returns the correct nan
-int g=(int)(f2*1000.0+0.5);
+int g=(int)(f2+.5);
 
 return mem[g];
+
+// This version interpolates, but is slower
+/*int g=(int)f2;
+f2-=g;
+return mem[g+1]*f2+mem[g]*(1.0-f2);*/
 }
 
 
