@@ -299,6 +299,8 @@ def ave_var(data, mode = "a"):
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
 	ave /= n
+	from utilities import drop_image
+	drop_image(ave, 'toto.hdf')
 	return ave, (var - ave*ave*n)/(n-1)
 
 def add_oe(data):
@@ -3894,7 +3896,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
-	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask, True)
 	Kmeans.compute_im2()
 	status = Kmeans.init_mem(myid % NGPU_PER_NODES)
 	if status:
@@ -3931,6 +3933,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		ite    = 0
 		fsync  = 0
 		ferror = 0
+		ctconv = 0
 		while ite < maxit:
 			stop = 0
 			
@@ -3939,21 +3942,25 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				Kmeans.one_iter_SA()
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
+				if ct == 0: ctconv += 1
+				else:       ctconv  = 0
 				if myid == main_node:
-					print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+					print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
 				T *= F
 				Kmeans.set_T(T)
+				
 				if T < 0.00001: switch_SA = False
+				if ctconv >= 10: stop = 1
 			else:
 				status = Kmeans.one_iter()
 				ct     = Kmeans.get_ct_im_mv()
 				if myid == main_node:
 					print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				if status != 0: stop = 1
-				stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-				stop = mpi_bcast(stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-				stop = int(stop[0])
-				if stop: break
+			stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			stop = mpi_bcast(stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			stop = int(stop[0])
+			if stop: break
 
 			#if myid == main_node: print 'ite cuda', time() - ts1, 's'
 			ite += 1
