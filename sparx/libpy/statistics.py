@@ -1673,7 +1673,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 	else:   return IM, None, None
 
 # k-means write the head of the logfile
-def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m, init_method):
+def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m, init_method='random'):
 	from utilities import print_msg
 
 	if F != 0: SA = True
