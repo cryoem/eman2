@@ -153,7 +153,7 @@ for single particle analysis."""
   
   	#########
 	# only let user open one micrograph at a time
-	if len(args) > 1: 
+	if len(args) > 1  and "cmd" not in options.auto: 
 		print "can't open more than one micrograph file at a time! exiting...."
 		return
 	#########
