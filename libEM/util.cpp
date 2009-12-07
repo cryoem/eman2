@@ -776,6 +776,27 @@ int g=(int)(-f*50.0+0.5);
 return mem[g];
 }
 
+// Uses a precached table to return a good approximate to acos(x)
+// tolerates values slightly outside the -1 - 1 domain
+float Util::fast_acos(const float &f) {
+static float *mem = (float *)malloc(sizeof(float)*1003);
+static bool needinit=true;
+
+if (needinit) {
+	needinit=false;
+	for (int i=0; i<=1000; i++) mem[i]=(float)acos(i/1000.0);
+	mem[1001]=0.0;
+	mem[1002]=0.0;
+}
+float f2=fabs(f);
+
+if (f2>1.0015) return acos(1.1);		// returns the correct nan
+int g=(int)(f2*1000.0+0.5);
+
+return mem[g];
+}
+
+
 float Util::get_gauss_rand(float mean, float sigma)
 {
 	Randnum* randnum = Randnum::Instance();

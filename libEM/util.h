@@ -677,12 +677,19 @@ namespace EMAN
 			}
 			return (int) x;
 		}
-		/** Returns an approximate of exp(x) using a cached table and linear interpolation
+		/** Returns an approximate of exp(x) using a cached table
 		 * uses actual exp(x) outside the cached range
 		 * @param[in] f argument to exp(f)
 		 * @return (float)exp(x)
 		*/
 		static float fast_exp(const float &f) ;
+
+		/** Returns an approximate of acos(x) using a cached table and linear interpolation
+		 * tolerates values very slightly outside the -1 - 1 range (returning 0)
+		 * @param[in] x argument to acos(x)
+		 * @return (float)acos(x)
+		*/
+		static float fast_acos(const float &f) ;
 
 		/** Calculate Gaussian value.  a * exp(-(dx * dx + dy * dy + dz * dz) / d)
 		 * @param[in] a  amplitude
@@ -864,7 +871,9 @@ namespace EMAN
 		*/
 		static inline float angle_err_ri(float r1,float i1,float r2,float i2) {
 			if ((r1==0 && i1==0) || (r2==0 && i2==0)) return 0;
-			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));
+//			printf("%f\t%f\t%f\n",r1*r2+i1*i2,hypot(r1,i1),hypot(r2,i2));
+//			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));		
+			return fast_acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));		// fast_acos also tolerates values very slightly above 1
 		}
 
 		/** Check whether a number is a good float. A number is a good
