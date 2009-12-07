@@ -855,6 +855,17 @@ namespace EMAN
 			}
 			return r;
 		}
+		
+		/** Calculate the angular phase difference between two r/i vectors
+		 *
+		 * @param[in] r1/i1 first vector, 2 floats
+		 * @param[in] r2/i2 second vector, 2 floats
+		 * @return angular difference
+		*/
+		static inline float angle_err_ri(float r1,float i1,float r2,float i2) {
+			if ((r1==0 && i1==0) || (r2==0 && i2==0)) return 0;
+			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));
+		}
 
 		/** Check whether a number is a good float. A number is a good
 		 * float if it is not abnormal zero, and not inf, -inf or NaN

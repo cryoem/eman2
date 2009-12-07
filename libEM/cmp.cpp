@@ -734,6 +734,13 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
 
+	int snrweight = params.set_default("snrweight", 0);
+	int snrfn = params.set_default("snrfn",0);
+	int ampweight = params.set_default("ampweight",0);
+	int zeromask = params.set_default("zeromask",0);
+
+	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
+
 #ifdef EMAN2_USING_CUDA
  	if (image->gpu_operation_preferred()) {
 // 		cout << "Cuda cmp" << endl;
@@ -741,72 +748,150 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
  		return cuda_cmp(image,with);
  	}
 #endif
-	validate_input_args(image, with);
 
-	static float *dfsnr = 0;
-	static int nsnr = 0;
+	EMData *image_fft = NULL;
+	EMData *with_fft = NULL;
 
-// 	if (image->get_zsize() > 1) {
-// 		throw ImageDimensionException("2D only");
-// 	}
-
-	//int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	//int nz = image->get_zsize();
+//	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
+	int np = 0;
+	vector<float> snr;
 
-	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
+	if (snrweight) {
+		Ctf *ctf = NULL;
+		if (!image->has_attr("ctf")) {
+			if (!with->has_attr("ctf")) throw InvalidCallException("SNR weight with no CTF parameters");
+			ctf=with->get_attr("ctf");
+		}
+		else ctf=image->get_attr("ctf");
 
-	if (nsnr != np) {
-		nsnr = np;
-		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
+		float ds=1.0f/(ctf->apix*ny);
+		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR); // note that this returns ny/2 values
+		if(ctf) {delete ctf; ctf=0;}
+		np=snr.size();
+	}
 
-		//float w = Util::square(nx / 8.0f); // <- Not used currently
+	if (snrfn==1) {
+		np=ny/2;
+		snr.resize(np);
 
 		for (int i = 0; i < np; i++) {
-//			float x2 = Util::square(i / (float) Ctf::CTFOS);
-//			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
 			float x2 = 10.0f*i/np;
-			dfsnr[i] = x2 * exp(-x2);
+			snr[i] = x2 * exp(-x2);
 		}
 
 //		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
-	EMData *image_fft = image->do_fft();
-	image_fft->ri2ap();
-	EMData *with_fft = with->do_fft();
-	with_fft->ri2ap();
+	if (zeromask) {
+		image_fft=image->copy();
+		with_fft=with->copy();
+		
+		if (image_fft->is_complex()) image_fft->do_ift_inplace();
+		if (with_fft->is_complex()) with_fft->do_ift_inplace();
+		
+		int sz=image_fft->get_xsize()*image_fft->get_ysize()*image_fft->get_zsize();
+		float *d1=image_fft->get_data();
+		float *d2=with_fft->get_data();
+		
+		for (int i=0; i<sz; i++) {
+			if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+		}
+		
+		image_fft->update();
+		with_fft->update();
+		image_fft->do_fft_inplace();
+		with_fft->do_fft_inplace();
+		image_fft->set_attr("free_me",1); 
+		with_fft->set_attr("free_me",1); 
+	}
+	else {
+		if (image->is_complex()) image_fft=image;
+		else {
+			image_fft=image->do_fft();
+			image_fft->set_attr("free_me",1);
+		}
+		
+		if (with->is_complex()) with_fft=with;
+		else {
+			with_fft=with->do_fft();
+			with_fft->set_attr("free_me",1);
+		}
+	}
+// 	image_fft->ri2ap();
+// 	with_fft->ri2ap();
 
 	const float *const image_fft_data = image_fft->get_const_data();
 	const float *const with_fft_data = with_fft->get_const_data();
 	double sum = 0;
 	double norm = FLT_MIN;
 	size_t i = 0;
+	int nx=image_fft->get_xsize();
+	    ny=image_fft->get_ysize();
+	int nz=image_fft->get_zsize();
+	int nx2=image_fft->get_xsize()/2;
+	int ny2=image_fft->get_ysize()/2;
+	int nz2=image_fft->get_zsize()/2;
 
-	for (int z = 0; z < image_fft->get_zsize(); ++z){
-		for (int y = 0; y < image_fft->get_ysize(); ++y) {
-			for (int x = 0; x < image_fft->get_xsize(); x += 2) {
-				int r;
-//				if ( nz == 1 ) {
-					if (y<ny/2) r = Util::round(Util::hypot_fast(x / 2, y) * Ctf::CTFOS);
-					else r = Util::round(Util::hypot_fast(x / 2, y-ny) * Ctf::CTFOS);
-
-				float a = dfsnr[r] * with_fft_data[i];
-// 				cout << a << " " << Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) << " " <<image_fft_data[i + 1] << " " << with_fft_data[i + 1] << endl;
-				sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
+	if (np==0) {
+		for (int z = 0; z < nz; z++){
+			for (int y = 0; y < ny; y++) {
+				for (int x = 0; x < nx2; x ++) {
+					float a;
+					if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
+					else a=1.0;
+					sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
+					norm += a;
+					i += 2;
+				}
+			}
+		}
+		
+	}
+	else if (nz==1) {
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx2; x ++) {
+				int r=Util::hypot_fast_int(x,y>ny/2?ny-y:y);
+				if (r>=ny2) { i+=2; continue; }		// we only have snr values to the box radius
+				
+				float a;
+				if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
+				else a=1.0;
+				a*=snr[r];
+				sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
 				norm += a;
 				i += 2;
 			}
 		}
 	}
+	else {
+		for (int z = 0; z < nz; z++){
+			for (int y = 0; y < ny; y++) {
+				for (int x = 0; x < nx2; x ++) {
+					int r=Util::hypot3(x,y>ny/2?ny-y:y,z>nz/2?nz-z:z);
+					if (r>=ny2) { i+=2; continue; }		// we only have snr values to the box radius
+					
+					float a;
+					if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
+					else a=1.0;
+					a*=snr[r];
+					sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
+					norm += a;
+					i += 2;
+				}
+			}
+		}
+		
+	}
+
 	EXITFUNC;
 
-	if( image_fft )
+	if( image_fft->has_attr("free_me") )
 	{
 		delete image_fft;
 		image_fft = 0;
 	}
-	if( with_fft )
+	if( with_fft->has_attr("free_me") )
 	{
 		delete with_fft;
 		with_fft = 0;

@@ -437,6 +437,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("snrweight", EMObject::INT, "If set, the SNR of 'this' will be used to weight the result. If 'this' lacks CTF info, it will check 'with'. (default=0)");
+			d.put("snrfn", EMObject::INT, "If nonzero, an empirical function will be used as a radial weight rather than the true SNR. (1 - exp decay)'. (default=0)");
+			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'with' will be used as a weight in the averaging'. (default=0)");
+			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask");
 			return d;
 		}
 		
