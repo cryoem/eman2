@@ -2675,11 +2675,19 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
-		CTF  = True
+		tmpctf  = deepcopy(CTF[1])
+		tmpctf2 = deepcopy(CTF[2])
+		CTF     = True
+		ctf     = [None] * N
+		ctf[N_start:N_stop]  = tmpctf
+		ctf2    = [None] * N
+		ctf2[N_start:N_stop] = tmpctf2
 	else:
 		CTF  = False
+
+	## TODO change data strucut to works with IM and not im_M format
+	im_M = [None] * N
+	im_M[N_start:N_stop] = IM
 
 	# Simulate annealing
 	if F != 0: SA = True
@@ -2693,9 +2701,6 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		if isinstance(mask, basestring):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
-	## TODO change data strucut to works with IM and not im_M format
-	im_M = [None]*N
-	im_M[N_start:N_stop] = IM
 	
 	# [id]   part of code different for each node
 	# [sync] synchronise each node
@@ -2737,7 +2742,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 	if CTF:
 		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[0])
+		len_ctm	    = len(ctf2[N_start])
 	
 	# TRIALS
 	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
@@ -2806,7 +2811,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
 			
 			# [id] compute local S ctf2 and local S ave	
-			for im in xrange(N):
+			for im in xrange(N_start, N_stop):
 				# ctf2
 				for i in xrange(len_ctm):
 					Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
