@@ -243,7 +243,7 @@ EMData *FourierReconstructorSimple2D::finish(bool doift)
 	return  	image;
 }
 
-void ReconstructorVolumeData::normalize_threed()
+void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp)
 // normalizes the 3-D Fourier volume. Also imposes appropriate complex conjugate relationships
 {
 	float* norm = tmp_data->get_data();
@@ -257,6 +257,7 @@ void ReconstructorVolumeData::normalize_threed()
 
 	for (int i = 0; i < subnx * subny * subnz; i += 2) {
 		float d = norm[i/2];
+		if (sqrt_damp) d*=sqrt(d);
 		if (d == 0) {
 			rdata[i] = 0;
 			rdata[i + 1] = 0;
@@ -788,7 +789,8 @@ EMData *FourierReconstructor::finish(bool doift)
 // 	float *norm = tmp_data->get_data();
 // 	float *rdata = image->get_data();
 
-	normalize_threed();
+	bool sqrtnorm=params.set_default("sqrtnorm",false);
+	normalize_threed(sqrtnorm);
 
 // 	tmp_data->write_image("density.mrc");
 
