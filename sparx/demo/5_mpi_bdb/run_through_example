@@ -20,7 +20,7 @@ sxboxer.py -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --cc
 mpirun -np 4 sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --MPI || exit
 
 # K-means clustering of the 2D dataset (MPI version)
-mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --nb_part=2 --MPI || exit
+mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --T0=0.2 --nb_part=2 --MPI || exit
 # OR K-means clustering of the 2D dataset (CUDA version)
 #mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --rand_seed=10 --F=0.97 --nb_part=2 --CUDA || exit
 sxheader.py bdb:data --params=active --one
