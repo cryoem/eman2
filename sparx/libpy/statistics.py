@@ -2685,7 +2685,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:
 		CTF  = False
 
-	## TODO change data strucut to works with IM and not im_M format
+	## TODO change data struct to works directly with IM
 	im_M = [None] * N
 	im_M[N_start:N_stop] = IM
 
@@ -3179,11 +3179,19 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
-		CTF  = True
+		tmpctf  = deepcopy(CTF[1])
+		tmpctf2 = deepcopy(CTF[2])
+		CTF     = True
+		ctf     = [None] * N
+		ctf[N_start:N_stop]  = tmpctf
+		ctf2    = [None] * N
+		ctf2[N_start:N_stop] = tmpctf2
 	else:
 		CTF  = False
+
+	## TODO change data struct to work directly with IM
+	im_M = [None] * N
+	im_M[N_start:N_stop] = IM
 
 	# Simulate annealing
 	if F != 0: SA = True
@@ -3196,10 +3204,6 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if mask != None:
 		if isinstance(mask, basestring):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
-
-	## TODO change data struct to work directly with IM
-	im_M = [None] * N
-	im_M[N_start:N_stop] = IM
 	
 	# [id]   part of code different for each node
 	# [sync] synchronise each node
