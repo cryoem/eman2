@@ -34,6 +34,7 @@ from OpenGL import GL,GLUT
 from math import *
 from EMAN2 import get_3d_font_renderer, Util
 import sys
+import warnings
 
 from libpyGLUtils2 import *
 
@@ -62,10 +63,10 @@ class EMShape:
 	the programmer may create 'invisible' shapes for out-of-band use. Colors
 	are on the range 0-1.0 
 	
-		0               1  2  3  4  5     6     7     8
+		0               1  2  3  4  5     6     7     8        9
 		"rect"          R  G  B  x0 y0    x1    y1    linew
 		"rectpoint"     R  G  B  x0 y0    x1    y1    linew
-		"rectline"      R  G  B  x0 y0    x1    y1    boxw
+		"rectline"      R  G  B  x0 y0    x1    y1    boxw     linew
 		"rcircle"       R  G  B  x0 y0    x1    y1    linew
 		"rcirclepoint"  R  G  B  x0 y0    x1    y1    linew
 		"line"          R  G  B  x0 y0    x1    y1    linew
@@ -161,6 +162,8 @@ class EMShape:
 			pt1 = (s[6], s[7]) #second coordinate
 			assert self.shape[8] >= 0
 			width = s[8] #width
+			assert self.shape[9] >= 0
+			GL.glLineWidth(s[9])
 			#l_vect = (pt1[0]-pt0[0], pt1[1]-pt2[0]) #vector parallel to a longer side -- length vector
 			w_vect = ( -(pt1[1]-pt0[1]), pt1[0]-pt0[0] ) #vector parallel to a shorter side -- width vector
 			mag = sqrt(w_vect[0]**2 + w_vect[1]**2)
@@ -414,4 +417,160 @@ class EMShape:
 		
 	def is_animated(self):
 		return self.isanimated
+	def collision(self, x, y, fuzzy=False):
+		s = self.shape
 		
+		if s[0] == "rect":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rectpoint":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rectline":
+			#      0     1  2  3  4   5   6   7   8
+			# s = [type, r, g, b, x1, y1, x2, y2, width]
+			centroid = ( (s[4]+s[6])/2.0, (s[5]+s[7])/2.0 )
+			l_vect = (s[6]-s[4], s[7]-s[5])
+			length = sqrt(l_vect[0]**2+l_vect[1]**2)
+			l_uvect = (l_vect[0]/length, l_vect[1]/length)
+			w_uvect = (l_uvect[1], -l_uvect[0])
+			width = s[8]
+			#New coordinate system (w, l) with origin at centroid
+			translated = (x-centroid[0], y-centroid[1]) #translate the origin to the centroid
+			w = translated[0]*w_uvect[0] + translated[1]*w_uvect[1] #projection onto w_vect
+			l = translated[0]*l_uvect[0] + translated[1]*l_uvect[1] #projection onto l_vect
+			if abs(w) <= width/2.0:
+				if fuzzy and abs(l) <= 5*length/8.0: #fuzzy = True includes area L/8 units beyond the ends
+					return True
+				elif abs(l) <= length/2.0:
+					return True
+				else:
+					return False
+			else:
+				return False
+		elif s[0] == "rcircle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rcirclepoint":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "line":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "label":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "circle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrrect":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrline":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrlabel":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrcircle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "point":
+			warnings.warn("Not yet implemented.")
+		else:
+			raise LookupError
+	def control_pts(self):
+		s = self.shape
+		
+		if s[0] == "rect":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rectpoint":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rectline":
+			#      0     1  2  3  4   5   6   7   8
+			# s = [type, r, g, b, x1, y1, x2, y2, width]
+			return ( (s[4],s[5]), (s[6],s[7]), ((s[4]+s[6])/2.0, (s[5]+s[7])/2.0) )			
+		elif s[0] == "rcircle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "rcirclepoint":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "line":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "label":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "circle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrrect":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrline":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrlabel":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "scrcircle":
+			warnings.warn("Not yet implemented.")
+		elif s[0] == "point":
+			warnings.warn("Not yet implemented.")
+		else:
+			raise LookupError
+	def control_pt_min_distance(self, x, y):
+		control_points = self.control_pts()
+		squared_distances = [point[0]**2+point[1]**2 for point in control_points]
+		return sqrt(min(squared_distances))
+
+class EMShapeList(list):
+	def collisions(self,x,y,fuzzy=False):
+		"""
+		This returns a list of shapes that enclose the point (x,y).	If fuzzy
+		is set to True, the point need not be exactly inside the shape.
+		"""
+		ret = []
+		for shape in self:
+			if shape.collision(x,y,fuzzy):
+				ret.append[shape]
+		return ret
+	
+	def closest_collision(self, x, y, fuzzy=False):
+		"""
+		This searches the list returned by collisions() to find the shape
+		with a control point closest to x,y. The parameter fuzzy is used by
+		collisions(). If there are no collisions, this returns none.
+		"""
+		shapes = self.collisions(x, y, fuzzy)
+		if shapes:
+			min_dist = None
+			for shape in shapes:
+				dist = shape.control_pt_min_distance(x,y)
+				if min_dist == None:
+					min_dist = dist
+					closest_shape = shape
+				elif dist < min_dist:
+					min_dist = dist
+					closest_shape = shape
+			return closest_shape		
+		else:
+			return None
+
+class EMShapeDict(dict):
+	def collisions(self,x,y,fuzzy=False):
+		"""
+		This returns a list of keys to the shapes that enclose the point (x,y).
+		If fuzzy is set to True, the point need not be exactly inside the shape.
+		"""
+		ret = []
+		for k in self:
+			if self.get(k).collision(x,y, fuzzy):
+				ret.append(k)
+		return ret
+	
+	def closest_collision(self,x,y,fuzzy=False):
+		"""
+		This searches the list returned by collisions() to find the shape
+		with a control point closest to x,y. The key to that shape is returned.
+		The parameter fuzzy is used by collisions(). If there are no collisions, 
+		this returns None.
+		"""
+		shape_keys = self.collisions(x, y, fuzzy)
+		if shape_keys:
+			min_dist = None
+			for key in shape_keys:
+				shape = self.get(key)
+				
+				dist = shape.control_pt_min_distance(x,y)
+				if min_dist == None:
+					min_dist = dist
+					closest_shape_key = key
+				elif dist < min_dist:
+					min_dist = dist
+					closest_shape_key = key
+			return closest_shape_key
+		else:
+			return None
