@@ -9754,23 +9754,25 @@ EMData* BinarySkeletonizerProcessor::process(EMData * image)
 	using namespace wustl_mm::SkeletonMaker;
 
 	Volume * vimage = new Volume(image);
-	VolumeSkeletonizer vskeletonizer;
 	float threshold = params["threshold"];
-	int min_curvew = params.set_default("min_curve_width", 3);
+	int min_curvew = params.set_default("min_curve_width", 4);
 	int min_srfcw = params.set_default("min_surface_width", 4);
 	//cout << "PeformPureJuSkeletonization" << endl;
-	Volume* vskel = vskeletonizer.PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
+	Volume* vskel = VolumeSkeletonizer::PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
 	//cout << "skeletonization done" << endl;
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
 	EMData* skel = vskel->get_emdata();
 	//skel->write_image("test-skel.mrc");
+	skel->update();
 	return skel;
 }
 
 void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 {
 	EMData* em_skel = this->process(image);
-	*image = *em_skel;
+	//TODO: use memcpy and copy metadata explicitly
+	*image = *em_skel; //Deep copy performed by EMData::operator=
+	image->update();
 	delete em_skel;
 	em_skel = NULL;
 	return;
