@@ -299,8 +299,7 @@ def ave_var(data, mode = "a"):
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
 	ave /= n
-	from utilities import drop_image
-	drop_image(ave, 'toto.hdf')
+
 	return ave, (var - ave*ave*n)/(n-1)
 
 def add_oe(data):
@@ -5847,7 +5846,7 @@ def k_means_stab_update_tag(stack, STB_PART, lrej):
 		# these are still unstable
 		for ID in lrej:
 			im.read_image(stack, ID, True)
-			im.set_attr('active', 1.0)
+			im.set_attr('active', 1)
 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
@@ -5875,6 +5874,58 @@ def k_means_stab_gather(nb_run, maskname, outdir):
 				except: pass
 
 	return ct
+
+# extract group to a stack of images for each classe, and apply alignment
+def k_means_extract_class_ali(stack_name, ave_name, dir):
+	from   utilities  import get_im, get_params2D, set_params2D
+	from fundamentals import rot_shift2D
+	import os
+
+	K = EMUtil.get_image_count(ave_name)
+	# all images are not open, I assume we pick up only few images (from stable_averages)
+	for k in xrange(K):
+		im  = get_im(ave_name, k)
+		lid = im.get_attr('members')
+		# if there are only one image in member 
+		if not isinstance(lid, list): lid = [lid]
+		trg = os.path.join(dir, 'class_%03i.hdf' % k)
+		for i, item in enumerate(lid):
+			im = get_im(stack_name, item)
+			alpha, sx, sy, mir, scale = get_params2D(im, 'xform.align2d')
+			im = rot_shift2D(im, alpha, sx, sy, mir, scale)
+			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
+			im.set_attr('active', 1)
+			im.write_image(trg, i)
+	
+# compute pixel error for a class given	
+def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, snr=1.0, Fourvar=False):
+	from applications import header, ali2d_c
+	from utilities    import estimate_stability
+	from statistics   import aves
+	import os
+	name = class_name.split('.')[0]
+	file = os.path.join(dir, class_name)
+	header(file, 'xform.align2d', randomize=True)
+	ali2d_c(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
+	header(file, 'xform.align2d', backup=True, suffix='_round1')
+	header(file, 'xform.align2d', randomize=True)
+	ali2d_c(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
+
+	data1 = EMData.read_images(file)
+	header(file, 'xform.align2d_round1', restore=True)
+	data2 = EMData.read_images(file)
+
+	stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
+	ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
+
+	ave, var = aves(file, 'a')
+	ave.set_attr('err_mir', stab_mirror)
+	ave.set_attr('err_pix', ave_pix_err)
+	ave.set_attr('err_ccc', ccc)
+
+	return ave
 
 ### END K-MEANS ##############################################################################
 ##############################################################################################
@@ -7253,6 +7304,7 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 
 	return Cls
 
+# This code looks obsolete, I do not write it. JB
 def k_means_aves(images, N, K, rand_seed, outdir):
 	from utilities import model_blank
 	from random       import seed, randint
