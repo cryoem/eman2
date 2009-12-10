@@ -9,22 +9,26 @@ using namespace wustl_mm::SkeletonMaker;
 #define GRAYSKELETONCPP_VOLUME_SKELETONIZER_H
 
 const int MAX_GAUSSIAN_FILTER_RADIUS = 10;
+const int DEFAULT_SKELETON_DIRECTION_RADIUS = 3;
 
 namespace wustl_mm {
 	namespace GraySkeletonCPP {
+
 		class VolumeSkeletonizer
 		{
 		public:
-			Volume * PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth);
+			VolumeSkeletonizer(int pointRadius, int curveRadius, int surfaceRadius, int skeletonDirectionRadius=DEFAULT_SKELETON_DIRECTION_RADIUS);
+			~VolumeSkeletonizer();
+			static Volume * PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth);
 			//Volume * PerformImmersionSkeletonizationAndPruning(Volume * sourceVol, Volume * preserveVol, double startGray, double endGray, double stepSize, int smoothingIterations, int smoothingRadius, int minCurveSize, int minSurfaceSize, int maxCurveHole, int maxSurfaceHole, string outputPath, bool doPruning, double pointThreshold, double curveThreshold, double surfaceThreshold);
 		private:
-			Volume * GetJuSurfaceSkeleton(Volume * sourceVolume, Volume * preserve, double threshold);
-			Volume * GetJuCurveSkeleton(Volume * sourceVolume, Volume * preserve, double threshold, bool is3D);
-			Volume * GetJuTopologySkeleton(Volume * sourceVolume, Volume * preserve, double threshold);
-			void PruneCurves(Volume * sourceVolume, int pruneLength);
-			void PruneSurfaces(Volume * sourceVolume, int pruneLength);
-			void VoxelOr(Volume * sourceAndDestVolume1, Volume * sourceVolume2);
-			Volume * GetJuThinning(Volume * sourceVolume, Volume * preserve, double threshold, char thinningClass);
+			static Volume * GetJuSurfaceSkeleton(Volume * sourceVolume, Volume * preserve, double threshold);
+			static Volume * GetJuCurveSkeleton(Volume * sourceVolume, Volume * preserve, double threshold, bool is3D);
+			static Volume * GetJuTopologySkeleton(Volume * sourceVolume, Volume * preserve, double threshold);
+			static void PruneCurves(Volume * sourceVolume, int pruneLength);
+			static void PruneSurfaces(Volume * sourceVolume, int pruneLength);
+			static void VoxelOr(Volume * sourceAndDestVolume1, Volume * sourceVolume2);
+			static Volume * GetJuThinning(Volume * sourceVolume, Volume * preserve, double threshold, char thinningClass);
 
 			static const char THINNING_CLASS_SURFACE_PRESERVATION;
 			static const char THINNING_CLASS_CURVE_PRESERVATION_2D;
@@ -34,6 +38,18 @@ namespace wustl_mm {
 			static const char PRUNING_CLASS_PRUNE_SURFACES;
 			static const char PRUNING_CLASS_PRUNE_CURVES;
 			static const char PRUNING_CLASS_PRUNE_POINTS;
+
+			//MathLib * math;
+			//NormalFinder * surfaceNormalFinder;
+			//ProbabilityDistribution3D gaussianFilterPointRadius;
+			//ProbabilityDistribution3D gaussianFilterCurveRadius;
+			//ProbabilityDistribution3D gaussianFilterSurfaceRadius;
+			//ProbabilityDistribution3D gaussianFilterMaxRadius;
+			//ProbabilityDistribution3D uniformFilterSkeletonDirectionRadius;
+			int pointRadius;
+			int curveRadius;
+			int surfaceRadius;
+			int skeletonDirectionRadius;
 		};
 	}
 }
