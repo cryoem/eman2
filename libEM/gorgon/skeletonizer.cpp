@@ -15,6 +15,36 @@ using namespace wustl_mm::GraySkeletonCPP;
 		const char VolumeSkeletonizer::PRUNING_CLASS_PRUNE_CURVES = 6;
 		const char VolumeSkeletonizer::PRUNING_CLASS_PRUNE_POINTS = 7;
 
+		VolumeSkeletonizer::VolumeSkeletonizer(int pointRadius, int curveRadius, int surfaceRadius, int skeletonDirectionRadius) {
+//			math = new MathLib();
+//			surfaceNormalFinder = new NormalFinder();
+			this->pointRadius = pointRadius;
+			this->curveRadius = curveRadius;
+			this->surfaceRadius = surfaceRadius;
+			this->skeletonDirectionRadius = skeletonDirectionRadius;
+
+//			gaussianFilterPointRadius.radius = pointRadius;
+//			math->GetBinomialDistribution(gaussianFilterPointRadius);
+//
+//			gaussianFilterCurveRadius.radius = curveRadius;
+//			math->GetBinomialDistribution(gaussianFilterCurveRadius);
+//
+//			gaussianFilterSurfaceRadius.radius = surfaceRadius;
+//			math->GetBinomialDistribution(gaussianFilterSurfaceRadius);
+//
+//			gaussianFilterMaxRadius.radius = MAX_GAUSSIAN_FILTER_RADIUS;
+//			math->GetBinomialDistribution(gaussianFilterMaxRadius);
+//
+//			uniformFilterSkeletonDirectionRadius.radius = skeletonDirectionRadius;
+//			math->GetUniformDistribution(uniformFilterSkeletonDirectionRadius);
+		}
+
+		VolumeSkeletonizer::~VolumeSkeletonizer() {
+			//delete math;
+			//delete surfaceNormalFinder;
+		}
+
+
 		Volume * VolumeSkeletonizer::PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth) {
 			imageVol->pad(MAX_GAUSSIAN_FILTER_RADIUS, 0);
 			Volume * preservedVol = new Volume(imageVol->getSizeX(), imageVol->getSizeY(), imageVol->getSizeZ());
@@ -29,7 +59,38 @@ using namespace wustl_mm::GraySkeletonCPP;
 			curveVol = VolumeSkeletonizer::GetJuCurveSkeleton(imageVol, preservedVol, threshold, true);
 			VolumeSkeletonizer::PruneCurves(curveVol, minCurveWidth);
 			VoxelOr(preservedVol, curveVol);
+
+
+
+
 			topologyVol = VolumeSkeletonizer::GetJuTopologySkeleton(imageVol, preservedVol, threshold);
+
+			//Code below by Ross as a test -- to replace GetJuTopologySkeleton return value
+//			int curveVolMax = curveVol->getVolumeData()->GetMaxIndex();
+//			int surfaceVolMax = curveVol->getVolumeData()->GetMaxIndex();
+//			int maximum = curveVolMax <= surfaceVolMax? curveVolMax : surfaceVolMax;
+//			if (curveVolMax != surfaceVolMax)
+//				cout << "Curve Skeleton: " << curveVolMax << '\n' << "Surface Skeleton" << surfaceVolMax << endl;
+//			topologyVol = new Volume(curveVol->getSizeX(), curveVol->getSizeY(), curveVol->getSizeZ());
+//			float val, cval, sval;
+//			for (int i = 0; i < maximum; i++)
+//			{
+//				cval = float(curveVol->getDataAt(i));
+//				sval = float(surfaceVol->getDataAt(i));
+//				if (cval && sval)
+//					val = 100; //Something went wrong!
+//				else if (cval)
+//					val = 1;
+//				else if (sval)
+//					val = -1;
+//				else
+//					val = 0;
+//				topologyVol->setDataAt(i, val);
+//			}
+
+
+
+
 			imageVol->pad(-MAX_GAUSSIAN_FILTER_RADIUS, 0);
 			topologyVol->pad(-MAX_GAUSSIAN_FILTER_RADIUS, 0);
 			delete preservedVol;
@@ -39,7 +100,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 		}
 
 		Volume * VolumeSkeletonizer::GetJuCurveSkeleton(Volume * sourceVolume, Volume * preserve, double threshold, bool is3D){
-			char thinningClass = is3D ? THINNING_CLASS_CURVE_PRESERVATION : THINNING_CLASS_CURVE_PRESERVATION_2D;		
+			char thinningClass = is3D ? THINNING_CLASS_CURVE_PRESERVATION : THINNING_CLASS_CURVE_PRESERVATION_2D;
 			return GetJuThinning(sourceVolume, preserve, threshold, thinningClass);
 		}
 
@@ -114,16 +175,16 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//}
 
 			//if(doPruning) {
-				//volumeGradient = GetVolumeGradient(sourceVol);			
+				//volumeGradient = GetVolumeGradient(sourceVol);
 			//}
 
 			//Volume * nullVol = new Volume(sourceVol->getSizeX(), sourceVol->getSizeY(), sourceVol->getSizeZ());
 			//appTimeManager.PushCurrentTime();
-			//Volume * surfaceVol = GetImmersionThinning(sourceVol, preserveVol, startGray, endGray, stepSize, THINNING_CLASS_SURFACE_PRESERVATION);			
+			//Volume * surfaceVol = GetImmersionThinning(sourceVol, preserveVol, startGray, endGray, stepSize, THINNING_CLASS_SURFACE_PRESERVATION);
 			//appTimeManager.PopAndDisplayTime("Surface Thinning : %f seconds!\n");
-			
+
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
-				//surfaceVol->toMRCFile((char *)(outputPath + "-S-Pre-Prune-Pre-Erode.mrc").c_str());				
+				//surfaceVol->toMRCFile((char *)(outputPath + "-S-Pre-Prune-Pre-Erode.mrc").c_str());
 			//#endif
 
 			//PruneSurfaces(surfaceVol, minSurfaceSize);
@@ -131,7 +192,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//appTimeManager.PushCurrentTime();
 			//if(doPruning) {
 				//#ifdef SAVE_INTERMEDIATE_RESULTS
-					//surfaceVol->toMRCFile((char *)(outputPath + "-S-Pre-Prune.mrc").c_str());				
+					//surfaceVol->toMRCFile((char *)(outputPath + "-S-Pre-Prune.mrc").c_str());
 					//WriteVolumeToVRMLFile(surfaceVol, outputPath + "-S-Pre-Prune.wrl");
 				//#endif
 				//appTimeManager.PushCurrentTime();
@@ -139,7 +200,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 				//appTimeManager.PopAndDisplayTime("  Getting Eigens : %f seconds!\n");
 
 				//appTimeManager.PushCurrentTime();
-				//Volume * prunedSurfaceVol = new Volume(surfaceVol->getSizeX(), surfaceVol->getSizeY(), surfaceVol->getSizeZ(), 0, 0, 0, surfaceVol);				
+				//Volume * prunedSurfaceVol = new Volume(surfaceVol->getSizeX(), surfaceVol->getSizeY(), surfaceVol->getSizeZ(), 0, 0, 0, surfaceVol);
 				//appTimeManager.PopAndDisplayTime("  Getting Copy of surface : %f seconds!\n");
 
 
@@ -157,16 +218,16 @@ using namespace wustl_mm::GraySkeletonCPP;
 				//surfaceVol = prunedSurfaceVol;
 				//appTimeManager.PopAndDisplayTime("  Memory Cleanup: %f seconds!\n");
 
-			//}		
+			//}
 
-			//PruneSurfaces(surfaceVol, minSurfaceSize);		
+			//PruneSurfaces(surfaceVol, minSurfaceSize);
 			//appTimeManager.PopAndDisplayTime("Surface Pruning  : %f seconds!\n");
 
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
 				//surfaceVol->toMRCFile((char *)(outputPath + "-S-Post-Erosion.mrc").c_str());
 			//#endif
 
-			//Volume * cleanedSurfaceVol = GetJuSurfaceSkeleton(surfaceVol, nullVol, 0.5);		
+			//Volume * cleanedSurfaceVol = GetJuSurfaceSkeleton(surfaceVol, nullVol, 0.5);
 			//PruneSurfaces(cleanedSurfaceVol, minSurfaceSize);
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
 				//cleanedSurfaceVol->toMRCFile((char *)(outputPath + "-S-Cleaned.mrc").c_str());
@@ -189,7 +250,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//VoxelBinarySubtract(curveVol, surfaceVol);
 
 			//appTimeManager.PushCurrentTime();
-			//if(doPruning) {				
+			//if(doPruning) {
 				//#ifdef SAVE_INTERMEDIATE_RESULTS
 					//curveVol->toMRCFile((char *)(outputPath + "-C-Pre-Prune.mrc").c_str());
 				//#endif
@@ -210,18 +271,18 @@ using namespace wustl_mm::GraySkeletonCPP;
 				//delete prunedCurveVol;
 				//curveVol = filledCurveVol;
 
-				
+
 			//}
 
 			//VoxelOr(curveVol, surfaceVol);
-			//PruneCurves(curveVol, minCurveSize);		
+			//PruneCurves(curveVol, minCurveSize);
 			//appTimeManager.PopAndDisplayTime("Curve Pruning    : %f seconds!\n");
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
 				//curveVol->toMRCFile((char *)(outputPath + "-C-Post-Erosion.mrc").c_str());
 			//#endif
 
-			//Volume * cleanedCurveVol = GetJuCurveSkeleton(curveVol, surfaceVol, 0.5, true);		
-			//PruneCurves(cleanedCurveVol, minCurveSize);		
+			//Volume * cleanedCurveVol = GetJuCurveSkeleton(curveVol, surfaceVol, 0.5, true);
+			//PruneCurves(cleanedCurveVol, minCurveSize);
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
 				//cleanedCurveVol->toMRCFile((char *)(outputPath + "-C-Cleaned.mrc").c_str());
 			//#endif
@@ -233,7 +294,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//#ifdef SAVE_INTERMEDIATE_RESULTS
 				//curveVol->toMRCFile((char *)(outputPath + "-SC.mrc").c_str());
 			//#endif
-			
+
 			//// Removed as points will never be preserved.
 			//// Volume * pointVol = GetImmersionThinning(sourceVol, curveVol, startGray, endGray, stepSize, THINNING_CLASS_POINT_PRESERVATION);
 			////if(doPruning) {
@@ -256,6 +317,6 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//#endif
 
 			//sourceVol->pad(-MAX_GAUSSIAN_FILTER_RADIUS, 0);
-			//curveVol->pad(-MAX_GAUSSIAN_FILTER_RADIUS, 0);			
-			//return curveVol;					
+			//curveVol->pad(-MAX_GAUSSIAN_FILTER_RADIUS, 0);
+			//return curveVol;
 		//}
