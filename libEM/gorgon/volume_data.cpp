@@ -151,6 +151,7 @@ using namespace wustl_mm::SkeletonMaker;
 		}
 
 		float VolumeData::GetDataAt(int index) {
+			//TODO: This may be a problem because EMAN2 and Gorgon do indexing differently --> see if this causes problems
 			return emdata->get_value_at(index);
 		}
 
@@ -189,8 +190,8 @@ using namespace wustl_mm::SkeletonMaker;
 		}
 
 		void VolumeData::SetDataAt(int index, float value) {
-			//TODO: This may be a problem because EMAN and Gorgon do indexing differently --> see if this causes problems
-			emdata->get_data()[index] = value; //eman2
+			//TODO: This may be a problem because EMAN2 and Gorgon do indexing differently --> see if this causes problems
+			emdata->get_data()[index] = value;
 		}
 		void VolumeData::Pad(int padBy, double padValue) {
 
