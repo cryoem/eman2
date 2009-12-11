@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--MPI",      action="store_true", default=False,          help="whether to use MPI version ")
 	parser.add_option('--th_err',   type='float',        default=5.0,            help='cutoff threshold to pixel error')
 	(options, args) = parser.parse_args()
-	if len(args) =! 4:
+	if len(args) != 4:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
