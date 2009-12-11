@@ -3792,7 +3792,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 		sys.exit()
 	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
 	Kmeans.compute_im2()
-	status = Kmeans.init_mem(-1)
+	status = Kmeans.init_mem(-1) # select free device
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
@@ -5674,104 +5674,6 @@ def k_means_stab_init_tag(stack):
 			im.set_attr('stab_part', -2)
 			write_header(stack, im, n) 
 
-# k-means open and prepare images MPI version, only unstable objects (active = 1)
-def k_means_open_unstable_MPI(stack, maskname, CTF, nb_cpu, main_node, myid):
-	from utilities    import file_type
-	from mpi          import mpi_bcast, mpi_barrier, MPI_COMM_WORLD, MPI_INT
-	from statistics   import k_means_open_im, k_means_open_txt
-
-	ext = file_type(stack)
-	BDB, TXT = False, False
-	if ext == 'bdb':   BDB = True
-	elif ext == 'txt': TXT = True
-
-	N = 0
-	if myid == main_node:
-		if TXT:
-			data = open(stack, 'r').readlines()
-			N    = len(data)
-		else:
-			N    = EMUtil.get_image_count(stack)
-		lim  = []
-		if BDB:
-			DB = db_open_dict(stack)
-			for n in xrange(N):
-				if DB.get_attr(n, 'active'): lim.append(n)
-			DB.close()
-		elif TXT:
-			lim = range(N)
-		else:
-			im = EMData()
-			for n in xrange(N):
-				im.read_image(stack, n, True)
-				if im.get_attr('active'): lim.append(n)
-
-		N = len(lim)
-
-	mpi_barrier(MPI_COMM_WORLD)
-	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	N = map(int, N)[0]
-	if myid != main_node: lim = [0] * N
-	mpi_barrier(MPI_COMM_WORLD)
-	lim = mpi_bcast(lim, N, MPI_INT, main_node, MPI_COMM_WORLD)
-	lim = map(int, lim)
-
-	N_start = int(round(float(N) / nb_cpu * myid))  # This is not a canonical way of doing that, there is function in SPARX, please use it PAP
-	N_stop  = int(round(float(N) / nb_cpu * (myid + 1)))
-
-	# Now each node read his part of data (unsynchronise due to bdb)  # I do not think it is necessary, bdb should work! PAP
-	if BDB:
-		for cpu in xrange(nb_cpu):
-			if cpu == myid:			
-				im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
-			mpi_barrier(MPI_COMM_WORLD)
-	elif TXT:
-		im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, N_start, N_stop, N)
-	else:
-		im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, lim)
-
-	#  It is awful how you coded MPI.  After some research I realized in your implementation each node carries all images!
-	#  Please correct it - read other code in the system and see how to handle it properly.  Each node should carry only its share of data!
-	#  PAP  08/11/09
-	return im_M, mask, ctf, ctf2, lim, N, N_start, N_stop
-
-# k-means open and prepare images, only unstable objects (active = 1)
-def k_means_open_unstable(stack, maskname, CTF):
-	from utilities     import file_type
-	from statistics    import k_means_open_im, k_means_open_txt
-
-	ext = file_type(stack)
-	BDB, TXT = False, False
-	if ext == 'bdb':   BDB = True
-	elif ext == 'txt': TXT = True
-	
-	lim  = []
-	if TXT:
-		data = open(stack, 'r').readlines()
-		N    = len(data)
-	else:
-		N    = EMUtil.get_image_count(stack)
-
-
-	if BDB:
-		DB = db_open_dict(stack)
-		for n in xrange(N):
-			if DB.get_attr(n, 'active'): lim.append(n)
-		DB.close()
-	elif TXT:
-		lim = range(N)
-	else:
-		im = EMData()
-		for n in xrange(N):
-			im.read_image(stack, n, True)
-			if im.get_attr('active'): lim.append(n)
-
-	N = len(lim)
-	if TXT:	im_M, mask, ctf, ctf2 = k_means_open_txt(stack, maskname, 0, N, N)
-	else:   im_M, mask, ctf, ctf2 = k_means_open_im(stack, maskname, 0, N, N, CTF, lim)
-
-	return im_M, mask, ctf, ctf2, lim, N
-
 # Convert local all assignment to absolute all partition
 def k_means_stab_asg2part(outdir, npart):
 	from numpy     import array
@@ -5926,6 +5828,60 @@ def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, s
 	ave.set_attr('err_ccc', ccc)
 
 	return ave
+
+# ISC procedure, update configuration file with ite
+def isc_update_ite_conf(conf_file, ite):
+	import ConfigParser
+	config = ConfigParser.ConfigParser()
+	config.set('main', 'ite', ite)
+	config.write(open(conf_file, 'w'))
+
+# ISC procedure, read configuration file
+def isc_read_conf(conf_file):
+	import ConfigParser
+
+	# read config file
+	config  = ConfigParser.ConfigParser()
+	config.read(conf_file)
+	cfgmain = dict(config.items('main'))
+	cfgali  = dict(config.items('alignment'))
+	cfgclu  = dict(config.items('clustering'))
+	cfgrali = dict(config.items('realignment'))
+	# convert data if need
+	#   clustering
+	cfgclu['f']          = float(cfgclu['f'])
+	cfgclu['th_nobj']    = int(cfgclu['th_nobj'])
+	cfgclu['t0']         = float(cfgclu['t0'])
+	cfgclu['ctf']        = eval(cgfclu['ctf'])
+	cfgclu['maxit']      = int(cfgclu['maxit'])
+	cfgclu['rand_seed']  = int(cfgclu['rand_seed'])
+	cfgclu['im_per_grp'] = int(cfgclu['im_per_grp'])
+	cfgclu['nb_part']    = int(cfgclu['nb_part'])
+	cfgclu['nb_cpu']     = int(cfgclu['nb_cpu'])
+	cfgclu['cuda']       = eval(cfgclu['cuda'])
+	#   realignment
+	cfgrali['th_err']    = float(cfgrali['th_err'])
+	cfgrali['fourvar']   = eval(cfgrali['fourvar'])
+	cfgrali['maxit']     = int(cfgrali['maxit'])
+	cfgrali['ctf']       = eval(cfgrali['ctf'])
+	cfgrali['snr']       = float(cfgrali['snr'])
+	cfgrali['ou']        = int(cfgrali['ou'])
+	cfgrali['nb_cpu']    = int(cfgrali['nb_cpu'])
+	#   main
+	cfgmain['ite']       = int(cfgmain['ite'])
+	cfgmain['mpi']       = eval(cfgmain['mpi'])
+	cfgmain['maxit']     = int(cfgmain['maxit'])
+	#   alignment
+	cfgali['n_ite']      = int(cfgali['n_ite'])
+	cfgali['fourvar']    = eval(cfgali['fourvar'])
+	cfgali['maxit']      = int(cfgali['maxit'])
+	cfgali['ctf']        = eval(cfgali['ctf'])
+	cfgali['snr']        = float(cfgali['snr'])
+	cfgali['ou']         = int(cfgali['ou'])
+	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
+
+	return cfgmain, cfgali, cfgclu, cfgrali
+
 
 ### END K-MEANS ##############################################################################
 ##############################################################################################

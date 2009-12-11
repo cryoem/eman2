@@ -11591,8 +11591,156 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 # ----------------------------------------------------------------------------------------------
 # 2009-12-09 09:47:19 JB
+
 # ISC procedure code
 def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
+	from statistics import isc_read_conf, isc_update_ite_conf
+	import sys, logging, os
+	
+	# read config file
+	cfgmain, cfgali, cfgclu, cfgrali = isc_read_conf(conf_file)
+
+	# init logger
+	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
+
+	# prepare iteration
+	if ite == -1: ite = cfgmain['ite']
+	if ite == 1:
+		logging.info('### ISC     %s' % ('#' * 20))
+		if not os.path.exists('backup_parameters'):
+			os.mkdir('backup_parameters')
+	if ite != 1 and not os.path.exists('backup_parameters'):
+		print 'Directory "backup_parameters" does not exist. If is the first time you run ISC, you must start with ite=1'
+		sys.exit()
+
+	# main loop
+	for loop in xrange(maxit):
+		logging.info('=== Ite %03i %s' % (ite, '=' * 20))
+		logging.info('============%s' % ('=' * 20))
+		
+		# alignment
+		if flag_ali and (ite-1) % cfgali['n_ite'] == 0:
+			logging.info('Alignment')
+			header(cfgmain['stack'], 'xform.align2d', zero=True)
+			if cfgali['cpu_list'] == 'local': cmd = '-np %d' % cfgali['nb_cpu']
+			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgali['nb_cpu'], cfgali['cpu_list'])
+			parali = '%s %03i_alignment --ou=%d --xr=%s --ts=%s --maxit=%d --function=%s --snr=%f' % (cfgmain['stack'], ite, 
+				 cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
+			if cfgail['ctf']:        parali += ' --CTF'
+			if cfgali['nb_cpu'] > 1: parali += ' --MPI'
+			if cfgali['fourvar']:    parali += ' --Fourvar'
+			os.system('mpirun %s sxali2d_c.py %s' % (cmd, parali))
+			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d.txt' % ite)
+			ave_ali(cfgmain['stack'], '%03i_alignment/global_ave.hdf' % ite, True, True)
+			os.system('mv logfile_* %03i_alignment' % ite)
+			logging.info('... Done')
+
+		# clustering
+		if flag_clu:
+			logging.info('Clustering')
+			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_clu.txt' % ite)
+			lact = EMUtil.get_all_attributes(cfgmain['stack'], 'active')
+			K    = sum(lact) // cfgclu['im_per_grp']
+			if cfgclu['cpu_list'] == 'local': cmd = '-np %d' % cfgclu['nb_cpu']
+			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgclu['nb_cpu'], cfgclu['cpu_list'])
+			parclu = '%s %03i_clustering %s --K=%d --nb_part=%d --th_nobj=%d --match=%s --maxit=%d --rand_seed=%d --T0=%f --F=%f' % (cfgmain['stack'],
+                                  ite, cfgmain['mask'], K, cfgclu['nb_part'], cfgclu['th_nobj'], cfgclu['match'], cfgclu['maxit'], cfgclu['rand_seed'], cfgclu['t0'], cfgclu['f'])
+			if cfgclu['ctf']:        parclu += ' --CTF'
+			if cfgclu['cuda']:       parclu += ' --CUDA'
+			if cfgclu['nb_cpu'] > 1: parclu += ' --MPI'
+			os.system('mpirun %s sxk_means_stable.py %s' % (cmd, parclu))
+			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
+			os.system('mv logfile_* %03i_clustering' % ite)
+			logging.info('... Done')
+
+		# realignment
+		if flag_reali:
+			logging.info('Realignment')
+			if not os.path.exists('%03i_realignment' % ite): os.mkdir('%03i_realignment' % ite)
+			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_reali.txt' % ite)
+			if cfgrali['cpu_list'] == 'local': cmd = '-np %d' % cfgrali['nb_cpu']
+			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgrali['nb_cpu'], cfgrali['cpu_list'])
+			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr=%s --ts=%s --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'],
+                                   ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'])
+			if cfgrali['ctf']:        parrali += ' --CTF'
+			if cfgrali['fourvar']:    parrali += ' --Fourvar'
+			if cfgrali['nb_cpu'] > 1: parrali += ' --MPI'
+			os.system('mpirun %s sxisc_realignment.py %s' % (cmd, parrali))
+			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_reali.txt' % ite)
+			logging.info('... done')
+			
+		ite += 1
+		isc_update_ite_conf(conf_file, ite)
+
+# realign data from class averages, select homogenous groups and update active images to the main stack
+def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, MPI):
+	from statisctics import k_means_class_pixerror, k_means_extract_class_ali
+	from numpy       import array
+	import os, logging
+	if MPI:
+		from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast
+		from mpi import MPI_INT, MPI_COMM_WORLD
+		sys.argv  = mpi_init(len(sys.argv),sys.argv)		
+		ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+		myid      = mpi_comm_rank(MPI_COMM_WORLD)
+		main_node = 0
+		mpi_barrier(MPI_COMM_WORLD)
+	else: myid = main_node = 0
+	if myid == main_node:
+		if not os.path.exists(output_dir): os.mkdir(output_dir)
+		k_means_extract_class_ali(stack, averages, output_dir)
+	mpi_barrier(MPI_COMM_WORLD)
+	K = EMUtil.get_image_count(averages)
+	if MPI: start, stop = MPI_start_end(K, ncpu, myid)
+	else:   start, stop = 0, K
+	trg = os.path.join(output_dir, 'averages_reali.hdf')
+	for iclass in xrange(start, stop):
+		ave = k_means_class_pixerror('class_%03i.hdf' % iclass, output_dir, ou, xr, 
+					     ts, maxit, fun, CTF, snr, Fourvar) 
+		ave.write_image(trg, iclass)
+	mpi_barrier(MPI_COMM_WORLD)
+	if myid == main_node:
+		lerr = EMUtil.get_all_attributes(trg, 'err_pix')
+		lerr = array(lerr)
+		merr, serr = lerr.mean(), lerr.std()
+		logging.basicConfig(filename = os.path.join(output_dir, 'main_log.txt'), format = '%(asctime)s %(message)s', level = logging.INFO)
+		logging.info('Realignment')
+		logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
+		ct   = 0
+		lrej = []
+		for k in xrange(K):
+			ref = get_im(averages, k)
+			dic = ref.get_attr_dict()
+			if lerr[k] <= th_err:
+				ave = get_im(trg, k)
+				ave.set_attr_dict(dic)
+				ave.set_attr('err_pix', lerr[k])
+				ave.set_attr('ite_ref', ite)
+				ave.set_attr('k_ref', k)
+				ave.write_image(out_averages, ct)
+				ct += 1
+			else:	lrej.extend(dic['members'])
+		lrej = map(int, lrej)		
+		logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (th_err, ct, K, len(lrej)))
+		ext = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for id in lrej:	DB.set_attr(id, 'active', 1)
+			DB.close()
+		else:
+			im = EMData()
+			for id in lrej:
+				im.read_image(stack)
+				im.set_attr('active', 1)
+				write_header(stack, im, id)
+
+		logging.info('... done')
+
+	mpi_barrier(MPI_COMM_WORLD)
+		
+
+# ISC procedure code
+def isc_dev(conf_file, ite, flag_ali, flag_clu, flag_reali):
 	from statistics import k_means_extract_class_ali, k_means_class_pixerror
 	from utilities  import file_type, get_im
 	import ConfigParser, sys, logging, os
@@ -11623,7 +11771,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
 	
 	# prepare iteration
-	if ite == -1: ite = config.getint('variable', 'ite')
+	if ite == -1: ite = config.getint('main', 'ite')
 	if ite == 1 and myid == main_node:
 		logging.info('### ISC     %s' % ('#' * 20))
 		if not os.path.exists('backup_parameters'):
@@ -11664,10 +11812,11 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 				if myid != main_node: K = 0
 				K = mpi_bcast(K, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				K = int(K)
-				if CUDA: k_means_stab_MPICUDA_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], 
-								     K, int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
-								     int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), cfgclu['match'], 
-								     int(cfgclu['maxit']))
+				if CUDA:
+					k_means_stab_MPICUDA_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], 
+								    K, int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
+								    int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), cfgclu['match'], 
+								    int(cfgclu['maxit']))
 
 				else:    k_means_stab_MPI_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], K,
 								 int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
@@ -11753,7 +11902,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 
 		ite += 1
 		if myid == main_node:
-			config.set('variable', 'ite', ite)
+			config.set('main', 'ite', ite)
 			config.write(open(conf_file, 'w'))
 
 		mpi_barrier(MPI_COMM_WORLD)
