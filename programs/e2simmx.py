@@ -145,17 +145,18 @@ class EMParallelSimMX:
 		
 		output = self.args[2]
 		
-		if file_exists(output):
+		if file_exists(output) and not options.fillzero:
 			if options.force: remove_file(output)
 			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
 			
 		e = EMData(self.clen,self.rlen)
 		e.to_zero()
+		e.set_attr(PROJ_FILE_ATTR,self.args[0])
+		e.set_attr(PART_FILE_ATTR,self.args[1])
 		n = 1
 		if self.options.saveali: n = 5 # the total number of images written to disk
-		for i in range(n):
-			e.set_attr(PROJ_FILE_ATTR,self.args[0])
-			e.set_attr(PART_FILE_ATTR,self.args[1])
+		if not options.fillzero : e.write_image(output,0)
+		for i in range(1,n):
 			e.write_image(output,i)
 	
 	def __get_blocks(self):
@@ -259,6 +260,8 @@ class EMParallelSimMX:
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
+				
+				
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -492,6 +495,7 @@ def main():
 	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
 #	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
+	parser.add_option("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
@@ -618,7 +622,14 @@ def main():
 		if options.verbose: 
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
-			
+		
+		# With the fillzero option, we only compute values where there is a zero in the existing matrix
+		if options.fillzero :
+			ss=EMData()
+			ss.read_image(args[2],0,False,Region(crange[0],r,crange[1]-crange[0]+1,1))
+			subset=[i for i in range(ss["nx"]) if ss[i,0]==0]
+		else : subset=None
+		
 #		if ( options.lowmem ):
 		rimg.read_image(args[1],r)
 		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
@@ -631,20 +642,25 @@ def main():
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask)
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset)
 		for c,v in enumerate(row):
-			mxout[0].set_value_at(c,r,0,v[0])
+			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
+			else mxout[0].set_value_at(c,r,0,v[0])
 		
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		mxout[0].process_inplace("math.finite",{"to":1e24})
 		if options.saveali :
 			for c,v in enumerate(row):
-#				print row
-				#print "%f %f %f " %(v[1],v[2],v[3])
-				mxout[1].set_value_at(c,r,0,v[1])
-				mxout[2].set_value_at(c,r,0,v[2])
-				mxout[3].set_value_at(c,r,0,v[3])
-				mxout[4].set_value_at(c,r,0,v[4])
+				if row==None :
+					mxout[1].set_value_at(c,r,0,0)
+					mxout[2].set_value_at(c,r,0,0)
+					mxout[3].set_value_at(c,r,0,0)
+					mxout[4].set_value_at(c,r,0,0)
+				else :
+					mxout[1].set_value_at(c,r,0,v[1])
+					mxout[2].set_value_at(c,r,0,v[2])
+					mxout[3].set_value_at(c,r,0,v[3])
+					mxout[4].set_value_at(c,r,0,v[4])
 	
 	if options.verbose : print"\nSimilarity computation complete"
 	
@@ -656,11 +672,14 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
 	for i,r in enumerate(reflist):
+		if subset!=None and i not in subset : 
+			ret[i]=None
+			continue
 		if align[0] :
 			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])

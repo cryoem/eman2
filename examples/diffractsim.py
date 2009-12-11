@@ -46,15 +46,19 @@ Various CTF-related operations on images."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--xrange",type="string",help="x0,dx,x1",default="0,1,1")
-	parser.add_option("--yrange",type="string",help="y0,yx,y1",default="0,1,1")
+	parser.add_option("--size",type="string",help="nx,ny",default="512,256")
+	parser.add_option("--origin",type="string",help="x,y",default="256,256")
+	parser.add_option("--xrange",type="string",help="x0,x1,dx",default="0,1,1")
+	parser.add_option("--yrange",type="string",help="y0,y1,dy",default="0,1,1")
 #	parser.add_option("--zrange",type="string",help="z0,zx,z1",default="0,1,1")
 	parser.add_option("--wavelen",type="float",help="Wavelength in pixels",default=16.0)
 	parser.add_option("--phase",type="float",help="Phase shift",default=0)
+	parser.add_option("--plane",action="store_true",help="Make a plane wave rather than a circular wave",default=False)
 
 	(options, args) = parser.parse_args()
 	
-	size=512,256
+	size=eval(options.size)
+	origin=eval(options.origin)
 	
 	for i in range(8):
 		nsrc=0
@@ -62,14 +66,22 @@ Various CTF-related operations on images."""
 		t=EMData(*size)
 		for x in range(*eval(options.xrange)):
 			for y in range(*eval(options.yrange)):
-				t.process_inplace("testimage.sphericalwave",{"wavelength":options.wavelen,"phase":options.phase+2*pi*x/(options.wavelen)-0.25*pi*i,"x":x+size[0]/2,"y":y+size[1]/2,"z":0})
+				if options.plane:
+					t.process_inplace("testimage.sinewave",{"wavelength":options.wavelen,"phase":options.phase+2*pi*x/(options.wavelen)-0.25*pi*i,"axis":"x"})
+				else :
+					t.process_inplace("testimage.sphericalwave",{"wavelength":options.wavelen,"phase":options.phase+2*pi*x/(options.wavelen)-0.25*pi*i,"x":x+origin[0],"y":y+origin[1],"z":0})
 				sm+=t
 				nsrc+=1
-		sm["render_min"]=-nsrc/256.0
-		sm["render_max"]=nsrc/256.0
-		sm.write_image("img.%d.png"%i)
+		if options.plane :
+			sm["render_min"]=sm["minimum"]
+			sm["render_max"]=sm["maximum"]
+		else :
+			sm["render_min"]=-10.0*nsrc/256.0
+			sm["render_max"]=10.0*nsrc/256.0
+		sm.write_image("img.%02d.png"%i)
 		
-	os.system("animate -delay 2 img.?.png")
+	os.system("ffmpeg -i img.%02d.png out.mov")
+#	os.system("animate -delay 2 img.?.png")
 
 if __name__ == "__main__":
    	main(sys.argv)

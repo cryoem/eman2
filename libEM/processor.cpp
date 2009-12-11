@@ -7033,7 +7033,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 
 	if(ndim==1) {	//1D
 		for(int i=0; i<nx; ++i, ++dat) {
-			*dat = sin(i*(2.0f*M_PI/wavelength) - phase*180/M_PI);
+			*dat = sin(i*(2.0f*M_PI/wavelength) + phase);
 		}
 	}
 	else if(ndim==2) {	//2D
@@ -7044,13 +7044,13 @@ void TestImageSinewave::process_inplace(EMData * image)
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i, ++dat) {
 				if(alpha != 0) {
-					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wavelength) + phase);
 				}
 				else if(axis.compare("y")==0 || axis.compare("Y")==0) {
-					*dat = sin(j*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+					*dat = sin(j*(2.0f*M_PI/wavelength) + phase);
 				}
 				else {
-					*dat = sin(i*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+					*dat = sin(i*(2.0f*M_PI/wavelength) + phase);
 				}
 			}
 		}
@@ -7073,13 +7073,13 @@ void TestImageSinewave::process_inplace(EMData * image)
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i<nx; ++i, ++dat) {
 					if(axis.compare("z")==0 || axis.compare("Z")==0) {
-						*dat = sin(k*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+						*dat = sin(k*(2.0f*M_PI/wavelength) + phase);
 					}
 					else if(axis.compare("y")==0 || axis.compare("Y")==0) {
-						*dat = sin(j*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+						*dat = sin(j*(2.0f*M_PI/wavelength) + phase);
 					}
 					else {
-						*dat = sin(i*(2.0f*M_PI/wavelength) - phase*M_PI/180);
+						*dat = sin(i*(2.0f*M_PI/wavelength) + phase);
 					}
 				}
 			}

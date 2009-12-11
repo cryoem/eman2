@@ -147,17 +147,45 @@ def main():
 	print "Seeding full classification matrix"
 	mxstg1=EMData(args[5],0)
 	mx=EMData(clen,rlen,1)
+	mx.to_zero()
 	if options.saveali:
-		mx.to_zero()
 		for i in range(1,5): mx.write_image(args[3],i)		# seed alignment data with nothing
+	mx.add(-1.0e38)	# a large negative value to be replaced later
 
 	for ptcl in range(rlen):
+		# find the best class from the coarse search
+		val=(1.0e38,-1)
 		for cls1 in range(clen_stg1):
-			val=mxstg1(cls1,ptcl)
-			for i in classes[cls1]: mx[i,ptcl]=val
+			val=min(val,(mxstg1[cls1,ptcl],cls1))
+		
+		# then set the corresponding values in the full matrix to 0
+		for i in classes[val[1]]: mx[i,ptcl]=0.0
 			
 	mx.update()
 	mx.write_image(args[2],0)
+
+	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero"  %(args[0],args[1],args[2],options.cmp,options.simalign,options.simaligncmp)
+	if options.simmask!=None : cmd += " --mask=%s"%options.simmask
+	
+	if ( options.simralign != None ):
+		cmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+	
+	if (options.verbose):
+		cmd += " -v"
+	
+	if options.parallel: cmd += " --parallel=%s" %options.parallel
+	
+	#if (options.lowmem): e2simmxcmd += " --lowmem"	
+	
+	if (options.shrink):
+		cmd += " --shrink="+str(options.shrink)
+		
+	if ( nofilecheck ):
+		cmd += " --nofilecheck"
+		
+	print "executing ",cmd
+	os.system(cmd)
+	
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 	
