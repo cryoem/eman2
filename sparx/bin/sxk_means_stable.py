@@ -80,6 +80,7 @@ def main():
 
 		global_def.BATCH = True
 		if options.MPI:
+			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 			if options.CUDA:
 				from  applications  import  k_means_stab_MPICUDA_stream
