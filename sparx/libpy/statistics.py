@@ -3947,7 +3947,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 			
 			#if myid == main_node: ts1 = time()
 			if switch_SA:
-				Kmeans.one_iter_SA()
+				status = Kmeans.one_iter_SA()
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 				if ct == 0: ctconv += 1
@@ -5833,6 +5833,7 @@ def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, s
 def isc_update_ite_conf(conf_file, ite):
 	import ConfigParser
 	config = ConfigParser.ConfigParser()
+	config.read(conf_file)
 	config.set('main', 'ite', ite)
 	config.write(open(conf_file, 'w'))
 
@@ -5852,7 +5853,7 @@ def isc_read_conf(conf_file):
 	cfgclu['f']          = float(cfgclu['f'])
 	cfgclu['th_nobj']    = int(cfgclu['th_nobj'])
 	cfgclu['t0']         = float(cfgclu['t0'])
-	cfgclu['ctf']        = eval(cgfclu['ctf'])
+	cfgclu['ctf']        = eval(cfgclu['ctf'])
 	cfgclu['maxit']      = int(cfgclu['maxit'])
 	cfgclu['rand_seed']  = int(cfgclu['rand_seed'])
 	cfgclu['im_per_grp'] = int(cfgclu['im_per_grp'])
