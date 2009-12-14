@@ -50,7 +50,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.particles_dict = {} #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (1, 1, 1)
         self.counter = counterGen()
-        
+                
         self.__create_ui()
         
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
@@ -60,6 +60,19 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
         get_application().show_specific(self.main_image)
         
+        if self.get_db_item("boxes") == None:
+            self.set_db_item("boxes", [])
+        else:
+            boxList = self.get_db_item("boxes")
+            for boxCoords in boxList:
+                key = self.generate_emshape_key()
+                emshape_list = ["rectline"]
+                emshape_list.extend(list(self.color))
+                emshape_list.extend(list(boxCoords))
+                emshape_list.append(2)
+                emshape = EMShape( emshape_list )
+                self.main_image.add_shape(key, emshape)
+            self.main_image.updateGL()
         
     def __create_ui(self):
         self.boxWidthLabel = QtGui.QLabel(self.tr("Box &Width"))
@@ -102,7 +115,46 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.addWidget(self.gen_output_but)
         self.vbl.addWidget(self.done_but)
         self.vbl.addWidget(self.status_bar)
-        
+
+    def box_coords_string(self):
+        lines = [ "\t".join( [str(i) for i in coords_size_tuple] ) for coords_size_tuple in self.particles_dict.keys() ]
+        ret = "\n".join(lines)
+        print ret
+        return ret
+    def generate_emshape_key(self):
+        i = self.counter.next()
+        return "rectline%i" % i
+    def get_width(self):
+        return self.boxWidthSpinBox.value()
+
+    def get_db_item(self, key):
+        db_name = E2HELIXBOXER_DB + "#" + key
+        db = db_open_dict(db_name)
+        val = db[self.filename]
+        db_close_dict(db_name)
+        return val
+    def remove_db_item(self, key):
+        db_name = E2HELIXBOXER_DB + "#" + key
+        db = db_open_dict(db_name)
+        db.pop(key)
+    def set_db_item(self, key, value):
+        db_name = E2HELIXBOXER_DB + "#" + key
+        db = db_open_dict(db_name)
+        db[self.filename] = value
+        db_close_dict(db_name)
+    def add_box_to_db(self, boxCoords):
+        assert len(boxCoords) == 5, "boxCoords must have 5 items"
+        db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
+        boxList = db[self.filename] #Get a copy of the db in memory
+        boxList.append(tuple(boxCoords))
+        db[self.filename] = boxList #Needed to save changes to disk
+    def remove_box_from_db(self, boxCoords):
+        assert len(boxCoords) == 5, "boxCoords must have 5 items"
+        db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
+        boxList = db[self.filename] #Get a copy of the db in memory
+        boxList.remove(tuple(boxCoords))
+        db[self.filename] = boxList #Needed to save changes to disk
+
     def mouse_down(self, event, click_loc):
         """
         If the shift key is pressed and the click is inside a box, delete it.
@@ -162,12 +214,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.current_boxkey = None
             self.initial_helix_box_data_tuple = None
         elif self.edit_mode == "delete":
+            boxCoords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
+            self.remove_box_from_db(boxCoords)
             self.main_image.del_shape(box_key)
             self.main_image.updateGL()
             self.current_boxkey = None
         else:
             self.current_boxkey = box_key
-            self.initial_helix_box_data_tuple = list( self.main_image.get_shapes().get(box_key).getShape()[4:] )
+            self.initial_helix_box_data_tuple = tuple( self.main_image.get_shapes().get(box_key).getShape()[4:9] )
 
     def mouse_drag(self, event, cursor_loc):
         """
@@ -183,7 +237,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 emshape_box = EMShape(emshape_tuple)
                 self.main_image.add_shape(self.current_boxkey, emshape_box)
                 self.main_image.updateGL()
-                self.initial_helix_box_data_tuple = emshape_tuple[4:]
+                self.initial_helix_box_data_tuple = emshape_tuple[4:9]
                 self.edit_mode = "2nd_point"
                 
             elif self.edit_mode == "delete":
@@ -218,7 +272,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
 
         if self.current_boxkey and self.edit_mode != "delete":
+            if self.initial_helix_box_data_tuple in self.get_db_item("boxes"):
+                self.remove_box_from_db(self.initial_helix_box_data_tuple)
             box = self.main_image.get_shapes().get(self.current_boxkey)
+            boxCoords = box.getShape()[4:9]
+            self.add_box_to_db(boxCoords)
             
             #Now we'll get the area of the image that was boxed, and display it
             control_pts = box.control_pts()
@@ -244,7 +302,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             particle = em_image.get_rotated_clip( tr, particle_dimensions )
             data_tuple = tuple(box.getShape()[4:9])
             self.particles_dict[data_tuple] = particle
-            self.set_db_item("boxes", self.particles_dict.keys() )
             
             if not self.particle_viewer:
                 self.particle_viewer = EMImage2DModule(application=get_application())
@@ -266,27 +323,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.edit_mode = None
         self.current_boxkey = None #We are done editing the box
         self.initial_helix_box_data_tuple = None
-    def generate_emshape_key(self):
-        i = self.counter.next()
-        return "rectline%i" % i
-    def get_width(self):
-        return self.boxWidthSpinBox.value()
-    def get_db_item(self, key):
-        db_name = E2HELIXBOXER_DB + "#" + key
-        db = db_open_dict(db_name)
-        val = db[self.filename]
-        db_close_dict(db_name)
-        return val
-    def set_db_item(self, key, value):
-        db_name = E2HELIXBOXER_DB + "#" + key
-        db = db_open_dict(db_name)
-        db[self.filename] = value
-        db_close_dict(db_name)
-    def box_coords_string(self):
-        lines = [ "\t".join( [str(i) for i in coords_size_tuple] ) for coords_size_tuple in self.particles_dict.keys() ]
-        ret = "\n".join(lines)
-        print ret
-        return ret
+
 
 def main():
     progname = os.path.basename(sys.argv[0])
@@ -306,7 +343,6 @@ e2helixboxer.py ????.mrc --boxwidth=256
     else:
         filename = None
     logid=E2init(sys.argv)
-    db = db_open_dict(E2HELIXBOXER_DB)
     
     app = EMStandAloneApplication()
     helixboxer = EMHelixBoxerWidget(filename, app)
