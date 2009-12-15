@@ -687,7 +687,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
 				send_EMData(tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
-		to_break = mpi_bcast(to_break, 1, MPI_INT, group_main_node, group_comm)
+		to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		to_break = int(to_break[0])
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		mpi_barrier(MPI_COMM_WORLD)
