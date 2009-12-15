@@ -327,6 +327,9 @@ def main():
 				wgts[i] = wgts[i][0]
 			boot = None
 			keep = None
+	else:
+		boot = None
+		keep = None
 	# change weights to cummulative probabilities
 	wgts = prepare_wgts( wgts )
 	outdir = args[2]

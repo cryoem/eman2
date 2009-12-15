@@ -479,13 +479,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for i in xrange(number_of_ave):
 			qt[i][0] = criterion_list[i]
 			qt[i][3] = i
-		english = ['first', 'second', 'third']
+		english = ['first', 'second', 'third', 'fourth', 'fifth']
 		
 	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
 	cs = [0.0]*2
 	to_break = 0
+
 	for ipt in xrange(max(restart, 0), N_merge):
 
 		if key == group_main_node:        msg = ""
@@ -572,12 +573,18 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        total_iter += 1
 
 			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
+			alpha_list = [0.0]*len(data)
+			sx_list = [0.0]*len(data)
+			sy_list = [0.0]*len(data)
 			mirror_list = [0]*len(data)
 			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
 			finfo = open(info_file, "w")
 			for nim in xrange(len(data)):
 			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim])
 			        finfo.write("%20f %20f %20f %10d %10.4f\n"%(alpha, sx, sy, mirror, 1.0))
+				alpha_list[nim] = alpha
+				sx_list[nim] = sx
+				sy_list[nim] = sy
 			        mirror_list[nim] = mirror
 			finfo.close()
 		else:
@@ -597,6 +604,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        mirror_list[nim] = mirror
 			finfo.close()
 
+		alpha_list_gathered = mpi_gatherv(alpha_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		sx_list_gathered = mpi_gatherv(sx_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		sy_list_gathered = mpi_gatherv(sy_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		mirror_list_gathered = mpi_gatherv(mirror_list, len(data), MPI_INT, recvcount, disps2, MPI_INT, main_node, MPI_COMM_WORLD)
 
 		if key == group_main_node:
@@ -638,6 +648,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				        savg.append(img.copy())
 				        img.write_image(os.path.join(outdir, "avg_before_merge%02d.hdf"%(ipt)), isav)
 					
+				old_best_criterion = qt[0][0]
+				old_worst_criterion = qt[number_of_ave-1][0]
+				
 				for isav in xrange(number_of_ave):
 					qt[isav+number_of_ave][0] = qt[isav][0]
 					qt[isav+number_of_ave][1] = qt[isav][1]
@@ -654,13 +667,24 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					print_msg("Criterion for current average %2d: %20.8f\n"%(isav, qt[isav][0]))
 				for isav in xrange(number_of_ave):
 					print_msg("Criterion for previous average %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav+number_of_ave][0], qt[isav+number_of_ave][2], qt[isav+number_of_ave][3]))
-				old_criterion = qt[-1][0]
+
 				qt.sort(reverse = True)
-				if old_criterion == qt[number_of_ave-1][0]:
+
+				if old_worst_criterion == qt[number_of_ave-1][0]:
 					to_break += 1
 					print_msg("This is the %s straight time that there is no improvement in criterion.\n"%(english[to_break-1]))
 				else:
 					to_break = 0
+				
+				if old_best_criterion < qt[0][0]:
+					best_ali_params = []
+					iave = qt[0][3]
+					for nim in xrange(nima):
+						best_ali_params.append(alpha_list_gathered[iave*nima+nim])
+						best_ali_params.append(sx_list_gathered[iave*nima+nim])
+						best_ali_params.append(sy_list_gathered[iave*nima+nim])
+						best_ali_params.append(mirror_list_gathered[iave*nima+nim])
+					
 				for isav in xrange(number_of_ave):
 					print_msg("Sorted criterion %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav][0], qt[isav][2], qt[isav][3]))
 				print_msg("-"*100+"\n")
@@ -694,16 +718,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
 		if to_break >= 3: break
 
-	par_str = ["xform.align2d"]
-	if color == 0:    # We can only use one group of alignment as the final results
-		if key == group_main_node:
-			if file_type(stack) == "bdb":
-				recv_attr_dict_bdb(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
-			else:
-				recv_attr_dict(group_main_node, stack, data, par_str, image_start, image_end, group_number_of_proc, group_comm)
-		else:
-			send_attr_dict(group_main_node, data, par_str, image_start, image_end, group_comm)
-	if myid == main_node:  print_end_msg("ali2d_a_MPI")
+	if myid == main_node:
+		img = EMData()
+		for nim in xrange(nima):
+			img.read_image(stack, nim)
+			set_params2D(img, [float(best_ali_params[nim*4]), float(best_ali_params[nim*4+1]), float(best_ali_params[nim*4+2]), int(best_ali_params[nim*4+3]), 1.0])
+			img.write_image(stack, nim)
+		print_end_msg("ali2d_a_MPI")
 
 
 '''
@@ -2918,7 +2939,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					a1 = a1[0]
 				else:
 					a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Criterion = %15.8e\n"%(a1)
+				msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
 				print_msg(msg)
 				
 				if a1 < a0:
