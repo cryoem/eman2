@@ -148,7 +148,7 @@ class EMParallelSimMX:
 		if file_exists(output) and not options.fillzero:
 			if options.force: remove_file(output)
 			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
-			
+		
 		e = EMData(self.clen,self.rlen)
 		e.to_zero()
 		e.set_attr(PROJ_FILE_ATTR,self.args[0])
@@ -164,7 +164,7 @@ class EMParallelSimMX:
 		Gets the blocks that will be processed in parallel, these are essentially ranges
 		'''
 		
-		steve_factor = 8 # simmx should do more 
+		steve_factor = 8 # increase number of jobs a bit for better distribution
 		total_jobs = steve_factor*self.num_cpus
 		
 		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
@@ -202,43 +202,6 @@ class EMParallelSimMX:
 #		print self.clen,self.rlen,residual_c,residual_r
 		return blocks
 	
-	
-	def check_blocks(self,blocks):
-		'''
-		@param blocks that which is returned from __get_blocks -
-		This function is for testing. 
-		Goes through all of the blocks and adds a '1' to the pixels in the corresponding
-		location in the image for each block. If any pixel is non zero there is a problem
-		The call to this function could be removed eventually - if the data sets are huge
-		then it could potentially occupy a lot of memory 
-		'''
-		e = EMData()
-		e.set_size(self.clen,self.rlen)
-		e.to_zero()
-		
-		for block in blocks:
-			tmp = EMData()
-			tmp.set_size(self.clen,self.rlen)
-			tmp.to_zero()
-			g = EMData()
-			g.set_size(block[1]-block[0],block[3]-block[2],1)
-			g.to_one()
-			tmp.insert_clip(g,[block[0],block[2],0])
-			e.add(tmp)
-			
-		f = EMData()
-		f.set_size(self.clen,self.rlen)
-		f.to_one()
-		
-		if not e == f:
-			e.write_image("e.mrc")
-			f.write_image("f.mrc")
-			(e-f).write_image("error_block.mrc")
-			print "block error",e["mean"]
-			print "wrote error_block.mrc to disk"
-			print blocks	
-			raise RuntimeError("There was a catastrophic error: please send that which was printed out to EMAN2 developers")
-		
 	def execute(self):
 		'''
 		The main function to be called
@@ -260,8 +223,25 @@ class EMParallelSimMX:
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
-				
-				
+				if self.options.fillzero :
+					# for each particle check to see which portion of the matrix we need to fill
+					for i in range(block[2],block[3]):
+						c=EMData()
+						c.read_image(self.args[2],0,False,Region(block[0],i,block[1]-block[0]+1,1))
+						rng=[]
+						inr=0
+						st=0
+						for j in range(c["nx"]):
+							if c[j]==0 and not inr:
+								st=j
+								inr=1
+							if c[j]!=0 and inr:
+								rng.append((i,st,j-1))
+								inr=0
+						if inr :
+							rng.append((i,st,j))
+					data["partial"]=rng
+						
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				#print "Est %d CPUs"%etc.cpu_est()
@@ -379,12 +359,18 @@ class EMSimTaskDC(EMTask):
 			ptcls[idx] = image
 		return refs,ptcls,shrink,mask
 			
-	def __cmp_one_to_many(self,ptcl,refs,mask):
+	def __cmp_one_to_many(self,ptcl,refs,mask,partial=None):
 	
 		options = self.options
 		
 		data = {}
 		for ref_idx,ref in refs.items():
+			if partial!=None :
+				for i in partial:
+					if ref_idx>=i[1] and ref_idx<=i[2] : break	# this ref is in the list, go ahead and compute
+				else :
+					data[ref_idx] = (None,None)			# ref wasn't in the partial list, skip this one
+					continue
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 	
@@ -417,7 +403,9 @@ class EMSimTaskDC(EMTask):
 		for ptcl_idx,ptcl in ptcls.items():
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
-			sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask)
+			if self.data.has_key("partial") :
+				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[i for i in self.data["partial"] if i[0]==ptcl_idx])
+			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
 		
@@ -645,7 +633,7 @@ def main():
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset)
 		for c,v in enumerate(row):
 			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
-			else mxout[0].set_value_at(c,r,0,v[0])
+			else: mxout[0].set_value_at(c,r,0,v[0])
 		
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		mxout[0].process_inplace("math.finite",{"to":1e24})
