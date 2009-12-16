@@ -244,7 +244,7 @@ class EMParallelSimMX:
 							rng.append((i,st,j))
 					data["partial"]=rng						
 				
-				if fillzero and len(data["partial"])==0 : continue		# nothing to compute in this block, skip it completely
+				if self.options.fillzero and len(data["partial"])==0 : continue		# nothing to compute in this block, skip it completely
 				else :
 					task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 					#print "Est %d CPUs"%etc.cpu_est()
@@ -426,7 +426,7 @@ class EMSimTaskDC(EMTask):
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
 			if self.data.has_key("partial") :
-				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[i for i in self.data["partial"] if i[0]==ptcl_idx])
+				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx])
 			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
