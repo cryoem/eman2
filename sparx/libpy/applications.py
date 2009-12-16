@@ -11488,7 +11488,6 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt
 	import sys, logging, os, pickle
 
-	sys.argv  = mpi_init(len(sys.argv), sys.argv)
 	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
