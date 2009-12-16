@@ -524,7 +524,7 @@ def runEMDCServer(port,verbose,killclients=False):
 				print "Port in use, waiting"
 				time.sleep(5)
 				continue
-		if verbose: print server
+		if verbose: print "Server started on port ",port
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):

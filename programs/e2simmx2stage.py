@@ -93,7 +93,7 @@ def main():
 	os.system(cmd)
 	
 	# Go through the reference self-simmx and determine the most self-dissimilar set of references
-	print "Finding dissimilar classification centers"
+	print "Finding %d dissimilar classification centers"%clen_stg1
 	ref_simmx=EMData(args[3],0)
 	ref_orts=EMData.read_images(args[3],(1,2,3,4))
 	centers=[0]		# start with the first (generally a top view) image regardless 
@@ -118,7 +118,7 @@ def main():
 		for j in xrange(3): classes[quals[j][1]].append(i)
 	
 	# now generate an averaged reference for each center
-	print "Averaging for each center"
+	print "Averaging each center"
 	for ii,i in enumerate(classes):
 #		print "%d.  %d"%(ii,len(i)),i[:6]
 		avg=EMData(args[0],i[0])
@@ -133,7 +133,7 @@ def main():
 		avg.mult(1.0/len(i))
 		avg["class_ptcl_idxs"]=i
 		avg["class_ptcl_src"]=args[0]
-		avg.write_image(args[4],-1)
+		avg.write_image(args[4],ii)
 			
 	############### Step 2 - classify the particles against the averaged references
 	print "First stage particle classification"
@@ -164,11 +164,11 @@ def main():
 	mx.update()
 	mx.write_image(args[2],0)
 
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero"  %(args[0],args[1],args[2],options.cmp,options.simalign,options.simaligncmp)
-	if options.simmask!=None : cmd += " --mask=%s"%options.simmask
+	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp)
+	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	
-	if ( options.simralign != None ):
-		cmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+	if ( options.ralign != None ):
+		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)
 	
 	if (options.verbose):
 		cmd += " -v"
@@ -179,9 +179,6 @@ def main():
 	
 	if (options.shrink):
 		cmd += " --shrink="+str(options.shrink)
-		
-	if ( nofilecheck ):
-		cmd += " --nofilecheck"
 		
 	print "executing ",cmd
 	os.system(cmd)

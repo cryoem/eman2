@@ -1081,7 +1081,7 @@ The basic design of EMAN Processors: <br>\
 		}
 		void process_inplace(EMData * image);
 
-		void set_params(const Dict & new_params)
+		virtual void set_params(const Dict & new_params)
 		{
 			params = new_params;
 			if (params.size() == 1) {
@@ -1631,7 +1631,7 @@ The basic design of EMAN Processors: <br>\
 	/**f(x) = x if x >= minval; f(x) = minval if x < minval
 	 *@param minval Everything below this value is set to this value
 	 */
-	class ToMinvalProcessor:public RealPixelProcessor
+	class ToMinvalProcessor:public Processor
 	{
 	  public:
 		string get_name() const
@@ -1643,28 +1643,27 @@ The basic design of EMAN Processors: <br>\
 			return new ToMinvalProcessor();
 		}
 
+		void process_inplace(EMData *image);
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("minval", EMObject::FLOAT, "Everything below this value is set to this value");
+			d.put("newval", EMObject::FLOAT, "If set, values below minval will be set to newval instead of minval ");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "f(x) = x if x >= minval; f(x) = minval if x < minval.";
+			return "f(x) = x if x >= minval; f(x) = minval|newval if x < minval.";
 		}
 		
 		static const string NAME;
 
 	protected:
-		inline void process_pixel(float *x) const
-		{
-			if (*x < value) {
-				*x = value;
-			}
-		}
+
 	};
+
 
 
 	/**f(x) = x-minval if x >= minval; f(x) = 0 if x < minval

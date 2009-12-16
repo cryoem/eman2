@@ -1302,6 +1302,30 @@ void MaskEdgeMeanProcessor::calc_locals(EMData * image)
 	ring_avg = sum / nitems;
 }
 
+void ToMinvalProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	float minval = params.set_default("minval",0.0);
+	float newval = params.set_default("newval",minval);
+
+	size_t size = (size_t)image->get_xsize() *
+		          (size_t)image->get_ysize() *
+		          (size_t)image->get_zsize();
+	float *data = image->get_data();
+
+	
+
+	for (size_t i = 0; i < size; i++) {
+		if (data[i]<minval) data[i]=newval;
+	}
+	image->update();
+}
+
+
 void ComplexPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {

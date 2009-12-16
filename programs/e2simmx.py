@@ -75,7 +75,7 @@ def opt_rectangular_subdivision(x,y,n):
 		
 		candidates.sort()
 		#print candidates
-		print " %d x %d blocks -> %d subprocesses"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1])
+		print " %d x %d blocks -> %d subprocesses (%d x %d each)"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1],x/candidates[0][1][0],y/candidates[0][1][1])
 
 		return candidates[0][1]
 
@@ -217,7 +217,7 @@ class EMParallelSimMX:
 			etc=EMTaskCustomer(self.options.parallel)
 
 			tasks=[]
-			for block in blocks:
+			for bn,block in enumerate(blocks):
 				
 				data = {}
 				data["references"] = ("cache",self.args[0],block[0],block[1])
@@ -225,6 +225,8 @@ class EMParallelSimMX:
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
 				if self.options.fillzero :
 					# for each particle check to see which portion of the matrix we need to fill
+					if (bn%10==0) : print "%d/%d     \r"%(bn,len(blocks)),
+					sys.stdout.flush()
 					for i in range(block[2],block[3]):
 						c=EMData()
 						c.read_image(self.args[2],0,False,Region(block[0],i,block[1]-block[0]+1,1))
@@ -240,13 +242,13 @@ class EMParallelSimMX:
 								inr=0
 						if inr :
 							rng.append((i,st,j))
-					data["partial"]=rng
-						
+					data["partial"]=rng						
 				
 				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 				#print "Est %d CPUs"%etc.cpu_est()
 				tasks.append(task)
 				
+			print "%d/%d         "%(bn,len(blocks))
 			self.tids=etc.send_tasks(tasks)
 			print len(self.tids)," tasks submitted"
 #			
@@ -274,10 +276,26 @@ class EMParallelSimMX:
 								sys.stdout.flush()
 								
 						self.tids.pop(i)
+					print len(self.tids),"simmx tasks left in main loop   \r",
+					sys.stdout.flush()
 
 				
 				time.sleep(10)
-			print ("All simmx tasks complete")
+			print "\nAll simmx tasks complete "
+			
+			# if using fillzero, we must fix the -1.0e38 values placed into empty cells
+			if self.options.fillzero :
+				print "Filling noncomputed regions in similarity matrix"
+				l=EMData()
+				for r in range(rlen):
+					l.read_image(self.args[2],0,False,Region(0,r,clen,1))
+					fill=l["maximum"]+.0001
+					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
+					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
+				
+				print "Filling complete"
+					
+
 			
 		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
 				
@@ -298,6 +316,8 @@ class EMParallelSimMX:
 		# Note this is region io - the init_memory function made sure the images exist and are the right dimensions (on disk)
 		for i,mxout in enumerate(result_data):
 			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
+		
+			
 
 from EMAN2db import EMTask
 class EMSimTaskDC(EMTask):
@@ -369,7 +389,7 @@ class EMSimTaskDC(EMTask):
 				for i in partial:
 					if ref_idx>=i[1] and ref_idx<=i[2] : break	# this ref is in the list, go ahead and compute
 				else :
-					data[ref_idx] = (None,None)			# ref wasn't in the partial list, skip this one
+					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
@@ -437,13 +457,19 @@ class EMSimTaskDC(EMTask):
 				result_data[0].set(rc,rr,cmp)
 				if self.options.has_key("align") and self.options["align"] != None:
 					tran = data[1]
-					params = tran.get_params("2d")
-					scale_correction = 1.0
-					if shrink != None: corretion = float(shrink)
-					result_data[1].set(rc,rr,scale_correction*params["tx"])
-					result_data[2].set(rc,rr,scale_correction*params["ty"])
-					result_data[3].set(rc,rr,params["alpha"])
-					result_data[4].set(rc,rr,params["mirror"])
+					if tran==None :
+						result_data[1].set(rc,rr,0)
+						result_data[2].set(rc,rr,0)
+						result_data[3].set(rc,rr,0)
+						result_data[4].set(rc,rr,0)					
+					else :
+						params = tran.get_params("2d")
+						scale_correction = 1.0
+						if shrink != None: corretion = float(shrink)
+						result_data[1].set(rc,rr,scale_correction*params["tx"])
+						result_data[2].set(rc,rr,scale_correction*params["ty"])
+						result_data[3].set(rc,rr,params["alpha"])
+						result_data[4].set(rc,rr,params["mirror"])
 					
 		for r in result_data: r.update()
 		
