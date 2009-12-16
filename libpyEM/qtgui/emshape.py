@@ -155,14 +155,16 @@ class EMShape:
 		elif s[0]=="rectline":
 			#This makes a rectangle based on a width and two points
 			#The two points are the endpoints for the longer axis of symmetry
-			#Those two points implicity define the length
+			#Those two points implicitly define the length
 			#The width is a parameter and together with the two coordinates, defines the rectangle
+			
+			assert s[4] != s[6] or s[5] != s[7], "The endpoints cannot coincide"
+			assert self.shape[8] >= 0, "The width must be positive"
+			assert self.shape[9] >= 0, "The line-width must be positive"
 			
 			pt0 = (s[4], s[5]) #first coordinate
 			pt1 = (s[6], s[7]) #second coordinate
-			assert self.shape[8] >= 0
 			width = s[8] #width
-			assert self.shape[9] >= 0
 			GL.glLineWidth(s[9])
 			#l_vect = (pt1[0]-pt0[0], pt1[1]-pt2[0]) #vector parallel to a longer side -- length vector
 			w_vect = ( -(pt1[1]-pt0[1]), pt1[0]-pt0[0] ) #vector parallel to a shorter side -- width vector
