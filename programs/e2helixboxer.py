@@ -2,17 +2,21 @@
 
 #Author: Ross Coleman
 
-from EMAN2 import test_image, get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end
+from EMAN2 import test_image, get_image_directory, Transform, Region, \
+    EMANVERSION, EMData, E2init, E2end
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
+from PyQt4 import QtGui, QtCore
 from emapplication import EMStandAloneApplication, get_application
 from emimage2d import EMImage2DModule
-#from emimagemx import EMImageMXModule
+from emselector import EMSelectorModule
 from emshape import EMShape, EMShapeDict
-from optparse import OptionParser
-
 from math import *
-import weakref, sys, os
-from PyQt4 import QtGui, QtCore
+from optparse import OptionParser
+import weakref
+import sys
+import os
+#from emimagemx import EMImageMXModule
+
 
 
 E2HELIXBOXER_DB = "bdb:e2helixboxercache"
@@ -26,7 +30,8 @@ def counterGen():
     while True:
         i += 1
         yield i
-        
+
+
 class EMHelixBoxerWidget(QtGui.QWidget):
     def __init__(self, filename, app):
         QtGui.QWidget.__init__(self)
@@ -50,13 +55,25 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.particles_dict = {} #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (1, 1, 1)
         self.counter = counterGen()
-                
+        self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
+        self.image_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
+
         self.__create_ui()
+        
+        self.coords_ftype_combobox.addItems( sorted(self.coords_file_extension_dict.keys()) )
+        self.segs_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
+        self.ptcls_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
+        width = 100
+        self.box_width_spinbox.setValue(width)
+        self.ptcls_width_spinbox.setValue( width )
+        self.ptcls_length_spinbox.setValue( width )
+        self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
         
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
-        self.connect( self.gen_output_but, QtCore.SIGNAL("clicked()"), self.box_coords_string )
+        self.connect(self.output_dir_pushbutton, QtCore.SIGNAL("clicked()"), self.choose_dir )
+        self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
 
         get_application().show_specific(self.main_image)
         
@@ -75,57 +92,165 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.main_image.updateGL()
         
     def __create_ui(self):
-        self.boxWidthLabel = QtGui.QLabel(self.tr("Box &Width"))
-        self.boxWidthSpinBox = QtGui.QSpinBox()
-        self.boxWidthSpinBox.setMaximum(1000)
-        self.boxWidthSpinBox.setValue(100)
-        self.boxWidthLabel.setBuddy(self.boxWidthSpinBox)
+        self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
+        self.box_width_spinbox = QtGui.QSpinBox()
+        self.box_width_spinbox.setMaximum(1000)
+        self.box_width_label.setBuddy(self.box_width_spinbox)
         
-        self.imgQualityLabel = QtGui.QLabel(self.tr("Image &Quality"))
-        self.imgQualityComboBox = QtGui.QComboBox()
+        self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
+        self.img_quality_combobox = QtGui.QComboBox()
         qualities = [str(i) for i in range(5)]
-        self.imgQualityComboBox.addItems(qualities)
-        self.imgQualityComboBox.setCurrentIndex(2)
-        self.imgQualityLabel.setBuddy(self.imgQualityComboBox)
-             
-        self.gen_output_but=QtGui.QPushButton(self.tr("&Write Output"))
-        self.done_but=QtGui.QPushButton(self.tr("&Done"))
+        self.img_quality_combobox.addItems(qualities)
+        self.img_quality_combobox.setCurrentIndex(2)
+        self.img_quality_label.setBuddy(self.img_quality_combobox)
         
+        self.coords_groupbox = QtGui.QGroupBox(self.tr("Write &Coordinates:"))
+        self.coords_groupbox.setCheckable(True)
+        coords_ftype_label = QtGui.QLabel(self.tr("&File Type:"))
+        self.coords_ftype_combobox = QtGui.QComboBox()
+        coords_ftype_label.setBuddy(self.coords_ftype_combobox)
+        
+        self.segs_groupbox = QtGui.QGroupBox(self.tr("Write &Segments:"))
+        self.segs_groupbox.setCheckable(True)
+        segs_ftype_label = QtGui.QLabel(self.tr("File &Type:"))
+        self.segs_ftype_combobox = QtGui.QComboBox()
+        segs_ftype_label.setBuddy(self.segs_ftype_combobox)
+        
+        self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
+        self.ptcls_groupbox.setCheckable(True)
+        ptcls_ftype_label = QtGui.QLabel(self.tr("File T&ype:"))
+        self.ptcls_ftype_combobox = QtGui.QComboBox()
+        ptcls_ftype_label.setBuddy(self.ptcls_ftype_combobox)
+        ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
+        self.ptcls_overlap_spinbox = QtGui.QSpinBox()
+        self.ptcls_overlap_spinbox.setMaximum(1000)
+        ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
+        ptcls_width_label = QtGui.QLabel(self.tr("W&idth:"))
+        self.ptcls_width_spinbox = QtGui.QSpinBox()
+        self.ptcls_width_spinbox.setMaximum(1000)
+        ptcls_width_label.setBuddy(self.ptcls_width_spinbox)
+        ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
+        self.ptcls_length_spinbox = QtGui.QSpinBox()
+        self.ptcls_length_spinbox.setMaximum(1000)
+        ptcls_length_label.setBuddy(self.ptcls_length_spinbox)
+        
+        output_dir_label = QtGui.QLabel(self.tr("Output &Directory"))
+        self.output_dir_line_edit = QtGui.QLineEdit()
+        output_dir_label.setBuddy(self.output_dir_line_edit)
+        self.output_dir_pushbutton = QtGui.QPushButton(self.tr("&Browse"))
+        self.write_output_button = QtGui.QPushButton(self.tr("W&rite Output"))
+
+        self.done_but=QtGui.QPushButton(self.tr("&Done"))
+
+
+
         self.status_bar = QtGui.QStatusBar()
         self.status_bar.showMessage("Ready",10000)
         
-        self.imgQualityComboBox.setEnabled(False)
+        self.img_quality_combobox.setEnabled(False)
+        
         self.done_but.setEnabled(False)
-        #self.gen_output_but.setEnabled(False)
+        #self.writeCoordsButton.setEnabled(False)
         
         widthLayout = QtGui.QHBoxLayout()
-        widthLayout.addWidget(self.boxWidthLabel)
-        widthLayout.addWidget(self.boxWidthSpinBox)
+        widthLayout.addWidget(self.box_width_label)
+        widthLayout.addWidget(self.box_width_spinbox)
         
         qualityLayout = QtGui.QHBoxLayout()
-        qualityLayout.addWidget(self.imgQualityLabel)
-        qualityLayout.addWidget(self.imgQualityComboBox)
+        qualityLayout.addWidget(self.img_quality_label)
+        qualityLayout.addWidget(self.img_quality_combobox)
+        
+        coords_ftype_layout = QtGui.QHBoxLayout()
+        coords_ftype_layout.addWidget(coords_ftype_label)
+        coords_ftype_layout.addWidget(self.coords_ftype_combobox)
+        self.coords_groupbox.setLayout(coords_ftype_layout)
+        
+        segs_ftype_layout = QtGui.QHBoxLayout()
+        segs_ftype_layout.addWidget(segs_ftype_label)
+        segs_ftype_layout.addWidget(self.segs_ftype_combobox)
+        self.segs_groupbox.setLayout(segs_ftype_layout)
+        
+        ptcls_ftype_layout = QtGui.QHBoxLayout()
+        ptcls_ftype_layout.addWidget(ptcls_ftype_label)
+        ptcls_ftype_layout.addWidget(self.ptcls_ftype_combobox)
+        
+        ptcls_overlap_layout = QtGui.QHBoxLayout()
+        ptcls_overlap_layout.addWidget(ptcls_overlap_label)
+        ptcls_overlap_layout.addWidget(self.ptcls_overlap_spinbox)
+        
+        ptcls_width_layout = QtGui.QHBoxLayout()
+        ptcls_width_layout.addWidget(ptcls_width_label)
+        ptcls_width_layout.addWidget(self.ptcls_width_spinbox)
+        
+        ptcls_length_layout = QtGui.QHBoxLayout()
+        ptcls_length_layout.addWidget(ptcls_length_label)
+        ptcls_length_layout.addWidget(self.ptcls_length_spinbox)
+        
+        ptcls_opts_layout = QtGui.QVBoxLayout()
+        ptcls_opts_layout.addLayout(ptcls_ftype_layout)
+        ptcls_opts_layout.addLayout(ptcls_overlap_layout)
+        ptcls_opts_layout.addLayout(ptcls_width_layout)
+        ptcls_opts_layout.addLayout(ptcls_length_layout)
+        self.ptcls_groupbox.setLayout(ptcls_opts_layout)
+        
+        directory_layout = QtGui.QHBoxLayout()
+        directory_layout.addWidget(output_dir_label)
+        directory_layout.addWidget(self.output_dir_line_edit)
+        
+        button_layout = QtGui.QHBoxLayout()
+        button_layout.addWidget(self.output_dir_pushbutton)
+        button_layout.addWidget(self.write_output_button)
+        
+        layout = QtGui.QVBoxLayout()
+
         
         self.vbl = QtGui.QVBoxLayout(self)
         self.vbl.setMargin(0)
         self.vbl.setSpacing(6)
         self.vbl.setObjectName("vbl")
         self.vbl.addLayout(widthLayout)
-        self.vbl.addLayout(qualityLayout)        
-        self.vbl.addWidget(self.gen_output_but)
+        self.vbl.addLayout(qualityLayout)
+        self.vbl.addWidget(self.coords_groupbox)
+        self.vbl.addWidget(self.segs_groupbox)
+        self.vbl.addWidget(self.ptcls_groupbox)
+        self.vbl.addLayout(directory_layout)
+        self.vbl.addLayout(button_layout)
         self.vbl.addWidget(self.done_but)
         self.vbl.addWidget(self.status_bar)
 
     def box_coords_string(self):
-        lines = [ "\t".join( [str(i) for i in coords_size_tuple] ) for coords_size_tuple in self.particles_dict.keys() ]
+        print self.main_image.get_shapes()
+        coords_list = [ shape.getShape()[4:9] for shape in self.main_image.get_shapes().values() ]
+        lines = [ "\t".join( [str(i) for i in coords] ) for coords in coords_list ]
         ret = "\n".join(lines)
-        print ret
         return ret
+    def choose_dir(self):
+        #selector = EMSelectorModule(save_as_mode=False)
+        #selector.widget.save_as_line_edit.setEnabled(False)
+        #path = selector.exec_()
+        
+        path = QtGui.QFileDialog.getExistingDirectory(self)
+        
+        self.output_dir_line_edit.setText(path)
     def generate_emshape_key(self):
         i = self.counter.next()
         return "rectline%i" % i
     def get_width(self):
-        return self.boxWidthSpinBox.value()
+        return self.box_width_spinbox.value()
+    def width_changed(self, width):
+        self.ptcls_length_spinbox.setValue(width)
+        self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
+        self.ptcls_width_spinbox.setValue( width )
+    def write_coords(self):
+        em_selector_module = EMSelectorModule()
+        file_path = em_selector_module.exec_()
+        print file_path
+        print self.box_coords_string()
+    def write_particles(self):
+        em_selector_module = EMSelectorModule()
+        file_path = em_selector_module.exec_()
+        print file_path
+        pass
 
     def get_db_item(self, key):
         db_name = E2HELIXBOXER_DB + "#" + key
@@ -325,6 +450,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.initial_helix_box_data_tuple = None
 
 
+        
+        
+        
 def main():
     progname = os.path.basename(sys.argv[0])
     usage = """%prog [options] <image>....
