@@ -244,9 +244,11 @@ class EMParallelSimMX:
 							rng.append((i,st,j))
 					data["partial"]=rng						
 				
-				task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
-				#print "Est %d CPUs"%etc.cpu_est()
-				tasks.append(task)
+				if fillzero and len(data["partial"])==0 : continue		# nothing to compute in this block, skip it completely
+				else :
+					task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
+					#print "Est %d CPUs"%etc.cpu_est()
+					tasks.append(task)
 				
 			print "%d/%d         "%(bn,len(blocks))
 			self.tids=etc.send_tasks(tasks)

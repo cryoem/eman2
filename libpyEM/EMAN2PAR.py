@@ -1031,7 +1031,7 @@ class EMDCTaskClient(EMTaskClient):
 			for k,i in task.data.items():
 				if self.verbose>1 : print "Data translate ",k,i
 #				try:
-				if isinstance(i,list) and i[0]=="cache" :
+				if isinstance(i,list) and len[i]>0 and i[0]=="cache" :
 					cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
 					cache=db_open_dict(cname)
 					if self.verbose>2 : print "Open cache : ",cname
