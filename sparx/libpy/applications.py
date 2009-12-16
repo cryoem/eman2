@@ -269,6 +269,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if restart==-1:  
 			if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 			os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 	if max_iter == 0:
@@ -352,8 +353,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	Fourvar = False
 	N_merge = 50
 	grid_size = 32
-	crossover_rate = 0.8
-	mutation_rate = 0.01
+	crossover_rate = 0.9
+	mutation_rate = 0.001
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
@@ -673,8 +674,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if old_worst_criterion == qt[number_of_ave-1][0]:
 					to_break += 1
 					print_msg("This is the %s straight time that there is no improvement in criterion.\n"%(english[to_break-1]))
+					if to_break == 1:
+						mutation_rate = 0.002
+					elif to_break == 2:
+						mutation_rate = 0.005
+					elif to_break == 3:
+						mutation_rate = 0.01
+					elif to_break == 4:
+						mutation_rate = 0.02
 				else:
 					to_break = 0
+					mutation_rate = 0.001
 				
 				if old_best_criterion < qt[0][0]:
 					best_ali_params = []
