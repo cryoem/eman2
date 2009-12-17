@@ -238,7 +238,7 @@ class EMParallelSimMX:
 								st=j
 								inr=1
 							if c[j]!=0 and inr:
-								rng.append((i,st,j-1))
+								rng.append((i,st+block[0],j-1+block[0]))
 								inr=0
 						if inr :
 							rng.append((i,st,j))
@@ -300,14 +300,14 @@ class EMParallelSimMX:
 				l=EMData(self.args[2],0,True)
 				rlen=l["ny"]
 				clen=l["nx"]
-				os.system("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
+#				os.system("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
 				print "Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen)
 				l=EMData()
 				for r in range(rlen):
 					l.read_image(self.args[2],0,False,Region(0,r,clen,1))
 					fill=l["maximum"]+.0001
 					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
-					l.write_image(self.args[2]+"_x",0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
+					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
 				
 				print "Filling complete"
 					
@@ -467,10 +467,10 @@ class EMSimTaskDC(EMTask):
 		
 		for r,dd in sim_data.items():
 			for c,data in dd.items():
-				cmp = data[0]
+				comp = data[0]
 				rc = c-min_ref_idx # this was a solution to a bug
 				rr = r-min_ptcl_idx # this was a solution to a bug
-				result_data[0].set(rc,rr,cmp)
+				result_data[0].set(rc,rr,comp)
 				if self.options.has_key("align") and self.options["align"] != None:
 					tran = data[1]
 					if tran==None :

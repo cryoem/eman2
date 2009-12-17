@@ -3872,7 +3872,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 
 		db = db_open_dict(self.form_db_name)
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
-		ptwostage = ParamDef(name="twostage",vartype="boolean",desc_short="2 Stage Simmx",desc_long="This will determine the orientation in 2 stages, offering a significant speedup when there are many projections",property=None,defaultunits=db.get("twostage",dfl=False),choices=[])
+		ptwostage = ParamDef(name="twostage",vartype="int",desc_short="2 Stage Simmx",desc_long="This will determine the orientation in 2 stages, usually 5-10x faster, number specifies shrink factor for first stage, 0 disables",property=None,defaultunits=db.get("twostage",dfl=0),choices=[])
 
 		
 		params.append([pshrink,ptwostage])
@@ -4033,17 +4033,22 @@ class EMClassificationTools(ParticleWorkFlowTask):
 			if getattr(options,opt) != None: string_args.append(opt)
 		
 		if include_shrink and options.shrink > 1: string_args.append("shrink") # e2simmx doesn't like it if shrink is 1
-	
+		if options.twostage>0 : string_args.append("twostage")
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
 		
 		if not params.has_key("shrink"): params["shrink"] = 1
+		if not params.has_key("twostage"): params["twostage"] = 0
 		
 		if params["shrink"] <= 0:
 			error_message.append("The shrink argument in the simmx page must be atleast 1")
+
+		if params["twostage"] < 0:
+			error_message.append("The shrink argument in the simmx page must be atleast 0")
 			
 		options.shrink=params["shrink"]
+		options.twostage=params["twostage"]
 		
 		error_message.extend(self.check_aligners_and_cmps(params,options,"sim","Simmx"))
 		

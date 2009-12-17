@@ -81,7 +81,7 @@ def main():
 
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
-	clen_stg1=int(sqrt(clen*3))
+	clen_stg1=3*int(sqrt(clen))
 
 	print "%d references, using %d stage 1 averaged references"%(clen,clen_stg1)
 
@@ -122,7 +122,7 @@ def main():
 		for i in xrange(clen):
 			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 			quals.sort()
-			for j in xrange(3): classes[quals[j][1]].append(i)
+			for j in xrange(4): classes[quals[j][1]].append(i)
 		
 		# now generate an averaged reference for each center
 		print "Averaging each center"
