@@ -323,6 +323,14 @@ def eqprojEuler(args, data):
 	v = prj.cmp("ccc", data[2], {"mask":data[5], "negative":0})
 	return v
 
+def symm_func(args, data):
+	from utilities import sym_vol
+	from fundamentals  import  rot_shift3D
+	sym = sym_vol(rot_shift3D(data[0], args[0], args[1], args[2]), data[2])
+	avg = sym.cmp("dot",sym,{"mask":data[1], "negative":0})
+	print avg, args
+	return avg
+
 def find_symm(vol, mask, sym_gp, phi, theta, psi, scale, ftolerance, xtolerance):
 	
 	from utilities import amoeba, model_circle
@@ -1337,14 +1345,6 @@ def sub_favj(ave, data, jtot, mirror, numr):
 				ave[np + j]    -= cs.real
 				ave[np + j +1] -= cs.imag
 	#print_col(ave)
-
-def symm_func(args, data):
-	from utilities import sym_vol
-	from fundamentals  import  rot_shift3D
-	sym = sym_vol(rot_shift3D(data[0], args[0], args[1], args[2]), data[2])
-	avg = sym.cmp("dot",sym,{"mask":data[1], "negative":0})
-	print avg, args
-	return avg
 
 def update_favj(ave, data, jtot, mirror, numr):
 	'''

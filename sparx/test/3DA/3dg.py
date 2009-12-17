@@ -3,8 +3,8 @@
 from EMAN2  import *
 from sparx  import *
 
-from sys import exit
-from time import time
+from sys   import exit
+from time  import time
 vol = EMData()
 vol.read_image("../model001.tcp")
 #nx = 128
@@ -46,9 +46,9 @@ for i in xrange(nangles):
 	#proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
 	proj = project(vol, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y], r)
 	#apply CTF
-	#defocus = randint(3,4)*100.0
+	defocus = randint(3,4)*100.0
 	#proj = projo.copy()
-	#proj = filt_ctf(projo, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
+	proj = filt_ctf(proj, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
 	#if(i == 0): st = Util.infomask(proj,None,True)
 	#proj += model_gauss_noise(st[1]*3.,nx,nx)
 	# Set all parameters for the new 2D image
@@ -59,6 +59,7 @@ for i in xrange(nangles):
 	# flags describing the status of the image (1 = true, 0 = false)
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.write_image(stack_data, i)
+exit()
 print time()-start
 del vol
 del volft

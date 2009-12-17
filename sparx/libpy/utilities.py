@@ -2125,7 +2125,7 @@ def recv_EMData(src, tag):
 	comm=MPI_COMM_WORLD
 	head_tag = 2*tag
 	img_head = mpi_recv(4,MPI_INT, src, head_tag, comm)
-        
+
 	nx = int(img_head[0])
 	ny = int(img_head[1])
 	nz = int(img_head[2])
