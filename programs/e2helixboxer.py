@@ -31,6 +31,78 @@ def counterGen():
         i += 1
         yield i
 
+def get_particles_from_segment( segment, px_overlap, px_length = None, px_width = None ):
+    if not px_width:
+        px_width = segment.get_xsize()
+    if not px_length:
+        px_length = px_width
+    assert px_length > px_overlap, "The overlap must be smaller than the particle length"
+    
+    px_step = px_length - px_overlap
+    
+    (xsize, ysize) = (px_width, px_length)
+    (x0,y0) = (0,0)
+    particles = []
+    while y0 + ysize <= segment.get_xsize():
+        particles.append(segment.get_clip(x0, y0, xsize, ysize))
+        y0 += px_step
+    
+    return particles
+
+def get_segment_from_coords(frame, x1, y1, x2, y2, width):
+    l_vect = (x2-x1, y2-y1)
+    length = sqrt(l_vect[0]**2+l_vect[1]**2)
+    l_uvect = (l_vect[0]/length, l_vect[1]/length)
+    centroid = ( (x1+x2)/2.0, (y1+y2)/2.0 )
+    
+    #Rotate so that the length is parallel to the y-axis
+    #Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
+    rot_angle = 180/pi*acos( l_uvect[1] )
+    #Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+    if l_uvect[0] < 0:
+        rot_angle *= -1 #rotate the box clockwise
+    
+    tr = Transform()
+    tr.set_trans(centroid)
+    tr.set_rotation({"type":"2d", "alpha":rot_angle})
+    segment_dimensions = ( int(round(width)), int(round(length)), 1 )
+    segment = frame.get_rotated_clip( tr, segment_dimensions )
+    return segment
+
+def save_db_coords_to_file(frame_filepath, output_type = "box", output_dir=""):
+    frame_filename = os.path.basename(frame_filepath)
+    frame_name = os.path.splitext( frame_filename )[0]
+    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
+    box_coords_list = db[frame_filename]
+    if output_type == "box":
+        path = os.path.join(output_dir, frame_name + ".box")
+        out_file = open(path, "w")
+        for coords in box_coords_list:
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[5], coords[5], -1) )
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[2], coords[3], coords[5], coords[5], -2) )
+        out_file.close()
+    elif output_type == "hbox":
+        path = os.path.join(output_dir, frame_name + ".hbox")
+        out_file = open(path, "w")
+        for coords in box_coords_list:
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[4], coords[5]) )
+        out_file.close()
+    else:
+        pass
+
+def save_segments_from_db_coords(frame_filepath, output_type = "hdf", output_dir=""):
+    frame = EMData(frame_filepath)
+    frame_filename = os.path.basename(frame_filepath)
+    frame_name = os.path.splitext( frame_filename )[0]
+    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
+    box_coords_list = db[frame_filename]
+    for coords in box_coords_list:
+        segment = get_segment_from_coords(frame, *coords)
+        #TODO: actually write the files!
+
+def save_particles_from_db_coords(frame_filepath, x1, y1, x2, y2, width, 
+                                  px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+    pass
 
 class EMHelixBoxerWidget(QtGui.QWidget):
     def __init__(self, filename, app):
@@ -46,13 +118,13 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image = EMImage2DModule(img, application=app)
         self.main_image.set_file_name(filename) # TODO: set the filename
         self.main_image.shapes = EMShapeDict()
-        self.particle_viewer = None #Will be an EMImage2DModule instance
+        self.segment_viewer = None #Will be an EMImage2DModule instance
         #self.box_list = HelixBoxList()
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
-        self.particles_dict = {} #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.segments_dict = {} #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (1, 1, 1)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
@@ -74,6 +146,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
         self.connect(self.output_dir_pushbutton, QtCore.SIGNAL("clicked()"), self.choose_dir )
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
+        self.connect(self.done_but, QtCore.SIGNAL("clicked()"), self.exit_app )
 
         get_application().show_specific(self.main_image)
         
@@ -103,6 +176,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.img_quality_combobox.addItems(qualities)
         self.img_quality_combobox.setCurrentIndex(2)
         self.img_quality_label.setBuddy(self.img_quality_combobox)
+        self.img_quality_combobox.setEnabled(False)
         
         self.coords_groupbox = QtGui.QGroupBox(self.tr("Write &Coordinates:"))
         self.coords_groupbox.setCheckable(True)
@@ -139,18 +213,13 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         output_dir_label.setBuddy(self.output_dir_line_edit)
         self.output_dir_pushbutton = QtGui.QPushButton(self.tr("&Browse"))
         self.write_output_button = QtGui.QPushButton(self.tr("W&rite Output"))
+        self.write_output_button.setEnabled(False)
 
         self.done_but=QtGui.QPushButton(self.tr("&Done"))
-
-
-
         self.status_bar = QtGui.QStatusBar()
         self.status_bar.showMessage("Ready",10000)
         
-        self.img_quality_combobox.setEnabled(False)
-        
-        self.done_but.setEnabled(False)
-        #self.writeCoordsButton.setEnabled(False)
+
         
         widthLayout = QtGui.QHBoxLayout()
         widthLayout.addWidget(self.box_width_label)
@@ -232,6 +301,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         path = QtGui.QFileDialog.getExistingDirectory(self)
         
         self.output_dir_line_edit.setText(path)
+    def exit_app(self):
+        app = get_application()
+        app.quit()
     def generate_emshape_key(self):
         i = self.counter.next()
         return "rectline%i" % i
@@ -402,47 +474,25 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             box = self.main_image.get_shapes().get(self.current_boxkey)
             boxCoords = box.getShape()[4:9]
             self.add_box_to_db(boxCoords)
-            
-            #Now we'll get the area of the image that was boxed, and display it
-            control_pts = box.control_pts()
-            box_centroid = control_pts[2]
-            p0 = control_pts[0]
-            p1 = control_pts[1]
-            l_vect = (p1[0]-p0[0], p1[1]-p0[1])
-            box_length = sqrt(l_vect[0]**2+l_vect[1]**2)
-            box_width = box.getShape()[8]
-            l_uvect = (l_vect[0]/box_length, l_vect[1]/box_length)
-            #Rotate so that the length is parallel to the y-axis
-            #Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
-            rot_angle = 180/pi*acos( l_uvect[1] )
-            #Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
-            if l_uvect[0] < 0:
-                rot_angle *= -1 #We want to rotate the box clockwise, so the angle is negative
-
-            em_image = self.main_image.get_data()
-            tr = Transform()
-            tr.set_trans(box_centroid)
-            tr.set_rotation({"type":"2d", "alpha":rot_angle})
-            particle_dimensions = ( int(round(box_width)), int(round(box_length)), 1 )
-            particle = em_image.get_rotated_clip( tr, particle_dimensions )
+            segment = get_segment_from_coords( self.main_image.get_data(), *boxCoords )
             data_tuple = tuple(box.getShape()[4:9])
-            self.particles_dict[data_tuple] = particle
+            self.segments_dict[data_tuple] = segment
             
-            if not self.particle_viewer:
-                self.particle_viewer = EMImage2DModule(application=get_application())
-                self.particle_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
-                self.particle_viewer.setWindowTitle("Current Boxed Particle")
-                self.particle_viewer.get_qt_widget().resize(200,800)
-            self.particle_viewer.set_data(particle)
-            #w = self.particle_viewer.width()
-            #self.particle_viewer.set_origin(w/2,0)
-            self.particle_viewer.updateGL()
-            get_application().show_specific(self.particle_viewer)
+            if not self.segment_viewer:
+                self.segment_viewer = EMImage2DModule(application=get_application())
+                self.segment_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
+                self.segment_viewer.setWindowTitle("Current Boxed Segment")
+                self.segment_viewer.get_qt_widget().resize(200,800)
+            self.segment_viewer.set_data(segment)
+            #w = self.segment_viewer.width()
+            #self.segment_viewer.set_origin(w/2,0)
+            self.segment_viewer.updateGL()
+            get_application().show_specific(self.segment_viewer)
             scale = 100 / self.get_width()
-            self.particle_viewer.set_scale(scale)
-            if self.particle_viewer.inspector:
-                self.particle_viewer.inspector.set_scale(scale)
-            self.particle_viewer.updateGL()
+            self.segment_viewer.set_scale(scale)
+            if self.segment_viewer.inspector:
+                self.segment_viewer.inspector.set_scale(scale)
+            self.segment_viewer.updateGL()
 
         self.click_loc = None
         self.edit_mode = None
@@ -468,12 +518,14 @@ e2helixboxer.py ????.mrc --boxwidth=256
     (options, args) = parser.parse_args()
     if len(args) > 0:
         filename= args[0]
+        (path, basename) = os.path.split(filename)
     else:
         filename = None
+        (path, basename) = (None, None)
     logid=E2init(sys.argv)
     
     app = EMStandAloneApplication()
-    helixboxer = EMHelixBoxerWidget(filename, app)
+    helixboxer = EMHelixBoxerWidget(basename, app)
     helixboxer.show()
     app.execute()
     E2end(logid)
