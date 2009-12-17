@@ -227,10 +227,10 @@ class EMParallelSimMX:
 					# for each particle check to see which portion of the matrix we need to fill
 					if (bn%10==0) : print "%d/%d     \r"%(bn,len(blocks)),
 					sys.stdout.flush()
+					rng=[]
 					for i in range(block[2],block[3]):
 						c=EMData()
 						c.read_image(self.args[2],0,False,Region(block[0],i,block[1]-block[0]+1,1))
-						rng=[]
 						inr=0
 						st=0
 						for j in range(c["nx"]):
@@ -242,14 +242,24 @@ class EMParallelSimMX:
 								inr=0
 						if inr :
 							rng.append((i,st,j))
-					data["partial"]=rng						
+					data["partial"]=rng
+#					print "%d) %s\t"%(bn,str(block)),rng
 				
 				if self.options.fillzero and len(data["partial"])==0 : continue		# nothing to compute in this block, skip it completely
 				else :
 					task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 					#print "Est %d CPUs"%etc.cpu_est()
 					tasks.append(task)
-				
+			
+			# This just verifies that all particles have at least one class
+			#a=set()
+			#for i in tasks:
+				#for k in i.data["partial"] : a.add(k[0])
+
+			#b=set(range(self.rlen))
+			#b-=a
+			#print b
+
 			print "%d/%d         "%(bn,len(blocks))
 			self.tids=etc.send_tasks(tasks)
 			print len(self.tids)," tasks submitted"
@@ -287,13 +297,17 @@ class EMParallelSimMX:
 			
 			# if using fillzero, we must fix the -1.0e38 values placed into empty cells
 			if self.options.fillzero :
-				print "Filling noncomputed regions in similarity matrix"
+				l=EMData(self.args[2],0,True)
+				rlen=l["ny"]
+				clen=l["nx"]
+				os.system("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
+				print "Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen)
 				l=EMData()
 				for r in range(rlen):
 					l.read_image(self.args[2],0,False,Region(0,r,clen,1))
 					fill=l["maximum"]+.0001
 					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
-					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
+					l.write_image(self.args[2]+"_x",0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
 				
 				print "Filling complete"
 					

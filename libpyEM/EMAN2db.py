@@ -528,7 +528,8 @@ class EMTaskQueue:
 				task.data[j][1]=did
 
 		self.active[tid]=task		# store the task in the queue
-		EMTaskQueue.lock.release()
+		try: EMTaskQueue.lock.release()
+		except: print "Warning: lock re-released in add_task. Not serious, but shouldn't happen."
 		return tid
 		
 	def task_progress(self,tid,percent):
