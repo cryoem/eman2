@@ -1126,8 +1126,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	qv = pi/180.0
-	ant = abs(cos(an*qv))
+	ant = abs(cos(an*pi/180.0))
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
@@ -1172,8 +1171,10 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	else:
 		return -1.0e23, 0.0
 
-
-def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=None):
+def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=180.0, finfo=None):
+	"""
+	  dpsi - how far psi can be from the original value.
+	"""
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
@@ -1184,7 +1185,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
-	
+
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -1192,8 +1193,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	qv = pi/180.
-	ant = abs(cos(an*qv))
+	ant = abs(cos(an*pi/180.0))
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
@@ -1204,7 +1204,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, finfo=
 		finfo.flush()
 
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, 180.0, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, 180.0, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#Util.multiref_peaks_ali(data[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
@@ -1582,7 +1582,7 @@ def max_3D_pixel_error(t1, t2, r):
 	from math import sin, cos, pi, sqrt
 	t3 = t2*t1.inverse()
 	ddmax = 0.0
-	for i in xrange(1, r+1):
+	for i in xrange(int(r), int(r)+1):
 		for ang in xrange(int(2*pi*i+0.5)):
 			v = Vec3f(i*cos(ang), i*sin(ang), 0)
 			d = t3*v - v

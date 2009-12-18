@@ -7218,12 +7218,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		out.close()
 
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-          max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
+          max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,  dpsi,
 	  rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
 	  fourvar, MPI):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
+			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,  dpsi,
 			rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
 			fourvar)
 		return
@@ -7232,7 +7232,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	from utilities      import get_image, get_input_from_string
 	from utilities      import get_params_proj, set_params_proj
 	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
-	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
+	from alignment	    import proj_ali_incore, proj_ali_incore_local_psi, helios, Numrinit, prepare_refrings
 	from projection     import prep_vol
 	from statistics     import ccc
 	from fundamentals   import cyclic_shift, rot_shift3D
@@ -7366,7 +7366,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				if an[N_step] == -1:	
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
-					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					peak, pixel_error = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], dpsi)
 
 				paramali = get_params_proj(data[im])
 				# phi theta psi sx sy
@@ -7399,9 +7399,11 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			#  calculate new and improved 3D
 			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = npad)
 			else:	 vol = recons3d_4nn(data, range(nima), npad = npad)
+			from filter import filt_tanl
+			vol = filt_tanl(vol, 0.17, 0.1)
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
-			if(N_step*max_iter+Iter+1 > 2):
+			if(N_step*max_iter+Iter+1 > 5):
 				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
 			else:
 				#  in the first two steps the symmetry is imposed
