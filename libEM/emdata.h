@@ -266,6 +266,7 @@ namespace EMAN
 		 */
 		void rotate(const Transform3D & t);
 
+		float max_3D_pixel_error(const Transform &t1, const Transform &t2, float r);
 
 		/** Rotate this image.
 		 * DEPRECATED USE EMData::Transform

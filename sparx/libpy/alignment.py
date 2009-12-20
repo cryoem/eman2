@@ -1570,6 +1570,7 @@ def max_pixel_error(alpha1, sx1, sy1, alpha2, sx2, sy2, d):
 	from math import sin, pi, sqrt
 	return abs(sin((alpha1-alpha2)/180.0*pi/2))*d+sqrt((sx1-sx2)**2+(sy1-sy2)**2)
 
+'''
 def max_3D_pixel_error(t1, t2, r):
 	"""
 	  Compute maximum pixel error between two projection directions
@@ -1589,6 +1590,39 @@ def max_3D_pixel_error(t1, t2, r):
 			dd = d[0]**2+d[1]**2+d[2]**2
 			if dd > ddmax: ddmax=dd
 	return sqrt(ddmax)
+
+def max_3D_pixel_errorA(t1, t2, r):
+	"""
+	  Compute maximum pixel error between two projection directions
+	  assuming object has radius r, t1 is the projection transformation
+	  of the first projection and t2 of the second one, respectively:
+		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t.set_trans(Vec2f(-tx, -ty))
+	  Note the function is symmetric in t1, t2.
+	"""
+	from math import sin, cos, pi, sqrt
+	t3 = t2*t1.inverse()
+	ddmax = 0.0
+	for i in xrange(int(r)+1):
+		for ang in xrange(int(2*pi*i+0.5)):
+			v = Vec3f(i*cos(ang), i*sin(ang), 0)
+			d = t3*v - v
+			dd = d[0]**2+d[1]**2+d[2]**2
+			if dd > ddmax: ddmax=dd
+	return sqrt(ddmax)
+'''
+
+def max_3D_pixel_error(t1, t2, r):
+	"""
+	  Compute maximum pixel error between two projection directions
+	  assuming object has radius r, t1 is the projection transformation
+	  of the first projection and t2 of the second one, respectively:
+		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t.set_trans(Vec2f(-tx, -ty))
+	  Note the function is symmetric in t1, t2.
+	"""
+	return EMData().max_3D_pixel_error(t1, t2, r)
+
 
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask

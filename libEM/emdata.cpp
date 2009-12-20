@@ -50,6 +50,7 @@
 #include <complex>
 
 #include <algorithm> // fill
+#include <cmath>
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
@@ -909,6 +910,21 @@ void EMData::rotate(const Transform3D & t)
 	rotate_translate(t);
 }
 
+float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, float r) {
+	
+	Transform t;
+	int r0 = (int)r;
+	float ddmax = 0.0f;
+
+	t = t2*t1.inverse();
+	for (int i=0; i<int(2*M_PI*r0+0.5); i++) {
+		Vec3f v = Vec3f(r0*cos(i), r0*sin(i), 0);
+		Vec3f d = t*v-v;
+		float dd = d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
+		if (dd > ddmax) ddmax = dd; 
+	}
+	return std::sqrt(ddmax);
+}
 
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
