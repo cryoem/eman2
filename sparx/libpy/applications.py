@@ -31,9 +31,10 @@
 from EMAN2_cppwrap import *
 from global_def import *
 
-def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, MPI=False):
+def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, option=0, number_of_ave=16, crossover_rate=0.9, mutation_rate="0.001 0.002 0.005", max_merge=50,\
+		grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0, MPI=False):
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, number_of_ave, CTF, snr, user_func_name, restart)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, option, number_of_ave, crossover_rate, mutation_rate, max_merge, grid_size, max_avg, CTF, Fourvar, snr, user_func_name, restart, verbose)
 		return
 	
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
@@ -226,7 +227,8 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, number_of_ave=16, CTF=False, snr=1.0, user_func_name="ref_ali2d", restart=-1):
+def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, option=0, number_of_ave=16, crossover_rate=0.9, mutation_rate="0.001 0.002 0.005", \
+	max_merge=50, grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -248,7 +250,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	import os
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv
+	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv, mpi_scatterv
 	from mpi 	  import MPI_FLOAT, MPI_SUM, MPI_INT
 	from mpi          import mpi_comm_split
 
@@ -282,15 +284,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if  yr == "-1":  yrng = xrng
 	else          :  yrng = get_input_from_string(yr)
 	step = get_input_from_string(ts)
+	mutation_rate = get_input_from_string(mutation_rate)
 	
 	if key == group_main_node:
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
 	if myid == main_node:
-		print_msg("Input stack                 : %s\n"%(stack))
-		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("Inner radius                : %i\n"%(first_ring))
+		print_msg("Input stack                     : %s\n"%(stack))
+		print_msg("Output directory                : %s\n"%(outdir))
+		print_msg("Inner radius                    : %i\n"%(first_ring))
 
 	if ftp == "hdf":
 		from utilities import recv_attr_dict
@@ -306,7 +309,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print "Invalid file type"
 		return
 
-	# This is for gathering of mirror list
+	# This is for the gathering and scattering of parameter lists
 	disps = [0]
 	disps2 = [0]*number_of_proc
 	recvcount = [0]*number_of_proc
@@ -350,47 +353,63 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	# Some useful parameters
 	fl = 0.4
 	aa = 0.1
-	Fourvar = False
-	N_merge = 50
-	grid_size = 32
-	crossover_rate = 0.9
-	mutation_rate = 0.001
+	mutation_rate_string = ["%10.4f"% t for t in mutation_rate]
 	if myid == main_node:
-		print_msg("Outer radius                : %i\n"%(last_ring))
-		print_msg("Ring step                   : %i\n"%(rstep))
-		print_msg("X search range              : %s\n"%(xrng))
-		print_msg("Y search range              : %s\n"%(yrng))
-		print_msg("Translational step          : %s\n"%(step))
-		print_msg("Center type                 : %i\n"%(center))
-		print_msg("Maximum iteration           : %i\n"%(max_iter))
-		print_msg("Data with CTF               : %s\n"%(CTF))
-		print_msg("Signal-to-noise ratio       : %f\n"%(snr))
-		if auto_stop: print_msg("Stop iteration with         : criterion\n")
-		else:         print_msg("Stop iteration with         : maxit\n")
-		print_msg("User function               : %s\n"%(user_func_name))
-		print_msg("Number of averages used     : %d\n"%(number_of_ave))
-		print_msg("Number of processors used   : %d\n"%(number_of_proc))
-		print_msg("Number of recombinations    : %d\n"%(N_merge))
-		print_msg("Crossover rate              : %f\n"%(crossover_rate))
-		print_msg("Mutation rate               : %f\n"%(mutation_rate))
+		print_msg("Outer radius                    : %i\n"%(last_ring))
+		print_msg("Ring step                       : %i\n"%(rstep))
+		print_msg("X search range                  : %s\n"%(xrng))
+		print_msg("Y search range                  : %s\n"%(yrng))
+		print_msg("Translational step              : %s\n"%(step))
+		print_msg("Center type                     : %i\n"%(center))
+		print_msg("Maximum iteration               : %i\n"%(max_iter))
+		print_msg("Data with CTF                   : %s\n"%(CTF))
+		print_msg("Signal-to-noise ratio           : %f\n"%(snr))
+		if auto_stop: print_msg("Stop iteration with             : criterion\n")
+		else:         print_msg("Stop iteration with             : maxit\n")
+		print_msg("User function                   : %s\n"%(user_func_name))
+		print_msg("Number of processors used       : %d\n"%(number_of_proc))
 		if restart != -1:
-			print_msg("Restarted from iteration    : %d\n"%(restart))
+			print_msg("Restarted from iteration        : %d\n"%(restart))
 		print_msg("Tangent filter                  \n")
-		print_msg("    cut-off frequency       : %f\n"%(fl))
-		print_msg("    fall-off                : %f\n"%(aa))
-		print_msg("Grid size of chessboard     : %d\n"%(grid_size))
-		print_msg("Average divided by variance : %s\n"%(Fourvar))
-
+		print_msg("    cut-off frequency           : %f\n"%(fl))
+		print_msg("    fall-off                    : %f\n"%(aa))
+		print_msg("Average divided by variance     : %s\n"%(Fourvar))
+		print_msg("Verbose level                   : %d\n"%(verbose))
+		print_msg("Parameters for Genetic Algorithm     \n")
+		print_msg("    Option                      : %d\n"%(option))
+		if option==0:
+			print_msg("    This is the classic program.\n")
+		elif option==1:
+			print_msg("    In this option, we wiped out the alignmemnt parameters after each merge.\n")
+		elif option==2:
+			print_msg("    In this option, we wiped out cs after each merge.\n")
+		elif option==3:
+			print_msg("    In this option, we wiped out both alignment parameters and cs after each merge.\n")
+		elif option==4:
+			print_msg("    In this option, we divided the averages into two types.\n")
+		elif option==5:
+			print_msg("    In this option, we merge the alignment parameters as well as the averages.\n")
+		elif option==6:
+			print_msg("    In this option, we merge the alignment parameteres and also divided the averages into two types.\n")
+		else:
+			pass
+		print_msg("    Number of averages used     : %d\n"%(number_of_ave))
+		print_msg("    Number of recombinations    : %d\n"%(max_merge))
+		print_msg("    Crossover rate              : %f\n"%(crossover_rate))
+		print_msg("    Mutation rate               : %s\n"%(''.join(mutation_rate_string)))
+		print_msg("    Grid size of chessboard     : %d\n"%(grid_size))
+		print_msg("    Maximum averages allowed    : %d\n"%(max_avg))
+	
 	if maskfile:
 		import  types
 		if type(maskfile) is types.StringType:  
-			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
+			if myid == main_node:		print_msg("Maskfile                        : %s\n\n"%(maskfile))
 			mask = get_image(maskfile)
 		else:
-			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
+			if myid == main_node: 		print_msg("Maskfile                        : user provided in-core mask\n\n")
 			mask = maskfile
 	else: 
-		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		if myid == main_node: 	print_msg("Maskfile                        : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
@@ -415,8 +434,20 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data[im] -= st[0]
 		ctf_2_sum = None
 
-	for im in data:
-		set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
+	alpha_list = [0.0]*len(data)
+	sx_list = [0.0]*len(data)
+	sy_list = [0.0]*len(data)
+	mirror_list = [0]*len(data)
+	for im in xrange(len(data)):
+		alpha = random()*360.0
+		sx = 0.0
+		sy = 0.0
+		mirror = randint(0, 1)
+		set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
+		alpha_list[im] = alpha
+		sx_list[im] = sx
+		sy_list[im] = sy
+		mirror_list[im] = mirror
 	
 	if Fourvar:
 		tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
@@ -476,24 +507,43 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				chessboard2.set_value_at(ii, jj, 1-v)
 		
 		# Generate the array to store goal value, average image, iteration number and group number
-		qt = [[0.0, model_blank(nx, nx), -1, 0] for inp in xrange(number_of_ave*2)]
+		if option >= 4:
+			qt = [[0.0, model_blank(nx, nx), -1, 0, [0.0 for inn in xrange(nima*4)]] for inp in xrange(number_of_ave*2)]
+		else:
+			qt = [[0.0, model_blank(nx, nx), -1, 0] for inp in xrange(number_of_ave*2)]
 		for i in xrange(number_of_ave):
 			qt[i][0] = criterion_list[i]
 			qt[i][3] = i
-		english = ['first', 'second', 'third', 'fourth', 'fifth']
+		english = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']
 		
 	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
 	cs = [0.0]*2
 	to_break = 0
+	
+	if option >= 5:
+		alpha_list_new = [0.0]*(nima*number_of_ave)
+		sx_list_new = [0.0]*(nima*number_of_ave)
+		sy_list_new = [0.0]*(nima*number_of_ave)
+		mirror_list_new = [0]*(nima*number_of_ave)
 
-	for ipt in xrange(max(restart, 0), N_merge):
+	for ipt in xrange(max(restart, 0), max_merge):
 
-		if key == group_main_node:        msg = ""
+		if key == group_main_node and verbose == 2:        msg = ""
 
 		if restart==-1 or ipt>restart:
 			total_iter = 0
+
+			if option==5 or option==6:
+				for im in xrange(len(data)): set_params2D(data[im], [alpha_list[im], sx_list[im], sy_list[im], mirror_list[im], 1.0])
+			elif option==1 or option==3:
+				for im in xrange(len(data)): set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0])
+			else:
+				pass
+				
+			if option==2 or option==3:
+				cs = [0.0]*2
 
 			for Iter in xrange(max_iter):
 			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
@@ -552,8 +602,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        		pixel_error = float(pixel_error[0])/(nima-mirror_change)
 			        		mirror_change = float(mirror_change[0])/nima
 			        		tavg = fshift(tavg, -cs[0], -cs[1])
-			        		msg += "Average center x =	%10.3f    Center y     = %10.3f\n"%(cs[0], cs[1])
-			        		msg += "Mirror change = 	%10.3f    Pixel error  = %10.3f\n"%(mirror_change, pixel_error)
+			        		if verbose == 2 :
+							msg += "Average center x =	%10.3f    Center y     = %10.3f\n"%(cs[0], cs[1])
+				        		msg += "Mirror change = 	%10.3f    Pixel error  = %10.3f\n"%(mirror_change, pixel_error)
 			        	else:
 			        		tavg, cs = user_func(ref_data)
 
@@ -565,8 +616,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						criterion = a0[0]
 					else:
 				        	criterion = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
-
-			        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %20.8f\n\n"%(ipt, color, Iter, criterion)
+					if verbose == 2:
+				        	msg += "MERGE # %2d	Average # %2d	  ITERATION # %4d     criterion = %20.8f\n\n"%(ipt, color, Iter, criterion)
 			        else:
 			        	tavg = EMData(nx, nx, 1, True)
 			        	cs = [0.0]*2		       
@@ -574,10 +625,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        total_iter += 1
 
 			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
-			alpha_list = [0.0]*len(data)
-			sx_list = [0.0]*len(data)
-			sy_list = [0.0]*len(data)
-			mirror_list = [0]*len(data)
 			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
 			finfo = open(info_file, "w")
 			for nim in xrange(len(data)):
@@ -612,34 +659,41 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 		if key == group_main_node:
 			if myid == main_node:
-				# Print the message on the main node
-				print_msg(msg)
-				
-				# Print the message received from the group main node
-				for isav in xrange(1, number_of_ave):
-				        msg = mpi_recv(500*max_iter, MPI_INT, isav, isav+100, MPI_COMM_WORLD)
-				        msg_string = ""
-				        index = 0
-				        num = msg[index]
-				        while num != 0:
-				        	msg_string += chr(num)
-				        	index += 1
-				        	num = msg[index]
-				        print_msg(msg_string)
+				if verbose == 2:
+					# Print the message on the main node
+					print_msg(msg)
+					
+					# Print the message received from the group main node
+					for isav in xrange(1, number_of_ave):
+				        	msg = mpi_recv(500*max_iter, MPI_INT, isav, isav+100, MPI_COMM_WORLD)
+					        msg_string = ""
+					        index = 0
+					        num = msg[index]
+					        while num != 0:
+					        	msg_string += chr(num)
+				        		index += 1
+				        		num = msg[index]
+					        print_msg(msg_string)
 
 				# Calculate and print the stability information
+				alpha_list_gathered = map(float, alpha_list_gathered)
+				sx_list_gathered = map(float, sx_list_gathered)
+				sy_list_gathered = map(float, sy_list_gathered)
 				mirror_list_gathered = map(int, mirror_list_gathered)
-				avg_mirror_stable = 0
-				for iii in xrange(number_of_ave-1):
-				        for jjj in xrange(iii+1, number_of_ave):
-				        	mirror_change = 0
-				        	for nim in xrange(nima):
-				        		mirror_change += abs(int(mirror_list_gathered[iii*nima+nim])-int(mirror_list_gathered[jjj*nima+nim]))
-				        	if mirror_change < 0.5*nima:
-				        		mirror_change = nima-mirror_change
-				        	avg_mirror_stable += mirror_change
-				        	print_msg("The stability between Group %d and Group %d is %f\n"%(iii, jjj, mirror_change/float(nima)))  		       
-				print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
+				
+			
+				if verbose >= 1:
+					avg_mirror_stable = 0
+					for isav in xrange(number_of_ave-1):
+					        for jsav in xrange(isav+1, number_of_ave):
+					        	mirror_change = 0
+					        	for nim in xrange(nima):
+				        			mirror_change += abs(mirror_list_gathered[isav*nima+nim]-mirror_list_gathered[jsav*nima+nim])
+				        		if mirror_change < 0.5*nima:
+				        			mirror_change = nima-mirror_change
+					        	avg_mirror_stable += mirror_change
+					        	print_msg("The stability between Group %d and Group %d is %f\n"%(isav, jsav, mirror_change/float(nima)))  		       
+					print_msg("The average mirror stability rate is %f\n"%(avg_mirror_stable/float(nima*(number_of_ave-1)*number_of_ave/2)))
 
 				# Collect all averages and sort them according to the criterion
 				savg = [tavg.copy()]
@@ -649,44 +703,95 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				        savg.append(img.copy())
 				        img.write_image(os.path.join(outdir, "avg_before_merge%02d.hdf"%(ipt)), isav)
 					
-				old_best_criterion = qt[0][0]
-				old_worst_criterion = qt[number_of_ave-1][0]
-				
+				old_criterion = [0.0]*number_of_ave
+
 				for isav in xrange(number_of_ave):
+					old_criterion[isav] = qt[isav][0]
 					qt[isav+number_of_ave][0] = qt[isav][0]
-					qt[isav+number_of_ave][1] = qt[isav][1]
+					qt[isav+number_of_ave][1] = qt[isav][1].copy()
 					qt[isav+number_of_ave][2] = qt[isav][2]
 					qt[isav+number_of_ave][3] = qt[isav][3]
+					if option >= 4:
+						for im in xrange(nima*4):
+							qt[isav+number_of_ave][4][im] = qt[isav][4][im]
+										
 					img = savg[isav].copy()
 				        qt[isav][0] = img.cmp("dot", img, dict(negative = 0, mask = ref_data[0]))
-					qt[isav][1] = img
+					qt[isav][1] = img.copy()
 					qt[isav][2] = ipt
 					qt[isav][3] = isav
+					if option >= 4:
+						for im in xrange(nima): 
+							qt[isav][4][im*4] = alpha_list_gathered[isav*nima+im]
+							qt[isav][4][im*4+1] = sx_list_gathered[isav*nima+im]
+							qt[isav][4][im*4+2] = sy_list_gathered[isav*nima+im]
+							qt[isav][4][im*4+3] = mirror_list_gathered[isav*nima+im]
 	
 				print_msg("-"*100+"\n")
 				for isav in xrange(number_of_ave):
 					print_msg("Criterion for current average %2d: %20.8f\n"%(isav, qt[isav][0]))
 				for isav in xrange(number_of_ave):
 					print_msg("Criterion for previous average %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav+number_of_ave][0], qt[isav+number_of_ave][2], qt[isav+number_of_ave][3]))
+					
+				
+				if option == 7:
+					# Selection of candidates
+					for isav in xrange(number_of_ave*2):	p[isav] = p[isav]/crit_sum
+					for isav in xrange(1, number_of_ave*2-1): p[isav] += p[isav-1]
+					p[-1] = 1.0 
+					selected = []
+					for isav in xrange(number_of_ave):
+						found = False
+						while found == False:
+							t = random()
+							l = 0
+							while t > p[l]:	l+=1
+							if l not in selected: 
+								selected.append(l)
+								found = True
+				
+					print_msg("We selected the following averages: %s\n"%(selected))
+				
+					qt2 = [[0.0, model_blank(nx, nx), -1, 0, [0, 0, 0, 0]] for inp in xrange(number_of_ave)]
+				
+					for isav in xrange(number_of_ave):
+						qt2[isav][0] = qt[selected[isav]][0]
+						qt2[isav][1] = qt[selected[isav]][1].copy()
+						qt2[isav][2] = qt[selected[isav]][2]
+						qt2[isav][3] = qt[selected[isav]][3]	
 
 				qt.sort(reverse = True)
-
-				if old_worst_criterion == qt[number_of_ave-1][0]:
+				
+				# Control the averages such that one averages appears "max_avg" in maximum, this only make sense in option 1, 3 and 4
+				ave_num = [0]*number_of_ave
+				isav = 0
+				while isav<number_of_ave:
+					ave_num[qt[isav][3]] += 1
+					while ave_num[qt[isav][3]] > max_avg:
+						ave_num[qt[isav][3]] -= 1
+						for d in xrange(isav, number_of_ave*2-2):
+							qt[d][0] = qt[d+1][0]
+							qt[d][1] = qt[d+1][1]
+							qt[d][2] = qt[d+1][2]
+							qt[d][3] = qt[d+1][3]
+							if option==4:
+								for im in xrange(nima*4):
+									qt[d][4][im] = qt[d+1][4][im]
+						ave_num[qt[isav][3]] += 1
+					isav += 1
+				
+				# To determine whether there is any improvement in the last merge
+				improvement = False
+				for isav in xrange(number_of_ave):
+					if qt[isav][0] > old_criterion[isav]:	improvement = True
+				if improvement == False:
 					to_break += 1
 					print_msg("This is the %s straight time that there is no improvement in criterion.\n"%(english[to_break-1]))
-					if to_break == 1:
-						mutation_rate = 0.002
-					elif to_break == 2:
-						mutation_rate = 0.005
-					elif to_break == 3:
-						mutation_rate = 0.01
-					elif to_break == 4:
-						mutation_rate = 0.02
 				else:
 					to_break = 0
-					mutation_rate = 0.001
 				
-				if old_best_criterion < qt[0][0]:
+				# To determine whether we have found new best criterion
+				if qt[0][0] > old_criterion[0]:
 					best_ali_params = []
 					iave = qt[0][3]
 					for nim in xrange(nima):
@@ -697,36 +802,154 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					
 				for isav in xrange(number_of_ave):
 					print_msg("Sorted criterion %2d: %20.8f    From iteration %2d, average %2d\n"%(isav, qt[isav][0], qt[isav][2], qt[isav][3]))
-				print_msg("-"*100+"\n")
 				
-				index = range(number_of_ave)
-				shuffle(index)				
-				tsavg = []
-				for isav in xrange(number_of_ave):
-					r = random()
-					if r < crossover_rate:
-						tsavg.append(Util.addn_img(Util.muln_img(qt[index[isav]][1], chessboard1), Util.muln_img(qt[index[(isav+1)%number_of_ave]][1], chessboard2)))
-						print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, index[isav], index[(isav+1)%number_of_ave]))
-					else:
-						tsavg.append(qt[index[isav]][1])
-						print_msg("The new average %2d is from average %2d.\n"%(isav, index[isav]))
-					Util.image_mutation(tsavg[isav], mutation_rate)
-					tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+				# Crossover and mutation operation
+				if option == 4 or option == 6:
+					sk = []
+					for isav in xrange(number_of_ave):
+						mirror = 0
+						alpha = 0
+						sx = 0
+						sy = 0
+						for nim in xrange(nima):
+							alpha += (qt[isav][4][nim*4] > 180.0)
+							sx += (qt[isav][4][nim*4+1] > 0.0)
+							sy += (qt[isav][4][nim*4+2] > 0.0)
+							mirror += qt[isav][4][nim*4+3]
+						sk.append([[mirror, alpha, sx, sy], isav])
 
+					sk.sort()
+					print_msg("sk = %s\n"%sk)
+					
+					tsavg = []
+					if option == 6:
+					        alpha_list_new = [0.0]*(number_of_ave*nima)
+					        sx_list_new = [0.0]*(number_of_ave*nima)
+					        sy_list_new = [0.0]*(number_of_ave*nima)
+					        mirror_list_new = [0]*(number_of_ave*nima)
+					for isav in xrange(number_of_ave):
+						r = random()
+						l1 = randint(0, number_of_ave/2-1)
+						l2 = randint(number_of_ave/2, number_of_ave-1)
+						av1 = sk[l1][1]
+						av2 = sk[l2][1]
+						if r < crossover_rate:
+							l = randint(0, 1)
+							if l == 0:
+								tsavg.append(Util.addn_img(Util.muln_img(qt[av1][1], chessboard1), Util.muln_img(qt[av2][1], chessboard2)))
+							else:
+								tsavg.append(Util.addn_img(Util.muln_img(qt[av1][1], chessboard2), Util.muln_img(qt[av2][1], chessboard1)))
+							print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, av1, av2))
+					        	if option == 6:
+					        		bp = nima/2
+					        		for im in xrange(bp):
+					        			alpha_list_new[isav*nima+im] = qt[av1][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av1][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av1][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
+					        		for im in xrange(bp, nima):
+					        			alpha_list_new[isav*nima+im] = qt[av2][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av2][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av2][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av2][4][im*4+3]
+						else:
+							tsavg.append(qt[av1][1])
+							print_msg("The new average %2d is from average %2d.\n"%(isav, av1))
+					        	if option == 6:
+					        		for im in xrange(nima):
+					        			alpha_list_new[isav*nima+im] = qt[av1][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av1][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av1][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
+					        if option == 6 and to_break < len(mutation_rate):
+					        	alpha_list_new = list_mutation(alpha_list_new, mutation_rate[to_break])
+					        	sx_list_new = list_mutation(sx_list_new, mutation_rate[to_break])
+					        	sy_list_new = list_mutation(sy_list_new, mutation_rate[to_break])
+					        	mirror_list_new = list_mutation(mirror_list_new, mutation_rate[to_break], True)
+						if to_break < len(mutation_rate):
+						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
+						tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+				else:
+					index = range(number_of_ave)
+					shuffle(index)  		       
+					tsavg = []
+					if option == 5:
+					        alpha_list_new = [0.0]*(number_of_ave*nima)
+					        sx_list_new = [0.0]*(number_of_ave*nima)
+					        sy_list_new = [0.0]*(number_of_ave*nima)
+					        mirror_list_new = [0]*(number_of_ave*nima)
+					for isav in xrange(number_of_ave):
+					        r = random()
+					        if r < crossover_rate:
+					        	av1 = index[isav]
+					        	av2 = index[(isav+1)%number_of_ave]
+					        	tsavg.append(Util.addn_img(Util.muln_img(qt[av1][1], chessboard1), Util.muln_img(qt[av2][1], chessboard2)))
+					        	if option >= 5:
+					        		bp = nima/2
+					        		for im in xrange(bp):
+					        			alpha_list_new[isav*nima+im] = qt[av1][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av1][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av1][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
+					        		for im in xrange(bp, nima):
+					        			alpha_list_new[isav*nima+im] = qt[av2][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av2][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av2][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av2][4][im*4+3]
+					        	print_msg("The new average %2d is merged from average %2d and average %2d.\n"%(isav, av1, av2))
+					        else:
+					        	av1 = index[isav]
+					        	tsavg.append(qt[av1][1])
+					        	if option == 5:
+					        		for im in xrange(nima):
+					        			alpha_list_new[isav*nima+im] = qt[av1][4][im*4]
+					        			sx_list_new[isav*nima+im] = qt[av1][4][im*4+1]
+					        			sy_list_new[isav*nima+im] = qt[av1][4][im*4+2]
+					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
+					        	print_msg("The new average %2d is from average %2d.\n"%(isav, av1))
+					        if option == 5 and to_break < len(mutation_rate):
+					        	alpha_list_new = list_mutation(alpha_list_new, mutation_rate[to_break])
+					        	sx_list_new = list_mutation(sx_list_new, mutation_rate[to_break])
+					        	sy_list_new = list_mutation(sy_list_new, mutation_rate[to_break])
+					        	mirror_list_new = list_mutation(mirror_list_new, mutation_rate[to_break], True)
+						if to_break < len(mutation_rate):
+						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
+					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+				
+				if option == 7:
+					for isav in xrange(number_of_ave):
+						qt[isav+number_of_ave][0] = qt2[isav][0]
+						qt[isav+number_of_ave][1] = qt2[isav][1].copy()
+						qt[isav+number_of_ave][2] = qt2[isav][2]
+						qt[isav+number_of_ave][3] = qt2[isav][3]
+				
 				for isav in xrange(1, number_of_ave):
 					send_EMData(tsavg[isav], isav, isav+300)
 				tavg = tsavg[0].copy()
 				del tsavg
 			else:
-				mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
+				if verbose == 2: mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
 				send_EMData(tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
+				
 		to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		to_break = int(to_break[0])
 		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+
+		if option == 5 or option == 6:
+			alpha_list = mpi_scatterv(alpha_list_new, recvcount, disps2, MPI_FLOAT, len(data), MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			sx_list = mpi_scatterv(sx_list_new, recvcount, disps2, MPI_FLOAT, len(data), MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			sy_list = mpi_scatterv(sy_list_new, recvcount, disps2, MPI_FLOAT, len(data), MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mirror_list = mpi_scatterv(mirror_list_new, recvcount, disps2, MPI_INT, len(data), MPI_INT, main_node, MPI_COMM_WORLD)
+		
+			alpha_list = map(float, alpha_list)
+			sx_list = map(float, sx_list)
+			sy_list = map(float, sy_list)
+			mirror_list = map(int, mirror_list)
+	
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
-		if to_break >= 3: break
+		if to_break >= len(mutation_rate): break
 
 	if myid == main_node:
 		img = EMData()
@@ -736,6 +959,28 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			img.write_image(stack, nim)
 		print_end_msg("ali2d_a_MPI")
 
+
+def list_mutation(list, mutation_rate, mirror=False):
+
+	from random import random
+
+	l = len(list)
+	new_list = []
+	if mirror:
+		for i in xrange(l):
+			if random() < mutation_rate:
+				new_list.append(1-list[i])
+			else:
+				new_list.append(list[i])
+	else:
+		max_list = max(list)
+		min_list = min(list)
+		for i in xrange(l):
+			if random() < mutation_rate:
+				new_list.append(random()*(max_list-min_list)+min_list)
+			else:
+				new_list.append(list[i])
+	return new_list
 
 '''
 def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="SA", T0=1.0, F=0.996):

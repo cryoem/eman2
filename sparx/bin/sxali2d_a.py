@@ -27,7 +27,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
 
@@ -40,7 +40,6 @@ from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	#usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --randomize --T0=T0 --F=F --MPI"
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --number_of_ave=number_of_ave --CTF --snr=SNR --function=user_function_name --restart=0 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="float",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
@@ -51,14 +50,19 @@ def main():
 	parser.add_option("--ts",    type="string", default="2 1 0.5 0.25",help="step of translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--center",type="float",  default=-1,            help="-1. average center method 0.not centered 1.phase approximation 2.cc with Gaussian function 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--maxit", type="float",  default=0,             help="maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
-	parser.add_option("--number_of_ave", type="int",    default=4,             help="Number of averages for the alignment")
+	parser.add_option("--option", type="int",   default=0,              help="The option of using the genetic algorithm")
+	parser.add_option("--number_of_ave", type="int",    default=16,     help="Number of averages for the alignment")
+	parser.add_option("--crossover_rate", type="float",   default=0.9,  help="Crossover rate of the genetic algorithm")
+	parser.add_option("--mutation_rate", type="string",   default="0.001 0.002 0.005",     help="Mutation rate of the genetic algorithm")
+	parser.add_option("--max_merge", type="int",   default=50,          help="The maximum merge allowed")
+	parser.add_option("--grid_size", type="int",   default=32,          help="Size of the chessboard")
+	parser.add_option("--max_avg",   type="int",   default=100,         help="Maximum average allowed in the best solutions")
 	parser.add_option("--CTF", action="store_true", default=False,     help="Consider CTF correction during the alignment ")
+	parser.add_option("--Fourvar", action="store_true", default=False,     help="Whether to divided by variance")
 	parser.add_option("--snr",   type="float",  default=1.0,           help="Signal-to-noise ratio of the dataset")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="name of the reference preparation function")
-	#parser.add_option("--random_method", type="string", default="",    help="SA: Simulated Annealing   ML: Maximum Likelihood")
-	#parser.add_option("--T0",    type="float",  default=1.0,           help="initial temperature for simulated annealing")
-	#parser.add_option("--F",     type="float",  default=0.996,         help="cooling rate for simulated annealing")
-	parser.add_option("--restart", type="int", default=-1,             help="name of the reference preparation function")
+	parser.add_option("--restart", type="int", default=-1,             help="iteration number to restart from")
+	parser.add_option("--verbose", type="int", default=0,              help="The amount of information to print out")
 	parser.add_option("--MPI", action="store_true", default=False,     help="use MPI version ")
 	(options, args) = parser.parse_args()
 	
@@ -80,7 +84,8 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.number_of_ave, options.CTF, options.snr, options.function, options.restart, options.MPI)
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.option, options.number_of_ave, options.crossover_rate, options.mutation_rate, options.max_merge, \
+			options.grid_size, options.max_avg, options.CTF, options.Fourvar, options.snr, options.function, options.restart, options.verbose, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
