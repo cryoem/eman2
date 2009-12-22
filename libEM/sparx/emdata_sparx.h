@@ -608,7 +608,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @param[in] radius: radius of the structure (default nx/2-1).
 		 *  @return New image
 		 */
-		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f);
+		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f, float minrad = -1.0f);
 
 
 

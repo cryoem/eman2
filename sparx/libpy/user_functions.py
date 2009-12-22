@@ -289,6 +289,28 @@ def ref_ali3d( ref_data ):
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
+def helical( ref_data ):
+	from utilities      import print_msg
+	from filter         import fit_tanh, filt_tanl
+	from morphology     import threshold
+	#  Prepare the reference in helical refinement, i.e., low-pass filter .
+	#  Input: list ref_data
+	#   0 - raw volume
+	#  Output: filtered, and masked reference image
+
+	global  ref_ali2d_counter
+	ref_ali2d_counter += 1
+	print_msg("helical   #%6d\n"%(ref_ali2d_counter))
+	stat = Util.infomask(ref_data[0], None, True)
+	volf = ref_data[0] - stat[0]
+	volf = threshold(volf)
+	fl = 0.2#0.17
+	aa = 0.1
+	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	print_msg(msg)
+	volf = filt_tanl(volf, fl, aa)
+	return  volf
+
 def reference3( ref_data ):
 	from utilities      import print_msg
 	from filter         import fit_tanh1, filt_tanl
@@ -729,6 +751,7 @@ class factory_class:
 		self.contents["ref_ali3dm"]         = ref_ali3dm
 		self.contents["ref_ali3dm_new"]     = ref_ali3dm_new
 		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
+		self.contents["helical"]            = helical
 		self.contents["spruce_up_var_m"]    = spruce_up_var_m
 		self.contents["reference3"]         = reference3
 		self.contents["reference4"]         = reference4

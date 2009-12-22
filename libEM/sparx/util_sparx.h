@@ -478,6 +478,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
 	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag);
+	static Dict Crosrng_psi_0_180(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
 	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
 
 	static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
@@ -616,6 +617,9 @@ public:
                 vector< int >numr, float cnx, float cny);
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
+                vector< int >numr, float cnx, float cny);
+	static vector<float> multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny);
 	static vector<float> multiref_polar_ali_2d_local_psi(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,

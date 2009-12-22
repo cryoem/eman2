@@ -137,11 +137,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	# initialize data for the reference preparation function
 	# mask can be modified in user_function
-	ref_data = []
-	ref_data.append(mask)
-	ref_data.append(center)
-	ref_data.append(None)
-	ref_data.append(None)
+	ref_data = [mask, center, None, None]
 
 	cs = [0.0]*2
 	total_iter = 0
@@ -490,11 +486,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if key == group_main_node:
 		# initialize data for the reference preparation function
-		ref_data = []
-		ref_data.append(mask)
-		ref_data.append(center)
-		ref_data.append(None)
-		ref_data.append(None)
+		ref_data = [mask, center, None, None]
 	
 	if myid == main_node:
 		# Generate the chessboard image
@@ -2818,11 +2810,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	
 	# initialize data for the reference preparation function
 	#  mask can be modified in user_function
-	ref_data = []
-	ref_data.append( mask )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [mask, center, None, None]
+
 	cs = [0.0]*2
 	# iterate
 	total_iter = 0
@@ -3096,11 +3085,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if myid == main_node:
 		# initialize data for the reference preparation function
-		ref_data = []
-		ref_data.append( mask )
-		ref_data.append( center )
-		ref_data.append( None )
-		ref_data.append( None )
+		ref_data = [mask, center, None, None]
 		sx_sum = 0.0
 		sy_sum = 0.0
 		a0 = -1.0e22
@@ -3330,9 +3315,8 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 		print_msg("Maskfile                    : default, a circle with radius %i\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 	# initialize data for the reference preparation function
-	ref_data = []
-	ref_data.append( mask )
-	ref_data.append( center )
+	ref_data = [mask, center]
+
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Search range                : %-5.2f\n"%(br))
 	print_msg("Center type                 : %i\n"%(center))
@@ -3536,11 +3520,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	again = True
 	Iter = 0
 	
-	ref_data = []
-	ref_data.append(mask)
-	ref_data.append(center)
-	ref_data.append(None)
-	ref_data.append(None)
+	ref_data = [mask, center, None, None]
 	
 	while Iter < max_iter and again:
 		#again = False
@@ -3809,11 +3789,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	again = True
 	Iter = 0
 	
-	ref_data = []
-	ref_data.append(mask)
-	ref_data.append(center)
-	ref_data.append(None)
-	ref_data.append(None)
+	ref_data = [mask, center, None, None]
 	
 	while Iter < max_iter and again:
 		ringref = []
@@ -4719,11 +4695,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	params = ["alpha", "sx", "sy", "mirror"]
 	# initialize data for the reference preparation function
 	#  mask can be modified in user_function
-	ref_data = []
-	ref_data.append( mask )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [mask, center, None, None]
 	cs=[[0.0,0.0]]*NG
 	total_iter = 0
 	for N_step in xrange(len(xrng)):
@@ -4746,11 +4718,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 
 				frsc.append(fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "resolution_%03d_%03d"%(k, total_iter))))
 				#  prepare averages for alignment
-				kref_data = []
-				kref_data.append( mask )
-				kref_data.append( 0 )
-				kref_data.append( tavg[k] )
-				kref_data.append( frsc[k] )
+				kref_data = [mask, 0, tavg[k], frsc[k]]
 				#  call the user-supplied function to prepare reference image, i.e., filter it, but do not center!
 				ktavg[k], cs[k] = user_func( kref_data )
 				del kref_data
@@ -4897,11 +4865,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			data[im] -= st[0]
 
 	# initialize data for the reference preparation function
-	ref_data = []
-	ref_data.append( mask3D )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [mask3D, ceter, None, None]
 
 	# do the projection matching
 	for N_step in xrange(lstp):
@@ -5044,11 +5008,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 	nima = len(data)
 	# initialize data for the reference preparation function
-	ref_data = []
-	ref_data.append( mask3D )
-	ref_data.append( max(center,0) )#  for center -1 switch of centereing by user function
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [ mask3D, max(center,0), None, None ]#  for center -1 switch of centering by user function
 
 	cs = [0.0]*3
 	# do the projection matching
@@ -5081,7 +5041,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
 			del vol1
 			del vol2
-			
+
 			# calculate new and improved 3D
 			if CTF:  vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
 			else:	 vol = recons3d_4nn(data, range(nima), sym)
@@ -5247,9 +5207,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		finfo.flush()
 	if myid == main_node:
 		# initialize data for the reference preparation function
-		ref_data = [ mask3D, max(center,0), None, None, None ]
+		ref_data = [ mask3D, max(center,0), None, None, None, None ]
 		# for method -1, switch off centering in user function
-		ref_data.append( None )
 
 	from time import time	
 
@@ -5484,11 +5443,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	else   : from reconstruction import recons3d_4nn
 
 	# initialize data for the reference preparation function
-	ref_data = []
-	ref_data.append( mask3D )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [mask3D, center, None, None]
 
 	# do the projection matching
 	total_iter = 0
@@ -6736,11 +6691,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 		outf.flush()
 
 	# initialize data for the reference preparation function
-	ref_data = []
-	ref_data.append( mask3D )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data = [mask3D, center, None, None]
 
 	M = nx
 	npad = 2
@@ -7462,26 +7413,24 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			outlist[2].write_image(file_particle, k)
 		out.close()
 
-def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-          max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,  dpsi,
-	  rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
-	  fourvar, MPI):
+def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
+          ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+	  rmin, rmax, fract, npad, sym, user_func_name, datasym,
+	  fourvar, debug = False, MPI = False):
 	if MPI:
-		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-			max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,  dpsi,
-			rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
-			fourvar)
+		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
+			ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+			rmin, rmax, fract, npad, sym, user_func_name, datasym,
+			fourvar, debug)
 		return
 
-	from utilities      import model_circle, drop_image, read_spider_doc
+	from utilities      import model_circle, drop_image
 	from utilities      import get_image, get_input_from_string
 	from utilities      import get_params_proj, set_params_proj
-	#from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
-	from alignment	    import proj_ali_incore, proj_ali_incore_local_psi, helios, Numrinit, prepare_refrings
+	from alignment	    import proj_ali_helical, helios, Numrinit, prepare_refrings
 	from projection     import prep_vol
 	from statistics     import ccc
 	from fundamentals   import cyclic_shift, rot_shift3D
-	#from statistics    import fsc_mask
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -7508,11 +7457,11 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
 
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Reference volume            : %s\n"%(ref_vol))	
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Maskfile                    : %s\n"%(maskfile))
-	print_msg("Inner radius                : %i\n"%(first_ring))
+	print_msg("Input stack                               : %s\n"%(stack))
+	print_msg("Reference volume                          : %s\n"%(ref_vol))	
+	print_msg("Output directory                          : %s\n"%(outdir))
+	print_msg("Maskfile                                  : %s\n"%(maskfile))
+	print_msg("Inner radius                              : %i\n"%(first_ring))
 
 	vol     = EMData()
 	vol.read_image(ref_vol)
@@ -7521,17 +7470,12 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 
 	print_msg("Outer radius                              : %i\n"%(last_ring))
 	print_msg("Ring step                                 : %i\n"%(rstep))
-	print_msg("threshold for the CC peak                 : %f\n"%(min_cc_peak))
 	print_msg("X search range                            : %s\n"%(xrng))
-	print_msg("threshold for translation in X direction  : %f\n"%(max_x_shift))
 	print_msg("Y search range                            : %s\n"%(yrng))
-	print_msg("threshold for translation in Y direction  : %f\n"%(max_y_shift))
 	print_msg("Translational step                        : %s\n"%(step))
 	print_msg("Angular step                              : %s\n"%(delta))
 	print_msg("Angular search range                      : %s\n"%(an))
 	print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
-	#print_msg("search step for hsearch - angle           : %f\n"%(step_a))
-	#print_msg("search step for hsearch - rise            : %f\n"%(step_r))
 	print_msg("fraction of volume used for helical search: %f\n"%(fract))
 	print_msg("initial symmetry - angle                  : %f\n"%(dphi))
 	print_msg("initial symmetry - axial rise             : %f\n"%(dp))
@@ -7541,6 +7485,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	print_msg("Symmetry group                            : %s\n"%(sym))
 	print_msg("symmetry doc file                         : %s\n"%(datasym))
 	print_msg("npad                                      : %i\n"%(npad))
+	print_msg("User function                             : %s\n"%(user_func_name))
 
 	if (maskfile) :
 		if (type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -7591,14 +7536,15 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 					previous_defocus = -1.0
 				else:
 					volft,kb = prep_vol( vol )
-					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
-					del volft
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False, phiEqpsi = "Zero")
+					del volft, kb
 			else:
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
-				del volft
+				refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False, phiEqpsi = "Zero")
+				del volft, kb
 			sx = 0.0
 			sy = 0.0
+			phihi = [0.0]*nima
 			for im in xrange( nima ):
 				if CTF and ctf_applied == False:
 					ctf = data[im].get_attr( "ctf" )
@@ -7606,32 +7552,28 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 						previous_defocus = ctf.defocus
 						ctfvol = filt_ctf(vol, ctf)
 						volft,kb = prep_vol( ctfvol )
-						refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
+						refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False, phiEqpsi = "Zero")
+						del volft, kb
 
-				if an[N_step] == -1:	
-					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
-				else:
-					peak, pixel_error = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], dpsi)
+				#if an[N_step] == -1:
+				#	peak, pixel_error = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+				#else:
+				peak, phihi[im], sxi, syi, pixel_error = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step], psi_max)
 
-				paramali = get_params_proj(data[im])
-				# phi theta psi sx sy
-				sx += paramali[3]
-				sy += paramali[4]
-				#  conflict with the meaning of active  PAP 05/09
-				active = 1
-				# peak
-				#if(peak < min_cc_peak): active = 0
-				# s2x
-				if(abs(paramali[3]) > max_x_shift): active = 0
-				# s2y
-				elif(abs(paramali[4]) > max_y_shift): active = 0
-				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
-				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
-				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
-				data[im].set_attr_dict({'active':active})
-				#print the alignment parameters into the LOG file!
-				print_msg("Image %i,  status    : %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(im, active, paramali[2], paramali[3], paramali[4], peak))
+				sx += sxi
+				sy += syi
+				#print_msg("Image %i,  psi %9.2f,    s2x  %9.2f, s2y  %9.2f,  peak  %10.3e \n"%(im, paramali[2], paramali[3], paramali[4], peak))
 
+			# histogram of phi's
+			from statistics import hist_list
+			lhist = 30
+			region, histo = hist_list(phihi, lhist)
+			msg = "      Histogram of phi angles\n      phi         number of particles\n"
+			print_msg(msg)
+			for lhx in xrange(lhist):
+				msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+				print_msg(msg)
+			del phihi, region, histo, msg
 			#center projections
 			sx /= nima
 			sy /= nima
@@ -7640,19 +7582,20 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
 
 			#  3D stuff
-			#  I removed symmetry, by default the volume is not symmetrized
 			#  calculate new and improved 3D
 			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, npad = npad)
 			else:	 vol = recons3d_4nn(data, range(nima), npad = npad)
-			from filter import filt_tanl
-			vol = filt_tanl(vol, 0.17, 0.1)
+
+			ref_data = [vol]
+			vol = user_func(ref_data)
+
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
-			if(N_step*max_iter+Iter+1 > 5):
-				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+			if(N_step*max_iter+Iter+1 > 2):
+				vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 			else:
 				#  in the first two steps the symmetry is imposed
-				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax)
+				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
 			print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 			fofo = open(os.path.join(outdir,datasym),'a')
 			fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
@@ -7663,57 +7606,64 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
 
-def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_shift, yr, 
-	max_y_shift, max_tilt, ts, delta, an, maxit, CTF, snr, dp, dphi,
-	rmin, rmax, fract, pol_ang_step, npad, sym, user_func_name, datasym,
-	Fourvar):
-	from utilities      import model_circle, drop_image, read_spider_doc
-	from utilities      import get_image, get_input_from_string, file_type
-	from utilities      import get_params_proj, set_params_proj, recv_attr_dict, send_attr_dict
-	from alignment	    import proj_ali_incore, proj_ali_incore_local, helios, Numrinit, prepare_refrings
-	from projection     import prep_vol
-	from statistics     import ccc
+def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
+	ts, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
+	rmin, rmax, fract, npad, sym, user_func_name, datasym,
+	fourvar, debug):
+
+
+	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import send_attr_dict
+	from utilities      import get_params_proj, set_params_proj, file_type
+	from fundamentals   import rot_avg_image
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from utilities      import bcast_number_to_all, bcast_list_to_all, bcast_EMData_to_all
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT, MPI_SUM
-	from mpi 	    import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv
-	from time           import time
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from filter         import filt_ctf
+	from projection     import prep_vol, prgs
+	from statistics     import hist_list, varf3d_MPI
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_d_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-	
-	debug = True
+
+
 	if debug:
 		from time import sleep
 		while not os.path.exists(outdir):
 			print  "Node ",myid,"  waiting..."
 			sleep(5)
 
-
-		info_file = outdir+("/progress%04d"%myid)
+		info_file = os.path.join(outdir, "progress%04d"%myid)
 		finfo = open(info_file, 'w')
 	else:
 		finfo = None
+
+
+	sym = "c1"
+	symref = "s"
+	ref_a= "P"
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
 	else          :  yrng = get_input_from_string(yr)
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
-	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
-	if (an == "-1"):
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
 		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
+
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
@@ -7736,40 +7686,37 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		print_msg("Inner radius                              : %i\n"%(first_ring))
 		print_msg("Outer radius                              : %i\n"%(last_ring))
 		print_msg("Ring step                                 : %i\n"%(rstep))
-		print_msg("Threshold for the CC peak                 : %f\n"%(min_cc_peak))
 		print_msg("X search range                            : %s\n"%(xrng))
-		print_msg("Threshold for translation in X direction  : %f\n"%(max_x_shift))
 		print_msg("Y search range                            : %s\n"%(yrng))
-		print_msg("Threshold for translation in Y direction  : %f\n"%(max_y_shift))
 		print_msg("Translational step                        : %s\n"%(step))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("max radius for helical search (in Ang)    : %f\n"%(rmax))
-		print_msg("Fraction of volume used for helical search: %f\n"%(fract))
+		print_msg("min radius for helical search (in pix)    : %f\n"%(rmin))
+		print_msg("max radius for helical search (in pix)    : %f\n"%(rmax))
+		print_msg("fraction of volume used for helical search: %f\n"%(fract))
 		print_msg("initial symmetry - angle                  : %f\n"%(dphi))
 		print_msg("initial symmetry - axial rise             : %f\n"%(dp))
 		print_msg("Maximum iteration                         : %i\n"%(max_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
+		print_msg("Symmetry group                            : %s\n"%(sym))
 		print_msg("symmetry doc file                         : %s\n"%(datasym))
 		print_msg("npad                                      : %i\n"%(npad))
+		print_msg("User function                             : %s\n\n"%(user_func_name))
+
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
-	else: mask3D = model_circle(last_ring, nx, nx, nx)
-	
+	#else: mask3D = model_circle(last_ring, nx, nx, nx)
+
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
-	fscmask = model_circle(last_ring,nx,nx,nx)
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
 		from filter         import filt_ctf
-	else:	from reconstruction import recons3d_4nn_MPI
-	sym = "c1"
-	symref = "s"
-	ref_a= "P"
-	
+	else:	 from reconstruction import recons3d_4nn_MPI
+
 	if myid == main_node:
        		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
@@ -7782,127 +7729,178 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 		nima = len(list_of_particles)
 	else:
 		nima = 0
-	nima = bcast_number_to_all(nima, source_node = main_node)
+	total_nima = bcast_number_to_all(nima, source_node = main_node)
 
 	if myid != main_node:
-		list_of_particles = [-1]*nima
+		list_of_particles = [-1]*total_nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
 	if debug:
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
-	for im in xrange(len(data)):
+	if fourvar:  original_data = []
+	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
-	if(data[0].get_attr_default('ctf_applied', 2) > 0):  ctf_applied = True
-	else:   ctf_applied = False
+		if fourvar: original_data.append(data[im].copy())
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+
+	if debug:
+		finfo.write( '%d loaded  \n' % nima )
+		finfo.flush()
 	if CTF:
 		pixel_size = data[0].get_attr('ctf').apix
 	else:
 		pixel_size = data[0].get_attr('pixel_size')
-	if myid == 0:
+	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
 
-	if debug:
-		finfo.write( '%d Loaded  \n' % len(data) )
-		finfo.flush()
-	
-	if myid == main_node:  drop_image(vol, os.path.join(outdir, "aligned0000.hdf"))
+	from time import time	
+
+	#  this is needed for gathering of pixel errors
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+
+	pixer = [0.0]*nima
+	phihi = [0.0]*nima
+	total_iter = 0
+	# do the projection matching
 	for N_step in xrange(lstp):
- 		for Iter in xrange(max_iter):
+		terminate = 0
+		Iter = -1
+ 		while(Iter < max_iter-1 and terminate == 0):
+			Iter += 1
+			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
-			if CTF:
-				if ctf_applied == False:
-					previous_defocus = -1.0
-				else:
-					volft,kb = prep_vol( vol )
-					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI=False)
-					del volft
-			else:
-				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True)
-				del volft
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+
+			volft,kb = prep_vol( vol )
+			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
+			del volft,kb
+			if myid== main_node:
+				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
+				start_time = time()
 
 			sx = 0.0
 			sy = 0.0
-			for im in xrange( len(data) ):
-				if CTF and ctf_applied == False:
-					ctf = data[im].get_attr( "ctf" )
-					if( ctf.defocus != previous_defocus):
-						previous_defocus = ctf.defocus
-						ctfvol = filt_ctf(vol, ctf)
-						volft,kb = prep_vol( ctfvol )
-						start_prepare = time()
-						refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr)
-						if myid== main_node:
-							print_msg( "Time to prepare ring: %d\n" % (time()-start_prepare) )
+			for im in xrange( nima ):
 
-				if an[N_step] == -1: 
-					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
-				else:           
-					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+				#if an[N_step] == -1: 
+				#	peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
+				#else:           
+				peak, phihi[im], sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				sx += sxi
+				sy += syi
 
-				paramali = get_params_proj(data[im])
-				# phi theta psi sx sy
-				sx += paramali[3]
-				sy += paramali[4]
-				active = 1
-				# peak
-				#if(peak < min_cc_peak): active = 0
-				# s2x
-				if(abs(paramali[3]) > max_x_shift): active = 0
-				# s2y
-				elif(abs(paramali[4]) > max_y_shift): active = 0
-				# psi correct value should be 90 +/- max_tilt, or 270 +/- max_tilt!
-				elif(abs(paramali[2]-270.0) >max_tilt and paramali[2] >180.0): active = 0
-				elif(abs(paramali[2]-90.0) >max_tilt and paramali[2] <180.0): active = 0
-				data[im].set_attr_dict({'active':active})
-	
+			if myid == main_node:
+				print_msg("Time of alignment = %d\n"%(time()-start_time))
+				start_time = time()
+
 			sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			if myid == main_node:
-				sx = float(sx)/nima
-				sy = float(sy)/nima
-			sx = mpi_bcast(sx, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			sy = mpi_bcast(sy, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			sx = float(sx[0])
-			sy = float(sy[0])
-			#  Center projections
-			for im in xrange( len(data) ):
+			if( myid == main_node ):
+				sx = float(sx[0])/total_nima
+				sy = float(sy[0])/total_nima
+			else:
+				sx = 0.0
+				sy = 0.0
+			sx = bcast_number_to_all(sx, source_node = main_node)
+			sy = bcast_number_to_all(sy, source_node = main_node)
+			for im in xrange( nima ):
 				paramali = get_params_proj(data[im])
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
 
-			if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, snr, 1, "c1", None, npad)
-			else:    vol = recons3d_4nn_MPI(myid, data, "c1", None, npad)
+			#output pixel errors
+			from mpi import mpi_gatherv
+			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			terminate = 0
+			if(myid == main_node):
+				recvbuf = map(float, recvbuf)
+				from statistics import hist_list
+				lhist = 20
+				region, histo = hist_list(recvbuf, lhist)
+				if(region[0] < 0.0):  region[0] = 0.0
+				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
+				print_msg(msg)
+				for lhx in xrange(lhist):
+					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+					print_msg(msg)
+				# Terminate if 95% within 1 pixel error
+				im = 0
+				for lhx in xrange(lhist):
+					if(region[lhx] > 1.0): break
+					im += histo[lhx]
+				#if(im/float(total_nima) > 0.95):  terminate = 1
+				del region, histo
+			#output distribution of phi
+			recvbuf = mpi_gatherv(phihi, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				recvbuf = map(float, recvbuf)
+				lhist = 30
+				region, histo = hist_list(recvbuf, lhist)
+				msg = "\n      Distribution of phi\n      phi         number of particles\n"
+				print_msg(msg)
+				for lhx in xrange(lhist):
+					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+					print_msg(msg)
+				del region, histo
+			del recvbuf
+			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+			terminate = int(terminate[0])
 
-			"""
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = mpad)
+			else:   vol = recons3d_4nn_MPI(myid, data, npad = npad)
+
+			if myid == main_node:
+				print_msg("\n 3D reconstruction time = %d\n"%(time()-start_time))
+				start_time = time()
+
 			if fourvar:
 			#  Compute Fourier variance
-				varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(N_step*max_iter+Iter+1)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
-				if myid == main_node:   varf = 1.0/varf
+				for im in xrange(nima):
+					original_data[im].set_attr( 'xform.projection', data[im].get_attr('xform.projection') )
+				varf = varf3d_MPI(original_data, ssnr_text_file = os.path.join(outdir, "ssnr%04d"%(total_iter)), mask2D = None, reference_structure = vol, ou = last_ring, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+				if myid == main_node:
+					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
+					start_time = time()
+					varf = 1.0/varf
 			else:  varf = None
-			"""
+
 			if myid == main_node:
-				drop_image(vol, os.path.join(outdir, "unsymmetrized%04d.hdf"%(N_step*max_iter+Iter+1)))
-				if(N_step*max_iter+Iter+1 > 2):
-					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax)
+				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
+				ref_data = [vol]
+				#  call user-supplied function to prepare reference image, i.e., filter it
+				vol = user_func(ref_data)
+				if(total_iter > 2):
+					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 				else:
 					#  in the first two steps the symmetry is imposed
-					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax)
-				print_msg("new delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
+				print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
-				drop_image(vol, os.path.join(outdir, "aligned%04d.hdf"%(N_step*max_iter+Iter+1)) )
-				#drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
-			#del varf
+			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
@@ -7916,6 +7914,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
+
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""

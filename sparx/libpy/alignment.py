@@ -980,7 +980,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False):
+def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus"):
         from projection   import prep_vol, prgs
         from math         import sin, cos, pi
 	from applications import MPI_start_end
@@ -988,7 +988,7 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False):
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
-	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
@@ -1126,7 +1126,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	ant = abs(cos(an*pi/180.0))
+	ant = cos(an*pi/180.0)
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
@@ -1193,7 +1193,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	ant = abs(cos(an*pi/180.0))
+	ant = cos(an*pi/180.0)
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
@@ -1237,6 +1237,69 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
+
+def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=None):
+	"""
+	  dpsi - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+	if finfo:
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, step, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	iref = int(iref)
+	#print  " IN ", ang, sxs, sys, mirror, iref, peak
+	if iref > -1:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+
+		#print  " OUT",refrings[iref].get_attr("psi"), angb, phi, theta, psi, s2x, s2y
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t2.set_trans(Vec2f(-s2x, -s2y))
+		data.set_attr("xform.projection", t2)
+		from alignment import max_3D_pixel_error
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, phi, s2x, s2y, pixel_error
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0
 
 def ali_vol_func(params, data):
 	from utilities    import compose_transform3
@@ -1287,12 +1350,12 @@ def ali_vol_func_only_scale(params, data):
 	return res
 
 def helios_func(params, data):
-	sm = data[0].helicise(data[2], params[0], params[1], data[3], data[4])
+	sm = data[0].helicise(data[2], params[0], params[1], data[3], data[4], data[5])
 	q = sm.cmp("dot", sm, {"negative":0})
 	#print  params,q
 	return  q
 
-def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0):
+def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0.0):
 	from alignment    import helios_func
 	from utilities    import amoeba
 	nx = vol.get_xsize()
@@ -1301,7 +1364,7 @@ def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0):
 	if(radius <= 0.0):    radius = nx//2-1
 	params = [dp, dphi]
 	#print  " input params ",params
-	data=[vol, params, pixel_size, section_use, radius]
+	data=[vol, params, pixel_size, section_use, radius, rmin]
 	new_params = [dp, dphi]
 	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-3, 1.0e-3, 500, data)
 	#print  " new params ", new_params[0], new_params[1]

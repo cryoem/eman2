@@ -124,7 +124,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 	from utilities import reduce_EMData_to_root
 	if( len(prjlist) == 0 ):
-		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+		ERROR("empty input list","recons3d_4nn_MPI",1)
 
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:

@@ -4931,7 +4931,7 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 
 #define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
-EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius) {
+EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {
 	if (3 != get_ndim())
 		throw ImageDimensionException("helicise needs a 3-D image.");
 	if (is_complex())
@@ -4946,9 +4946,11 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	int numst = int((ne - nb)/dp*pixel_size + 0.5);
 	// how many steps needed
 	int nst = int(nz*pixel_size/dp+0.5);
-	float r2;
+	float r2, ir;
 	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
+	if(minrad < 0.0f) ir = 0.0f;
+	else ir = minrad*minrad;
 	for (int k = 0; k<nz; k++) {
 		for (int j = 0; j<ny; j++) {
 			int jy = j - nyc;
@@ -4956,7 +4958,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			for (int i = 0; i<nx; i++) {
 				int ix = i - nxc;
 				float d2 = (float)(ix*ix + jj);
-				if(d2 <= r2) {
+				if(d2 <= r2 && d2>=minrad) {
 					int nq = 1;
 					for ( int ist = -nst; ist <= nst; ist++) {
 						float zold = (k*pixel_size + ist*dp)/pixel_size;
