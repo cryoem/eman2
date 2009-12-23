@@ -900,10 +900,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
 					        	print_msg("The new average %2d is from average %2d.\n"%(isav, av1))
 					        if option == 5 and to_break < len(mutation_rate):
-					        	alpha_list_new = list_mutation(alpha_list_new, mutation_rate[to_break])
-					        	sx_list_new = list_mutation(sx_list_new, mutation_rate[to_break])
-					        	sy_list_new = list_mutation(sy_list_new, mutation_rate[to_break])
-					        	mirror_list_new = list_mutation(mirror_list_new, mutation_rate[to_break], True)
+					        	alpha_list_new = list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
+					        	sx_list_new = list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+					        	sy_list_new = list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+					        	mirror_list_new = list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
 						if to_break < len(mutation_rate):
 						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
@@ -952,26 +952,47 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_end_msg("ali2d_a_MPI")
 
 
-def list_mutation(list, mutation_rate, mirror=False):
+def list_mutation(list0, mutation_rate, min_val=0, max_val=1, bit=1, mirror=False):
 
 	from random import random
 
-	l = len(list)
-	new_list = []
+	l = len(list0)
+	new_list = [0.0]*l
 	if mirror:
 		for i in xrange(l):
 			if random() < mutation_rate:
-				new_list.append(1-list[i])
+				new_list.append(1-list0[i])
 			else:
-				new_list.append(list[i])
+				new_list.append(list0[i])
 	else:
-		max_list = max(list)
-		min_list = min(list)
+		# Generate the gray code, this without doubt is extremely inefficient, but we just want to check the results first
+		# We'll worry about the code efficiency later.
+		graycode = []
+		K = 2**bit
+		for k in xrange(K):
+			binary = [0]*bit
+			gray = [0]*bit
+			tempk = k 
+			for i in xrange(bit):
+				binary[i] = tempk%2
+				tempk /= 2
+			shift = 0
+			for i in xrange(bit-1, -1, -1):
+				gray[i] = (binary[i]-shift)%2
+				shift += gray[i]-2
+			graycode.append(gray)
 		for i in xrange(l):
-			if random() < mutation_rate:
-				new_list.append(random()*(max_list-min_list)+min_list)
-			else:
-				new_list.append(list[i])
+			t = min(max(min_val, list0[i]), max_val)
+			k = int((t-min_val)/(max_val-min_val)*(K-1)+0.5)
+			gray = [0]*bit
+			for j in xrange(bit):
+				if random() < mutation_rate:
+					gray[j] = 1-graycode[k][j]
+				else:
+					gray[j] = graycode[k][j]
+			k_new = graycode.index(gray)
+			new_list[i] = k_new*(max_val-min_val)/(K-1)+min_val 			
+			
 	return new_list
 
 '''
