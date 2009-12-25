@@ -114,7 +114,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		Util.mul_img(sumsq, sumsq.conjg())
 		Util.mul_scalar(sumsq, 1.0/float(n))
 		Util.sub_img(var, sumsq)
-		
+
 	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
 	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
@@ -355,6 +355,7 @@ def ave_series_ctf(data, ctf2):
 
 	return filt_table(ave, ctf2)
 
+'''
 def ave_var_series(data, kb):
 	"""
 		Calculate average and variance of an image series using current alignment parameters
@@ -428,7 +429,7 @@ def ave_oe_series_g(data, kb):
 	ave1 /= (n/2+(n%2))
 	ave2 /= (n/2)
 	return ave1, ave2
-
+'''
 
 def ave_oe_series_d(data):
 	"""
