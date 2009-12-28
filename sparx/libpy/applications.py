@@ -872,7 +872,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        mirror_list_new = [0]*(number_of_ave*nima)
 					for isav in xrange(number_of_ave):
 					        r = random()
-					        if r < crossover_rate:
+						if r < crossover_rate:
 					        	av1 = index[isav]
 					        	av2 = index[(isav+1)%number_of_ave]
 					        	tsavg.append(Util.addn_img(Util.muln_img(qt[av1][1], chessboard1), Util.muln_img(qt[av2][1], chessboard2)))
@@ -957,13 +957,13 @@ def list_mutation(list0, mutation_rate, min_val=0, max_val=1, bit=1, mirror=Fals
 	from random import random
 
 	l = len(list0)
-	new_list = [0.0]*l
+	new_list = [0]*l
 	if mirror:
 		for i in xrange(l):
 			if random() < mutation_rate:
-				new_list.append(1-list0[i])
+				new_list[i] = 1-list0[i]
 			else:
-				new_list.append(list0[i])
+				new_list[i] = list0[i]
 	else:
 		# Generate the gray code, this without doubt is extremely inefficient, but we just want to check the results first
 		# We'll worry about the code efficiency later.
