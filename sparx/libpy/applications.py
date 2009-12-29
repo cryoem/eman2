@@ -9443,7 +9443,7 @@ def params_2D_to_3D(stack):
 	print_end_msg("params_2D_to_3D")
 	
 def params_3D_to_2D(stack):
-	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg, set_params2D
+	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg, set_params2D, write_header
 	
 	print_begin_msg("params_3D_to_2D")
 	print_msg("Input stack                 : %s\n\n"%(stack))
