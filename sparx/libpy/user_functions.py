@@ -66,7 +66,6 @@ def ref_ali2d( ref_data ):
 		print_msg(msg)
 	return  tavg, cs
 
-
 def ref_ali2d_c( ref_data ):
 	from utilities    import print_msg
 	from filter       import fit_tanh, filt_tanl
@@ -93,7 +92,6 @@ def ref_ali2d_c( ref_data ):
 		msg = "Center x = %10.3f, y       = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
-
 
 def ref_ali2d_m( ref_data ):
 	from utilities    import print_msg
@@ -122,7 +120,6 @@ def ref_ali2d_m( ref_data ):
 		print_msg(msg)
 	return  tavg, cs
 
-
 def ref_ali3dm( refdata ):
 	from filter import fit_tanh, filt_tanl
 	from utilities import get_im
@@ -142,8 +139,6 @@ def ref_ali3dm( refdata ):
 		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 					
-
-
 def ref_ali3dm_ali_50S( refdata ):
 	from filter       import fit_tanh, filt_tanl
 	from utilities    import get_im
@@ -432,7 +427,6 @@ def ref_aliB_cone( ref_data ):
 	"""
 	return  volf
 
-
 def ref_7grp( ref_data ):
 	from utilities      import print_msg
 	from filter         import fit_tanh, filt_tanl, filt_gaussinv
@@ -554,7 +548,6 @@ def spruce_up_variance( ref_data ):
 	
 	volf = filt_gaussl(volf, 0.4)
 	return  volf, cs
-
 
 def minfilt( fscc ):
 	from filter import fit_tanh
@@ -723,10 +716,10 @@ def constant( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
-	fl = 0.4
-	aa = 0.1
-	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	#print_msg(msg)
+	fl = 0.2
+	aa = 0.2
+	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	return  tavg, cs

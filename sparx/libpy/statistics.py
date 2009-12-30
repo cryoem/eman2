@@ -213,7 +213,6 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		sumsq = EMData()
 	return tavg, ave1, ave2, var, sumsq
 
-
 def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 	"""
 		Calculate average of an image series
@@ -265,20 +264,22 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 
 def ave_var(data, mode = "a"):
 	"""
-		Calculate average and variance of a 2 or 3D image series
+		Calculate average and variance of a 2D or 3D image series
 		with optional application of orientation parameters
+		data can be either in-core stack or a disk file
 	"""
-	from utilities import model_blank
-	n = len(data)
-	nx = data[0].get_xsize()
-	ny = data[0].get_ysize()
-	nz = data[0].get_zsize()
+	from utilities import model_blank, get_im
+	if  type(data) == type(""): n = EMUtil.get_image_count(data)
+	else:                       n = len(data)
+	img = get_im(data, 0)
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
 	if(mode == "a"):
 		if(nz > 1):
 			ali_params = "xform.align3d"
 			from fundamentals import rot_shift3D
-			from utilities import get_params2D
-
+			from utilities import get_params3D
 		else:
 			ali_params = "xform.align2d"
 			from fundamentals import rot_shift2D
@@ -287,18 +288,17 @@ def ave_var(data, mode = "a"):
 	ave = model_blank(nx,ny,nz)
 	var = model_blank(nx,ny,nz)
 	for i in xrange(n):
+		img = get_im(data,i)
 		if(mode == "a"):
 			if(nz > 1):
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(data[i])
-				img = rot_shift3D(data[i], phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 			else:
-				angle, sx, sy, mirror, scale = get_params2D(data[i])
-				img = rot_shift2D(data[i], angle, sx, sy, mirror, scale)
-		else:
-			img = data[i]
+				angle, sx, sy, mirror, scale = get_params2D(img)
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
-	ave /= n
+	Util.mul_scalar(ave, 1.0 /float(n) )
 
 	return ave, (var - ave*ave*n)/(n-1)
 
