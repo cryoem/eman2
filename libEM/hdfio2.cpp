@@ -508,7 +508,7 @@ bool HdfIO2::is_valid(const void *first_block)
 }
 
 // Reads all of the attributes from the /MDF/images/<imgno> group
-int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
+int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	init();
@@ -551,6 +551,26 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 			dict.erase("ctf");
 			dict["ctf"] = ctf_;
 			delete ctf_;
+		}
+	}
+
+	if(area) {
+		if( dict.has_key("apix_x") && dict.has_key("apix_y") && dict.has_key("apix_z") )
+		{
+			if( dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z") )
+			{
+				float xorigin = dict["origin_x"];
+				float yorigin = dict["origin_y"];
+				float zorigin = dict["origin_z"];
+
+				float apix_x = dict["apix_x"];
+				float apix_y = dict["apix_y"];
+				float apix_z = dict["apix_z"];
+
+				dict["origin_x"] = xorigin + apix_x * area->origin[0];
+				dict["origin_y"] = yorigin + apix_y * area->origin[1];
+				dict["origin_z"] = zorigin + apix_z * area->origin[2];
+			}
 		}
 	}
 
@@ -616,24 +636,36 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		doffset[1] = area->y_origin();
 		doffset[2] = area->z_origin();
 
+		cout << "doffset = " << doffset[0] << ", " << doffset[1] << ", " << doffset[2] << std::endl;
+
 		hsize_t     dcount[3];              /* size of the hyperslab in the file */
  		dcount[0] = area->get_width();
-		dcount[1] = area->get_height();
-		dcount[2] = area->get_depth();
+		dcount[1] = area->get_height()?area->get_height():1;
+		dcount[2] = area->get_depth()?area->get_depth():1;
+
+		cout << "dcount = " << dcount[0] << ", " << dcount[1] << ", " << dcount[2] << std::endl;
 
 		herr_t status2 = H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Define memory dataspace - the memory we will created for the region*/
  		hsize_t     dims[3];              /* size of the region in the memory */
 		dims[0]  = area->get_width();
-		dims[1]  = area->get_height();
- 		dims[2]  = area->get_depth();
+		dims[1]  = area->get_height()?area->get_height():1;
+ 		dims[2]  = area->get_depth()?area->get_depth():1;
+
+ 		cout << "dims = " << dims[0] << ", " << dims[1] << ", " << dims[2] << std::endl;
+
  		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
 
  		H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
+
+ 		std::cout << "Region data read: data[1] = " << data[1] << std::endl;
+
  		H5Sclose(memoryspace);
 	} else {
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+
+		std::cout << "Whole data read: data[1] = " << data[1] << std::endl;
 	}
 
 	H5Sclose(spc);
@@ -705,7 +737,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 				H5Aclose(attr);
 				continue;
 			}
-			EMObject val=read_attr(attr);
+			EMObject val=read_attr(attr);area->get_height()
 			dict2[name+5]=val;
 			H5Aclose(attr);
 		}
@@ -780,16 +812,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 		hsize_t dcount[3];		/*size of the hyperslab in the file*/
 		dcount[0] = area->get_width();
-		dcount[1] = area->get_height();
-		dcount[2] = area->get_depth();
+		dcount[1] = area->get_height()?area->get_height():1;
+		dcount[2] = area->get_depth()?area->get_depth():1;
 
 		herr_t status2 = H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Create memory space with size of the region.*/
 		hsize_t dims[3];	/*size of the region in the memory*/
 		dims[0] = area->get_width();
-		dims[1] = area->get_height();
-		dims[2] = area->get_depth();
+		dims[1] = area->get_height()?area->get_height():1;
+		dims[2] = area->get_depth()?area->get_depth():1;
 
 		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
 		H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, spc, H5P_DEFAULT, data);
