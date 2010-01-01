@@ -737,7 +737,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 				H5Aclose(attr);
 				continue;
 			}
-			EMObject val=read_attr(attr);area->get_height()
+			EMObject val=read_attr(attr);
 			dict2[name+5]=val;
 			H5Aclose(attr);
 		}
