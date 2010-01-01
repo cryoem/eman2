@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 
-def filt_median(f, nx, ny, nz, kernelshape = BLOCK):
+def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 	if kernelshape=="BLOCK":
 		return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
 	elif kernelshape=="CIRCULAR":
