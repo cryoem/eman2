@@ -116,15 +116,10 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		Util.sub_img(var, sumsq)
 
 	Util.mul_scalar(var, 1.0/float(n-1))
-	# Comment by Zhengfan Yang on 08/09/09
-	# The value of this component is ofter close to zero, and very often
-	# numerical inaccuracy causes this component to be less than zero,
-	# in this case, we set it to one.
-	if var.get_value_at(0, 0) < 0.0:   var.set_value_at(0, 0, 1.0)
+	var.set_value_at(0, 0, 1.0)
 	st = Util.infomask(var, None, True)
 	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
 	return tavg, ave1, ave2, var, sumsq
-
 
 def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0, comm = -1):
 	"""
@@ -206,11 +201,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)
 		Util.mul_scalar(var, 1.0/float(nima-1))
-		# Comment by Zhengfan Yang on 08/09/09
-		# The value of this component is ofter close to zero, and very often
-		# numerical inaccuracy causes this component to be less than zero,
-		# in this case, we set it to one.
-		if var.get_value_at(0, 0) < 0.0:   var.set_value_at(0, 0, 1.0)
+		var.set_value_at(0, 0, 1.0)
 		st = Util.infomask(var, None, True)
 		if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf_MPI", 1)
 	else:
@@ -224,6 +215,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of the average.
 		In addition, calculate odd and even sums, these are not divided by the ctf^2
+		If ctf_2_sum not provided, sum of ctf^2 will be calculated and returned
 	"""
 	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft
@@ -1046,9 +1038,9 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 		rssnr.append(qt)
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
 
-def varf(data, mask = None, mode=""):
+def varf(data, mask = None, mode="a"):
 	'''
-	Calculate variance in Fourier space for 2D or 3D images
+	Calculate variance in Fourier space for 2D or 3D images, (no CTF correction)
 	If mode = "a" apply alignment parameters
 	'''
 	from fundamentals import fft, rot_shift2D
@@ -1093,10 +1085,11 @@ def varf(data, mask = None, mode=""):
 
 	return var, rot_avg_table(Util.pack_complex_to_real(var))
 
-def varfctf(data, mask = None, mode=""):
+def varfctf(data, mask = None, mode="a"):
 	'''
-	Calculate variance in Fourier space for 2D or 3D images including ctf information
+	Calculate variance in Fourier space for 2D or 3D images including ctf correction
 	If mode = "a" apply alignment parameters
+	This command is for ML average, i.e., A = sum_k (CTF_k F_k) / sum_k ( CTF_k^2 )
 	'''
 	from fundamentals import fft, rot_shift2D
 	from morphology   import ctf_img
@@ -1136,7 +1129,7 @@ def varfctf(data, mask = None, mode=""):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
-		oc = filt_ctf(ima, ctf_params, pad=True)
+		oc = filt_ctf(ima, ctf_params, dopad=True)
 		Util.add_img(sumsq, fft(oc))
 		Util.add_img2(var, fft(ima))
 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params, ny = ny, nz = nz))
@@ -1150,6 +1143,121 @@ def varfctf(data, mask = None, mode=""):
 	from fundamentals import rot_avg_table
 
 	return var, rot_avg_table(Util.pack_complex_to_real(var))
+
+def varf2d(data, ave, mask = None, mode="a"):
+	'''
+	Calculate variance in Fourier space for 2D images including ctf correction
+	ave is the Wiener average of data
+	If mode = "a" apply alignment parameters
+	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
+	'''
+	from fundamentals import fft, rot_shift2D
+	from morphology   import ctf_img
+	from filter       import filt_ctf
+	from utilities    import get_arb_params, get_params2D, get_im
+	from fundamentals import fft
+	import  types
+
+	if (type(data) is types.StringType):
+		n = EMUtil.get_image_count(data)
+	else:
+		n = len(data)
+	ima = get_im(data)
+	nx = ima.get_xsize()
+	ny = ima.get_ysize()
+	nz = ima.get_zsize()
+	if(ima.get_attr_default('ctf_applied', 1) == 1):
+		ERROR("data cannot be ctf-applied","varf2d",1)
+	if(nz > 1): ERROR("data cannot be 3D","varf2d",1)
+
+	var = EMData(nx, ny, nz, False)
+
+	defocus = -1.0
+	for i in xrange(n):
+		ima = get_im(data, i)
+		ctf = ima.get_attr("ctf")
+		if(mode == "a"):
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+		if(mask): Util.mul_img(ima, mask)
+		if(defocus != ctf.defocus):
+			oc = filt_ctf(ave, ctf, dopad=True)
+			defocus = ctf.defocus
+			#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
+		Util.add_img2(var, fft(Util.subn_img(ima, oc)))
+
+	Util.mul_scalar(var, 1.0/float(n-1))
+	st = Util.infomask(var, None, True)
+	if(st[2]<0.0):  ERROR("Negative variance!","varfctf",1)
+
+	from fundamentals import rot_avg_table
+
+	return var, rot_avg_table(Util.pack_complex_to_real(var))
+
+def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node = 0, comm = -1):
+	"""
+	Calculate variance in Fourier space for 2D images optionally including ctf correction
+	ave is the Wiener average of data
+	If mode = "a" apply alignment parameters
+	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
+	"""
+	from utilities    import    model_blank, get_params2D
+	from fundamentals import    rot_shift2D, fft, fftip
+	from utilities    import    reduce_EMData_to_root
+	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	
+	if comm == -1:
+		from mpi import MPI_COMM_WORLD
+		comm = MPI_COMM_WORLD
+
+	n = len(data)
+	nx = data[0].get_xsize()
+	ny = data[0].get_ysize()
+	var  = EMData(nx, ny, 1, False)
+	
+	if CTF:
+		from filter       import filt_ctf
+		from morphology   import ctf_img
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
+	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+		defocus = -1.0
+	 	for i in xrange(n):
+			ctf = data[i].get_attr("ctf")
+			if(mode == "a"):
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+ 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
+			else:
+				ima = data[i].copy()
+			if(mask): Util.mul_img(ima, mask)
+			if(defocus != ctf.defocus):
+				oc = filt_ctf(ave, ctf, dopad=True)
+				defocus = ctf.defocus
+			Util.add_img2(var, fft(Util.subn_img(ima, oc)))
+	else:
+		for i in xrange(n):
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  Util.mul_img(ima, mask)
+				fftip(ima)
+			else:
+				if  mask:   ima = fft(Util.muln_img(data[i], mask))
+				else:       ima = fft(data[i])
+			Util.add_img2(var, ima)
+	reduce_EMData_to_root(var, myid, main_node, comm)
+	nima = n
+	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
+	if myid == main_node:
+		Util.mul_scalar(var, 1.0/float(nima-1))
+		var.set_value_at(0, 0, 1.0)
+		st = Util.infomask(var, None, True)
+		if st[2] < 0.0:  ERROR("Negative variance!", "varf2_MPI", 1)
+
+		from fundamentals import rot_avg_table
+
+		return var, rot_avg_table(Util.pack_complex_to_real(var))
+	else:
+		return  EMData(), [0]  # return minimum what has to be returned, but no meaning.
 
 def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1"):
 	"""
@@ -1207,8 +1315,28 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 		datstrings.append("\n")
 		outf.write("".join(datstrings))
 	outf.close()
-	from morphology import threshold_to_minval
-	return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+	vol_ssnr1 = Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2))
+	del  vol_ssnr2
+	nc = nx//2
+	r2 = radius**2
+	for i in xrange(nx):
+		for j in xrange(nx):
+			for k in xrange(nx):
+				if( ( (i-nc)**2+(j-nc)**2+(k-nc)**2) <r2):
+					if( vol_ssnr1.get_value_at(i,j,k) <= 0.0):
+						bm = -1.0
+						for i1 in xrange(-1,2):
+							for i2 in xrange(-1,2):
+								for i3 in xrange(-1,2):
+									tm = vol_ssnr1.get_value_at(i+i1,j+i2,k+i3)
+									if(tm > bm):
+										bm = tm
+						vol_ssnr1.set_value_at(i,j,k,bm)
+									
+				else:  vol_ssnr1.set_value_at(i,j,k, 1.0)
+	return vol_ssnr1
+	#from morphology import threshold_to_minval
+	#return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 
 def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
 	"""
@@ -1226,7 +1354,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	nx  = prjlist[0].get_xsize()
-	if ou == -1: radius = int(nx/2) - 1
+	if ou == -1: radius = int(nx/2) - 2
 	else:        radius = int(ou)
 	if(reference_structure == None):
 		if CTF :
@@ -1259,6 +1387,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	del volft
 	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	del re_prjlist
 
 	if myid == 0:
 		outf = file(ssnr_text_file, "w")
@@ -1277,8 +1406,29 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 			outf.write("".join(datstrings))
 		outf.close()
 	if myid == 0:
-		from morphology import threshold_to_minval
-		return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+		vol_ssnr1 = Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2))
+		del  vol_ssnr2
+		# what follows is a risky business.  There should be a better way to deal with negative values. but for the time being...
+		nc = nx//2
+		r2 = radius**2
+		for i in xrange(nx):
+			for j in xrange(nx):
+				for k in xrange(nx):
+					if( ( (i-nc)**2+(j-nc)**2+(k-nc)**2) <r2):
+						if( vol_ssnr1.get_value_at(i,j,k) <= 0.0):
+							bm = -1.0
+							for i1 in xrange(-1,2):
+								for i2 in xrange(-1,2):
+									for i3 in xrange(-1,2):
+										tm = vol_ssnr1.get_value_at(i+i1,j+i2,k+i3)
+										if(tm > bm):
+											bm = tm
+							vol_ssnr1.set_value_at(i,j,k,bm)
+										
+					else:  vol_ssnr1.set_value_at(i,j,k, 1.0)
+		return  vol_ssnr1
+		#from morphology import threshold_to_minval
+		#return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 	else:  return  model_blank(2,2,2)
 
 def ccc(img1, img2, mask=None):
@@ -7267,13 +7417,14 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 
 	return Cls
 
-# This code looks obsolete, I do not write it. JB
+'''
+# This code looks obsolete, I do not write it. JB.. So I commented it out, PAP 12/31/09
 def k_means_aves(images, N, K, rand_seed, outdir):
 	from utilities import model_blank
 	from random       import seed, randint
 	from sys import exit
 	
-	#  This version is not quite correct, as ctf2 is not modified in the avergae, but it cannot be done any other simple way :-(
+	#  This version is not quite correct, as ctf2 is not modified in the average, but it cannot be done any other simple way :-(
 	seed(rand_seed)
 	assign = [0]*N
 	nx = images[0].get_xsize()
@@ -7352,20 +7503,21 @@ def k_means_aves(images, N, K, rand_seed, outdir):
 						print  "ASSIGNED to ",k,Gain_max
 			# if improvement, move object
 			if(assign_to > -1):
-				print  "   >>>>>>>>>>>>>>>>>    MOVING OBJECT",im,Cls,CRIT
+				print  "   #####################    MOVING OBJECT",im,Cls,CRIT
 				CT += Gain[assign_to]
 				assign[im] = assign_to
 				Cls[ca] -= 1
 				CRIT[ca] = JMINUS
 				Cls[assign_to] += 1	
 				CRIT[assign_to] = JPLUSk
-				print  "   >>>>>>>>>>>>>>>>>    MOVING OBJECT",im,assign_to,CT, Cls,CRIT
+				print  "   #####################    MOVING OBJECT",im,assign_to,CT, Cls,CRIT
 				change = True
 		print " ITERATION ",cnt
 		print  CT
 		print  CRIT
 		print  assign
 	exit()
+'''
 
 def var_bydef(vol_stack, vol_list, info):
 	"""  var_bydef calculates variance from definition
