@@ -1060,10 +1060,10 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
-	#from utilities    import get_params_proj, set_params_proj
 
 	ID = data.get_attr("ID")
 	if finfo:
+		from utilities    import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
