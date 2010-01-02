@@ -52,7 +52,7 @@ def main():
 	parser.add_option("--snr",     type="float",	    default=1.0,   help="Signal-to-Noise Ratio" )
 	parser.add_option("--sym",     type="string",	    default="c1",  help="symmetry" )
 	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
-	parser.add_option("--group",   type="int",          default=-1,    help="perfo reconstruction using images for a given group number (group is attribute in the header)" )
+	parser.add_option("--group",   type="int",          default=-1,    help="perform reconstruction using images for a given group number (group is attribute in the header)" )
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no verbose, 1 verbose" )
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])
