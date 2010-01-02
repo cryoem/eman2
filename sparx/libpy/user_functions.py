@@ -514,11 +514,11 @@ def spruce_up_variance( ref_data ):
 	#   4 1.0/variance
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
-	mask = ref_data[0]
+	mask   = ref_data[0]
 	center = ref_data[1]
-	vol  = ref_data[2]
-	fscc = ref_data[3]
-	varf = ref_data[4]
+	vol    = ref_data[2]
+	fscc   = ref_data[3]
+	varf   = ref_data[4]
 
 	print_msg("spruce_up with variance\n")
 	cs = [0.0]*3
@@ -527,7 +527,7 @@ def spruce_up_variance( ref_data ):
 		volf = vol.filter_by_image(varf)
 
 	#fl, aa = fit_tanh(ref_data[3])
-	fl = 0.30
+	fl = 0.22
 	aa = 0.15
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
