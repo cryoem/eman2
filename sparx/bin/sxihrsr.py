@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--CTF",      action="store_true", default=False,         help="CTF correction")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",      action="store_true", default=False,         help="use MPI version")
-	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
+	parser.add_option("--fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--dp",       type="float",  default= 1.0,                help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",  default= 1.0,                help="delta phi - rotation in degrees")   
 	parser.add_option("--psi_max",  type="float",  default= 20.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
@@ -91,7 +91,7 @@ def main():
 			options.yr, options.ts, options.delta, 
 			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.psi_max,
 			options.rmin, options.rmax, options.fract, options.npad,
-			options.sym, options.function, options.datasym, options.Fourvar, options.debug, options.MPI) 
+			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
 		global_def.BATCH = False
 
 if __name__ == "__main__":
