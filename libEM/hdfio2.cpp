@@ -665,7 +665,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	} else {
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 
-		std::cout << "Whole data read: data[1] = " << data[1] << std::endl;
+		//std::cout << "Whole data read: data[1] = " << data[1] << std::endl;
 	}
 
 	H5Sclose(spc);
