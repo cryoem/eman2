@@ -799,8 +799,8 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 
 def aves_w(stack, mode="a"):
 	"""
-		Apply alignment parameters, and calculate Wiener 
-		Summation using CTF and SNR saved in header
+		Apply alignment parameters, and calculate Wiener average
+		using CTF and SNR saved in header
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
@@ -856,8 +856,7 @@ def aves_w(stack, mode="a"):
 	
 def aves_wiener(input_stack, mode="a", SNR=1.0):
 	"""
-		Apply alignment parameters, and calculate Wiener 
-		Summation using CTF info and SNR saved in header
+		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
