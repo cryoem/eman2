@@ -42,7 +42,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --MPI --Fourvar --th_err=threshold_cutoff"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ou",       type="float",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
+	parser.add_option("--ou",       type="int",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--xr",       type="string",       default="4 2 1 1",      help="range for translation search in x direction, search is +/xr ")
 	parser.add_option("--ts",       type="string",       default="2 1 0.5 0.25", help="step of translation search in both directions")
 	parser.add_option("--maxit",    type="float",        default=0,              help="maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
@@ -63,9 +63,13 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
+		if options.MPI:
+			from mpi import mpi_init
+			sys.argv  = mpi_init(len(sys.argv), sys.argv)		
+
 		global_def.BATCH = True
 		isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
-				options.maxit, options.fun, options.th_err, options.snr, options.CTF,
+				options.maxit, options.function, options.th_err, options.snr, options.CTF,
 				options.Fourvar, options.MPI)
 		global_def.BATCH = False
 

@@ -10800,23 +10800,33 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 		sys.exit()
 
 	# main loop
-	for loop in xrange(maxit):
+	for loop in xrange(cfgmain['maxit']):
 		logging.info('=== Ite %03i %s' % (ite, '=' * 20))
 		logging.info('============%s' % ('=' * 20))
 		
 		# alignment
 		if flag_ali and (ite-1) % cfgali['n_ite'] == 0:
-			logging.info('Alignment')
-			header(cfgmain['stack'], 'xform.align2d', zero=True)
+			header(cfgmain['stack'], 'xform.align2d', rand_alpha=True)
+			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d_init.txt'% ite)
 			if cfgali['cpu_list'] == 'local': cmd = '-np %d' % cfgali['nb_cpu']
 			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgali['nb_cpu'], cfgali['cpu_list'])
-			parali = '%s %03i_alignment --ou=%d --xr=%s --ts=%s --maxit=%d --function=%s --snr=%f' % (cfgmain['stack'], ite, 
-				 cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
-			if cfgail['ctf']:        parali += ' --CTF'
+
+			#logging.info('Alignment with ali2d_a')
+			#parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (cfgmain['stack'], ite, 
+				# cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
+			#if cfgali['ctf']:        parali += ' --CTF'
+			#if cfgali['nb_cpu'] > 1: parali += ' --MPI'
+			#if cfgali['fourvar']:    parali += ' --Fourvar'
+			#os.system('mpirun %s sxali2d_a.py %s' % (cmd, parali))
+			
+			logging.info('Alignment with ali2d_c')
+			parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (cfgmain['stack'], ite, cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
+			if cfgali['ctf']:        parali += ' --CTF'
 			if cfgali['nb_cpu'] > 1: parali += ' --MPI'
 			if cfgali['fourvar']:    parali += ' --Fourvar'
 			os.system('mpirun %s sxali2d_c.py %s' % (cmd, parali))
-			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d.txt' % ite)
+						
+			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d_ali.txt' % ite)
 			ave_ali(cfgmain['stack'], '%03i_alignment/global_ave.hdf' % ite, True, True)
 			os.system('mv logfile_* %03i_alignment' % ite)
 			logging.info('... Done')
@@ -10837,22 +10847,36 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 			os.system('mpirun %s sxk_means_stable.py %s' % (cmd, parclu))
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
 			os.system('mv logfile_* %03i_clustering' % ite)
+			data = open(os.path.join('%03i_clustering' % ite, 'main_log.txt'), 'r').readlines()
+			for i, line in enumerate(data):
+				if line.find('Stability') != -1: break
+			data = data[i]
+			stb  = float(data.split()[4])
+			if stb == 0.0:
+				logging.info('... stability: %6.3f %% -> exit' % stb)
+				sys.exit()
+			else:   logging.info('... stability: %6.2f %%' % stb)
 			logging.info('... Done')
 
 		# realignment
 		if flag_reali:
 			logging.info('Realignment')
+			if not os.path.exists(os.path.join('%03i_clustering' % ite, 'averages.hdf')):
+				logging.info('... Averages from clustering do not exist -> exit')
+				sys.exit()
 			if not os.path.exists('%03i_realignment' % ite): os.mkdir('%03i_realignment' % ite)
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_reali.txt' % ite)
 			if cfgrali['cpu_list'] == 'local': cmd = '-np %d' % cfgrali['nb_cpu']
 			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgrali['nb_cpu'], cfgrali['cpu_list'])
-			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr=%s --ts=%s --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'],
+			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'],
                                    ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'])
 			if cfgrali['ctf']:        parrali += ' --CTF'
 			if cfgrali['fourvar']:    parrali += ' --Fourvar'
 			if cfgrali['nb_cpu'] > 1: parrali += ' --MPI'
 			os.system('mpirun %s sxisc_realignment.py %s' % (cmd, parrali))
+			#isc_realignment(cfgmain['stack'], '%03i_clustering/averages.hdf' % ite, 'pool_ave_%03i.hdf' % ite, '%03i_realignment' % ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'], cfgrali['ctf'], cfgrali['fourvar'], False)
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_reali.txt' % ite)
+			#os.system('mv logfile_* %03i_realignment' % ite)
 			logging.info('... done')
 			
 		ite += 1
@@ -10860,9 +10884,117 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 
 # realign data from class averages, select homogenous groups and update active images to the main stack
 def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, MPI):
-	from statisctics import k_means_class_pixerror, k_means_extract_class_ali
-	from numpy       import array
+	from applications import header, ali2d_c
+	from utilities    import estimate_stability, get_im, file_type
+	from statistics   import aves, k_means_extract_class_ali
+	from alignment    import align2d
+	from fundamentals import rot_shift2D
+	from numpy        import array
+	from mpi          import mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	import os, logging
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	if myid == main_node:
+		if not os.path.exists(output_dir): os.mkdir(output_dir)
+		cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
+		k_means_extract_class_ali(stack, averages, output_dir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	os.chdir(output_dir)
+	averages = 'averages_org.hdf'
+	K   = EMUtil.get_image_count(averages)
+	trg = 'averages_reali.hdf'
+	for iclass in xrange(K):
+		class_name = 'class_%03i.hdf' % iclass
+		name       = 'class_%03i' % iclass
+		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
+		
+		#os.system('mpirun -np 16 -hostfile ../nodelist -wdir `pwd` sxali2d_a.py %s %s --ou=%d --xr=%s --ts=%s --maxit=%d --number_of_ave=16 --function=julien --MPI' % (class_name, '%s_01' % name, ou, xr, ts, maxit))
+		ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+			CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+		
+		if myid == main_node:
+			header(class_name, 'xform.align2d', backup=True, suffix='_round1')
+			header(class_name, 'xform.align2d', rand_alpha=True)
+
+		#os.system('mpirun -np 16 -hostfile ../nodelist -wdir `pwd` sxali2d_a.py %s %s --ou=%d --xr=%s --ts=%s --maxit=%d --number_of_ave=16 --function=julien --MPI' % (class_name, '%s_02' % name, ou, xr, ts, maxit))
+
+		ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+			CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+
+		if myid == main_node:
+			data1 = EMData.read_images(class_name)
+			header(class_name, 'xform.align2d_round1', restore=True)
+			data2 = EMData.read_images(class_name)
+			stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
+			ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
+			ave, var = aves(class_name, 'a')
+			ave.set_attr('err_mir', stab_mirror)
+			ave.set_attr('err_pix', ave_pix_err)
+			ave.set_attr('err_ccc', ccc)
+			ref = get_im(averages, iclass)
+			alpha, sx, sy, mir, peak = align2d(ref, ave, 1.0, 1.0, 0.5, 1, ou, 1)
+			im2 = rot_shift2D(ref, alpha, sx, sy, mir, 1)
+			euc = im2.cmp('SqEuclidean', ave)
+			ave.set_attr('err_peak', peak)
+			ave.set_attr('err_euc', euc)
+			ave.write_image(trg, iclass)
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		lerr = EMUtil.get_all_attributes(trg, 'err_euc')
+		lerr = array(lerr)
+		merr, serr = lerr.mean(), lerr.std()
+		logging.basicConfig(filename = '../main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
+		#logging.info('Realignment')
+		logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
+		ct   = 0
+		lrej = []
+		for k in xrange(K):
+			ref = get_im(averages, k)
+			dic = ref.get_attr_dict()
+			if lerr[k] <= merr:
+				ave = get_im(trg, k)
+				ave.set_attr_dict(dic)
+				ave.set_attr('err_euc', lerr[k])
+				ave.set_attr('k_ref', k)
+				ave.write_image(out_averages, ct)
+				ct += 1
+			else:	lrej.extend(dic['members'])
+		lrej = map(int, lrej)		
+		logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (th_err, ct, K, len(lrej)))
+
+		os.chdir('..')
+		cpy(os.path.join(output_dir, out_averages), out_averages)
+		ext = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for id in lrej:	DB.set_attr(id, 'active', 1)
+			DB.close()
+		else:
+			im = EMData()
+			for id in lrej:
+				im.read_image(stack)
+				im.set_attr('active', 1)
+				write_header(stack, im, id)
+
+		#logging.info('... done')
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+# realign data from class averages, select homogenous groups and update active images to the main stack
+def isc_realignment_(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, MPI, ali2da=False):
+	from statistics   import k_means_class_pixerror, k_means_extract_class_ali
+	from numpy        import array
+	from utilities    import get_im, file_type
+	from alignment    import align2d
+	from fundamentals import rot_shift2D
+	import os, logging
+	if ali2da:
+		isc_realignment_a(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, MPI)
+		sys.exit()
 	if MPI:
 		from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast
 		from mpi import MPI_INT, MPI_COMM_WORLD
@@ -10883,10 +11015,17 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 	for iclass in xrange(start, stop):
 		ave = k_means_class_pixerror('class_%03i.hdf' % iclass, output_dir, ou, xr, 
 					     ts, maxit, fun, CTF, snr, Fourvar) 
+		ref = get_im(averages, iclass)
+		alpha, sx, sy, mir, peak = align2d(ref, ave, 1.0, 1.0, 0.5, 1, ou, 1)
+		im2 = rot_shift2D(ref, alpha, sx, sy, mir, 1)
+		euc = im2.cmp('SqEuclidean', ave)
+		ave.set_attr('err_peak', peak)
+		ave.set_attr('err_euc', euc)
+
 		ave.write_image(trg, iclass)
 	mpi_barrier(MPI_COMM_WORLD)
 	if myid == main_node:
-		lerr = EMUtil.get_all_attributes(trg, 'err_pix')
+		lerr = EMUtil.get_all_attributes(trg, 'err_euc')
 		lerr = array(lerr)
 		merr, serr = lerr.mean(), lerr.std()
 		logging.basicConfig(filename = os.path.join(output_dir, 'main_log.txt'), format = '%(asctime)s %(message)s', level = logging.INFO)
@@ -10897,11 +11036,10 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 		for k in xrange(K):
 			ref = get_im(averages, k)
 			dic = ref.get_attr_dict()
-			if lerr[k] <= th_err:
+			if lerr[k] <= merr:
 				ave = get_im(trg, k)
 				ave.set_attr_dict(dic)
-				ave.set_attr('err_pix', lerr[k])
-				ave.set_attr('ite_ref', ite)
+				ave.set_attr('err_euc', lerr[k])
 				ave.set_attr('k_ref', k)
 				ave.write_image(out_averages, ct)
 				ct += 1
