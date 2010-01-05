@@ -1268,7 +1268,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
 
@@ -8029,9 +8029,9 @@ def transform2d(stack_data, stack_data_ali):
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", verbose=0, MPI=False):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, verbose)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -8046,6 +8046,18 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("CTF sign                    : %i\n"%(sign))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
+	if(listfile):
+		from utilities import read_text_file
+		pid_list = read_text_file(listfile, 0)
+		pid_list = map(int, pid_list)
+		print_msg("Reconstruction for images listed in file : %s\n\n"%(listfile))
+	elif(group > -1):
+		print_msg("Reconstruction for group             : %i\n\n"%(group))
+		tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+		pid_list = []
+		for i in xrange(len(tmp_list)):
+			if(tmp_list[i] == group):  pid_list.append(i)
+		del tmp_list
 
 	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad)
 	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad)
@@ -8055,17 +8067,52 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 		drop_image(vol, vol_stack)
 	print_end_msg("recons3d_n")
 
-def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, verbose):
+def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
-	from utilities import get_im
-	from utilities import drop_image
-	from string    import replace
-	from time      import time
-	from mpi 	   import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from utilities      import get_im, drop_image, bcast_number_to_all
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from string         import replace
+	from time           import time
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
 
 	myid  = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	time_start = time()
+
+	if(myid == 0):
+		print_begin_msg("recons3d_n_MPI")
+		print_msg("Input stack  	       : %s\n"%(prj_stack))
+		print_msg("Output volume	       : %s\n"%(vol_stack))
+		print_msg("Padding factor	       : %i\n"%(npad))
+		print_msg("CTF correction	       : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		print_msg("CTF sign		       : %i\n"%(sign))
+		print_msg("Symmetry group	       : %s\n\n"%(sym))
+		if(listfile):
+			from utilities import read_text_file
+			pid_list = read_text_file(listfile, 0)
+			pid_list = map(int, pid_list)
+			print_msg("Reconstruction for images listed in file : %s\n\n"%(listfile))
+		elif(group > -1):
+			print_msg("Reconstruction for group		: %i\n\n"%(group))
+			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+			pid_list = []
+			for i in xrange(len(tmp_list)):
+				if(tmp_list[i] == group):  pid_list.append(i)
+			del tmp_list
+		nima = len(pid_list)
+	else:
+		nima = 0
+
+	nima = bcast_number_to_all(nima, source_node = 0)
+
+	if(listfile or group > -1):
+		if myid != 0:
+			pid_list = [-1]*nima
+		pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+		pid_list = map(int, pid_list)
+	else:
+		pid_list = range(nima)
 
 	if verbose==0:
 		info = None
@@ -8073,26 +8120,12 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		infofile = "progress%04d.txt"%(myid+1)
 		info = open( infofile, 'w' )
 
-	nimage = len(pid_list)
+	image_start, image_end = MPI_start_end(nima, nproc, myid)
 
-	#nimage_per_node = nimage/nproc
-	#image_start = myid * nimage_per_node
-	#if myid == nproc-1 : image_end = nimage
-	#else:                image_end = image_start + nimage_per_node
-	image_start, image_end = MPI_start_end(nimage, nproc, myid)
+	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
+	del pid_list
 
-	prjlist = []
-	for i in range(image_start,image_end):
-		prj = get_im( prj_stack, pid_list[i] )
-
-		#set_arb_params(prj, prm[pid_list[i]], par_str)
-
-		prjlist.append( prj )
-		if not(info is None): info.write( "%4d read\n" % i )
-	#del prj
-	#del prm
-
-	if ctf: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info, npad)
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info, npad)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info, npad)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
@@ -8104,50 +8137,90 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 			info.write( "Total time: %10.3f\n" % (time()-time_start) )
 			info.flush()
 
-def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", verbose=1, MPI=False):
+def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", listfile = "", group = -1, verbose=1, MPI=False):
 	if MPI:
-		recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF, snr, sym, verbose)
+		recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF, snr, sym, listfile, group, verbose)
 		return
 
-	nimage = EMUtil.get_image_count( prj_stack )
+	nima = EMUtil.get_image_count( prj_stack )
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
 	from statistics     import fsc_mask
 	from utilities      import drop_image
-	if CTF:
-		volodd = recons3d_4nn_ctf(prj_stack, range(0, nimage, 2), snr, 1, sym, verbose)
-		voleve = recons3d_4nn_ctf(prj_stack, range(1, nimage, 2), snr, 1, sym, verbose)
-		volall = recons3d_4nn_ctf(prj_stack, range(nimage),       snr, 1, sym, verbose)
+	if(listfile):
+		from utilities import read_text_file
+		pid_list = read_text_file(listfile, 0)
+		pid_list = map(int, pid_list)
+	elif(group > -1):
+			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+			pid_list = []
+			for i in xrange(len(tmp_list)):
+				if(tmp_list[i] == group):  pid_list.append(i)
+			del tmp_list
 	else:
-		volodd = recons3d_4nn(prj_stack, range(0, nimage, 2), sym)
-		voleve = recons3d_4nn(prj_stack, range(1, nimage, 2), sym)
-		volall = recons3d_4nn(prj_stack, range(nimage),       sym)
+		pid_list = range(nima)
+	if CTF:
+		volodd = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], snr, 1, sym, verbose)
+		voleve = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], snr, 1, sym, verbose)
+		t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
+		del volodd, voleve
+		volall = recons3d_4nn_ctf(prj_stack, pid_list,                                          snr, 1, sym, verbose)
+	else:
+		volodd = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], sym)
+		voleve = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], sym)
+		t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
+		del volodd, voleve
+		volall = recons3d_4nn(prj_stack, pid_list,                                          sym)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(volall, vol_stack, "s")
 	else:
 		drop_image(volall, vol_stack)
-	t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
 
-def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", verbose=1):
+def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", listfile="", group=-1, verbose=1):
 
-	from mpi       import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from utilities import drop_image
+	from mpi       import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_bcast, MPI_INT
+	from utilities import drop_image, bcast_number_to_all
 	nproc = mpi_comm_size( MPI_COMM_WORLD )
 	myid  = mpi_comm_rank( MPI_COMM_WORLD )
 	
+	if(myid == 0):
+		if(listfile):
+			from utilities import read_text_file
+			pid_list = read_text_file(listfile, 0)
+			pid_list = map(int, pid_list)
+			nima = len(pid_list)
+		elif(group > -1):
+			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+			pid_list = []
+			for i in xrange(len(tmp_list)):
+				if(tmp_list[i] == group):  pid_list.append(i)
+			del tmp_list
+			nima = len(pid_list)
+		else:
+			nima = EMUtil.get_image_count(prj_stack)
+			pid_list = range(nima)
+	else:
+		nima = 0
+
+	nima = bcast_number_to_all(nima, source_node = 0)
+
+	if myid != 0:
+		pid_list = [-1]*nima
+	pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+	pid_list = map(int, pid_list)
+
+	image_start, image_end = MPI_start_end(nima, nproc, myid)
+
+	imgdata = EMData.read_images(prj_stack, pid_list[image_start:image_end])
+	del pid_list
+
 	if verbose==0:
 		info = None
 	else:
 		infofile = "progress%04d.txt" % (myid)
 		info = open( infofile, 'w' )
 
-	img_number     = EMUtil.get_image_count( prj_stack )
-
-	img_node_start, img_node_end = MPI_start_end(img_number, nproc, myid)
-
-	imgdata = EMData.read_images(prj_stack,range(img_node_start, img_node_end))
-
-	odd_start = img_node_start % 2
+	odd_start = image_start%2
 	eve_start = (odd_start+1)%2
 	if CTF:
 		from reconstruction import rec3D_MPI

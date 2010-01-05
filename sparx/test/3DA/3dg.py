@@ -13,7 +13,7 @@ vol.read_image("../model001.tcp")
 #info(e)
 nx = vol.get_xsize()
 r = nx//2-2
-delta=5.0
+delta=3.0
 '''
 angles=even_angles(delta,0.,90.,0,359.99,"S")
 i1 = len(angles)
@@ -57,6 +57,7 @@ for i in xrange(nangles):
 	# CTF parameters, if defocus zero, they are undetermined
 	#set_ctf(proj, [defocus, 2.0, 300.0, 2.5, 0.0, 0.1])
 	# flags describing the status of the image (1 = true, 0 = false)
+	proj.set_attr('group', i%3)
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.write_image(stack_data, i)
 exit()

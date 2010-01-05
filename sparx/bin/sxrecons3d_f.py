@@ -35,7 +35,7 @@ from   global_def import *
 import sys
 from   optparse import OptionParser
 import os
-from utilities import get_image
+from   utilities import get_image
 def main():
 
 	arglist = []
@@ -43,12 +43,14 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack vol_stack fsc_curve <mask> --CTF --snr=signal_noise_ratio --sym=symmetry -verbose=(0|1) --MPI"
+	usage = progname + " prj_stack vol_stack fsc_curve <mask> --CTF --snr=signal_noise_ratio --list=file --group=ID --sym=symmetry -verbose=(0|1) --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",     action="store_true", default=False, help="perform ctf correction")
 	parser.add_option("--snr",     type="float",        default=1.0,   help="Signal-to-Noise Ratio in the data" )
 	parser.add_option("--sym",     type="string",       default="c1",  help="symmetry" )
+	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
+	parser.add_option("--group",   type="int",          default=-1,    help="perform reconstruction using images for a given group number (group is attribute in the header)" )
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])     
@@ -65,7 +67,6 @@ def main():
 	if len(args) == 3: mask = None
 	else:              mask = get_image( args[3] )
 
-	from applications import recons3d_f
 	if options.MPI:
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
@@ -74,9 +75,14 @@ def main():
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 
+	if(options.list and options.group > -1):
+		ERROR("options group and list cannot be used together","recon3d_n",1)
+		sys.exit()
+
+	from applications import recons3d_f
 
 	global_def.BATCH = True
-	recons3d_f(prj_stack, vol_stack, fsc_curve, mask, options.CTF, options.snr, options.sym, options.verbose, options.MPI)
+	recons3d_f(prj_stack, vol_stack, fsc_curve, mask, options.CTF, options.snr, options.sym, options.list, options.group, options.verbose, options.MPI)
 	global_def.BATCH = False
 
 

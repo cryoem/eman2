@@ -44,7 +44,7 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --snr=signal_noise_ratio --sym=symmetry --verbose=(0|1) --MPI"
+	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",     action="store_true", default=False, help="apply CTF correction")
@@ -84,21 +84,12 @@ def main():
 
 	if(options.list and options.group > -1):
 		ERROR("options group and list cannot be used together","recon3d_n",1)
-		exit()
-	if(options.list):
-		from utilities import read_text_file
-		pid_list = read_text_file(options.list, 0)
-		for i in xrange(len(pid_list)):  pid_list[i] = int(pid_list[i])
-	if(options.group > -1):
-		group_list = EMUtil.get_all_attributes(prj_stack, 'group')
-		pid_list= []
-		for i in xrange(len(group_list)):
-			if(group_list[i] == options.group):  pid_list.append(i)
+		sys.exit()
 
 	from applications import recons3d_n
 
 	global_def.BATCH = True
-	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.verbose, options.MPI)
+	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI)
 	global_def.BATCH = False
 
 
