@@ -12916,6 +12916,174 @@ def k_means_open_txt(stack, maskname, N_start, N_stop, N):
 
 	return im_M, mask, None, None
 
+# ISC procedure code
+def isc_dev(conf_file, ite, flag_ali, flag_clu, flag_reali):
+	from statistics import k_means_extract_class_ali, k_means_class_pixerror
+	from utilities  import file_type, get_im
+	import ConfigParser, sys, logging, os
+		
+	# read config file
+	config  = ConfigParser.ConfigParser()
+	config.read(conf_file)
+	cfgmain = dict(config.items('main'))
+	cfgali  = dict(config.items('alignment'))
+	cfgclu  = dict(config.items('clustering'))
+	cfgpool = dict(config.items('pooling'))
+	MPI     = config.getboolean('main', 'MPI')
+	CUDA    = config.getboolean('main', 'CUDA')
+	maxit   = config.getint('main', 'maxit')
+
+	# init MPI
+	if MPI:
+		from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast
+		from mpi import MPI_INT, MPI_COMM_WORLD
+		sys.argv  = mpi_init(len(sys.argv),sys.argv)		
+		ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+		myid      = mpi_comm_rank(MPI_COMM_WORLD)
+		main_node = 0
+		mpi_barrier(MPI_COMM_WORLD)
+	else: myid = main_node = 0
+
+	# init logger
+	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
+	
+	# prepare iteration
+	if ite == -1: ite = config.getint('main', 'ite')
+	if ite == 1 and myid == main_node:
+		logging.info('### ISC     %s' % ('#' * 20))
+		if not os.path.exists('backup_parameters'):
+			os.mkdir('backup_parameters')
+	if ite != 1 and not os.path.exists('backup_parameters'):
+		if myid == main_node: print 'Directory "backup_parameters" does not exist. If is the first time you run ISC, you must start with ite=1'
+		sys.exit()
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# main loop
+	for loop in xrange(maxit):
+		if myid == main_node:
+			logging.info('=== Ite %03i %s' % (ite, '=' * 20))
+			logging.info('============%s' % ('=' * 20))
+		# alignment
+		if flag_ali and (ite-1) % int(cfgali['n_ite']) == 0:
+			if myid == main_node:
+				logging.info('Alignment')
+				header(cfgmain['stack'], 'xform.align2d', zero=True)
+			ali2d_c(cfgmain['stack'], '%03i_alignment' % ite, ou=int(cfgali['ou']), xr=cfgali['xr'],
+				ts=cfgali['ts'], maxit=int(cfgali['maxit']), CTF=eval(cfgali['ctf']), snr=float(cfgali['snr']),
+				Fourvar=eval(cfgali['fourvar']), user_func_name=cfgali['fun'], MPI=MPI)
+			if myid == main_node:
+				header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d.txt' % ite)
+				ave_ali(cfgmain['stack'], '%03i_alignment/global_ave.hdf' % ite, True, True)
+				os.system('mv logfile_* %03i_alignment' % ite)
+				logging.info('... Done')
+
+			mpi_barrier(MPI_COMM_WORLD)
+
+		# clustering
+		if flag_clu:
+			if myid == main_node:
+				header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_clu.txt' % ite)
+				lact = EMUtil.get_all_attributes(cfgmain['stack'], 'active')
+				K    = sum(lact) // int(cfgclu['im_per_grp'])
+			if MPI:
+				if myid != main_node: K = 0
+				K = mpi_bcast(K, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				K = int(K)
+				if CUDA:
+					k_means_stab_MPICUDA_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], 
+								    K, int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
+								    int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), cfgclu['match'], 
+								    int(cfgclu['maxit']))
+
+				else:    k_means_stab_MPI_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], K,
+								 int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
+								 int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), 'cla', 
+								 eval(cfgclu['ctf']), cfgclu['match'], int(cfgclu['maxit']))
+			else:
+				if CUDA: k_means_stab_CUDA_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], K,
+								  int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
+								  int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), cfgclu['match'],
+								  int(cfgclu['maxit']))
+
+				else:    k_means_stab_stream(cfgmain['stack'], '%03i_clustering' % ite, cfgmain['mask'], K,
+								 int(cfgclu['nb_part']), float(cfgclu['f']), float(cfgclu['t0']),
+								 int(cfgclu['th_nobj']), int(cfgclu['rand_seed']), 'cla', 
+								 eval(cfgclu['ctf']), cfgclu['match'], int(cfgclu['maxit']))
+			if myid == main_node:
+				header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
+				os.system('mv logfile_* %03i_clustering' % ite)
+
+		# re-alignment
+		if flag_reali:
+			if myid == main_node:
+				logging.info('Realignment')
+				if not os.path.exists('%03i_realignment' % ite): os.mkdir('%03i_realignment' % ite)
+				k_means_extract_class_ali(cfgmain['stack'], '%03i_clustering/averages.hdf' % ite, '%03i_realignment' % ite)
+
+			K = EMUtil.get_image_count('%03i_clustering/averages.hdf' % ite)
+			if MPI: start, stop = MPI_start_end(K, ncpu, myid)
+			else:   start, stop = 0, K
+			mpi_barrier(MPI_COMM_WORLD)
+			for iclass in xrange(start, stop):
+				ave = k_means_class_pixerror('class_%03i.hdf' % iclass, '%03i_realignment' % ite, 
+							     int(cfgali['ou']), cfgali['xr'], cfgali['ts'], 
+							     int(cfgali['maxit']), cfgali['fun'], eval(cfgali['ctf']), 
+							     float(cfgali['snr']), eval(cfgali['fourvar']))
+				ave.write_image('%03i_realignment/averages_reali.hdf' % ite, iclass)
+			mpi_barrier(MPI_COMM_WORLD)
+			if myid == main_node:
+				os.system('mv logfile_* %03i_realignment' % ite)
+				lerr = EMUtil.get_all_attributes('%03i_realignment/averages_reali.hdf' % ite, 'err_pix')
+				from numpy import array
+				lerr = array(lerr)
+				merr, serr = lerr.mean(), lerr.std()
+				logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
+				logging.info('... done')
+
+			# pooling
+			if myid == main_node:
+				logging.info('Select averages')
+				header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_reali.txt' % ite)
+				lerr = EMUtil.get_all_attributes('%03i_realignment/averages_reali.hdf' % ite, 'err_pix')
+				K    = EMUtil.get_image_count('%03i_realignment/averages_reali.hdf' % ite)
+				ct   = 0
+				lrej = []
+				for k in xrange(K):
+					ref = get_im('%03i_clustering/averages.hdf' % ite, k)
+					dic = ref.get_attr_dict()
+					if lerr[k] <= float(cfgpool['th_err']):
+						ave = get_im('%03i_realignment/averages_reali.hdf' % ite, k)
+						ave.set_attr_dict(dic)
+						ave.set_attr('err_pix', lerr[k])
+						ave.set_attr('ite_ref', ite)
+						ave.set_attr('k_ref', k)
+						ave.write_image('pool_ave_%03i.hdf' % ite, ct)
+						ct += 1
+					else:	lrej.extend(dic['members'])
+				lrej = map(int, lrej)		
+				logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (float(cfgpool['th_err']), ct, K, len(lrej)))
+				ext = file_type(cfgmain['stack'])
+				if ext == 'bdb':
+					DB = db_open_dict(cfgmain['stack'])
+					for id in lrej:	DB.set_attr(id, 'active', 1)
+					DB.close()
+				else:
+					im = EMData()
+					for id in lrej:
+						im.read_image(cfgmain['stack'])
+						im.set_attr('active', 1)
+						write_header(cfgmain['stack'], im, id)
+
+				header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_reali.txt' % ite)
+				logging.info('... done')
+
+		ite += 1
+		if myid == main_node:
+			config.set('main', 'ite', ite)
+			config.write(open(conf_file, 'w'))
+
+		mpi_barrier(MPI_COMM_WORLD)
+
 
 ## END OLD CODE K-MEANS STABLE ################################################################
 ###############################################################################################
