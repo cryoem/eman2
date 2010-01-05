@@ -275,13 +275,20 @@ inline void set_translation(float dx, float dy, float dz)
 /** Get the 3D orientation of 'this' image.
  * @return The 3D orientation of 'this' image.
  */
-inline Transform3D get_transform() const
+inline Transform get_transform() const
 {
-	return Transform3D( (float)attr_dict["euler_alt"],
-			    (float)attr_dict["euler_az"],
-			    (float)attr_dict["euler_phi"]);
-}
+	Dict rotation_dict;
+	rotation_dict["type"] = "eman";
+	rotation_dict["alt"] = attr_dict["euler_alt"];
+	rotation_dict["az"] = attr_dict["euler_az"];
+	rotation_dict["phi"] = attr_dict["euler_phi"];
 
+	Transform trans;
+	trans.to_identity();
+	trans.set_rotation(rotation_dict);
+
+	return trans;
+}
 
 /** Define the 3D orientation of this particle, also
  * used to indicate relative rotations for reconstructions

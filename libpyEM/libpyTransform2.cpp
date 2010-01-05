@@ -137,6 +137,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_get_rotation_overloads_0_1, get_rotation, 0, 1)
 
 }// namespace
 
@@ -551,7 +552,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_trans", &EMAN::Transform::get_trans)
 		.def("get_trans_2d", &EMAN::Transform::get_trans_2d)
 		.def("get_trans_2D", &EMAN::Transform::get_trans_2d)
-		.def("get_rotation", &EMAN::Transform::get_rotation)
+		.def("get_rotation", &EMAN::Transform::get_rotation, EMAN_Transform_get_rotation_overloads_0_1(args("euler_type"), "Get a rotation in any Euler format\n \neuler_type - the requested Euler type(default='eman')\n \nreturn a dictionary containing the key-entry pairs describing the rotations in terms of the requested Euler type"))
 		.def("negate", &EMAN::Transform::negate)
 		.def("set_params", &EMAN::Transform::set_params)
 		.def("get_params", &EMAN::Transform::get_params)
@@ -561,7 +562,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("transform", (EMAN::Vec3f (EMAN::Transform::*)(const float&, const float&, const float&) const )&EMAN::Transform::transform)
 		.def("inverse", &EMAN::Transform::inverse)
 		.def("invert", &EMAN::Transform::invert)
-	        .def("transpose", &EMAN::Transform::transpose)
+		.def("transpose", &EMAN::Transform::transpose)
 		.def("orthogonalize", &EMAN::Transform::orthogonalize)
 		.def("printme", &EMAN::Transform::printme)
 		.def("at", &EMAN::Transform::at)
