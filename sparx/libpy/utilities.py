@@ -2135,7 +2135,9 @@ def recv_EMData(src, tag):
 	ntot = nx*ny*nz
 
 	#construct a EMData by taking the ownership of numpy array, no memory copying  --Grant Tang
-	#numpy_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	#recv_data_numeric = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	#recv_data_numpy = numpy.array(recv_data_numeric)
+	#numpy_data = recv_data.reshape(recv_data, (nz,ny,nx))
 	#img = EMNumPy.numpy2em(numpy_data)
 
 	#comment out Wei's original code, which makes memory copy to construct EMData from numpy array  --Grant Tang
