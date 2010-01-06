@@ -182,10 +182,10 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 			if(i%2 == 0):   Util.add_img(ave1, ima)
 			else:           Util.add_img(ave2, ima)
 			Util.add_img2(var, ima)
-	reduce_EMData_to_root(ave1, myid, main_node, comm)
-	reduce_EMData_to_root(ave2, myid, main_node, comm)
-	reduce_EMData_to_root(var, myid, main_node, comm)
-	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
+	ave1 = reduce_EMData_to_root(ave1, myid, main_node, comm)
+	ave2 = reduce_EMData_to_root(ave2, myid, main_node, comm)
+	var = reduce_EMData_to_root(var, myid, main_node, comm)
+	if get_ctf2: ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
 	nima = n
 	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
 	if myid == main_node:
@@ -1243,7 +1243,7 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 				if  mask:   ima = fft(Util.muln_img(data[i], mask))
 				else:       ima = fft(data[i])
 			Util.add_img2(var, ima)
-	reduce_EMData_to_root(var, myid, main_node, comm)
+	var = reduce_EMData_to_root(var, myid, main_node, comm)
 	nima = n
 	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
 	if myid == main_node:
@@ -1367,7 +1367,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 			else :
 				recons3d_4nn_MPI(myid, prjlist, sym)
 				reference_structure = model_blank(nx, nx, nx)
-		bcast_EMData_to_all(reference_structure, myid, 0)
+		reference_structure = bcast_EMData_to_all(reference_structure, myid, 0)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(reference_structure)
@@ -2982,8 +2982,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
 				
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				
 				for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / Cls_ctf2[k][i]
 				Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
@@ -3002,8 +3002,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 			# [all] compute global sum, broadcast the results and obtain the average
 			for k in xrange(K):
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+				Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 			# [id] compute Ji
@@ -3129,8 +3129,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					
 					for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
 					Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
@@ -3149,8 +3149,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 				# [all] compute global sum, broadcast the results and obtain the average
 				for k in xrange(K):
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+					Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# [id] compute Ji
@@ -3254,7 +3254,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = map(float, Cls['Ji'])
 		for k in xrange(K):
-			reduce_EMData_to_root(Cls['var'][k], myid, main_node)
+			Cls['var'][k] = reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 			
 	else:
 		# [id] compute Ji and the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
@@ -3270,7 +3270,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = map(float, Cls['Ji'])
 		
-		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
+		for k in xrange(K): Cls['var'][k] = reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
 		# [main] caclculate the variance for each cluster
 		if myid == main_node:
@@ -3484,8 +3484,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
 				
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				
 				valCTF = [0] * len_ctm
 				for i in xrange(len_ctm):	valCTF[i] = 1.0 / Cls_ctf2[k][i]
@@ -3505,8 +3505,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 			# [all] compute global sum, broadcast the results and obtain the average
 			for k in xrange(K):
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+				Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 			# [id] compute Ji
@@ -3657,8 +3657,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 							Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 							Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
-							reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-							bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+							Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+							Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 							valCTF = [0] * len_ctm
 							for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
@@ -3673,8 +3673,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 						# [all] compute global sum, broadcast the results and obtain the average
 						for k in xrange(K):
-							reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-							bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+							Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+							Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 							Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 					# [all] waiting the result
@@ -3731,8 +3731,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					
 					valCTF = [0] * len_ctm
 					for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
@@ -3752,8 +3752,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 				# [all] compute global sum, broadcast the results and obtain the average
 				for k in xrange(K):
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+					Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# [id] compute Ji
@@ -3863,7 +3863,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		mpi_barrier(MPI_COMM_WORLD)
 		
 		# [all] global sum var
-		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)
+		for k in xrange(K): Cls['var'][k] = reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 	else:
 		# [id] compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
 		for im in xrange(N_start, N_stop): Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
@@ -3872,7 +3872,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		mpi_barrier(MPI_COMM_WORLD)
 
 		# [all] global sum var
-		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
+		for k in xrange(K): Cls['var'][k] = reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
 		# [main] caclculate the variance for each cluster
 		if myid == main_node:
@@ -5014,8 +5014,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
-			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
 			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
@@ -5029,8 +5029,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 		# [all] compute global sum, broadcast the results and obtain the average
 		for k in xrange(K):
-			reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+			Cls['ave'][k] = bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 	## Clustering		
@@ -7801,21 +7801,21 @@ class def_variancer:
 		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		avg = self.sum1.copy()
 
-		reduce_EMData_to_root( avg, myid, rootid )
+		avg = reduce_EMData_to_root( avg, myid, rootid )
 		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 
 		if myid==rootid:
    		    nimg = int(nimg[0])
 		    avg /= nimg
 
-		bcast_EMData_to_all( avg, myid, rootid )
+		avg = bcast_EMData_to_all( avg, myid, rootid )
 
 		var = avg.copy()
 		var.to_zero()
 		for img in self.imgs:
 			Util.add_img2( var, Util.subn_img(img, avg) )
 
-		reduce_EMData_to_root( var, myid, rootid )
+		var = reduce_EMData_to_root( var, myid, rootid )
 		if myid == rootid:
 			var /= (nimg-1)
 			var.set_attr( "nimg", nimg )
@@ -7830,7 +7830,7 @@ class def_variancer:
 
 		cpy1 = self.sum1.copy()
 
-		reduce_EMData_to_root( cpy1, myid, rootid )
+		cpy1 = reduce_EMData_to_root( cpy1, myid, rootid )
 		
 		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
 		

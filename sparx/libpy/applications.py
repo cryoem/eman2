@@ -422,7 +422,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
+		ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 		ctf_2_sum += 1/snr
 	else:
 		for im in xrange(len(data)):
@@ -449,8 +449,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 	else:
 		ave1, ave2 = sum_oe(data, "a", CTF, EMData())
-		reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
-		reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
+		ave1 = reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
+		ave2 = reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
 
 	if key == group_main_node:
 		if Fourvar:
@@ -478,7 +478,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		else:
 			mpi_send(criterion, 1, MPI_FLOAT, main_node, color, MPI_COMM_WORLD)
 	else: tavg = model_blank(nx, nx)
-	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+	tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
@@ -562,8 +562,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 				else:
 					ave1, ave2 = sum_oe(data, "a", CTF, EMData())
-					reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
-					reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
+					ave1 = reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
+					ave2 = reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
  			
 	
 			        mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
@@ -613,7 +613,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        else:
 			        	tavg = EMData(nx, nx, 1, True)
 			        	cs = [0.0]*2		       
-			        bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+				tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 			        total_iter += 1
 
 			# Here, we reduce the alignment parameters scattered on all nodes to the main node.
@@ -926,7 +926,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				
 		to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		to_break = int(to_break[0])
-		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+		tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
 		if option == 5 or option == 6:
 			alpha_list = mpi_scatterv(alpha_list_new, recvcount, disps2, MPI_FLOAT, len(data), MPI_FLOAT, main_node, MPI_COMM_WORLD)
@@ -1360,7 +1360,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			all_ali_params.append(mirror)
 
 	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	else:  ctf_2_sum = None
 	# startup
@@ -1406,8 +1406,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
-			reduce_EMData_to_root(ave1, myid, main_node)
-			reduce_EMData_to_root(ave2, myid, main_node)
+			ave1 = reduce_EMData_to_root(ave1, myid, main_node)
+			ave2 = reduce_EMData_to_root(ave2, myid, main_node)
 			if myid == main_node:
 				print_msg("Iteration #%4d\n"%(total_iter))
 				if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
@@ -1417,7 +1417,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			else:
 				tavg =  model_blank(nx, nx)
 			del ave1, ave2
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 				
 			if  Fourvar:  
 				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
@@ -1462,7 +1462,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				cs = [0.0]*2
 
 			if Fourvar:  del vav
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = map(float, cs)
 			if auto_stop:
@@ -1922,7 +1922,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 			all_ali_params.append(mirror)
 
 	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		if(not Fourvar):  ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	else:  ctf_2_sum = None
 	# startup
@@ -1971,8 +1971,8 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 					R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
 				else:
 					ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
-				reduce_EMData_to_root(ave1, myid, main_node)
-				reduce_EMData_to_root(ave2, myid, main_node)
+				ave1 = reduce_EMData_to_root(ave1, myid, main_node)
+				ave2 = reduce_EMData_to_root(ave2, myid, main_node)
 
 			if myid == main_node:
 				print_msg("Iteration #%4d\n"%(total_iter))
@@ -2037,7 +2037,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 				tavg = EMData(nx, nx, 1, True)
 				cs = [0.0]*2
 
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = map(float, cs)
 			if auto_stop:
@@ -2685,8 +2685,8 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			ctf2  = mpi_reduce(ctf2, 2*lctf*numref, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node: ctf2 = reshape(ctf2, s)
 		for j in xrange(numref):
-			reduce_EMData_to_root(refi[j][0], myid, main_node)
-			reduce_EMData_to_root(refi[j][1], myid, main_node)
+			refi[j][0] = reduce_EMData_to_root(refi[j][0], myid, main_node)
+			refi[j][1] = reduce_EMData_to_root(refi[j][1], myid, main_node)
 			refi[j][2] = mpi_reduce(refi[j][2], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if(myid == main_node): refi[j][2] = int(refi[j][2][0])
 		# gather assignements
@@ -2774,7 +2774,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		if CTF:  del  ctf2
 		if again:
 			for j in xrange(numref):
-				bcast_EMData_to_all(refi[j][0], myid, main_node)
+				refi[j][0] = bcast_EMData_to_all(refi[j][0], myid, main_node)
 
 	#  clean up
 	del assign
@@ -3919,7 +3919,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, file_type
 	from fundamentals   import rot_avg_image
@@ -4167,7 +4167,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
 			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'ID']
@@ -5218,7 +5218,7 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 		momm = get_im("varmask.hdf")
 	else:
 		momm =  model_blank(nx, nx, nx)
-	bcast_EMData_to_all(momm, myid, main_node)
+	momm = bcast_EMData_to_all(momm, myid, main_node)
 	from projection import project
 	
 
@@ -6286,7 +6286,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 			if(iteration == maxit):
 				if myid == main_node: print_end_msg("ali3d_e_MPI")
 				return
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
@@ -6855,7 +6855,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
 	from fundamentals   import rot_avg_image
@@ -7142,7 +7142,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
 			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'ID']
@@ -8408,7 +8408,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		if  myid == 0: vol = get_im(reference_structure)
 	if  myid == 0:
 		vol.write_image("recof.hdf",0)
-	bcast_EMData_to_all(vol, myid, 0)
+	vol = bcast_EMData_to_all(vol, myid, 0)
 	re_prjlist = []
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(vol)
@@ -9366,7 +9366,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 		if  MPI:
 			if  CTF:  refvol, fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid )
 			else:     refvol, fscc = rec3D_MPI_noCTF( imgdata, sym, None, fsc_file, myid )
-			bcast_EMData_to_all( refvol, myid )
+			refvol = bcast_EMData_to_all( refvol, myid )
 		else:
 			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
 			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
@@ -9447,7 +9447,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 		if  MPI:
 			if  CTF:  refvol, fscc = rec3D_MPI( imgdata, snr, sym, None, fsc_file, myid )
 			else:     refvol, fscc = rec3D_MPI_noCTF( imgdata, sym, None, fsc_file, myid )
-			bcast_EMData_to_all( refvol, myid )
+			refvol = bcast_EMData_to_all( refvol, myid )
 		else:
 			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
 			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
@@ -9461,7 +9461,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 				info.write( "reconstructed volume written to " + vol_file  + "\n")
 				info.flush()
 
-		if  MPI:  bcast_EMData_to_all( refvol, myid )
+		if  MPI:  refvol = bcast_EMData_to_all( refvol, myid )
 		[mean,sigma,fmin,fmax] = Util.infomask( refvol, None, True )
 		if(verbose == 1):
 			info.write( 'vol all after reconstruction, myid: %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, mean, sigma, fmin, fmax ) )
@@ -9788,7 +9788,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 		from statistics import pcanalyzer
 		if(myid == 0):  pcamask = get_im( pcamask)
 		else:           pcamask = model_blank(nx,ny,nz)
-		bcast_EMData_to_all(pcamask, myid)
+		pcamask = bcast_EMData_to_all(pcamask, myid)
 		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
 		if( myid == 0 ):  refstat = Util.infomask(img, pcamask, True)
 		else:             refstat = [0.0,0.0,0.0,0.0]
@@ -9845,15 +9845,15 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
-	reduce_EMData_to_root(avg1, myid)
-	reduce_EMData_to_root(avg2, myid)
+	avg1 = reduce_EMData_to_root(avg1, myid)
+	avg2 = reduce_EMData_to_root(avg2, myid)
 	total_img = mpi_reduce(total_img, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 	if( myid == 0) :
 		total_img = int(total_img[0])
 		avg = Util.addn_img(avg1, avg2)
 		Util.mul_scalar(avg, 1.0/float(total_img))
 	else:    avg = model_blank(nx,ny,nz)
-	bcast_EMData_to_all( avg, myid )
+	avg = bcast_EMData_to_all( avg, myid )
 	if( myid == 0 ):
 		Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
 		avg1.write_image(avgfileE)
@@ -9895,13 +9895,13 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 				if(total_img%2 == 0): Util.add_img2(var1, img)
 				else:                 Util.add_img2(var2 , img)
 
-	reduce_EMData_to_root(var1, myid)
-	reduce_EMData_to_root(var2, myid)
+	var1 = reduce_EMData_to_root(var1, myid)
+	var2 = reduce_EMData_to_root(var2, myid)
 	if( myid == 0):
 		var = Util.addn_img(var1, var2)
 		Util.mul_scalar(var, 1.0/float(total_img-1) )
 	else:    var = model_blank(nx,ny,nz)
-	bcast_EMData_to_all( var, myid )
+	var = bcast_EMData_to_all( var, myid )
 	if(  (myid == 0)):
 		Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
 		circumference(var1, radcir-1).write_image(varfileE)

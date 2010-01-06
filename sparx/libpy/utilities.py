@@ -1983,6 +1983,7 @@ def running_time_txt(start_time):
 	time_s   = (time_run % 3600) % 60
 	return 'Running time is: %s h %s min %s s' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0'))
 
+'''
 def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
@@ -2003,6 +2004,7 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 		mpi_barrier(comm)
         	if myid == main_node:
         		array1d[block_begin:block_end] = tmpsum[0:block_size]
+
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
@@ -2040,6 +2042,7 @@ def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 		data1d = reshape(data, (ntot, ))
 		data1d[0:ntot] = tmp[0:ntot]
 
+
 def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
@@ -2053,7 +2056,200 @@ def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
 	if(myid != main_node):
 		tavg_data1d = reshape(tavg_data,(ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
+'''
+
+def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
+
+	# Comment by Zhengfan Yang on 01/05/10
+	#
+	# Notice: 
+	# (1) one should use this new version of broadcasting EMData in the following way:
+	# 	img = bcast_EMData_to_all(img, myid, main_node, comm)
+	# instead of
+	# 	bcast_EMData_to_all(img, myid, main_node, comm)
+	# The latter is inconsistent with mpi_bcast() and difficult to implement efficiently
+	#
+	# (2) To be consistent with send_EMData() and recv_EMData(), we assume that the node 
+	# other than the broadcasting node know nothing about the EMData(). Therefore, one 
+	# need to broadcast the size of EMData() and two attributes: is_complex and is_ri. 
+	# For all other attributes, you are on your own.
+
+	from numpy import reshape
+	from mpi import mpi_bcast, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+
+	if comm == -1: comm = MPI_COMM_WORLD
+	
+	img_head = []
+	if myid == main_node:
+		img_head.append(img.get_xsize())
+		img_head.append(img.get_ysize())
+		img_head.append(img.get_zsize())
+		img_head.append(img.is_complex())
+		img_head.append(img.is_ri())
+	img_head = mpi_bcast(img_head, 5, MPI_INT, main_node, comm)
+	nx = int(img_head[0])
+	ny = int(img_head[1])
+	nz = int(img_head[2])
+	is_complex = int(img_head[3])
+	is_ri = int(img_head[4])
+
+	ntot = nx*ny*nz
+	img_data = EMNumPy.em2numpy(img)
+	img_data = mpi_bcast(img_data, ntot, MPI_FLOAT, main_node, comm)
+	if nz != 1:
+		img_data = reshape(img_data, (nz, ny, nx))     # For some reason, the order should be like this -- Zhengfan Yang
+	elif ny != 1:
+		img_data = reshape(img_data, (ny, nx))
+	else:
+		pass
+	img = EMNumPy.numpy2em(img_data)
+	img.set_complex(is_complex)
+	img.set_ri(is_ri)
+	
+	return img
+
+
+def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
+
+	# Comment by Zhengfan Yang on 01/05/10
+	#
+	# Notice: 
+	# (1) one should use this new version of reducing EMData in the following way:
+	# 	img = reduce_EMData_to_root(img, myid, main_node, comm)
+	# instead of
+	# 	reduce_EMData_to_root(img, myid, main_node, comm)
+	# The latter is inconsistent with mpi_bcast() and difficult to implement efficiently
+
+	from numpy import reshape
+	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+	
+	if comm == -1: comm = MPI_COMM_WORLD
+	
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+	is_complex = img.is_complex()
+	is_ri = img.is_ri()
+	ntot = nx*ny*nz
+	
+	img_data = EMNumPy.em2numpy(img)
+	img_data = mpi_reduce(img_data, ntot, MPI_FLOAT, MPI_SUM, main_node, comm)
+
+	if myid == main_node:
+		if nz!=1:
+			img_data = reshape(img_data, (nz, ny, nx))
+		elif ny!=1:
+			img_data = reshape(img_data, (ny, nx))
+		else:
+			pass
+
+		img = EMNumPy.numpy2em(img_data)
+		img.set_complex(is_complex)
+		img.set_ri(is_ri)
+	
+		return img
+	else:
+		return img
+
+def send_EMData(img, dst, tag):
+	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+	
+	comm = MPI_COMM_WORLD
+	img_head = []
+	img_head.append(img.get_xsize())
+	img_head.append(img.get_ysize())
+	img_head.append(img.get_zsize())
+	img_head.append(img.is_complex())
+	img_head.append(img.is_ri())
+
+	head_tag = 2*tag
+	mpi_send(img_head, 5, MPI_INT, dst, head_tag, comm)
+
+	img_data = get_image_data(img)
+	data_tag = 2*tag+1
+	ntot = img_head[0]*img_head[1]*img_head[2]
+	mpi_send(img_data, ntot, MPI_FLOAT, dst, data_tag, comm)
+
+        '''
+	count = 100000
+	data1d = reshape(img_data, (ntot,))
+	ntime = (ntot-1) /count + 1
+
+	for i in xrange(ntime):
+		block_begin = i*count
+		block_end   = i*count + count
+		if block_end > ntot:
+		    block_end = ntot
+		block_size  = block_end - block_begin
+		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
+        '''
+
+def recv_EMData(src, tag):
+	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+	from numpy import reshape
+	
+	comm = MPI_COMM_WORLD
+	head_tag = 2*tag
+	img_head = mpi_recv(5, MPI_INT, src, head_tag, comm)
+
+	nx = int(img_head[0])
+	ny = int(img_head[1])
+	nz = int(img_head[2])
+	is_complex = int(img_head[3])
+	is_ri = int(img_head[4])
+
+	data_tag = 2*tag+1
+	ntot = nx*ny*nz
+	
+	img_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	if nz != 1:
+		img_data = reshape(img_data, (nz, ny, nx))
+	elif ny != 1:
+		img_data = reshape(img_data, (ny, nx))
+	else:
+		pass
+
+	img = EMNumPy.numpy2em(img_data)
+	img.set_complex(is_complex)
+	img.set_ri(is_ri)
+	return img
 		
+	'''
+	#construct a EMData by taking the ownership of numpy array, no memory copying  --Grant Tang
+	#recv_data_numeric = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	#recv_data_numpy = numpy.array(recv_data_numeric)
+	#numpy_data = recv_data.reshape(recv_data, (nz,ny,nx))
+	#img = EMNumPy.numpy2em(numpy_data)
+
+	#comment out Wei's original code, which makes memory copy to construct EMData from numpy array  --Grant Tang
+	img = EMData()
+	img.set_size(nx, ny, nz)
+	if( complex > 0 ):
+		img.set_complex(True)
+	else:
+		img.set_complex(False)
+
+	data1d = reshape( get_image_data(img), (ntot,) )
+	tmp_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+        data1d[0:ntot] = tmp_data[0:ntot] 
+        
+        
+	count = 100000
+	ntime = (ntot-1)/count + 1
+
+	for i in xrange(ntime):
+		block_begin = i*count
+		block_end   = i*count + count
+		if block_end > ntot:
+		    block_end = ntot
+		block_size  = block_end - block_begin
+		tmp_data = mpi_recv(block_size, MPI_FLOAT, src, data_tag*ntime+i, comm)
+		data1d[block_begin:block_end] = tmp_data[0:block_size]
+        
+	return img
+	'''
+
+
 def bcast_string_to_all(str_to_send, source_node = 0):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD
 	str_tmp = ""
@@ -2085,87 +2281,6 @@ def bcast_list_to_all(list_to_send, source_node = 0):
 		if (type(list_to_send[i]) == types.IntType ): list_to_bcast.append( int(  list_tmp[i] ) )
 		else:                                        list_to_bcast.append( float( list_tmp[i] ) )
 	return list_to_bcast
-
-def send_EMData(img, dst, tag):
-	from numpy import shape, reshape, array
-	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
-	comm=MPI_COMM_WORLD
-	img_head = []
-	img_head.append( img.get_xsize() )
-	img_head.append( img.get_ysize() )
-	img_head.append( img.get_zsize() )
-	if img.is_complex():  img_head.append( 1 )
-	else:                 img_head.append( 0 )
-
-	head_tag = 2*tag
-	mpi_send(img_head, 4, MPI_INT, dst, head_tag, comm)
-
-	img_data = get_image_data(img)
-	data_tag = 2*tag + 1
-	ntot = img_head[0]*img_head[1]*img_head[2]
-	mpi_send(img_data, ntot, MPI_FLOAT, dst, data_tag, comm)
-
-        '''
-	count = 100000
-	data1d = reshape(img_data, (ntot,))
-	ntime = (ntot-1) /count + 1
-
-	for i in xrange(ntime):
-		block_begin = i*count
-		block_end   = i*count + count
-		if block_end > ntot:
-		    block_end = ntot
-		block_size  = block_end - block_begin
-		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
-        '''
-
-def recv_EMData(src, tag):
-	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import shape, reshape,array
-	comm=MPI_COMM_WORLD
-	head_tag = 2*tag
-	img_head = mpi_recv(4,MPI_INT, src, head_tag, comm)
-
-	nx = int(img_head[0])
-	ny = int(img_head[1])
-	nz = int(img_head[2])
-	complex = int(img_head[3])
-
-	data_tag  = 2*tag + 1
-	ntot = nx*ny*nz
-
-	#construct a EMData by taking the ownership of numpy array, no memory copying  --Grant Tang
-	#recv_data_numeric = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-	#recv_data_numpy = numpy.array(recv_data_numeric)
-	#numpy_data = recv_data.reshape(recv_data, (nz,ny,nx))
-	#img = EMNumPy.numpy2em(numpy_data)
-
-	#comment out Wei's original code, which makes memory copy to construct EMData from numpy array  --Grant Tang
-	img = EMData()
-	img.set_size(nx, ny, nz)
-	if( complex > 0 ):
-		img.set_complex(True)
-	else:
-		img.set_complex(False)
-
-	data1d = reshape( get_image_data(img), (ntot,) )
-	tmp_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-        data1d[0:ntot] = tmp_data[0:ntot] 
-        
-        '''
-	count = 100000
-	ntime = (ntot-1)/count + 1
-
-	for i in xrange(ntime):
-		block_begin = i*count
-		block_end   = i*count + count
-		if block_end > ntot:
-		    block_end = ntot
-		block_size  = block_end - block_begin
-		tmp_data = mpi_recv(block_size, MPI_FLOAT, src, data_tag*ntime+i, comm)
-		data1d[block_begin:block_end] = tmp_data[0:block_size]
-        '''
-	return img
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types

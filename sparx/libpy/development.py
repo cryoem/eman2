@@ -377,7 +377,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ctf_params = data[im].get_attr("ctf")
 			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 
 		ctf_2_sum += 1.0/snr # this is complex addition (1.0/snr,0)
 	else:  ctf_2_sum = None
@@ -414,8 +414,8 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				tavg, ave1, ave2, vav, sumsq = add_ave_varf_MPI(myid, data, mask, "a", CTF, ctf_2_sum)
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
-				reduce_EMData_to_root(ave1, myid, main_node)
-				reduce_EMData_to_root(ave2, myid, main_node)
+				ave1 = reduce_EMData_to_root(ave1, myid, main_node)
+				ave2 = reduce_EMData_to_root(ave2, myid, main_node)
 
 			if myid == main_node:
 
@@ -481,7 +481,7 @@ def ali2d_g_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				tavg = EMData(nx, nx, 1, True)
 				cs = [0.0]*2
 
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = [float(cs[0]), float(cs[1])]
 			if auto_stop:
@@ -1128,7 +1128,7 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 				vol[krf] = filt_tanl(vol[krf], flm, aam)
 				drop_image(vol[krf], os.path.join(outdir, replace("volf%3d_%3d_%3d.hdf"%(krf, iteration, ic),' ','0') ))
 		for krf in xrange(Kref):
-			bcast_EMData_to_all(vol[krf], myid, main_node)
+			vol[krf] = bcast_EMData_to_all(vol[krf], myid, main_node)
 
 		#  here we should write header info, just in case the program crashes...
 	# write out headers  and STOP, under MPI writing has to be done sequentially
@@ -1317,7 +1317,7 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			for krf in xrange(Kref):
 				outf.write( "bcasting volume: %d\n" % krf )
 				outf.flush()
-				bcast_EMData_to_all(vol[krf], myid, main_node)
+				vol[krf] = bcast_EMData_to_all(vol[krf], myid, main_node)
 
 		#from sys import exit
 		#exit()
@@ -1337,7 +1337,7 @@ def ali3d_d_new_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, file_type
 	from fundamentals   import rot_avg_image
@@ -1582,7 +1582,7 @@ def ali3d_d_new_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
 			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			
 			mpi_barrier(MPI_COMM_WORLD)
 			
@@ -1788,7 +1788,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, file_type
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
@@ -2017,7 +2017,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
 			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'ID']
@@ -6218,8 +6218,8 @@ def rec3D_MPI_noCTF_index(data, index, symmetry, myid, main_node = 0):
 			psi   = data[i].get_attr('psi')
 			rec.insert_slice(data[i], Transform3D(Ttype, phi, theta, psi) )
 
-	reduce_EMData_to_root(fftvol, myid, main_node)
-	reduce_EMData_to_root(weight, myid, main_node)
+	fftvol = reduce_EMData_to_root(fftvol, myid, main_node)
+	weight = reduce_EMData_to_root(weight, myid, main_node)
 
 	if myid == main_node:   return rec.finish(True)
 	else:                   return model_blank(nx,nx,nx)
@@ -7212,7 +7212,7 @@ def ali2d_rac_MPI(stack, maskfile = None, kmeans = 'None', ir = 1, ou = -1, rs =
 		# [main] broadcast each average to other node
 		for k in xrange(K):
 			tmp = AVE[k].copy()
-			bcast_EMData_to_all(tmp, myid, main_node)
+			tmp = bcast_EMData_to_all(tmp, myid, main_node)
 			AVE[k] = tmp.copy() # need to use .copy() to store the new im
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -8353,8 +8353,8 @@ def SSNR_func_MPI(args, data):
 			Util.mul_img(imgft, ctfimg)
 		Util.add_img(avgimg, imgft)
 		
-	reduce_EMData_to_root(avgimg, myid, main_node)
-	reduce_EMData_to_root(var, myid, main_node)
+	avgimg = reduce_EMData_to_root(avgimg, myid, main_node)
+	var = reduce_EMData_to_root(var, myid, main_node)
 	if myid == main_node:
 		if CTF:
 			Util.div_filter(avgimg, ctfimg2)
@@ -8411,7 +8411,6 @@ def SSNR_grad_MPI(args, data):
 	from numpy import zeros, array, float32, float64
 	from applications import MPI_start_end
 	from utilities import reduce_EMData_to_root, bcast_EMData_to_all 
-	from utilities import reduce_array_to_root, bcast_array_to_all
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -8475,10 +8474,10 @@ def SSNR_grad_MPI(args, data):
 			Util.mul_img(imgft0, ctfimg)
 		Util.add_img(avgimg, imgft0)
 		
-	reduce_EMData_to_root(avgimg, myid, main_node)
-	reduce_EMData_to_root(var, myid, main_node)
-	bcast_EMData_to_all(avgimg, myid, main_node)
-	bcast_EMData_to_all(var, myid, main_node)
+	avgimg = reduce_EMData_to_root(avgimg, myid, main_node)
+	var = reduce_EMData_to_root(var, myid, main_node)
+	avgimg = bcast_EMData_to_all(avgimg, myid, main_node)
+	var = bcast_EMData_to_all(var, myid, main_node)
 
 	if CTF:
 		Util.div_filter(avgimg, ctfimg2)
@@ -9088,7 +9087,7 @@ def list_bcast_im(list, myid, main_node):
 	N   = len(list)
 	data = model_blank(N)
 	for n in xrange(N): data.set_value_at(n, float(list[n]))
-	bcast_EMData_to_all(data, myid, main_node)
+	data = bcast_EMData_to_all(data, myid, main_node)
 	for n in xrange(N): list[n] = int(data.get_value_at(n))
 	return list
 
@@ -11247,7 +11246,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				drop_image(vol, os.path.join(outdir, replace("vhlf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				del adam, vol_ssnr, rfsc, filt
 				del h
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			if(an[N_step] == -1): proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=True)
 			else:                 proj_ali_incore_localB(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo, MPI=True)
 			prm = []
@@ -11450,7 +11449,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	else  :
 		if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
 		else:		     recons3d_4nn_MPI(myid, prjlist, sym)
-	bcast_EMData_to_all(vol, myid, 0)
+	vol = bcast_EMData_to_all(vol, myid, 0)
 	if CTF: img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
 	                    "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
 	else   : img_dicts = ["phi", "theta", "psi", "s2x", "s2y"]
@@ -11636,7 +11635,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 				#from sys import exit
 				#exit()
 
-				bcast_EMData_to_all(vol, myid, main_node)
+				vol = bcast_EMData_to_all(vol, myid, main_node)
 			fifi = True
 			volft,kb  = prep_vol(vol)
 
@@ -12079,8 +12078,8 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 			#from sys import exit
 			#exit()
 
-			bcast_EMData_to_all(volftb, myid, main_node)
-			bcast_EMData_to_all(vol, myid, main_node)
+			volftb = bcast_EMData_to_all(volftb, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			volft,kb  = prep_vol(vol)
 
 			image_start_in_chunk = image_start + ic*n_in_chunk
@@ -13422,7 +13421,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 				cs = vol.phase_cog()
 				refvols[0] = fshift(refvols[0], -cs[0], -cs[1] -cs[2])
 				drop_image(refvols[0],os.path.join(outdir, replace("volf%6d.spi"%jtep,' ','0')), "s")
-			    bcast_EMData_to_all(refvols[0], myid, main_node)
+			    refvols[0] = bcast_EMData_to_all(refvols[0], myid, main_node)
                         elif nrefvol==2:
                             iref = 0
                             fscfile = os.path.join(outdir, replace("resolution%4d%2d"%(jtep,iref), ' ', '0'))
@@ -13441,8 +13440,8 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
                                 drop_image(refvols[0],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, 0),' ','0')), "s")
                                 drop_image(refvols[1],os.path.join(outdir, replace("volf%4d%2d.spi"%(jtep, 1),' ','0')), "s")
 
-                            bcast_EMData_to_all(refvols[0], myid, main_node)
-                            bcast_EMData_to_all(refvols[1], myid, main_node)
+                            refvols[0] = bcast_EMData_to_all(refvols[0], myid, main_node)
+                            refvols[1] = bcast_EMData_to_all(refvols[1], myid, main_node)
 
                         else:
                             fscs =[None]*(nrefvol/2)
@@ -13496,7 +13495,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 
 
 			    for iref in xrange(nrefvol):
-                                bcast_EMData_to_all(refvols[iref], myid, main_node)
+                                refvols[iref] = bcast_EMData_to_all(refvols[iref], myid, main_node)
                                 [mean,sigma,fmin,fmax] = Util.infomask( refvols[iref], None, True )
                                 outf.write( 'after bcast, myid,iref: %d %d %10.3e %10.3e %10.3e %10.3e\n' % ( myid, iref, mean, sigma, fmin, fmax ) )
 
@@ -13755,8 +13754,8 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			from sys import exit
 			exit()
 
-			#bcast_EMData_to_all(volftb, myid, main_node)
-			bcast_EMData_to_all(vol, myid, main_node)
+			#volftb = bcast_EMData_to_all(volftb, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			#volft,kb  = prep_vol(vol)
 			data = []
 			# Only Euler angles
@@ -14097,8 +14096,8 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 			from sys import exit
 			exit()
 
-			#bcast_EMData_to_all(volftb, myid, main_node)
-			bcast_EMData_to_all(vol, myid, main_node)
+			#volftb = bcast_EMData_to_all(volftb, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 			#volft,kb  = prep_vol(vol)
 			data = []
 			# Only Euler angles
@@ -14429,8 +14428,8 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 				del adam, vol_ssnr, rfsc, filt
 				del h
 				"""
-			bcast_EMData_to_all(vol,  myid, main_node)
-			bcast_EMData_to_all(vhlf, myid, main_node)
+			vol = bcast_EMData_to_all(vol,  myid, main_node)
+			vhlf = bcast_EMData_to_all(vhlf, myid, main_node)
 			from filter import  filt_tophatb
 			volft,kb  = prep_vol( filt_tophatb(vhlf, 0.20, 0.40, False))
 			from statistics import ccc
@@ -14708,7 +14707,7 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 				drop_image(vol, os.path.join(outdir, replace("vhlf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 				del adam, vol_ssnr, rfsc, filt
 				del h
-			bcast_EMData_to_all(vol, myid, main_node)
+			vol = bcast_EMData_to_all(vol, myid, main_node)
 
 			volft,kb  = prep_vol(vol)
 			data = []
@@ -15612,7 +15611,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 			st = Util.infomask(data[im-image_start], mask, False)
 			data[im-image_start] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
+		ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 
 	## TO TEST
 	#for im in data:
@@ -15621,8 +15620,8 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
         #tavg = ave_series(data, False)
 	tavg, vav = add_ave_varf_MPI(data, None, "a", CTF)
 	
-	reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
-	reduce_EMData_to_root(vav, key, group_main_node, group_comm)
+	tavg = reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
+	vav = reduce_EMData_to_root(vav, key, group_main_node, group_comm)
 	
 	if key == group_main_node:
 		sumsq = fft(tavg)
@@ -15665,7 +15664,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 					index += 1
 					num = msg[index]
 				print_msg(msg_string)
-	bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+	tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
@@ -15739,8 +15738,8 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 			tavg, vav = add_ave_varf_MPI(data, None, "a", CTF, ali_params)
 			
 			# bring all partial sums together
-			reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
-			reduce_EMData_to_root(vav, key, group_main_node, group_comm)
+			tavg = reduce_EMData_to_root(tavg, key, group_main_node, group_comm)
+			vav = reduce_EMData_to_root(vav, key, group_main_node, group_comm)
 			
 			select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
 			mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
@@ -15797,7 +15796,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 			else:
 				tavg = EMData(nx, nx, 1, True)
 				cs = [0.0]*2			
-			bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+			tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 			total_iter += 1
 			T = max(T*F, 1.0e-8)
 			#again = mpi_bcast(again, 1, MPI_INT, group_main_node, group_comm)
@@ -15893,7 +15892,7 @@ def ali2d_a_MPI_(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", 
 					send_EMData(tsavg[isav], isav, isav+300)
 				tavg = tsavg[0].copy()
 				del tsavg
-		bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
+		tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 		#par_str = [ali_params, "ID"]
@@ -16038,13 +16037,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		for im in data:
 			set_params2D(im, [randint(0,359), randint(-2,2), randint(-2,2), randint(0,1),1.0])
 		tavg = ave_series(data, False)
-		reduce_EMData_to_root(tavg, myid, main_node)
+		tavg = reduce_EMData_to_root(tavg, myid, main_node)
 		if myid == main_node:
 			Util.mul_scalar(tavg, 1.0/float(nima))
 			drop_image(tavg, os.path.join(outdir, "initial%05d.hdf"%(i)))
 			a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 			print_msg("Initial criterion  : %12.3e\n"%(a0))
-		bcast_EMData_to_all(tavg, myid, main_node)
+		tavg = bcast_EMData_to_all(tavg, myid, main_node)
 		savg.append(tavg.copy())
 	for im in data:
 		im.set_attr_dict({'xform.align2d':tnull})
@@ -16059,7 +16058,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
 
-	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	if CTF: ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -16124,11 +16123,11 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					select += sel
 					Util.add_img(tavg, rot_shift2D(im, alphan, sxn, syn, mirror))
 				#  bring all partial sums together
-				reduce_EMData_to_root(tavg, myid, main_node)
+				tavg = reduce_EMData_to_root(tavg, myid, main_node)
 				select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				#reduce_EMData_to_root(vav, myid, main_node)
+				#vav = reduce_EMData_to_root(vav, myid, main_node)
 
 				if myid == main_node:
 					Util.mul_scalar(tavg, 1.0/float(nima))
@@ -16164,7 +16163,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:
 					tavg = EMData(nx, nx, 1, True)
 					cs = [0.0]*2
-				bcast_EMData_to_all(tavg, myid, main_node)
+				tavg = bcast_EMData_to_all(tavg, myid, main_node)
 				total_iter += 1
 				T = max(T*F, 1.0e-8)
 				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
@@ -16212,7 +16211,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				savg[isav] = tsavg[isav].copy()
 			del tsavg			
 		for isav in xrange(nsav):
-			bcast_EMData_to_all(savg[isav], myid, main_node)
+			savg[isav] = bcast_EMData_to_all(savg[isav], myid, main_node)
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	#par_str = ["xform.align2d", "ID"]
@@ -16345,12 +16344,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	tavg = model_blank(nx, nx)
 	tavg = ave_series(data, False)
-	reduce_EMData_to_root(tavg, myid, main_node)
+	tavg = reduce_EMData_to_root(tavg, myid, main_node)
 	if myid == main_node:
 		Util.mul_scalar(tavg, 1.0/float(nima))
 		a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 		print_msg("Initial criterion  : %12.3e\n"%(a0))
-	bcast_EMData_to_all(tavg, myid, main_node)
+	tavg = bcast_EMData_to_all(tavg, myid, main_node)
 	if CTF:
 		for im in xrange(image_start, image_end):
 			ctf_params = data[im-image_start].get_attr("ctf")
@@ -16362,7 +16361,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
 
-	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	if CTF: ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -16443,8 +16442,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			av     = mpi_reduce(av, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			pksa   = mpi_reduce(pksa, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			#  bring all partial sums together
-			reduce_EMData_to_root(tavg, myid, main_node)
-			#reduce_EMData_to_root(vav, myid, main_node)
+			tavg = reduce_EMData_to_root(tavg, myid, main_node)
+			#vav = reduce_EMData_to_root(vav, myid, main_node)
 
 			if myid == main_node:
 				"""
@@ -16533,7 +16532,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				method = " "
 				knp = 1
 			else:   method = "SA"
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			total_iter += 1
 			#if(total_iter%5 == 0): T = max(T*F,1.0e-8)
 			T = max(T*F,1.0e-8)
@@ -16674,12 +16673,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		im.set_attr("select0",0)
 	tavg = model_blank(nx, nx)
 	tavg = ave_series(data, False)
-	reduce_EMData_to_root(tavg, myid, main_node)
+	tavg = reduce_EMData_to_root(tavg, myid, main_node)
 	if myid == main_node:
 		Util.mul_scalar(tavg, 1.0/float(nima))
 		a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
 		print_msg("Initial criterion  : %12.3e\n"%(a0))
-	bcast_EMData_to_all(tavg, myid, main_node)
+	tavg = bcast_EMData_to_all(tavg, myid, main_node)
 	if CTF:
 		for im in xrange(image_start, image_end):
 			ctf_params = data[im-image_start].get_attr("ctf")
@@ -16691,7 +16690,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
 
-	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	if CTF: ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -16780,8 +16779,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			av     = mpi_reduce(av, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			pksa   = mpi_reduce(pksa, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			#  bring all partial sums together
-			reduce_EMData_to_root(tavg, myid, main_node)
-			#reduce_EMData_to_root(vav, myid, main_node)
+			tavg = reduce_EMData_to_root(tavg, myid, main_node)
+			#vav = reduce_EMData_to_root(vav, myid, main_node)
 
 			if myid == main_node:
 				"""
@@ -16870,7 +16869,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				method = " "
 				knp = 1
 			else:   method = "SA"
-			bcast_EMData_to_all(tavg, myid, main_node)
+			tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			total_iter += 1
 			#if(total_iter%5 == 0): T = max(T*F,1.0e-8)
 			T = max(T*F,1.0e-8)
@@ -17021,7 +17020,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		#info(ima)
 		#info(tavg)
 		Util.add_img(tavg, ima)
-	reduce_EMData_to_root(tavg, myid, main_node)
+	tavg = reduce_EMData_to_root(tavg, myid, main_node)
 	#info(tavg)
 	total_iter=0
 	if myid == main_node:
@@ -17044,7 +17043,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg(msg)
 	else:
 		tavg = model_blank(nx, nx)
-	bcast_EMData_to_all(tavg, myid, main_node)
+	tavg = bcast_EMData_to_all(tavg, myid, main_node)
 
 	if CTF:
 		for im in xrange(image_start, image_end):
@@ -17053,7 +17052,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data[im-image_start] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
-	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+	if CTF: ctf_2_sum = reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -17118,7 +17117,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				
 				#  This looks like a duplication, but it is to reduce interpolation errors, eventually btavg will replace tavg
 				Util.add_img(ntavg, dali[it])
-			reduce_EMData_to_root(ntavg, myid, main_node)
+			ntavg = reduce_EMData_to_root(ntavg, myid, main_node)
 			tavg = ntavg.copy()
 			accepted = mpi_reduce(accepted, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			improved = mpi_reduce(improved, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -17158,7 +17157,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				cs = [0.0]*2
 
 			again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			#bcast_EMData_to_all(tavg, myid, main_node)
+			#tavg = bcast_EMData_to_all(tavg, myid, main_node)
 			if not again: break
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			#cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
