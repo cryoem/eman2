@@ -3955,7 +3955,6 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 	if isinstance(rand_seed, list): rnd = rand_seed
 	else:                           rnd = [rand_seed]
 	
-	
 	for ipart in xrange(nbpart):
 		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))
 		
