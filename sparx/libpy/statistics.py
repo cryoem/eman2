@@ -1741,7 +1741,7 @@ def k_means_init_open_im(stack, maskname):
 
 # k-means open and prepare images
 def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
-	from utilities     import get_params2D, get_image, get_params3D, file_type, model_blank
+	from utilities     import get_params2D, get_image, get_params3D, file_type, model_blank, print_msg
 	from fundamentals  import rot_shift2D, rot_shift3D
 	from sys           import exit
 	if CTF:
@@ -1791,13 +1791,21 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 	for i in xrange(N):
 		# 3D object
 		if nz > 1:
-			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
-			IM[i]  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-			if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
+			try:
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
+				IM[i]  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
+			except:
+				ERROR('K-MEANS no 3D alignment paramters found', 1)
+				sys.exit()
 		# 2D object
 		elif ny > 1:
-			alpha, sx, sy, mirror, scale = get_params2D(IM[i])
-			IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+			try:
+				alpha, sx, sy, mirror, scale = get_params2D(IM[i])
+				IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+			except: 
+				ERROR('K-MEANS no 2D alignment parameters found', 1)
+				sys.exit()
 
 		# obtain ctf
 		if CTF:
@@ -4616,13 +4624,17 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
 				image = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 				if mirror: image.process_inplace('mirror', {'axis':'x'})
-			except:	pass
+			except:
+				ERROR('K-MEANS no 3D alignment paramters found', 1)
+				sys.exit()
 		# 2D object
 		elif ny > 1:
 			try:
 				alpha, sx, sy, mirror, scale = get_params2D(image)
 				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
-			except: pass
+			except: 
+				ERROR('K_MEANS no 2D alignment paramters found', 1)
+				sys.exit()
 
 		if flagnorm:
 			# normalize
