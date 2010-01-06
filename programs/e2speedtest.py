@@ -62,10 +62,11 @@ improved with time."""
     parser.add_option("--low",action="store_true",help="low level test",default=False)
     parser.add_option("--refine",action="store_true",help="refine alignment",default=False)
     parser.add_option("--big",action="store_true",help="big size test",default=False)
+    parser.add_option("--size",type=int,help="Size of particles, 96 default for comparisons",default=96)
     
     (options, args) = parser.parse_args()
     
-    SIZE = 96
+    SIZE = options.size
     NTT = 500
     
     print 'This could take a few minutes. Please be patient.'
@@ -84,7 +85,7 @@ improved with time."""
 #    pat.update()
     pat=test_image(size=(SIZE,SIZE))
     pat.process_inplace('normalize.circlemean')
-    pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0});
+    pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
     
     data = [None for i in xrange(NTT)]
     
@@ -99,7 +100,7 @@ improved with time."""
         data[i]=test_image(0,size=(SIZE,SIZE))
 	data[i].add(test_image(1,size=(SIZE,SIZE)))
         data[i].process_inplace('normalize.circlemean')
-        data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2});
+        data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2})
         
 #        if i < 5 :
 #            data[i].write_image('speed.hed', i, EMUtil.ImageType.IMAGE_IMAGIC)
@@ -307,7 +308,7 @@ so in most cases it is not dealt with.'
             elif options.refine:
                 tmp = data[i].align('rotate_translate_flip', data[j], {})
             else:
-                tmp = data[i].align('rotate_translate_flip', data[j], {});
+                tmp = data[i].align('rotate_translate_flip', data[j], {})
             
             if j%10 == 0:
                 sys.stdout.write('.')
@@ -315,7 +316,7 @@ so in most cases it is not dealt with.'
         print
     t2 = time.clock()
     
-    ti = t2 - t1;
+    ti = t2 - t1
     
     if not options.big and not options.slow and not options.refine:
         print 'For comparison (note these numbers may change from release to release'

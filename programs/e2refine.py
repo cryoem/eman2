@@ -70,7 +70,7 @@ def main():
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--simmask",type="string",help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
-	parser.add_option("--twostage", dest="twostage", type = "int", default=None, help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage",default=0)
+	parser.add_option("--twostage", dest="twostage", type = "int", help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage",default=0)
 	
 	# options associated with e2classify.py
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 1)", default=1)
