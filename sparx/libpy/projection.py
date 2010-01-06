@@ -418,25 +418,6 @@ def cml_refine_agls(Prj, Ori, delta):
 
 	return Ori
 
-# cml init for MPI version
-def cml_init_MPI(trials):
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from utilities    import bcast_number_to_all
-	from random       import randint
-	import sys
-	
-	# init
-	sys.argv  = mpi_init(len(sys.argv),sys.argv)
-	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
-	myid      = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
-	mpi_barrier(MPI_COMM_WORLD)
-
-	N_start = int(round(float(trials) / ncpu * myid))
-	N_stop  = int(round(float(trials) / ncpu * (myid + 1)))
-
-	return main_node, myid, ncpu, N_start, N_stop
-
 # cml init list of rand_seed for trials version
 def cml_init_rnd(trials, rand_seed):
 	from random import seed, randrange

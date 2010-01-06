@@ -8825,14 +8825,30 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 # application find structure
 def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
-	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_MPI, cml_init_rnd
+	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_rnd
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	from random     import seed, random
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_bcast
 	from mpi        import mpi_barrier, MPI_COMM_WORLD, mpi_reduce, MPI_FLOAT, MPI_INT, MPI_SUM
 	import time, sys, os
 
 	# init
-	main_node, myid, nbcpu, N_start, N_stop = cml_init_MPI(trials)
+	sys.argv  = mpi_init(len(sys.argv),sys.argv)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	mpi_barrier(MPI_COMM_WORLD)
+
+	flag = 0
+	if myid == main_node:
+		if ncpu < trials:
+			ERROR('Find structure MPI: number of trials must be superior than the number of processors.')
+			flag = 1
+	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	flag = int(flag[0])
+	if flag != 0: sys.exit()
+	
+	N_start, N_stop = MPI_start_end(trials, ncpu, myid)
 	lrnd    = cml_init_rnd(trials, rand_seed)
 	out_dir = out_dir.rstrip('/')
 
