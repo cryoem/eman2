@@ -5055,7 +5055,7 @@ def get_refiparams(nx):
 	v = K/2.0/N
 	return {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  Focus on intersubunit region	
@@ -5434,7 +5434,8 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 			if myid==main_node:
 				#print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
 				print_msg("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments\n")
-
+			from sys import exit
+			exit()
 			while(runtype == "ASSIGNMENT"):
 				Iter += 1
 				if Iter%(nassign+nrefine) < nassign :
@@ -5447,7 +5448,7 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 		print_end_msg("ali3d_em_MPI")
 
 
-def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  The original, fully operational version	
@@ -8722,8 +8723,8 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 def params_2D_to_3D(stack):
 	from utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
 	
-	print_begin_msg("params_2D_to_3D")
-	print_msg("Input stack                 : %s\n\n"%(stack))
+	#print_begin_msg("params_2D_to_3D")
+	#print_msg("Input stack                 : %s\n\n"%(stack))
 
 	nima = EMUtil.get_image_count(stack)
 	ima = EMData()
@@ -8733,13 +8734,13 @@ def params_2D_to_3D(stack):
 		p = params_2D_3D(p[0], p[1], p[2], int(p[3]))
 		set_params_proj(ima, p)
 		write_header(stack, ima, im)
-	print_end_msg("params_2D_to_3D")
+	#print_end_msg("params_2D_to_3D")
 	
 def params_3D_to_2D(stack):
 	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg, set_params2D, write_header
 	
-	print_begin_msg("params_3D_to_2D")
-	print_msg("Input stack                 : %s\n\n"%(stack))
+	#print_begin_msg("params_3D_to_2D")
+	#print_msg("Input stack                 : %s\n\n"%(stack))
 
 	nima = EMUtil.get_image_count(stack)
 	ima = EMData()
@@ -8750,7 +8751,7 @@ def params_3D_to_2D(stack):
 		alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 		set_params2D(ima, [alpha, sx, sy, mirror, 1.0])
 		write_header(stack, ima, im)
-	print_end_msg("params_3D_to_2D")
+	#print_end_msg("params_3D_to_2D")
 
 
 # application find structure

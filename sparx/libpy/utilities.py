@@ -2105,7 +2105,7 @@ def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 	img = EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
-	
+
 	return img
 
 
@@ -2121,7 +2121,7 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 	# The latter is inconsistent with mpi_bcast() and difficult to implement efficiently
 
 	from numpy import reshape
-	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
 	
 	if comm == -1: comm = MPI_COMM_WORLD
 	
@@ -2146,7 +2146,6 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 		img = EMNumPy.numpy2em(img_data)
 		img.set_complex(is_complex)
 		img.set_ri(is_ri)
-	
 		return img
 	else:
 		return img
@@ -2752,13 +2751,12 @@ def getvec( phi, tht ):
 	from math import pi,cos,sin
 	angle_to_rad = pi/180.0
 
-
 	if tht > 180.0:
-		tht = tht - 180.0
-		phi = phi + 180.0
+		tht -= 180.0
+		phi += 180.0
 	elif tht > 90.0:
 		tht = 180.0 - tht
-		phi = phi + 180.0
+		phi += 180.0
 
 	assert tht <=90.0
 
@@ -2770,6 +2768,33 @@ def getvec( phi, tht ):
 	z = cos(tht)
 
 	return (x,y,z)
+
+def nearest_ang( vecs, phi, tht ) :
+	from utilities import getvec
+	vec = getvec( phi, tht )
+
+	best_s = -1.0
+	best_i = -1
+
+	for i in xrange( len(vecs) ):
+	    s = abs(vecs[i][0]*vec[0] + vecs[i][1]*vec[1] + vecs[i][2]*vec[2])
+	    if s > best_s:
+		best_s = s
+	    	best_i = i
+
+	return best_i
+
+def assign_projangles(projangles, refangles):
+	refnormal = [None]*len(refangles)
+	for i in xrange(len(refangles)):
+		refnormal[i] = getvec( refangles[i][0], refangles[i][1] )
+	assignments = [[] for i in xrange(len(refangles))]
+	print len(assignments)
+	for i in xrange(len(projangles)):
+		mm = nearest_ang( refnormal, projangles[i][0], projangles[i][1] )
+		print mm
+		assignments[mm].append(i)
+	return assignments
 
 def disable_bdb_cache():
 
@@ -2814,10 +2839,10 @@ def rotation_between_anglesets(agls1, agls2):
 			theta = d["theta"]
 			psi = d["psi"]
 
-		map = False
+		mapt = False
 		if theta > 90:
 			theta = theta - 2 * (theta - 90.0)
-			map   = True
+			mapt   = True
 		phi   *= deg2rad
 		theta *= deg2rad
 		x = sin(theta) * sin(phi)
@@ -2825,7 +2850,7 @@ def rotation_between_anglesets(agls1, agls2):
 		val = 1.0 - x*x - y*y
 		if val < 0.0: val = 0.0
 		z = sqrt(val)
-		if map: z = -z
+		if mapt: z = -z
 
 		return [x, y, z]
 
