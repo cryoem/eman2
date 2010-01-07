@@ -1130,6 +1130,7 @@ class TestImageIO(unittest.TestCase):
 		
 		from EMAN2 import get_supported_3d_formats
 		
+		#test for 3D image
 		size = 8
 		e = EMData(size,size,size)
 		e.process_inplace('testimage.axes')
@@ -1154,13 +1155,14 @@ class TestImageIO(unittest.TestCase):
 										self.assertEqual(f==g,True)
 			finally:
 				remove_file(name)
-			
+		
+		#test for 2D image	
 		size = 8
 		e = EMData()
 		e.set_size(size,size)
 		e.process_inplace("testimage.noise.uniform.rand")
 		
-		fmts = ["mrc","spi","em","img"]
+		fmts = ["mrc","spi","em","img", "hdf"]
 		
 		for fmt in fmts:
 			name = "testregionimage."+fmt
@@ -1201,21 +1203,65 @@ class TestImageIO(unittest.TestCase):
 
 	def test_hdfio_region(self):
 		"""test hdf io region ..............................."""
-		file1 = "test_hdfio_region_1.h5"
-		nx = 48
-		ny = 64
-		nz1 = 1
-		TestUtil.make_image_file(file1, IMAGE_HDF, EM_FLOAT, nx, ny, nz1)
-		self.region_read_write_test(IMAGE_HDF, file1)
+#		file1 = "test_hdfio_region_1.h5"
+#		nx = 48
+#		ny = 64
+#		nz1 = 1
+#		TestUtil.make_image_file(file1, IMAGE_HDF, EM_FLOAT, nx, ny, nz1)
+#		self.region_read_write_test(IMAGE_HDF, file1)
+#
+#		file2 = "test_hdfio_region_2.h5"
+#		nz2 = 12
+#		TestUtil.make_image_file(file2, IMAGE_HDF, EM_FLOAT, nx, ny, nz2)
+#		self.region_read_write_test(IMAGE_HDF, file2)
+#
+#		os.unlink(file1)
+#		os.unlink(file2)
+		
+		file3 = "test2D.hdf"
+		img = EMData(4,4)
+		for i in range(4):
+			for j in range(4):
+				img.set_value_at(j, i, i*4+j)
+		img.write_image(file3)
+		
+		f = EMData()
+		f.read_image(file3, 0, False, Region(0,0,2,2))
+		self.assertEqual(f.get_value_at(0,0), 0)
+		self.assertEqual(f.get_value_at(0,1), 4)
+		self.assertEqual(f.get_value_at(1,0), 1)
+		self.assertEqual(f.get_value_at(1,1), 5)
+		
+		g = EMData()
+		g.read_image(file3, 0, False, Region(2,2,2,2))
+		self.assertEqual(g.get_value_at(0,0), 10)
+		self.assertEqual(g.get_value_at(0,1), 14)
+		self.assertEqual(g.get_value_at(1,0), 11)
+		self.assertEqual(g.get_value_at(1,1), 15)
 
-		file2 = "test_hdfio_region_2.h5"
-		nz2 = 12
-		TestUtil.make_image_file(file2, IMAGE_HDF, EM_FLOAT, nx, ny, nz2)
-		self.region_read_write_test(IMAGE_HDF, file2)
+		os.unlink(file3)
+		
+		file4 = "test3D.hdf"
+		img2 = EMData(4,4,4)
+		for i in range(4):
+			for j in range(4):
+				for k in range(4):
+					img2.set_value_at(k, j, i, i*4*4+j*4+k)
+		img2.write_image(file4)
+		
+		f2 = EMData()
+		f2.read_image(file4, 0, False, Region(0,0,0,2,2,2))
+		self.assertEqual(f2.get_value_at(0,0,0), 0)
+		self.assertEqual(f2.get_value_at(0,1,0), 4)
+		self.assertEqual(f2.get_value_at(1,0,0), 1)
+		self.assertEqual(f2.get_value_at(1,1,0), 5)
+		self.assertEqual(f2.get_value_at(0,0,1), 16)
+		self.assertEqual(f2.get_value_at(0,1,1), 20)
+		self.assertEqual(f2.get_value_at(1,0,1), 17)
+		self.assertEqual(f2.get_value_at(1,1,1), 21)
+		
+		os.unlink(file4)
 
-		os.unlink(file1)
-		os.unlink(file2)
-			  
 """
 	def  test_spiderio_region(self):
 		file1 = "test_spiderio_region_1.h5"
