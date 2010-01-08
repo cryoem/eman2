@@ -311,8 +311,7 @@ def db_read_image(self,fsp,*parms):
 	This function can be used to read a set of images from a file or bdb: database. Pass in
 	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
-	are read, accesses to the image data in the resulting EMData objects will be invalid.
-	Region reading is not supported for bdb:entries yet."""
+	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
 		 
