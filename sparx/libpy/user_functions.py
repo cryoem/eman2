@@ -719,14 +719,14 @@ def constant( ref_data ):
 	#print_msg("steady   #%6d\n"%(ref_ali2d_counter))
 	fl = 0.4
 	aa = 0.1
-	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	print_msg(msg)
+	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	#print_msg(msg)
 	from utilities import model_circle
 	nx = ref_data[2].get_xsize()
-	stat = Util.infomask(ref_data[2],model_circle(nx//2-2,nx,nx), False)
+	stat = Util.infomask(ref_data[2], model_circle(nx//2-2,nx,nx), False)
 	ref_data[2] -= stat[0]
 	#tavg = filt_tanl(threshold(ref_data[2]), fl, aa)
-	tavg = filt_tanl( ref_data[2], fl, aa)
+	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	return  tavg, cs
 

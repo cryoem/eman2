@@ -591,7 +591,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        		tavg, dummy = user_func(ref_data)
 			        		cs[0] = float(sx_sum[0])/nima
 			        		cs[1] = float(sy_sum[0])/nima
-			        		pixel_error = float(pixel_error[0])/(nima-mirror_change)
+			        		pixel_error = float(pixel_error[0])/(nima-int(mirror_change))
 			        		mirror_change = float(mirror_change[0])/nima
 			        		tavg = fshift(tavg, -cs[0], -cs[1])
 			        		if verbose == 2 :
@@ -925,7 +925,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				tavg = recv_EMData(main_node, color+300)
 				
 		to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		to_break = int(to_break[0])
+		to_break = int(to_break)
 		tavg = bcast_EMData_to_all(tavg, key, group_main_node, group_comm)
 
 		if option == 5 or option == 6:
