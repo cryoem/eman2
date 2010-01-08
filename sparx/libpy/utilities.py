@@ -56,11 +56,11 @@ def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
 	if (theta > 90.0):
 		mirror = 1
+		alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
 	else:
 		mirror = 0
-	alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, psi, 0, 0, 1.0)
-
-	return  -alpha, sx, sy, mirror
+		alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 360.0-psi, 0, 0, 1.0)
+	return  alpha, sx, sy, mirror
 
 # Amoeba uses the simplex method of Nelder and Mead to maximize a
 # function of 1 or more variables.
@@ -2789,10 +2789,8 @@ def assign_projangles(projangles, refangles):
 	for i in xrange(len(refangles)):
 		refnormal[i] = getvec( refangles[i][0], refangles[i][1] )
 	assignments = [[] for i in xrange(len(refangles))]
-	print len(assignments)
 	for i in xrange(len(projangles)):
 		mm = nearest_ang( refnormal, projangles[i][0], projangles[i][1] )
-		print mm
 		assignments[mm].append(i)
 	return assignments
 
