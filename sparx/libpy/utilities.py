@@ -572,8 +572,11 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
 	       angles in degrees
 	"""
-	compparams = compose_transform3(0,0, alpha1, sx1, sy1, 0, scale1, 0, 0, alpha2, sx2, sy2, 0, scale2)
-	return (compparams[0]+compparams[2])%360.0, compparams[3], compparams[4], compparams[6]
+	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
+	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":0,"scale":scale2})
+	tt = t2*t1
+	d = tt.get_params("2D")
+	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], d[ "scale" ]
 
 def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2):
 	"""
@@ -590,20 +593,15 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 	d = Rcomp.get_params("spider")
 	return d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["scale"]
    
-def combine_params2(a1, x1, y1, m1, a2, x2, y2, m2):
+def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
 	  Combine 2D alignent parameters including mirror
 	"""
-	if( m1 == 0):
-		[a3,x3,y3,scale] = compose_transform2(a1, x1, y1, 1.0, a2, x2, y2, 1.0)
-		m3 = m2
-	else:
-		[a3,x3,y3,scale] = compose_transform2(a1, x1, y1, 1.0, -a2, -x2, y2, 1.0)
-		if( m2 == 0 ):
-			m3 = 1
-		else:
-			m3 = 0
-	return a3,x3,y3,m3
+	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
+	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
+	tt = t2*t1
+	d = tt.get_params("2D")
+	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], d[ "mirror" ]
 
 def create_spider_doc(fname,spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
