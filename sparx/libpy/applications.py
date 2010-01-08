@@ -10216,7 +10216,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1)
+		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm)
 		print_end_msg('k-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
@@ -10224,7 +10224,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if myid == main_node:
 			print_begin_msg('k-means')
 			k_means_cuda_headlog(stack, out_dir, 'cuda', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
-		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1)
+		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1, flagnorm)
 		if myid == main_node:
 			print_end_msg('k-means')
 
@@ -10276,7 +10276,7 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # 2009-07-29 14:06:54 new code
 
 # K-means main stability stream command line, CUDA version
-def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
+def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9, flagnorm = False):
 	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
 	from statistics import k_means_stab_asg2part, k_means_stab_export, k_means_stab_export_txt
 	from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog, k_means_stab_update_tag
@@ -10320,7 +10320,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	# classification
 	print_begin_msg('k-means')
 	k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, 1, m)
-	k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, outdir, TXT, npart, logging)
+	k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, outdir, TXT, npart, logging, flagnorm)
 
 	# read assignment and convert to partition
 	logging.info('... Matching')
@@ -10353,7 +10353,7 @@ def k_means_stab_CUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 
 	logging.info('... Done')
 
 # K-means main stability stream command line, CUDA version
-def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9):
+def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, match = 'pwa', maxit = 1e9, flagnorm = False):
 	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi        import mpi_bcast, MPI_INT
 	from utilities  import print_begin_msg, print_end_msg, print_msg, file_type, running_time
@@ -10423,7 +10423,7 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 		k_means_cuda_headlog(stack, outdir, 'cuda', N, K, maskname, maxit, T0, F, rnd, ncpu, m)
 
 	# classification
-	k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, myid, main_node, ncpu, outdir, TXT, npart, logging)
+	k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rnd, myid, main_node, ncpu, outdir, TXT, npart, logging, flagnorm)
 	
 	if myid == main_node:
 		# end of classification
@@ -10454,7 +10454,7 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 	mpi_barrier(MPI_COMM_WORLD)
 
 # K-means main stability stream command line
-def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
+def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9, flagnorm = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
 	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_export, k_means_init_open_im
@@ -10493,7 +10493,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	# open unstable images
 	logging.info('... Open images')
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
-	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
 
 	logging.info('... %d unstable images found' % N)
 	if N < 2:
@@ -10554,7 +10554,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	logging.info('... Done')
 
 # K-means main stability stream command line
-def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9):
+def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9, flagnorm = False):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
@@ -10618,7 +10618,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
-	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut)
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
 
 	if myid == main_node:
 		logging.info('... %d active images found' % N)

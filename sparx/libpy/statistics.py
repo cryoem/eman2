@@ -3941,7 +3941,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:                 return None, None
 
 # K-mean CUDA
-def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1):
+def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, flagnorm = False):
 	from statistics import k_means_cuda_error, k_means_cuda_open_im
 	from statistics import k_means_locasg2glbasg, k_means_cuda_export
 	from utilities  import print_msg, running_time
@@ -3953,7 +3953,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
-	k_means_cuda_open_im(Kmeans, stack, LUT, mask)
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask, flagnorm)
 	Kmeans.compute_im2()
 	status = Kmeans.init_mem(-1) # select free device
 	if status:
@@ -4033,7 +4033,7 @@ def dump_AVE(AVE, mask, myid, ite = 0):
         NEWAVE.write_image('ave_from_%02i_ite_%02i.hdf' % (myid, ite), k)
 
 # K-mean CUDA
-def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, nbpart, logging = -1):
+def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, nbpart, logging = -1, flagnorm = False):
 	from applications import MPI_start_end
 	from statistics   import k_means_cuda_error, k_means_cuda_open_im
 	from statistics   import k_means_locasg2glbasg, k_means_cuda_export
@@ -4066,7 +4066,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	if status:
 		k_means_cuda_error(status)
 		sys.exit()
-	k_means_cuda_open_im(Kmeans, stack, LUT, mask, True)
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask, flagnorm)
 	Kmeans.compute_im2()
 	status = Kmeans.init_mem(myid % NGPU_PER_NODES)
 	if status:
