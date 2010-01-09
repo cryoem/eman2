@@ -133,6 +133,7 @@ class TrackerControl(QtGui.QWidget):
 		self.im2d =    EMImage2DModule(application=app,winid="tomotrackbox.big")
 		self.imboxed = EMImage2DModule(application=app,winid="tomotrackbox.small")
 		self.improj =  EMImage2DModule(application=app,winid="tomotrackbox.proj")
+		self.imslice = EMImage2DModule(application=app,winid="tomotrackbox.3dslice")
 		self.imvol =   EMImage3DModule(application=app,winid="tomotrackbox.3d")
 	
 		# get some signals from the window. With a regular Qt object this would just
@@ -155,6 +156,7 @@ class TrackerControl(QtGui.QWidget):
 		self.im2d.closeEvent(QtGui.QCloseEvent())
 		self.imboxed.closeEvent(QtGui.QCloseEvent())
 		self.improj.closeEvent(QtGui.QCloseEvent())
+		self.imslice.closeEvent(QtGui.QCloseEvent())
 		self.imvol.closeEvent(QtGui.QCloseEvent())
 		event.accept()
 		
@@ -221,6 +223,9 @@ class TrackerControl(QtGui.QWidget):
 		self.improj.show()
 		self.improj.updateGL()
 
+		self.imslice.set_data(self.filt3d)
+		self.imslice.show()
+		self.imslice.updateGL()
 	
 	def update_stack(self):
 		stack=self.get_boxed_stack()
@@ -359,7 +364,7 @@ class TrackerControl(QtGui.QWidget):
 		print "Subsampling = %1.2f"%samp
 
 		# Now the reconstruction
-		recon=Reconstructors.get("fourier", {"quiet":False,"sym":"c1","x_in":pad,"y_in":pad,"mode":mode})
+		recon=Reconstructors.get("fourier", {"sym":"c1","size":(pad,pad,pad),"mode":reconmodes[mode],"verbose":True})
 		recon.setup()
 		
 		for ri in range(5):
@@ -453,10 +458,12 @@ class TrackerControl(QtGui.QWidget):
 		scores=[]
 		
 		# First pass to assess qualities and normalizations
-		for p in stack:
+		for i,p in enumerate(stack):
 			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.insert_slice(p2,p["xform.projection"],1.0)
+			print " %d    \r"%i
+		print ""
 
 		# after building the model once we can assess how well everything agrees
 		for p in stack:
@@ -464,6 +471,8 @@ class TrackerControl(QtGui.QWidget):
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
 			scores.append((p2["reconstruct_absqual"],p2["reconstruct_norm"]))
+			print " %d\t%1.3f    \r"%(i,scores[-1][0])
+		print ""
 
 		# clear out the first reconstruction (probably no longer necessary)
 #		ret=recon.finish(True)

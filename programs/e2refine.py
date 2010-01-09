@@ -70,7 +70,7 @@ def main():
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--simmask",type="string",help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
-	parser.add_option("--twostage", dest="twostage", type = "int", help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage",default=0)
+	parser.add_option("--twostage", dest="twostage", type = "int", help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0)
 	
 	# options associated with e2classify.py
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 1)", default=1)
@@ -158,6 +158,11 @@ def main():
 		E2progress(logid,progress/total_procs)
 		
 		number_options_file(i,"simmx",options,"simmxfile")
+		if options.twostage>0 :
+			number_options_file(i,"proj_simmx",options,"simmxprojfile")
+			number_options_file(i,"proj_stg1",options,"projstg1file")
+			number_options_file(i,"simmx_stg1",options,"simmxstg1file")
+			
 		if ( os.system(get_simmx_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_simmx_cmd(options)
 			exit_refine(1,logid)
@@ -380,14 +385,18 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 	else:
 		image = options.input
 	
-	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, image,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
+	if options.twostage>0 : 
+		e2simmxcmd = "e2simmx2stage.py %s %s %s %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --shrinks1=%d"  %(options.projfile, image,options.simmxfile,options.simmxprojfile,options.projstg1file,options.simmxstg1file,options.simcmp,options.simalign,options.simaligncmp,options.twostage)
+	else :
+		e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, image,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
+
 	if options.simmask!=None : e2simmxcmd += " --mask=%s"%options.simmask
 	
 	if ( options.simralign != None ):
 		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	
 	if (options.verbose):
-		e2simmxcmd += " -v"
+		e2simmxcmd += " --verbose=1"
 	
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	
