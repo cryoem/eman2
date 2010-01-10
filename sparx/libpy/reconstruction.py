@@ -150,11 +150,11 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 				nimg += 1
 				info.write("Image %4d inserted.\n" %(nimg) )
 				info.flush()
-	#  Wei, what if none are active?
+
 	if not (info is None): 
 		info.write( "Begin reducing ...\n" )
 		info.flush()
-		
+
 	reduce_EMData_to_root(fftvol, myid)
 	reduce_EMData_to_root(weight, myid)
 
@@ -195,7 +195,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
 			info.flush()
-	#  WEI:  what to do is no particles were active, thus none was inserted PAP  10/30/08
+
 	if( not (info is None) ): 
 		info.write( "begin reduce\n" )
 		info.flush()

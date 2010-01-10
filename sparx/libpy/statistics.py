@@ -8481,7 +8481,7 @@ def compare_fra(file1name,file2name,file3name,Threshold,r,nx,ny,nz):
 	"""
 
 	from statistics import avg_3D_pixel_error
-	from utilities import read_text_file, write_text_rows, rotation_between_anglesets
+	from utilities  import read_text_file, write_text_rows, rotation_between_anglesets
 
 	a = read_text_file(file1name,-1)
 	b = read_text_file(file2name,-1)

@@ -993,7 +993,7 @@ def get_image_data(img):
           as well (and vice versa).
     """
     return EMNumPy.em2numpy(img)
-	
+
 def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, ytransSearch=0, stp=1, center=1):
 	""" 
 		Get the in_plane angle from two images
@@ -1003,10 +1003,10 @@ def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, yt
 		The sense of the rotation is clockwise.
 		center=1 means image is first centered, then rotation angle is found
 	"""
-	
+
 	from alignment import Numrinit, ringwe, Applyws, ormq
 	from filter import fshift
-	
+
 	first_ring=int(iring); last_ring=int(fring); rstep=int(ringstep); xrng=int(xtransSearch); yrng=int(ytransSearch); step=int(stp)	
 	nx=ima.get_xsize()
 	if(last_ring == -1): last_ring=int(nx/2)-2
@@ -1039,9 +1039,9 @@ def get_sym(symmetry):
 		RNow  = RA.get_sym(symmetry, j)
 		RNowE = RNow.get_rotation('spider')
 		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
-		
+
 	return angs
-		
+
 def get_textimage(fname):
 	"""	
 		Return an image created from a text file.  The first line of
@@ -1168,7 +1168,7 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.
 	invtrans = Rinv.get_trans()
 	invscale = Rinv.get_scale()
 	return inveuler['phi'], inveuler['theta'], inveuler['psi'], invtrans.at(0), invtrans.at(1), invtrans.at(2), invscale
-	
+
 def list_syms():
 	"""Create a list of available symmetries
 	"""
@@ -1338,7 +1338,7 @@ def parse_spider_fname(mystr, *fieldvals):
 		loc = field.end + 1
 	newstrfrags.append(mystr[loc:])
 	return "".join(newstrfrags)
-   
+
 def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 	peaks    = e.peak_search(npeak, invert)
 	ndim     = peaks[0]
@@ -1442,7 +1442,6 @@ def print_slice(input, iz=0):
 	    	line.append("\n")
 	    	if(nx%5 != 0): line.append("\n")
 	print "".join(line)
-
 
 def print_image(input):
 	"""Print the data in an image to standard out.
@@ -2006,21 +2005,21 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	from numpy import array, shape, reshape
-	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
+	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
+	from utilities import get_image_data
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
+
 	array = get_image_data(data)
-	
-	n = shape(array)
-	ntot = 1
-	for i in xrange(len(n)): ntot *= n[i]
-	count = 100000
+	n     = shape(array)
+	ntot  = 1
+	for i in n: ntot *= i
+	count = 256*256*256
 	array1d = reshape( array, (ntot,))
 	ntime = (ntot-1) /count + 1
 	for i in xrange(ntime):
 		block_begin = i*count
-		block_end   = i*count + count
-		if block_end > ntot: block_end = ntot
+		block_end   = min(block_begin + count, ntot)
 		block_size  = block_end - block_begin
 		tmpsum = mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
 		mpi_barrier(comm)
@@ -2044,7 +2043,7 @@ def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 
 def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
 	from numpy import array, shape, reshape
-	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from mpi   import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	
 	if comm == -1: comm = MPI_COMM_WORLD
 	tavg_data = EMNumPy.em2numpy(tavg)
@@ -2824,8 +2823,8 @@ def rotation_between_anglesets(agls1, agls2):
 	from numpy import array, linalg, matrix
 	import types
 
-	rad2deg = 180 / pi
-	deg2rad = 1 / rad2deg
+	rad2deg = 180.0 / pi
+	deg2rad = 1.0 / rad2deg
 
 	def ori2xyz(ori):
 		if(type(ori) == types.ListType):
