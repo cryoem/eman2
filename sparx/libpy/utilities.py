@@ -2014,7 +2014,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	n     = shape(array)
 	ntot  = 1
 	for i in n: ntot *= i
-	count = 256*256*256
+	count = (128*4+2)*(128*4)**2
 	array1d = reshape( array, (ntot,))
 	ntime = (ntot-1) /count + 1
 	for i in xrange(ntime):
@@ -2023,6 +2023,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 		block_size  = block_end - block_begin
 		tmpsum = mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
 		mpi_barrier(comm)
+		print i,block_begin,block_end, block_size
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
