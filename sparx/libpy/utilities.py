@@ -2014,7 +2014,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	n     = shape(array)
 	ntot  = 1
 	for i in n: ntot *= i
-	count = (128*4+2)*(128*4)**2
+	count = (75*4+2)*(75*4)**2
 	array1d = reshape( array, (ntot,))
 	ntime = (ntot-1) /count + 1
 	for i in xrange(ntime):
