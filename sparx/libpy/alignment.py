@@ -1030,7 +1030,7 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False, phiEqps
 				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
 				if i >= ref_start and i < ref_end: rootid = j
 
-			refrings[i] = bcast_EMData_to_all( refrings[i], myid, rootid )
+			bcast_EMData_to_all( refrings[i], myid, rootid )
 
 	for i in xrange(len(ref_angles)):
 		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)

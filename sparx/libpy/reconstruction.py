@@ -155,8 +155,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 		
-	fftvol = reduce_EMData_to_root(fftvol, myid)
-	weight = reduce_EMData_to_root(weight, myid)
+	reduce_EMData_to_root(fftvol, myid)
+	reduce_EMData_to_root(weight, myid)
 
 	if myid == 0 :  vol = r.finish(True)
 	else:
@@ -200,8 +200,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		info.write( "begin reduce\n" )
 		info.flush()
 
-	fftvol = reduce_EMData_to_root(fftvol, myid)
-	weight = reduce_EMData_to_root(weight, myid)
+	reduce_EMData_to_root(fftvol, myid)
+	reduce_EMData_to_root(weight, myid)
 
 	if( not (info is None) ): 
 		info.write( "after reduce\n" )
@@ -420,10 +420,10 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				prj *= mask2D
 			r.insert_slice(prj, xform_proj )
 	#from utilities import info
-	weight = reduce_EMData_to_root(weight,  myid, 0)
-	fftvol = reduce_EMData_to_root(fftvol,  myid, 0)
-	weight2 = reduce_EMData_to_root(weight2, myid, 0)
-	if CTF: weight3 = reduce_EMData_to_root(weight3, myid, 0)
+	reduce_EMData_to_root(weight,  myid, 0)
+	reduce_EMData_to_root(fftvol,  myid, 0)
+	reduce_EMData_to_root(weight2, myid, 0)
+	if CTF: reduce_EMData_to_root(weight3, myid, 0)
 	if myid == 0 :
 		vol_ssnr = r.finish(True)
 		outlist = [[] for i in xrange(6)]
@@ -780,8 +780,8 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		info.write( "begin reduce half\n" )
 		info.flush()
 
-	fftvol_half = reduce_EMData_to_root(fftvol_half, myid, main_node_half)
-	weight_half = reduce_EMData_to_root(weight_half, myid, main_node_half)
+	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
+	reduce_EMData_to_root(weight_half, myid, main_node_half)
 
 	if not(info is None):
 		info.write( "after reduce half\n" )
@@ -825,8 +825,8 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 		info.write( "begin reduce half\n" )
 		info.flush()
 
-	fftvol_half = reduce_EMData_to_root(fftvol_half, myid, main_node_half)
-	weight_half = reduce_EMData_to_root(weight_half, myid, main_node_half)
+	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
+	reduce_EMData_to_root(weight_half, myid, main_node_half)
 
 	return fftvol_half, weight_half
 
@@ -851,8 +851,8 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         	info.write( "begin reduce half\n" )
         	info.flush()
 
-	fftvol_half = reduce_EMData_to_root(fftvol_half, myid, main_node_half)
-	weight_half = reduce_EMData_to_root(weight_half, myid, main_node_half)
+	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
+	reduce_EMData_to_root(weight_half, myid, main_node_half)
 
 	if not(info is None):
 		info.write( "after reduce half\n" )

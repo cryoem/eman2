@@ -173,7 +173,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 			for j in xrange(ncpu):
 				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
 				if i >= ref_start and i < ref_end: rootid = j
-			prjref[i] = bcast_EMData_to_all( prjref[i], myid, rootid )
+			bcast_EMData_to_all( prjref[i], myid, rootid )
 
 	for i in xrange(len(ref_angles)):
 		prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})

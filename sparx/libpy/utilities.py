@@ -2002,10 +2002,10 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 		mpi_barrier(comm)
         	if myid == main_node:
         		array1d[block_begin:block_end] = tmpsum[0:block_size]
-
+'''
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
@@ -2027,6 +2027,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
+'''
 def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 	from Numeric import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
@@ -2039,10 +2040,10 @@ def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
 	if myid != main_node:
 		data1d = reshape(data, (ntot, ))
 		data1d[0:ntot] = tmp[0:ntot]
-
+'''
 
 def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	
 	if comm == -1: comm = MPI_COMM_WORLD
@@ -2054,8 +2055,8 @@ def bcast_EMData_to_all(tavg, myid, main_node = 0, comm = -1):
 	if(myid != main_node):
 		tavg_data1d = reshape(tavg_data,(ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
+	
 '''
-
 def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 
 	# Comment by Zhengfan Yang on 01/05/10
@@ -2147,6 +2148,7 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 		return img
 	else:
 		return img
+'''
 
 def send_EMData(img, dst, tag):
 	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
