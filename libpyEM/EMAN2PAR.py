@@ -1026,10 +1026,17 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 #		self.request.send(self.data.upper())
 
 def DCclient_alarm(signum=None,stack=None):
+	"""for normal use"""
 #		if stack!=None : traceback.print_stack(stack)
 	print "ALARM - network interrupt"
 	if stack!=None : traceback.print_stack(stack)
 	return
+
+def DCclient_alarm2(signum=None,stack=None):
+	"""for the special case of precaching"""
+#		if stack!=None : traceback.print_stack(stack)
+	raise Exception,"timeout"
+
 
 class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
@@ -1073,6 +1080,7 @@ class EMDCTaskClient(EMTaskClient):
 			time.sleep(15)
 			return
 
+		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 		try: 
 			lname=""
 			while 1 :
@@ -1089,6 +1097,7 @@ class EMDCTaskClient(EMTaskClient):
 				f[img[2]]=img[3]
 				
 		except: pass
+		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 
 		signal.alarm(0)
 
