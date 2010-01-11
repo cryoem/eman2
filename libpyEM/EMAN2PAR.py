@@ -1104,12 +1104,14 @@ class EMDCTaskClient(EMTaskClient):
 
 	def docache(sock,sockf,clist):
 		"""This routine will receive data to cache from the server, then broadcast it locally"""
+		if verbose: print "Caching starting ",clist
 		needed=[]
 		for i in clist[1] :			# loop over list of files to cache
 			cname="bdb:cache_%d.%d"%(i[0],i[1])
 			cache=db_open_dict(cname)
 			try: z=cache.get_header(0)
 			except: needed.append(i)
+			if z==None : needed.append(i)
 			
 
 		sendobj(sockf,needed)
