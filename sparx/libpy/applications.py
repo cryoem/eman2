@@ -8116,27 +8116,27 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 		pid_list = range(nima)
 
 	if verbose==0:
-		info = None
+		finfo = None
 	else:
 		infofile = "progress%04d.txt"%(myid+1)
-		info = open( infofile, 'w' )
+		finfo = open( infofile, 'w' )
 
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
 
 	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info, npad)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info, npad)
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
 			drop_image(vol, vol_stack)
-		if not(info is None):
-			info.write( "result written to " + vol_stack + "\n")
-			info.write( "Total time: %10.3f\n" % (time()-time_start) )
-			info.flush()
+		if not(finfo is None):
+			finfo.write( "result written to " + vol_stack + "\n")
+			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
+			finfo.flush()
 
 def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", listfile = "", group = -1, verbose=1, MPI=False):
 	if MPI:
@@ -8216,20 +8216,20 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	del pid_list
 
 	if verbose==0:
-		info = None
+		finfo = None
 	else:
 		infofile = "progress%04d.txt" % (myid)
-		info = open( infofile, 'w' )
+		finfo = open( infofile, 'w' )
 
 	odd_start = image_start%2
 	eve_start = (odd_start+1)%2
 	if CTF:
 		from reconstruction import rec3D_MPI
 
-		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, info)
+		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo)
 	else :
 		from reconstruction import rec3D_MPI_noCTF
-		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, info)
+		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo)
 	if myid == 0:
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
