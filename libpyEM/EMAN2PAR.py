@@ -1064,7 +1064,7 @@ class EMDCTaskClient(EMTaskClient):
 		
 		return True
 
-	def listencache():
+	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
 		try:
 			sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
