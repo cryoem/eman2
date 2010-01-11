@@ -727,9 +727,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					files=self.queue.precache["files"]
 					if len(files)>0:
 						self.queue.caching=True
-						lst=["CACHE"]
+						lst=["CACHE",[]]
 						for i in files:
-							lst.append(self.queue.todid(i))
+							lst[1].append(self.queue.todid(i))
 							
 						# send the list of objects to the client and get back a list of which ones the client needs
 						sendobj(self.sockf,lst)
@@ -1162,6 +1162,7 @@ class EMDCTaskClient(EMTaskClient):
 			
 				# Get a task from the server
 				task=recvobj(sockf)
+				if verbose>1 : print "Task: ",task
 				
 				# This means the server wants to use us to precache files on all of the clients, we won't
 				# get a task until we finish this
