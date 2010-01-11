@@ -714,12 +714,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				
 				# keep track of clients
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
-				
+
+				EMDCTaskHandler.tasklock.acquire()
 				if self.queue.caching :
 					sendobj(self.sockf,None)			# clients will listen for cache data while idle
 					self.sockf.flush()
 					r=recvobj(self.sockf)
 					if self.verbose>1 : print "Telling client to wait ",self.client_address
+					EMDCTaskHandler.tasklock.release()
 					return
 				
 				#### This implements precaching of large data files
@@ -727,6 +729,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					files=self.queue.precache["files"]
 					if len(files)>0:
 						self.queue.caching=True
+						EMDCTaskHandler.tasklock.release()
 						lst=["CACHE",[]]
 						for i in files:
 							lst[1].append(self.queue.todid(i))
@@ -741,6 +744,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							self.queue.precache["files"]=[]
 							self.queue.caching=False
 						else :
+							import EMUtil
 							for i in needed:
 								name=self.queue.didtoname[i]			# get the filename back from the did
 								n=nimg = EMUtil.get_image_count(name)	# how many images to cache in this file
@@ -759,6 +763,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							if recvobj(self.sockf) != "ACK " :
 								print "No ack after caching"
 								return
+					else : EMDCTaskHandler.tasklock.release()
+
 				except:
 					self.queue.caching=False
 					traceback.print_exc()
@@ -1102,9 +1108,9 @@ class EMDCTaskClient(EMTaskClient):
 
 		signal.alarm(0)
 
-	def docache(sock,sockf,clist):
+	def docache(self,sock,sockf,clist):
 		"""This routine will receive data to cache from the server, then broadcast it locally"""
-		if verbose: print "Caching starting ",clist
+#		if self.verbose: print "Caching starting ",clist
 		needed=[]
 		for i in clist[1] :			# loop over list of files to cache
 			cname="bdb:cache_%d.%d"%(i[0],i[1])
@@ -1162,7 +1168,7 @@ class EMDCTaskClient(EMTaskClient):
 			
 				# Get a task from the server
 				task=recvobj(sockf)
-				if verbose>1 : print "Task: ",task
+				if self.verbose>1 : print "Task: ",task
 				
 				# This means the server wants to use us to precache files on all of the clients, we won't
 				# get a task until we finish this
