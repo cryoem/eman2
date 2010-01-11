@@ -489,7 +489,7 @@ class EMTaskQueue:
 		EMTaskQueue.lock.release()
 		return ret
 	
-	def todid(name):
+	def todid(self,name):
 		"""Returns the did for a path, creating one if not already known"""
 		fmt=e2filemodtime(name)
 		try : 

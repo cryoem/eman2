@@ -724,7 +724,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				
 				#### This implements precaching of large data files
 				try :
-					files=self.precache["files"]
+					files=self.queue.precache["files"]
 					if len(files)>0:
 						self.queue.caching=True
 						lst=["CACHE"]
@@ -738,7 +738,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						
 						# if none are needed, clear out the list of needed files
 						if len(needed)==0:
-							self.precache["files"]=[]
+							self.queue.precache["files"]=[]
 							self.queue.caching=False
 						else :
 							for i in needed:
@@ -761,6 +761,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 								return
 				except:
 					self.queue.caching=False
+					traceback.print_exc()
 				
 				#### Now we get back to sending an actual task
 				EMDCTaskHandler.tasklock.acquire()
