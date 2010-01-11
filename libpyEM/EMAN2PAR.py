@@ -405,8 +405,8 @@ def openEMDCsock(addr,clientid=0, retry=3):
 
 	# Introduce ourselves and ask for a task to execute
 	sockf.write("EMAN")
-	sockf.write(pack("I4",EMAN2PARVER))
-	sockf.write(pack("I4",clientid))
+	sockf.write(pack("<I4",EMAN2PARVER))
+	sockf.write(pack("<I4",clientid))
 	sockf.flush()
 	if sockf.read(4)=="BADV" : 
 		print "ERROR: Server version mismatch ",socket.gethostname()
@@ -416,20 +416,58 @@ def openEMDCsock(addr,clientid=0, retry=3):
 
 	return(sock,sockf)
 
+global oseq
+oseq=1
+
+def broadcast(sock,obj):
+	"""This will broadcast an object through a bound datagram socket on port 9989 by serializing the
+	the packets into a set of 1k hunks, assums MTU > 1k. Packets contain 
+	PKLD+uid+totlen+objseq+pktseq+1kdata """
+	global oseq
+	p=dumps(obj,-1)
+	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
+	for seq in xrange(1+(len(p)-1)/1024):
+		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+	
+def recv_broadcast(sock):
+	"""This will receive an object sent using broadcast(). If a partial object is received, then a new object starts,
+	the first object will be abandoned, and the second (successful) object will be returned"""
+	
+	myuid=os.getuid()
+	curobjseq=-1
+	curpktseq=-1
+	while 1:
+		pkt=sock.recv(1044)		# 20 byte header + 1024 bytes of data 
+		mag,uid,totlen,objseq,pktseq=unpack("<4sIIII",pkt[:20])
+		if mag !="EMAN" or uid!=myuid: continue			# not for us
+		if pktseq!=0 and objseq!=curobjseq  : continue	# for us, but in the middle of a transmission and we missed some
+		if pktseq==0:
+			curobjseq=objseq
+			payload=pkt[20:]
+		else :
+			if pktseq!=curpktseq+1 : continue			# we missed some :^(
+			payload+=pkt[20:]
+		if len(payload)==totlen : 
+			try : ret=load(payload)
+			except : continue							# really depressing, we got all of the data, but there was some error
+			return ret
+		curpktseq=pktseq
+
+
 def sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
 	if obj==None : 
-		sock.write(pack("I",0))
+		sock.write(pack("<I",0))
 		return
 	strobj=dumps(obj,-1)
-	sock.write(pack("I",len(strobj)))
+	sock.write(pack("<I",len(strobj)))
 	sock.write(strobj)
 
 def recvobj(sock):
 	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
 	l=sock.read(4)
 	try : 
-		datlen=unpack("I",l)[0]
+		datlen=unpack("<I",l)[0]
 	except:
 		print "Format error in unpacking '%s'"%l
 		raise Exception,"Network error receiving object"
@@ -622,14 +660,14 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		msg = self.sockf.read(4)
 		if msg!="EMAN" : raise Exception,"Non EMAN client"
 
-		ver=unpack("I",self.sockf.read(4))[0]
+		ver=unpack("<I",self.sockf.read(4))[0]
 		if ver!=EMAN2PARVER : 
 			self.sockf.write("BADV")
 			self.sockf.flush()
 			raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
 		self.sockf.write("ACK ")
 		self.sockf.flush()
-		client_id=unpack("I",self.sockf.read(4))[0]
+		client_id=unpack("<I",self.sockf.read(4))[0]
 
 		while (1):
 			cmd = self.sockf.read(4)
@@ -677,6 +715,54 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				# keep track of clients
 				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				
+				if self.queue.caching :
+					sendobj(self.sockf,None)			# clients will listen for cache data while idle
+					self.sockf.flush()
+					r=recvobj(self.sockf)
+					if self.verbose>1 : print "Telling client to wait ",self.client_address
+					return
+				
+				#### This implements precaching of large data files
+				try :
+					files=self.precache["files"]
+					if len(files)>0:
+						self.queue.caching=True
+						lst=["CACHE"]
+						for i in files:
+							lst.append(self.queue.todid(i))
+							
+						# send the list of objects to the client and get back a list of which ones the client needs
+						sendobj(self.sockf,lst)
+						self.sockf.flush()
+						needed=recvobj(self.sockf)
+						
+						# if none are needed, clear out the list of needed files
+						if len(needed)==0:
+							self.precache["files"]=[]
+							self.queue.caching=False
+						else :
+							for i in needed:
+								name=self.queue.didtoname[i]			# get the filename back from the did
+								n=nimg = EMUtil.get_image_count(name)	# how many images to cache in this file
+								a=EMData()
+								for j in xrange(n):				# loop over images
+									a.read_image(name,j)
+									self.sockf.flush()			# flush before transmitting rather than after for better efficiency
+									sendobj(self.sockf,(i[0],i[1],j,a))
+									if j%100==0 :
+										print " Caching %s: %d / %d        \r"%(name,j,n),
+										sys.stdout.flush()
+							
+							self.sendobj(self.sockf,"DONE")
+							self.sockf.flush()
+							self.queue.caching=False
+							if recvobj(self.sockf) != "ACK " :
+								print "No ack after caching"
+								return
+				except:
+					self.queue.caching=False
+				
+				#### Now we get back to sending an actual task
 				EMDCTaskHandler.tasklock.acquire()
 				
 				# Get the first task and send it (pickled)
@@ -978,6 +1064,72 @@ class EMDCTaskClient(EMTaskClient):
 		
 		return True
 
+	def listencache():
+		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
+		try:
+			sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+			sock.bind(("",9989))
+		except:
+			time.sleep(15)
+			return
+
+		try: 
+			lname=""
+			while 1 :
+				signal.alarm(15)
+				img=recv_broadcast(sock)
+				try : cname="bdb:cache_%d.%d"%(img[0],img[1])
+				except :
+					print "Invalid cache data '",img,"'"
+					continue
+				if cname!=lname : 
+					if self.verbose : print "Receiving cache data ",cname
+					f=db_open_dict(cname)
+					lname=cname
+				f[img[2]]=img[3]
+				
+		except: pass
+
+		signal.alarm(0)
+
+	def docache(sock,sockf,clist):
+		"""This routine will receive data to cache from the server, then broadcast it locally"""
+		needed=[]
+		for i in clist[1] :			# loop over list of files to cache
+			cname="bdb:cache_%d.%d"%(i[0],i[1])
+			cache=db_open_dict(cname)
+			try: z=cache.get_header(0)
+			except: needed.append(i)
+			
+
+		sendobj(sockf,needed)
+		sockf.flush()
+		if self.verbose : print "Caching phase, need : ",needed
+		if len(needed)==0 : return
+		
+		lname=""
+		bcast=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)	# One client will broadcast the data on its subnet for mass distribution
+		bcast.bind(("",9989))
+		bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+		while 1:
+			img=recvobj(sockf)		# this should contain time,rint,img#,image
+			if isinstance(img,str):
+				if img=="DONE" : break
+				print "Unknown cache return string '",img,"'"
+				break
+			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
+			except :
+				print "Invalid cache data '",img,"'"
+				break
+			if cname!=lname : 
+				if self.verbose : print "Receiving cache data ",cname
+				f=db_open_dict(cname)
+				lname=cname
+			broadcast(bcast,img)
+			f[img[2]]=img[3]
+			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
+			
+
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after
 		which to terminate the client if we aren't given something to do. dieifnoserver is the same if we can't find a server to
@@ -997,7 +1149,17 @@ class EMDCTaskClient(EMTaskClient):
 				sockf.flush()
 			
 				# Get a task from the server
-				task=recvobj(sockf)				
+				task=recvobj(sockf)
+				
+				# This means the server wants to use us to precache files on all of the clients, we won't
+				# get a task until we finish this
+				if isinstance(task,list) and task[0]=="CACHE" :
+					self.docache(sock,sockf,task)
+					sendobj(sockf,("ACK ",socket.gethostname()))
+					sockf.flush()
+					task=recvobj(sockf)
+
+				# acknowledge the task even before we know what we got
 				sendobj(sockf,("ACK ",socket.gethostname()))
 				sockf.flush()
 				signal.alarm(0)
@@ -1023,7 +1185,7 @@ class EMDCTaskClient(EMTaskClient):
 				if time.time()-lastjob>dieifidle : 
 					print "Idle too long. Terminating"
 					break
-				time.sleep(15)
+				self.listencache()		# We will listen for precached data for 15 seconds (or sleep if another thread is listening)
 				continue
 			sockf.flush()
 			

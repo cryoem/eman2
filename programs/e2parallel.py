@@ -49,13 +49,13 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","dcrerunall","dckillall")
+	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","rerunall","killall","precache")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
 
-<command> is one of: dcserver, dcclient, dckill, dcrerunall, dckillall, dckillclients, servmon
+<command> is one of: dcserver, dcclient, dckill, dcrerunall, precache, killall, killclients, servmon
 
 run e2parallel.py servmon to run a GUI server monitor. This MUST run on the same machine in the same directory as the server.
 
@@ -88,11 +88,14 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="dckillclients" :
 		killdcclients(options.server,options.port,options.verbose)
 
-	elif args[0]=="dcrerunall":
-		rerunalldc()
+	elif args[0]=="precache" :
+		precache(args[1:])
 
-	elif args[0]=="dckillall":
-		killalldc()
+	elif args[0]=="rerunall":
+		rerunall()
+
+	elif args[0]=="killall":
+		killall()
 
 	elif args[0]=="servmon" :
 		runservmon()
@@ -117,7 +120,14 @@ def rundcclient(host,port,verbose):
 	client.run(onejob=False)
 #	print "New client (%d alloced)"%EMData.totalalloc
 
-def rerunalldc():
+def precache(files):
+	"""Adds a list of filenames to the precaching queue. Precaching will occur before jobs are started."""
+	q=EMTaskQueue()
+	print len(files)," files queued for precaching" 
+	q.precache["files"]=files
+	
+
+def rerunall():
 	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
 	e=q.active.keys()
@@ -127,7 +137,7 @@ def rerunalldc():
 	
 	print "Requeued %d tasks"%len(e)
 
-def killalldc():
+def killall():
 	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
 	e=q.active.keys()

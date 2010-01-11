@@ -443,6 +443,7 @@ class EMTaskQueue:
 	no guarantee in either list that all keys less than 'max' will exist."""
 
 	lock=threading.Lock()
+	caching=False		# flag to prevent multiple simultaneous caching
 
 	def __init__(self,path=None,ro=False):
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
@@ -452,6 +453,7 @@ class EMTaskQueue:
 		self.complete=db_open_dict("bdb:%s#tasks_complete"%path,ro)	# complete tasks
 		self.nametodid=db_open_dict("bdb:%s#tasks_name2did"%path,ro)	# map local data filenames to did codes
 		self.didtoname=db_open_dict("bdb:%s#tasks_did2name"%path,ro)	# map data id to local filename
+		self.precache=db_open_dict("bdb:%s#precache_files"%path,ro)		# files to precache on clients, has one element "files" with a list of paths
 
 		#if not self.active.has_key("max") : self.active["max"]=-1
 		#if not self.active.has_key("min") : self.active["min"]=0
@@ -487,6 +489,26 @@ class EMTaskQueue:
 		EMTaskQueue.lock.release()
 		return ret
 	
+	def todid(name):
+		"""Returns the did for a path, creating one if not already known"""
+		fmt=e2filemodtime(name)
+		try : 
+			did=self.nametodid[name]			# get the existing did from the cache (modtime,int)
+			if fmt!=did[0]	:					# if the file has been changed, we need to assign a new did
+				del self.didtoname[did]
+				EMTaskQueue.lock.release()
+				raise Exception
+		except: 
+			did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
+			while (self.didtoname.has_key(did)):
+				did=(fmt,random.randint(0,999999))
+		
+		self.nametodid[name]=did
+		self.didtoname[did]=name
+		
+		return did  
+		
+	
 	def add_task(self,task):
 		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
 		specified, a doubly linked list is established. parentid MUST be the id of a task
@@ -506,21 +528,7 @@ class EMTaskQueue:
 			try: 
 				if k[0]!="cache" : continue
 			except: continue
-			
-			fmt=e2filemodtime(k[1])
-			try : 
-				did=self.nametodid[k[1]]			# get the existing did from the cache (modtime,int)
-				if fmt!=did[0]	:					# if the file has been changed, we need to assign a new did
-					del self.didtoname[did]
-					EMTaskQueue.lock.release()
-					raise Exception
-			except: 
-				did=(fmt,random.randint(0,999999))	# since there may be multiple files with the same timestamp, we also use a random int
-				while (self.didtoname.has_key(did)):
-					did=(fmt,random.randint(0,999999))
-			
-			self.nametodid[k[1]]=did
-			self.didtoname[did]=k[1]
+			did=self.todid(k[1])
 			try: k[1]=did
 			except:
 				task.data[j]=list(k)

@@ -386,7 +386,8 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 		image = options.input
 	
 	if options.twostage>0 : 
-		e2simmxcmd = "e2simmx2stage.py %s %s %s %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --shrinks1=%d"  %(options.projfile, image,options.simmxfile,options.simmxprojfile,options.projstg1file,options.simmxstg1file,options.simcmp,options.simalign,options.simaligncmp,options.twostage)
+		try : e2simmxcmd = "e2simmx2stage.py %s %s %s %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --shrinks1=%d"  %(options.projfile, image,options.simmxfile,options.simmxprojfile,options.projstg1file,options.simmxstg1file,options.simcmp,options.simalign,options.simaligncmp,options.twostage)
+		except: print options
 	else :
 		e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, image,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
 
@@ -416,9 +417,13 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 
 def check_simmx_args(options, nofilecheck=False):
 	if not hasattr(options,"simmxfile"): setattr(options,"simmxfile","dummy")
+	number_options_file(0,"proj_simmx",options,"simmxprojfile")
+	number_options_file(0,"proj_stg1",options,"projstg1file")
+	number_options_file(0,"simmx_stg1",options,"simmxstg1file")
 	cmd = get_simmx_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing simmx command: %s" %cmd
+	return (False)
 	return ( os.system(cmd) != 0)
 
 def get_projection_cmd(options,check=False):

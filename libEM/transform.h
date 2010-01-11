@@ -344,7 +344,7 @@ namespace EMAN
 			* @return the transformed vector
 			 */
 			inline Vec2f transform(const float& x, const float& y) const {
-				assert_valid_2d();
+//				assert_valid_2d();
 				Vec2f ret;
 				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][3];
 				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][3];
