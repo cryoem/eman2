@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2 import test_image,EMData,abs_path,local_datetime
+from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
 from e2classaverage import EMClassAveTaskDC
 from e2simmx import EMSimTaskDC
@@ -428,6 +428,7 @@ def broadcast(sock,obj):
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
 	for seq in xrange(1+(len(p)-1)/1024):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+	oseq+=1
 	
 def recv_broadcast(sock):
 	"""This will receive an object sent using broadcast(). If a partial object is received, then a new object starts,
@@ -448,7 +449,7 @@ def recv_broadcast(sock):
 			if pktseq!=curpktseq+1 : continue			# we missed some :^(
 			payload+=pkt[20:]
 		if len(payload)==totlen : 
-			try : ret=load(payload)
+			try : ret=loads(payload)
 			except : continue							# really depressing, we got all of the data, but there was some error
 			return ret
 		curpktseq=pktseq
@@ -744,7 +745,6 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							self.queue.precache["files"]=[]
 							self.queue.caching=False
 						else :
-							import EMUtil
 							for i in needed:
 								name=self.queue.didtoname[i]			# get the filename back from the did
 								n=nimg = EMUtil.get_image_count(name)	# how many images to cache in this file
