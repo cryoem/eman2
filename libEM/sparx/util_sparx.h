@@ -465,7 +465,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		Basically, they all do cross-correlation function to two images in polar coordinates
 		Crosrng_e is the original one
 		Crosrng_ew is the one that you could apply weights to different rings
-		Crosrng_ms assumes the user already apply weights to circ1, it also returns both
+		Crosrng_ms assumes the user already applied weights to circ1, it also returns both
 		           straight and mirrored positions simultaneously.
 	        Crosrng_msg differs from the previous ones in that it returns the cross-correlation
 			    function entirely instead of the peak value and position, thus makes it
@@ -473,8 +473,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	        Crosrng_msg_s is same as Crosrng_msg except that it only checks straight position
 	        Crosrng_msg_m is same as Crosrng_msg except that it only checks mirrored position
 	  */
-	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
-	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
+	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int mirrored);
+	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int mirrored);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
 	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag);

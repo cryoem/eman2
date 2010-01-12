@@ -3188,8 +3188,8 @@ void Util::prb1d(double *b, int npoint, float *pos) {
 #define  q(i)            q[i-1]
 #define  b(i)            b[i-1]
 #define  t7(i)           t7[i-1]
-Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
-	//  neg = 0 straight,  neg = 1 mirrored
+Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int mirrored) {
+	//  mirrored = 0 straight,  mirrored = 1 mirrored
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3197,10 +3197,10 @@ Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg)
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
 /*
-c checks single position, neg is flag for checking mirrored position
+c checks single position, mirrored is flag for checking mirrored position
 c
 c  input - fourier transforms of rings!
-c  first set is conjugated (mirrored) if neg
+c  first set is conjugated (mirrored) if mirrored
 c  circ1 already multiplied by weights!
 c       automatic arrays
 	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
@@ -3233,7 +3233,7 @@ c       automatic arrays
 			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
 			t(2)		= 0.0;
 
-			if (neg) {
+			if (mirrored) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
@@ -3250,7 +3250,7 @@ c       automatic arrays
 			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
 		} else {
 			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-			if (neg) {
+			if (mirrored) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
@@ -3295,8 +3295,8 @@ c       automatic arrays
 	return  retvals;
 }
 
-Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
-   //  neg = 0 straight,  neg = 1 mirrored
+Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int mirrored) {
+   //  mirrored = 0 straight,  mirrored = 1 mirrored
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3304,10 +3304,10 @@ Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
 /*
-c checks single position, neg is flag for checking mirrored position
+c checks single position, mirrored is flag for checking mirrored position
 c
 c  input - fourier transforms of rings!
-c  first set is conjugated (mirrored) if neg
+c  first set is conjugated (mirrored) if mirrored
 c  multiplication by weights!
 c       automatic arrays
 	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
@@ -3340,7 +3340,7 @@ c       automatic arrays
 			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
 			t(2)  	  = 0.0;
 
-			if (neg) {
+			if (mirrored) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=numr3i; j=j+2) {
 					jc = j+numr2i-1;
@@ -3357,7 +3357,7 @@ c       automatic arrays
 			for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
 		} else {
 			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-			if (neg) {
+			if (mirrored) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=maxrin; j=j+2) {
 					jc = j+numr2i-1;
@@ -4394,7 +4394,7 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 	return static_cast<float>(ener);
 }
 
-void Util::update_fav (EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
+void Util::update_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
@@ -5579,6 +5579,8 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	freq_hist = (-freq_hist);
 	return static_cast<float>(freq_hist);
 }
+
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
@@ -17874,23 +17876,20 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		//  compare with all reference images
 		// for iref in xrange(len(crefim)):
 		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+			float ddp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+			if(abs(ddp)>=ant) {
+				Dict retvals;
+				if(ddp >= 0.0f) retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
+				else            retvals = Crosrng_e(crefim[iref], cimage, numr, 1);
 		    		double qn = retvals["qn"];
-		    		double qm = retvals["qm"];
-		    		if(qn >= peak || qm >= peak) {
+		    		if(qn >= peak) {
 					sx = -ix;
 					sy = -iy;
 					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm );
-						mirror = 1;
-					}
+					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					peak = static_cast<float>( qn );
+					if(ddp >= 0.0f)  mirror = 0;
+					else              mirror = 1;
 				}
 		    	}
 		}  delete cimage; cimage = 0;
