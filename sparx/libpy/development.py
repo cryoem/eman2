@@ -7985,6 +7985,114 @@ def ave_ali_err(stack):
 			min_ali = ps[0]
 	return min_err
 	
+def ave_ali_err_new(stack1, stack2=None, r=25):
+	
+	from sys import exit
+	from math import cos, sin, pi, atan
+	from utilities import get_params2D, combine_params2
+	
+	nima = EMUtil.get_image_count(stack1)
+	data1 = EMData.read_images(stack1)
+
+	if stack2 != None: 
+		nima2 = EMUtil.get_image_count(stack2)
+		if nima2 != nima:
+			print "Error: Number of images don't agree!"
+			exit(0)
+		data2 = EMData.read_images(stack2)
+
+	# Read the alignment parameters and determine the relative mirrorness
+	cosi = 0.0
+	sini = 0.0
+	mirror_same = 0
+	ali_params1 = []
+	ali_params2 = []
+	for i in xrange(nima):
+		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
+		if stack2 != None:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
+		else:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d_ideal2")
+		ali_params1.append(alpha1)
+		ali_params1.append(sx1)
+		ali_params1.append(sy1)
+		ali_params1.append(mirror1)
+		ali_params2.append(alpha2)
+		ali_params2.append(sx2)
+		ali_params2.append(sy2)
+		ali_params2.append(mirror2)
+		if mirror1 == mirror2:	mirror_same += 1
+
+	if mirror_same > nima/2:
+		mirror = 0
+	else:
+		mirror_same = nima-mirror_same
+		mirror = 1
+	
+	# Determine the relative angle	
+	for i in xrange(nima):
+		mirror1 = ali_params1[i*4+3]
+		mirror2 = ali_params2[i*4+3]
+		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
+			alpha1 = ali_params1[i*4]
+			alpha2 = ali_params2[i*4]
+			if mirror1 == 1:  alpha1 = -alpha1
+			if mirror2 == 1:  alpha2 = -alpha2
+			cosi += cos((alpha2-alpha1)*pi/180.0)
+			sini += sin((alpha2-alpha1)*pi/180.0)
+	if cosi > 0.0:
+		alphai = atan(sini/cosi)/pi*180.0
+	elif cosi < 0.0:
+		alphai = atan(sini/cosi)/pi*180.0+180.0		
+	else:
+		if sini > 0.0:
+			alphai = 90.0
+		else:
+			alphai = -90.0
+			
+	# Determine the relative shift
+	sxi = 0.0
+	syi = 0.0
+	for i in xrange(nima):
+		mirror1 = ali_params1[i*4+3]
+		mirror2 = ali_params2[i*4+3]
+		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
+			alpha1 = ali_params1[i*4]
+			alpha2 = ali_params2[i*4]
+			sx1 = ali_params1[i*4+1]
+			sx2 = ali_params2[i*4+1]
+			sy1 = ali_params1[i*4+2]
+			sy2 = ali_params2[i*4+2]
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, 0.0, 0.0, 0)
+			if mirror1 == 0: sxi += sx2-sx12
+			else: sxi -= sx2-sx12
+			syi += sy2-sy12
+			
+	sxi /= mirror_same
+	syi /= mirror_same
+			
+	# Determine the average pixel error
+	err = 0.0
+	for i in xrange(nima):
+		mirror1 = ali_params1[i*4+3]
+		mirror2 = ali_params2[i*4+3]
+		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
+			alpha1 = ali_params1[i*4]
+			alpha2 = ali_params2[i*4]
+			sx1 = ali_params1[i*4+1]
+			sx2 = ali_params2[i*4+1]
+			sy1 = ali_params1[i*4+2]
+			sy2 = ali_params2[i*4+2]
+			if mirror1 == 1:
+				alpha1 = -alpha1
+				sx1 = -sx1
+			if mirror2 == 1:
+				alpha2 = -alpha2
+				sx2 = -sx2
+			err += abs(sin((alpha1-alphai-alpha2)/180.0*pi/2))*(r*2)+sqrt((sx1-sxi-sx2)**2+(sy1-syi-sy2)**2)
+	
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+	
 
 def ave_ali_err_MPI(stack):
 	from utilities import inverse_transform2, amoeba, get_params2D
