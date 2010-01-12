@@ -8036,8 +8036,9 @@ def ave_ali_err_new(stack1, stack2=None, r=25):
 		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
 			alpha1 = ali_params1[i*4]
 			alpha2 = ali_params2[i*4]
-			if mirror1 == 1:  alpha1 = -alpha1
-			if mirror2 == 1:  alpha2 = -alpha2
+			if mirror == 0 and mirror1 == 1 or mirror == 1 and mirror1 == 1:
+				alpha1 = -alpha1
+				alpha2 = -alpha2
 			cosi += cos((alpha2-alpha1)*pi/180.0)
 			sini += sin((alpha2-alpha1)*pi/180.0)
 	if cosi > 0.0:
@@ -8083,13 +8084,8 @@ def ave_ali_err_new(stack1, stack2=None, r=25):
 			sx2 = ali_params2[i*4+1]
 			sy1 = ali_params1[i*4+2]
 			sy2 = ali_params2[i*4+2]
-			if mirror1 == 1:
-				alpha1 = -alpha1
-				sx1 = -sx1
-			if mirror2 == 1:
-				alpha2 = -alpha2
-				sx2 = -sx2
-			err += abs(sin((alpha1-alphai-alpha2)/180.0*pi/2))*(r*2)+sqrt((sx1-sxi-sx2)**2+(sy1-syi-sy2)**2)
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, sxi, syi, 0)
+			err += abs(sin((alpha12-alpha2)/180.0*pi/2))*(r*2)+sqrt((sx12-sx2)**2+(sy12-sy2)**2)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
 	
