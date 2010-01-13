@@ -198,7 +198,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 		"B_factor": b_factor,
 		"amp_contrast": ampcont,
 		"dopad": ip,
-		"binary": binary;
+		"binary": binary,
 		"sign": sign}
 	tmp = Processor.EMFourierFilter(img, params)
 	tmp.set_attr_dict({"ctf":ctf})
