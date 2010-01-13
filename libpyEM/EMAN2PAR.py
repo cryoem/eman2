@@ -1154,9 +1154,10 @@ class EMDCTaskClient(EMTaskClient):
 		bcast.bind(("",9989))
 		bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
 		n=0
+		t0,t1,t2,t3=0,0,0,0
 		while 1:
 			signal.alarm(60)
-			t0=time.time()
+			t0+=time.time()
 			img=recvobj(sockf)		# this should contain time,rint,img#,image
 			if isinstance(img,str):
 				if img=="DONE" : break
@@ -1170,14 +1171,16 @@ class EMDCTaskClient(EMTaskClient):
 				if self.verbose : print "Receiving cache data ",cname
 				f=db_open_dict(cname)
 				lname=cname
-			t1=time.time()
+			t1+=time.time()
 			broadcast(bcast,img)
 			f[img[2]]=img[3]
 			t2=time.time()
 			sockf.write("ACK ")
 			sockf.flush()
-			t3=time.time
-			if n%50==0 : print "timing : %d\t%1.3f\t%1.3f\t%1.3f"%(n,t1-t0,t2-t1,t3-t2)
+			t3+=time.time()
+			if n%50==0 : 
+				print "timing : %d\t%1.3f\t%1.3f\t%1.3f"%(n,t1-t0,t2-t1,t3-t2)
+				t0,t1,t2,t3=0,0,0,0
 			n+=1
 #			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
 			
