@@ -1147,7 +1147,7 @@ class EMDCTaskClient(EMTaskClient):
 		sendobj(sockf,needed)
 		sockf.flush()
 		if self.verbose : print "Caching phase, need : ",needed
-		if len(needed)==0 : return
+#		if len(needed)==0 : return
 		
 		lname=""
 		bcast=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)	# One client will broadcast the data on its subnet for mass distribution
@@ -1174,7 +1174,7 @@ class EMDCTaskClient(EMTaskClient):
 			t1+=time.time()
 			broadcast(bcast,img)
 			f[img[2]]=img[3]
-			t2=time.time()
+			t2+=time.time()
 			sockf.write("ACK ")
 			sockf.flush()
 			t3+=time.time()
