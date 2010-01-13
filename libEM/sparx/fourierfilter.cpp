@@ -249,6 +249,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			wgh      = params["amp_contrast"];
 			sign     = params["sign"];
 			undoctf  = params["undo"];
+			ix       = params["binary"];
+			if(ix == 1) undoctf = 2;
 			break;
 		case KAISER_I0:
 		case KAISER_SINH:
@@ -648,13 +650,19 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 				      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
-							if( undoctf == 1 )
-							{
+							switch (undoctf) {
+							case 0:
+							    fp->cmplx(ix,iy,iz) *= tf;
+							    break;
+							case 1:
 							    if( tf>0 && tf <  1e-5 ) tf =  1e-5f;
 							    if( tf<0 && tf > -1e-5 ) tf = -1e-5f;
 							    fp->cmplx(ix,iy,iz) /= tf;
-							} else
-							    fp->cmplx(ix,iy,iz) *= tf;
+							    break;
+							case 2:
+							    fp->cmplx(ix,iy,iz) *= fabs(tf);
+							    break;
+							}
 						}
 					}
 				}

@@ -177,7 +177,7 @@ def filt_table(e, table):
 			"table" : table}
 	return Processor.EMFourierFilter(e, params)
 
-def filt_ctf(img, ctf, dopad=True, sign=1):
+def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 	assert img.get_ysize() > 1
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
@@ -198,6 +198,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1):
 		"B_factor": b_factor,
 		"amp_contrast": ampcont,
 		"dopad": ip,
+		"binary": binary;
 		"sign": sign}
 	tmp = Processor.EMFourierFilter(img, params)
 	tmp.set_attr_dict({"ctf":ctf})
