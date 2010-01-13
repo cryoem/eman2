@@ -428,6 +428,7 @@ def broadcast(sock,obj):
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
 	for seq in xrange(1+(len(p)-1)/1024):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 	oseq+=1
 	
 def recv_broadcast(sock):
@@ -446,11 +447,11 @@ def recv_broadcast(sock):
 			curobjseq=objseq
 			payload=pkt[20:]
 		else :
-			if pktseq!=curpktseq+1 : continue			# we missed some :^(
+			if pktseq!=curpktseq+1 : continue			# we missed some, or got the repeat :^(
 			payload+=pkt[20:]
 		if len(payload)==totlen : 
-			try : ret=loads(payload)
-			except : continue							# really depressing, we got all of the data, but there was some error
+			ret=payload
+			payload=""
 			return ret
 		curpktseq=pktseq
 
@@ -753,6 +754,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 									a.read_image(name,j)
 									self.sockf.flush()			# flush before transmitting rather than after for better efficiency
 									sendobj(self.sockf,(i[0],i[1],j,a))
+									rsp=sockf.read(4)
+									if rsp!="ACK " : print "Odd, non-ACK during caching"
 									if j%100==0 :
 										print " Caching %s: %d / %d        \r"%(name,j,n),
 										sys.stdout.flush()
@@ -1078,6 +1081,30 @@ class EMDCTaskClient(EMTaskClient):
 		
 		return True
 
+	def cachewriter(self,cq):
+		"""This writes the incoming broadcast cache data in a separate thread so we don't miss any broadcasts"""
+		
+		n=0
+		while 1:
+			if len(cq)==0 : continue
+			img=cq.pop()
+			if img==None : break		# our signal to exit
+			
+			# The data item should be a pickled tuple (time,rand,img#,image)
+			try : img=loads(img)
+			except : continue			# bad pickle :^(
+			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
+			except : continue			# data wasn't what we expected
+			
+			if cname!=lname : 
+				if self.verbose : print "Receiving cache data ",cname
+				f=db_open_dict(cname)
+				lname=cname
+			f[img[2]]=img[3]
+			n+=1
+
+		if self.verbose : print n," items cached"
+
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
 		try:
@@ -1087,26 +1114,22 @@ class EMDCTaskClient(EMTaskClient):
 			time.sleep(15)
 			return
 
+		cq=[]	# a list of returned images, gradually written by the thread
+		thr=threading.Thread(target=self.cachewriter,args=(cq,))
+		thr.start()
+
 		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 		try: 
 			lname=""
 			while 1 :
 				signal.alarm(15)
-				img=recv_broadcast(sock)
-				try : cname="bdb:cache_%d.%d"%(img[0],img[1])
-				except :
-					print "Invalid cache data '",img,"'"
-					continue
-				if cname!=lname : 
-					if self.verbose : print "Receiving cache data ",cname
-					f=db_open_dict(cname)
-					lname=cname
-				f[img[2]]=img[3]
+				cq.append(recv_broadcast(sock))
 				
-		except: pass
+		except: cq.append(None)
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 
 		signal.alarm(0)
+		thr.join()			# wait for cachewriting to complete
 
 	def docache(self,sock,sockf,clist):
 		"""This routine will receive data to cache from the server, then broadcast it locally"""
@@ -1145,7 +1168,9 @@ class EMDCTaskClient(EMTaskClient):
 				lname=cname
 			broadcast(bcast,img)
 			f[img[2]]=img[3]
-			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
+			sockf.write("ACK ")
+			sockf.flush()
+#			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
 			
 
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
