@@ -94,8 +94,9 @@ class EMTaskCustomer:
 
 	def precache(self,filelist):
 		"""This will cause a list of files to be precached on the compute nodes before actual computation begins"""
-		filelist=list(filelist)
 		if self.servtype=="dc" :
+			filelist=[abs_path(i) for i in filelist]
+			
 			try: EMDCsendonecom(self.addr,"CACH",filelist)
 			except:
 				self.wait_for_server()
