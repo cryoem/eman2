@@ -92,6 +92,15 @@ class EMTaskCustomer:
 		self.wait_for_server(delay*2)
 		return
 
+	def precache(self,filelist):
+		"""This will cause a list of files to be precached on the compute nodes before actual computation begins"""
+		filelist=list(filelist)
+		if self.servtype=="dc" :
+			try: EMDCsendonecom(self.addr,"CACH",filelist)
+			except:
+				self.wait_for_server()
+				EMDCsendonecom(self.addr,"CACH",filelist)
+		
 	def cpu_est(self,wait=True):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
@@ -760,7 +769,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 										print " Caching %s: %d / %d        \r"%(name,j,n),
 										sys.stdout.flush()
 							
-							self.sendobj(self.sockf,"DONE")
+							sendobj(self.sockf,"DONE")
 							self.sockf.flush()
 							self.queue.caching=False
 							if recvobj(self.sockf) != "ACK " :
@@ -951,6 +960,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,"OK")
 					self.sockf.flush()
 				else : print "ERROR: tried to requeue None"
+
+			# This will cause files to be precached on the clients before running more tasks
+			elif cmd=="CACH" :
+				self.queue.precache["files"]=data
+				sendobj(self.sockf,None)
+				self.sockf.flush()
+				if self.verbose : print "Accepted list for precaching ",data
 
 			# Get an estimate of the number of CPUs available to run jobs
 			# At the moment, this is the number of hosts that have communicated with us
@@ -1310,6 +1326,7 @@ class EMDCTaskClient(EMTaskClient):
 				signal.alarm(120)
 				try:
 					sendobj(sockf,task.taskid)
+					sockf.flush()
 				except:
 					print "Immediate ERROR (retrying ",task.taskid,")"
 					retry=True

@@ -96,6 +96,7 @@ class EMParallelSimMX:
 	
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
+		etc.precache([args[0],args[1]])
 		self.num_cpus = etc.cpu_est()
 		if self.num_cpus < 32: # lower limit
 			self.num_cpus = 32

@@ -62,6 +62,8 @@ class EMParallelProject3D:
 		
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
+		etc.precache([args[0]])
+		
 		self.num_cpus = etc.cpu_est()
 		if self.num_cpus > 32: # upper limit 
 			self.num_cpus = 32
