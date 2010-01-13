@@ -173,7 +173,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case TOP_HOMOMORPHIC:
 			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
-			gamma = params["value_at_zero_frequency"];
+			gamma  = params["value_at_zero_frequency"];
 			omegaL = 1.0f/omegaL/omegaL;
 			omegaH = 1.0f/omegaH/omegaH;
 			break;
@@ -250,7 +250,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			sign     = params["sign"];
 			undoctf  = params["undo"];
 			ix       = params["binary"];
-			if(ix == 1) undoctf = 2;
+			if(ix == 1) {undoctf = 2;  b_factor=0.0;} //ignore B-factor for the binary CTF
 			break;
 		case KAISER_I0:
 		case KAISER_SINH:
@@ -660,7 +660,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							    fp->cmplx(ix,iy,iz) /= tf;
 							    break;
 							case 2:
-							    fp->cmplx(ix,iy,iz) *= fabs(tf);
+							    if(tf < 0.0f) fp->cmplx(ix,iy,iz) *= -1.0f;
 							    break;
 							}
 						}
