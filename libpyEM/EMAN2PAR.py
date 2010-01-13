@@ -754,7 +754,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 									a.read_image(name,j)
 									self.sockf.flush()			# flush before transmitting rather than after for better efficiency
 									sendobj(self.sockf,(i[0],i[1],j,a))
-									rsp=sockf.read(4)
+									rsp=self.sockf.read(4)
 									if rsp!="ACK " : print "Odd, non-ACK during caching"
 									if j%100==0 :
 										print " Caching %s: %d / %d        \r"%(name,j,n),
@@ -1085,6 +1085,7 @@ class EMDCTaskClient(EMTaskClient):
 		"""This writes the incoming broadcast cache data in a separate thread so we don't miss any broadcasts"""
 		
 		n=0
+		lname=""
 		while 1:
 			if len(cq)==0 : continue
 			img=cq.pop()
