@@ -738,7 +738,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				#### This implements precaching of large data files
 				try :
 					files=self.queue.precache["files"]
-					if len(files)>0:
+					if files!=None and len(files)>0:
 						self.queue.caching=True
 						EMDCTaskHandler.tasklock.release()
 						lst=["CACHE",[]]
@@ -1120,7 +1120,7 @@ class EMDCTaskClient(EMTaskClient):
 			f[img[2]]=img[3]
 			n+=1
 
-		if self.verbose : print n," items cached"
+		if self.verbose and n>0: print n," items cached"
 
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
