@@ -3048,6 +3048,7 @@ def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
 	from alignment import align2d
 	from utilities import get_params2D, combine_params2
 	from math import sin, pi, sqrt
+	from morphology import ctf_img
 
 	PI_180 = pi/180
 	nima = len(data1)
