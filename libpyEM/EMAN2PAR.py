@@ -771,13 +771,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 										print " Caching %s: %d / %d        \r"%(name,j,n),
 										sys.stdout.flush()
 							
-							sendobj(self.sockf,"DONE")
-							self.sockf.flush()
-							self.queue.caching=False
-							ack=recvobj(self.sockf)
-							if ack != "ACK " :
-								print "No ack after caching (%s)"%str(ack)
-								return
+						sendobj(self.sockf,"DONE")
+						self.sockf.flush()
+						self.queue.caching=False
+						ack=recvobj(self.sockf)
+						if ack != "ACK " :
+							print "No ack after caching (%s)"%str(ack)
+							return
 					else : EMDCTaskHandler.tasklock.release()
 
 				except:
