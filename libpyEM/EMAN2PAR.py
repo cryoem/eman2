@@ -756,6 +756,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							self.queue.precache["files"]=[]
 							self.queue.caching=False
 						else :
+							if self.verbose : print "Precaching ",needed
 							for i in needed:
 								name=self.queue.didtoname[i]			# get the filename back from the did
 								n=nimg = EMUtil.get_image_count(name)	# how many images to cache in this file
@@ -773,8 +774,9 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							sendobj(self.sockf,"DONE")
 							self.sockf.flush()
 							self.queue.caching=False
-							if recvobj(self.sockf) != "ACK " :
-								print "No ack after caching"
+							ack=recvobj(self.sockf)
+							if ack != "ACK " :
+								print "No ack after caching (%s)"%ack
 								return
 					else : EMDCTaskHandler.tasklock.release()
 
@@ -1171,10 +1173,10 @@ class EMDCTaskClient(EMTaskClient):
 		bcast.bind(("",9989))
 		bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
 		n=0
-		t0,t1,t2,t3=0,0,0,0
+#		t0,t1,t2,t3=0,0,0,0
 		while 1:
 			signal.alarm(60)
-			t0+=time.time()
+#			t0+=time.time()
 			img=recvobj(sockf)		# this should contain time,rint,img#,image
 			if isinstance(img,str):
 				if img=="DONE" : break
@@ -1188,19 +1190,20 @@ class EMDCTaskClient(EMTaskClient):
 				if self.verbose : print "Receiving cache data ",cname
 				f=db_open_dict(cname)
 				lname=cname
-			t1+=time.time()
+#			t1+=time.time()
 			broadcast(bcast,img)
+			if img[2]==0 :  broadcast(bcast,img)
 			f[img[2]]=img[3]
-			t2+=time.time()
+#			t2+=time.time()
 			sockf.write("ACK ")
 			sockf.flush()
-			t3+=time.time()
-			if n%50==0 : 
-				print "timing : %d\t%1.3f\t%1.3f\t%1.3f"%(n,t1-t0,t2-t1,t3-t2)
-				t0,t1,t2,t3=0,0,0,0
+#			t3+=time.time()
+#			if n%50==0 : 
+#				print "timing : %d\t%1.3f\t%1.3f\t%1.3f"%(n,t1-t0,t2-t1,t3-t2)
+#				t0,t1,t2,t3=0,0,0,0
 			n+=1
 #			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
-			
+		
 
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after
