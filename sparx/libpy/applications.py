@@ -10224,7 +10224,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if myid == main_node:
 			print_begin_msg('k-means')
 			k_means_cuda_headlog(stack, out_dir, 'cuda', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
-		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1, flagnorm)
+		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1, flagnorm=flagnorm)
 		if myid == main_node:
 			print_end_msg('k-means')
 
@@ -10689,8 +10689,9 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 # 2009-12-09 09:47:19 JB
 
 # ISC procedure code
-def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
-	from statistics import isc_read_conf, isc_update_ite_conf
+def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
+	from statistics import isc_read_conf, isc_update_ite_conf, isc_ave_huge
+	from utilities  import get_im, read_text_file, write_text_file
 	import sys, logging, os
 	
 	# read config file
@@ -10721,6 +10722,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 			if cfgali['cpu_list'] == 'local': cmd = '-np %d' % cfgali['nb_cpu']
 			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgali['nb_cpu'], cfgali['cpu_list'])
 
+			## ALI2D_A
 			#logging.info('Alignment with ali2d_a')
 			#parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (cfgmain['stack'], ite, 
 				# cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
@@ -10734,28 +10736,64 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 			if cfgali['ctf']:        parali += ' --CTF'
 			if cfgali['nb_cpu'] > 1: parali += ' --MPI'
 			if cfgali['fourvar']:    parali += ' --Fourvar'
+			# Used os.system in order to have the possibility to run ali2d_a with 
+			# more number of cpus than the clustering by GPU, otherwise each alignment 
+			# requires hours and hours of running time 
 			os.system('mpirun %s sxali2d_c.py %s' % (cmd, parali))
 						
 			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d_ali.txt' % ite)
 			ave_ali(cfgmain['stack'], '%03i_alignment/global_ave.hdf' % ite, True, True)
 			os.system('mv logfile_* %03i_alignment' % ite)
 			logging.info('... Done')
+			if flag_tiny:
+				# update alignment
+				im1 = get_im(cfgmain['stack'], 0)
+				im2 = get_im(cfgmain['stackdeci'], 0)
+				nx1 = im1.get_xsize()
+				nx2 = im2.get_xsize()
+				rat = float(nx2) / float(nx1)
+				p   = read_text_file('backup_parameters/%03i_ali2d_ali.txt' % ite, -1)
+				for i in xrange(len(p[0])):
+					p[1][i] *= rat
+					p[2][i] *= rat
+				write_text_file(p, 'backup_parameters/%03i_ali2d_ali_tiny.txt' % ite)
+				header(cfgmain['stackdeci'], 'xform.align2d', fimport='backup_parameters/%03i_ali2d_ali_tiny.txt' % ite)
+				logging.info('... Updated decimated data')
 
 		# clustering
 		if flag_clu:
 			logging.info('Clustering')
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_clu.txt' % ite)
-			lact = EMUtil.get_all_attributes(cfgmain['stack'], 'active')
+			# if using decimate data
+			if flag_tiny:
+				stack_clu = cfgmain['stackdeci']
+				mask_clu  = cfgmain['maskdeci']
+				header(stack_clu, 'active', fimport='backup_parameters/%03i_active_before_clu.txt' % ite)
+			else:
+				stack_clu = cfgmain['stack']
+				mask_clu  = cfgmain['mask']
+			lact = EMUtil.get_all_attributes(stack_clu, 'active')
 			K    = sum(lact) // cfgclu['im_per_grp']
 			if cfgclu['cpu_list'] == 'local': cmd = '-np %d' % cfgclu['nb_cpu']
 			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgclu['nb_cpu'], cfgclu['cpu_list'])
-			parclu = '%s %03i_clustering %s --K=%d --nb_part=%d --th_nobj=%d --match=%s --maxit=%d --rand_seed=%d --T0=%f --F=%f' % (cfgmain['stack'],
-                                  ite, cfgmain['mask'], K, cfgclu['nb_part'], cfgclu['th_nobj'], cfgclu['match'], cfgclu['maxit'], cfgclu['rand_seed'], cfgclu['t0'], cfgclu['f'])
+			parclu = '%s %03i_clustering %s --K=%d --nb_part=%d --th_nobj=%d --match=%s --maxit=%d --rand_seed=%d --T0=%f --F=%f --normalize' % (stack_clu,
+                                  ite, mask_clu, K, cfgclu['nb_part'], cfgclu['th_nobj'], cfgclu['match'], cfgclu['maxit'], cfgclu['rand_seed'], cfgclu['t0'], cfgclu['f'])
 			if cfgclu['ctf']:        parclu += ' --CTF'
 			if cfgclu['cuda']:       parclu += ' --CUDA'
 			if cfgclu['nb_cpu'] > 1: parclu += ' --MPI'
+			# So far, it is virtually impossible to use the GPU clustering without call it from outside
+			# with os.system. The reason is NVIDIA not include to CUDA a function to unset a GPU by the current CPU.
+			# Then when you align, MPI redistribute CPU along Node, and to the next clustering as CPUs have changed you cannot
+			# allocate an other GPU or keep processing with the same. This problem is know by NVIDIA (see forum) and works
+			# to build this function. So far you need explicitly break the link between CPU and GPU by killing it when
+			# the process is done, that why os.system works well, start an exterior prog, run, and die.
 			os.system('mpirun %s sxk_means_stable.py %s' % (cmd, parclu))
-			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
+			header(stack_clu, 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
+			if flag_tiny:
+				header(cfgmain['stack'], 'active', fimport='backup_parameters/%03i_active_after_clu.txt' % ite)
+				os.system('mv %03i_clustering/averages.hdf %03i_clustering/averages_tiny.hdf' % (ite, ite))
+				# update ave
+				isc_ave_huge('%03i_clustering/averages_tiny.hdf' % ite, cfgmain['stack'], '%03i_clustering/averages.hdf' % ite)
 			os.system('mv logfile_* %03i_clustering' % ite)
 			data = open(os.path.join('%03i_clustering' % ite, 'main_log.txt'), 'r').readlines()
 			for i, line in enumerate(data):
@@ -10776,14 +10814,20 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 				sys.exit()
 			if not os.path.exists('%03i_realignment' % ite): os.mkdir('%03i_realignment' % ite)
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_reali.txt' % ite)
+			
+			isc_realignment(cfgmain['stack'], '%03i_clustering/averages.hdf' % ite, 'pool_ave_%03i.hdf' % ite, '%03i_realignment' % ite, 
+					cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], 
+					cfgrali['snr'], cfgrali['ctf'], cfgrali['fourvar'], cfgrali['nb_cpu'], cfgrali['cpu_list'], cfgrali['ali'])
+
+			'''
 			if cfgrali['cpu_list'] == 'local': cmd = '-np %d' % cfgrali['nb_cpu']
 			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgrali['nb_cpu'], cfgrali['cpu_list'])
-			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'],
-                                   ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'])
+			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'], ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'])
 			if cfgrali['ctf']:        parrali += ' --CTF'
 			if cfgrali['fourvar']:    parrali += ' --Fourvar'
 			if cfgrali['nb_cpu'] > 1: parrali += ' --MPI'
 			os.system('mpirun %s sxisc_realignment.py %s' % (cmd, parrali))
+			'''
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_reali.txt' % ite)
 			logging.info('... done')
 			
@@ -10791,107 +10835,118 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali):
 		isc_update_ite_conf(conf_file, ite)
 
 # realign data from class averages, select homogenous groups and update active images to the main stack
-def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, MPI):
-	from applications import header, ali2d_c
+def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, ncpu, node_list, kind_of_ali):
+	from applications import header, ali2d_c, ali2d_a
 	from utilities    import estimate_stability, get_im, file_type
 	from statistics   import aves, k_means_extract_class_ali
 	from alignment    import align2d
 	from fundamentals import rot_shift2D
 	from numpy        import array
-	from mpi          import mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
-	import os, logging
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
+	import os, logging, sys
 
-	if myid == main_node:
-		if not os.path.exists(output_dir): os.mkdir(output_dir)
-		cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
-		k_means_extract_class_ali(stack, averages, output_dir)
-	mpi_barrier(MPI_COMM_WORLD)
+	if not os.path.exists(output_dir): os.mkdir(output_dir)
+	cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
+	k_means_extract_class_ali(stack, averages, output_dir)
 
 	os.chdir(output_dir)
 	averages = 'averages_org.hdf'
-	K   = EMUtil.get_image_count(averages)
-	trg = 'averages_reali.hdf'
+	K        = EMUtil.get_image_count(averages)
+	trg      = 'averages_reali.hdf'
+	if ncpu > 1:
+		mpicmd = 'mpirun -np %i' % ncpu
+		if node_list != 'local': mpicmd += ' -hostfile %s -wdir' % node_list
+	else:
+		mpicmd = ''
+
 	for iclass in xrange(K):
 		class_name = 'class_%03i.hdf' % iclass
 		name       = 'class_%03i' % iclass
-		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
-		
-		#os.system('mpirun -np 16 -hostfile ../nodelist -wdir `pwd` sxali2d_a.py %s %s --ou=%d --xr=%s --ts=%s --maxit=%d --number_of_ave=16 --function=julien --MPI' % (class_name, '%s_01' % name, ou, xr, ts, maxit))
+		header(class_name, 'xform.align2d', rand_alpha=True)
 
-		ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-			CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
-		
-		if myid == main_node:
-			header(class_name, 'xform.align2d', backup=True, suffix='_round1')
-			header(class_name, 'xform.align2d', rand_alpha=True)
+		# Waiting to change os.system to this (ali2d_c...), but Yang needs to fix the issue with global variable
+		# which disable the possibility to run twice ali2d sequencially
+		#ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
 
-		#os.system('mpirun -np 16 -hostfile ../nodelist -wdir `pwd` sxali2d_a.py %s %s --ou=%d --xr=%s --ts=%s --maxit=%d --number_of_ave=16 --function=julien --MPI' % (class_name, '%s_02' % name, ou, xr, ts, maxit))
+		if kind_of_ali == 'ali2d_c':
+			parali = 'sxali2d_c.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		elif kind_of_ali == 'ali2d_a':
+			parali = 'sxali2d_a.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		if CTF:      parali += ' --CTF'
+		if Fourvar:  parali += ' --Fourvar'
+		if ncpu > 1: parali += ' --MPI'
 
-		ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-			CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+		os.system(mpicmd + ' ' + parali)
+		header(class_name, 'xform.align2d', backup=True, suffix='_round1')
 
-		if myid == main_node:
-			data1 = EMData.read_images(class_name)
-			header(class_name, 'xform.align2d_round1', restore=True)
-			data2 = EMData.read_images(class_name)
-			stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
-			ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
-			ave, var = aves(class_name, 'a')
-			ave.set_attr('err_mir', stab_mirror)
-			ave.set_attr('err_pix', ave_pix_err)
-			ave.set_attr('err_ccc', ccc)
-			ref = get_im(averages, iclass)
-			alpha, sx, sy, mir, peak = align2d(ref, ave, 1.0, 1.0, 0.5, 1, ou, 1)
-			im2 = rot_shift2D(ref, alpha, sx, sy, mir, 1)
-			euc = im2.cmp('SqEuclidean', ave)
-			ave.set_attr('err_peak', peak)
-			ave.set_attr('err_euc', euc)
-			ave.write_image(trg, iclass)
+		header(class_name, 'xform.align2d', rand_alpha=True)
+		if kind_of_ali == 'ali2d_c':
+			parali = 'sxali2d_c.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		elif kind_of_ali == 'ali2d_a':
+			parali = 'sxali2d_a.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		if CTF:      parali += ' --CTF'
+		if Fourvar:  parali += ' --Fourvar'
+		if ncpu > 1: parali += ' --MPI'
+		os.system(mpicmd + ' ' + parali)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		#ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
 
-	if myid == main_node:
-		lerr = EMUtil.get_all_attributes(trg, 'err_euc')
-		lerr = array(lerr)
-		merr, serr = lerr.mean(), lerr.std()
-		logging.basicConfig(filename = '../main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
-		#logging.info('Realignment')
-		logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
-		ct   = 0
-		lrej = []
-		for k in xrange(K):
-			ref = get_im(averages, k)
-			dic = ref.get_attr_dict()
-			if lerr[k] <= merr:
-				ave = get_im(trg, k)
-				ave.set_attr_dict(dic)
-				ave.set_attr('err_euc', lerr[k])
-				ave.set_attr('k_ref', k)
-				ave.write_image(out_averages, ct)
-				ct += 1
-			else:	lrej.extend(dic['members'])
-		lrej = map(int, lrej)		
-		logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (th_err, ct, K, len(lrej)))
+		data1 = EMData.read_images(class_name)
+		header(class_name, 'xform.align2d_round1', restore=True)
+		data2 = EMData.read_images(class_name)
+		stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
+		ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
+		ave, var = aves(class_name, 'a')
+		ave.set_attr('err_mir', stab_mirror)
+		ave.set_attr('err_pix', ave_pix_err)
+		ave.set_attr('err_ccc', ccc)
+		ref = get_im(averages, iclass)
+		alpha, sx, sy, mir, peak = align2d(ref, ave, 1.0, 1.0, 0.5, 1, ou, 1)
+		im2 = rot_shift2D(ref, alpha, sx, sy, mir, 1)
+		euc = im2.cmp('SqEuclidean', ave)
+		ave.set_attr('err_peak', peak)
+		ave.set_attr('err_euc', euc)
+		ave.write_image(trg, iclass)
 
-		os.chdir('..')
-		cpy(os.path.join(output_dir, out_averages), out_averages)
-		ext = file_type(stack)
-		if ext == 'bdb':
-			DB = db_open_dict(stack)
-			for id in lrej:	DB.set_attr(id, 'active', 1)
-			DB.close()
-		else:
-			im = EMData()
-			for id in lrej:
-				im.read_image(stack)
-				im.set_attr('active', 1)
-				write_header(stack, im, id)
+	lerr = EMUtil.get_all_attributes(trg, 'err_euc')
+	lerr = array(lerr)
+	merr, serr = lerr.mean(), lerr.std()
+	logging.basicConfig(filename = '../main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
+	#logging.info('Realignment')
+	logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
+	ct   = 0
+	lrej = []
+	for k in xrange(K):
+		ref = get_im(averages, k)
+		dic = ref.get_attr_dict()
+		if lerr[k] <= merr:
+			ave = get_im(trg, k)
+			ave.set_attr_dict(dic)
+			ave.set_attr('err_euc', lerr[k])
+			ave.set_attr('k_ref', k)
+			ave.write_image(out_averages, ct)
+			ct += 1
+		else:	lrej.extend(dic['members'])
+	lrej = map(int, lrej)		
+	logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (th_err, ct, K, len(lrej)))
 
-		#logging.info('... done')
+	os.chdir('..')
+	cpy(os.path.join(output_dir, out_averages), out_averages)
+	ext = file_type(stack)
+	if ext == 'bdb':
+		DB = db_open_dict(stack)
+		for id in lrej:	DB.set_attr(id, 'active', 1)
+		DB.close()
+	else:
+		im = EMData()
+		for id in lrej:
+			im.read_image(stack)
+			im.set_attr('active', 1)
+			write_header(stack, im, id)
 
-	mpi_barrier(MPI_COMM_WORLD)
+	#logging.info('... done')
+
 
 # ----------------------------------------------------------------------------------------------
 

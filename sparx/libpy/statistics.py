@@ -6049,6 +6049,36 @@ def isc_read_conf(conf_file):
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
+def isc_ave_huge(ave_tiny, org_data, ave_huge):
+	from utilities    import get_im, get_params2D, model_blank
+	from fundamentals import rot_shift2D
+	from sys import exit
+	im = get_im(org_data, 0)
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	D  = EMData.read_images(org_data)
+	A  = EMData.read_images(ave_tiny)
+	K  = len(A)
+	for k in xrange(K):
+		asg = A[k].get_attr('members')
+		asg = map(int, asg)
+		ave = model_blank(nx, ny)
+		for id in asg:
+			a, sx, sy, mir, sc = get_params2D(D[id])
+			im = rot_shift2D(D[id], a, sx, sy, mir, sc)
+			Util.add_img(ave, im)
+		Util.mul_scalar(ave, 1.0 / float(len(asg)))
+
+		ave.set_attr('members', asg)
+		ave.set_attr('nobjects', len(asg))
+		ave.set_attr('Class_average', 1)
+		ave.write_image(ave_huge, k)
+
+
+
+
+
+	
 
 ### END K-MEANS ##############################################################################
 ##############################################################################################

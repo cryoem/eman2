@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --MPI --Fourvar --th_err=threshold_cutoff"
+	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ncpu=number_of_cpu --nodelist=list_of_nodes --ali=kind_of_alignment"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",       type="int",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--xr",       type="string",       default="4 2 1 1",      help="range for translation search in x direction, search is +/xr ")
@@ -50,8 +50,10 @@ def main():
 	parser.add_option("--snr",      type="float",        default=1.0,            help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,          help="compute Fourier variance")
 	parser.add_option("--function", type="string",       default="ref_ali2d",    help="name of the reference preparation function")
-	parser.add_option("--MPI",      action="store_true", default=False,          help="whether to use MPI version ")
 	parser.add_option('--th_err',   type='float',        default=5.0,            help='cutoff threshold to pixel error')
+	parser.add_option('--ncpu',     type='int',          default=1,              help='number of cpus required in mpirun, if only one the program run without mpirun')
+	parser.add_option('--nodelist', type='string',       default='local',        help='list of nodes to mpirun, if "local" run mpirun on local machine')
+	parser.add_option('--ali',      type='string',       default='ali2d_c',      help='name of the function to aligned, ali2d_c or ali2d_a')
 	(options, args) = parser.parse_args()
 	if len(args) != 4:
     		print "usage: " + usage
@@ -63,14 +65,10 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		if options.MPI:
-			from mpi import mpi_init
-			sys.argv  = mpi_init(len(sys.argv), sys.argv)		
-
 		global_def.BATCH = True
 		isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
 				options.maxit, options.function, options.th_err, options.snr, options.CTF,
-				options.Fourvar, options.MPI)
+				options.Fourvar, options.ncpu, options.nodelist, options.ali)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

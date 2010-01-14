@@ -40,10 +40,11 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " config_file.cfg --ite=1 --ali --clus --reali"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option('--ite',   type='int',          default=-1,    help='Start at the iteration number defined')
-	parser.add_option('--ali',   action='store_true', default=False, help='Perform global alignement')
-	parser.add_option('--clus',  action='store_true', default=False, help='Perform clustering')
-	parser.add_option('--reali', action='store_true', default=False, help='Perform realignment')
+	parser.add_option('--ite',      type='int',          default=-1,    help='Start at the iteration number defined')
+	parser.add_option('--ali',      action='store_true', default=False, help='Perform global alignement')
+	parser.add_option('--clus',     action='store_true', default=False, help='Perform clustering')
+	parser.add_option('--reali',    action='store_true', default=False, help='Perform realignment')
+	parser.add_option('--decimate', action='store_true', default=False, help='Used decimated data')
 	(options, args) = parser.parse_args()
 
     	if len(args) != 1:
@@ -57,7 +58,7 @@ def main():
 
 	from applications import isc
 	global_def.BATCH = True
-	isc(args[0], options.ite, options.ali, options.clus, options.reali)
+	isc(args[0], options.ite, options.ali, options.clus, options.reali, options.decimate)
 	global_def.BATCH = False
 	
 
