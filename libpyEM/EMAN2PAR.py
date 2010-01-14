@@ -776,7 +776,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							self.queue.caching=False
 							ack=recvobj(self.sockf)
 							if ack != "ACK " :
-								print "No ack after caching (%s)"%ack
+								print "No ack after caching (%s)"%str(ack)
 								return
 					else : EMDCTaskHandler.tasklock.release()
 
@@ -1231,7 +1231,7 @@ class EMDCTaskClient(EMTaskClient):
 				# get a task until we finish this
 				if isinstance(task,list) and task[0]=="CACHE" :
 					self.docache(sock,sockf,task)
-					sendobj(sockf,("ACK ",socket.gethostname()))
+					sendobj(sockf,"ACK ")
 					sockf.flush()
 					task=recvobj(sockf)
 
