@@ -1043,12 +1043,16 @@ string Util::recv_broadcast(int sock) {
 //	int sock=socket(AF_INET,SOCK_DGRAM,0);
 //	if (bind(sock,&sadr,sizeof(sockaddr_in))) return string();
 
-	if (ByteOrder::is_host_big_endian()) return string();	// FIXME: no support for big endian hosts
+	if (ByteOrder::is_host_big_endian()) {
+		printf("No cache mirroring on Big endian machines yet\n");
+		return string();	// FIXME: no support for big endian hosts
+	}
 
 	BPKT pkt;
 	string ret;
 	vector<char> fill;
 	int obj=-1,i;
+	printf ("Listening\n");
 
 	while (1) {
 		int l = recv(sock,&pkt,1044,0);
@@ -1064,7 +1068,7 @@ string Util::recv_broadcast(int sock) {
 			obj=pkt.oseq;
 			ret.resize(pkt.len);
 			fill.resize((pkt.len-1)/1024+1);
-			for (i; i<fill.size(); i++) fill[i]=0;
+			for (i=0; i<fill.size(); i++) fill[i]=0;
 		}
 		if (obj==-1) printf("Something wierd happened. please report\n");
 
@@ -1076,6 +1080,8 @@ string Util::recv_broadcast(int sock) {
 		for (i=0; i<fill.size(); i++) {
 			if (fill[i]!=1) break;
 		}
+		printf("\t\t\tObj %d  %d/%d      \r",obj,i,(int)fill.size());
+		fflush(stdout);
 
 		if (i==fill.size()) return ret; 	// Yea !  We got a good packet
 	}
