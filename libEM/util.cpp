@@ -1073,7 +1073,7 @@ string Util::recv_broadcast(int sock) {
 		ret.replace(pkt.pseq*1024,l-20,(char *)pkt.data,l-20);
 
 		// see if we got everything
-		for (i; i<fill.size(); i++) {
+		for (i=0; i<fill.size(); i++) {
 			if (fill[i]!=1) break;
 		}
 
