@@ -1038,7 +1038,7 @@ struct BPKT {
 	int pseq; 	// packet id within object
 	unsigned char data[1024]; };
 
-static string recv_broadcast(int sock) {
+string Util::recv_broadcast(int sock) {
 //	struct sockaddr_in sadr = { AF_INET, 9989, INADDR_ANY};
 //	int sock=socket(AF_INET,SOCK_DGRAM,0);
 //	if (bind(sock,&sadr,sizeof(sockaddr_in))) return string();
