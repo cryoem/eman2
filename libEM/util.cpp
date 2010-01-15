@@ -1025,6 +1025,63 @@ int Util::calc_best_fft_size(int low)
 	return 1;
 }
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include "byteorder.h"
+// This is the structure of a broadcast packet
+// Transmitter assumes little endian
+struct BPKT { 
+	char hdr[4]; 
+	int uid; 	// user id on transmitter
+	int len; 	// length of total object
+	int oseq; 	// object id
+	int pseq; 	// packet id within object
+	unsigned char data[1024]; };
+
+static string recv_broadcast(int sock) {
+//	struct sockaddr_in sadr = { AF_INET, 9989, INADDR_ANY};
+//	int sock=socket(AF_INET,SOCK_DGRAM,0);
+//	if (bind(sock,&sadr,sizeof(sockaddr_in))) return string();
+
+	if (ByteOrder::is_host_big_endian()) return string();	// FIXME: no support for big endian hosts
+
+	BPKT pkt;
+	string ret;
+	vector<char> fill;
+	int obj=-1,i;
+
+	while (1) {
+		int l = recv(sock,&pkt,1044,0);
+		if (l<20) {
+			printf("Bad packet from broadcast");
+			continue;
+		}
+
+		if (strncmp(pkt.hdr,"EMAN",4)!=0) continue;
+
+		// new object coming in
+		if (obj!=pkt.oseq) {
+			obj=pkt.oseq;
+			ret.resize(pkt.len);
+			fill.resize((pkt.len-1)/1024+1);
+			for (i; i<fill.size(); i++) fill[i]=0;
+		}
+		if (obj==-1) printf("Something wierd happened. please report\n");
+
+		// copy the packet into the output buffer
+		fill[pkt.pseq]=1;
+		ret.replace(pkt.pseq*1024,l-20,(char *)pkt.data,l-20);
+
+		// see if we got everything
+		for (i; i<fill.size(); i++) {
+			if (fill[i]!=1) break;
+		}
+
+		if (i==fill.size()) return ret; 	// Yea !  We got a good packet
+	}
+
+}
+
 string Util::get_time_label()
 {
 	time_t t0 = time(0);

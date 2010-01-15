@@ -922,6 +922,9 @@ namespace EMAN
 			return 1;
 		}
 
+
+		static string recv_broadcast(int port);
+
 		/** Get the current time in a string with format "mm/dd/yyyy hh:mm".
 		 * @return The current time string.
 		 */

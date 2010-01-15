@@ -1143,7 +1143,8 @@ class EMDCTaskClient(EMTaskClient):
 			lname=""
 			while 1 :
 				signal.alarm(15)
-				cq.append(recv_broadcast(sock))
+#				cq.append(recv_broadcast(sock))		# too slow
+				cq.append(Util.recv_broadcast(sock.fileno()))
 				
 		except: cq.append(None)
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
