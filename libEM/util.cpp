@@ -1052,7 +1052,7 @@ string Util::recv_broadcast(int sock) {
 	string ret;
 	vector<char> fill;
 	int obj=-1,i;
-	printf ("Listening\n");
+//	printf ("Listening\n");
 
 	while (1) {
 		int l = recv(sock,&pkt,1044,0);
@@ -1080,8 +1080,8 @@ string Util::recv_broadcast(int sock) {
 		for (i=0; i<fill.size(); i++) {
 			if (fill[i]!=1) break;
 		}
-		printf("\t\t\tObj %d  %d/%d      \r",obj,i,(int)fill.size());
-		fflush(stdout);
+//		printf("\t\t\tObj %d  %d/%d      \r",obj,i,(int)fill.size());
+//		fflush(stdout);
 
 		if (i==fill.size()) return ret; 	// Yea !  We got a good packet
 	}
