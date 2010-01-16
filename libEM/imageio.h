@@ -297,8 +297,7 @@ namespace EMAN
 		/** Validate image I/O region.
 		 *
 		 * @param area The image I/O region.
-		 * @param max_size The upper limit of the region's size. The region
-		 * must be within 'max_size'.
+		 * @param max_size The upper limit of the region's size. The region must be within 'max_size'.
 		 * @param is_new_file Whether it is on a new file or not.
 		 * @param inbounds_only if true verifies that the region is inside the image, otherwise no check is performed
 		 * @exception ImageReadException Any image reading problem.

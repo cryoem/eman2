@@ -555,6 +555,12 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	if(area) {
+		check_region(area, IntSize(dict["nx"], dict["ny"], dict["nz"]), false, false);
+
+		dict["nx"] = area->get_width();
+		dict["ny"] = area->get_height();
+		dict["nz"] = area->get_depth();
+
 		if( dict.has_key("apix_x") && dict.has_key("apix_y") && dict.has_key("apix_z") )
 		{
 			if( dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z") )
@@ -629,19 +635,64 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
 	hid_t spc=H5Dget_space(ds);
 
+	hsize_t nx, ny, nz;
+	hsize_t dims_out[3];
+	hsize_t rank = H5Sget_simple_extent_ndims(spc);
+	std::cout << "rank = " << rank << std::endl;
+
+	H5Sget_simple_extent_dims(spc, dims_out, NULL);
+	nx = dims_out[2];
+	if(rank > 1) {
+		ny = dims_out[1];
+	}
+	else {
+		ny = 1;
+	}
+
+	if(rank > 2) {
+		nz = dims_out[0];
+	}
+	else {
+		nz = 1;
+	}
+	std::cout << "Original image data: nx = " << nx << ", ny = " << ny << ", nz = " << nz << std::endl;
+
 	if (area) {
+//		if(area->x_origin() > nx || area->y_origin() > ny || area->z_origin() > nz || (area->x_origin()+nx)<0 || (area->y_origin()+ny)<0 || (area->z_origin()+nz)<0) {
+//			throw ImageDimensionException("The area's origin is completely out of bound");
+//		}
+
  		/*Get the file dataspace - the region we want to read in the file*/
  		hsize_t     doffset[3];             /* hyperslab offset in the file */
- 		doffset[0] = area->x_origin();
-		doffset[1] = area->y_origin();
-		doffset[2] = area->z_origin();
+ 		doffset[2] = area->x_origin() < 0 ? 0 : area->x_origin();
+		doffset[1] = area->y_origin() < 0 ? 0 : area->y_origin();
+		doffset[0] = area->z_origin() < 0 ? 0 : area->z_origin();
+		int x0 = doffset[0];
+		int y0 = doffset[1];
+		int z0 = doffset[2];
 
 		cout << "doffset = " << doffset[0] << ", " << doffset[1] << ", " << doffset[2] << std::endl;
 
+		int z1 = area->x_origin() + area->get_width();
+		z1 = z1 > nz ? nz : z1;
+		if(z1 <= 0) {
+			z1 = 1;
+		}
+
+		int y1 = area->y_origin() + area->get_height();
+		y1 = y1 > ny ? ny : y1;
+
+		int x1 = area->z_origin() + area->get_depth();
+		x1 = x1 > nx ? nx : x1;
+
+
+		if(x1 < x0 || y1< y0 || z1 < z0) return 0; //out of bounds, this is fine, nothing happens
+//		if (x1<0 || y1<0 || z1<0) throw ImageDimensionException("This area is completely out of bound");
+
 		hsize_t     dcount[3];              /* size of the hyperslab in the file */
- 		dcount[0] = area->get_width();
-		dcount[1] = area->get_height()?area->get_height():1;
-		dcount[2] = area->get_depth()?area->get_depth():1;
+ 		dcount[0] = x1 - doffset[0];
+		dcount[1] = y1 - doffset[1];
+		dcount[2] = z1 - doffset[2];
 
 		cout << "dcount = " << dcount[0] << ", " << dcount[1] << ", " << dcount[2] << std::endl;
 
@@ -649,17 +700,81 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 		/*Define memory dataspace - the memory we will created for the region*/
  		hsize_t     dims[3];              /* size of the region in the memory */
-		dims[0]  = area->get_width();
-		dims[1]  = area->get_height()?area->get_height():1;
- 		dims[2]  = area->get_depth()?area->get_depth():1;
+ 		dims[0] = dcount[0];
+ 		dims[1]	= dcount[1]?dcount[1]:1;
+ 		dims[2] = dcount[2]?dcount[2]:1;
+ 		int nx1 = dims[0];
+		int ny1 = dims[1];
+		int nz1 = dims[2];
 
  		cout << "dims = " << dims[0] << ", " << dims[1] << ", " << dims[2] << std::endl;
 
  		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
 
- 		H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
+ 		if( (area->x_origin()>=0) && (area->y_origin()>=0) && (area->z_origin()>=0) && ((int)(area->x_origin() + area->get_width())<=nx) && ((int)(area->y_origin() + area->get_height())<=ny) && ((int)(area->z_origin() + area->get_depth())<=nz) ){	//the region is in boundary
+ 			std::cout << "region is in boundary" << std::endl;
+ 			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
+ 		}
+ 		else {	//the region are partial out of boundary
+ 			std::cout << "region is at least partially out of bounds" << std::endl;
+ 			/* When the requested region has some part out of image boundary,
+ 			 * we need read the sub-area which is within image,
+ 			 * and fill the out of boundary part with zero.
+ 			 * We actually read the sub-region from HDF by hyperslab I/O,
+ 			 * then copy it back to the pre-allocated region.*/
+ 			float * subdata = new float[dims[0]*dims[1]*dims[2]];
 
- 		std::cout << "Region data read: data[1] = " << data[1] << std::endl;
+ 			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,subdata);
+
+ 			/* The coordinates of the top-left corner sub-region in region*/
+ 			int xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
+ 			int yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
+ 			int zd0 = (int) (area->z_origin() < 0 ? -area->z_origin() : 0);
+
+ 			size_t clipped_row_size = (x1-x0)* sizeof(float);
+
+ 			std::cout << "clipped_row_size = " << clipped_row_size << std::endl;
+
+ 			int src_secsize = nx1 * ny1;
+ 			int dst_secsize = (int)(area->get_width())*(int)(area->get_height());
+
+ 			std::cout << "src_secsize = " << src_secsize << ", dst_sec_size = " << dst_secsize << std::endl;
+
+ 			float * src = subdata;
+ 			float * dst = data + zd0*dst_secsize + yd0*(int)(area->get_width()) + xd0;
+
+ 			std::cout << "z0 = " << z0 << ", y0 = " << y0 << ", x0 = " << x0 << endl;
+
+ 			int src_gap = src_secsize - (y1-y0) * nx1;
+ 			int dst_gap = dst_secsize - (y1-y0) * (int)(area->get_depth());
+
+ 			std::cout << "src_gap = " << src_gap << std::endl;
+ 			std::cout << "dst_gap = " << dst_gap << std::endl;
+
+ 			std::cout << "z1 = " << z1 << ", y1 = " << y1 << ", x1 = " << x1 << std::endl;
+ 			std::cout << "dcount[2] = " << dcount[2] << ", dcount[1] = " << dcount[1] << ", dcount[0] = " << dcount[0] << std::endl;
+
+ 			for(int i = 0; i<dcount[2]; ++i) {
+ 				for(int j = 0; j<dcount[1]; ++j) {
+ 					EMUtil::em_memcpy(dst, src, clipped_row_size);
+
+ 					for(int ii = 0; ii < clipped_row_size/sizeof(float); ii++) {
+ 						std::cout << "src[" << ii << "] = " << src[ii] << std::endl;
+ 					}
+
+ 					src += nx1;
+// 					dst += (int)(area->get_width());
+ 					dst += (int)(area->get_depth());
+ 				}
+ 				src += src_gap;
+ 				dst += dst_gap;
+ 				std::cout << "src+= once" << std::endl;
+ 			}
+
+ 			delete [] subdata;
+ 		}
+
+ 		//std::cout << "Region data read: data[1] = " << data[1] << std::endl;
 
  		H5Sclose(memoryspace);
 	} else {
@@ -677,7 +792,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
-int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
+int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 #ifdef DEBUGHDF
@@ -765,6 +880,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 			H5Dclose(ds);
 			H5Sclose(space);
 		}
+	}
+
+	if(area) {
+		check_region(area, IntSize(dict["nx"], dict["ny"], dict["nz"]), false, true);
 	}
 
 	// Write the attributes to the group
