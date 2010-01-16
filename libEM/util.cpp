@@ -1051,11 +1051,15 @@ string Util::recv_broadcast(int sock) {
 	BPKT pkt;
 	string ret;
 	vector<char> fill;
-	int obj=-1,i;
-//	printf ("Listening\n");
+	int obj=-1,i=0;
+	printf ("Listening\n");
 
 	while (1) {
 		int l = recv(sock,&pkt,1044,0);
+		if (l<=0) {
+			if (obj!=-1) printf("Timeout with incomplete obj %d  %d/%d\n",obj,i,(int)fill.size());
+			return string();		// probably a timeout
+		}
 		if (l<20) {
 			printf("Bad packet from broadcast");
 			continue;
@@ -1081,7 +1085,7 @@ string Util::recv_broadcast(int sock) {
 			if (fill[i]!=1) break;
 		}
 //		printf("\t\t\tObj %d  %d/%d      \r",obj,i,(int)fill.size());
-//		fflush(stdout);
+		fflush(stdout);
 
 		if (i==fill.size()) return ret; 	// Yea !  We got a good packet
 	}

@@ -438,6 +438,7 @@ def broadcast(sock,obj):
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
 	for seq in xrange(1+(len(p)-1)/1024):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+	for seq in xrange(1+(len(p)-1)/1024):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 	oseq+=1
 	
@@ -1133,6 +1134,7 @@ class EMDCTaskClient(EMTaskClient):
 		except:
 			time.sleep(15)
 			return
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 
 		cq=[]	# a list of returned images, gradually written by the thread
 		thr=threading.Thread(target=self.cachewriter,args=(cq,))
@@ -1142,9 +1144,13 @@ class EMDCTaskClient(EMTaskClient):
 		try: 
 			lname=""
 			while 1 :
-				signal.alarm(15)
+				#signal.alarm(15)
 #				cq.append(recv_broadcast(sock))		# too slow
-				cq.append(Util.recv_broadcast(sock.fileno()))
+				ret=Util.recv_broadcast(sock.fileno())
+				if ret==None or len(ret)==0 :
+					cq.append(None)
+					break
+				cq.append(ret)
 				
 		except: cq.append(None)
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
