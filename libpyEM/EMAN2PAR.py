@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil
+from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
 from e2classaverage import EMClassAveTaskDC
 from e2simmx import EMSimTaskDC
