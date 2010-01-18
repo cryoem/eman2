@@ -54,19 +54,25 @@ def main():
 	parser.add_option('--ncpu',     type='int',          default=1,              help='number of cpus required in mpirun, if only one the program run without mpirun')
 	parser.add_option('--nodelist', type='string',       default='local',        help='list of nodes to mpirun, if "local" run mpirun on local machine')
 	parser.add_option('--ali',      type='string',       default='ali2d_c',      help='name of the function to aligned, ali2d_c or ali2d_a')
+	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 	(options, args) = parser.parse_args()
 	if len(args) != 4:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		from applications import isc_realignment
+		from applications import isc_realignment, isc_realignment_MPI
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
 		global_def.BATCH = True
-		isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
+		if options.MPI:
+			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
+					    options.maxit, options.function, options.th_err, options.snr, options.CTF, 
+					    options.Fourvar, options.ali)
+		else:
+			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
 				options.maxit, options.function, options.th_err, options.snr, options.CTF,
 				options.Fourvar, options.ncpu, options.nodelist, options.ali)
 		global_def.BATCH = False

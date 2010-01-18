@@ -10947,6 +10947,146 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 
 	#logging.info('... done')
 
+# realign data from class averages, select homogenous groups and update active images to the main stack
+def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, kind_of_ali):
+	from applications import header, ali2d_c, ali2d_a
+	from utilities    import estimate_stability, get_im, file_type
+	from statistics   import aves, k_means_extract_class_ali
+	from alignment    import align2d
+	from fundamentals import rot_shift2D
+	from numpy        import array
+	import os, logging, sys
+
+	from mpi import mpi_init
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from mpi        import mpi_bcast, MPI_INT
+	sys.argv  = mpi_init(len(sys.argv), sys.argv)
+	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		if not os.path.exists(output_dir): os.mkdir(output_dir)
+	#cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
+	#k_means_extract_class_ali(stack, averages, output_dir)
+
+	os.chdir(output_dir)
+	averages = 'averages_org.hdf'
+	K        = EMUtil.get_image_count(averages)
+	trg      = 'averages_reali.hdf'
+	#if ncpu > 1:
+	#	mpicmd = 'mpirun -np %i' % ncpu
+	#	if node_list != 'local': mpicmd += ' -hostfile ../%s -wdir `pwd`' % node_list
+	#else:
+	#	mpicmd = ''
+
+	for iclass in xrange(0, 2):
+		class_name = 'class_%03i.hdf' % iclass
+		name       = 'class_%03i' % iclass
+		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
+
+		# Waiting to change os.system to this (ali2d_c...), but Yang needs to fix the issue with global variable
+		# which disable the possibility to run twice ali2d sequencially
+		#ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+		
+		#if kind_of_ali == 'ali2d_c':
+		#	parali = 'sxali2d_c.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		#elif kind_of_ali == 'ali2d_a':
+		#	parali = 'sxali2d_a.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16 --option=5 --mutation_rate="0.05 0.1 0.2" --max_merge=20' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		#if CTF:      parali += ' --CTF'
+		#if Fourvar:  parali += ' --Fourvar'
+		#if ncpu > 1: parali += ' --MPI'
+
+		#os.system(mpicmd + ' ' + parali)
+		
+		ali2d_a_MPI(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit, option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2", max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
+		if myid == main_node:
+			header(class_name, 'xform.align2d', backup=True, suffix='_round1')
+			header(class_name, 'xform.align2d', rand_alpha=True)
+		ali2d_a_MPI(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit, option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2", max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
+
+		#if kind_of_ali == 'ali2d_c':
+		#	parali = 'sxali2d_c.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		#elif kind_of_ali == 'ali2d_a':
+		#	parali = 'sxali2d_a.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16 --option=5 --mutation_rate="0.05 0.1 0.2" --max_merge=20' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		#if CTF:      parali += ' --CTF'
+		#if Fourvar:  parali += ' --Fourvar'
+		#if ncpu > 1: parali += ' --MPI'
+		#os.system(mpicmd + ' ' + parali)
+
+		#ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+
+		# I cannot keep the realignment directories until Yang change his function ali2d_a.
+		# The directory memory uses ~40 MB for each alignment, so if I repeat that x2 with ~30 averages
+		# per iteration, and typically ISC runs for 100 iterations. A realignment with ali2d_a 
+		# required 240 GB on the disk.
+		if myid == main_node:
+			os.system('rm -r %s_01/* %s_02/*' % (name, name))
+			data1 = EMData.read_images(class_name)
+			header(class_name, 'xform.align2d_round1', restore=True)
+			data2 = EMData.read_images(class_name)
+			stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
+			ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
+			ave, var = aves(class_name, 'a')
+			ave.set_attr('err_mir', stab_mirror)
+			ave.set_attr('err_pix', ave_pix_err)
+			ave.set_attr('err_ccc', ccc)
+			ref = get_im(averages, iclass)
+			alpha, sx, sy, mir, peak = align2d(ref, ave, 1.0, 1.0, 0.5, 1, ou, 1)
+			im2 = rot_shift2D(ref, alpha, sx, sy, mir, 1)
+			euc = im2.cmp('SqEuclidean', ave)
+			ave.set_attr('err_peak', peak)
+			ave.set_attr('err_euc', euc)
+			ave.write_image(trg, iclass)
+
+		mpi_barrier(MPI_COMM_WORLD)
+	'''
+	if myid == main_node:
+		lerr = EMUtil.get_all_attributes(trg, 'err_pix')
+		lerr = array(lerr)
+		merr, serr = lerr.mean(), lerr.std()
+		logging.basicConfig(filename = '../main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
+		#logging.info('Realignment')
+		logging.info('... realign %3d averages, pixel error: mean=%6.3f std=%6.3f' % (K, merr, serr))
+		ct   = 0
+		lrej = []
+		for k in xrange(K):
+			ref = get_im(averages, k)
+			dic = ref.get_attr_dict()
+			if th_err == -1: toto = 1e6
+			else:            toto = merr
+			if lerr[k] <= toto:
+				ave = get_im(trg, k)
+				ave.set_attr_dict(dic)
+				ave.set_attr('err_euc', lerr[k])
+				ave.set_attr('k_ref', k)
+				ave.write_image(out_averages, ct)
+				ct += 1
+			else:	lrej.extend(dic['members'])
+		lrej = map(int, lrej)		
+		logging.info('... threshold=%6.3f, keep %3d /%3d averages, reject %4d images' % (th_err, ct, K, len(lrej)))
+
+		os.chdir('..')
+		cpy(os.path.join(output_dir, out_averages), out_averages)
+		ext = file_type(stack)
+		if ext == 'bdb':
+			DB = db_open_dict(stack)
+			for id in lrej:	DB.set_attr(id, 'active', 1)
+			DB.close()
+		else:
+			im = EMData()
+			for id in lrej:
+				im.read_image(stack)
+				im.set_attr('active', 1)
+				write_header(stack, im, id)
+
+		#logging.info('... done')
+	'''
+	#mpi_barrier(MPI_COMM_WORLD)
+
 
 # ----------------------------------------------------------------------------------------------
 
