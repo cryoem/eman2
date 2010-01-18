@@ -638,7 +638,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	hsize_t nx, ny, nz;
 	hsize_t dims_out[3];
 	hsize_t rank = H5Sget_simple_extent_ndims(spc);
-	std::cout << "rank = " << rank << std::endl;
+//	std::cout << "rank = " << rank << std::endl;
 
 	H5Sget_simple_extent_dims(spc, dims_out, NULL);
 	nx = dims_out[2];
@@ -655,7 +655,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	else {
 		nz = 1;
 	}
-	std::cout << "Original image data: nx = " << nx << ", ny = " << ny << ", nz = " << nz << std::endl;
+//	std::cout << "Original image data: nx = " << nx << ", ny = " << ny << ", nz = " << nz << std::endl;
 
 	if (area) {
 //		if(area->x_origin() > nx || area->y_origin() > ny || area->z_origin() > nz || (area->x_origin()+nx)<0 || (area->y_origin()+ny)<0 || (area->z_origin()+nz)<0) {
