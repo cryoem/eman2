@@ -955,12 +955,8 @@ def aves_adw(input_stack, mode="a", SNR=1.0, r = 1.0):
 				ctf2[k] += tmp[k] * tmp[k]
 			
 	for k in xrange(nc):
-		tmp[k] = ctf1[k]/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
-	from utilities import write_text_file, info
-	info(ave)
-	write_text_file([tmp, ctf1, ctf2],"wft.txt")
+		tmp[k] = 1.0/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
 	ave = filt_table(ave, tmp)
-	info(ave)
 	del tmp, ctf1, ctf2
 	# variance
 	var = EMData(nx,ny)

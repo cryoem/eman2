@@ -56,6 +56,8 @@ def ref_ali2d( ref_data ):
 	ref_ali2d_counter += 1
 	print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
 	fl, aa = fit_tanh(ref_data[3])
+	aa = min(aa, 0.2)
+	fl = max(min(0.4,fl),0.12)
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
