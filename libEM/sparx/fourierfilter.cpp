@@ -574,8 +574,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					for ( iy = 1; iy <= nyp; iy++) {
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx = sqrt(argx);
+							jx=ix-1; argx = sqrt(argy + float(jx*jx)*dx2);
 							fp->cmplx(ix,iy,iz) *= 	0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -587,8 +586,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					for ( iy = 1; iy <= nyp; iy++) {
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx = sqrt(argx);
+							jx=ix-1; sqrt(argx = argy + float(jx*jx)*dx2);
 							fp->cmplx(ix,iy,iz) *= 	1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -600,8 +598,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					for ( iy = 1; iy <= nyp; iy++) {
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx = sqrt(argx);
+							jx=ix-1; argx = sqrt(argy + float(jx*jx)*dx2);
 							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -613,8 +610,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					for ( iy = 1; iy <= nyp; iy++) {
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
-							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx = sqrt(argx);
+							jx=ix-1; argx = sqrt(argy + float(jx*jx)*dx2);
 							fp->cmplx(ix,iy,iz) *= 0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL)));
 						}
 					}
@@ -627,7 +623,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							float rf = sqrt( argx )*2.0f*lsd2;
+							float rf = sqrt( argx )*nxp;
 							int  ir = int(rf);
 							float df = rf - float(ir);
 							float f = table[ir] + df * (table[ir+1] - table[ir]); // (1-df)*table[ir]+df*table[ir+1];
