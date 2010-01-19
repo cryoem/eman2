@@ -437,9 +437,15 @@ def broadcast(sock,obj):
 	p=dumps(obj,-1)
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
 	for seq in xrange(1+(len(p)-1)/1024):
+		r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+		if r<0 :
+			print "transmit fail %d"%seq
+	                r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+
+	for seq in xrange((len(p)-1)/1024,-1,-1):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
-	for seq in xrange(1+(len(p)-1)/1024):
-		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
+#	for seq in xrange(1+(len(p)-1)/1024):
+#		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 	oseq+=1
 	
 def recv_broadcast(sock):
@@ -1108,8 +1114,11 @@ class EMDCTaskClient(EMTaskClient):
 		lname=""
 		while 1:
 			if len(cq)==0 : continue
+#			print len(cq), " in cache list"
 			img=cq.pop()
-			if img==None : break		# our signal to exit
+			if img==None : 
+				if len(cq)==0 : break
+				cq.insert(0,None)
 			
 			# The data item should be a pickled tuple (time,rand,img#,image)
 			try : img=loads(img)
@@ -1122,6 +1131,7 @@ class EMDCTaskClient(EMTaskClient):
 				f=db_open_dict(cname)
 				lname=cname
 			f[img[2]]=img[3]
+#			print "> ",img[2],cname
 			n+=1
 
 		if self.verbose and n>0: print n," items cached"
@@ -1150,7 +1160,7 @@ class EMDCTaskClient(EMTaskClient):
 				if ret==None or len(ret)==0 :
 					cq.append(None)
 					break
-				cq.append(ret)
+				cq.insert(0,ret)
 				
 		except: cq.append(None)
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
@@ -1199,7 +1209,7 @@ class EMDCTaskClient(EMTaskClient):
 				lname=cname
 #			t1+=time.time()
 			broadcast(bcast,img)
-			if img[2]==0 :  broadcast(bcast,img)
+#			if img[2]==0 :  broadcast(bcast,img)
 			f[img[2]]=img[3]
 #			t2+=time.time()
 			sockf.write("ACK ")
