@@ -908,6 +908,76 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
 
+	
+def aves_adw(input_stack, mode="a", SNR=1.0, r = 1.0):
+	"""
+		Apply alignment parameters, and calculate Wiener average using CTF info
+		mode="a" will apply alignment parameters to the input image.
+	"""
+	
+	from  fundamentals import fft, rot_shift2D
+	from  morphology   import ctf_img, ctf_1d, ctf_2
+	from  filter 	   import filt_ctf, filt_table
+	from  utilities    import pad, get_params2D, get_im
+	from  math 	   import sqrt
+	
+	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
+	else:  n = len(input_stack)
+	ima = get_im(input_stack, 0)
+	nx  = ima.get_xsize()
+	ny  = ima.get_xsize()
+
+	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+
+	nx2 = 2*nx
+	ny2 = 2*ny
+	ave       = EMData(nx2, ny2, 1, False)
+
+	for i in xrange(n):
+		ima = get_im(input_stack, i)
+		ctf_params = ima.get_attr("ctf")
+		if mode == "a":
+	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
+		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
+		Util.add_img(ave, oc)
+		if(i == 0):
+			ctf1 = ctf_1d(nx2, ctf_params)
+			nc = len(ctf1)
+			ctf2 = [0.0]*nc
+			for k in xrange(nc):
+				ctf1[k] = abs(ctf1[k])
+				ctf2[k] = ctf1[k] * ctf1[k]
+		else:
+			tmp = ctf_1d(nx2, ctf_params)
+			for k in xrange(nc):
+				ctf1[k] += abs(tmp[k])
+				ctf2[k] += tmp[k] * tmp[k]
+			
+	for k in xrange(nc):
+		tmp[k] = ctf1[k]/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
+	from utilities import write_text_file, info
+	info(ave)
+	write_text_file([tmp, ctf1, ctf2],"wft.txt")
+	ave = filt_table(ave, tmp)
+	info(ave)
+	del tmp, ctf1, ctf2
+	# variance
+	var = EMData(nx,ny)
+	var.to_zero()
+	for i in xrange(n):
+		ima = get_im(input_stack, i)
+		ctf_params = ima.get_attr("ctf")
+		if mode == "a":
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+		oc = filt_ctf(ave, ctf_params, dopad=False)
+		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
+		Util.add_img2(var, ima)
+	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
+	Util.mul_scalar(var, 1.0/(n-1))
+	return ave, var
+
 def ssnr2d(data, mask = None, mode=""):
 	'''
 	Calculate ssnr and variance in Fourier space for 2D or 3D images
