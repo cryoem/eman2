@@ -69,66 +69,105 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
     segment = frame.get_rotated_clip( tr, segment_dimensions )
     return segment
 
-def save_db_coords_to_file(frame_filepath, output_type = "box", output_dir=""):
-    frame_filename = os.path.basename(frame_filepath)
-    frame_name = os.path.splitext( frame_filename )[0]
-    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-    box_coords_list = db[frame_filename]
+def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
     if output_type == "box":
         path = os.path.join(output_dir, frame_name + ".box")
         out_file = open(path, "w")
-        for coords in box_coords_list:
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[5], coords[5], -1) )
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[2], coords[3], coords[5], coords[5], -2) )
+        for coords in coords_list:
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[4], coords[4], -1) )
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[2], coords[3], coords[4], coords[4], -2) )
         out_file.close()
     elif output_type == "hbox":
         path = os.path.join(output_dir, frame_name + ".hbox")
         out_file = open(path, "w")
-        for coords in box_coords_list:
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[4], coords[5]) )
+        for coords in coords_list:
+            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
         out_file.close()
     else:
         pass
 
-def save_segments_from_db_coords(frame_filepath, output_type = "hdf", output_dir=""):
+def db_save_coords(frame_filepath, output_type = "box", output_dir=""):
+    frame_filename = os.path.basename(frame_filepath)
+    frame_name = os.path.splitext( frame_filename )[0]
+    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
+    box_coords_list = db[frame_filename]
+    save_coords(box_coords_list, frame_name, output_type, output_dir)
+    
+def db_get_segments_dict(frame_filepath):
     frame = EMData(frame_filepath)
     frame_filename = os.path.basename(frame_filepath)
     frame_name = os.path.splitext( frame_filename )[0]
     db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
     box_coords_list = db[frame_filename]
+    segments_dict = {}
     for coords in box_coords_list:
         segment = get_segment_from_coords(frame, *coords)
-        #TODO: actually write the files!
+        segments_dict[tuple(coords)] = segment
+    return segments_dict
 
-def save_particles_from_db_coords(frame_filepath, x1, y1, x2, y2, width, 
-                                  px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+def save_segment(segment_emdata, frame_name, segment_num, output_type = "hdf", output_dir=""):
+    output_fname = "%s_seg%i.%s" % (frame_name, segment_num, output_type)
+    output_filepath = os.path.join(output_dir, output_fname)
+    segment_emdata.write_image( output_filepath )
+
+def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
+    frame_filename = os.path.basename(frame_filepath)
+    frame_name = os.path.splitext( frame_filename )[0]
+    segments_dict = db_get_segments(frame_filepath)
+    i = 1
+    for coords in segments_dict:
+        segment = segments_dict[coords]
+        save_segment(segment, frame_name, i, output_type, output_dir)
+        i+=1
+
+def save_particles(segment, frame_name, px_overlap, px_length = None, px_width = None, output_dir=""):
+    particles = get_particles_from_segment(segment, px_overlap, px_length, px_width)
+    #TODO: save as a stack!
+
+def db_save_particles(frame_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
 
 class EMHelixBoxerWidget(QtGui.QWidget):
-    def __init__(self, filename, app):
+    def __init__(self, frame_filepath, app):
         QtGui.QWidget.__init__(self)
         self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
         self.setWindowTitle("e2helixboxer")
         
-        if not filename:
-            filename = "test_image"
-            image = test_image()
-        img = EMData(filename)
-        self.filename = filename
+        if not frame_filepath:
+            basename = "test_image"
+            img = test_image()
+        else:
+            (path, basename) = os.path.split(frame_filepath)
+            img = EMData(frame_filepath)
+        
+        self.filename = basename
         self.main_image = EMImage2DModule(img, application=app)
-        self.main_image.set_file_name(filename) # TODO: set the filename
+        self.main_image.set_file_name(basename) # TODO: determine if this should use the entire file path
         self.main_image.shapes = EMShapeDict()
         self.segment_viewer = None #Will be an EMImage2DModule instance
-        #self.box_list = HelixBoxList()
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
-        self.segments_dict = {} #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.segments_dict = db_get_segments_dict(self.filename) #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (1, 1, 1)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
         self.image_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
+
+        if self.get_db_item("boxes") == None:
+            self.set_db_item("boxes", [])
+        else:
+            boxList = self.get_db_item("boxes")
+            for boxCoords in boxList:
+                key = self.generate_emshape_key()
+                emshape_list = ["rectline"]
+                emshape_list.extend(list(self.color))
+                emshape_list.extend(list(boxCoords))
+                emshape_list.append(2)
+                emshape = EMShape( emshape_list )
+                self.main_image.add_shape(key, emshape)
+            self.main_image.updateGL()
 
         self.__create_ui()
         
@@ -145,24 +184,13 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
         self.connect(self.output_dir_pushbutton, QtCore.SIGNAL("clicked()"), self.choose_dir )
+        self.connect(self.write_output_button, QtCore.SIGNAL("clicked()"), self.write_ouput )
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect(self.done_but, QtCore.SIGNAL("clicked()"), self.exit_app )
 
         get_application().show_specific(self.main_image)
         
-        if self.get_db_item("boxes") == None:
-            self.set_db_item("boxes", [])
-        else:
-            boxList = self.get_db_item("boxes")
-            for boxCoords in boxList:
-                key = self.generate_emshape_key()
-                emshape_list = ["rectline"]
-                emshape_list.extend(list(self.color))
-                emshape_list.extend(list(boxCoords))
-                emshape_list.append(2)
-                emshape = EMShape( emshape_list )
-                self.main_image.add_shape(key, emshape)
-            self.main_image.updateGL()
+
         
     def __create_ui(self):
         self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
@@ -213,13 +241,15 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         output_dir_label.setBuddy(self.output_dir_line_edit)
         self.output_dir_pushbutton = QtGui.QPushButton(self.tr("&Browse"))
         self.write_output_button = QtGui.QPushButton(self.tr("W&rite Output"))
-        self.write_output_button.setEnabled(False)
 
         self.done_but=QtGui.QPushButton(self.tr("&Done"))
         self.status_bar = QtGui.QStatusBar()
         self.status_bar.showMessage("Ready",10000)
         
-
+        self.ptcls_groupbox.setChecked(False)
+        self.ptcls_groupbox.setEnabled(False)
+        
+        
         
         widthLayout = QtGui.QHBoxLayout()
         widthLayout.addWidget(self.box_width_label)
@@ -323,7 +353,26 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         file_path = em_selector_module.exec_()
         print file_path
         pass
-
+    def write_ouput(self):
+        frame_filename = os.path.basename(self.filename)
+        frame_name = os.path.splitext( frame_filename )[0]
+        if self.coords_groupbox.isChecked():
+            coords_out_type = unicode( self.coords_ftype_combobox.currentText() )
+            coords_out_type = self.coords_file_extension_dict[coords_out_type]
+            save_coords(self.segments_dict.keys(), frame_name, coords_out_type)
+        if self.ptcls_groupbox.isChecked():
+            #save_particles(self.filename)
+            pass
+        if self.segs_groupbox.isChecked():
+            seg_file_extension = self.image_file_extension_dict[unicode(self.segs_ftype_combobox.currentText())]
+            print seg_file_extension
+            i = 1
+            for coords_key in self.segments_dict:
+                print coords_key
+                seg = self.segments_dict[coords_key]
+                save_segment(seg, frame_name, i, seg_file_extension)
+                i += 1
+        
     def get_db_item(self, key):
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
@@ -525,7 +574,7 @@ e2helixboxer.py ????.mrc --boxwidth=256
     logid=E2init(sys.argv)
     
     app = EMStandAloneApplication()
-    helixboxer = EMHelixBoxerWidget(basename, app)
+    helixboxer = EMHelixBoxerWidget(filename, app)
     helixboxer.show()
     app.execute()
     E2end(logid)
