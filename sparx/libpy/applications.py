@@ -10442,13 +10442,13 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 	elif match == 'pwa' and myid == main_node:
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
-	elif match == 'XXX':
+	#elif match == 'XXX':
 		# Jia code MPI
 		# FUNCTION HERE
 		# get back, stability value, number of objects stable, and the stable partition
-		if myid == main_node:
-			logging.info('... Stability: %5.2f %% (%d objects)' % (11.4, 100)
-
+		#if myid == main_node:
+		#	logging.info('... Stability: %5.2f %% (%d objects)' % (11.4, 11)
+	
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
@@ -10982,7 +10982,7 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 	K        = EMUtil.get_image_count(averages)
 	trg      = 'averages_reali.hdf'
 
-	for iclass in xrange(483, K):
+	for iclass in xrange(547, K):
 		class_name = 'class_%03i.hdf' % iclass
 		name       = 'class_%03i' % iclass
 		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
