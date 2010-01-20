@@ -10433,14 +10433,25 @@ def k_means_stab_MPICUDA_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0
 		logging.info('... Matching')
 		ALL_PART = k_means_stab_asg2part(outdir, npart)
 
-		# calculate the stability
-		if match   == 'hh':
-			stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
-			logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
-		elif match == 'pwa':
-			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
-			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	mpi_barrier(MPI_COMM_WORLD)
 
+	# calculate the stability
+	if match   == 'hh' and myid == main_node:
+		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+	elif match == 'pwa' and myid == main_node:
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	elif match == 'XXX':
+		# Jia code MPI
+		# FUNCTION HERE
+		# get back, stability value, number of objects stable, and the stable partition
+		if myid == main_node:
+			logging.info('... Stability: %5.2f %% (%d objects)' % (11.4, 100)
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
 		# export the stable class averages
 		count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj)
 		logging.info('... Export %i stable class averages: averages.hdf (rejected %i images)' % (count_k, len(id_rejected)))
@@ -10852,45 +10863,40 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 	averages = 'averages_org.hdf'
 	K        = EMUtil.get_image_count(averages)
 	trg      = 'averages_reali.hdf'
-	if ncpu > 1:
-		mpicmd = 'mpirun -np %i' % ncpu
-		if node_list != 'local': mpicmd += ' -hostfile %s -wdir' % node_list
-	else:
-		mpicmd = ''
 
 	for iclass in xrange(K):
 		class_name = 'class_%03i.hdf' % iclass
 		name       = 'class_%03i' % iclass
 		header(class_name, 'xform.align2d', rand_alpha=True)
 
-		# Waiting to change os.system to this (ali2d_c...), but Yang needs to fix the issue with global variable
-		# which disable the possibility to run twice ali2d sequencially
-		#ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
-
-		if kind_of_ali == 'ali2d_c':
-			parali = 'sxali2d_c.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
+		# WARNING, you must use the modulo of iteration count with maxit in your 
+		# user_function, to adapt the filter. Because the iteration count won't 
+		# restart to 0 for the second alignment. Yang needs to fix the issue with 
+		# the global variables.
+		if   kind_of_ali == 'ali2d_c':
+			ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun)
 		elif kind_of_ali == 'ali2d_a':
-			parali = 'sxali2d_a.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		if CTF:      parali += ' --CTF'
-		if Fourvar:  parali += ' --Fourvar'
-		if ncpu > 1: parali += ' --MPI'
+			ali2d_a(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				    option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2",
+				    max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
 
-		os.system(mpicmd + ' ' + parali)
 		header(class_name, 'xform.align2d', backup=True, suffix='_round1')
-
 		header(class_name, 'xform.align2d', rand_alpha=True)
-		if kind_of_ali == 'ali2d_c':
-			parali = 'sxali2d_c.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		elif kind_of_ali == 'ali2d_a':
-			parali = 'sxali2d_a.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		if CTF:      parali += ' --CTF'
-		if Fourvar:  parali += ' --Fourvar'
-		if ncpu > 1: parali += ' --MPI'
-		os.system(mpicmd + ' ' + parali)
 
-		#ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+		if   kind_of_ali == 'ali2d_c':
+			ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun)
+		elif kind_of_ali == 'ali2d_a':
+			ali2d_a(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				    option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2",
+				    max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
+
+		# I cannot keep the realignment directories until Yang change his function ali2d_a.
+		# The directory memory uses ~40 MB for each alignment, so if I repeat that x2 with ~30 averages
+		# per iteration, and run ISC for 100 iterations, the realignment with ali2d_a 
+		# required 240 GB on the disk.
+		os.system('rm -r %s_01/* %s_02/*' % (name, name))
 
 		data1 = EMData.read_images(class_name)
 		header(class_name, 'xform.align2d_round1', restore=True)
@@ -10949,7 +10955,7 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 
 # realign data from class averages, select homogenous groups and update active images to the main stack
 def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, kind_of_ali):
-	from applications import header, ali2d_c, ali2d_a
+	from applications import header, ali2d_c_MPI, ali2d_a_MPI
 	from utilities    import estimate_stability, get_im, file_type
 	from statistics   import aves, k_means_extract_class_ali
 	from alignment    import align2d
@@ -10975,53 +10981,39 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 	averages = 'averages_org.hdf'
 	K        = EMUtil.get_image_count(averages)
 	trg      = 'averages_reali.hdf'
-	#if ncpu > 1:
-	#	mpicmd = 'mpirun -np %i' % ncpu
-	#	if node_list != 'local': mpicmd += ' -hostfile ../%s -wdir `pwd`' % node_list
-	#else:
-	#	mpicmd = ''
 
-	for iclass in xrange(0, 2):
+	for iclass in xrange(483, K):
 		class_name = 'class_%03i.hdf' % iclass
 		name       = 'class_%03i' % iclass
 		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
 
-		# Waiting to change os.system to this (ali2d_c...), but Yang needs to fix the issue with global variable
-		# which disable the possibility to run twice ali2d sequencially
-		#ali2d_c(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
-		
-		#if kind_of_ali == 'ali2d_c':
-		#	parali = 'sxali2d_c.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		#elif kind_of_ali == 'ali2d_a':
-		#	parali = 'sxali2d_a.py %s %s_01 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16 --option=5 --mutation_rate="0.05 0.1 0.2" --max_merge=20' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		#if CTF:      parali += ' --CTF'
-		#if Fourvar:  parali += ' --Fourvar'
-		#if ncpu > 1: parali += ' --MPI'
+		# WARNING, you must use the modulo of iteration count with maxit in your 
+		# user_function, to adapt the filter. Because the iteration count won't 
+		# restart to 0 for the second alignment. Yang needs to fix the issue with 
+		# the global variables.
+		if   kind_of_ali == 'ali2d_c':
+			ali2d_c_MPI(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun)
+		elif kind_of_ali == 'ali2d_a':
+			ali2d_a_MPI(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				    option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2",
+				    max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
 
-		#os.system(mpicmd + ' ' + parali)
-		
-		ali2d_a_MPI(class_name, '%s_01' % name, ou=ou, xr=xr, ts=ts, maxit=maxit, option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2", max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
-		if myid == main_node:
+  		if myid == main_node:
 			header(class_name, 'xform.align2d', backup=True, suffix='_round1')
 			header(class_name, 'xform.align2d', rand_alpha=True)
-		ali2d_a_MPI(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit, option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2", max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
 
-		#if kind_of_ali == 'ali2d_c':
-		#	parali = 'sxali2d_c.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		#elif kind_of_ali == 'ali2d_a':
-		#	parali = 'sxali2d_a.py %s %s_02 --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16 --option=5 --mutation_rate="0.05 0.1 0.2" --max_merge=20' % (class_name, name, ou, xr, ts, maxit, fun, snr)
-		#if CTF:      parali += ' --CTF'
-		#if Fourvar:  parali += ' --Fourvar'
-		#if ncpu > 1: parali += ' --MPI'
-		#os.system(mpicmd + ' ' + parali)
-
-		#ali2d_c(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
-		#	CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=MPI)
+		if   kind_of_ali == 'ali2d_c':
+			ali2d_c_MPI(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun)
+		elif kind_of_ali == 'ali2d_a':
+			ali2d_a_MPI(class_name, '%s_02' % name, ou=ou, xr=xr, ts=ts, maxit=maxit,
+				    option=5, number_of_ave=16, mutation_rate="0.05 0.1 0.2",
+				    max_merge=20, CTF=CTF, Fourvar=Fourvar, snr=snr, user_func_name=fun)
 
 		# I cannot keep the realignment directories until Yang change his function ali2d_a.
 		# The directory memory uses ~40 MB for each alignment, so if I repeat that x2 with ~30 averages
-		# per iteration, and typically ISC runs for 100 iterations. A realignment with ali2d_a 
+		# per iteration, and run ISC for 100 iterations, the realignment with ali2d_a 
 		# required 240 GB on the disk.
 		if myid == main_node:
 			os.system('rm -r %s_01/* %s_02/*' % (name, name))
