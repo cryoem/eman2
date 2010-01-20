@@ -58,6 +58,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--prefix",type="string",help="Output file prefix",default=None)
+	parser.add_option("--tiltstep",type="float",help="Step between tilts in degrees, default=2",default=2.0)
 	parser.add_option("--maxshift",type="int",help="Maximum shift in autoalign, default=8",default=8)
 	parser.add_option("--seqali",action="store_true",default=False,help="Average particles in previous slices for better alignments of near-spherical objects")
 	parser.add_option("--invert",action="store_true",default=False,help="Inverts image data contrast on the fly")
@@ -78,7 +79,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	app = EMStandAloneApplication()
 
 	
-	track=TrackerControl(app,options.maxshift,options.invert,options.seqali)
+	track=TrackerControl(app,options.maxshift,options.invert,options.seqali,options.tiltstep)
 	track.set_image(args[0])
 
 	app.execute()
@@ -86,11 +87,12 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	E2end(logid)
 	
 class TrackerControl(QtGui.QWidget):
-	def __init__(self,app,maxshift,invert=False,seqali=False):
+	def __init__(self,app,maxshift,invert=False,seqali=False,tiltstep=2.0):
 		self.app=app
 		self.maxshift=maxshift
 		self.seqali=seqali
 		self.invert=invert
+		self.tiltstep=tiltstep
 		
 		# the control panel
 		QtGui.QWidget.__init__(self,None)
@@ -147,6 +149,7 @@ class TrackerControl(QtGui.QWidget):
 		self.imageparm=None
 		self.tiltshapes=None
 		self.curtilt=0
+		self.oldtilt=self.curtilt
 		self.map3d=None
 		
 		self.show()
@@ -167,7 +170,7 @@ class TrackerControl(QtGui.QWidget):
 		
 	def do_projalign(self,x=0):
 		"""In response to the projection align button. Just a wrapper"""
-		self.projection_align()
+		self.projection_align(self.tiltstep)
 		self.update_stack()
 #		self.do_reconst()
 
@@ -175,7 +178,7 @@ class TrackerControl(QtGui.QWidget):
 		"""In response to the normal reconstruction button. Just a wrapper"""
 		stack=self.get_boxed_stack()
 		mode=self.sbmode.value()
-		self.map3d=self.reconstruct(stack,2.0,mode)
+		self.map3d=self.reconstruct(stack,self.tiltstep,mode)
 		self.update_3d()
 
 		
@@ -185,7 +188,7 @@ class TrackerControl(QtGui.QWidget):
 #		self.map3d=self.reconstruct_ca(stack[5:-4],0.5)
 #		init=self.reconstruct_ca(stack[5:-4],0.5)
 		mode=self.sbmode.value()
-		self.map3d=self.reconstruct_wedgefill(stack,2.0,mode)
+		self.map3d=self.reconstruct_wedgefill(stack,self.tiltstep,mode)
 		self.update_3d()
 		
 	def do_magics(self,x):
@@ -257,10 +260,20 @@ class TrackerControl(QtGui.QWidget):
 		
 		if self.tiltshapes[self.curtilt]!=None :
 			self.im2d.add_shape("finalbox",self.tiltshapes[self.curtilt])
+			
+			s0=self.tiltshapes[self.oldtilt].getShape()
+			s1=self.tiltshapes[self.curtilt].getShape()
+			dx=s0[4]-s1[4]
+			dy=s0[5]-s1[5]
+			
+			self.im2d.set_origin(self.im2d.origin[0]-dx,self.im2d.origin[1]-dy)
+			self.oldtilt=self.curtilt
+			
 		self.im2d.updateGL()
 
 	def change_tilt(self,direc):
 		"""When the user presses the up or down arrow"""
+		self.oldtilt=self.curtilt
 		self.curtilt+=direc
 		if self.curtilt<0 : self.curtilt=0
 		if self.curtilt>=self.imageparm["nz"] : self.curtilt=self.imageparm["nz"]-1
