@@ -336,7 +336,7 @@ class EMShape:
 			elif s[0]=="scrlabel":
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )
-				text = x[6]
+				text = s[6]
 				if s[8]<0 :
 					if EMShape.font_renderer != None and EMShape.font_renderer != 1:
 						GL.glTranslate(x1,y1,.2)
@@ -346,8 +346,8 @@ class EMShape:
 					else:
 						GL.glColor(1.,1.,1.)
 						GL.glTranslate(x1,y1,0)
-						#GL.glScalef(y2/1500.0/sc,y2/1500.0/sc,y2/1500.0/sc)
-						GL.glScalef(y2/1500.0,y2/1500.0,1)
+						#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+						GL.glScalef(s[7]/1500.0,s[7]/1500.0,1)
 						GL.glLineWidth(-s[8])
 						w=104.76*len(text)
 						GL.glBegin(GL.GL_QUADS)
@@ -364,19 +364,18 @@ class EMShape:
 					GL.glColor(*col)
 					GL.glTranslate(x1,y1,-1)
 	#				GL.glScalef(y2/100.0,y2/100.0,y2/100.0)
-					GL.glScalef(y2/1500.0/sc,y2/1500.0/sc,1)
+					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,1)
 					GL.glLineWidth(fabs(s[8]))
-					for i in x2:
+					for i in text:
 						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			elif s[0]=="scrcircle":
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )
-				x2 = int( round(s[6]) )
-				y2 = int( round(s[7]) )
+
 				GL.glColor(*col)
-				GL.glLineWidth(y2)
+				GL.glLineWidth(s[7])
 				GL.glTranslate(x1,y1,0)
-				GL.glScalef(x2,x2,x2)
+				GL.glScalef(s[6],s[6],s[6])
 				GL.glCallList(EMShape.dlists)
 			#GL.glLoadMatrixf(mx)
 		
