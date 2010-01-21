@@ -43,8 +43,8 @@ def get_particles_from_segment( segment, px_overlap, px_length = None, px_width 
     (xsize, ysize) = (px_width, px_length)
     (x0,y0) = (0,0)
     particles = []
-    while y0 + ysize <= segment.get_xsize():
-        particles.append(segment.get_clip(x0, y0, xsize, ysize))
+    while y0 + ysize <= segment.get_ysize():
+        particles.append( segment.get_clip(Region(x0, y0, xsize, ysize)) )
         y0 += px_step
     
     return particles
@@ -106,7 +106,7 @@ def db_get_segments_dict(frame_filepath):
     return segments_dict
 
 def save_segment(segment_emdata, frame_name, segment_num, output_type = "hdf", output_dir=""):
-    output_fname = "%s_seg%i.%s" % (frame_name, segment_num, output_type)
+    output_fname = "%s.%i.seg.%s" % (frame_name, segment_num, output_type)
     output_filepath = os.path.join(output_dir, output_fname)
     segment_emdata.write_image( output_filepath )
 
@@ -120,9 +120,14 @@ def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
         save_segment(segment, frame_name, i, output_type, output_dir)
         i+=1
 
-def save_particles(segment, frame_name, px_overlap, px_length = None, px_width = None, output_dir=""):
+def save_particles(segment, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     particles = get_particles_from_segment(segment, px_overlap, px_length, px_width)
-    #TODO: save as a stack!
+    output_filename = "%s.%i.ptcl.%s" % (frame_name, segment_num, output_type)
+    output_filepath = os.path.join(output_dir, output_filename)
+    for i in range(len(particles)):
+        ptcl = particles[i]
+        ptcl.write_image(output_filepath, i) #appending to the image stack
+
 
 def db_save_particles(frame_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
@@ -246,9 +251,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.status_bar = QtGui.QStatusBar()
         self.status_bar.showMessage("Ready",10000)
         
-        self.ptcls_groupbox.setChecked(False)
-        self.ptcls_groupbox.setEnabled(False)
-        
         
         
         widthLayout = QtGui.QHBoxLayout()
@@ -356,12 +358,22 @@ class EMHelixBoxerWidget(QtGui.QWidget):
     def write_ouput(self):
         frame_filename = os.path.basename(self.filename)
         frame_name = os.path.splitext( frame_filename )[0]
+        output_dir = str(self.output_dir_line_edit.text())
         if self.coords_groupbox.isChecked():
             coords_out_type = unicode( self.coords_ftype_combobox.currentText() )
             coords_out_type = self.coords_file_extension_dict[coords_out_type]
-            save_coords(self.segments_dict.keys(), frame_name, coords_out_type)
+            save_coords(self.segments_dict.keys(), frame_name, coords_out_type, output_dir)
         if self.ptcls_groupbox.isChecked():
-            #save_particles(self.filename)
+            i = 1
+            for coords_key in self.segments_dict:
+                px_overlap = self.ptcls_overlap_spinbox.value()
+                px_length = self.ptcls_length_spinbox.value()
+                px_width = self.ptcls_width_spinbox.value()
+                output_type = self.image_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
+                
+                seg = self.segments_dict[coords_key]
+                save_particles(seg, i, frame_name, px_overlap, px_length, px_width, output_type, output_dir)
+                i += 1
             pass
         if self.segs_groupbox.isChecked():
             seg_file_extension = self.image_file_extension_dict[unicode(self.segs_ftype_combobox.currentText())]
@@ -370,7 +382,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             for coords_key in self.segments_dict:
                 print coords_key
                 seg = self.segments_dict[coords_key]
-                save_segment(seg, frame_name, i, seg_file_extension)
+                save_segment(seg, frame_name, i, seg_file_extension, output_dir)
                 i += 1
         
     def get_db_item(self, key):
