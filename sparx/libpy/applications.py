@@ -10700,7 +10700,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 # 2009-12-09 09:47:19 JB
 
 # ISC procedure code
-def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
+def isc(conf_file, flag_ali, flag_clu, flag_reali, flag_tiny):
 	from statistics import isc_read_conf, isc_update_ite_conf, isc_ave_huge
 	from utilities  import get_im, read_text_file, write_text_file
 	import sys, logging, os
@@ -10712,7 +10712,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s %(message)s', level = logging.INFO)
 
 	# prepare iteration
-	if ite == -1: ite = cfgmain['ite']
+	ite = cfgmain['ite']
 	if ite == 1:
 		logging.info('### ISC     %s' % ('#' * 20))
 		if not os.path.exists('backup_parameters'):
@@ -10730,27 +10730,30 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 		if flag_ali and (ite-1) % cfgali['n_ite'] == 0:
 			header(cfgmain['stack'], 'xform.align2d', rand_alpha=True)
 			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d_init.txt'% ite)
-			if cfgali['cpu_list'] == 'local': cmd = '-np %d' % cfgali['nb_cpu']
-			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgali['nb_cpu'], cfgali['cpu_list'])
 
-			## ALI2D_A
-			#logging.info('Alignment with ali2d_a')
-			#parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (cfgmain['stack'], ite, 
-				# cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
-			#if cfgali['ctf']:        parali += ' --CTF'
-			#if cfgali['nb_cpu'] > 1: parali += ' --MPI'
-			#if cfgali['fourvar']:    parali += ' --Fourvar'
-			#os.system('mpirun %s sxali2d_a.py %s' % (cmd, parali))
-			
-			logging.info('Alignment with ali2d_c')
-			parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (cfgmain['stack'], ite, cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
-			if cfgali['ctf']:        parali += ' --CTF'
-			if cfgali['nb_cpu'] > 1: parali += ' --MPI'
-			if cfgali['fourvar']:    parali += ' --Fourvar'
-			# Used os.system in order to have the possibility to run ali2d_a with 
-			# more number of cpus than the clustering by GPU, otherwise each alignment 
-			# requires hours and hours of running time 
-			os.system('mpirun %s sxali2d_c.py %s' % (cmd, parali))
+			if cfgali['nb_cpu'] == 1: cmd = ''
+			else:
+				if cfgali['cpu_list'] == 'local': cmd = 'mpirun -np %d ' % cfgali['nb_cpu']
+				else: cmd = 'mpirun -np %d -hostfile %s -wdir `pwd` ' % (cfgali['nb_cpu'], cfgali['cpu_list'])
+
+			if cfgali['kind_ali'] == 'ali2d_c':
+				logging.info('Alignment with ali2d_c')
+				parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f' % (cfgmain['stack'], ite, cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
+				if cfgali['ctf']:        parali += ' --CTF'
+				if cfgali['nb_cpu'] > 1: parali += ' --MPI'
+				if cfgali['fourvar']:    parali += ' --Fourvar'
+				# Used os.system in order to have the possibility to run ali2d_a with 
+				# more number of cpus than the clustering by GPU, otherwise each alignment 
+				# requires hours and hours of running time 
+				os.system('%ssxali2d_c.py %s' % (cmd, parali))
+			elif cfgali['kind_ali'] == 'ali2d_a':
+				logging.info('Alignment with ali2d_a')
+				parali = '%s %03i_alignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --snr=%f --number_of_ave=16' % (cfgmain['stack'], ite, 
+					 cfgali['ou'], cfgali['xr'], cfgali['ts'], cfgali['maxit'], cfgali['fun'], cfgali['snr'])
+				if cfgali['ctf']:        parali += ' --CTF'
+				if cfgali['nb_cpu'] > 1: parali += ' --MPI'
+				if cfgali['fourvar']:    parali += ' --Fourvar'
+				os.system('%ssxali2d_a.py %s' % (cmd, parali))
 						
 			header(cfgmain['stack'], 'xform.align2d', fexport='backup_parameters/%03i_ali2d_ali.txt' % ite)
 			ave_ali(cfgmain['stack'], '%03i_alignment/global_ave.hdf' % ite, True, True)
@@ -10785,8 +10788,11 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 				mask_clu  = cfgmain['mask']
 			lact = EMUtil.get_all_attributes(stack_clu, 'active')
 			K    = sum(lact) // cfgclu['im_per_grp']
-			if cfgclu['cpu_list'] == 'local': cmd = '-np %d' % cfgclu['nb_cpu']
-			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgclu['nb_cpu'], cfgclu['cpu_list'])
+
+			if cfgclu['nb_cpu'] == 1: cmd = ''
+			else:
+				if cfgclu['cpu_list'] == 'local': cmd = 'mpirun -np %d ' % cfgclu['nb_cpu']
+				else: cmd = 'mpirun -np %d -hostfile %s -wdir `pwd` ' % (cfgclu['nb_cpu'], cfgclu['cpu_list'])
 			parclu = '%s %03i_clustering %s --K=%d --nb_part=%d --th_nobj=%d --match=%s --maxit=%d --rand_seed=%d --T0=%f --F=%f --normalize' % (stack_clu,
                                   ite, mask_clu, K, cfgclu['nb_part'], cfgclu['th_nobj'], cfgclu['match'], cfgclu['maxit'], cfgclu['rand_seed'], cfgclu['t0'], cfgclu['f'])
 			if cfgclu['ctf']:        parclu += ' --CTF'
@@ -10798,7 +10804,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 			# allocate an other GPU or keep processing with the same. This problem is know by NVIDIA (see forum) and works
 			# to build this function. So far you need explicitly break the link between CPU and GPU by killing it when
 			# the process is done, that why os.system works well, start an exterior prog, run, and die.
-			os.system('mpirun %s sxk_means_stable.py %s' % (cmd, parclu))
+			os.system('%ssxk_means_stable.py %s' % (cmd, parclu))
 			header(stack_clu, 'active', fexport='backup_parameters/%03i_active_after_clu.txt' % ite)
 			if flag_tiny:
 				header(cfgmain['stack'], 'active', fimport='backup_parameters/%03i_active_after_clu.txt' % ite)
@@ -10825,20 +10831,17 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 				sys.exit()
 			if not os.path.exists('%03i_realignment' % ite): os.mkdir('%03i_realignment' % ite)
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_before_reali.txt' % ite)
+			if cfgrali['nb_cpu'] == 1: cmd = ''
+			else:
+				if cfgrali['cpu_list'] == 'local': cmd = 'mpirun -np %d ' % cfgrali['nb_cpu']
+				else: cmd = 'mpirun -np %d -hostfile %s -wdir `pwd` ' % (cfgrali['nb_cpu'], cfgrali['cpu_list'])
+			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --th_err=%f --snr=%f --ali=%s' % (cfgmain['stack'], ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'], cfgrali['kind_ali'])
 			
-			isc_realignment(cfgmain['stack'], '%03i_clustering/averages.hdf' % ite, 'pool_ave_%03i.hdf' % ite, '%03i_realignment' % ite, 
-					cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], 
-					cfgrali['snr'], cfgrali['ctf'], cfgrali['fourvar'], cfgrali['nb_cpu'], cfgrali['cpu_list'], cfgrali['ali'])
-
-			'''
-			if cfgrali['cpu_list'] == 'local': cmd = '-np %d' % cfgrali['nb_cpu']
-			else: cmd = '-np %d -hostfile %s -wdir `pwd`' % (cfgrali['nb_cpu'], cfgrali['cpu_list'])
-			parrali = '%s %03i_clustering/averages.hdf pool_ave_%03i.hdf %03i_realignment --ou=%d --xr="%s" --ts="%s" --maxit=%d --function=%s --th_err=%f --snr=%f' % (cfgmain['stack'], ite, ite, ite, cfgrali['ou'], cfgrali['xr'], cfgrali['ts'], cfgrali['maxit'], cfgrali['fun'], cfgrali['th_err'], cfgrali['snr'])
 			if cfgrali['ctf']:        parrali += ' --CTF'
 			if cfgrali['fourvar']:    parrali += ' --Fourvar'
 			if cfgrali['nb_cpu'] > 1: parrali += ' --MPI'
-			os.system('mpirun %s sxisc_realignment.py %s' % (cmd, parrali))
-			'''
+			os.system('%ssxisc_realignment.py %s' % (cmd, parrali))
+			
 			header(cfgmain['stack'], 'active', fexport='backup_parameters/%03i_active_after_reali.txt' % ite)
 			logging.info('... done')
 			
@@ -10846,7 +10849,7 @@ def isc(conf_file, ite, flag_ali, flag_clu, flag_reali, flag_tiny):
 		isc_update_ite_conf(conf_file, ite)
 
 # realign data from class averages, select homogenous groups and update active images to the main stack
-def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, ncpu, node_list, kind_of_ali):
+def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, th_err, snr, CTF, Fourvar, kind_of_ali):
 	from applications import header, ali2d_c, ali2d_a
 	from utilities    import estimate_stability, get_im, file_type
 	from statistics   import aves, k_means_extract_class_ali
@@ -10926,7 +10929,10 @@ def isc_realignment(stack, averages, out_averages, output_dir, ou, xr, ts, maxit
 	for k in xrange(K):
 		ref = get_im(averages, k)
 		dic = ref.get_attr_dict()
-		if lerr[k] <= merr:
+		if   th_err == -1: th = 1e6
+		elif th_err == -2: th = merr
+		else:              th = th_err
+		if lerr[k] <= th:
 			ave = get_im(trg, k)
 			ave.set_attr_dict(dic)
 			ave.set_attr('err_euc', lerr[k])
@@ -10974,19 +10980,20 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 
 	if myid == main_node:
 		if not os.path.exists(output_dir): os.mkdir(output_dir)
-	#cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
-	#k_means_extract_class_ali(stack, averages, output_dir)
+		cpy(averages, os.path.join(output_dir, 'averages_org.hdf'))
+		k_means_extract_class_ali(stack, averages, output_dir)
 
 	os.chdir(output_dir)
 	averages = 'averages_org.hdf'
+	mpi_barrier(MPI_COMM_WORLD)
 	K        = EMUtil.get_image_count(averages)
 	trg      = 'averages_reali.hdf'
 
-	for iclass in xrange(547, K):
+	for iclass in xrange(K):
 		class_name = 'class_%03i.hdf' % iclass
 		name       = 'class_%03i' % iclass
 		if myid == main_node: header(class_name, 'xform.align2d', rand_alpha=True)
-
+		
 		# WARNING, you must use the modulo of iteration count with maxit in your 
 		# user_function, to adapt the filter. Because the iteration count won't 
 		# restart to 0 for the second alignment. Yang needs to fix the issue with 
@@ -11035,7 +11042,7 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 			ave.write_image(trg, iclass)
 
 		mpi_barrier(MPI_COMM_WORLD)
-	'''
+
 	if myid == main_node:
 		lerr = EMUtil.get_all_attributes(trg, 'err_pix')
 		lerr = array(lerr)
@@ -11048,9 +11055,10 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 		for k in xrange(K):
 			ref = get_im(averages, k)
 			dic = ref.get_attr_dict()
-			if th_err == -1: toto = 1e6
-			else:            toto = merr
-			if lerr[k] <= toto:
+			if   th_err == -1: th = 1e6
+			elif th_err == -2: th = merr
+			else:              th = th_err
+			if lerr[k] <= th:
 				ave = get_im(trg, k)
 				ave.set_attr_dict(dic)
 				ave.set_attr('err_euc', lerr[k])
@@ -11076,7 +11084,7 @@ def isc_realignment_MPI(stack, averages, out_averages, output_dir, ou, xr, ts, m
 				write_header(stack, im, id)
 
 		#logging.info('... done')
-	'''
+
 	#mpi_barrier(MPI_COMM_WORLD)
 
 

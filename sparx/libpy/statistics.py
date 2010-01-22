@@ -6102,7 +6102,6 @@ def isc_read_conf(conf_file):
 	cfgrali['nb_cpu']    = int(cfgrali['nb_cpu'])
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
-	cfgmain['mpi']       = eval(cfgmain['mpi'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
 	#   alignment
 	cfgali['n_ite']      = int(cfgali['n_ite'])
