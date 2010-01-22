@@ -105,6 +105,9 @@ class TrackerControl(QtGui.QWidget):
 		# action buttons
 		self.bcenalign=QtGui.QPushButton("Center Align")
 		self.bprojalign=QtGui.QPushButton("Proj. Realign")
+		self.btiltaxis=QtGui.QPushButton("Tilt Axis")
+		self.btiltaxisval=QtGui.QLineEdit("90.0")
+		self.bsavedata=QtGui.QPushButton("Save Data")
 		self.breconst=QtGui.QPushButton("3D Normal")
 		self.sbmode=QtGui.QSpinBox(self)
 		self.sbmode.setRange(0,2)
@@ -116,6 +119,9 @@ class TrackerControl(QtGui.QWidget):
 		
 		self.gbl.addWidget(self.bcenalign,0,0)
 		self.gbl.addWidget(self.bprojalign,0,1)
+		self.gbl.addWidget(self.btiltaxis,0,2)
+		self.gbl.addWidget(self.btiltaxisval,0,3)
+#		self.gbl.addWidget(self.bsavedata,0,3)
 		self.gbl.addWidget(self.breconst,1,0)
 		self.gbl.addWidget(self.sbmode,2,0,1,1)
 		self.gbl.addWidget(self.vslpfilt,3,0,1,4)
@@ -125,6 +131,8 @@ class TrackerControl(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.bcenalign,QtCore.SIGNAL("clicked(bool)"),self.do_cenalign)
 		QtCore.QObject.connect(self.bprojalign,QtCore.SIGNAL("clicked(bool)"),self.do_projalign)
+		QtCore.QObject.connect(self.btiltaxis,QtCore.SIGNAL("clicked(bool)"),self.do_tiltaxis)
+		QtCore.QObject.connect(self.bsavedata,QtCore.SIGNAL("clicked(bool)"),self.do_savedata)
 		QtCore.QObject.connect(self.breconst,QtCore.SIGNAL("clicked(bool)"),self.do_reconst)
 		QtCore.QObject.connect(self.bmagict,QtCore.SIGNAL("clicked(bool)"),self.do_magict)
 		QtCore.QObject.connect(self.bmagics,QtCore.SIGNAL("clicked(bool)"),self.do_magics)
@@ -151,6 +159,7 @@ class TrackerControl(QtGui.QWidget):
 		self.curtilt=0
 		self.oldtilt=self.curtilt
 		self.map3d=None
+		self.downloc=None
 		
 		self.show()
 		self.im2d.show()
@@ -174,6 +183,10 @@ class TrackerControl(QtGui.QWidget):
 		self.update_stack()
 #		self.do_reconst()
 
+	def do_tiltaxis(self):
+		"""In response to the tilt axis button. Just a wrapper"""
+		self.tilt_axis()
+		
 	def do_reconst(self,x=0):
 		"""In response to the normal reconstruction button. Just a wrapper"""
 		stack=self.get_boxed_stack()
@@ -204,6 +217,9 @@ class TrackerControl(QtGui.QWidget):
 		if self.map3d==None : return
 		self.lpfilt=v
 		self.update_3d()
+		
+	def do_savedata(self):
+		""
 	
 	def update_3d(self):
 		if self.map3d==None : return
@@ -286,6 +302,7 @@ class TrackerControl(QtGui.QWidget):
 		self.downloc=lc	
 
 	def drag(self,event,lc):
+		if self.downloc==None : return
 		dx=abs(lc[0]-self.downloc[0])
 		dy=abs(lc[1]-self.downloc[1])
 		dx=max(dx,dy)	# Make box square
@@ -298,6 +315,7 @@ class TrackerControl(QtGui.QWidget):
 		self.im2d.updateGL()
 	
 	def up(self,event,lc):
+		if self.downloc==None : return
 		dx=abs(lc[0]-self.downloc[0])
 		dy=abs(lc[1]-self.downloc[1])
 		dx=max(dx,dy)	# Make box square
@@ -309,6 +327,7 @@ class TrackerControl(QtGui.QWidget):
 			self.find_boxes(s)
 		
 		self.update_tilt()
+		self.downloc=None
 
 	def get_boxed_stack(self):
 		stack=[]
@@ -354,6 +373,7 @@ class TrackerControl(QtGui.QWidget):
 		"""Fills the missing wedge with the average of the slices"""
 		print "Making 3D tomofill"
 		
+		taxis=float(self.btiltaxisval.text())
 		boxsize=stack[0]["nx"]
 		pad=Util.calc_best_fft_size(int(boxsize*1.5))
 
@@ -405,7 +425,7 @@ class TrackerControl(QtGui.QWidget):
 					p=stack[ii].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
 #					print a,ii,ii+1,stack[ii]["alt"],frac
 				
-				xf=Transform({"type":"eman","alt":a,"az":-90.0,"phi":90.0})
+				xf=Transform({"type":"eman","alt":a,"az":-taxis,"phi":taxis})
 				p["xform.projection"]=xf
 						
 				if ri%2==1:	
@@ -425,6 +445,7 @@ class TrackerControl(QtGui.QWidget):
 		"""Cylindrically averaged tomographic model, generally used for filling empty spaces. Returned volume is padded."""
 		print "Making CA"
 		
+		taxis=float(self.btiltaxisval.text())
 		boxsize=stack[0]["nx"]
 		pad=Util.calc_best_fft_size(int(boxsize*1.5))
 
@@ -442,11 +463,11 @@ class TrackerControl(QtGui.QWidget):
 			if ri>0 :
 				alt=-180.0
 				while (alt<180.0):
-					recon.determine_slice_agreement(av,Transform({"type":"eman","alt":alt,"az":-90.0,"phi":90.0}),1)
+					recon.determine_slice_agreement(av,Transform({"type":"eman","alt":alt,"az":-taxis,"phi":taxis}),1)
 					alt+=angstep
 			alt=-180.0
 			while (alt<180.0) :
-				recon.insert_slice(av,Transform({"type":"eman","alt":alt,"az":-90.0,"phi":90.0}))
+				recon.insert_slice(av,Transform({"type":"eman","alt":alt,"az":-taxis,"phi":taxis}))
 				alt+=angstep
 		
 		ret=recon.finish()
@@ -460,10 +481,12 @@ class TrackerControl(QtGui.QWidget):
 		""" Tomographic reconstruction of the current stack """
 		if initmodel!=None : print "Using initial model"
 		
-		boxsize=stack[0]["nx"]
-		pad=Util.calc_best_fft_size(int(boxsize*1.5))
+		taxis=float(self.btiltaxisval.text())
 		
-		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-90.0,"phi":90.0})
+		boxsize=stack[0]["nx"]
+		pad=good_size(int(boxsize*1.5))
+		
+		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-taxis,"phi":taxis})
 		
 		recon=Reconstructors.get("fourier", {"sym":"c1","size":(pad,pad,pad),"mode":reconmodes[mode],"verbose":True})
 		if initmodel!=None : recon.setup(initmodel,.01)
@@ -517,12 +540,54 @@ class TrackerControl(QtGui.QWidget):
 		
 		return ret
 	
+	def tilt_axis(self):
+		ntilt=self.imageparm["nz"]
+		sz=good_size(self.imageparm["nx"]/2)
+		while 1:
+			av=None
+			n=0
+			for i in range(ntilt):
+				refshape=self.tiltshapes[i].getShape()
+				if refshape[4]<=sz/2 or refshape[5]<=sz/2 or self.imageparm["nx"]-refshape[4]<=sz/2 or self.imageparm["ny"]-refshape[5]<=sz/2 : break
+				img=EMData(self.imagefile,0,False,Region(refshape[4]-sz/2,refshape[5]-sz/2,i,sz,sz,1))
+				if self.invert : img.mult(-1.0)
+				img.process_inplace("normalize.edgemean")
+				
+				if av==None: av=img
+				else : av.add(img)
+				n+=1
+				
+			if n==ntilt : break
+			sz/=2
+			if sz<32: return
+			print "You may wish to center on a feature closer to the center of the image next time -> ",sz
+		
+		sz2=good_size(sz+128)
+		av2=av.get_clip(Region((sz-sz2)/2,(sz-sz2)/2,sz2,sz2))
+		av2.process_inplace("mask.zeroedgefill")
+		av2.process_inplace("filter.flattenbackground",{"radius":64})
+		av=av2.get_clip(Region((sz2-sz)/2,(sz2-sz)/2,sz,sz))
+		av.process_inplace("normalize.edgemean")
+		av.process_inplace("mask.sharp",{"outer_radius":sz/2-1})
+
+#		display(av)
+		f=av.do_fft()
+		d=f.calc_az_dist(360,-90.25,0.5,10.0,sz/2-1)
+		d=[(i,j*0.5-90) for j,i in enumerate(d)]
+		self.btiltaxisval.setText(str(max(d)[1]))
+#		print max(d)
+#		print min(d)
+#		plot(d)
+
+	
 	def projection_align(self,angstep=2.0):
 		"""realign the current set of boxes using iterative projection matching"""
 		
+		taxis=float(self.btiltaxisval.text())
+
 		stack=self.get_boxed_stack()
 		for i,p in enumerate(stack) : 
-			ort=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-90.0,"phi":90.0})
+			ort=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":taxis,"phi":-taxis})		# is this right ?
 			curshape=self.tiltshapes[i].getShape()
 			
 			# Read the reference at the user specified size, then pad it a bit
@@ -561,6 +626,7 @@ class TrackerControl(QtGui.QWidget):
 			
 			# Read the reference at the user specified size, then pad it a bit
 			ref=EMData(self.imagefile,0,False,Region(refshape[4],refshape[5],i-1,refshape[6]-refshape[4],refshape[7]-refshape[5],1))
+			ref.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 			ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			ref.process_inplace("normalize.edgemean")
 			ref=ref.get_clip(Region(-self.maxshift,-self.maxshift,ref["nx"]+self.maxshift*2,ref["ny"]+self.maxshift*2))
@@ -570,10 +636,14 @@ class TrackerControl(QtGui.QWidget):
 			
 			# when we read the alignment target, we pad with actual image data since the object will have moved
 			trg=EMData(self.imagefile,0,False,Region(refshape[4]-self.maxshift,refshape[5]-self.maxshift,i,refshape[6]-refshape[4]+self.maxshift*2,refshape[7]-refshape[5]+self.maxshift*2,1))
+			trg.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
 			
 			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5,"masked":1})
+			ref.write_image("dbug.hdf",-1)
+			trg.write_image("dbug.hdf",-1)
+			aln.write_image("dbug.hdf",-1)
 			trans=aln["xform.align2d"].get_trans()
 #			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 

@@ -101,6 +101,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	int nz = this_img->get_zsize();
 
 	int masked = params.set_default("masked",0);
+	int useflcf = params.set_default("useflcf",0);
 	bool use_cpu = true;
 #ifdef EMAN2_USING_CUDA
 	if (this_img->gpu_operation_preferred() ) {
@@ -109,7 +110,10 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		cf = this_img->calc_ccf_cuda(to,false,false);
 	}
 #endif // EMAN2_USING_CUDA
-	if (use_cpu) cf = this_img->calc_ccf(to);
+	if (use_cpu) {
+		if (useflcf) cf = this_img->calc_flcf(to);
+		else cf = this_img->calc_ccf(to);
+	}
 
 	// This is too expensive
 	if (masked) {
@@ -358,6 +362,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	Dict trans_params;
 	trans_params["intonly"]  = 0;
 	trans_params["maxshift"] = params.set_default("maxshift", -1);
+	trans_params["useflcf"]=params.set_default("useflcf",0);
 
 	// Do the first case translational alignment
 	trans_params["nozero"]   = params.set_default("nozero",false);
@@ -410,7 +415,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0),"useflcf",params.set_default("useflcf",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image

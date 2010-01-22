@@ -2472,6 +2472,8 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	// Before we can subtract, the mean must be phase shifted
 	m->process_inplace("xform.phaseorigin.tocenter");
 	// Subtract the local mean
+//	image->write_image("a.mrc");
+//	m->write_image("b.mrc");
 	image->sub(*m); // WE'RE DONE!
 	delete m;
 

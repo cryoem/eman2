@@ -2154,6 +2154,9 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 {
 	ENTERFUNC;
 
+	a0=a0*M_PI/180.0;
+	da=da*M_PI/180.0;
+
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("no 3D image");
 	}
@@ -2170,13 +2173,9 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 		int c = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x += 2, c += 2) {
-				float x1 = x / 2.0f;
-				float y1 = y - ny / 2.0f;
-#ifdef	_WIN32
-				float r = (float)_hypot(x1, y1);
-#else
-				float r = (float)hypot(x1, y1);
-#endif	//_WIN32
+				int x1 = x / 2;
+				int y1 = y<ny/2?y:y-ny;
+				float r = (float)Util::hypot_fast(x1,y1);
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
@@ -2185,7 +2184,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 						a = (atan2(y1, x1) - a0) / da;
 					}
 
-					int i = static_cast < int >(floor(a));
+					int i = (int)(floor(a));
 					a -= i;
 
 					if (i == 0) {

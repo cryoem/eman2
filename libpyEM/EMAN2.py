@@ -394,6 +394,14 @@ def remove_image(fsp):
 		elif fsp[-4:]==".img" : os.unlink(fsp[:-3]+"hed")
 	except: pass
 
+def good_size(size):
+	"""Will return the next larger 'good' box size (with good performance)"""
+	sizes=[32, 33, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 81, 84, 96, 98, 100, 104, 105, 112, 120, 128,130, 132, 140, 150, 154, 168, 180, 182, 192, 196, 208, 210, 220, 224, 240, 250, 256,260, 288, 300, 330, 352, 360, 384, 416, 440, 448, 450, 480, 512]
+	for i in sizes :
+		if i>=size: return i
+	
+	return Util.calc_best_fft_size(size)
+
 def parsesym(optstr):
 	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
 	[sym, dict] = parsemodopt(optstr)

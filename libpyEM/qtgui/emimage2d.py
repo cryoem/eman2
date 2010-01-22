@@ -275,7 +275,7 @@ class EMImage2DMeasureMode(EMImage2DMouseEvents):
 	def mouse_down(self,event):
 		if event.buttons()&Qt.LeftButton:
 			lc=self.mediator.scr_to_img(event.x(),event.y())
-			self.mediator.del_shape("MEASL")
+#			self.mediator.del_shape("MEASL")
 			self.mediator.del_shape("MEAS")
 			self.mediator.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 			self.mediator.updateGL()
@@ -288,14 +288,15 @@ class EMImage2DMeasureMode(EMImage2DMouseEvents):
 			
 			dx=lc[0]-current_shapes["MEAS"].shape[4]
 			dy=lc[1]-current_shapes["MEAS"].shape[5]
-			self.mediator.add_shape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1]),9,-1)))
+			#self.mediator.add_shape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1]),9,-1)))
 			
 			inspector = self.mediator.get_inspector()
 			if inspector:
 				apix=inspector.mtapix.value
 				inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
 				inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
-				inspector.mtshowlen.setText("dx,dy: %1.2f , %1.2f   Len: %1.3f"%(dx*apix,dy*apix,hypot(dx,dy)*apix))
+				inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
+				inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
 
 				# displays the pixel value at the current endpoint
 				if inspector.target().curfft :
@@ -434,6 +435,7 @@ class EMImage2DModule(EMGUIModule):
 			return (640,640)
 	
 	allim=WeakKeyDictionary()
+	
 	def __init__(self, image=None,application=get_application(),winid=None):
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
@@ -563,13 +565,13 @@ class EMImage2DModule(EMGUIModule):
 	def set_mouse_mode(self,mode):
 		if self.mmode == mode: return
 		
-		if mode == 0:
+		if mode == 0 or mode == 1:
 			self.mouse_event_handler = self.mouse_event_handlers["emit"]
-		elif mode == 1:
-			self.mouse_event_handler = self.mouse_event_handlers["measure"]
 		elif mode == 2:
+			self.mouse_event_handler = self.mouse_event_handlers["measure"]
+		elif mode == 3:
 			self.mouse_event_handler = self.mouse_event_handlers["draw"]
-		elif mode == 3: # metadata mode, just go to emit mode, it's fine
+		elif mode == 4: # metadata mode, just go to emit mode, it's fine
 			self.mouse_event_handler = self.mouse_event_handlers["emit"]
 		else:
 			print "unknown mouse mode:",mode
@@ -1089,6 +1091,24 @@ class EMImage2DModule(EMGUIModule):
 		
 		return False
 
+	def render_bitmap(self):
+		"""This will render the current bitmap into a string and return a tuple with 1 or 3 (grey vs RGB), width, height, and the raw data string"""
+		if not self.invert : pixden=(0,255)
+		else: pixden=(255,0)
+
+
+		if self.curfft==1 :
+			if self.display_fft.is_complex() == False:
+				print "error, the fft is not complex, internal error"
+				return
+			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
+		elif self.curfft in (2,3) :
+			a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
+		else : 
+			a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.data, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+
+		return a
+
 	def render(self):
 		if not self.data and not self.fft : return
 		if not self.is_visible(): 
@@ -1133,19 +1153,10 @@ class EMImage2DModule(EMGUIModule):
 		else: render = True
 		
 		if render:
-			if self.curfft==1 :
-				if self.display_fft.is_complex() == False:
-					print "error, the fft is not complex, internal error"
-					return
-				a=self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3)
-				gl_render_type = GL_RGB
+			(bpp,w,h,a)=self.render_bitmap()
+			if bpp==3 : gl_render_type = GL_RGB
+			else : gl_render_type = GL_LUMINANCE
 				
-			elif self.curfft in (2,3) :
-				a=GLUtil.render_amp8(self.display_fft, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2)
-				gl_render_type = GL_LUMINANCE
-			else : 
-				a=GLUtil.render_amp8(self.data, int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2)
-				gl_render_type = GL_LUMINANCE
 			if not self.glflags.npt_textures_unsupported():
 				
 				self.hist=struct.unpack('256i',a[-1024:])
@@ -1161,7 +1172,7 @@ class EMImage2DModule(EMGUIModule):
 	
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,w,h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -1878,6 +1889,46 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.apptablab = QtGui.QLabel("Application specific mouse functions",self.apptab)
 		self.mmtab.addTab(self.apptab,"App")
 		
+		# Save tab
+		self.savetab = QtGui.QWidget()
+		self.stlay = QtGui.QGridLayout(self.savetab)
+		
+		self.stsnapbut = QtGui.QPushButton("Snapshot")
+		self.stwholebut = QtGui.QPushButton("Save Img")
+		self.ststackbut = QtGui.QPushButton("Save Stack")
+		self.stmoviebut = QtGui.QPushButton("Movie")
+		self.stanimgif = QtGui.QPushButton("GIF Anim")
+
+		self.stlay.addWidget(self.stsnapbut,0,0)
+		self.stlay.addWidget(self.stwholebut,1,0)
+		self.stlay.addWidget(self.ststackbut,1,1)
+		self.stlay.addWidget(self.stmoviebut,0,2)
+		self.stlay.addWidget(self.stanimgif,1,2)
+		self.stmoviebut.setEnabled(False)
+		self.stanimgif.setEnabled(False)
+
+		self.rngbl = QtGui.QHBoxLayout()
+		self.stlay.addLayout(self.rngbl,2,0,1,3)
+		self.stmmlbl = QtGui.QLabel("Img Range :")
+		self.stminsb = QtGui.QSpinBox()
+		self.stminsb.setRange(0,0)
+		self.stminsb.setValue(0)
+		self.stmaxsb = QtGui.QSpinBox()
+		self.stmaxsb.setRange(0,0)
+		self.stmaxsb.setValue(0)
+		
+		self.rngbl.addWidget(self.stmmlbl)
+		self.rngbl.addWidget(self.stminsb)
+		self.rngbl.addWidget(self.stmaxsb)
+
+		self.mmtab.addTab(self.savetab,"Save")
+		
+		QtCore.QObject.connect(self.stsnapbut,QtCore.SIGNAL("clicked(bool)"),self.do_snapshot)
+		QtCore.QObject.connect(self.stwholebut,QtCore.SIGNAL("clicked(bool)"),self.do_saveimg)
+		QtCore.QObject.connect(self.ststackbut,QtCore.SIGNAL("clicked(bool)"),self.do_savestack)
+		QtCore.QObject.connect(self.stmoviebut,QtCore.SIGNAL("clicked(bool)"),self.do_makemovie)
+		QtCore.QObject.connect(self.stanimgif,QtCore.SIGNAL("clicked(bool)"),self.do_makegifanim)
+		
 		# Measure tab
 		self.meastab = QtGui.QWidget()
 		self.mtlay = QtGui.QGridLayout(self.meastab)
@@ -1894,20 +1945,24 @@ class EMImageInspector2D(QtGui.QWidget):
 #		self.mtapix.resize(60,21)
 #		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 		
-		self.mtshowlen= QtGui.QLabel("Length:")
-		self.mtlay.addWidget(self.mtshowlen,2,0,1,2,Qt.AlignHCenter)
 		
-		self.mtshoworigin= QtGui.QLabel("Origin:")
-		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignHCenter)
+		self.mtshoworigin= QtGui.QLabel("Origin: 0,0")
+		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignLeft)
 		
-		self.mtshowend= QtGui.QLabel("End:")
-		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignHCenter)
+		self.mtshowend= QtGui.QLabel("End: 0,0")
+		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignLeft)
 
-		self.mtshowval= QtGui.QLabel("Value:")
-		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignHCenter)
+		self.mtshowlen= QtGui.QLabel("dx,dy: 0")
+		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignLeft)
+
+		self.mtshowlen2= QtGui.QLabel("Length: 0")
+		self.mtlay.addWidget(self.mtshowlen,2,1,Qt.AlignLeft)
+
+		self.mtshowval= QtGui.QLabel("Value: ?")
+		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignLeft)
 
 		self.mtshowval2= QtGui.QLabel(" ")
-		self.mtlay.addWidget(self.mtshowval2,4,0,1,2,Qt.AlignHCenter)
+		self.mtlay.addWidget(self.mtshowval2,4,0,1,2,Qt.AlignLeft)
 
 		
 		self.mmtab.addTab(self.meastab,"Meas")
@@ -2085,6 +2140,78 @@ class EMImageInspector2D(QtGui.QWidget):
 ##	def resizeEvent(self,event):
 #		print self.width(),self.height()
 
+	def do_snapshot(self,du) :
+		if self.target().data==None : return
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm or .ppm only")
+		fsp=str(fsp)
+		if fsp[-4:]==".pgm" or fsp[-4:]==".ppm" : fsp=fsp[:-4]
+		(depth,w,h,bmap)=self.target().render_bitmap()
+		if depth==3 : 
+			out=file(fsp+".ppm","w")
+			out.write("P6 %d %d 255\n"%(w,h))
+			out.write(bmap)
+			out.close()
+		elif depth==1 : 
+			out=file(fsp+".pgm","w")
+			out.write("P5 %d %d 255\n"%(w,h))
+			print w,h,w*h,len(bmap)
+			out.write(bmap)
+			out.close()
+		
+	def do_saveimg(self,du) :
+		if self.target().data==None : return
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
+		fsp=str(fsp)		
+		self.target().data.write_image(fsp)
+
+	def do_savestack(self,du) :
+		if self.target().list_data==None : return
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion")
+		#fsp=str(fsp).split(".")
+		#if len(fsp)==1 :
+			#fsp1=fsp[0]
+			#fsp2="mrc"
+		#else :
+			#fsp1=".".join(fsp[:-1])
+			#fsp2=fsp[-1]
+		
+		for i in range(self.stminsb.value(),self.stmaxsb.value()):
+			im=self.target().list_data[i]
+			im.write_image(fsp,-1)
+
+	def do_makemovie(self,du) :
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")
+		if self.target().list_data==None : return
+		
+		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
+			im=self.target().list_data[i]
+			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
+		
+		ret= os.system("ffmpeg -i tmp.%%03d.png %s"%fsp)
+		if ret!=0 : 
+			QtGui.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
+			return
+		
+		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
+			os.unlink("tmp.%03d.png"%(i-self.stminsb.value()+1))
+		
+		
+	def do_makegifanim(self,du) :
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output gif file")
+		if self.target().list_data==None : return
+		
+		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
+			im=self.target().list_data[i]
+			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
+		
+		ret= os.system("convert tmp.???.png %s"%fsp)
+		if ret!=0 : 
+			QtGui.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure ImageMagick (convert program) is installed and in your path. Frames not deleted.")
+			return
+		
+		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
+			os.unlink("tmp.%03d.png"%(i-self.stminsb.value()+1))
+
 	def do_python(self):
 		img=self.target().data
 		try: 
@@ -2099,6 +2226,11 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.pyout.setText(QtCore.QString(r))
 
 	def disable_image_range(self):
+		self.stminsb.setRange(0,0)
+		self.stmaxsb.setRange(0,0)
+		self.stmoviebut.setEnabled(False)
+		self.stanimgif.setEnabled(False)
+		
 		if self.image_range != None:
 			self.vbl.removeWidget(self.image_range)
 			self.image_range.deleteLater()
@@ -2116,6 +2248,12 @@ class EMImageInspector2D(QtGui.QWidget):
 			
 		self.image_range.setRange(minimum,maximum)
 		self.image_range.setValue(current_idx)
+		self.stmoviebut.setEnabled(True)
+		self.stanimgif.setEnabled(True)
+
+		self.stminsb.setRange(minimum,maximum)
+		self.stmaxsb.setRange(minimum,maximum)
+		self.stmaxsb.setValue(maximum)
 		
 		QtCore.QObject.connect(self.image_range, QtCore.SIGNAL("valueChanged"), self.target().image_range_changed)
 

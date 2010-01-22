@@ -200,6 +200,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("intonly", EMObject::INT,"Integer pixel translations only");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels");
 			d.put("masked", EMObject::INT,"Treat zero pixels in 'this' as a mask for normalization (default false)");
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
@@ -327,6 +328,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			return d;
 		}
 		
@@ -463,6 +465,7 @@ namespace EMAN
 			d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			return d;
 		}
 		
