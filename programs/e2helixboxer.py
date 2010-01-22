@@ -76,10 +76,18 @@ def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
             os.mkdir(output_filepath)
         output_filepath = os.path.join(output_filepath, frame_name + ".box")
         out_file = open(output_filepath, "w")
+        
         for coords in coords_list:
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[4], coords[4], -1) )
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[2], coords[3], coords[4], coords[4], -2) )
+            (x1, y1) = (coords[0], coords[1])
+            (x2, y2) = (coords[2], coords[3])
+            width = coords[4]
+            r = width / 2.0
+                        
+            #For some reason, EMAN1 subtracts half the box width from each coordinate
+            out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-1\n" % (x1 - r, y1 - r, width, width) )
+            out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-2\n" % (x2 - r, y2 - r, width, width) )
         out_file.close()
+        
     elif output_type == "hbox":
         output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
         if not os.access(output_filepath, os.F_OK):
@@ -89,6 +97,7 @@ def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
         for coords in coords_list:
             out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
         out_file.close()
+        
     else:
         pass
 
@@ -105,6 +114,8 @@ def db_get_segments_dict(frame_filepath):
     frame_name = os.path.splitext( frame_filename )[0]
     db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
     box_coords_list = db[frame_filename]
+    if not box_coords_list:
+        return {}
     segments_dict = {}
     for coords in box_coords_list:
         segment = get_segment_from_coords(frame, *coords)
@@ -171,7 +182,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
         self.segments_dict = db_get_segments_dict(frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
-        self.color = (1, 1, 1)
+        self.color = (0, 1, 0)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
         self.image_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
