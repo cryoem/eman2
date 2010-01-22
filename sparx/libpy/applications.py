@@ -8842,8 +8842,9 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 
 	flag = 0
 	if myid == main_node:
-		if ncpu < trials:
-			ERROR('Find structure MPI: number of trials must be superior than the number of processors.')
+		if ncpu > trials:
+			print '** WARNING **'
+			print 'Find structure MPI: number of trials must be superior than the number of processors.'
 			flag = 1
 	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	flag = int(flag[0])
@@ -8866,7 +8867,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 
 	# Update logfile
-	if myid == main_node: cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, nbcpu)
+	if myid == main_node: cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, ncpu)
 
 	disc_init = [0.0] * trials
 	disc_end  = [0.0] * trials
