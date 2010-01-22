@@ -71,15 +71,21 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
 
 def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
     if output_type == "box":
-        path = os.path.join(output_dir, frame_name + ".box")
-        out_file = open(path, "w")
+        output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
+        if not os.access(output_filepath, os.F_OK):
+            os.mkdir(output_filepath)
+        output_filepath = os.path.join(output_filepath, frame_name + ".box")
+        out_file = open(output_filepath, "w")
         for coords in coords_list:
             out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[4], coords[4], -1) )
             out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[2], coords[3], coords[4], coords[4], -2) )
         out_file.close()
     elif output_type == "hbox":
-        path = os.path.join(output_dir, frame_name + ".hbox")
-        out_file = open(path, "w")
+        output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
+        if not os.access(output_filepath, os.F_OK):
+            os.mkdir(output_filepath)
+        output_filepath = os.path.join(output_filepath, frame_name + ".hbox")
+        out_file = open(output_filepath, "w")
         for coords in coords_list:
             out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
         out_file.close()
@@ -107,7 +113,12 @@ def db_get_segments_dict(frame_filepath):
 
 def save_segment(segment_emdata, frame_name, segment_num, output_type = "hdf", output_dir=""):
     output_fname = "%s.%i.seg.%s" % (frame_name, segment_num, output_type)
-    output_filepath = os.path.join(output_dir, output_fname)
+    output_filepath = os.path.join(output_dir, "seg." + str(segment_emdata.get_xsize()))
+    if not os.access(output_filepath, os.F_OK):
+        os.mkdir(output_filepath)
+    output_filepath = os.path.join(output_filepath, output_fname)
+    if os.access(output_filepath, os.F_OK):
+        os.remove(output_filepath)
     segment_emdata.write_image( output_filepath )
 
 def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
@@ -120,10 +131,15 @@ def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
         save_segment(segment, frame_name, i, output_type, output_dir)
         i+=1
 
-def save_particles(segment, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
-    particles = get_particles_from_segment(segment, px_overlap, px_length, px_width)
+def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+    particles = get_particles_from_segment(segment_emdata, px_overlap, px_length, px_width)
     output_filename = "%s.%i.ptcl.%s" % (frame_name, segment_num, output_type)
-    output_filepath = os.path.join(output_dir, output_filename)
+    output_filepath = os.path.join(output_dir, "ptcl." + str(px_width))
+    if not os.access(output_filepath, os.F_OK):
+        os.mkdir(output_filepath)
+    output_filepath = os.path.join(output_filepath, output_filename)
+    if os.access(output_filepath, os.F_OK):
+        os.remove(output_filepath)
     for i in range(len(particles)):
         ptcl = particles[i]
         ptcl.write_image(output_filepath, i) #appending to the image stack
@@ -154,7 +170,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
-        self.segments_dict = db_get_segments_dict(self.filename) #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.segments_dict = db_get_segments_dict(frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (1, 1, 1)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
@@ -345,18 +361,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.ptcls_length_spinbox.setValue(width)
         self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
         self.ptcls_width_spinbox.setValue( width )
-    def write_coords(self):
-        em_selector_module = EMSelectorModule()
-        file_path = em_selector_module.exec_()
-        print file_path
-        print self.box_coords_string()
-    def write_particles(self):
-        em_selector_module = EMSelectorModule()
-        file_path = em_selector_module.exec_()
-        print file_path
-        pass
     def write_ouput(self):
-        frame_filename = os.path.basename(self.filename)
+        frame_filename = os.path.basename(self.filename) #already the basename, currently
         frame_name = os.path.splitext( frame_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
         if self.coords_groupbox.isChecked():
