@@ -207,6 +207,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.segs_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
         self.ptcls_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
         width = 100
+        if self.segments_dict:
+            first_coords = self.segments_dict.keys()[0]
+            width = first_coords[4]
         self.box_width_spinbox.setValue(width)
         self.ptcls_width_spinbox.setValue( width )
         self.ptcls_length_spinbox.setValue( width )
@@ -369,9 +372,34 @@ class EMHelixBoxerWidget(QtGui.QWidget):
     def get_width(self):
         return self.box_width_spinbox.value()
     def width_changed(self, width):
+        if width < 1:
+            return
+        #other widget updates
         self.ptcls_length_spinbox.setValue(width)
         self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
         self.ptcls_width_spinbox.setValue( width )
+        
+        #resize current boxes
+        #TODO: this is similar to part of self.mouse_up ==> make both methods call a function with common code
+        shapes = self.main_image.get_shapes() #an EMShapeDict of EMShapes
+        for box_key in shapes.keys():
+            old_emshape = shapes.get(box_key)
+            old_coords = old_emshape.getShape()[4:9]
+            new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
+            segment = get_segment_from_coords( self.main_image.get_data(), *new_coords )
+                        
+            self.remove_box_from_db(old_coords)
+            self.add_box_to_db(new_coords)
+            self.segments_dict.pop(tuple(old_coords))
+            self.segments_dict[new_coords] = segment
+                        
+            new_emshape = EMShape( ["rectline", self.color[0], self.color[1], self.color[2], new_coords[0], new_coords[1], new_coords[2], new_coords[3], new_coords[4], 2] )
+            shapes[box_key] = new_emshape
+            
+        self.main_image.shapechange=1
+        self.main_image.updateGL()
+        if self.segment_viewer:
+            self.segment_viewer.set_data(EMData(1,1))
     def write_ouput(self):
         frame_filename = os.path.basename(self.filename) #already the basename, currently
         frame_name = os.path.splitext( frame_filename )[0]
