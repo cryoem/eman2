@@ -259,6 +259,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
         self.__create_ui()
         
+        self.main_image.optimally_resize()
+        
         self.coords_ftype_combobox.addItems( sorted(self.coords_file_extension_dict.keys()) )
         self.segs_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
         self.ptcls_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
@@ -414,6 +416,24 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         #path = selector.exec_()
         path = QtGui.QFileDialog.getExistingDirectory(self)
         self.output_dir_line_edit.setText(path)
+    def display_segment(self, segment_emdata):
+        """
+        launches or updates an EMImage2DModule to display segment_emdata
+        @segment_emdata: an EMData object that stores the image data for a segment
+        """
+        if not self.segment_viewer:
+            self.segment_viewer = EMImage2DModule(application=get_application())
+            self.segment_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
+            self.segment_viewer.setWindowTitle("Current Boxed Segment")
+            self.segment_viewer.get_qt_widget().resize(200,800)
+        self.segment_viewer.set_data(segment_emdata)
+
+        get_application().show_specific(self.segment_viewer)
+        scale = 100.0 / self.get_width()
+        self.segment_viewer.set_scale(scale)
+        if self.segment_viewer.inspector:
+            self.segment_viewer.inspector.set_scale(scale)
+        self.segment_viewer.updateGL()
     def exit_app(self):
         """
         quits the program
@@ -464,7 +484,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image.updateGL()
         
         if self.segment_viewer:
-             self.segment_viewer.set_data(EMData(1,1))
+             self.display_segment(segment) #display the segment from the last iteration
         
     def write_ouput(self):
         """
@@ -676,30 +696,13 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             data_tuple = tuple(box.getShape()[4:9])
             self.segments_dict[data_tuple] = segment
             
-            if not self.segment_viewer:
-                self.segment_viewer = EMImage2DModule(application=get_application())
-                self.segment_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
-                self.segment_viewer.setWindowTitle("Current Boxed Segment")
-                self.segment_viewer.get_qt_widget().resize(200,800)
-            self.segment_viewer.set_data(segment)
-            #w = self.segment_viewer.width()
-            #self.segment_viewer.set_origin(w/2,0)
-            self.segment_viewer.updateGL()
-            get_application().show_specific(self.segment_viewer)
-            scale = 100 / self.get_width()
-            self.segment_viewer.set_scale(scale)
-            if self.segment_viewer.inspector:
-                self.segment_viewer.inspector.set_scale(scale)
-            self.segment_viewer.updateGL()
-
+            self.display_segment(segment)
+            
         self.click_loc = None
         self.edit_mode = None
         self.current_boxkey = None #We are done editing the box
         self.initial_helix_box_data_tuple = None
 
-
-        
-        
         
 def main():
     progname = os.path.basename(sys.argv[0])
