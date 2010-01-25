@@ -18,6 +18,15 @@ import os
 #from emimagemx import EMImageMXModule
 
 
+"""
+This program is used to box segments from a frame and extract particles from the segments.
+A frame is the the EM micrograph image that contains the biological macromolecules that will be boxed.
+A segment is a rectangular region that shows a helical region of a biological macromolecule. 
+Different segments from the same frame will generally have different lengths but the same width.
+A particle is a square or rectangle from inside a segment. Particles are chosen so that they overlap each other
+within a segment. Usually, all particles from a frame will have the same dimensions.
+"""
+
 
 E2HELIXBOXER_DB = "bdb:e2helixboxercache"
 def counterGen():
@@ -32,6 +41,14 @@ def counterGen():
         yield i
 
 def get_particles_from_segment( segment, px_overlap, px_length = None, px_width = None ):
+    """
+    Gets the square/rectangular "particles" inside a rectangular segment.
+    @segment: EMData object that contains the rectangular region boxed by the user
+    @px_overlap: pixels of overlap of the rectangular particles taken from the segment
+    @px_length: length of the particles in pixels, defaults to the width of the segment
+    @px_width: width of the particles in pixels, defaults to px_length
+    @return: a list of EMData particles
+    """
     if not px_width:
         px_width = segment.get_xsize()
     if not px_length:
@@ -50,6 +67,16 @@ def get_particles_from_segment( segment, px_overlap, px_length = None, px_width 
     return particles
 
 def get_segment_from_coords(frame, x1, y1, x2, y2, width):
+    """
+    Gets the rectangular segment of the image specified by the coordinates.
+    @frame: the EMData object which holds the micrograph from which segments and particles are chosen
+    @x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @width: the width in pixels of the rectangle
+    @return: the rectangular EMData segment specified by the coordinates and width 
+    """
     l_vect = (x2-x1, y2-y1)
     length = sqrt(l_vect[0]**2+l_vect[1]**2)
     l_uvect = (l_vect[0]/length, l_vect[1]/length)
@@ -70,6 +97,18 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
     return segment
 
 def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
+    """
+    Saves coordinates and widths of the boxed segments to a file.
+    @coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a segment
+    @frame_name: the file name of the frame without the file extension
+    @output_type: the file format used for saving coordinates. Can be "box" or "hbox".
+    "*.box": the EMAN1 file format -- r is half the width (w) of the boxes
+        x1-r    y1-r    w    w    -1
+        x2-r    y2-r    w    w    -2
+    "*.hbox": the EMAN2 file format
+        x1    y1    x2    y2    w
+    @output_dir: the file will be saved in {output_dir}/box.xyz/ where xyz is the width of the boxes     
+    """
     if output_type == "box":
         output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
         if not os.access(output_filepath, os.F_OK):
@@ -123,6 +162,14 @@ def db_get_segments_dict(frame_filepath):
     return segments_dict
 
 def save_segment(segment_emdata, frame_name, segment_num, output_type = "hdf", output_dir=""):
+    """
+    Saves a boxed segment to an image file.
+    @segment_emdata: the EMData object that holds the image data for the segment
+    @frame_name: the file name of the frame without the file extension
+    @segment_num: the number that identifies this segment among those boxed from this frame
+    @output_type: the image file type to write out
+    @output_dir: the file will be saved in {output_dir}/seg.xyz/ where xyz is the width of the segment 
+    """
     output_fname = "%s.%i.seg.%s" % (frame_name, segment_num, output_type)
     output_filepath = os.path.join(output_dir, "seg." + str(segment_emdata.get_xsize()))
     if not os.access(output_filepath, os.F_OK):
@@ -143,6 +190,15 @@ def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
         i+=1
 
 def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+    """
+    saves the particles in a segment to a stack file
+    @segment_emdata: the EMData object containing the image data for the segment
+    @segment_num: the number used to identify this segment among all those boxed in the frame
+    @frame_name: the file name of the frame without the file extension
+    @px_overlap, @px_length, @px_width: see get_particles_from_segment() function
+    @output_type: the output image file type
+    @output_dir: the output file will be saved in {output_dir}/ptcl.xyz where xyz is the width of each of the particles
+    """
     particles = get_particles_from_segment(segment_emdata, px_overlap, px_length, px_width)
     output_filename = "%s.%i.ptcl.%s" % (frame_name, segment_num, output_type)
     output_filepath = os.path.join(output_dir, "ptcl." + str(px_width))
@@ -191,11 +247,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.set_db_item("boxes", [])
         else:
             boxList = self.get_db_item("boxes")
-            for boxCoords in boxList:
+            for box_coords in boxList:
                 key = self.generate_emshape_key()
                 emshape_list = ["rectline"]
                 emshape_list.extend(list(self.color))
-                emshape_list.extend(list(boxCoords))
+                emshape_list.extend(list(box_coords))
                 emshape_list.append(2)
                 emshape = EMShape( emshape_list )
                 self.main_image.add_shape(key, emshape)
@@ -349,29 +405,37 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.addWidget(self.done_but)
         self.vbl.addWidget(self.status_bar)
 
-    def box_coords_string(self):
-        print self.main_image.get_shapes()
-        coords_list = [ shape.getShape()[4:9] for shape in self.main_image.get_shapes().values() ]
-        lines = [ "\t".join( [str(i) for i in coords] ) for coords in coords_list ]
-        ret = "\n".join(lines)
-        return ret
     def choose_dir(self):
+        """
+        launches a file-browser dialog to select the base directory in which to save output coordinates, segments, and particles 
+        """
         #selector = EMSelectorModule(save_as_mode=False)
         #selector.widget.save_as_line_edit.setEnabled(False)
         #path = selector.exec_()
-        
         path = QtGui.QFileDialog.getExistingDirectory(self)
-        
         self.output_dir_line_edit.setText(path)
     def exit_app(self):
+        """
+        quits the program
+        """
         app = get_application()
         app.quit()
     def generate_emshape_key(self):
+        """
+        creates a unique key for a new "rectline" EMShape, which is used for boxing a segment
+        @return: a string that is the key for the new "rectline" EMShape
+        """
         i = self.counter.next()
         return "rectline%i" % i
     def get_width(self):
+        """
+        returns the current width for the segments
+        """
         return self.box_width_spinbox.value()
     def width_changed(self, width):
+        """
+        updates the widths of the boxed segments when the user changes the width to use for segments
+        """
         if width < 1:
             return
         #other widget updates
@@ -398,9 +462,15 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             
         self.main_image.shapechange=1
         self.main_image.updateGL()
+        
         if self.segment_viewer:
-            self.segment_viewer.set_data(EMData(1,1))
+             self.segment_viewer.set_data(EMData(1,1))
+        
     def write_ouput(self):
+        """
+        writes the coordinates for the segments, the image data for the segments, and the image data 
+        for the particles to files if each of those options are checked
+        """
         frame_filename = os.path.basename(self.filename) #already the basename, currently
         frame_name = os.path.splitext( frame_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
@@ -431,31 +501,46 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 i += 1
         
     def get_db_item(self, key):
+        """
+        gets the value stored in the e2helixboxer database for the specified key and the current frame 
+        """
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
         val = db[self.filename]
         db_close_dict(db_name)
         return val
     def remove_db_item(self, key):
+        """
+        removes the key and its value from the e2helixboxer database for the current frame
+        """
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
         db.pop(key)
     def set_db_item(self, key, value):
+        """
+        sets the value stored in the e2helixboxer database for the specified key and the current frame 
+        """
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
         db[self.filename] = value
         db_close_dict(db_name)
-    def add_box_to_db(self, boxCoords):
-        assert len(boxCoords) == 5, "boxCoords must have 5 items"
+    def add_box_to_db(self, box_coords):
+        """
+        adds the coordinates for a segment to the e2helixboxer database for the current frame
+        """
+        assert len(box_coords) == 5, "box_coords must have 5 items"
         db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
         boxList = db[self.filename] #Get a copy of the db in memory
-        boxList.append(tuple(boxCoords))
+        boxList.append(tuple(box_coords))
         db[self.filename] = boxList #Needed to save changes to disk
-    def remove_box_from_db(self, boxCoords):
-        assert len(boxCoords) == 5, "boxCoords must have 5 items"
+    def remove_box_from_db(self, box_coords):
+        """
+        removes the coordinates for a segment in the e2helixboxer database for the current frame
+        """
+        assert len(box_coords) == 5, "box_coords must have 5 items"
         db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
         boxList = db[self.filename] #Get a copy of the db in memory
-        boxList.remove(tuple(boxCoords))
+        boxList.remove(tuple(box_coords))
         db[self.filename] = boxList #Needed to save changes to disk
 
     def mouse_down(self, event, click_loc):
@@ -469,6 +554,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         (3/8 L from the shorter axis of symmetry) will result in moving the entire box.
         Clicking on a point betwen 3/8 L and 5/8 L from the shorter axis of symmetry
         results in moving that end of the box while keeping the midpoint of the other end fixed.
+        
+        @event: the mouse click event that causes a box to be added, removed, or modified
+        @click_loc: the coordinates in Angstroms of the mouse click on the image
         """
 
         self.click_loc = click_loc
@@ -517,8 +605,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.current_boxkey = None
             self.initial_helix_box_data_tuple = None
         elif self.edit_mode == "delete":
-            boxCoords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
-            self.remove_box_from_db(boxCoords)
+            box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
+            self.remove_box_from_db(box_coords)
             self.main_image.del_shape(box_key)
             self.main_image.updateGL()
             self.current_boxkey = None
@@ -530,6 +618,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         Boxes are deleted in mouse_down, and the decision of how to edit is made there.
         However, new boxes are made and existing boxes are edited here.
+        @event: the mouse click event that causes a box to be added, removed, or modified
+        @click_loc: the coordinates in Angstroms of the mouse click on the image
         """
         
         if self.click_loc and self.edit_mode: #self.click_loc and self.edit_mode are set in mouse_down
@@ -572,15 +662,17 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         Once the mouse button comes back up, creating a new box, or editing
         an existing box is complete, so we need only clear variables relevant
         to creating or editing boxes, and get the image data from the boxed area.
+        @event: the mouse click event that causes a box to be added, removed, or modified
+        @click_loc: the coordinates in Angstroms of the mouse click on the image
         """
 
         if self.current_boxkey and self.edit_mode != "delete":
             if self.initial_helix_box_data_tuple in self.get_db_item("boxes"):
                 self.remove_box_from_db(self.initial_helix_box_data_tuple)
             box = self.main_image.get_shapes().get(self.current_boxkey)
-            boxCoords = box.getShape()[4:9]
-            self.add_box_to_db(boxCoords)
-            segment = get_segment_from_coords( self.main_image.get_data(), *boxCoords )
+            box_coords = box.getShape()[4:9]
+            self.add_box_to_db(box_coords)
+            segment = get_segment_from_coords( self.main_image.get_data(), *box_coords )
             data_tuple = tuple(box.getShape()[4:9])
             self.segments_dict[data_tuple] = segment
             
