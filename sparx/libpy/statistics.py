@@ -909,7 +909,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	return ave, var
 
 	
-def aves_adw(input_stack, mode="a", SNR=1.0, r = 1.0):
+def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
@@ -955,7 +955,9 @@ def aves_adw(input_stack, mode="a", SNR=1.0, r = 1.0):
 				ctf2[k] += tmp[k] * tmp[k]
 			
 	for k in xrange(nc):
-		tmp[k] = 1.0/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
+		ww = max((ctf1[k]*SNR/(ctf2[k]*SNR+1)-1.0)/Ng, 0.0)+1.0
+		tmp[k] = ww/ctf1[k]
+		#tmp[k] = 1.0/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
 	ave = filt_table(ave, tmp)
 	del tmp, ctf1, ctf2
 	# variance
