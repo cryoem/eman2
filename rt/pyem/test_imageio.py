@@ -1130,32 +1130,6 @@ class TestImageIO(unittest.TestCase):
 		
 		from EMAN2 import get_supported_3d_formats
 		
-		#test for 3D image
-		size = 8
-		e = EMData(size,size,size)
-		e.process_inplace('testimage.axes')
-		
-		fmts = get_supported_3d_formats()
-		fmts =  ["spi","mrc","icos","em", "hdf"]
-		unsupported = ["img","xplor","pif","emim","vtk"] # so many that we can't use :(
-		for fmt in fmts:
-			name = "testregionimage."+fmt
-			e.write_image(name)
-			try:
-				for i in range(-2,3):
-					for j in range(-2,3):
-						for k in range(-2,3):
-							for l in range(-2,3):
-								for m in range(-2,3):
-									for n in range(-2,3):
-										region = Region(i,j,k,size+l,size+m,size+n)
-										f = EMData()
-										f.read_image(name,0,False,region)
-										g = e.get_clip(region)
-										self.assertEqual(f==g,True)
-			finally:
-				remove_file(name)
-		
 		#test for 2D image	
 		size = 8
 		e = EMData()
@@ -1177,6 +1151,34 @@ class TestImageIO(unittest.TestCase):
 									f.read_image(name,0,False,region)
 									g = e.get_clip(region)
 									self.assertEqual(f==g,True)
+			finally:
+				remove_file(name)
+		
+		
+		#test for 3D image
+		size = 8
+		e = EMData(size,size,size)
+		e.process_inplace('testimage.axes')
+		
+		fmts = get_supported_3d_formats()
+		fmts =  ["spi","mrc","icos","em", "hdf"]
+		unsupported = ["img","xplor","pif","emim","vtk"] # so many that we can't use :(
+		for fmt in fmts:
+			name = "testregionimage."+fmt
+			print "image name is: ", name
+			e.write_image(name)
+			try:
+				for i in range(-2,3):
+					for j in range(-2,3):
+						for k in range(-2,3):
+							for l in range(-2,3):
+								for m in range(-2,3):
+									for n in range(-2,3):
+										region = Region(i,j,k,size+l,size+m,size+n)
+										f = EMData()
+										f.read_image(name,0,False,region)
+										g = e.get_clip(region)
+										self.assertEqual(f==g,True)
 			finally:
 				remove_file(name)
 		
