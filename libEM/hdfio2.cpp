@@ -638,149 +638,167 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	hsize_t nx, ny, nz;
 	hsize_t dims_out[3];
 	hsize_t rank = H5Sget_simple_extent_ndims(spc);
-//	std::cout << "rank = " << rank << std::endl;
 
 	H5Sget_simple_extent_dims(spc, dims_out, NULL);
-	nx = dims_out[2];
-	if(rank > 1) {
-		ny = dims_out[1];
-	}
-	else {
+	if(rank == 1) {
+		nx = dims_out[0];
 		ny = 1;
-	}
-
-	if(rank > 2) {
-		nz = dims_out[0];
-	}
-	else {
 		nz = 1;
 	}
-//	std::cout << "Original image data: nx = " << nx << ", ny = " << ny << ", nz = " << nz << std::endl;
+	else if(rank == 2) {
+		nx = dims_out[1];
+		ny = dims_out[0];
+		nz = 1;
+	}
+	else if(rank == 3) {
+		nx = dims_out[2];
+		ny = dims_out[1];
+		nz = dims_out[0];
+	}
 
 	if (area) {
-//		if(area->x_origin() > nx || area->y_origin() > ny || area->z_origin() > nz || (area->x_origin()+nx)<0 || (area->y_origin()+ny)<0 || (area->z_origin()+nz)<0) {
-//			throw ImageDimensionException("The area's origin is completely out of bound");
-//		}
+		hid_t memoryspace;
 
  		/*Get the file dataspace - the region we want to read in the file*/
- 		hsize_t     doffset[3];             /* hyperslab offset in the file */
- 		doffset[2] = area->x_origin() < 0 ? 0 : area->x_origin();
-		doffset[1] = area->y_origin() < 0 ? 0 : area->y_origin();
-		doffset[0] = area->z_origin() < 0 ? 0 : area->z_origin();
-		int x0 = doffset[0];
-		int y0 = doffset[1];
-		int z0 = doffset[2];
+		int x0, y0, z0;		//the coordinates for up left corner, trim to be within image bound
+		int x1, y1, z1;		//the coordinates for down right corner, trim to be within image bound
+		int nx1, ny1, nz1;	//dimensions of the sub-region, actual region read form file
+ 		if(rank == 3) {
+			hsize_t     doffset[3];             /* hyperslab offset in the file */
+			doffset[2] = area->x_origin() < 0 ? 0 : area->x_origin();
+			doffset[1] = area->y_origin() < 0 ? 0 : area->y_origin();
+			doffset[0] = area->z_origin() < 0 ? 0 : area->z_origin();
+			x0 = doffset[0];
+			y0 = doffset[1];
+			z0 = doffset[2];
 
-		cout << "doffset = " << doffset[0] << ", " << doffset[1] << ", " << doffset[2] << std::endl;
+			z1 = area->x_origin() + area->get_width();
+			z1 = z1 > nx ? nx : z1;
 
-		int z1 = area->x_origin() + area->get_width();
-		z1 = z1 > nz ? nz : z1;
-		if(z1 <= 0) {
+			y1 = area->y_origin() + area->get_height();
+			y1 = y1 > ny ? ny : y1;
+			if(y1 <= 0) {
+				y1 = 1;
+			}
+
+			x1 = area->z_origin() + area->get_depth();
+			x1 = x1 > nz ? nz : x1;
+			if(x1 <= 0) {
+				x1 = 1;
+			}
+
+			if(x1 < x0 || y1< y0 || z1 < z0) return 0; //out of bounds, this is fine, nothing happens
+
+			hsize_t     dcount[3];              /* size of the hyperslab in the file */
+			dcount[0] = x1 - doffset[0];
+			dcount[1] = y1 - doffset[1];
+			dcount[2] = z1 - doffset[2];
+
+			H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+
+			/*Define memory dataspace - the memory we will created for the region*/
+			hsize_t     dims[3];              /* size of the region in the memory */
+			dims[0] = dcount[2]?dcount[2]:1;
+			dims[1]	= dcount[1]?dcount[1]:1;
+			dims[2] = dcount[0]?dcount[0]:1;
+			nx1 = dims[0];
+			ny1 = dims[1];
+			nz1 = dims[2];
+
+			memoryspace = H5Screate_simple(3, dims, NULL);
+ 		}
+ 		else if(rank == 2) {
+ 			hsize_t     doffset[2];             /* hyperslab offset in the file */
+			doffset[1] = area->x_origin() < 0 ? 0 : area->x_origin();
+			doffset[0] = area->y_origin() < 0 ? 0 : area->y_origin();
+			x0 = doffset[0];
+			y0 = doffset[1];
+			z0 = 1;
+
+			y1 = area->x_origin() + area->get_width();
+			y1 = y1 > nx ? nx : y1;
+
+			x1 = area->y_origin() + area->get_height();
+			x1 = x1 > ny ? ny : x1;
+			if(x1 <= 0) {
+				x1 = 1;
+			}
+
 			z1 = 1;
-		}
 
-		int y1 = area->y_origin() + area->get_height();
-		y1 = y1 > ny ? ny : y1;
+			if(x1 < x0 || y1< y0) return 0; //out of bounds, this is fine, nothing happens
 
-		int x1 = area->z_origin() + area->get_depth();
-		x1 = x1 > nx ? nx : x1;
+			hsize_t     dcount[2];              /* size of the hyperslab in the file */
+			dcount[0] = x1 - doffset[0];
+			dcount[1] = y1 - doffset[1];
 
+			H5Sselect_none(spc);
+			H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
-		if(x1 < x0 || y1< y0 || z1 < z0) return 0; //out of bounds, this is fine, nothing happens
-//		if (x1<0 || y1<0 || z1<0) throw ImageDimensionException("This area is completely out of bound");
+			/*Define memory dataspace - the memory we will created for the region*/
+			hsize_t     dims[2];              /* size of the region in the memory */
+			dims[0] = dcount[1]?dcount[1]:1;
+			dims[1]	= dcount[0]?dcount[0]:1;
+			nx1 = dims[0];
+			ny1 = dims[1];
+			nz1 = 1;
 
-		hsize_t     dcount[3];              /* size of the hyperslab in the file */
- 		dcount[0] = x1 - doffset[0];
-		dcount[1] = y1 - doffset[1];
-		dcount[2] = z1 - doffset[2];
+			memoryspace = H5Screate_simple(2, dims, NULL);
+ 		}
 
-		cout << "dcount = " << dcount[0] << ", " << dcount[1] << ", " << dcount[2] << std::endl;
-
-		herr_t status2 = H5Sselect_hyperslab (spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
-
-		/*Define memory dataspace - the memory we will created for the region*/
- 		hsize_t     dims[3];              /* size of the region in the memory */
- 		dims[0] = dcount[0];
- 		dims[1]	= dcount[1]?dcount[1]:1;
- 		dims[2] = dcount[2]?dcount[2]:1;
- 		int nx1 = dims[0];
-		int ny1 = dims[1];
-		int nz1 = dims[2];
-
- 		cout << "dims = " << dims[0] << ", " << dims[1] << ", " << dims[2] << std::endl;
-
- 		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
-
- 		if( (area->x_origin()>=0) && (area->y_origin()>=0) && (area->z_origin()>=0) && ((int)(area->x_origin() + area->get_width())<=nx) && ((int)(area->y_origin() + area->get_height())<=ny) && ((int)(area->z_origin() + area->get_depth())<=nz) ){	//the region is in boundary
- 			std::cout << "region is in boundary" << std::endl;
+ 		if( (area->x_origin()>=0) && (area->y_origin()>=0) && (area->z_origin()>=0) && ((hsize_t)(area->x_origin() + area->get_width())<=nx) && ((hsize_t)(area->y_origin() + area->get_height())<=ny) && ((hsize_t)(area->z_origin() + area->get_depth())<=nz) ){	//the region is in boundary
  			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,data);
  		}
  		else {	//the region are partial out of boundary
- 			std::cout << "region is at least partially out of bounds" << std::endl;
  			/* When the requested region has some part out of image boundary,
  			 * we need read the sub-area which is within image,
  			 * and fill the out of boundary part with zero.
  			 * We actually read the sub-region from HDF by hyperslab I/O,
  			 * then copy it back to the pre-allocated region.*/
- 			float * subdata = new float[dims[0]*dims[1]*dims[2]];
+ 			float * subdata = new float[nx1*ny1*nz1];
+
 
  			H5Dread(ds,H5T_NATIVE_FLOAT,memoryspace,spc,H5P_DEFAULT,subdata);
 
- 			/* The coordinates of the top-left corner sub-region in region*/
- 			int xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
- 			int yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
- 			int zd0 = (int) (area->z_origin() < 0 ? -area->z_origin() : 0);
-
- 			size_t clipped_row_size = (x1-x0)* sizeof(float);
-
- 			std::cout << "clipped_row_size = " << clipped_row_size << std::endl;
+ 			int xd0=0, yd0=0, zd0=0;	//The coordinates of the top-left corner sub-region in region
+ 			size_t clipped_row_size = 0;
+ 			if(rank == 3) {
+				xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
+				yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
+				zd0 = (int) (area->z_origin() < 0 ? -area->z_origin() : 0);
+ 				clipped_row_size = (z1-z0)* sizeof(float);
+ 			}
+ 			else if(rank == 2) {
+ 				xd0 = (int) (area->x_origin() < 0 ? -area->x_origin() : 0);
+ 				yd0 = (int) (area->y_origin() < 0 ? -area->y_origin() : 0);
+ 				clipped_row_size = (y1-y0)* sizeof(float);
+ 			}
 
  			int src_secsize = nx1 * ny1;
  			int dst_secsize = (int)(area->get_width())*(int)(area->get_height());
 
- 			std::cout << "src_secsize = " << src_secsize << ", dst_sec_size = " << dst_secsize << std::endl;
-
  			float * src = subdata;
  			float * dst = data + zd0*dst_secsize + yd0*(int)(area->get_width()) + xd0;
 
- 			std::cout << "z0 = " << z0 << ", y0 = " << y0 << ", x0 = " << x0 << endl;
-
  			int src_gap = src_secsize - (y1-y0) * nx1;
- 			int dst_gap = dst_secsize - (y1-y0) * (int)(area->get_depth());
+ 			int dst_gap = dst_secsize - (y1-y0) * (int)(area->get_width());
 
- 			std::cout << "src_gap = " << src_gap << std::endl;
- 			std::cout << "dst_gap = " << dst_gap << std::endl;
-
- 			std::cout << "z1 = " << z1 << ", y1 = " << y1 << ", x1 = " << x1 << std::endl;
- 			std::cout << "dcount[2] = " << dcount[2] << ", dcount[1] = " << dcount[1] << ", dcount[0] = " << dcount[0] << std::endl;
-
- 			for(int i = 0; i<dcount[2]; ++i) {
- 				for(int j = 0; j<dcount[1]; ++j) {
+ 			for(int i = 0; i<nz1; ++i) {
+ 				for(int j = 0; j<ny1; ++j) {
  					EMUtil::em_memcpy(dst, src, clipped_row_size);
 
- 					for(int ii = 0; ii < clipped_row_size/sizeof(float); ii++) {
- 						std::cout << "src[" << ii << "] = " << src[ii] << std::endl;
- 					}
-
  					src += nx1;
-// 					dst += (int)(area->get_width());
- 					dst += (int)(area->get_depth());
+ 					dst += (int)(area->get_width());
  				}
  				src += src_gap;
  				dst += dst_gap;
- 				std::cout << "src+= once" << std::endl;
  			}
 
  			delete [] subdata;
  		}
-
- 		//std::cout << "Region data read: data[1] = " << data[1] << std::endl;
-
  		H5Sclose(memoryspace);
 	} else {
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-
-		//std::cout << "Whole data read: data[1] = " << data[1] << std::endl;
 	}
 
 	H5Sclose(spc);
@@ -934,7 +952,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		dcount[1] = area->get_height()?area->get_height():1;
 		dcount[2] = area->get_depth()?area->get_depth():1;
 
-		herr_t status2 = H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+		H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Create memory space with size of the region.*/
 		hsize_t dims[3];	/*size of the region in the memory*/
