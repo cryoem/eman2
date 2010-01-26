@@ -1165,7 +1165,6 @@ class TestImageIO(unittest.TestCase):
 		unsupported = ["img","xplor","pif","emim","vtk"] # so many that we can't use :(
 		for fmt in fmts:
 			name = "testregionimage."+fmt
-			print "image name is: ", name
 			e.write_image(name)
 			try:
 				for i in range(-2,3):
