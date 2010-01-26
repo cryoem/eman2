@@ -79,6 +79,7 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
     """
     l_vect = (x2-x1, y2-y1)
     length = sqrt(l_vect[0]**2+l_vect[1]**2)
+    assert length != 0
     l_uvect = (l_vect[0]/length, l_vect[1]/length)
     centroid = ( (x1+x2)/2.0, (y1+y2)/2.0 )
     
@@ -96,6 +97,46 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
     segment = frame.get_rotated_clip( tr, segment_dimensions )
     return segment
 
+def load_coords(coords_filepath):
+    """
+    load coordinates from a *.box or *.hbox file
+    @return a list of tuples [(x0, x1, y1, y2, width), ...] 
+    """
+    (path, filename) = os.path.split(coords_filepath)
+    (basename, extension) = os.path.splitext(filename)
+    if extension == ".box":
+        data = []
+        datum = [None]*5
+        for line in open(coords_filepath):
+            line = line.split("\t")
+            for i in range(len(line)):
+                line[i] = int(line[i])
+            if line[4] == -1:
+                w = line[2]
+                r = w / 2.0
+                datum[0] = line[0] + r
+                datum[1] = line[1] + r
+                datum[4] = w
+            elif line[4] == -2:
+                assert line[2] == w
+                r = w / 2.0
+                datum[2] = line[0] + r
+                datum[3] = line[1] + r
+                w = None
+                r = None
+                data.append(tuple(datum))
+                datum = [None]*5
+    elif extension == ".hbox":
+        data = []
+        for line in open(coords_filepath):
+            line = line.split("\t")
+            for i in range(len(line)):
+                line[i] = int(line[i])
+            data.append(tuple(line))
+    else:
+        pass
+    
+    return data
 def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
     """
     Saves coordinates and widths of the boxed segments to a file.
@@ -123,6 +164,8 @@ def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
             r = width / 2.0
                         
             #For some reason, EMAN1 subtracts half the box width from each coordinate
+            #EMAN1 uses <cstdio> fprintf() and "%1.0f", which rounds half-integers away from zero
+            #the string format operator works the same in Python as it does in C for decimal floats
             out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-1\n" % (x1 - r, y1 - r, width, width) )
             out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-2\n" % (x2 - r, y2 - r, width, width) )
         out_file.close()
@@ -276,6 +319,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
         QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
+        self.connect(self.load_boxes_button, QtCore.SIGNAL("clicked()"), self.load_boxes )
         self.connect(self.output_dir_pushbutton, QtCore.SIGNAL("clicked()"), self.choose_dir )
         self.connect(self.write_output_button, QtCore.SIGNAL("clicked()"), self.write_ouput )
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
@@ -298,6 +342,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.img_quality_combobox.setCurrentIndex(2)
         self.img_quality_label.setBuddy(self.img_quality_combobox)
         self.img_quality_combobox.setEnabled(False)
+
+        self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
         
         self.coords_groupbox = QtGui.QGroupBox(self.tr("Write &Coordinates:"))
         self.coords_groupbox.setCheckable(True)
@@ -399,6 +445,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.setObjectName("vbl")
         self.vbl.addLayout(widthLayout)
         self.vbl.addLayout(qualityLayout)
+        self.vbl.addWidget(self.load_boxes_button)
         self.vbl.addWidget(self.coords_groupbox)
         self.vbl.addWidget(self.segs_groupbox)
         self.vbl.addWidget(self.ptcls_groupbox)
@@ -452,6 +499,38 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         returns the current width for the segments
         """
         return self.box_width_spinbox.value()
+    def load_boxes(self):
+        """
+        load boxes from a file selected in a file browser dialog
+        """
+        path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.box *.hbox)"))
+        path = str(path)
+        coords_list = load_coords(path)
+        
+        keep_boxes_msgbox = QtGui.QMessageBox()
+        keep_boxes_msgbox.setText(self.tr("Keep current boxes?"))
+        keep_boxes_msgbox.setInformativeText(self.tr("Do you want to keep your current boxes?"))
+        keep_boxes_msgbox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+        keep_boxes_msgbox.setDefaultButton(QtGui.QMessageBox.Yes)
+        keep_current_boxes = keep_boxes_msgbox.exec_()
+
+        if keep_current_boxes == QtGui.QMessageBox.No:
+            self.main_image.shapes = EMShapeDict()
+            self.set_db_item("boxes", [])
+            self.segments_dict = {}
+            if self.segment_viewer:
+                self.display_segment(EMData(10,10))
+        
+        for coords in coords_list:
+            emshape = EMShape(["rectline", self.color[0], self.color[1], self.color[2], coords[0], coords[1], coords[2], coords[3], coords[4], 2])
+            key = self.generate_emshape_key()
+            self.main_image.add_shape(key, emshape)
+            segment = get_segment_from_coords(self.main_image.get_data(), *coords)
+            self.segments_dict[coords] = segment
+            self.add_box_to_db(coords)
+
+        self.main_image.updateGL()
+        
     def width_changed(self, width):
         """
         updates the widths of the boxed segments when the user changes the width to use for segments
@@ -484,7 +563,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image.updateGL()
         
         if self.segment_viewer:
-             self.display_segment(segment) #display the segment from the last iteration
+            self.display_segment(EMData(10,10))
         
     def write_ouput(self):
         """
@@ -644,14 +723,16 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         if self.click_loc and self.edit_mode: #self.click_loc and self.edit_mode are set in mouse_down
             if self.edit_mode == "new":
-                self.current_boxkey = self.generate_emshape_key()                
-                emshape_tuple = ( "rectline",self.color[0], self.color[1], self.color[2], 
-                                       self.click_loc[0], self.click_loc[1], cursor_loc[0], cursor_loc[1], self.get_width(), 2 )
-                emshape_box = EMShape(emshape_tuple)
-                self.main_image.add_shape(self.current_boxkey, emshape_box)
-                self.main_image.updateGL()
-                self.initial_helix_box_data_tuple = emshape_tuple[4:9]
-                self.edit_mode = "2nd_point"
+                if self.click_loc[0] != cursor_loc[0] or self.click_loc[1] != cursor_loc[1]: #Don't make a zero-sized box
+                    self.current_boxkey = self.generate_emshape_key()                
+                    emshape_tuple = ( "rectline",self.color[0], self.color[1], self.color[2], 
+                                           self.click_loc[0], self.click_loc[1], cursor_loc[0], cursor_loc[1], self.get_width(), 2 )
+                    
+                    emshape_box = EMShape(emshape_tuple)
+                    self.main_image.add_shape(self.current_boxkey, emshape_box)
+                    self.main_image.updateGL()
+                    self.initial_helix_box_data_tuple = emshape_tuple[4:9]
+                    self.edit_mode = "2nd_point"
                 
             elif self.edit_mode == "delete":
                 pass
@@ -686,7 +767,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         @click_loc: the coordinates in Angstroms of the mouse click on the image
         """
 
-        if self.current_boxkey and self.edit_mode != "delete":
+        if self.current_boxkey and self.edit_mode != "delete": 
             if self.initial_helix_box_data_tuple in self.get_db_item("boxes"):
                 self.remove_box_from_db(self.initial_helix_box_data_tuple)
             box = self.main_image.get_shapes().get(self.current_boxkey)
