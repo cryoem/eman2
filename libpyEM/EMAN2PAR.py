@@ -49,6 +49,13 @@ import random
 import signal
 import traceback
 
+# if there is a problem with zlib just don't compress
+try: from zlib import compress,decompress
+except:
+	print "Warning: no compression available, please install zlib"
+	def compress(s) : return(s)
+	def decompress(s) : return(s)
+
 # used to make sure servers and clients are running the same version
 EMAN2PARVER=12
 
@@ -472,6 +479,25 @@ def recv_broadcast(sock):
 			return ret
 		curpktseq=pktseq
 
+def sendstr(sock,obj):
+	"""Sends a string on a socket. obj must be a string or None. A string of zero length is equivalent to None. Use recvstr() to receive"""
+	if obj==None or len(obj)==0: 
+		sock.write(pack("<I",0))
+		return
+	sock.write(pack("<I",len(obj)))
+	sock.write(obj)
+
+def recvstr(sock):
+	"""Receives a (compressed) string on a socket. obj must be a string. Use sendstr() to receive"""
+	l=sock.read(4)
+	try : 
+		datlen=unpack("<I",l)[0]
+	except:
+		print "Format error in unpacking '%s'"%l
+		raise Exception,"Network error receiving object"
+	if datlen<=0 :return None
+	return sock.read(datlen)
+
 
 def sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
@@ -758,6 +784,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						self.sockf.flush()
 						needed=recvobj(self.sockf)
 						
+						# send a list of all clients to try to talk to
+						allclients=set()
+						for i in EMDCTaskHandler.clients.keys(): 
+							if i=="maxrec" : continue
+							allclients.add(EMDCTaskHandler.clients[i][0])
+						allclients=list(allclients)
+						print "Clients: ", allclients
+						sendobj(self.sockf,allclients)
+						
 						# if none are needed, clear out the list of needed files
 						if len(needed)==0:
 							self.queue.precache["files"]=[]
@@ -771,14 +806,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 								for j in xrange(n):				# loop over images
 									a.read_image(name,j)
 									self.sockf.flush()			# flush before transmitting rather than after for better efficiency
-									sendobj(self.sockf,(i[0],i[1],j,a))
+									xmit=compress(dumps((i[0],i[1],j,a),-1),3)		# compressed pickled string for efficient transfer
+									sendstr(self.sockf,xmit)
 									rsp=self.sockf.read(4)
 									if rsp!="ACK " : print "Odd, non-ACK during caching"
 									if j%100==0 :
 										print " Caching %s: %d / %d        \r"%(name,j,n),
 										sys.stdout.flush()
 							
-						sendobj(self.sockf,"DONE")
+						sendstr(self.sockf,"DONE")
 						self.sockf.flush()
 						self.queue.caching=False
 						ack=recvobj(self.sockf)
@@ -1121,7 +1157,7 @@ class EMDCTaskClient(EMTaskClient):
 				cq.insert(0,None)
 			
 			# The data item should be a pickled tuple (time,rand,img#,image)
-			try : img=loads(img)
+			try : img=loads(decompress(img))
 			except : continue			# bad pickle :^(
 			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
 			except : continue			# data wasn't what we expected
@@ -1136,40 +1172,110 @@ class EMDCTaskClient(EMTaskClient):
 
 		if self.verbose and n>0: print n," items cached"
 
+	def connectfromlist(self,hostlist):
+		"""Given a list of possible hostnames to connect to, try to connect to each in sequence until one
+		answers. Transmit the remainder of the list to the host after connection. Returns the connected socket or
+		None if no connection was sucessful. """
+
+		fail=1
+		while fail :
+			try:
+				nexthost=hostlist.pop()
+			except:
+				sockout=None
+				break
+			sockout=socket.socket()
+			signal.alarm(5)
+			try : 
+				sockout.connect((nexthost,9989))
+				sendobj(sockout,chainlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
+				sockout.flush()
+				fail=0
+			except: 
+				print "connect %s to %s failed"%(socket.gethostname(),nexthost)
+
+		signal.alarm(0)
+		return sockout
+
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
 		try:
-			sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+			sock=socket.socket()
 			sock.bind(("",9989))
 		except:
+			sock=None
 			time.sleep(15)
 			return
-		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
+#		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 
 		cq=[]	# a list of returned images, gradually written by the thread
 		thr=threading.Thread(target=self.cachewriter,args=(cq,))
 		thr.start()
 
-		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
+#		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
+
+		chainlist=recvobj(sockf)		# The first thing we get is a list of other clients to send data to
+		sockout=self.connectfromlist(chainlist)		# try to establish a connection to one of them
+		
 		try: 
-			lname=""
+			ret=None
 			while 1 :
-				#signal.alarm(15)
+				if ret==None : signal.alarm(15)		# if we haven't gotten anything yet, only wait a little while
+				else : signal.alarm(30)				# if we've been receiving data, wait longer for more
+				
 #				cq.append(recv_broadcast(sock))		# too slow
-				ret=Util.recv_broadcast(sock.fileno())
-				if ret==None or len(ret)==0 :
+#				ret=Util.recv_broadcast(sock.fileno())
+
+				ret=None
+				try:
+					ret=recvstr(sockf)		# this should contain time,rint,img#,image
+					
+					if ret=="DONE" : break
+					sockf.write("ACK ")			# We do the ACK immediately along the chain for performance
+					sockf.flush()
+				except:
+#					traceback.print_exc()
+#					print "**** error receiving data on ",socket.gethostname()
 					cq.append(None)
 					break
+				
+				if len(ret)==0 : ret=None
 				cq.insert(0,ret)
 				
-		except: cq.append(None)
+				signal.alarm(60)				# Longer timeout for retransmitting down the chain
+				# Send the image down the chain
+				if sockout!=None :
+					try:
+						sendstr(sockout,ret)
+						sockout.flush()
+						if sockf.read(4)!="ACK " : raise Exception
+					except:
+						print "Chain broken ! (%s)"%socket.gethostname()
+						sockout=None
+
+				if ret==None: break
+				
+		except: 
+			traceback.print_exc()		# we shouldn't really get an exception here
+			print "**** Exception in outer chain loop"
+			cq.append(None)
+			
+		# Tell the chain we're done
+		if sockout!=None :
+			try:
+				sockout.sendstr("DONE")
+				sockout.flush()
+				sockout.close()
+			except: pass
+
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 
 		signal.alarm(0)
-		thr.join()			# wait for cachewriting to complete
+		thr.join()			# wait for cache writing to complete
 
 	def docache(self,sock,sockf,clist):
-		"""This routine will receive data to cache from the server, then broadcast it locally"""
+		"""This routine will receive data to cache from the server, then transmit it to the next server in line. This used
+		to use a network broadcast mechanism, but it proved to be too unreliable"""
 #		if self.verbose: print "Caching starting ",clist
 		needed=[]
 		for i in clist[1] :			# loop over list of files to cache
@@ -1185,20 +1291,23 @@ class EMDCTaskClient(EMTaskClient):
 		if self.verbose : print "Caching phase, need : ",needed
 #		if len(needed)==0 : return
 		
+		#bcast=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)	# One client will broadcast the data on its subnet for mass distribution
+		#bcast.bind(("",9989))
+		#bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+		chainlist=recvobj(sockf)		# The first thing we get back is a list of other clients to send data to
+		sockout=self.connectfromlist(chainlist)		# try to establish a connection to one of them
+				
 		lname=""
-		bcast=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)	# One client will broadcast the data on its subnet for mass distribution
-		bcast.bind(("",9989))
-		bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
 		n=0
 #		t0,t1,t2,t3=0,0,0,0
+		# This loop receives the data from the server, then forwards it to the next host in the chain
 		while 1:
 			signal.alarm(60)
-#			t0+=time.time()
-			img=recvobj(sockf)		# this should contain time,rint,img#,image
-			if isinstance(img,str):
-				if img=="DONE" : break
-				print "Unknown cache return string '",img,"'"
-				break
+			xmit=recvstr(sockf)		# this should contain time,rint,img#,image
+			
+			if xmit=="DONE" : break
+			ret=loads(decompress(xmit))
+
 			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
 			except :
 				print "Invalid cache data '",img,"'"
@@ -1207,19 +1316,33 @@ class EMDCTaskClient(EMTaskClient):
 				if self.verbose : print "Receiving cache data ",cname
 				f=db_open_dict(cname)
 				lname=cname
-#			t1+=time.time()
-			broadcast(bcast,img)
-#			if img[2]==0 :  broadcast(bcast,img)
-			f[img[2]]=img[3]
-#			t2+=time.time()
+				
+			# Send the image down the chain
+			if sockout!=None :
+				try:
+					sendobj(sockout,xmit)
+					sockout.flush()
+					if sockf.read(4)!="ACK " : raise Exception
+				except:
+					print "Chain broken ! (%s)"%socket.gethostname()
+					sockout=None
+					
+			f[img[2]]=img[3]		# Save the image in the local cache
+			
+			# need to consider moving this up before the chain propegation
 			sockf.write("ACK ")
 			sockf.flush()
-#			t3+=time.time()
-#			if n%50==0 : 
-#				print "timing : %d\t%1.3f\t%1.3f\t%1.3f"%(n,t1-t0,t2-t1,t3-t2)
-#				t0,t1,t2,t3=0,0,0,0
 			n+=1
-#			broadcast(bcast,img)		# since we have no retransmission method, and since the reveivers may be slow, this will help fill missing data
+		
+		# Tell the chain we're done
+		if sockout!=None :
+			try:
+				sockout.sendstr("DONE")
+				sockout.flush()
+				sockout.close()
+			except: pass
+			
+		signal.alarm(0)
 		
 
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
