@@ -1199,9 +1199,14 @@ class EMDCTaskClient(EMTaskClient):
 
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
+		
 		try:
 			sock=socket.socket()
 			sock.bind(("",9989))
+			signal.alarm(15)
+			sock.listen()
+			sock2=sock.accept()
+			sockf=sock2.makefile()
 		except:
 			sock=None
 			time.sleep(15)
