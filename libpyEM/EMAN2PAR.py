@@ -1311,7 +1311,7 @@ class EMDCTaskClient(EMTaskClient):
 			xmit=recvstr(sockf)		# this should contain time,rint,img#,image
 			
 			if xmit=="DONE" : break
-			ret=loads(decompress(xmit))
+			img=loads(decompress(xmit))
 
 			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
 			except :
