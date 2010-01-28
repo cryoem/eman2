@@ -955,9 +955,11 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 				ctf2[k] += tmp[k] * tmp[k]
 			
 	for k in xrange(nc):
-		ww = max((ctf1[k]*SNR/(ctf2[k]*SNR+1)-1.0)/Ng, 0.0)+1.0
-		tmp[k] = ww/ctf1[k]
-		#tmp[k] = 1.0/(ctf2[k] + 1.0/(r/(ctf1[k]-ctf2[k])+(1.0-r)*SNR))
+		if ctf1[k] > 0.001:
+			ww = 1.0/Ng+float(Ng-1)/Ng*(SNR*ctf2[k]+1)/(SNR*ctf1[k])
+		else:
+			ww = 1.0/Ng+float(Ng-1)/Ng/(SNR*0.001)
+		tmp[k] = ww/(ctf2[k]*SNR+1.0)
 	ave = filt_table(ave, tmp)
 	del tmp, ctf1, ctf2
 	# variance
