@@ -281,7 +281,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
         self.segments_dict = db_get_segments_dict(frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
-        self.color = (0, 1, 0)
+        self.color = (0, 0, 1)
+        self.selected_color = (0, 1, 0)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
         self.image_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
@@ -301,6 +302,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.main_image.updateGL()
 
         self.__create_ui()
+        
+        self.img_quality_combobox.setCurrentIndex( self.get_image_quality() )
         
         self.main_image.optimally_resize()
         
@@ -324,9 +327,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.connect(self.write_output_button, QtCore.SIGNAL("clicked()"), self.write_ouput )
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect(self.done_but, QtCore.SIGNAL("clicked()"), self.exit_app )
-
-        get_application().show_specific(self.main_image)
-        
+        self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
+        get_application().show_specific(self.main_image)        
 
         
     def __create_ui(self):
@@ -341,7 +343,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.img_quality_combobox.addItems(qualities)
         self.img_quality_combobox.setCurrentIndex(2)
         self.img_quality_label.setBuddy(self.img_quality_combobox)
-        self.img_quality_combobox.setEnabled(False)
+        #self.img_quality_combobox.setEnabled(False)
 
         self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
         
@@ -463,11 +465,24 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         #path = selector.exec_()
         path = QtGui.QFileDialog.getExistingDirectory(self)
         self.output_dir_line_edit.setText(path)
+    def color_boxes(self):
+        emshapes_dict = self.main_image.get_shapes()
+        for key in emshapes_dict:
+            shape = emshapes_dict.get(key).shape
+            for i in range(3):
+                shape[i+1] = self.color[i]
+        current_shape = emshapes_dict.get(self.current_boxkey)
+        if current_shape:
+            for i in range(3):
+                current_shape.shape[i+1] = self.selected_color[i]
+        self.main_image.shapechange=1
+        self.main_image.updateGL()
     def display_segment(self, segment_emdata):
         """
         launches or updates an EMImage2DModule to display segment_emdata
         @segment_emdata: an EMData object that stores the image data for a segment
         """
+        self.color_boxes()
         if not self.segment_viewer:
             self.segment_viewer = EMImage2DModule(application=get_application())
             self.segment_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
@@ -623,6 +638,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         db = db_open_dict(db_name)
         db[self.filename] = value
         db_close_dict(db_name)
+    def get_image_quality(self):
+        return self.get_db_item("quality")
+    def set_image_quality(self, quality):
+        self.set_db_item("quality", quality)
     def add_box_to_db(self, box_coords):
         """
         adds the coordinates for a segment to the e2helixboxer database for the current frame
@@ -778,7 +797,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.segments_dict[data_tuple] = segment
             
             self.display_segment(segment)
-            
+        
         self.click_loc = None
         self.edit_mode = None
         self.current_boxkey = None #We are done editing the box
