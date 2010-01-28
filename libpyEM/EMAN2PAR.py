@@ -1196,6 +1196,7 @@ class EMDCTaskClient(EMTaskClient):
 				sockoutf.flush()
 				fail=0
 			except: 
+				traceback.print_exc()
 				print "connect %s to %s failed"%(socket.gethostname(),nexthost)
 
 		signal.alarm(0)
@@ -1207,13 +1208,18 @@ class EMDCTaskClient(EMTaskClient):
 		try:
 			sock=socket.socket()
 			sock.bind(("",9989))
+		except:
+			sock=None
+			time.sleep(15)
+			return
+
+		try:
 			signal.alarm(15)
 			sock.listen(1)
 			sock2=sock.accept()[0]
 			sockf=sock2.makefile()
 		except:
 			sock=None
-#			time.sleep(15)
 			return
 #		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 
