@@ -421,7 +421,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
 
 	# Introduce ourselves
-	addr=socket.aton(socket.gethostbyname(socket.gethostname()))
+	addr=socket.inet_aton(socket.gethostbyname(socket.gethostname()))
 	sockf.write("EMAN")
 	sockf.write(pack("<III",EMAN2PARVER,clientid,addr))
 	sockf.flush()
@@ -713,7 +713,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.write("ACK ")
 		self.sockf.flush()
 		client_id=unpack("<I",self.sockf.read(4))[0]
-		client_addr=socket.ntoa(unpack("<I",self.sockf.read(4))[0])
+		client_addr=socket.inet_ntoa(unpack("<I",self.sockf.read(4))[0])
 
 		while (1):
 			cmd = self.sockf.read(4)
