@@ -57,7 +57,7 @@ except:
 	def decompress(s) : return(s)
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=12
+EMAN2PARVER=13
 
 # This is the maximum number of active server threads before telling clients to wait
 DCMAXTHREADS=7
@@ -420,10 +420,10 @@ def openEMDCsock(addr,clientid=0, retry=3):
 		break
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
 
-	# Introduce ourselves and ask for a task to execute
+	# Introduce ourselves
+	addr=socket.aton(socket.gethostbyname(socket.gethostname()))
 	sockf.write("EMAN")
-	sockf.write(pack("<I4",EMAN2PARVER))
-	sockf.write(pack("<I4",clientid))
+	sockf.write(pack("<III",EMAN2PARVER,clientid,addr))
 	sockf.flush()
 	if sockf.read(4)=="BADV" : 
 		print "ERROR: Server version mismatch ",socket.gethostname()
@@ -713,11 +713,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.write("ACK ")
 		self.sockf.flush()
 		client_id=unpack("<I",self.sockf.read(4))[0]
+		client_addr=socket.ntoa(unpack("<I",self.sockf.read(4))[0])
 
 		while (1):
 			cmd = self.sockf.read(4)
 			if len(cmd)<4 :
-				if self.verbose>1 : print "connection closed %s"%(str(self.client_address))
+				if self.verbose>1 : print "connection closed %s"%(str(self.client_addr))
 				break
 			
 			if cmd=="ACK " :
@@ -741,11 +742,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					print"? \r",
 					sys.stdout.flush()
 				elif cmd=="PROG" :
-					print "Command %s (%s): %s %s    \r"%(str(self.client_address),str(client_id),cmd,str(data)),
+					print "Command %s (%s): %s %s    \r"%(str(self.client_addr),str(client_id),cmd,str(data)),
 					sys.stdout.flush()
 				else :
-					try: print "Command %s (%s): %s (%d)  "%(str(self.client_address),str(client_id),cmd,len(data))
-					except: print "Command %s (%s): %s (-)  "%(str(self.client_address),str(client_id),cmd)
+					try: print "Command %s (%s): %s (%d)  "%(str(self.client_addr),str(client_id),cmd,len(data))
+					except: print "Command %s (%s): %s (-)  "%(str(self.client_addr),str(client_id),cmd)
 			
 			######################  These are issued by clients
 			# Ready for a task
@@ -758,14 +759,15 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					break
 				
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
+#				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
+				EMDCTaskHandler.clients[client_id]=(self.client_addr,time.time(),cmd)
 
 				EMDCTaskHandler.tasklock.acquire()
 				if self.queue.caching :
 					sendobj(self.sockf,None)			# clients will listen for cache data while idle
 					self.sockf.flush()
 					r=recvobj(self.sockf)
-					if self.verbose>1 : print "Telling client to wait ",self.client_address
+					if self.verbose>1 : print "Telling client to wait ",self.client_addr
 					EMDCTaskHandler.tasklock.release()
 					return
 				
@@ -854,7 +856,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					task.exechost=r[1]
 					try: self.queue.active[task.taskid]=task
 					except: pass
-					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,self.client_address[0],client_id,r,local_datetime()))
+					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,self.client_addr],client_id,r,local_datetime()))
 					EMDCTaskHandler.dbugfile.flush()
 				EMDCTaskHandler.tasklock.release()
 
@@ -867,7 +869,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>1 : print "DONE task (%08X) "%client_id,tid
 				
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
+				EMDCTaskHandler.clients[client_id]=(self.client_addr,time.time(),cmd)
 				
 				# then we get a sequence of key,value objects, ending with a final None key
 #				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
@@ -913,7 +915,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					if self.verbose : print "Error sending %s(%d)"%(fsp,data[2])
 				self.sockf.flush()
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
+				EMDCTaskHandler.clients[client_id]=(self.client_addr,time.time(),cmd)
 				
 			# Notify that a task has been aborted
 			# request should be taskid
@@ -941,7 +943,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				self.sockf.flush()
 
 				# keep track of clients
-				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
+				EMDCTaskHandler.clients[client_id]=(self.client_addr,time.time(),cmd)
 
 			###################### These are utility commands
 			# Returns whatever is sent as data
