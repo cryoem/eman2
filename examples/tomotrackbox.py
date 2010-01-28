@@ -160,6 +160,7 @@ class TrackerControl(QtGui.QWidget):
 		self.oldtilt=self.curtilt
 		self.map3d=None
 		self.downloc=None
+		self.downadjloc=None
 		
 		self.show()
 		self.im2d.show()
@@ -299,35 +300,64 @@ class TrackerControl(QtGui.QWidget):
 	def down(self,event,lc):
 		"""The event contains the x,y coordinates in window space, lc are the coordinates in image space"""
 
-		self.downloc=lc	
+		if event.buttons()&Qt.LeftButton:
+			if event.modifiers()&Qt.ShiftModifier : 
+				self.downadjloc=(lc,self.tiltshapes[self.curtilt].getShape()[4:8])
+			else :
+				self.downloc=lc
 
 	def drag(self,event,lc):
-		if self.downloc==None : return
-		dx=abs(lc[0]-self.downloc[0])
-		dy=abs(lc[1]-self.downloc[1])
-		dx=max(dx,dy)	# Make box square
-		dy=dx
-		s=EMShape(["rectpoint",0,.7,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
-		self.im2d.add_shape("box",s)
-		s=EMShape(["scrlabel",.7,.7,0,20.0,20.0,"%d (%d x %d)"%(self.curtilt,dx*2,dy*2),200.0,1])
-		self.im2d.add_shape("tilt",s)
+		if self.downloc!=None:
+			dx=abs(lc[0]-self.downloc[0])
+			dy=abs(lc[1]-self.downloc[1])
+			dx=max(dx,dy)	# Make box square
+			dy=dx
+			s=EMShape(["rectpoint",0,.7,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
+			self.im2d.add_shape("box",s)
+			s=EMShape(["scrlabel",.7,.7,0,20.0,20.0,"%d (%d x %d)"%(self.curtilt,dx*2,dy*2),200.0,1])
+			self.im2d.add_shape("tilt",s)
+		elif self.downadjloc!=None:
+			dx=(lc[0]-self.downadjloc[0][0])
+			dy=(lc[1]-self.downadjloc[0][1])
+			s=self.tiltshapes[self.curtilt].getShape()[:]
+			s[4]=self.downadjloc[1][0]+dx
+			s[5]=self.downadjloc[1][1]+dy
+			s[6]=self.downadjloc[1][2]+dx
+			s[7]=self.downadjloc[1][3]+dy
+			self.im2d.add_shape("box",EMShape(s))
 
 		self.im2d.updateGL()
 	
 	def up(self,event,lc):
-		if self.downloc==None : return
-		dx=abs(lc[0]-self.downloc[0])
-		dy=abs(lc[1]-self.downloc[1])
-		dx=max(dx,dy)	# Make box square
-		dy=dx
-		s=EMShape(["rectpoint",.7,.2,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
-		self.im2d.del_shape("box")
-		if hypot(lc[0]-self.downloc[0],lc[1]-self.downloc[1])>5 : 
-			self.tiltshapes=[None for i in range(self.imageparm["nz"])]
-			self.find_boxes(s)
-		
-		self.update_tilt()
-		self.downloc=None
+		if self.downloc!=None :
+			dx=abs(lc[0]-self.downloc[0])
+			dy=abs(lc[1]-self.downloc[1])
+			dx=max(dx,dy)	# Make box square
+			dy=dx
+			s=EMShape(["rectpoint",.7,.2,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
+			self.im2d.del_shape("box")
+			if hypot(lc[0]-self.downloc[0],lc[1]-self.downloc[1])>5 : 
+				self.tiltshapes=[None for i in range(self.imageparm["nz"])]
+				self.find_boxes(s)
+			
+			self.update_tilt()
+			self.downloc=None
+		elif self.downadjloc!=None :
+			dx=(lc[0]-self.downadjloc[0][0])
+			dy=(lc[1]-self.downadjloc[0][1])
+			s=self.tiltshapes[self.curtilt].getShape()[:]
+			s[4]=self.downadjloc[1][0]+dx
+			s[5]=self.downadjloc[1][1]+dy
+			s[6]=self.downadjloc[1][2]+dx
+			s[7]=self.downadjloc[1][3]+dy
+			self.tiltshapes[self.curtilt]=EMShape(s)
+			self.im2d.add_shape("finalbox",self.tiltshapes[self.curtilt])
+			self.im2d.del_shape("box")
+
+			self.update_tilt()
+			self.update_stack()
+			self.downadjloc=None
+			
 
 	def get_boxed_stack(self):
 		stack=[]
