@@ -1185,20 +1185,21 @@ class EMDCTaskClient(EMTaskClient):
 			try:
 				nexthost=hostlist.pop()
 			except:
-				sockout=None
+				sockout,sockoutf=None,None
 				break
 			sockout=socket.socket()
 			signal.alarm(5)
 			try : 
 				sockout.connect((nexthost,9989))
-				sendobj(sockout,chainlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
-				sockout.flush()
+				sockoutf=sockout.makefile()
+				sendobj(sockoutf,chainlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
+				sockoutf.flush()
 				fail=0
 			except: 
 				print "connect %s to %s failed"%(socket.gethostname(),nexthost)
 
 		signal.alarm(0)
-		return sockout
+		return (sockout,sockoutf)
 
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
@@ -1207,12 +1208,12 @@ class EMDCTaskClient(EMTaskClient):
 			sock=socket.socket()
 			sock.bind(("",9989))
 			signal.alarm(15)
-			sock.listen()
-			sock2=sock.accept()
+			sock.listen(1)
+			sock2=sock.accept()[0]
 			sockf=sock2.makefile()
 		except:
 			sock=None
-			time.sleep(15)
+#			time.sleep(15)
 			return
 #		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 
@@ -1223,7 +1224,7 @@ class EMDCTaskClient(EMTaskClient):
 #		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 
 		chainlist=recvobj(sockf)		# The first thing we get is a list of other clients to send data to
-		sockout=self.connectfromlist(chainlist)		# try to establish a connection to one of them
+		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them
 		
 		try: 
 			ret=None
@@ -1254,8 +1255,8 @@ class EMDCTaskClient(EMTaskClient):
 				# Send the image down the chain
 				if sockout!=None :
 					try:
-						sendstr(sockout,ret)
-						sockout.flush()
+						sendstr(sockoutf,ret)
+						sockoutf.flush()
 						if sockf.read(4)!="ACK " : raise Exception
 					except:
 						print "Chain broken ! (%s)"%socket.gethostname()
@@ -1271,9 +1272,10 @@ class EMDCTaskClient(EMTaskClient):
 		# Tell the chain we're done
 		if sockout!=None :
 			try:
-				sockout.sendstr("DONE")
-				sockout.flush()
-				sockout.close()
+				sockoutf.sendstr("DONE")
+				sockoutf.flush()
+#				sockoutf.close()
+#				sockout.close()
 			except: pass
 
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
@@ -1303,7 +1305,9 @@ class EMDCTaskClient(EMTaskClient):
 		#bcast.bind(("",9989))
 		#bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
 		chainlist=recvobj(sockf)		# The first thing we get back is a list of other clients to send data to
-		sockout=self.connectfromlist(chainlist)		# try to establish a connection to one of them
+		try: chainlist.remove(socket.gethostbyaddr(socket.gethostname()))
+		except: pass
+		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them
 				
 		lname=""
 		n=0
@@ -1328,8 +1332,8 @@ class EMDCTaskClient(EMTaskClient):
 			# Send the image down the chain
 			if sockout!=None :
 				try:
-					sendobj(sockout,xmit)
-					sockout.flush()
+					sendobj(sockoutf,xmit)
+					sockoutf.flush()
 					if sockf.read(4)!="ACK " : raise Exception
 				except:
 					print "Chain broken ! (%s)"%socket.gethostname()
@@ -1345,9 +1349,9 @@ class EMDCTaskClient(EMTaskClient):
 		# Tell the chain we're done
 		if sockout!=None :
 			try:
-				sockout.sendstr("DONE")
-				sockout.flush()
-				sockout.close()
+				sockoutf.sendstr("DONE")
+				sockoutf.flush()
+#				sockout.close()
 			except: pass
 			
 		signal.alarm(0)
