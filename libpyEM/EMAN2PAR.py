@@ -423,7 +423,8 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	# Introduce ourselves
 	addr=socket.inet_aton(socket.gethostbyname(socket.gethostname()))
 	sockf.write("EMAN")
-	sockf.write(pack("<III",EMAN2PARVER,clientid,addr))
+	sockf.write(pack("<II",EMAN2PARVER,clientid))
+	sockf.write(addr)
 	sockf.flush()
 	if sockf.read(4)=="BADV" : 
 		print "ERROR: Server version mismatch ",socket.gethostname()
@@ -713,7 +714,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.sockf.write("ACK ")
 		self.sockf.flush()
 		client_id=unpack("<I",self.sockf.read(4))[0]
-		client_addr=socket.inet_ntoa(unpack("<I",self.sockf.read(4))[0])
+		client_addr=socket.inet_ntoa(self.sockf.read(4))
 
 		while (1):
 			cmd = self.sockf.read(4)
