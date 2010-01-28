@@ -2166,7 +2166,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_savestack(self,du) :
 		if self.target().list_data==None : return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion")
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion"))
 		#fsp=str(fsp).split(".")
 		#if len(fsp)==1 :
 			#fsp1=fsp[0]

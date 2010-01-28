@@ -311,6 +311,7 @@ class TrackerControl(QtGui.QWidget):
 			dx=abs(lc[0]-self.downloc[0])
 			dy=abs(lc[1]-self.downloc[1])
 			dx=max(dx,dy)	# Make box square
+			dx=good_size(dx*2)/2	# use only good sizes
 			dy=dx
 			s=EMShape(["rectpoint",0,.7,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
 			self.im2d.add_shape("box",s)
@@ -333,6 +334,7 @@ class TrackerControl(QtGui.QWidget):
 			dx=abs(lc[0]-self.downloc[0])
 			dy=abs(lc[1]-self.downloc[1])
 			dx=max(dx,dy)	# Make box square
+			dx=good_size(dx*2)/2	# use only good sizes
 			dy=dx
 			s=EMShape(["rectpoint",.7,.2,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
 			self.im2d.del_shape("box")
@@ -364,6 +366,8 @@ class TrackerControl(QtGui.QWidget):
 		for i in range(self.imageparm["nz"]):
 			refshape=self.tiltshapes[i].getShape()
 			img=EMData(self.imagefile,0,False,Region(refshape[4],refshape[5],i,refshape[6]-refshape[4],refshape[7]-refshape[5],1))
+			img["ptcl_source_coord"]=(int((refshape[6]+refshape[4])/2.0),int((refshape[7]+refshape[5])/2.0),i)
+			img["ptcl_source_image"]=str(self.imagefile)
 			if self.invert : img.mult(-1.0)
 			img.process_inplace("normalize.edgemean")
 			stack.append(img)
