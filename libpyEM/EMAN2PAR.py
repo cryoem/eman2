@@ -1192,11 +1192,11 @@ class EMDCTaskClient(EMTaskClient):
 			try : 
 				sockout.connect((nexthost,9989))
 				sockoutf=sockout.makefile()
-				sendobj(sockoutf,chainlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
+				sendobj(sockoutf,hostlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
 				sockoutf.flush()
 				fail=0
 			except: 
-				traceback.print_exc()
+#				traceback.print_exc()
 				print "connect %s to %s failed"%(socket.gethostname(),nexthost)
 
 		signal.alarm(0)
@@ -1213,8 +1213,10 @@ class EMDCTaskClient(EMTaskClient):
 			time.sleep(15)
 			return
 
+		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 		try:
-			signal.alarm(15)
+#			signal.alarm(15)
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 			sock.listen(1)
 			sock2=sock.accept()[0]
 			sockf=sock2.makefile()
@@ -1223,6 +1225,7 @@ class EMDCTaskClient(EMTaskClient):
 			return
 #		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
 
+		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 		cq=[]	# a list of returned images, gradually written by the thread
 		thr=threading.Thread(target=self.cachewriter,args=(cq,))
 		thr.start()
