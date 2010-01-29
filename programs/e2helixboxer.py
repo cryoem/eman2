@@ -232,7 +232,7 @@ def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
         save_segment(segment, frame_name, i, output_type, output_dir)
         i+=1
 
-def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir="", do_edge_norm=False):
     """
     saves the particles in a segment to a stack file
     @segment_emdata: the EMData object containing the image data for the segment
@@ -252,6 +252,8 @@ def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_lengt
         os.remove(output_filepath)
     for i in range(len(particles)):
         ptcl = particles[i]
+        if do_edge_norm:
+            ptcl.process_inplace("normalize.edgemean")
         ptcl.write_image(output_filepath, i) #appending to the image stack
 
 
@@ -268,7 +270,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.frame_filepath = "test_image"
             img = test_image()
         else:
-            self.frame_filepath = os.path.relpath(frame_filepath)
+            if sys.version_info >= (2, 6):
+                self.frame_filepath = os.path.relpath(frame_filepath) #os.path.relpath is new in Python 2.6
+            else:
+                self.frame_filepath = frame_filepath
             img = EMData(frame_filepath)
         
         self.main_image = EMImage2DModule(application=app)
@@ -364,6 +369,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
         self.ptcls_groupbox.setCheckable(True)
+        self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("Edge-&normalize"))
+        self.ptcls_edgenorm_checkbox.setChecked(False)
         ptcls_ftype_label = QtGui.QLabel(self.tr("File T&ype:"))
         self.ptcls_ftype_combobox = QtGui.QComboBox()
         ptcls_ftype_label.setBuddy(self.ptcls_ftype_combobox)
@@ -427,6 +434,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         ptcls_length_layout.addWidget(self.ptcls_length_spinbox)
         
         ptcls_opts_layout = QtGui.QVBoxLayout()
+        ptcls_opts_layout.addWidget(self.ptcls_edgenorm_checkbox)
         ptcls_opts_layout.addLayout(ptcls_ftype_layout)
         ptcls_opts_layout.addLayout(ptcls_overlap_layout)
         ptcls_opts_layout.addLayout(ptcls_width_layout)
@@ -604,7 +612,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 output_type = self.image_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
                 
                 seg = self.segments_dict[coords_key]
-                save_particles(seg, i, frame_name, px_overlap, px_length, px_width, output_type, output_dir)
+                do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
+                save_particles(seg, i, frame_name, px_overlap, px_length, px_width, output_type, output_dir, do_edge_norm)
                 i += 1
             pass
         if self.segs_groupbox.isChecked():
@@ -811,7 +820,7 @@ def main():
     progname = os.path.basename(sys.argv[0])
     usage = """%prog [options] <image>....
 
-used to box alpha helices
+used to box helices
 
 For example:
 
