@@ -144,9 +144,10 @@ def main():
 				
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s --exclude=%s --saveali --force"%(args[4],args[1],args[5],options.shrinks1,
-			options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp,options.exclude)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s  --saveali --force"%(args[4],args[1],args[5],options.shrinks1,
+			options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
+		if options.exclude!=None : cmd+=" --exclude="+options.exclude
 		print "executing ",cmd
 		os.system(cmd)
 	else :

@@ -78,6 +78,7 @@ const string HighpassButterworthProcessor::NAME = "eman1.filter.highpass.butterw
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
 const string BooleanProcessor::NAME = "threshold.notzero";
+const string KmeansSegmentProcessor::NAME = "segment.kmeans";
 const string InvertCarefullyProcessor::NAME = "math.invert.carefully";
 const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
@@ -268,6 +269,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearRampProcessor>();
 	force_add<AbsoluateValueProcessor>();
 	force_add<BooleanProcessor>();
+	force_add<KmeansSegmentProcessor>();
 	force_add<ValuePowProcessor>();
 	force_add<ValueSquaredProcessor>();
 	force_add<ValueSqrtProcessor>();
@@ -752,6 +754,29 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	image->update();
 
 }
+
+EMData* KmeansSegmentProcessor::process(const EMData * const image)
+{
+	EMData * result = image->copy();
+	
+	int nseg = params.set_default("nseg",12);
+	float thr = params.set_default("thr",-1.0e30);
+	int ampweight = params.set_default("ampweight",1);
+	float maxsegsize = params.set_default("maxsegsize",10000.0);
+	
+	vector<float> centers(nseg*3);
+	
+	
+	
+	return result;
+}
+
+void KmeansSegmentProcessor::process_inplace(EMData *image)
+{
+	printf("Process inplace not implemented. Please use process.\n");
+	return;
+}
+
 
 void LinearPyramidProcessor::process_inplace(EMData *image) {
 

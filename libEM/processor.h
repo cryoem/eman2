@@ -670,6 +670,47 @@ The basic design of EMAN Processors: <br>\
 		int bgsize;
 	};
 
+	/** 
+	 *@param ctf[in] A Ctf object to use
+	 *
+	 *@author Steve Ludtke
+	 *@date 2008/11/03
+	 */
+	class KmeansSegmentProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		void process_inplace( EMData * image);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d ;
+			d.put("nseg", EMObject::INT, "Number of segments to divide the image into. default=12" );
+			d.put("thr",EMObject::FLOAT,"Isosurface threshold value. Pixels below this will not be segmented");
+			d.put("ampweight",EMObject::INT,"If set, will weight centers by voxel amplitude. default = 1");
+			d.put("maxsegsize",EMObject::FLOAT,"Maximum radial distance from segment center to member voxel. Default=10000");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new KmeansSegmentProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs K-means segmentation on a volume. Returned map contains number of segment for each voxel (or 0 for unsegmented voxels). Segmentation centers are stored in 'segmentcenters' attribute, consisting of a list of 3n floats in x,y,z triples.";
+		}
+
+		static const string NAME;
+		
+	};
+
 
 	/**Wiener filter based on a Ctf object either in the image header
 	 *@param ctf[in] A Ctf object to use
