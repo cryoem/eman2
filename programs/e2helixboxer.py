@@ -131,7 +131,8 @@ def load_coords(coords_filepath):
         for line in open(coords_filepath):
             line = line.split("\t")
             for i in range(len(line)):
-                line[i] = int(line[i])
+                line[i] = float(line[i])
+            line[-1] = int(line[-1])
             data.append(tuple(line))
     else:
         pass
@@ -191,6 +192,11 @@ def db_save_coords(frame_filepath, output_type = "box", output_dir=""):
     save_coords(box_coords_list, frame_name, output_type, output_dir)
     
 def db_get_segments_dict(frame_filepath):
+    """
+    gets a dictionary of segments
+    @frame_filepath: the path to the image file for the frame
+    @return: a dictionary formed like {(x1, y1, x2, y2, width): particle_EMData_object, ...}
+    """
     frame = EMData(frame_filepath)
     db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
     box_coords_list = db[frame_filepath]
@@ -259,7 +265,14 @@ def db_save_particles(frame_filepath, px_overlap, px_length = None, px_width = N
     pass
 
 class EMHelixBoxerWidget(QtGui.QWidget):
+    """
+    the GUI widget which contains the settings for boxing segments and writing results to files
+    """
     def __init__(self, frame_filepath, app):
+        """
+        @frame_filepath: the path to the image file for the frame -- that is the micrograph image from which particles will be boxed
+        @app: the application to which this widget belongs
+        """
         QtGui.QWidget.__init__(self)
         self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
         self.setWindowTitle("e2helixboxer")
@@ -476,6 +489,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         path = QtGui.QFileDialog.getExistingDirectory(self)
         self.output_dir_line_edit.setText(path)
     def color_boxes(self):
+        """
+        Sets the colors of the boxes, with the current box being colored differently from the other boxes.
+        """
         emshapes_dict = self.main_image.get_shapes()
         for key in emshapes_dict:
             shape = emshapes_dict.get(key).shape
@@ -648,8 +664,16 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         db[self.frame_filepath] = value
         db_close_dict(db_name)
     def get_image_quality(self):
+        """
+        gets the value stored in the e2helixboxer database for image quality, which is the user's subjective
+        evaluation of how good the frame is
+        """
         return self.get_db_item("quality")
     def set_image_quality(self, quality):
+        """
+        sets the value stored in the e2helixboxer database for image quality, which is the user's subjective
+        evaluation of how good the frame is
+        """
         self.set_db_item("quality", quality)
     def add_box_to_db(self, box_coords):
         """
@@ -683,7 +707,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         results in moving that end of the box while keeping the midpoint of the other end fixed.
         
         @event: the mouse click event that causes a box to be added, removed, or modified
-        @click_loc: the coordinates in Angstroms of the mouse click on the image
+        @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
         """
 
         self.click_loc = click_loc
@@ -734,6 +758,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         elif self.edit_mode == "delete":
             box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
             self.remove_box_from_db(box_coords)
+            self.segments_dict.pop(tuple(box_coords))
             self.main_image.del_shape(box_key)
             self.main_image.updateGL()
             self.current_boxkey = None
@@ -746,7 +771,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         Boxes are deleted in mouse_down, and the decision of how to edit is made there.
         However, new boxes are made and existing boxes are edited here.
         @event: the mouse click event that causes a box to be added, removed, or modified
-        @click_loc: the coordinates in Angstroms of the mouse click on the image
+        @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
         """
         
         if self.click_loc and self.edit_mode: #self.click_loc and self.edit_mode are set in mouse_down
@@ -792,7 +817,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         an existing box is complete, so we need only clear variables relevant
         to creating or editing boxes, and get the image data from the boxed area.
         @event: the mouse click event that causes a box to be added, removed, or modified
-        @click_loc: the coordinates in Angstroms of the mouse click on the image
+        @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
         """
 
         if self.current_boxkey and self.edit_mode != "delete": 
