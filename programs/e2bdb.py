@@ -52,6 +52,8 @@ Various utilities related to BDB databases."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
+	parser.add_option("--force","-F",action="store_true",default=False,help="This will force an action that would normally fail due to failed checks.")
+	parser.add_option("--delete",action="store_true",default=False,help="This will delete (or at least empty) the named database(s)")
 	parser.add_option("--all","-a",action="store_true",help="List per-particle info",default=False)
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
@@ -66,7 +68,7 @@ Various utilities related to BDB databases."""
 	(options, args) = parser.parse_args()
 
 	if options.cleanup : 
-		db_cleanup()
+		db_cleanup(options.force)
 		sys.exit(0)
 
 	if options.all : options.long=1
@@ -182,9 +184,21 @@ Various utilities related to BDB databases."""
 					except: pass
 				print " "
 
+		if options.delete :
+			if not options.force :
+				print "You are requesting to delete the following databases:"
+				for db in dbs:
+					print db," ",
+				if raw_input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
+					print "Aborted"
+					sys.exit(1)
+			
+			for db in dbs: db_remove_dict(path+db)
+			
+
 	if logid : E2end(logid)
 
-def db_cleanup():
+def db_cleanup(force=False):
 	"""This is an important utility function to clean up the database environment so databases can safely be moved or used remotely
 	from other machines. If working on a cluster, this routine should be called on any machine which has opened a database before that
 	database is written to on another machine"""
@@ -195,31 +209,39 @@ def db_cleanup():
 		
 	path="eman2db-%s"%os.getenv("USER","anyone")
 
-	try:
-		op=[l.split() for l in os.popen("lsof","r") if path in l]
-	except:
-		print "Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning."
-		sys.exit(1)
-	
-	# someone is still using the cache
-	if len(op)>0 :
-		s=set()
-		for i in op:
-			s.add(i[1])
-	
-		print "These processes are actively using the cache. Please exit them and try again :"
-		for i in s: 
-			try: print os.popen("ps %s"%i,"r").readlines()[-1]
-			except: print i
-			
-		return
+	if not force :
+		try:
+			pipe=os.popen("lsof","r")
+			op=[l.split() for l in pipe if path in l]
+			ret=pipe.close()
+			if ret!=None :
+				pipe=os.popen("/usr/sbin/lsof","r")
+				op=[l.split() for l in pipe if path in l]
+				ret=pipe.close()
+				if ret!=None: raise Exception
+		except:
+			print "Error : could not check for running EMAN2 jobs, please make sure the 'lsof' command is installed and functioning, or insure no EMAN2 commands are running and run e2bdb.py -cF"
+			sys.exit(1)
+		
+		# someone is still using the cache
+		if len(op)>0 :
+			s=set()
+			for i in op:
+				s.add(i[1])
+		
+			print "These processes are actively using the cache. Please exit them and try again :"
+			for i in s: 
+				try: print os.popen("ps %s"%i,"r").readlines()[-1]
+				except: print i
+				
+			return
 
 	# ok, properly close the cache and delete it
 	d=EMAN2DB()
 	d.close()		# Properly 'close' the environment before we delete it
 	
 	os.system("rm -rf /tmp/%s"%path)
-	print "Database cache removed. Now safe to access databases from another machine"
+	print "Database cache removed. Now safe to access databases from another machine or delete existing databases"
 	
 	
 
