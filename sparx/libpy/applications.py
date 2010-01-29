@@ -32,9 +32,9 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, option=0, number_of_ave=16, crossover_rate=0.9, mutation_rate="0.001 0.002 0.005", max_merge=50,\
-		grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0, MPI=False):
+		grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0, CUDA=False, GPU=0, MPI=False):
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, option, number_of_ave, crossover_rate, mutation_rate, max_merge, grid_size, max_avg, CTF, Fourvar, snr, user_func_name, restart, verbose)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, option, number_of_ave, crossover_rate, mutation_rate, max_merge, grid_size, max_avg, CTF, Fourvar, snr, user_func_name, restart, verbose, CUDA, GPU)
 		return
 	
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_input_from_string
@@ -224,7 +224,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, option=0, number_of_ave=16, crossover_rate=0.9, mutation_rate="0.001 0.002 0.005", \
-	max_merge=50, grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0):
+	max_merge=50, grid_size=32, max_avg=100, CTF=False, Fourvar=False, snr=1.0, user_func_name="ref_ali2d", restart=-1, verbose=0, CUDA=False, GPU=0):
 
 	"""
 	In this version of ali2d_a_MPI, we use MPI group management trying to increase the speedup of the program
@@ -364,6 +364,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		else:         print_msg("Stop iteration with             : maxit\n")
 		print_msg("User function                   : %s\n"%(user_func_name))
 		print_msg("Number of processors used       : %d\n"%(number_of_proc))
+		print_msg("Using CUDA                      : %s\n"%(CUDA))
+		print_msg("Number of GPUs                  : %d\n"%(GPU))
 		if restart != -1:
 			print_msg("Restarted from iteration        : %d\n"%(restart))
 		print_msg("Tangent filter                  \n")
@@ -414,6 +416,15 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	data = EMData.read_images(stack, range(image_start, image_end))
 
+	N_step = 0
+	if CUDA:
+		GPUID = myid%GPU
+		all_ali_params = []
+		all_ctf_params = []
+		R = CUDA_Aligner()
+		R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
+		for im in xrange(len(data)):	R.insert_image(data[im], im)
+
 	if CTF:
 		from morphology import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
@@ -422,6 +433,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+			if CUDA:
+				all_ctf_params.append(ctf_params.defocus)
+				all_ctf_params.append(ctf_params.cs)
+				all_ctf_params.append(ctf_params.voltage)
+				all_ctf_params.append(ctf_params.apix)
+				all_ctf_params.append(ctf_params.bfactor)
+				all_ctf_params.append(ctf_params.ampcont)
+		if CUDA: R.filter_stack(all_ctf_params, GPUID)
 		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 		ctf_2_sum += 1/snr
 	else:
@@ -439,16 +458,27 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		sx = 0.0
 		sy = 0.0
 		mirror = randint(0, 1)
-		set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
 		alpha_list[im] = alpha
 		sx_list[im] = sx
 		sy_list[im] = sy
 		mirror_list[im] = mirror
+		if CUDA:
+			all_ali_params.append(alpha)
+			all_ali_params.append(sx)
+			all_ali_params.append(sy)
+			all_ali_params.append(mirror)
+		else:
+			set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
 	
 	if Fourvar:
 		tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 	else:
-		ave1, ave2 = sum_oe(data, "a", CTF, EMData())
+		if CUDA:
+			ave1 = model_blank(nx, nx)
+			ave2 = model_blank(nx, nx)
+			R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+		else:
+			ave1, ave2 = sum_oe(data, "a", CTF, EMData())
 		reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
 		reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
 
@@ -508,7 +538,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			qt[i][3] = i
 		english = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']
 		
-	N_step = 0
 	sx_sum = 0.0
 	sy_sum = 0.0
 	cs = [0.0]*2
@@ -528,9 +557,25 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			total_iter = 0
 
 			if option==5 or option==6:
-				for im in xrange(len(data)): set_params2D(data[im], [alpha_list[im], sx_list[im], sy_list[im], mirror_list[im], 1.0])
+				if CUDA:
+					all_ali_params = []
+					for im in xrange(len(data)): 
+						all_ali_params.append(alpha_list[im])
+						all_ali_params.append(sx_list[im])
+						all_ali_params.append(sy_list[im])
+						all_ali_params.append(mirror_list[im])
+				else:
+					for im in xrange(len(data)): set_params2D(data[im], [alpha_list[im], sx_list[im], sy_list[im], mirror_list[im], 1.0])
 			elif option==1 or option==3:
-				for im in xrange(len(data)): set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0])
+				if CUDA:
+					all_ali_params = []
+					for im in xrange(len(data)):
+						all_ali_params.append(0.0)
+						all_ali_params.append(0.0)
+						all_ali_params.append(0.0)
+						all_ali_params.append(0)
+				else:
+					for im in xrange(len(data)): set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0])
 			else:
 				pass
 				
@@ -540,20 +585,41 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			for Iter in xrange(max_iter):
 			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
 			        cs = [float(cs[0]), float(cs[1])]
-			        old_ali = []
-			        for im in data:
-			        	alphan, sxn, syn, mirror, scale = get_params2D(im)
-			        	old_ali.append([alphan, sxn, syn, mirror, scale])
-			        sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF)
+
+				if CUDA:
+					old_ali_params = all_ali_params[:]
+				else:
+					old_ali_params = []
+				        for im in xrange(len(data)):  
+						alpha, sx, sy, mirror, scale = get_params2D(data[im])
+						old_ali_params.append(alpha)
+						old_ali_params.append(sx)
+						old_ali_params.append(sy)
+						old_ali_params.append(mirror)
+
+				if CUDA:
+					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1)
+					sx_sum = all_ali_params[-2]
+					sy_sum = all_ali_params[-1]
+					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
+				else:	
+					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF)
+
 			        sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 			        sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
 			        pixel_error = 0.0
 			        mirror_change = 0
 			        for im in xrange(len(data)):
-			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
-			        	if old_ali[im][3] == mirror:
-			        		this_error = max_pixel_error(old_ali[im][0], old_ali[im][1], old_ali[im][2], alphan, sxn, syn, last_ring*2)
+			        	if CUDA:
+						alpha = all_ali_params[im*4]
+						sx = all_ali_params[im*4+1]
+						sy = all_ali_params[im*4+2]
+						mirror = all_ali_params[im*4+3]
+					else:
+				        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
+			        	if old_ali_params[im*4+3] == mirror:
+			        		this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 			        		pixel_error += this_error
 			        	else:
 			        		mirror_change += 1
@@ -561,7 +627,12 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        if Fourvar:
 					tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
 				else:
-					ave1, ave2 = sum_oe(data, "a", CTF, EMData())
+					if CUDA:
+						ave1 = model_blank(nx, nx)
+						ave2 = model_blank(nx, nx)
+						R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+					else:
+						ave1, ave2 = sum_oe(data, "a", CTF, EMData())
 					reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
 					reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
  			
@@ -591,7 +662,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        		tavg, dummy = user_func(ref_data)
 			        		cs[0] = float(sx_sum[0])/nima
 			        		cs[1] = float(sy_sum[0])/nima
-			        		pixel_error = float(pixel_error[0])/(nima-int(mirror_change))
+			        		if mirror_change == nima:
+							pixel_error = 100.0
+						else:
+							pixel_error = float(pixel_error[0])/(nima-int(mirror_change))
 			        		mirror_change = float(mirror_change[0])/nima
 			        		tavg = fshift(tavg, -cs[0], -cs[1])
 			        		if verbose == 2 :
@@ -620,12 +694,19 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			info_file = os.path.join(outdir, "ali_params_%02d_%02d_%02d"%(ipt, color, key))
 			finfo = open(info_file, "w")
 			for nim in xrange(len(data)):
-			        alpha, sx, sy, mirror, dummy = get_params2D(data[nim])
-			        finfo.write("%20f %20f %20f %10d %10.4f\n"%(alpha, sx, sy, mirror, 1.0))
-				alpha_list[nim] = alpha
-				sx_list[nim] = sx
-				sy_list[nim] = sy
-			        mirror_list[nim] = mirror
+				if CUDA:
+				        finfo.write("%20f %20f %20f %10d %10.4f\n"%(all_ali_params[nim*4], all_ali_params[nim*4+1], all_ali_params[nim*4+2], all_ali_params[nim*4+3], 1.0))
+					alpha_list[nim] = all_ali_params[nim*4]
+					sx_list[nim] = all_ali_params[nim*4+1]
+					sy_list[nim] = all_ali_params[nim*4+2]
+			        	mirror_list[nim] = all_ali_params[nim*4+3]
+				else:
+				        alpha, sx, sy, mirror, dummy = get_params2D(data[nim])
+				        finfo.write("%20f %20f %20f %10d %10.4f\n"%(alpha, sx, sy, mirror, 1.0))
+					alpha_list[nim] = alpha
+					sx_list[nim] = sx
+					sy_list[nim] = sy
+			        	mirror_list[nim] = mirror
 			finfo.close()
 		else:
 			if key == group_main_node:
@@ -672,7 +753,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				sx_list_gathered = map(float, sx_list_gathered)
 				sy_list_gathered = map(float, sy_list_gathered)
 				mirror_list_gathered = map(int, mirror_list_gathered)
-				
 			
 				if verbose >= 1:
 					avg_mirror_stable = 0
@@ -920,7 +1000,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				tavg = tsavg[0].copy()
 				del tsavg
 			else:
-				if verbose == 2: mpi_send(msg, len(msg), MPI_INT, main_node, color+100, MPI_COMM_WORLD)
+				if verbose == 2: 
+					msg_array = [0]*(500*max_iter)
+					for i in xrange(len(msg)):  msg_array[i] = ord(msg[i])
+					mpi_send(msg_array, 500*max_iter, MPI_INT, main_node, color+100, MPI_COMM_WORLD)
 				send_EMData(tavg, main_node, color+200)
 				tavg = recv_EMData(main_node, color+300)
 				
@@ -942,6 +1025,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
 		if to_break >= len(mutation_rate): break
+	
+	if CUDA:  R.finish()
 
 	if myid == main_node:
 		img = EMData()
