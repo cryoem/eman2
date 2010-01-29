@@ -416,14 +416,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	data = EMData.read_images(stack, range(image_start, image_end))
 
-	N_step = 0
 	if CUDA:
 		GPUID = myid%GPU
 		all_ali_params = []
 		all_ctf_params = []
-		R = CUDA_Aligner()
-		R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
-		for im in xrange(len(data)):	R.insert_image(data[im], im)
 
 	if CTF:
 		from morphology import ctf_img
@@ -440,7 +436,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				all_ctf_params.append(ctf_params.apix)
 				all_ctf_params.append(ctf_params.bfactor)
 				all_ctf_params.append(ctf_params.ampcont)
-		if CUDA: R.filter_stack(all_ctf_params, GPUID)
 		reduce_EMData_to_root(ctf_2_sum, key, group_main_node, group_comm)
 		ctf_2_sum += 1/snr
 	else:
@@ -448,6 +443,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
 		ctf_2_sum = None
+		
+	N_step = 0
+	if CUDA:
+		R = CUDA_Aligner()
+		R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
+		for im in xrange(len(data)):	R.insert_image(data[im], im)
+		if CTF:  R.filter_stack(all_ctf_params, GPUID)
 
 	alpha_list = [0.0]*len(data)
 	sx_list = [0.0]*len(data)
