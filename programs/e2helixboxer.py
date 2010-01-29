@@ -271,8 +271,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.frame_filepath = os.path.relpath(frame_filepath)
             img = EMData(frame_filepath)
         
-        self.main_image = EMImage2DModule(img, application=app)
-        self.main_image.set_file_name( os.path.split(self.frame_filepath)[1] ) # TODO: determine if this should use the entire file path
+        self.main_image = EMImage2DModule(application=app)
+        self.main_image.set_data( img, self.frame_filepath )
         self.main_image.shapes = EMShapeDict()
         self.segment_viewer = None #Will be an EMImage2DModule instance
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
