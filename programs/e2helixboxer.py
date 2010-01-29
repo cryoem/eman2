@@ -265,15 +265,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.setWindowTitle("e2helixboxer")
         
         if not frame_filepath:
-            basename = "test_image"
+            self.frame_filepath = "test_image"
             img = test_image()
         else:
-            (path, basename) = os.path.split(frame_filepath)
+            self.frame_filepath = os.path.relpath(frame_filepath)
             img = EMData(frame_filepath)
         
-        self.filename = basename
         self.main_image = EMImage2DModule(img, application=app)
-        self.main_image.set_file_name(basename) # TODO: determine if this should use the entire file path
+        self.main_image.set_file_name( os.path.split(self.frame_filepath)[1] ) # TODO: determine if this should use the entire file path
         self.main_image.shapes = EMShapeDict()
         self.segment_viewer = None #Will be an EMImage2DModule instance
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
@@ -303,7 +302,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
         self.__create_ui()
         
-        self.img_quality_combobox.setCurrentIndex( self.get_image_quality() )
+        qual = self.get_image_quality()
+        if qual:
+            self.img_quality_combobox.setCurrentIndex( qual )
+        else:
+            self.img_quality_combobox.setCurrentIndex( 2 )
         
         self.main_image.optimally_resize()
         
@@ -585,7 +588,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         writes the coordinates for the segments, the image data for the segments, and the image data 
         for the particles to files if each of those options are checked
         """
-        frame_filename = os.path.basename(self.filename) #already the basename, currently
+        frame_filename = os.path.basename(self.frame_filepath)
         frame_name = os.path.splitext( frame_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
         if self.coords_groupbox.isChecked():
@@ -620,7 +623,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
-        val = db[self.filename]
+        val = db[self.frame_filepath]
         db_close_dict(db_name)
         return val
     def remove_db_item(self, key):
@@ -636,7 +639,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         db_name = E2HELIXBOXER_DB + "#" + key
         db = db_open_dict(db_name)
-        db[self.filename] = value
+        db[self.frame_filepath] = value
         db_close_dict(db_name)
     def get_image_quality(self):
         return self.get_db_item("quality")
@@ -648,18 +651,18 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         assert len(box_coords) == 5, "box_coords must have 5 items"
         db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-        boxList = db[self.filename] #Get a copy of the db in memory
+        boxList = db[self.frame_filepath] #Get a copy of the db in memory
         boxList.append(tuple(box_coords))
-        db[self.filename] = boxList #Needed to save changes to disk
+        db[self.frame_filepath] = boxList #Needed to save changes to disk
     def remove_box_from_db(self, box_coords):
         """
         removes the coordinates for a segment in the e2helixboxer database for the current frame
         """
         assert len(box_coords) == 5, "box_coords must have 5 items"
         db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-        boxList = db[self.filename] #Get a copy of the db in memory
+        boxList = db[self.frame_filepath] #Get a copy of the db in memory
         boxList.remove(tuple(box_coords))
-        db[self.filename] = boxList #Needed to save changes to disk
+        db[self.frame_filepath] = boxList #Needed to save changes to disk
 
     def mouse_down(self, event, click_loc):
         """
