@@ -137,7 +137,7 @@ def load_coords(coords_filepath):
         pass
     
     return data
-def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
+def save_coords(coords_list, frame_name, output_type = "hbox", output_dir=""):
     """
     Saves coordinates and widths of the boxed segments to a file.
     @coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a segment
@@ -177,7 +177,7 @@ def save_coords(coords_list, frame_name, output_type = "box", output_dir=""):
         output_filepath = os.path.join(output_filepath, frame_name + ".hbox")
         out_file = open(output_filepath, "w")
         for coords in coords_list:
-            out_file.write( "%i\t%i\t%i\t%i\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
+            out_file.write( "%f\t%f\t%f\t%f\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
         out_file.close()
         
     else:
@@ -192,10 +192,8 @@ def db_save_coords(frame_filepath, output_type = "box", output_dir=""):
     
 def db_get_segments_dict(frame_filepath):
     frame = EMData(frame_filepath)
-    frame_filename = os.path.basename(frame_filepath)
-    frame_name = os.path.splitext( frame_filename )[0]
     db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-    box_coords_list = db[frame_filename]
+    box_coords_list = db[frame_filepath]
     if not box_coords_list:
         return {}
     segments_dict = {}
@@ -284,12 +282,13 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
-        self.segments_dict = db_get_segments_dict(frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.segments_dict = db_get_segments_dict(self.frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (0, 0, 1)
         self.selected_color = (0, 1, 0)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
-        self.image_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
+        self.segs_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
+        self.ptcls_file_extension_dict = {"Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
 
         if self.get_db_item("boxes") == None:
             self.set_db_item("boxes", [])
@@ -316,8 +315,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image.optimally_resize()
         
         self.coords_ftype_combobox.addItems( sorted(self.coords_file_extension_dict.keys()) )
-        self.segs_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
-        self.ptcls_ftype_combobox.addItems( sorted(self.image_file_extension_dict.keys()) )
+        self.coords_ftype_combobox.setCurrentIndex(1)
+        self.segs_ftype_combobox.addItems( sorted(self.segs_file_extension_dict.keys()) )
+        self.ptcls_ftype_combobox.addItems( sorted(self.ptcls_file_extension_dict.keys()) )
         width = 100
         if self.segments_dict:
             first_coords = self.segments_dict.keys()[0]
@@ -351,7 +351,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.img_quality_combobox.addItems(qualities)
         self.img_quality_combobox.setCurrentIndex(2)
         self.img_quality_label.setBuddy(self.img_quality_combobox)
-        #self.img_quality_combobox.setEnabled(False)
 
         self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
         
@@ -609,7 +608,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 px_overlap = self.ptcls_overlap_spinbox.value()
                 px_length = self.ptcls_length_spinbox.value()
                 px_width = self.ptcls_width_spinbox.value()
-                output_type = self.image_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
+                output_type = self.ptcls_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
                 
                 seg = self.segments_dict[coords_key]
                 do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
@@ -617,11 +616,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 i += 1
             pass
         if self.segs_groupbox.isChecked():
-            seg_file_extension = self.image_file_extension_dict[unicode(self.segs_ftype_combobox.currentText())]
-            print seg_file_extension
+            seg_file_extension = self.segs_file_extension_dict[unicode(self.segs_ftype_combobox.currentText())]
             i = 1
             for coords_key in self.segments_dict:
-                print coords_key
                 seg = self.segments_dict[coords_key]
                 save_segment(seg, frame_name, i, seg_file_extension, output_dir)
                 i += 1
