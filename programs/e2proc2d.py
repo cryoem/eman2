@@ -189,6 +189,8 @@ def main():
 		Log.logger().set_level(options.verbose-2)
 	
 	d = EMData()
+	threed_xsize = 0
+	threed_ysize = 0
 	if options.treat3das2d:
 		d.read_image(infile, 0, True)
 		if(d.get_zsize() == 1):
@@ -197,9 +199,9 @@ def main():
 		else:
 			print "Process 3D as a stack of %d 2D images" % d.get_zsize()
 			nimg = d.get_zsize()
+			threed_xsize = d.get_xsize()
+			threed_ysize = d.get_ysize()
 			isthreed = False
-			outimg_3d = EMData(d.get_xsize(), d.get_ysize(), d.get_zsize())
-			temp_img_file = "tmp_file.hdf"
 	else:
 		nimg = EMUtil.get_image_count(infile)
 		# reads header only
@@ -253,8 +255,8 @@ def main():
 
 		if not isthreed:
 			if(options.treat3das2d):
-				img = EMData(infile)
-				d = img.get_clip(Region(0,0,i,img.get_xsize(),img.get_ysize(),1))
+				d = EMData()
+				d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
 			else:
 				d.read_image(infile, i)
 		else:
@@ -477,13 +479,33 @@ def main():
 				#elif options.mraprep:
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
+
 				if options.treat3das2d:
-					d.write_image(temp_img_file, -1)
-				else:
-					if 'mrc8bit' in optionlist:
-						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-					elif 'mrc16bit' in optionlist:
+					if i==0:
+						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
+						
+					out3d_img.insert_clip(d, (0,0,i))
+					
+#					if i==n1:
+#						out3d_img.write_image(outfile)
+					
+					#can not do region writing to an no-existing image file
+					#d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, Region(0,0,i,d.get_xsize(), d.get_ysize(),1), EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+				
+				#write processed image to file
+				if 'mrc8bit' in optionlist:
+					if options.treat3das2d and i==n1:
+						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+					else:
+					   d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+				elif 'mrc16bit' in optionlist:
+					if options.treat3das2d and i==n1:
+						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+					else:
 						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+				else:
+					if options.treat3das2d and i==n1:
+						out3d_img.write_image(outfile)
 					else:
 						if options.inplace:
 							d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
@@ -491,19 +513,6 @@ def main():
 							d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 				
 	#end of image loop
-	
-	if options.treat3das2d:
-		img = EMData(temp_img_file, 0)
-		nx = img.get_xsize()
-		ny = img.get_ysize()
-		del img
-		nz = EMUtil.get_image_count(temp_img_file)
-		outimg_3d = EMData(nx, ny, nz)
-		for i in range(nz):
-			d = EMData(temp_img_file, i)
-			outimg_3d.insert_clip(d, (0,0,i))
-		outimg_3d.write_image(outfile)
-		os.unlink(temp_img_file)
 		
 	if average:
 		average["ptcl_repr"]=(n1-n0+1)
