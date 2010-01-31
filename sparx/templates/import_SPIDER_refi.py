@@ -76,7 +76,7 @@ for ii in xrange(1,696+1) :
 
 		data = EMData()
 		data.read_image( proj_in, i )
-		#  One could decimate the data here as spider images are usually oveesampled.  This would require setting scale and adjusting
+		#  One could decimate the data here as spider images are usually oversampled.  This would require setting scale and adjusting
 		#  pixel size appropriately
 		#deci = Util.window(resample(data,scale),128,128,1,0,0,0)
 		deci = data
