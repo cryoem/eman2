@@ -272,7 +272,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.color = (0, 0, 1)
         self.selected_color = (0, 1, 0)
         self.counter = counterGen()
-        self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
         self.helices_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
         self.ptcls_file_extension_dict = {"Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
 
@@ -300,8 +299,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.main_image.optimally_resize()
         
-        self.coords_ftype_combobox.addItems( sorted(self.coords_file_extension_dict.keys()) )
-        self.coords_ftype_combobox.setCurrentIndex(1)
         self.helices_ftype_combobox.addItems( sorted(self.helices_file_extension_dict.keys()) )
         self.ptcls_ftype_combobox.addItems( sorted(self.ptcls_file_extension_dict.keys()) )
         width = 100
@@ -340,11 +337,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
         self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
         
-        self.coords_groupbox = QtGui.QGroupBox(self.tr("Write &Coordinates:"))
-        self.coords_groupbox.setCheckable(True)
-        coords_ftype_label = QtGui.QLabel(self.tr("&File Type:"))
-        self.coords_ftype_combobox = QtGui.QComboBox()
-        coords_ftype_label.setBuddy(self.coords_ftype_combobox)
+        self.coords_checkbox = QtGui.QCheckBox(self.tr("Write &Coordinates"))
+        self.coords_checkbox.setChecked(True)
         
         self.helices_groupbox = QtGui.QGroupBox(self.tr("Write &Helices:"))
         self.helices_groupbox.setCheckable(True)
@@ -391,11 +385,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         qualityLayout = QtGui.QHBoxLayout()
         qualityLayout.addWidget(self.img_quality_label)
         qualityLayout.addWidget(self.img_quality_combobox)
-        
-        coords_ftype_layout = QtGui.QHBoxLayout()
-        coords_ftype_layout.addWidget(coords_ftype_label)
-        coords_ftype_layout.addWidget(self.coords_ftype_combobox)
-        self.coords_groupbox.setLayout(coords_ftype_layout)
         
         helices_ftype_layout = QtGui.QHBoxLayout()
         helices_ftype_layout.addWidget(helices_ftype_label)
@@ -444,7 +433,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.addLayout(widthLayout)
         self.vbl.addLayout(qualityLayout)
         self.vbl.addWidget(self.load_boxes_button)
-        self.vbl.addWidget(self.coords_groupbox)
+        self.vbl.addWidget(self.coords_checkbox)
         self.vbl.addWidget(self.helices_groupbox)
         self.vbl.addWidget(self.ptcls_groupbox)
         self.vbl.addLayout(directory_layout)
@@ -587,7 +576,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         micrograph_filename = os.path.basename(self.micrograph_filepath)
         micrograph_name = os.path.splitext( micrograph_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
-        if self.coords_groupbox.isChecked():
+        if self.coords_checkbox.isChecked():
             save_coords(self.helices_dict.keys(), micrograph_name, output_dir)
         if self.ptcls_groupbox.isChecked():
             i = 1
