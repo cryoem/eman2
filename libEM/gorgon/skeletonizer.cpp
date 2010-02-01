@@ -3,6 +3,8 @@
 // Description:   Performs skeletonization on a grayscale volume
 
 #include "skeletonizer.h"
+#include <list>
+using std::list;
 
 using namespace wustl_mm::GraySkeletonCPP;
 
@@ -43,6 +45,71 @@ using namespace wustl_mm::GraySkeletonCPP;
 			//delete math;
 			//delete surfaceNormalFinder;
 		}
+		// **************************** Added by Ross ****************************************
+
+const float CURVE_VAL = 1.0f;
+const float SURFACE_VAL = 2.0f;
+const float MAP_ERR_VAL = 100.0f;
+
+		bool VolumeSkeletonizer::Are26Neighbors(Vec3<int> u, Vec3<int> v) {
+			if ( u==v || abs(u[0]-v[0])>1 || abs(u[1]-v[1])>1 || abs(u[2]-v[2])>1) {
+				return false;
+			} else { 
+				return true;
+			}
+		}
+		void VolumeSkeletonizer::CleanUpSkeleton(Volume * skeleton, int minNumVoxels, float valueThreshold) {
+			
+			//Get the indices of voxels that are above the threshold, i.e. part of the skeleton
+			list< Vec3<int> > skel_indices;
+			Vec3<int> voxel_indices;
+			for (int k=0; k < skeleton->getSizeZ(); k++) {
+				for (int j=0; j < skeleton->getSizeY(); j++) {
+					for (int i=0; i < skeleton->getSizeX(); i++) {
+						if (skeleton->getDataAt(i,j,k) > valueThreshold) {
+							voxel_indices.set_value(i,j,k);
+							skel_indices.push_front(voxel_indices);
+						}
+					}
+				}
+			}
+			
+			vector< Vec3<int> > segment; //the coordinates for a set of connected skeleton voxels
+			list< Vec3<int> >::iterator itr;
+			
+			/*
+			 1. Group the connected voxels together
+			 2. Check the number of voxels in that group
+			 3. If below the minimum number of voxels, remove them from the skeleton
+			 4. Repeat until all the voxels in the skeleton have been grouped (possibly alone if not connected)
+			*/
+			while (skel_indices.size() > 0) {
+				segment.clear();
+				segment.push_back(skel_indices.front());
+				skel_indices.pop_front();
+				// group connected voxels -- each member of segment neighbors at least one other member of segment
+				//For each voxel in segment, we test if each voxel in skel_indices is a neighbor
+				for (int seg_ix=0; seg_ix < segment.size(); seg_ix++) { 
+					for (itr = skel_indices.begin(); itr != skel_indices.end(); itr++) {
+						
+						if (Are26Neighbors(segment[seg_ix], *itr)) {
+							segment.push_back(*itr);
+							skel_indices.erase(itr);
+						}
+					}
+				} //Now, a segment is complete
+				
+
+				//If the region of connected voxels is too small, remove them from the map
+				if (segment.size() < minNumVoxels) {
+					for (int ix=0; ix<segment.size(); ix++) {
+						skeleton->setDataAt(segment[ix][0], segment[ix][1], segment[ix][2],0.0f);
+					}
+				}
+
+			}
+		}
+		// **************************** End: added by Ross ****************************************
 
 
 		Volume * VolumeSkeletonizer::PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth) {
@@ -59,9 +126,6 @@ using namespace wustl_mm::GraySkeletonCPP;
 			curveVol = VolumeSkeletonizer::GetJuCurveSkeleton(imageVol, preservedVol, threshold, true);
 			VolumeSkeletonizer::PruneCurves(curveVol, minCurveWidth);
 			VoxelOr(preservedVol, curveVol);
-
-
-
 
 			topologyVol = VolumeSkeletonizer::GetJuTopologySkeleton(imageVol, preservedVol, threshold);
 
@@ -87,6 +151,7 @@ using namespace wustl_mm::GraySkeletonCPP;
 //					val = 0;
 //				topologyVol->setDataAt(i, val);
 //			}
+
 
 
 

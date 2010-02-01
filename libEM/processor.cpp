@@ -9810,6 +9810,7 @@ EMData* BinarySkeletonizerProcessor::process(EMData * image)
 	int min_srfcw = params.set_default("min_surface_width", 4);
 	//cout << "PeformPureJuSkeletonization" << endl;
 	Volume* vskel = VolumeSkeletonizer::PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
+	VolumeSkeletonizer::CleanUpSkeleton(vskel, 4, 0.01);
 	//cout << "skeletonization done" << endl;
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
 	EMData* skel = vskel->get_emdata();
