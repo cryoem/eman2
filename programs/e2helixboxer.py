@@ -19,16 +19,15 @@ import os
 
 
 """
-This program is used to box segments from a frame and extract particles from the segments.
-A frame is the the EM micrograph image that contains the biological macromolecules that will be boxed.
-A segment is a rectangular region that shows a helical region of a biological macromolecule. 
-Different segments from the same frame will generally have different lengths but the same width.
-A particle is a square or rectangle from inside a segment. Particles are chosen so that they overlap each other
-within a segment. Usually, all particles from a frame will have the same dimensions.
+This program is used to box helices from a micrograph and extract particles from the helices.
+A helical region of a macromolecule can appear as a rectangle on a 2D micrograph; thus a "helix" in this program is a rectangle. 
+Different helices from the same micrograph will generally have different lengths but the same width.
+A particle is a square or rectangle from inside a helix. Particles are chosen so that they overlap each other
+within a helix. Usually, all particles from a micrograph will have the same dimensions.
 """
 
 
-E2HELIXBOXER_DB = "bdb:e2helixboxercache"
+E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
 def counterGen():
     """
     Calling this function will create a counter object.
@@ -40,17 +39,17 @@ def counterGen():
         i += 1
         yield i
 
-def get_particles_from_segment( segment, px_overlap, px_length = None, px_width = None ):
+def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = None ):
     """
-    Gets the square/rectangular "particles" inside a rectangular segment.
-    @segment: EMData object that contains the rectangular region boxed by the user
-    @px_overlap: pixels of overlap of the rectangular particles taken from the segment
-    @px_length: length of the particles in pixels, defaults to the width of the segment
+    Gets the square/rectangular "particles" inside a rectangular helix.
+    @helix: EMData object that contains the rectangular region boxed by the user
+    @px_overlap: pixels of overlap of the rectangular particles taken from the helix
+    @px_length: length of the particles in pixels, defaults to the width of the helix
     @px_width: width of the particles in pixels, defaults to px_length
     @return: a list of EMData particles
     """
     if not px_width:
-        px_width = segment.get_xsize()
+        px_width = helix.get_xsize()
     if not px_length:
         px_length = px_width
     assert px_length > px_overlap, "The overlap must be smaller than the particle length"
@@ -60,22 +59,22 @@ def get_particles_from_segment( segment, px_overlap, px_length = None, px_width 
     (xsize, ysize) = (px_width, px_length)
     (x0,y0) = (0,0)
     particles = []
-    while y0 + ysize <= segment.get_ysize():
-        particles.append( segment.get_clip(Region(x0, y0, xsize, ysize)) )
+    while y0 + ysize <= helix.get_ysize():
+        particles.append( helix.get_clip(Region(x0, y0, xsize, ysize)) )
         y0 += px_step
     
     return particles
 
-def get_segment_from_coords(frame, x1, y1, x2, y2, width):
+def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     """
-    Gets the rectangular segment of the image specified by the coordinates.
-    @frame: the EMData object which holds the micrograph from which segments and particles are chosen
+    Gets the rectangular helix of the image specified by the coordinates.
+    @micrograph: the EMData object which holds the micrograph from which helices and particles are chosen
     @x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
     @y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
     @x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
     @y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
     @width: the width in pixels of the rectangle
-    @return: the rectangular EMData segment specified by the coordinates and width 
+    @return: the rectangular EMData helix specified by the coordinates and width 
     """
     l_vect = (x2-x1, y2-y1)
     length = sqrt(l_vect[0]**2+l_vect[1]**2)
@@ -93,9 +92,9 @@ def get_segment_from_coords(frame, x1, y1, x2, y2, width):
     tr = Transform()
     tr.set_trans(centroid)
     tr.set_rotation({"type":"2d", "alpha":rot_angle})
-    segment_dimensions = ( int(round(width)), int(round(length)), 1 )
-    segment = frame.get_rotated_clip( tr, segment_dimensions )
-    return segment
+    helix_dimensions = ( int(round(width)), int(round(length)), 1 )
+    helix = micrograph.get_rotated_clip( tr, helix_dimensions )
+    return helix
 
 def load_coords(coords_filepath):
     """
@@ -138,120 +137,94 @@ def load_coords(coords_filepath):
         pass
     
     return data
-def save_coords(coords_list, frame_name, output_type = "hbox", output_dir=""):
+def save_coords(coords_list, micrograph_name, output_dir=""):
     """
-    Saves coordinates and widths of the boxed segments to a file.
-    @coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a segment
-    @frame_name: the file name of the frame without the file extension
-    @output_type: the file format used for saving coordinates. Can be "box" or "hbox".
-    "*.box": the EMAN1 file format -- r is half the width (w) of the boxes
+    Saves coordinates and widths of the boxed helices to a file.
+    @coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a helix
+    @micrograph_name: the file name of the micrograph without the file extension
+    @output_dir: the file will be saved in {output_dir}/box.xyz/ where xyz is the width of the boxes
+    "{micrograph_name}_boxes.txt": in the EMAN1 *.box file format (r is half the width (w) of the boxes)
         x1-r    y1-r    w    w    -1
         x2-r    y2-r    w    w    -2
-    "*.hbox": the EMAN2 file format
-        x1    y1    x2    y2    w
-    @output_dir: the file will be saved in {output_dir}/box.xyz/ where xyz is the width of the boxes     
     """
-    if output_type == "box":
-        output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
-        if not os.access(output_filepath, os.F_OK):
-            os.mkdir(output_filepath)
-        output_filepath = os.path.join(output_filepath, frame_name + ".box")
-        out_file = open(output_filepath, "w")
-        
-        for coords in coords_list:
-            (x1, y1) = (coords[0], coords[1])
-            (x2, y2) = (coords[2], coords[3])
-            width = coords[4]
-            r = width / 2.0
-                        
-            #For some reason, EMAN1 subtracts half the box width from each coordinate
-            #EMAN1 uses <cstdio> fprintf() and "%1.0f", which rounds half-integers away from zero
-            #the string format operator works the same in Python as it does in C for decimal floats
-            out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-1\n" % (x1 - r, y1 - r, width, width) )
-            out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-2\n" % (x2 - r, y2 - r, width, width) )
-        out_file.close()
-        
-    elif output_type == "hbox":
-        output_filepath = os.path.join(output_dir, "box." + str(coords_list[0][4]))
-        if not os.access(output_filepath, os.F_OK):
-            os.mkdir(output_filepath)
-        output_filepath = os.path.join(output_filepath, frame_name + ".hbox")
-        out_file = open(output_filepath, "w")
-        for coords in coords_list:
-            out_file.write( "%f\t%f\t%f\t%f\t%i\n" % (coords[0], coords[1], coords[2], coords[3], coords[4]) )
-        out_file.close()
-        
-    else:
-        pass
-
-def db_save_coords(frame_filepath, output_type = "box", output_dir=""):
-    frame_filename = os.path.basename(frame_filepath)
-    frame_name = os.path.splitext( frame_filename )[0]
-    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-    box_coords_list = db[frame_filename]
-    save_coords(box_coords_list, frame_name, output_type, output_dir)
+    output_filepath = os.path.join(output_dir, micrograph_name + "_boxes.txt")
+    out_file = open(output_filepath, "w")
     
-def db_get_segments_dict(frame_filepath):
+    for coords in coords_list:
+        (x1, y1) = (coords[0], coords[1])
+        (x2, y2) = (coords[2], coords[3])
+        width = coords[4]
+        r = width / 2.0
+                    
+        #For some reason, EMAN1 subtracts half the box width from each coordinate
+        #EMAN1 uses <cstdio> fprintf() and "%1.0f", which rounds half-integers away from zero
+        #the string format operator works the same in Python as it does in C for decimal floats
+        out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-1\n" % (x1 - r, y1 - r, width, width) )
+        out_file.write( "%1.0f\t%1.0f\t%1.0f\t%1.0f\t-2\n" % (x2 - r, y2 - r, width, width) )
+    out_file.close()
+
+def db_save_coords(micrograph_filepath, output_dir=""):
+    micrograph_filename = os.path.basename(micrograph_filepath)
+    micrograph_name = os.path.splitext( micrograph_filename )[0]
+    db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+    box_coords_list = db[micrograph_filename]
+    save_coords(box_coords_list, micrograph_name, output_dir)
+    
+def db_get_helices_dict(micrograph_filepath):
     """
-    gets a dictionary of segments
-    @frame_filepath: the path to the image file for the frame
+    gets a dictionary of helices
+    @micrograph_filepath: the path to the image file for the micrograph
     @return: a dictionary formed like {(x1, y1, x2, y2, width): particle_EMData_object, ...}
     """
-    frame = EMData(frame_filepath)
-    db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-    box_coords_list = db[frame_filepath]
+    micrograph = EMData(micrograph_filepath)
+    db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+    box_coords_list = db[micrograph_filepath]
     if not box_coords_list:
         return {}
-    segments_dict = {}
+    helices_dict = {}
     for coords in box_coords_list:
-        segment = get_segment_from_coords(frame, *coords)
-        segments_dict[tuple(coords)] = segment
-    return segments_dict
+        helix = get_helix_from_coords(micrograph, *coords)
+        helices_dict[tuple(coords)] = helix
+    return helices_dict
 
-def save_segment(segment_emdata, frame_name, segment_num, output_type = "hdf", output_dir=""):
+def save_helix(helix_emdata, micrograph_name, helix_num, output_type = "hdf", output_dir=""):
     """
-    Saves a boxed segment to an image file.
-    @segment_emdata: the EMData object that holds the image data for the segment
-    @frame_name: the file name of the frame without the file extension
-    @segment_num: the number that identifies this segment among those boxed from this frame
+    Saves a boxed helix to an image file.
+    @helix_emdata: the EMData object that holds the image data for the helix
+    @micrograph_name: the file name of the micrograph without the file extension
+    @helix_num: the number that identifies this helix among those boxed from this micrograph
     @output_type: the image file type to write out
-    @output_dir: the file will be saved in {output_dir}/seg.xyz/ where xyz is the width of the segment 
+    @output_dir: the file will be saved in {output_dir}/helix.xyz/ where xyz is the width of the helix 
     """
-    output_fname = "%s.%i.seg.%s" % (frame_name, segment_num, output_type)
-    output_filepath = os.path.join(output_dir, "seg." + str(segment_emdata.get_xsize()))
-    if not os.access(output_filepath, os.F_OK):
-        os.mkdir(output_filepath)
-    output_filepath = os.path.join(output_filepath, output_fname)
+    output_fname = "%s_helix_%i.%s" % (micrograph_name, helix_num, output_type)
+    output_filepath = os.path.join(output_dir, output_fname)
     if os.access(output_filepath, os.F_OK):
         os.remove(output_filepath)
-    segment_emdata.write_image( output_filepath )
+    helix_emdata.write_image( output_filepath )
 
-def db_save_segments(frame_filepath, output_type = "hdf", output_dir=""):
-    frame_filename = os.path.basename(frame_filepath)
-    frame_name = os.path.splitext( frame_filename )[0]
-    segments_dict = db_get_segments(frame_filepath)
+def db_save_helices(micrograph_filepath, output_type = "hdf", output_dir=""):
+    micrograph_filename = os.path.basename(micrograph_filepath)
+    micrograph_name = os.path.splitext( micrograph_filename )[0]
+    helices_dict = db_get_helices(micrograph_filepath)
     i = 1
-    for coords in segments_dict:
-        segment = segments_dict[coords]
-        save_segment(segment, frame_name, i, output_type, output_dir)
+    for coords in helices_dict:
+        helix = helices_dict[coords]
+        save_helix(helix, micrograph_name, i, output_type, output_dir)
         i+=1
 
-def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir="", do_edge_norm=False):
+def save_particles(helix_emdata, helix_num, micrograph_name, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir="", do_edge_norm=False):
     """
-    saves the particles in a segment to a stack file
-    @segment_emdata: the EMData object containing the image data for the segment
-    @segment_num: the number used to identify this segment among all those boxed in the frame
-    @frame_name: the file name of the frame without the file extension
-    @px_overlap, @px_length, @px_width: see get_particles_from_segment() function
+    saves the particles in a helix to a stack file
+    @helix_emdata: the EMData object containing the image data for the helix
+    @helix_num: the number used to identify this helix among all those boxed in the micrograph
+    @micrograph_name: the file name of the micrograph without the file extension
+    @px_overlap, @px_length, @px_width: see get_particles_from_helix() function
     @output_type: the output image file type
     @output_dir: the output file will be saved in {output_dir}/ptcl.xyz where xyz is the width of each of the particles
     """
-    particles = get_particles_from_segment(segment_emdata, px_overlap, px_length, px_width)
-    output_filename = "%s.%i.ptcl.%s" % (frame_name, segment_num, output_type)
-    output_filepath = os.path.join(output_dir, "ptcl." + str(px_width))
-    if not os.access(output_filepath, os.F_OK):
-        os.mkdir(output_filepath)
-    output_filepath = os.path.join(output_filepath, output_filename)
+    particles = get_particles_from_helix(helix_emdata, px_overlap, px_length, px_width)
+    output_filename = "%s_helix_%i_ptcl.%s" % (micrograph_name, helix_num, output_type)
+    output_filepath = os.path.join(output_dir, output_filename)
     if os.access(output_filepath, os.F_OK):
         os.remove(output_filepath)
     for i in range(len(particles)):
@@ -261,52 +234,52 @@ def save_particles(segment_emdata, segment_num, frame_name, px_overlap, px_lengt
         ptcl.write_image(output_filepath, i) #appending to the image stack
 
 
-def db_save_particles(frame_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
+def db_save_particles(micrograph_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
 
 class EMHelixBoxerWidget(QtGui.QWidget):
     """
-    the GUI widget which contains the settings for boxing segments and writing results to files
+    the GUI widget which contains the settings for boxing helices and writing results to files
     """
-    def __init__(self, frame_filepath, app):
+    def __init__(self, micrograph_filepath, app):
         """
-        @frame_filepath: the path to the image file for the frame -- that is the micrograph image from which particles will be boxed
+        @micrograph_filepath: the path to the image file for the micrograph
         @app: the application to which this widget belongs
         """
         QtGui.QWidget.__init__(self)
         self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
         self.setWindowTitle("e2helixboxer")
         
-        if not frame_filepath:
-            self.frame_filepath = "test_image"
+        if not micrograph_filepath:
+            self.micrograph_filepath = "test_image"
             img = test_image()
         else:
             if sys.version_info >= (2, 6):
-                self.frame_filepath = os.path.relpath(frame_filepath) #os.path.relpath is new in Python 2.6
+                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
             else:
-                self.frame_filepath = frame_filepath
-            img = EMData(frame_filepath)
+                self.micrograph_filepath = micrograph_filepath
+            img = EMData(micrograph_filepath)
         
         self.main_image = EMImage2DModule(application=app)
-        self.main_image.set_data( img, self.frame_filepath )
+        self.main_image.set_data( img, self.micrograph_filepath )
         self.main_image.shapes = EMShapeDict()
-        self.segment_viewer = None #Will be an EMImage2DModule instance
+        self.helix_viewer = None #Will be an EMImage2DModule instance
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
-        self.segments_dict = db_get_segments_dict(self.frame_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.helices_dict = db_get_helices_dict(self.micrograph_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
         self.color = (0, 0, 1)
         self.selected_color = (0, 1, 0)
         self.counter = counterGen()
         self.coords_file_extension_dict = {"EMAN1":"box", "EMAN2": "hbox"}
-        self.segs_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
+        self.helices_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
         self.ptcls_file_extension_dict = {"Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
 
-        if self.get_db_item("boxes") == None:
-            self.set_db_item("boxes", [])
+        if self.get_db_item("helixboxes") == None:
+            self.set_db_item("helixboxes", [])
         else:
-            boxList = self.get_db_item("boxes")
+            boxList = self.get_db_item("helixboxes")
             for box_coords in boxList:
                 key = self.generate_emshape_key()
                 emshape_list = ["rectline"]
@@ -329,11 +302,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.coords_ftype_combobox.addItems( sorted(self.coords_file_extension_dict.keys()) )
         self.coords_ftype_combobox.setCurrentIndex(1)
-        self.segs_ftype_combobox.addItems( sorted(self.segs_file_extension_dict.keys()) )
+        self.helices_ftype_combobox.addItems( sorted(self.helices_file_extension_dict.keys()) )
         self.ptcls_ftype_combobox.addItems( sorted(self.ptcls_file_extension_dict.keys()) )
         width = 100
-        if self.segments_dict:
-            first_coords = self.segments_dict.keys()[0]
+        if self.helices_dict:
+            first_coords = self.helices_dict.keys()[0]
             width = first_coords[4]
         self.box_width_spinbox.setValue(width)
         self.ptcls_width_spinbox.setValue( width )
@@ -373,11 +346,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.coords_ftype_combobox = QtGui.QComboBox()
         coords_ftype_label.setBuddy(self.coords_ftype_combobox)
         
-        self.segs_groupbox = QtGui.QGroupBox(self.tr("Write &Segments:"))
-        self.segs_groupbox.setCheckable(True)
-        segs_ftype_label = QtGui.QLabel(self.tr("File &Type:"))
-        self.segs_ftype_combobox = QtGui.QComboBox()
-        segs_ftype_label.setBuddy(self.segs_ftype_combobox)
+        self.helices_groupbox = QtGui.QGroupBox(self.tr("Write &Helices:"))
+        self.helices_groupbox.setCheckable(True)
+        helices_ftype_label = QtGui.QLabel(self.tr("File &Type:"))
+        self.helices_ftype_combobox = QtGui.QComboBox()
+        helices_ftype_label.setBuddy(self.helices_ftype_combobox)
         
         self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
         self.ptcls_groupbox.setCheckable(True)
@@ -424,10 +397,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         coords_ftype_layout.addWidget(self.coords_ftype_combobox)
         self.coords_groupbox.setLayout(coords_ftype_layout)
         
-        segs_ftype_layout = QtGui.QHBoxLayout()
-        segs_ftype_layout.addWidget(segs_ftype_label)
-        segs_ftype_layout.addWidget(self.segs_ftype_combobox)
-        self.segs_groupbox.setLayout(segs_ftype_layout)
+        helices_ftype_layout = QtGui.QHBoxLayout()
+        helices_ftype_layout.addWidget(helices_ftype_label)
+        helices_ftype_layout.addWidget(self.helices_ftype_combobox)
+        self.helices_groupbox.setLayout(helices_ftype_layout)
         
         ptcls_ftype_layout = QtGui.QHBoxLayout()
         ptcls_ftype_layout.addWidget(ptcls_ftype_label)
@@ -472,7 +445,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.addLayout(qualityLayout)
         self.vbl.addWidget(self.load_boxes_button)
         self.vbl.addWidget(self.coords_groupbox)
-        self.vbl.addWidget(self.segs_groupbox)
+        self.vbl.addWidget(self.helices_groupbox)
         self.vbl.addWidget(self.ptcls_groupbox)
         self.vbl.addLayout(directory_layout)
         self.vbl.addLayout(button_layout)
@@ -481,7 +454,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
     def choose_dir(self):
         """
-        launches a file-browser dialog to select the base directory in which to save output coordinates, segments, and particles 
+        launches a file-browser dialog to select the base directory in which to save output coordinates, helices, and particles 
         """
         #selector = EMSelectorModule(save_as_mode=False)
         #selector.widget.save_as_line_edit.setEnabled(False)
@@ -503,25 +476,25 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 current_shape.shape[i+1] = self.selected_color[i]
         self.main_image.shapechange=1
         self.main_image.updateGL()
-    def display_segment(self, segment_emdata):
+    def display_helix(self, helix_emdata):
         """
-        launches or updates an EMImage2DModule to display segment_emdata
-        @segment_emdata: an EMData object that stores the image data for a segment
+        launches or updates an EMImage2DModule to display helix_emdata
+        @helix_emdata: an EMData object that stores the image data for a helix
         """
         self.color_boxes()
-        if not self.segment_viewer:
-            self.segment_viewer = EMImage2DModule(application=get_application())
-            self.segment_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
-            self.segment_viewer.setWindowTitle("Current Boxed Segment")
-            self.segment_viewer.get_qt_widget().resize(200,800)
-        self.segment_viewer.set_data(segment_emdata)
+        if not self.helix_viewer:
+            self.helix_viewer = EMImage2DModule(application=get_application())
+            self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
+            self.helix_viewer.setWindowTitle("Current Boxed helix")
+            self.helix_viewer.get_qt_widget().resize(200,800)
+        self.helix_viewer.set_data(helix_emdata)
 
-        get_application().show_specific(self.segment_viewer)
+        get_application().show_specific(self.helix_viewer)
         scale = 100.0 / self.get_width()
-        self.segment_viewer.set_scale(scale)
-        if self.segment_viewer.inspector:
-            self.segment_viewer.inspector.set_scale(scale)
-        self.segment_viewer.updateGL()
+        self.helix_viewer.set_scale(scale)
+        if self.helix_viewer.inspector:
+            self.helix_viewer.inspector.set_scale(scale)
+        self.helix_viewer.updateGL()
     def exit_app(self):
         """
         quits the program
@@ -530,14 +503,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         app.quit()
     def generate_emshape_key(self):
         """
-        creates a unique key for a new "rectline" EMShape, which is used for boxing a segment
+        creates a unique key for a new "rectline" EMShape, which is used for boxing a helix
         @return: a string that is the key for the new "rectline" EMShape
         """
         i = self.counter.next()
         return "rectline%i" % i
     def get_width(self):
         """
-        returns the current width for the segments
+        returns the current width for the helices
         """
         return self.box_width_spinbox.value()
     def load_boxes(self):
@@ -557,24 +530,24 @@ class EMHelixBoxerWidget(QtGui.QWidget):
 
         if keep_current_boxes == QtGui.QMessageBox.No:
             self.main_image.shapes = EMShapeDict()
-            self.set_db_item("boxes", [])
-            self.segments_dict = {}
-            if self.segment_viewer:
-                self.display_segment(EMData(10,10))
+            self.set_db_item("helixboxes", [])
+            self.helices_dict = {}
+            if self.helix_viewer:
+                self.display_helix(EMData(10,10))
         
         for coords in coords_list:
             emshape = EMShape(["rectline", self.color[0], self.color[1], self.color[2], coords[0], coords[1], coords[2], coords[3], coords[4], 2])
             key = self.generate_emshape_key()
             self.main_image.add_shape(key, emshape)
-            segment = get_segment_from_coords(self.main_image.get_data(), *coords)
-            self.segments_dict[coords] = segment
+            helix = get_helix_from_coords(self.main_image.get_data(), *coords)
+            self.helices_dict[coords] = helix
             self.add_box_to_db(coords)
 
         self.main_image.updateGL()
         
     def width_changed(self, width):
         """
-        updates the widths of the boxed segments when the user changes the width to use for segments
+        updates the widths of the boxed helices when the user changes the width to use for helices
         """
         if width < 1:
             return
@@ -590,12 +563,12 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             old_emshape = shapes.get(box_key)
             old_coords = old_emshape.getShape()[4:9]
             new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
-            segment = get_segment_from_coords( self.main_image.get_data(), *new_coords )
+            helix = get_helix_from_coords( self.main_image.get_data(), *new_coords )
                         
             self.remove_box_from_db(old_coords)
             self.add_box_to_db(new_coords)
-            self.segments_dict.pop(tuple(old_coords))
-            self.segments_dict[new_coords] = segment
+            self.helices_dict.pop(tuple(old_coords))
+            self.helices_dict[new_coords] = helix
                         
             new_emshape = EMShape( ["rectline", self.color[0], self.color[1], self.color[2], new_coords[0], new_coords[1], new_coords[2], new_coords[3], new_coords[4], 2] )
             shapes[box_key] = new_emshape
@@ -603,96 +576,94 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image.shapechange=1
         self.main_image.updateGL()
         
-        if self.segment_viewer:
-            self.display_segment(EMData(10,10))
+        if self.helix_viewer:
+            self.display_helix(EMData(10,10))
         
     def write_ouput(self):
         """
-        writes the coordinates for the segments, the image data for the segments, and the image data 
+        writes the coordinates for the helices, the image data for the helices, and the image data 
         for the particles to files if each of those options are checked
         """
-        frame_filename = os.path.basename(self.frame_filepath)
-        frame_name = os.path.splitext( frame_filename )[0]
+        micrograph_filename = os.path.basename(self.micrograph_filepath)
+        micrograph_name = os.path.splitext( micrograph_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
         if self.coords_groupbox.isChecked():
-            coords_out_type = unicode( self.coords_ftype_combobox.currentText() )
-            coords_out_type = self.coords_file_extension_dict[coords_out_type]
-            save_coords(self.segments_dict.keys(), frame_name, coords_out_type, output_dir)
+            save_coords(self.helices_dict.keys(), micrograph_name, output_dir)
         if self.ptcls_groupbox.isChecked():
             i = 1
-            for coords_key in self.segments_dict:
+            for coords_key in self.helices_dict:
                 px_overlap = self.ptcls_overlap_spinbox.value()
                 px_length = self.ptcls_length_spinbox.value()
                 px_width = self.ptcls_width_spinbox.value()
                 output_type = self.ptcls_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
                 
-                seg = self.segments_dict[coords_key]
+                helix = self.helices_dict[coords_key]
                 do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
-                save_particles(seg, i, frame_name, px_overlap, px_length, px_width, output_type, output_dir, do_edge_norm)
+                save_particles(helix, i, micrograph_name, px_overlap, px_length, px_width, output_type, output_dir, do_edge_norm)
                 i += 1
             pass
-        if self.segs_groupbox.isChecked():
-            seg_file_extension = self.segs_file_extension_dict[unicode(self.segs_ftype_combobox.currentText())]
+        if self.helices_groupbox.isChecked():
+            helix_file_extension = self.helices_file_extension_dict[unicode(self.helices_ftype_combobox.currentText())]
             i = 1
-            for coords_key in self.segments_dict:
-                seg = self.segments_dict[coords_key]
-                save_segment(seg, frame_name, i, seg_file_extension, output_dir)
+            for coords_key in self.helices_dict:
+                helix = self.helices_dict[coords_key]
+                save_helix(helix, micrograph_name, i, helix_file_extension, output_dir)
                 i += 1
         
     def get_db_item(self, key):
         """
-        gets the value stored in the e2helixboxer database for the specified key and the current frame 
+        gets the value stored in the e2helixboxer database for the specified key and the current micrograph 
         """
-        db_name = E2HELIXBOXER_DB + "#" + key
+        db_name = E2HELIXBOXER_DB + key
         db = db_open_dict(db_name)
-        val = db[self.frame_filepath]
+        val = db[self.micrograph_filepath]
         db_close_dict(db_name)
         return val
     def remove_db_item(self, key):
         """
-        removes the key and its value from the e2helixboxer database for the current frame
+        removes the key and its value from the e2helixboxer database for the current micrograph
         """
-        db_name = E2HELIXBOXER_DB + "#" + key
+        db_name = E2HELIXBOXER_DB + key
         db = db_open_dict(db_name)
         db.pop(key)
     def set_db_item(self, key, value):
         """
-        sets the value stored in the e2helixboxer database for the specified key and the current frame 
+        sets the value stored in the e2helixboxer database for the specified key and the current micrograph 
         """
-        db_name = E2HELIXBOXER_DB + "#" + key
+        db_name = E2HELIXBOXER_DB + key
         db = db_open_dict(db_name)
-        db[self.frame_filepath] = value
+        db[self.micrograph_filepath] = value
         db_close_dict(db_name)
     def get_image_quality(self):
         """
         gets the value stored in the e2helixboxer database for image quality, which is the user's subjective
-        evaluation of how good the frame is
+        evaluation of how good the micrograph is
         """
         return self.get_db_item("quality")
     def set_image_quality(self, quality):
         """
         sets the value stored in the e2helixboxer database for image quality, which is the user's subjective
-        evaluation of how good the frame is
+        evaluation of how good the micrograph is
         """
         self.set_db_item("quality", quality)
     def add_box_to_db(self, box_coords):
         """
-        adds the coordinates for a segment to the e2helixboxer database for the current frame
+        adds the coordinates for a helix to the e2helixboxer database for the current micrograph
         """
         assert len(box_coords) == 5, "box_coords must have 5 items"
-        db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-        boxList = db[self.frame_filepath] #Get a copy of the db in memory
+        db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+        boxList = db[self.micrograph_filepath] #Get a copy of the db in memory
         boxList.append(tuple(box_coords))
-        db[self.frame_filepath] = boxList #Needed to save changes to disk
+        db[self.micrograph_filepath] = boxList #Needed to save changes to disk
     def remove_box_from_db(self, box_coords):
         """
-        removes the coordinates for a segment in the e2helixboxer database for the current frame
+        removes the coordinates for a helix in the e2helixboxer database for the current micrograph
         """
         assert len(box_coords) == 5, "box_coords must have 5 items"
-        db = db_open_dict(E2HELIXBOXER_DB + "#boxes")
-        boxList = db[self.frame_filepath] #Get a copy of the db in memory
+        db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+        boxList = db[self.micrograph_filepath] #Get a copy of the db in memory
         boxList.remove(tuple(box_coords))
-        db[self.frame_filepath] = boxList #Needed to save changes to disk
+        db[self.micrograph_filepath] = boxList #Needed to save changes to disk
 
     def mouse_down(self, event, click_loc):
         """
@@ -758,7 +729,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         elif self.edit_mode == "delete":
             box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
             self.remove_box_from_db(box_coords)
-            self.segments_dict.pop(tuple(box_coords))
+            self.helices_dict.pop(tuple(box_coords))
             self.main_image.del_shape(box_key)
             self.main_image.updateGL()
             self.current_boxkey = None
@@ -821,16 +792,16 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
 
         if self.current_boxkey and self.edit_mode != "delete": 
-            if self.initial_helix_box_data_tuple in self.get_db_item("boxes"):
+            if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
                 self.remove_box_from_db(self.initial_helix_box_data_tuple)
             box = self.main_image.get_shapes().get(self.current_boxkey)
             box_coords = box.getShape()[4:9]
             self.add_box_to_db(box_coords)
-            segment = get_segment_from_coords( self.main_image.get_data(), *box_coords )
+            helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
             data_tuple = tuple(box.getShape()[4:9])
-            self.segments_dict[data_tuple] = segment
+            self.helices_dict[data_tuple] = helix
             
-            self.display_segment(segment)
+            self.display_helix(helix)
         
         self.click_loc = None
         self.edit_mode = None
