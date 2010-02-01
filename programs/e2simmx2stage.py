@@ -116,14 +116,15 @@ def main():
 			for j in range(i+1,clen_stg1):
 				if ref_simmx[centers[i-1],centers[i]]>ref_simmx[centers[i-1],centers[j]] : centers[i],centers[j]=centers[j],centers[i] 
 
-		# now associate each reference with the closest 3 centers
+		# now associate each reference with the closest center
 		print "Associating references with centers"
 		classes=[[] for i in centers]	# each center becomes a list to start the process
 		for i in xrange(clen):
 			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 			quals.sort()
-			for j in xrange(4): classes[quals[j][1]].append(i)
-		
+#			for j in xrange(4): classes[quals[j][1]].append(i)		# we used to associate each reference with 3 closest centers
+			classes[quals[[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
+
 		# now generate an averaged reference for each center
 		print "Averaging each center"
 		for ii,i in enumerate(classes):
@@ -185,7 +186,7 @@ def main():
 		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)
 	
 	if (options.verbose):
-		cmd += " -v"
+		cmd += " --verbose=%d"%options.verbose
 	
 	if options.parallel: cmd += " --parallel=%s" %options.parallel
 	

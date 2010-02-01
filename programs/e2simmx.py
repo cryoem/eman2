@@ -538,7 +538,7 @@ def main():
 	
 	if len(args)<3 : parser.error("Input and output files required")
 	
-	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
+	if (options.check): options.verbose = 1 # turn verbose on if the user is only checking...
 		
 	if (options.nofilecheck == False):
 		options.reffile=args[0]
