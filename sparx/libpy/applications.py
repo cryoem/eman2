@@ -479,6 +479,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ave1 = model_blank(nx, nx)
 			ave2 = model_blank(nx, nx)
 			R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+			if CTF:
+				ave1 /= (nx*2)**2
+				ave2 /= (nx*2)**2
 		else:
 			ave1, ave2 = sum_oe(data, "a", CTF, EMData())
 		reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
@@ -635,6 +638,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						ave1 = model_blank(nx, nx)
 						ave2 = model_blank(nx, nx)
 						R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+						if CTF:
+							ave1 /= (nx*2)**2
+							ave2 /= (nx*2)**2
 					else:
 						ave1, ave2 = sum_oe(data, "a", CTF, EMData())
 					reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
@@ -1493,6 +1499,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				ave1 = model_blank(nx, nx)
 				ave2 = model_blank(nx, nx)
 				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+				# Comment by Zhengfan Yang on 02/01/10
+				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
+				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
+				# However, this step is not mandatory.
+				if CTF:
+					ave1 /= (nx*2)**2
+					ave2 /= (nx*2)**2
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 			reduce_EMData_to_root(ave1, myid, main_node)
