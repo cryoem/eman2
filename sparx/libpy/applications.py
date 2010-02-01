@@ -300,7 +300,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:
 			nima = EMUtil.get_image_count(stack)
 		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		nima = nima[0]
+		nima = int(nima[0])
 	else:
 		print "Invalid file type"
 		return
