@@ -588,16 +588,17 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        cs = mpi_bcast(cs, 2, MPI_FLOAT, group_main_node, group_comm)
 			        cs = [float(cs[0]), float(cs[1])]
 
-				if CUDA:
-					old_ali_params = all_ali_params[:]
-				else:
-					old_ali_params = []
-				        for im in xrange(len(data)):  
-						alpha, sx, sy, mirror, scale = get_params2D(data[im])
-						old_ali_params.append(alpha)
-						old_ali_params.append(sx)
-						old_ali_params.append(sy)
-						old_ali_params.append(mirror)
+				if verbose == 2:
+					if CUDA:
+						old_ali_params = all_ali_params[:]
+					else:
+						old_ali_params = []
+					        for im in xrange(len(data)):  
+							alpha, sx, sy, mirror, scale = get_params2D(data[im])
+							old_ali_params.append(alpha)
+							old_ali_params.append(sx)
+							old_ali_params.append(sy)
+							old_ali_params.append(mirror)
 
 				if CUDA:
 					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1)
@@ -610,21 +611,22 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 			        sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
-			        pixel_error = 0.0
-			        mirror_change = 0
-			        for im in xrange(len(data)):
-			        	if CUDA:
-						alpha = all_ali_params[im*4]
-						sx = all_ali_params[im*4+1]
-						sy = all_ali_params[im*4+2]
-						mirror = all_ali_params[im*4+3]
-					else:
-				        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
-			        	if old_ali_params[im*4+3] == mirror:
-			        		this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
-			        		pixel_error += this_error
-			        	else:
-			        		mirror_change += 1
+			        if verbose == 2:
+					pixel_error = 0.0
+				        mirror_change = 0
+				        for im in xrange(len(data)):
+				        	if CUDA:
+							alpha = all_ali_params[im*4]
+							sx = all_ali_params[im*4+1]
+							sy = all_ali_params[im*4+2]
+							mirror = all_ali_params[im*4+3]
+						else:
+					        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
+				        	if old_ali_params[im*4+3] == mirror:
+			        			this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
+			        			pixel_error += this_error
+				        	else:
+				        		mirror_change += 1
 
 			        if Fourvar:
 					tavg_I, ave1, ave2, var, sumsq = add_ave_varf_MPI(key, data, None, "a", CTF, ctf_2_sum, "xform.align2d", group_main_node, group_comm)
@@ -638,9 +640,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					reduce_EMData_to_root(ave1, key, group_main_node, group_comm)
 					reduce_EMData_to_root(ave2, key, group_main_node, group_comm)
  			
-	
-			        mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
-			        pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
+				if verbose == 2:
+				        mirror_change = mpi_reduce(mirror_change, 1, MPI_INT, MPI_SUM, group_main_node, group_comm)
+				        pixel_error = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, group_main_node, group_comm)
 
 			        if key == group_main_node:
 					if Fourvar:	
@@ -664,13 +666,13 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			        		tavg, dummy = user_func(ref_data)
 			        		cs[0] = float(sx_sum[0])/nima
 			        		cs[1] = float(sy_sum[0])/nima
-			        		if mirror_change == nima:
-							pixel_error = 100.0
-						else:
-							pixel_error = float(pixel_error[0])/(nima-int(mirror_change))
-			        		mirror_change = float(mirror_change[0])/nima
 			        		tavg = fshift(tavg, -cs[0], -cs[1])
-			        		if verbose == 2 :
+						if verbose == 2:
+				        		if mirror_change == nima:
+								pixel_error = 100.0
+							else:
+								pixel_error = float(pixel_error[0])/(nima-int(mirror_change))
+			        			mirror_change = float(mirror_change[0])/nima
 							msg += "Average center x =	%10.3f    Center y     = %10.3f\n"%(cs[0], cs[1])
 				        		msg += "Mirror change = 	%10.3f    Pixel error  = %10.3f\n"%(mirror_change, pixel_error)
 			        	else:
