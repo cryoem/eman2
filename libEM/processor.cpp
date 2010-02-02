@@ -843,7 +843,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 			}
 		}
 		
-		if (verbose) printf("Iteration %3d: %6ld pixels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
+		if (verbose) printf("Iteration %3d: %6ld voxels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
 		if (nreseed==0 && pixmov<maxvoxmove) break;		// termination conditions met
 	}
 	
