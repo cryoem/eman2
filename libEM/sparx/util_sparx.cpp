@@ -18278,7 +18278,7 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	}
 	p[2*vol-1] = 2.0;
 
-	float t = get_frand(0, 1);
+	float t = get_frand(0.0f, 1.0f);
 	int select = 0;
 	while (p[select] < t)	select += 1;
 
@@ -18844,7 +18844,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 						}  else  {
 							// this is inner shell, the point can only move (or vanish, if all neighbors exist)
 							if(img_ptr(ib,jb,kb) == 1.0) {
-								if(Util::get_frand(0.0,1.0) > qprob) {
+								if(Util::get_frand(0.0f,1.0f) > qprob) {
 									//  find out the number of neighbors
 									float  numn = -1.0f;  // we already know the central one is 1
 									for (newz = -1; newz <= 1; newz++)

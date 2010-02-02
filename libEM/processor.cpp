@@ -763,11 +763,92 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	float thr = params.set_default("thr",-1.0e30);
 	int ampweight = params.set_default("ampweight",1);
 	float maxsegsize = params.set_default("maxsegsize",10000.0);
+	int maxiter = params.set_default("maxiter",100);
+	int maxvoxmove = params.set_default("maxvoxmove",25);
+	int verbose = params.set_default("verbose",0);
 	
 	vector<float> centers(nseg*3);
+	vector<float> count(nseg);
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+//	int nxy=nx*ny;
 	
+	// seed
+	for (int i=0; i<nseg*3; i+=3) {
+		centers[i]=  Util::get_frand(0.0f,(float)nx);
+		centers[i+1]=Util::get_frand(0.0f,(float)ny);
+		centers[i+2]=Util::get_frand(0.0f,(float)nz);
+	}
 	
+	for (int iter=0; iter<maxiter; iter++) {
+		// classify
+		size_t pixmov=0;		// count of moved pixels
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nz; x++) {
+					if (image->get_value_at(x,y,z)<thr) {
+						result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
+						continue;
+					}
+					int bcls=-1;			// best matching class		
+					float bdist=nx+ny+nz;	// distance for best class
+					for (int c=0; c<nseg; c++) { 
+						float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
+						if (d<bdist) { bdist=d; bcls=c; }
+					}
+					if ((int)result->get_value_at(x,y,z)!=bcls) pixmov++;
+					if (bdist>maxsegsize) result->set_value_at(x,y,z,-1);		// pixel is too far from any center
+					else result->set_value_at(x,y,z,bcls);		// set the pixel to the class number
+				}
+			}
+		}
 	
+		// adjust centers
+		for (int i=0; i<nseg*3; i++) centers[i]=0;
+		for (int i=0; i<nseg; i++) count[i]=0;
+	
+		// weighted sums
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nz; x++) {
+					int cls = (int)result->get_value_at(x,y,z);
+					if (cls==-1) continue;
+					float w=1.0;
+					if (ampweight) w=image->get_value_at(x,y,z);
+					
+					centers[cls*3]+=x*w;
+					centers[cls*3+1]+=y*w;
+					centers[cls*3+2]+=z*w;
+					count[cls]+=w;
+				}
+			}
+		}
+		
+		// now each becomes center of mass, or gets randomly reseeded
+		int nreseed=0;
+		for (int c=0; c<nseg; c++) {
+			// reseed
+			if (count[c]==0) {
+				nreseed++;
+				centers[c*3]=  Util::get_frand(0.0f,(float)nx);
+				centers[c*3+1]=Util::get_frand(0.0f,(float)ny);
+				centers[c*3+2]=Util::get_frand(0.0f,(float)nz);
+			}
+			// center of mass
+			else {
+				centers[c*3]/=count[c];
+				centers[c*3+1]/=count[c];
+				centers[c*3+2]/=count[c];
+			}
+		}
+		
+		if (verbose) printf("Iteration %3d: %6ld pixels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
+		if (nreseed==0 && pixmov<maxvoxmove) break;		// termination conditions met
+	}
+	
+	result->set_attr("segment_centers",centers);
+
 	return result;
 }
 

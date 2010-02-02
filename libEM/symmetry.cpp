@@ -477,7 +477,7 @@ vector<Transform> RandomOrientationGenerator::gen_orientations(const Symmetry3D*
 		float azimuth = (float)EMConsts::rad2deg*atan2(y,x);
 
 		float phi = 0.0;
-		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
+		if ( phitoo ) phi = Util::get_frand(0.0f,359.9999f);
 
 		d["az"] = azimuth; d["phi"] = phi; d["alt"] = altitude;
 		Transform t(d);

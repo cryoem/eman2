@@ -540,10 +540,9 @@ def main():
 	
 	if (options.check): options.verbose = 1 # turn verbose on if the user is only checking...
 		
-	if (options.nofilecheck == False):
-		options.reffile=args[0]
-		options.datafile = args[1]
-		options.outfile = args[2]
+	options.reffile=args[0]
+	options.datafile = args[1]
+	options.outfile = args[2]
 	
 	error = check(options,True)
 	

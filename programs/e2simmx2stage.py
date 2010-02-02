@@ -89,7 +89,7 @@ def main():
 		############### Step 1 - classify the reference images
 
 		# compute the reference self-similarity matrix
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali"%(args[0],args[0],args[3],options.shrinks1)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali --force"%(args[0],args[0],args[3],options.shrinks1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
 		os.system(cmd)
@@ -123,7 +123,7 @@ def main():
 			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 			quals.sort()
 #			for j in xrange(4): classes[quals[j][1]].append(i)		# we used to associate each reference with 3 closest centers
-			classes[quals[[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
+			classes[quals[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
 
 		# now generate an averaged reference for each center
 		print "Averaging each center"
@@ -163,23 +163,23 @@ def main():
 	mx=EMData(clen,rlen,1)
 	mx.to_zero()
 	if options.saveali:
-		for i in range(1,5): mx.write_image(args[3],i)		# seed alignment data with nothing
+		for i in xrange(1,5): mx.write_image(args[3],i)		# seed alignment data with nothing
 	mx.add(-1.0e38)	# a large negative value to be replaced later
 
-	for ptcl in range(rlen):
-		# find the best class from the coarse search
-		val=(1.0e38,-1)
-		for cls1 in range(clen_stg1):
-			val=min(val,(mxstg1[cls1,ptcl],cls1))
+	for ptcl in xrange(rlen):
+		# find the best classes from the coarse search
+		vals=[(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)]
+		vals.sort()
 		
-		# then set the corresponding values in the full matrix to 0
-		for i in classes[val[1]]: mx[i,ptcl]=0.0
+		# then set the corresponding values in the best 5 stage 1 classes in the full matrix to 0
+		for j in xrange(5):
+			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 			
 	mx.update()
 	mx.write_image(args[2],0)
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp)
+	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	
 	if ( options.ralign != None ):

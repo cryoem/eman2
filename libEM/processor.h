@@ -694,6 +694,9 @@ The basic design of EMAN Processors: <br>\
 			d.put("thr",EMObject::FLOAT,"Isosurface threshold value. Pixels below this will not be segmented");
 			d.put("ampweight",EMObject::INT,"If set, will weight centers by voxel amplitude. default = 1");
 			d.put("maxsegsize",EMObject::FLOAT,"Maximum radial distance from segment center to member voxel. Default=10000");
+			d.put("maxiter",EMObject::FLOAT,"Maximum number of iterations to run before stopping. Default=100");
+			d.put("maxvoxmove",EMObject::FLOAT,"Maximum number of voxels that can move before quitting. Default=25");
+			d.put("verbose",EMObject::INT,"Be verbose while running");
 			return d;
 		}
 
@@ -704,7 +707,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs K-means segmentation on a volume. Returned map contains number of segment for each voxel (or 0 for unsegmented voxels). Segmentation centers are stored in 'segmentcenters' attribute, consisting of a list of 3n floats in x,y,z triples.";
+			return "Performs K-means segmentation on a volume. Note that this method uses random seeds, and thus will return different results each time it is run. Returned map contains number of segment for each voxel (or 0 for unsegmented voxels). Segmentation centers are stored in 'segmentcenters' attribute, consisting of a list of 3n floats in x,y,z triples.";
 		}
 
 		static const string NAME;

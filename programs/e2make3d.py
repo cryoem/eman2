@@ -338,9 +338,10 @@ def initialize_data(inputfile,tltfile,pad,no_weights,lowmem,preprocess):
 			else : 
 				try: elem["weight"]=float(tmp["ptcl_repr"])
 				except: elem["weight"]=1.0
-				if elem["weight"]<=0 :
-					print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
-					elem["weight"]=1.0
+				# This is bad if you have actual empty classes...
+				#if elem["weight"]<=0 :
+					#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
+					#elem["weight"]=1.0
 				
 			elem["filename"]=inputfile
 			elem["filenum"]=i
@@ -401,7 +402,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			
 			# If the image is below the quality cutoff, skip it
 			try:
-				if elem["reconstruct_qual"]<qcutoff : 
+				if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0 : 
 					if verbose : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
 					if it==niter-1 : 
 						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
@@ -444,7 +445,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			for i,elem in enumerate(data):
 				
 				try:
-					if elem["reconstruct_qual"]<qcutoff : 
+					if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0: 
 						print i," *"
 						continue
 				except: pass
@@ -470,15 +471,22 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				
 				if verbose : print "%d"%int(elem["weight"])
 
-			# Convert absolute qualities to relative qualities by local averaging
+			# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
 			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
 			
-			# compute a running average of qualities, then measure each value vs. the local average
+			# compute a running average of qualities (sorted by weight), then measure each value vs. the local average
 			qlist=[]
 			for i in range(len(squal)):
+				# skip averages with weight=0
+				if squal[i][0]==0 :
+					squal[i][4]["reconstruct_qual"]=-1
+					continue
 				sub=[squal[j][1] for j in xrange(max(0,i-10),min(i+10,len(squal)))]
 				squal[i][2]=sum(sub)/len(sub)
-				squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
+				try: squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
+				except :
+					print "##############  ",sub, squal[i], i,len(squal)
+					squal[i][4]["reconstruct_qual"]=-1
 				qlist.append(squal[i][1]/squal[i][2])
 #			plot(qlist)
 

@@ -43,12 +43,21 @@ from e2simmx import cmponetomany
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
-	Initial model generator"""
+	This program will take a set of reference-free class-averages (or other projections) and generate a set of possible
+	3-D initial models. It does this by heavily downsampling the data, then running a number of very fast, full iterative
+	refinements, each seeded with a random starting model. The results are sorted in order of apparent agreement with the
+	data, such that at the end, the first numbered model should be the best result. Ideally the top few answers will all
+	qualtitatively agree on the overall structure. If they do not, the results should be thoroughly assessed manually to
+	insure a sensible result. By default this routine will generate 10 initial models, but this may be fewer or more than
+	is strictly necessary depending on a number of factors. If the data is highly structurally heterogeneous, particularly
+	if combined with a strongly preferred orientation, a correct solution using this technique may not be possible, but
+	for most situations it will work well. For other situations, single particle tomography presents a good alternative
+	for generating initial models."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
 	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
-	parser.add_option("--tries", type="int", default=1, help="The number of different initial models to generate in search of a good one")
+	parser.add_option("--tries", type="int", default=10, help="The number of different initial models to generate in search of a good one")
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
 	parser.add_option("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False)
 	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
