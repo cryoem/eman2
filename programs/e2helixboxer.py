@@ -609,10 +609,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         if width < 1:
             return
-        #other widget updates
-        self.ptcls_length_spinbox.setValue(width)
-        self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
-        self.ptcls_width_spinbox.setValue( width )
         
         #resize current boxes
         #TODO: this is similar to part of self.mouse_up ==> make both methods call a function with common code
@@ -641,6 +637,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         Load WriteHelixFiles dialog to save coordinates, helices, and particles to files. 
         """
         self.write_helix_files_dlg = WriteHelixFiles(self)
+        self.write_helix_files_dlg.setModal(True)
         self.write_helix_files_dlg.show()
         
     def get_db_item(self, key):
