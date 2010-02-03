@@ -763,6 +763,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	float thr = params.set_default("thr",-1.0e30);
 	int ampweight = params.set_default("ampweight",1);
 	float maxsegsize = params.set_default("maxsegsize",10000.0);
+	float minsegsep = params.set_default("minsegsep",0.0);
 	int maxiter = params.set_default("maxiter",100);
 	int maxvoxmove = params.set_default("maxvoxmove",25);
 	int verbose = params.set_default("verbose",0);
@@ -782,7 +783,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	}
 	
 	for (int iter=0; iter<maxiter; iter++) {
-		// classify
+		// **** classify
 		size_t pixmov=0;		// count of moved pixels
 		for (int z=0; z<nz; z++) {
 			for (int y=0; y<ny; y++) {
@@ -804,7 +805,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 			}
 		}
 	
-		// adjust centers
+		// **** adjust centers
 		for (int i=0; i<nseg*3; i++) centers[i]=0;
 		for (int i=0; i<nseg; i++) count[i]=0;
 	
@@ -831,9 +832,11 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 			// reseed
 			if (count[c]==0) {
 				nreseed++;
-				centers[c*3]=  Util::get_frand(0.0f,(float)nx);
-				centers[c*3+1]=Util::get_frand(0.0f,(float)ny);
-				centers[c*3+2]=Util::get_frand(0.0f,(float)nz);
+				do {
+					centers[c*3]=  Util::get_frand(0.0f,(float)nx);
+					centers[c*3+1]=Util::get_frand(0.0f,(float)ny);
+					centers[c*3+2]=Util::get_frand(0.0f,(float)nz);
+				} while (image->get_value_at(centers[c*3],centers[c*3+1],centers[c*3+2])<thr);		// This makes sure the new point is inside density
 			}
 			// center of mass
 			else {
@@ -842,6 +845,23 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				centers[c*3+2]/=count[c];
 			}
 		}
+		
+		// with minsegsep, check separation
+		if (minsegsep>0) {
+			for (int c1=0; c1<nseg-1; c1++) {
+				for (int c2=c1+1; c2<nseg; c2++) {
+					if (Util::hypot3(centers[c1*3]-centers[c2*3],centers[c1*3+1]-centers[c2*3+1],centers[c1*3+2]-centers[c2*3+2])<=minsegsep) {
+						nreseed++;
+						do {
+							centers[c1*3]=  Util::get_frand(0.0f,(float)nx);
+							centers[c1*3+1]=Util::get_frand(0.0f,(float)ny);
+							centers[c1*3+2]=Util::get_frand(0.0f,(float)nz);
+						} while (image->get_value_at(centers[c1*3],centers[c1*3+1],centers[c1*3+2])<thr);
+					}
+				}
+			}
+		}
+
 		
 		if (verbose) printf("Iteration %3d: %6ld voxels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
 		if (nreseed==0 && pixmov<maxvoxmove) break;		// termination conditions met

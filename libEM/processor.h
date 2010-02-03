@@ -694,6 +694,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("thr",EMObject::FLOAT,"Isosurface threshold value. Pixels below this will not be segmented");
 			d.put("ampweight",EMObject::INT,"If set, will weight centers by voxel amplitude. default = 1");
 			d.put("maxsegsize",EMObject::FLOAT,"Maximum radial distance from segment center to member voxel. Default=10000");
+			d.put("minsegsep",EMObject::FLOAT,"Minimum segment separation. Segments too close will trigger a reseed");
 			d.put("maxiter",EMObject::FLOAT,"Maximum number of iterations to run before stopping. Default=100");
 			d.put("maxvoxmove",EMObject::FLOAT,"Maximum number of voxels that can move before quitting. Default=25");
 			d.put("verbose",EMObject::INT,"Be verbose while running");

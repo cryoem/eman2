@@ -385,7 +385,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if debug : print "Processing ",filename
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 		if options.fixnegbg : 
@@ -623,7 +623,7 @@ def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power 
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
@@ -710,6 +710,11 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
+
+	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
+	maxpix=apix*ys2/80.0		# we do this up to ~80 A
+	for i in xrange(maxpix) :
+		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]		# we set the background equal to the foreground if it's too big
 
 	db_close_dict(stackfile)	# safe for non-bdb files
 	

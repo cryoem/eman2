@@ -1149,7 +1149,7 @@ class EMFormWidget(QtGui.QWidget):
 				elif not isinstance(param,EMParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
-						if iparam.vartype == "EMButtonDialog": print "it was a button"
+#						if iparam.vartype == "EMButtonDialog": print "it was a button"
 						self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 					layout.addLayout(hbl)
 					act = False
