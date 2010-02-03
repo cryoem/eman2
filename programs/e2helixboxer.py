@@ -237,106 +237,30 @@ def save_particles(helix_emdata, helix_num, micrograph_name, px_overlap, px_leng
 def db_save_particles(micrograph_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
 
-class EMHelixBoxerWidget(QtGui.QWidget):
+class WriteHelixFiles(QtGui.QDialog):
     """
-    the GUI widget which contains the settings for boxing helices and writing results to files
+    options for writing helices and particles to files
     """
-    def __init__(self, micrograph_filepath, app):
-        """
-        @micrograph_filepath: the path to the image file for the micrograph
-        @app: the application to which this widget belongs
-        """
-        QtGui.QWidget.__init__(self)
-        self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
-        self.setWindowTitle("e2helixboxer")
-        
-        if not micrograph_filepath:
-            self.micrograph_filepath = "test_image"
-            img = test_image()
-        else:
-            if sys.version_info >= (2, 6):
-                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
-            else:
-                self.micrograph_filepath = micrograph_filepath
-            img = EMData(micrograph_filepath)
-        
-        self.main_image = EMImage2DModule(application=app)
-        self.main_image.set_data( img, self.micrograph_filepath )
-        self.main_image.shapes = EMShapeDict()
-        self.helix_viewer = None #Will be an EMImage2DModule instance
-        self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
-        self.current_boxkey = None
-        self.initial_helix_box_data_tuple = None
-        self.click_loc = None #Will be (x,y) tuple
-        self.helices_dict = db_get_helices_dict(self.micrograph_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
-        self.color = (0, 0, 1)
-        self.selected_color = (0, 1, 0)
-        self.counter = counterGen()
+    def __init__(self, qparent=None):
+        QtGui.QWidget.__init__(self, qparent)
+        self.setWindowTitle(self.tr("Write Helix and Particle Files"))
+        self.__create_ui()
         self.helices_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
         self.ptcls_file_extension_dict = {"Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
-
-        if self.get_db_item("helixboxes") == None:
-            self.set_db_item("helixboxes", [])
-        else:
-            boxList = self.get_db_item("helixboxes")
-            for box_coords in boxList:
-                key = self.generate_emshape_key()
-                emshape_list = ["rectline"]
-                emshape_list.extend(list(self.color))
-                emshape_list.extend(list(box_coords))
-                emshape_list.append(2)
-                emshape = EMShape( emshape_list )
-                self.main_image.add_shape(key, emshape)
-            self.main_image.updateGL()
-
-        self.__create_ui()
-        
-        qual = self.get_image_quality()
-        if qual:
-            self.img_quality_combobox.setCurrentIndex( qual )
-        else:
-            self.img_quality_combobox.setCurrentIndex( 2 )
-        
-        self.main_image.optimally_resize()
-        
         self.helices_ftype_combobox.addItems( sorted(self.helices_file_extension_dict.keys()) )
         self.ptcls_ftype_combobox.addItems( sorted(self.ptcls_file_extension_dict.keys()) )
-        width = 100
-        if self.helices_dict:
-            first_coords = self.helices_dict.keys()[0]
-            width = first_coords[4]
-        self.box_width_spinbox.setValue(width)
+        
+        width = self.parentWidget().get_width()
         self.ptcls_width_spinbox.setValue( width )
         self.ptcls_length_spinbox.setValue( width )
         self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
         
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
-        self.connect(self.load_boxes_button, QtCore.SIGNAL("clicked()"), self.load_boxes )
         self.connect(self.output_dir_pushbutton, QtCore.SIGNAL("clicked()"), self.choose_dir )
-        self.connect(self.write_output_button, QtCore.SIGNAL("clicked()"), self.write_ouput )
-        self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
-        self.connect(self.done_but, QtCore.SIGNAL("clicked()"), self.exit_app )
-        self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
-        get_application().show_specific(self.main_image)        
-
+        self.connect(self.button_box, QtCore.SIGNAL("accepted()"), self.save)
+        self.connect(self.button_box, QtCore.SIGNAL("rejected()"), self.cancel)
+        
         
     def __create_ui(self):
-        self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
-        self.box_width_spinbox = QtGui.QSpinBox()
-        self.box_width_spinbox.setMaximum(1000)
-        self.box_width_label.setBuddy(self.box_width_spinbox)
-        
-        self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
-        self.img_quality_combobox = QtGui.QComboBox()
-        qualities = [str(i) for i in range(5)]
-        self.img_quality_combobox.addItems(qualities)
-        self.img_quality_combobox.setCurrentIndex(2)
-        self.img_quality_label.setBuddy(self.img_quality_combobox)
-
-        self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
-        
         self.coords_checkbox = QtGui.QCheckBox(self.tr("Write &Coordinates"))
         self.coords_checkbox.setChecked(True)
         
@@ -370,21 +294,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.output_dir_line_edit = QtGui.QLineEdit()
         output_dir_label.setBuddy(self.output_dir_line_edit)
         self.output_dir_pushbutton = QtGui.QPushButton(self.tr("&Browse"))
-        self.write_output_button = QtGui.QPushButton(self.tr("W&rite Output"))
-
-        self.done_but=QtGui.QPushButton(self.tr("&Done"))
-        self.status_bar = QtGui.QStatusBar()
-        self.status_bar.showMessage("Ready",10000)
         
+        self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Save | QtGui.QDialogButtonBox.Cancel)
         
-        
-        widthLayout = QtGui.QHBoxLayout()
-        widthLayout.addWidget(self.box_width_label)
-        widthLayout.addWidget(self.box_width_spinbox)
-        
-        qualityLayout = QtGui.QHBoxLayout()
-        qualityLayout.addWidget(self.img_quality_label)
-        qualityLayout.addWidget(self.img_quality_combobox)
         
         helices_ftype_layout = QtGui.QHBoxLayout()
         helices_ftype_layout.addWidget(helices_ftype_label)
@@ -419,28 +331,20 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         directory_layout.addWidget(output_dir_label)
         directory_layout.addWidget(self.output_dir_line_edit)
         
-        button_layout = QtGui.QHBoxLayout()
-        button_layout.addWidget(self.output_dir_pushbutton)
-        button_layout.addWidget(self.write_output_button)
-        
-        layout = QtGui.QVBoxLayout()
 
-        
         self.vbl = QtGui.QVBoxLayout(self)
         self.vbl.setMargin(0)
         self.vbl.setSpacing(6)
         self.vbl.setObjectName("vbl")
-        self.vbl.addLayout(widthLayout)
-        self.vbl.addLayout(qualityLayout)
-        self.vbl.addWidget(self.load_boxes_button)
         self.vbl.addWidget(self.coords_checkbox)
         self.vbl.addWidget(self.helices_groupbox)
         self.vbl.addWidget(self.ptcls_groupbox)
         self.vbl.addLayout(directory_layout)
-        self.vbl.addLayout(button_layout)
-        self.vbl.addWidget(self.done_but)
-        self.vbl.addWidget(self.status_bar)
-
+        self.vbl.addWidget(self.output_dir_pushbutton)
+        self.vbl.addWidget(self.button_box)
+    def cancel(self):
+        self.hide()
+    
     def choose_dir(self):
         """
         launches a file-browser dialog to select the base directory in which to save output coordinates, helices, and particles 
@@ -450,6 +354,167 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         #path = selector.exec_()
         path = QtGui.QFileDialog.getExistingDirectory(self)
         self.output_dir_line_edit.setText(path)
+    def save(self):
+        """
+        writes the coordinates for the helices, the image data for the helices, and the image data 
+        for the particles to files if each of those options are checked
+        """
+        micrograph_filename = os.path.basename(self.parentWidget().micrograph_filepath)
+        micrograph_name = os.path.splitext( micrograph_filename )[0]
+        output_dir = str(self.output_dir_line_edit.text())
+        helices_dict = self.parentWidget().helices_dict
+        
+        if self.coords_checkbox.isChecked():
+            save_coords(helices_dict.keys(), micrograph_name, output_dir)
+        if self.ptcls_groupbox.isChecked():
+            i = 1
+            for coords_key in helices_dict:
+                px_overlap = self.ptcls_overlap_spinbox.value()
+                px_length = self.ptcls_length_spinbox.value()
+                px_width = self.ptcls_width_spinbox.value()
+                output_type = self.ptcls_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
+                
+                helix = helices_dict[coords_key]
+                do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
+                save_particles(helix, i, micrograph_name, px_overlap, px_length, px_width, output_type, output_dir, do_edge_norm)
+                i += 1
+            pass
+        if self.helices_groupbox.isChecked():
+            helix_file_extension = self.helices_file_extension_dict[unicode(self.helices_ftype_combobox.currentText())]
+            i = 1
+            for coords_key in helices_dict:
+                helix = helices_dict[coords_key]
+                save_helix(helix, micrograph_name, i, helix_file_extension, output_dir)
+                i += 1
+        
+        self.hide()
+        
+
+class EMHelixBoxerWidget(QtGui.QWidget):
+    """
+    the GUI widget which contains the settings for boxing helices and writing results to files
+    """
+    def __init__(self, micrograph_filepath, app):
+        """
+        @micrograph_filepath: the path to the image file for the micrograph
+        @app: the application to which this widget belongs
+        """
+        QtGui.QWidget.__init__(self)
+        self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
+        self.setWindowTitle("e2helixboxer")
+        
+        self.write_helix_files_dlg = None
+        
+        if not micrograph_filepath:
+            self.micrograph_filepath = "test_image"
+            img = test_image()
+        else:
+            if sys.version_info >= (2, 6):
+                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
+            else:
+                self.micrograph_filepath = micrograph_filepath
+            img = EMData(micrograph_filepath)
+        
+        self.main_image = EMImage2DModule(application=app)
+        self.main_image.set_data( img, self.micrograph_filepath )
+        self.main_image.shapes = EMShapeDict()
+        self.helix_viewer = None #Will be an EMImage2DModule instance
+        self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
+        self.current_boxkey = None
+        self.initial_helix_box_data_tuple = None
+        self.click_loc = None #Will be (x,y) tuple
+        self.helices_dict = db_get_helices_dict(self.micrograph_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
+        self.color = (0, 0, 1)
+        self.selected_color = (0, 1, 0)
+        self.counter = counterGen()
+
+
+        if self.get_db_item("helixboxes") == None:
+            self.set_db_item("helixboxes", [])
+        else:
+            boxList = self.get_db_item("helixboxes")
+            for box_coords in boxList:
+                key = self.generate_emshape_key()
+                emshape_list = ["rectline"]
+                emshape_list.extend(list(self.color))
+                emshape_list.extend(list(box_coords))
+                emshape_list.append(2)
+                emshape = EMShape( emshape_list )
+                self.main_image.add_shape(key, emshape)
+            self.main_image.updateGL()
+
+        self.__create_ui()
+        
+        qual = self.get_image_quality()
+        if qual:
+            self.img_quality_combobox.setCurrentIndex( qual )
+        else:
+            self.img_quality_combobox.setCurrentIndex( 2 )
+        
+        self.main_image.optimally_resize()
+        
+
+        width = 100
+        if self.helices_dict:
+            first_coords = self.helices_dict.keys()[0]
+            width = first_coords[4]
+        self.box_width_spinbox.setValue(width)
+                
+        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
+        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
+        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
+        self.connect(self.load_boxes_button, QtCore.SIGNAL("clicked()"), self.load_boxes )
+        self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
+        self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
+        self.connect(self.write_action, QtCore.SIGNAL("triggered()"), self.write_output)
+        
+        get_application().show_specific(self.main_image)        
+
+        
+    def __create_ui(self):
+        
+        self.menu_bar = QtGui.QMenuBar(self)
+        self.file_menu = QtGui.QMenu(self.tr("&File"))
+        self.write_action = QtGui.QAction(self.tr("&Save"), self)
+        self.file_menu.addAction(self.write_action)
+        self.menu_bar.addMenu(self.file_menu)
+        
+        self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
+        self.box_width_spinbox = QtGui.QSpinBox()
+        self.box_width_spinbox.setMaximum(1000)
+        self.box_width_label.setBuddy(self.box_width_spinbox)
+        
+        self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
+        self.img_quality_combobox = QtGui.QComboBox()
+        qualities = [str(i) for i in range(5)]
+        self.img_quality_combobox.addItems(qualities)
+        self.img_quality_combobox.setCurrentIndex(2)
+        self.img_quality_label.setBuddy(self.img_quality_combobox)
+
+        self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
+        
+        self.status_bar = QtGui.QStatusBar()
+        self.status_bar.showMessage("Ready",10000)
+        
+        
+        widthLayout = QtGui.QHBoxLayout()
+        widthLayout.addWidget(self.box_width_label)
+        widthLayout.addWidget(self.box_width_spinbox)
+        
+        qualityLayout = QtGui.QHBoxLayout()
+        qualityLayout.addWidget(self.img_quality_label)
+        qualityLayout.addWidget(self.img_quality_combobox)
+
+               
+        self.vbl = QtGui.QVBoxLayout(self)
+        self.vbl.setMargin(0)
+        self.vbl.setSpacing(6)
+        self.vbl.setObjectName("vbl")
+        self.vbl.addWidget(self.menu_bar)
+        self.vbl.addLayout(widthLayout)
+        self.vbl.addLayout(qualityLayout)
+        self.vbl.addWidget(self.status_bar)
+
     def color_boxes(self):
         """
         Sets the colors of the boxes, with the current box being colored differently from the other boxes.
@@ -484,12 +549,16 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         if self.helix_viewer.inspector:
             self.helix_viewer.inspector.set_scale(scale)
         self.helix_viewer.updateGL()
-    def exit_app(self):
+    def closeEvent(self, event):
         """
-        quits the program
+        overwriting the default so this will close all windows
         """
-        app = get_application()
-        app.quit()
+        if self.main_image:
+            self.main_image.closeEvent(event)
+        if self.helix_viewer:
+            self.helix_viewer.closeEvent(event)
+        event.accept()
+
     def generate_emshape_key(self):
         """
         creates a unique key for a new "rectline" EMShape, which is used for boxing a helix
@@ -567,37 +636,12 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         if self.helix_viewer:
             self.display_helix(EMData(10,10))
-        
-    def write_ouput(self):
+    def write_output(self):
         """
-        writes the coordinates for the helices, the image data for the helices, and the image data 
-        for the particles to files if each of those options are checked
+        Load WriteHelixFiles dialog to save coordinates, helices, and particles to files. 
         """
-        micrograph_filename = os.path.basename(self.micrograph_filepath)
-        micrograph_name = os.path.splitext( micrograph_filename )[0]
-        output_dir = str(self.output_dir_line_edit.text())
-        if self.coords_checkbox.isChecked():
-            save_coords(self.helices_dict.keys(), micrograph_name, output_dir)
-        if self.ptcls_groupbox.isChecked():
-            i = 1
-            for coords_key in self.helices_dict:
-                px_overlap = self.ptcls_overlap_spinbox.value()
-                px_length = self.ptcls_length_spinbox.value()
-                px_width = self.ptcls_width_spinbox.value()
-                output_type = self.ptcls_file_extension_dict[unicode(self.ptcls_ftype_combobox.currentText())]
-                
-                helix = self.helices_dict[coords_key]
-                do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
-                save_particles(helix, i, micrograph_name, px_overlap, px_length, px_width, output_type, output_dir, do_edge_norm)
-                i += 1
-            pass
-        if self.helices_groupbox.isChecked():
-            helix_file_extension = self.helices_file_extension_dict[unicode(self.helices_ftype_combobox.currentText())]
-            i = 1
-            for coords_key in self.helices_dict:
-                helix = self.helices_dict[coords_key]
-                save_helix(helix, micrograph_name, i, helix_file_extension, output_dir)
-                i += 1
+        self.write_helix_files_dlg = WriteHelixFiles(self)
+        self.write_helix_files_dlg.show()
         
     def get_db_item(self, key):
         """
