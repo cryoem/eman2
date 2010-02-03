@@ -989,14 +989,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        			sy_list_new[isav*nima+im] = qt[av1][4][im*4+2]
 					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
 					        	print_msg("The new average %2d is from average %2d.\n"%(isav, av1))
-					        if option == 5 and to_break < len(mutation_rate):
-					        	alpha_list_new = Util.list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
-					        	sx_list_new = Util.list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
-					        	sy_list_new = Util.list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
-					        	mirror_list_new = Util.list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
 						if to_break < len(mutation_rate):
 						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
+				        if option == 5 and to_break < len(mutation_rate):
+				        	alpha_list_new = Util.list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
+				        	sx_list_new = Util.list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+				        	sy_list_new = Util.list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+				        	mirror_list_new = Util.list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
 				
 				if option == 7:
 					for isav in xrange(number_of_ave):
