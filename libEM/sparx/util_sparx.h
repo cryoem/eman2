@@ -683,6 +683,8 @@ public:
 	static vector<float> vareas(EMData* d);
 	static EMData* get_slice(EMData *vol, int dim, int index);
 	static void image_mutation(EMData *img, float mutation_rate);
+	static void array_mutation(float* list, int len_list, float mutation_rate, float min_val, float max_val, int K, int is_mirror);
+	static vector<float> list_mutation(vector<float> list, float mutation_rate, float min_val, float max_val, int K, int is_mirror);
 	/*
 			To restrict the value to [0, nx)
 	*/

@@ -19553,9 +19553,10 @@ void Util::image_mutation(EMData *img, float mutation_rate) {
 	int nx = img->get_xsize();
 	float min = img->get_attr("minimum");
 	float max = img->get_attr("maximum");
-	float range = 255.999/(max-min);
 	float* img_data = img->get_data();
-	int r, p, normalized, mask;
+	array_mutation(img_data, nx*nx, mutation_rate, min, max, 8, 0);
+
+/*	int r, p, normalized, mask;
 	int n = int(1./mutation_rate);
 	for (int i=0; i<nx*nx;i++) 
 		for (int j=0; j<8; j++) {
@@ -19571,6 +19572,104 @@ void Util::image_mutation(EMData *img, float mutation_rate) {
 				}
 				img_data[i] = normalized/range+min;		
 			}
-		}
+		}*/
 	return;
 }
+
+
+/* The purpose of this function is to convery a list to grey code and mutate them*/
+void Util::array_mutation(float *list, int len_list, float mutation_rate, float min_val, float max_val, int L, int is_mirror) {
+	
+	if (is_mirror != 0) {
+		for (int i=0; i<len_list; i++) {
+			int r = rand()%10000;
+			float f = r/10000.0;
+			if (f < mutation_rate) list[i] = 1-list[i];
+		} 
+	} else {
+		map<int, vector<int> >  graycode;
+		map<vector<int>, int> rev_graycode;
+		vector <int> gray;
+		
+		int K=1;
+		for (int i=0; i<L; i++) K*=2;
+
+		for (int k=0; k<K; k++) {
+			int shift = 0;
+			vector <int> gray;
+			for (int i=L-1; i>-1; i--) {
+				int t = ((k>>i)%2-shift)%2;
+				gray.push_back(t);
+				shift += t-2;
+			}
+			graycode[k] = gray;
+			rev_graycode[gray] = k; 
+		}
+		
+		float gap = (K-1)/(max_val-min_val);
+		for (int i=0; i<len_list; i++) {
+			float val = list[i];
+			if (val < min_val) { val = min_val; }
+			else if  (val > max_val) { val = max_val; }
+			int k = int((val-min_val)*gap+0.5);
+			vector<int> gray = graycode[k];
+			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
+				int r = rand()%10000;
+				float f = r/10000.0;
+				if (f < mutation_rate) *p = 1-*p;
+			}
+			k = rev_graycode[gray];
+			list[i] = k/gap+min_val;
+		}
+	}
+
+}
+
+vector<float> Util::list_mutation(vector<float> list, float mutation_rate, float min_val, float max_val, int L, int is_mirror) {
+	
+	if (is_mirror != 0) {
+		for (vector<float>::iterator q=list.begin(); q!=list.end(); q++) {
+			int r = rand()%10000;
+			float f = r/10000.0;
+			if (f < mutation_rate) *q = 1-*q;
+		} 
+	} else {
+		map<int, vector<int> >  graycode;
+		map<vector<int>, int> rev_graycode;
+		vector <int> gray;
+		
+		int K=1;
+		for (int i=0; i<L; i++) K*=2;
+
+		for (int k=0; k<K; k++) {
+			int shift = 0;
+			vector <int> gray;
+			for (int i=L-1; i>-1; i--) {
+				int t = ((k>>i)%2-shift)%2;
+				gray.push_back(t);
+				shift += t-2;
+			}
+			graycode[k] = gray;
+			rev_graycode[gray] = k; 
+		}
+		
+		float gap = (K-1)/(max_val-min_val);
+		for (vector<float>::iterator q=list.begin(); q!=list.end(); q++) {
+			float val = *q;
+			if (val < min_val) { val = min_val; }
+			else if  (val > max_val) { val = max_val; }
+			int k = int((val-min_val)*gap+0.5);
+			vector<int> gray = graycode[k];
+			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
+				int r = rand()%10000;
+				float f = r/10000.0;
+				if (f < mutation_rate) *p = 1-*p;
+			}
+			k = rev_graycode[gray];
+			*q = k/gap+min_val;
+		}
+	}
+	return list;
+}
+
+

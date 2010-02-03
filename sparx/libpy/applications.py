@@ -734,7 +734,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				set_params2D(data[nim], [alpha, sx, sy, mirror, 1.0])
 			        mirror_list[nim] = mirror
 			finfo.close()
-
+		
 		alpha_list_gathered = mpi_gatherv(alpha_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		sx_list_gathered = mpi_gatherv(sx_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		sy_list_gathered = mpi_gatherv(sy_list, len(data), MPI_FLOAT, recvcount, disps2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
@@ -990,10 +990,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					        			mirror_list_new[isav*nima+im] = qt[av1][4][im*4+3]
 					        	print_msg("The new average %2d is from average %2d.\n"%(isav, av1))
 					        if option == 5 and to_break < len(mutation_rate):
-					        	alpha_list_new = list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
-					        	sx_list_new = list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
-					        	sy_list_new = list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
-					        	mirror_list_new = list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
+					        	alpha_list_new = Util.list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
+					        	sx_list_new = Util.list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+					        	sy_list_new = Util.list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+					        	mirror_list_new = Util.list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
 						if to_break < len(mutation_rate):
 						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
 					        tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
@@ -1035,7 +1035,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node: print_msg("Iteration %2d ends here.\n\n\n"%(ipt))
 		if to_break >= len(mutation_rate): break
-	
+		
 	if CUDA:  R.finish()
 
 	if myid == main_node:
@@ -1046,7 +1046,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			img.write_image(stack, nim)
 		print_end_msg("ali2d_a_MPI")
 
-
+'''
 def list_mutation(list0, mutation_rate, min_val=0, max_val=1, bit=1, mirror=False):
 
 	from random import random
@@ -1089,7 +1089,7 @@ def list_mutation(list0, mutation_rate, min_val=0, max_val=1, bit=1, mirror=Fals
 			new_list[i] = k_new*(max_val-min_val)/(K-1)+min_val 			
 			
 	return new_list
-
+'''
 '''
 MOVED COMMENTED OUT VERSIONS OF ali2d_a to development 12/31/09  PAP
 '''
