@@ -101,40 +101,27 @@ def load_coords(coords_filepath):
     load coordinates from a *.box or *.hbox file
     @return a list of tuples [(x0, x1, y1, y2, width), ...] 
     """
-    (path, filename) = os.path.split(coords_filepath)
-    (basename, extension) = os.path.splitext(filename)
-    if extension == ".box":
-        data = []
-        datum = [None]*5
-        for line in open(coords_filepath):
-            line = line.split("\t")
-            for i in range(len(line)):
-                line[i] = int(line[i])
-            if line[4] == -1:
-                w = line[2]
-                r = w / 2.0
-                datum[0] = line[0] + r
-                datum[1] = line[1] + r
-                datum[4] = w
-            elif line[4] == -2:
-                assert line[2] == w
-                r = w / 2.0
-                datum[2] = line[0] + r
-                datum[3] = line[1] + r
-                w = None
-                r = None
-                data.append(tuple(datum))
-                datum = [None]*5
-    elif extension == ".hbox":
-        data = []
-        for line in open(coords_filepath):
-            line = line.split("\t")
-            for i in range(len(line)):
-                line[i] = float(line[i])
-            line[-1] = int(line[-1])
-            data.append(tuple(line))
-    else:
-        pass
+    data = []
+    datum = [None]*5
+    for line in open(coords_filepath):
+        line = line.split("\t")
+        for i in range(len(line)):
+            line[i] = int(line[i])
+        if line[4] == -1:
+            w = line[2]
+            r = w / 2.0
+            datum[0] = line[0] + r
+            datum[1] = line[1] + r
+            datum[4] = w
+        elif line[4] == -2:
+            assert line[2] == w
+            r = w / 2.0
+            datum[2] = line[0] + r
+            datum[3] = line[1] + r
+            w = None
+            r = None
+            data.append(tuple(datum))
+            datum = [None]*5
     
     return data
 def save_coords(coords_list, micrograph_name, output_dir=""):
@@ -237,7 +224,7 @@ def save_particles(helix_emdata, helix_num, micrograph_name, px_overlap, px_leng
 def db_save_particles(micrograph_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
 
-class WriteHelixFiles(QtGui.QDialog):
+class EMWriteHelixFiles(QtGui.QDialog):
     """
     options for writing helices and particles to files
     """
@@ -466,9 +453,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.connect(self.load_boxes_button, QtCore.SIGNAL("clicked()"), self.load_boxes )
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
+        self.connect(self.load_boxes_action, QtCore.SIGNAL("triggered()"), self.load_boxes)
         self.connect(self.write_action, QtCore.SIGNAL("triggered()"), self.write_output)
-        
-        get_application().show_specific(self.main_image)        
+        get_application().show_specific(self.main_image)
 
         
     def __create_ui(self):
@@ -476,6 +463,8 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.menu_bar = QtGui.QMenuBar(self)
         self.file_menu = QtGui.QMenu(self.tr("&File"))
         self.write_action = QtGui.QAction(self.tr("&Save"), self)
+        self.load_boxes_action = QtGui.QAction(self.tr("Load &Boxes"), self)
+        self.file_menu.addAction(self.load_boxes_action)
         self.file_menu.addAction(self.write_action)
         self.menu_bar.addMenu(self.file_menu)
         
@@ -540,14 +529,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.helix_viewer = EMImage2DModule(application=get_application())
             self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
             self.helix_viewer.setWindowTitle("Current Boxed helix")
-            self.helix_viewer.get_qt_widget().resize(200,800)
+            self.helix_viewer.get_qt_widget().resize(300,800)
         self.helix_viewer.set_data(helix_emdata)
 
         get_application().show_specific(self.helix_viewer)
-        scale = 100.0 / self.get_width()
-        self.helix_viewer.set_scale(scale)
+        #scale = 100.0 / self.get_width()
+        self.helix_viewer.set_scale(1)
         if self.helix_viewer.inspector:
-            self.helix_viewer.inspector.set_scale(scale)
+            self.helix_viewer.inspector.set_scale(1)
         self.helix_viewer.updateGL()
     def closeEvent(self, event):
         """
@@ -575,7 +564,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         load boxes from a file selected in a file browser dialog
         """
-        path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.box *.hbox)"))
+        path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
         path = str(path)
         coords_list = load_coords(path)
         
@@ -618,7 +607,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             old_coords = old_emshape.getShape()[4:9]
             new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
             helix = get_helix_from_coords( self.main_image.get_data(), *new_coords )
-                        
+            
             self.remove_box_from_db(old_coords)
             self.add_box_to_db(new_coords)
             self.helices_dict.pop(tuple(old_coords))
@@ -634,9 +623,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.display_helix(EMData(10,10))
     def write_output(self):
         """
-        Load WriteHelixFiles dialog to save coordinates, helices, and particles to files. 
+        Load EMWriteHelixFiles dialog to save coordinates, helices, and particles to files. 
         """
-        self.write_helix_files_dlg = WriteHelixFiles(self)
+        self.write_helix_files_dlg = EMWriteHelixFiles(self)
         self.write_helix_files_dlg.setModal(True)
         self.write_helix_files_dlg.show()
         
