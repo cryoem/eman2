@@ -19559,7 +19559,7 @@ void Util::image_mutation(EMData *img, float mutation_rate) {
 }
 
 
-/* The purpose of this function is to convery a list to grey code and mutate them*/
+/* The purpose of this function is to convert a list to grey code and mutate them and convert them back */
 void Util::array_mutation(float *list, int len_list, float mutation_rate, float min_val, float max_val, int L, int is_mirror) {
 	
 	if (is_mirror != 0) {
