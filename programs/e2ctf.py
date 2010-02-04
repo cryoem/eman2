@@ -712,7 +712,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=apix*ys2/80.0		# we do this up to ~80 A
+	maxpix=int(apix*ys2/80.0)		# we do this up to ~80 A
 	for i in xrange(maxpix) :
 		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]		# we set the background equal to the foreground if it's too big
 
