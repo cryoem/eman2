@@ -159,7 +159,7 @@ EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
 EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 # end for 64-bit large file support
 
-SUBDIRS(libEM programs utils rt doc images sparx)
+SUBDIRS(libEM programs utils rt doc images sparx examples)
 
 IF(ENABLE_RT)
     SUBDIRS(rt)

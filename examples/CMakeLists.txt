@@ -1,0 +1,2 @@
+INSTALL_PROGRAMS(/examples "^.+\\.py$")
+INSTALL_FILES(/examples FILES 00README)
