@@ -19555,24 +19555,6 @@ void Util::image_mutation(EMData *img, float mutation_rate) {
 	float max = img->get_attr("maximum");
 	float* img_data = img->get_data();
 	array_mutation(img_data, nx*nx, mutation_rate, min, max, 8, 0);
-
-/*	int r, p, normalized, mask;
-	int n = int(1./mutation_rate);
-	for (int i=0; i<nx*nx;i++) 
-		for (int j=0; j<8; j++) {
-			r = rand()%n;
-			if (r==0) {
-				mask = 1 << j;
-				normalized = int((img_data[i]-min)*range);
-				p = normalized & mask;
-				if (p == 0) {
-					normalized += mask;
-				} else {
-					normalized -= mask;
-				}
-				img_data[i] = normalized/range+min;		
-			}
-		}*/
 	return;
 }
 
@@ -19613,13 +19595,19 @@ void Util::array_mutation(float *list, int len_list, float mutation_rate, float 
 			else if  (val > max_val) { val = max_val; }
 			int k = int((val-min_val)*gap+0.5);
 			vector<int> gray = graycode[k];
+			bool changed = false;
 			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
 				int r = rand()%10000;
 				float f = r/10000.0;
-				if (f < mutation_rate) *p = 1-*p;
+				if (f < mutation_rate) {
+					*p = 1-*p;
+					changed = true;
+				}
 			}
-			k = rev_graycode[gray];
-			list[i] = k/gap+min_val;
+			if (changed) {
+				k = rev_graycode[gray];
+				list[i] = k/gap+min_val;
+			}
 		}
 	}
 
@@ -19660,13 +19648,19 @@ vector<float> Util::list_mutation(vector<float> list, float mutation_rate, float
 			else if  (val > max_val) { val = max_val; }
 			int k = int((val-min_val)*gap+0.5);
 			vector<int> gray = graycode[k];
+			bool changed = false;
 			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
 				int r = rand()%10000;
 				float f = r/10000.0;
-				if (f < mutation_rate) *p = 1-*p;
+				if (f < mutation_rate) {
+					*p = 1-*p;
+					changed = true;
+				}
 			}
-			k = rev_graycode[gray];
-			*q = k/gap+min_val;
+			if (changed) {
+				k = rev_graycode[gray];
+				*q = k/gap+min_val;
+			}
 		}
 	}
 	return list;
