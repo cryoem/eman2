@@ -798,10 +798,13 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_xsize())/maxres;
 	else pmax=0;
 
+//	printf("%f\t%f\n",pmin,pmax);
+
 	// We use 'soft' edges for the Fourier cutoffs to minimize issues with pixel interpolation
 	for (int i = 0; i < np; i++) {
 		if (pmin>0) snr[i]*=(tanh(5.0*(i-pmin)/pmin)+1.0)/2.0;
-		if (pmax>0) snr[i]*=(tanh(i-pmax)+1.0)/2.0;
+		if (pmax>0) snr[i]*=(1.0-tanh(i-pmax))/2.0;
+//		printf("%d\t%f\n",i,snr[i]);
 	}
 
 	if (zeromask) {
