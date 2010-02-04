@@ -1508,12 +1508,12 @@ class GUIctf(QtGui.QWidget):
 		self.guiim.updateGL()
 		
 		if self.plotmode==1:
-			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True)
-			self.guiplot.set_data((s,self.data[val][3]),"bg")
+			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
+			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==0: 
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
-			self.guiplot.set_data((s,bgsub),"fg-bg",True,True)
+			self.guiplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
 			
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor
@@ -1534,7 +1534,7 @@ class GUIctf(QtGui.QWidget):
 			
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 			
-			self.guiplot.set_data((s,fit),"fit")
+			self.guiplot.set_data((s,fit),"fit",color=1)
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==2:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
@@ -1542,9 +1542,9 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==3:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
-			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
+			self.guiplot.set_data((s,snr[:len(s)]),"snr",True,color=0)
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
-			self.guiplot.set_data((s,ssnr[:len(s)]),"ssnr")
+			self.guiplot.set_data((s,ssnr[:len(s)]),"ssnr",color=1)
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==4:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve

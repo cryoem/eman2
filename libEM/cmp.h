@@ -441,6 +441,8 @@ namespace EMAN
 			d.put("snrfn", EMObject::INT, "If nonzero, an empirical function will be used as a radial weight rather than the true SNR. (1 - exp decay)'. (default=0)");
 			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'with' will be used as a weight in the averaging'. (default=0)");
 			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask");
+			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=500");
+			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
 			return d;
 		}
 		

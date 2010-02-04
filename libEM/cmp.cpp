@@ -738,6 +738,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	int snrfn = params.set_default("snrfn",0);
 	int ampweight = params.set_default("ampweight",0);
 	int zeromask = params.set_default("zeromask",0);
+	float minres = params.set_default("minres",500.0);
+	float maxres = params.set_default("maxres",10.0);
 
 	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
 
@@ -757,6 +759,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	int np = 0;
 	vector<float> snr;
 
+	// weighting based on SNR estimate from CTF
 	if (snrweight) {
 		Ctf *ctf = NULL;
 		if (!image->has_attr("ctf")) {
@@ -770,8 +773,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		if(ctf) {delete ctf; ctf=0;}
 		np=snr.size();
 	}
-
-	if (snrfn==1) {
+	// weighting based on empirical SNR function (not really good)
+	else if (snrfn==1) {
 		np=ny/2;
 		snr.resize(np);
 
@@ -779,8 +782,26 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 			float x2 = 10.0f*i/np;
 			snr[i] = x2 * exp(-x2);
 		}
+	}
+	// no weighting
+	else {
+		np=ny/2;
+		snr.resize(np);
 
-//		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
+		for (int i = 0; i < np; i++) snr[i]=1.0;
+	}
+
+	// Min/max modifications to weighting
+	float pmin,pmax;
+	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_xsize())/minres;		//cutoff in pixels
+	else pmin=0;
+	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_xsize())/maxres;
+	else pmax=0;
+
+	// We use 'soft' edges for the Fourier cutoffs to minimize issues with pixel interpolation
+	for (int i = 0; i < np; i++) {
+		if (pmin>0) snr[i]*=(tanh(5.0*(i-pmin)/pmin)+1.0)/2.0;
+		if (pmax>0) snr[i]*=(tanh(i-pmax)+1.0)/2.0;
 	}
 
 	if (zeromask) {
@@ -833,6 +854,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	int ny2=image_fft->get_ysize()/2;
 	int nz2=image_fft->get_zsize()/2;
 
+	// This can never happen any more...
 	if (np==0) {
 		for (int z = 0; z < nz; z++){
 			for (int y = 0; y < ny; y++) {
