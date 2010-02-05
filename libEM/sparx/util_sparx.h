@@ -465,7 +465,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		Basically, they all do cross-correlation function to two images in polar coordinates
 		Crosrng_e is the original one
 		Crosrng_ew is the one that you could apply weights to different rings
-		Crosrng_ms assumes the user already applied weights to circ1, it also returns both
+		Crosrng_ms assumes the user already apply weights to circ1, it also returns both
 		           straight and mirrored positions simultaneously.
 	        Crosrng_msg differs from the previous ones in that it returns the cross-correlation
 			    function entirely instead of the peak value and position, thus makes it
@@ -473,8 +473,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	        Crosrng_msg_s is same as Crosrng_msg except that it only checks straight position
 	        Crosrng_msg_m is same as Crosrng_msg except that it only checks mirrored position
 	  */
-	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int mirrored);
-	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int mirrored);
+	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
+	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
 	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag);
@@ -500,7 +500,25 @@ class FakeKaiserBessel : public KaiserBessel {
         static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
         static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
         static int k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag);
-
+	
+	// branch and bound matching algorithm
+	static void bb_enumerate_(int* Parts, int* classDims, int nParts, int nClasses, int T, int n_guesses, int* levels);
+	static void initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T);
+	static bool explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T, int partref, int* curintx, int
+	size_curintx, int* next, int size_next, int depth);
+	static int* branch(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel, int n_guesses);
+	static int findTopLargest(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int max_num_matches, int*
+	costlist, int n_guesses);
+	static int generatesubmax(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int n_guesses);
+	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curmax);
+	static int* explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curintx, int size_curintx, int* next, int
+	size_next, int depth);
+	static bool sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* output);
+	
+	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels);
+	static vector<int> branchMPIpy_(int* argParts, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int n_guesses, int nFirst, int* firstmatches);
+	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches); 
+	
         // new code common-lines
         static vector<double> cml_weights(const vector<float>& cml);
         static vector<int> cml_line_insino(vector<float> Rot, int i_prj, int n_prj);
