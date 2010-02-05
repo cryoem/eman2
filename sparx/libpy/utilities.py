@@ -34,27 +34,27 @@ from global_def import *
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
-		Convert 2D alignment parameters (alpha,sx,sy, mirror) into
+		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
 		3D alignment parameters (phi, theta, psi, s2x, s2y, mirror)
 	"""
 	phi = 0
 	psi = 0
 	theta = 0
 	alphan, s2x, s2y, scalen = compose_transform2(0, sx, sy, 1, -alpha, 0, 0, 1)
-	if( mirror > 0 ) :
+	if mirror > 0:
 		phi   = (540.0 + phi)%360.0
 		theta = 180.0  - theta
 		psi   = (540.0 - psi + alphan)%360.0
 	else:
 		psi   = (psi   + alphan)%360.0
 	return phi, theta, psi, s2x, s2y
-	
+
 def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
-		Convert 3D alignment parameters ( phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
+		Convert 3D alignment parameters (phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
 		into 2D alignment parameters (alpha, sx, sy, mirror)
 	"""
-	if (theta > 90.0):
+	if theta > 90.0:
 		mirror = 1
 		alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
 	else:
