@@ -3188,8 +3188,8 @@ void Util::prb1d(double *b, int npoint, float *pos) {
 #define  q(i)            q[i-1]
 #define  b(i)            b[i-1]
 #define  t7(i)           t7[i-1]
-Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int mirrored) {
-	//  mirrored = 0 straight,  mirrored = 1 mirrored
+Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
+	//  neg = 0 straight,  neg = 1 mirrored
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3197,10 +3197,10 @@ Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int mirr
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
 /*
-c checks single position, mirrored is flag for checking mirrored position
+c checks single position, neg is flag for checking mirrored position
 c
 c  input - fourier transforms of rings!
-c  first set is conjugated (mirrored) if mirrored
+c  first set is conjugated (mirrored) if neg
 c  circ1 already multiplied by weights!
 c       automatic arrays
 	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
@@ -3233,7 +3233,7 @@ c       automatic arrays
 			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
 			t(2)		= 0.0;
 
-			if (mirrored) {
+			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
@@ -3250,7 +3250,7 @@ c       automatic arrays
 			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
 		} else {
 			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-			if (mirrored) {
+			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
@@ -3295,8 +3295,8 @@ c       automatic arrays
 	return  retvals;
 }
 
-Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int mirrored) {
-   //  mirrored = 0 straight,  mirrored = 1 mirrored
+Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
+   //  neg = 0 straight,  neg = 1 mirrored
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3304,10 +3304,10 @@ Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
 /*
-c checks single position, mirrored is flag for checking mirrored position
+c checks single position, neg is flag for checking mirrored position
 c
 c  input - fourier transforms of rings!
-c  first set is conjugated (mirrored) if mirrored
+c  first set is conjugated (mirrored) if neg
 c  multiplication by weights!
 c       automatic arrays
 	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
@@ -3340,7 +3340,7 @@ c       automatic arrays
 			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
 			t(2)  	  = 0.0;
 
-			if (mirrored) {
+			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=numr3i; j=j+2) {
 					jc = j+numr2i-1;
@@ -3357,7 +3357,7 @@ c       automatic arrays
 			for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
 		} else {
 			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-			if (mirrored) {
+			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=maxrin; j=j+2) {
 					jc = j+numr2i-1;
@@ -4394,7 +4394,7 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 	return static_cast<float>(ener);
 }
 
-void Util::update_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
+void Util::update_fav (EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
@@ -5110,6 +5110,8 @@ int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long 
     return cont;
 }
 
+
+
 #define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*nx]
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
@@ -5579,8 +5581,6 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	freq_hist = (-freq_hist);
 	return static_cast<float>(freq_hist);
 }
-
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
@@ -17876,20 +17876,23 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		//  compare with all reference images
 		// for iref in xrange(len(crefim)):
 		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			float ddp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
-			if(abs(ddp)>=ant) {
-				Dict retvals;
-				if(ddp >= 0.0f) retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
-				else            retvals = Crosrng_e(crefim[iref], cimage, numr, 1);
+			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 		    		double qn = retvals["qn"];
-		    		if(qn >= peak) {
+		    		double qm = retvals["qm"];
+		    		if(qn >= peak || qm >= peak) {
 					sx = -ix;
 					sy = -iy;
 					nref = iref;
-					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-					peak = static_cast<float>( qn );
-					if(ddp >= 0.0f)  mirror = 0;
-					else              mirror = 1;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qn );
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qm );
+						mirror = 1;
+					}
 				}
 		    	}
 		}  delete cimage; cimage = 0;
@@ -19667,3 +19670,964 @@ vector<float> Util::list_mutation(vector<float> list, float mutation_rate, float
 }
 
 
+// K is the number of classes in each partition (should be the same for all partitions)
+// the first element of each class is its original index in the partition, and second is dummy var
+
+// will delete this soon.... use bb_enumerateMPI instead
+void Util::bb_enumerate_(int* argParts, int* dimClasses, int nParts, int K, int T,int n_guesses, int* Levels) {
+	
+	// Turn the one dimensional Parts into vectors for easier manipulation
+	// While we're at it, construct Indices, an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
+	// So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
+	
+	int* Indices = new int[nParts*K];
+	// Make a vector of nParts vectors of K int* each
+	vector <vector <int*> > Parts(nParts,vector<int*>(K));
+	int ind_c = 0;
+	
+	for (int i=0; i < nParts; i++){
+		for(int j = 0; j < K; j++){
+			Parts[i][j]=argParts + ind_c;
+			Indices[i*K + j] = ind_c;
+			ind_c = ind_c + *(dimClasses+i*K + j);
+			
+		}
+	}
+	
+	// make a copy of vector Parts for debugging purposes. 
+	// comment out if not debugging
+	vector <vector <int*> > oldParts = Parts; 
+	
+	// in the following we call initial_prune with Parts which is a vector. This is not the most 
+	// efficient since vector does not allow for direct addressing. But since initial_prune doesn't have very high complexity, and
+	// the running time for 7 partitions with 288 classes per partition is on the order of a couple of minutes at most, i'll just leave it for now.....
+	Util::initial_prune(Parts, dimClasses, nParts, K,T);
+	//**********************************************************************************************************************************************
+	
+	// figure out the partition with the smallest number of classes. that will be the MAXIMUM number of matches we can find
+	int numLevels = Parts[0].size();// initialize to number of classes in the first partition
+	for (int i=1; i < nParts; i++){
+		if (Parts[i].size() < numLevels) numLevels = Parts[i].size();
+	}
+	
+	// To maintain feasibility there can be at most
+	// numLevel matches in the optimal solution.
+	
+	// int* Levels = new int[numLevels]; // Levels[i] corresponds to the number of possibilities we consider for the i-th match, and this
+					  // determines how many branches occur at that level.
+	// numLevels is at most K. Since Levels is pre-allocated in python code with K elements, it should be fine.
+	//for(int i =0; i < numLevels; i++)
+	//	Levels[i] = 1;
+	// modify argParts so the dummy variable of each class is set to 1 if the class is not removed by initial_prune, and -1 otherwise.
+	// since the branch function is extremely computationally intensive, we have to pass it argParts (the 1-dimensional array) instead
+	// of the vector Parts (which doesn't allow for direct access).
+	
+	// Indices[i*K + j] is the number of offsets from the beginning of argParts of the first element of the j-th class of hte i-th partition
+	
+	for(int i = 0; i < nParts; i++){
+		for(int j=0; j < K; j++){
+			*(argParts + Indices[i*K + j]+1) = -1;
+		}
+	}
+	
+	int num_classes;
+	int old_index;
+	for(int i=0; i<nParts; i++){
+		num_classes = Parts[i].size();// number of classes in partition i after pruning
+		//cout<<"num_classes: "<< num_classes<<"\n";
+		for (int j=0; j < num_classes; j++){
+			old_index = *(Parts[i][j]);
+			//cout << "old_index: " << old_index<<"\n";
+			*(argParts + Indices[i*K + old_index]+1) = 1;
+		}
+	}
+	
+	// output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
+	// and the rest is the list of matches 
+	// in one dimensional form.
+	cout <<"begin partition matching\n";
+	int* output = Util::branch(argParts, Indices,dimClasses, nParts, K, T,Levels, numLevels,0,n_guesses);
+	cout <<"done with partition matching \n";
+	cout<<"total cost: "<<*output<<"\n";
+	cout<<"number of matches: "<<*(output+1)<<"\n";
+	// now go check if the matches are sensical! i.e, if the matches are feasible, if the sum of the match weights in output is equal to *output, and if each match in output has weight at least T
+	bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
+}
+
+// First element of output is total cost of the matches in the output
+// Second element of output is the total number of matches in output
+// So output has 2+(*(output+1))nParts elements.
+bool Util::sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* output){
+	//cout<<"sanitycheck called\n";
+	int total_cost = *output;
+	int num_matches = *(output+1);
+	
+	int cost=0;
+	int* intx;
+	int intx_size;
+	int* intx_next;
+	int intx_next_size;
+	int curclass;
+	int curclass_size;
+	//cout<<"cost by match: [";
+	for(int i = 0; i < num_matches; i++){
+		curclass = *(output+2+ i*nParts);
+		// check feasibility
+		if (*(argParts + Indices[curclass]+1) == -5) {cout<<"infeasible match!\n"; return 0;}
+		*(argParts + Indices[curclass]+1) = -5;
+		// initialize intx to the number of elements in class curclass of partition 0 of the i-th match
+		curclass_size = *(dimClasses+curclass)-2;
+		intx = new int[curclass_size];
+		for (int ic = 0; ic < curclass_size; ic++) *(intx+ic) = *(argParts + Indices[curclass]+2+ic);
+		intx_size = curclass_size;
+		
+		for (int j=1; j < nParts; j++){
+		      curclass = *(output+2+ i*nParts+j);
+		      if (*(argParts + Indices[j*K+curclass]+1)==-5){cout<<"infeasible match!\n"; return 0;}
+		      *(argParts + Indices[j*K+curclass]+1)=-5;
+		      // compute the intersection of intx and class curclass of partition j of the i-th match
+		      intx_next_size = Util::k_means_cont_table_(intx,argParts + Indices[j*K+curclass]+2, intx_next, intx_size, *(dimClasses + j*K+curclass)-2,0);
+		      intx_next = new int[intx_next_size];
+		      Util::k_means_cont_table_(intx,argParts + Indices[j*K+curclass]+2, intx_next, intx_size, *(dimClasses + j*K+curclass)-2,1);
+		      delete[] intx;
+		      intx=intx_next;
+		      intx_size= intx_next_size;
+		      if (j==nParts-1) delete[] intx_next;
+		}
+		
+		if (intx_next_size <= T) {cout << "something wrong with solution!\n"; return 0;}
+		//cout <<intx_next_size<<",";
+		cost = cost + intx_next_size;
+	}
+	//cout<<"]\n";
+	if (cost != total_cost) {cout << "something wrong with solution!\n"; return 0;}
+	
+	return 1;
+
+}
+
+int* Util::branch(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses) {
+	// Base Case: we're at a leaf, no more feasible matches possible
+	
+	if (curlevel > nLevels-1){
+		int* res = new int[2];
+		*res = 0;
+		*(res+1)=0;
+		return res;
+	}
+	
+	// We may still find more feasible matchings with cost gt T, so explore level curlevel
+	int nBranches = *(Levels + curlevel);
+	
+	// call findTopLargest to get the nBranches feasible matchings with the largest weight (gt T) over all other feasible matches
+	// matchlist is in one dimensional array form......
+	
+	int* matchlist = new int[nBranches*nParts];
+	int* costlist = new int[nBranches];// cost of each of the nBranches matches. If cost[i] < T then that means findTopLargest found less than i+1 matches
+					   // with cost > T
+					   
+	// initialize elements of costlist to 0
+	for (int i=0; i < nBranches; i++) *(costlist+i)=0;
+	
+	// each class in the matches found by findTopLargest is encoded by the original index of the first element of the class in argPart
+	// each match contains nParts classes, with the i-th class belonging to the i-th partition.
+	
+	Util::findTopLargest(argParts,Indices, dimClasses, nParts, K,  T, matchlist, nBranches,costlist,n_guesses);
+	
+	// if there are no feasible matches with cost gt T, then return 0
+	if (costlist[0]<= T){
+		int* res = new int[2];
+		*res = 0;
+		*(res+1)=0;
+		return res;
+	}
+	
+	int* maxreturn = new int[2];//initialize to placeholder
+	*maxreturn=0;
+	*(maxreturn+1)=0;
+	
+	// some temporary variables
+	int old_index;
+	int totalcost;
+	int nmatches;
+	int offset;
+	
+	for(int i=0; i < nBranches ; i++){
+	
+		// consider the i-th match returned by findTopLargest
+		
+		if (costlist[i] <= T) break; 
+		
+		// mark the classes in the i-th match of matchlist as taken (using the dummy variable and -2), and then call branch again on argParts. 
+		// After branch returns, compute overall cost, unmark  the classes just marked as 1 again in preparation for next loop.
+		
+		for(int j=0; j < nParts; j++){
+			// matchlist[i*nParts + j] is the original index of the class belonging to the j-th partition in the i-th match.
+			old_index=matchlist[i*nParts + j];
+			*(argParts + Indices[j*K+old_index] + 1) = -2;
+		}
+		
+		
+		int* ret = Util::branch(argParts, Indices, dimClasses, nParts, K, T, Levels, nLevels, curlevel+1,n_guesses);
+		
+		// first element of ret is the total cost of all the matches in ret, and second element is the number of matches in ret
+		totalcost = costlist[i] + *ret;
+		
+		// *************************************************************************************
+		// for debugging purposes
+		
+		// debug 1: for multi-branching in levels i less some pre-specified maxLevel. Assume maxLevel is pretty small else way too many print outs to be useful
+		   bool debug1 = 0;
+		   if (debug1){
+		       int maxLevel = 2;
+		        if (curlevel < maxLevel) cout<<"total cost level" << curlevel<<": "<<totalcost<<"\n";
+		   }
+		   
+		// debug 2: for multi-branching in ALL (or many ...) levels. This is data specific so it's all hard coded
+		   bool debug2 = 0;
+		   if (debug2){
+	           	int skip1 = 5;	
+		   	int max1=20;	
+		  	 if ((curlevel <= max1) && (curlevel%skip1 == 0)) cout << "total cost level "<< curlevel<<": "<<totalcost<<"\n"; 
+		   	
+	           	int skip2 = 10;
+		   	int max2 = 70;		
+		   	if ((curlevel > max1 )&&(curlevel <= max2) && (curlevel%skip2 == 0)) cout << "total cost level "<< curlevel<<": "<<totalcost<<"\n"; 
+		   }
+		// *************************************************************************************
+		
+		
+		// if totalcost > maxcost, or some variatio thereof, then copy the stuff over to maxreturn. 
+		// There are several possibilities here:
+		//    Option 1: Simply compare costs and take the largest one.
+		//    Option 2: At each level, if two costs are equal, then take the one which contains fewer matches, and thus
+		// 	        ensuring matches with larger weights. The motivation for this is largely the (possibly naive) assumption that
+		// 	        if we take the average of a larger number of images, then the averaged image will be "better".
+		//    Option 3: Do option 2 only on the highest level, i.e., curlevel=0
+		
+		 if (totalcost > *maxreturn) // option 1
+		// if ((totalcost > *maxreturn) || ( (curlevel==0) && (totalcost == *maxreturn) && (*(ret+1)+1 < *(maxreturn+1)) )) // option 3
+		
+		//if ((totalcost > *maxreturn) || ( (totalcost == *maxreturn) && (*(ret+1)+1 < *(maxreturn+1)) )) // option 2
+		{
+			nmatches = 1 + *(ret+1);
+			delete[] maxreturn; // get rid of the old maxreturn
+			maxreturn = new int[2+nmatches*nParts];
+			*maxreturn = totalcost;
+			*(maxreturn + 1)= nmatches;
+			int nret = 2+(nmatches-1)*nParts;
+			for(int iret=2; iret <nret;iret++) *(maxreturn+iret)=*(ret+iret);
+			for(int imax=0; imax<nParts;imax++) *(maxreturn+nret+imax)=matchlist[i*nParts + imax];
+		}
+		
+		
+		delete[] ret;
+		
+		// unmark the marked classes in preparation for the next iteration
+	
+		for(int j=0; j < nParts; j++){
+			// matchlist[i*nParts + j] is the original index of the class belonging to the j-th partition in the i-th match.
+			old_index=matchlist[i*nParts + j];
+			*(argParts + Indices[j*K+old_index] + 1) = 1;
+		}
+		
+	}
+	
+	delete[] matchlist;
+	delete[] costlist;
+	return maxreturn;
+	
+}
+
+// find max_num_matches feasible matches (if possible) which has weight gt T, and weight gteq weight of all other feasible matches.
+// return the results in the pre-allocated arrays matchlist and costlist.
+// Each match is a sequence (stored in a 1D array) of nParts numbers, where the i-th element in the sequence is the original index of the class from the i-th
+// partition.
+// Those classes in argParts whose dummy variable is 1 are the classes which are not yet used (i.e., those which can be used to construct the feasible matches)
+// returns the number of matches found. it's less than the number request if there aren't that many that's over the threshold
+int Util::findTopLargest(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int max_num_matches, int* costlist, int n_guesses){
+	int guess;
+	int* curmax = new int[nParts+1]; // first element is the max weight and the subsequent elements is the match with the weight.
+	int newT=T;
+	int num_found=0;
+	
+	for(int i=0; i < max_num_matches; i++){
+		guess = Util::generatesubmax(argParts, Indices,dimClasses,nParts, K, T,  n_guesses);
+		
+		if (T < guess) newT = guess -1;
+		// find the feasible match with the largest weight and put results in curmax
+		Util::search2(argParts, Indices,dimClasses,nParts, K, newT,curmax);
+		if (*curmax <= T){
+			max_num_matches=i;
+			break;
+		}
+		else {	
+			*(costlist+i) = *curmax;
+			
+			for (int j=0; j<nParts; j++){ 
+				*(matchlist+i*nParts+j) = *(curmax+1+j);
+				*(argParts + Indices[j*K+*(curmax+1+j)] + 1) = -3;// mark the classes in curmax as unavailable using -3 (remember to change it back)
+			
+			}
+			num_found = num_found+1;
+		}
+		
+	}
+	
+	
+	delete[] curmax;
+	// go through the selected classes (in matchlist) and reset to 1
+	
+	for (int i=0 ; i < max_num_matches; i++){
+		for (int j = 0; j < nParts; j++){
+			*(argParts + Indices[j*K+*(matchlist+i*nParts +j)] + 1) = 1;
+		}
+	
+	}
+	
+	
+	return num_found;
+}
+
+
+
+// return the weight of the largest weighted feasible match, along with the match in the (preallocated) argument curmax. 
+// The returned weight has to be gt newT. If there is no such feasible matching, return 0 as *curmax
+void Util::search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curmax){
+	// initialize the current max weight to 0
+	*curmax= 0;
+	// some temp variables
+	bool flag;
+	int nintx;
+	int* dummy;
+	int* ret;
+	
+	for(int a=0; a<K; a++)
+	{
+		// check that class a of partition 0 is active and has greater than newT elements. If not the case, then skip to the next class
+		if (*(argParts + Indices[a] + 1) < 1) continue; 
+		if (*(dimClasses + a)-2 <= newT) continue;
+		
+		// initial pruning: for each partition j>0, set the partition to inactive if its intersection with class a of partition 0 is less than new T
+		
+		for( int i=1; i < nParts; i++){
+			flag = 0; // if flag stays 0 then no class in this partition is active, which implies no feasible match with class a of part 0
+			for(int j=0; j < K; j++){
+				if (*(argParts + Indices[i*K+j] + 1) < 1) continue; 
+				if (*(dimClasses + i*K+j)-2 <= newT) {*(argParts + Indices[i*K+j] + 1) =-4; continue;}
+				nintx = Util::k_means_cont_table_(argParts + Indices[a]+2,argParts + Indices[i*K+j]+2, dummy, *(dimClasses + a)-2, *(dimClasses + i*K+j)-2,0);
+				if (nintx > newT) flag=1;
+				else *(argParts + Indices[i*K+j] + 1) =-4;
+			}
+			if (flag==0) {break;}
+		}
+		
+		// explore determines the feasible match with the largest weight greater than newT
+		if (flag > 0){ // Each partition has one or more active class
+			ret=Util::explore2(argParts, Indices, dimClasses, nParts, K, newT, argParts+Indices[a]+2, *(dimClasses+a)-2, argParts+Indices[a]+2, *(dimClasses+a)-2,0);
+			
+			if (*ret > *curmax){
+				*curmax = *ret;
+				*(curmax+1)=a;
+				for (int cp =0; cp < nParts-1; cp++) *(curmax+2+cp) = *(ret+1+cp);
+				
+			}
+			delete[] ret;
+		}	
+		// take all the classes marked as -4 and remark it as 1 in preparation for next round
+		for( int i=1; i < nParts; i++){
+			for(int j=0; j < K; j++){
+				if (*(argParts + Indices[i*K+j] + 1) == -4) *(argParts + Indices[i*K+j] + 1) =1;
+				
+			}
+		}
+		
+			
+		
+	}
+	
+	
+}
+
+
+int* Util::explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curintx, int size_curintx, int* next, int size_next, int depth){
+// depth is the level which is going to be explored in the current iteration	
+	int* curintx2;
+	
+	int nintx = size_curintx;
+	
+	// take the intx of next and cur
+	if (depth >0){
+		nintx = Util::k_means_cont_table_(curintx,next, curintx2, size_curintx, size_next,0);
+		if (nintx <= newT) {curintx2 = new int[1]; *curintx2=0;return curintx2;}
+	}
+	
+	// we're at a leaf so return.
+	if (depth == (nParts-1)) { curintx2 = new int[1]; *curintx2 = nintx; return curintx2;} 
+	
+	
+	// have not yet reached a leaf, and current weight is still greather than T, so keep on going.
+	
+	if (depth > 0){
+		curintx2 = new int[nintx]; // put the intersection set in here
+		Util::k_means_cont_table_(curintx,next,curintx2, size_curintx, size_next,1);
+	}
+	
+	if (depth == 0){
+		// set curintx2 to curintx
+		curintx2 = new int[size_curintx];
+		for (int cp = 0; cp < size_curintx; cp++) *(curintx2+cp) = *(curintx+cp);
+	}
+	
+	
+	// recursion (non-leaf case)
+	depth=depth+1;
+	int* curmax = new int[nParts-depth+1];
+	*curmax=0;
+	int* ret;
+	// we now consider each of the classes in partition depth in turn
+	for (int i=0; i < K; i++){
+		
+		if (*(argParts + Indices[depth*K+i] + 1) < 1) continue; // class is not active so move on
+		size_next = (*(dimClasses + depth*K+i ))-2;
+		if (size_next <= newT) continue;
+		ret = Util::explore2(argParts,Indices, dimClasses, nParts, K, newT, curintx2, nintx, argParts + Indices[depth*K+i] + 2, size_next, depth);
+		if (*ret > *curmax && *ret > newT){
+			*curmax = *ret;
+			*(curmax+1)=i;
+			for (int j=0; j<nParts-depth-1; j++) { *(curmax+2 + j) = *(ret+1+j);}
+		}
+		delete[] ret;
+	}
+	
+	delete[] curintx2;		
+	return curmax;	
+}
+
+
+
+
+// initial_prune removes all classes C from Parts where there does not exist ANY feasible matching containing class C which has weight gt T.
+// The first element of each class is its original index, and second is dummy variable
+void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T) {
+	//cout<<"initial_prune\n";
+	// simple initial pruning. For class indClass of partition indPart:
+	// For each class of partition which is not indPart, see if there is a class in the partition with which indClass has intersection greater than T
+	// If for some partition (not equal to indPart) for which there is no such class, then return 0 immediately.
+	
+	// 1. For each class of partition which is not indPart, remove the class from Parts if its intx with indClass of indPart is not gt T
+	
+	// remember when calling k_means_cont_table, the first element of each class is an index, and actual number of elements in the class
+	// (as stored in dimClasses) should be decremented by 1 accordingly, and second is dummy variable
+	
+	int* dummy;
+	int* cref;
+	int cref_size;
+	int* ccomp;
+	int ccomp_size;
+	int nintx;
+	for (int i=0; i < nParts; i++){
+		for (int j =0; j < K; j++){
+			
+			// consider class Parts[i][j]
+			cref = Parts[i][j];//incr by 1 since first element is index and second is dummy
+			cref_size = (*(dimClasses+i*K+(*cref)))-2;
+			
+			
+			if (cref_size <= T){
+				
+				*cref = -1;
+				continue;
+			}
+			bool done = 0;
+			for (int a = 0; a < nParts; a++){
+				if (a == i) continue; //consider all classes not in partition i and set to inactive all those classes whose intx with cref is not gt T
+				bool hasActive=0; 
+				for (int b=0; b < Parts[a].size(); b++){
+					// get the card of the intx between Parts[i][j] and Parts[a][b] using k_means_cont_table
+					// remember first element of each class is the index of the class 
+					ccomp = Parts[a][b];
+					ccomp_size= (*(dimClasses+a*K+(*ccomp)))-2;
+					nintx = Util::k_means_cont_table_(cref+2,ccomp+2, dummy, cref_size, ccomp_size,0);
+					
+					
+					if (nintx <= T)
+						*(ccomp+1) = 0; // class Parts[a][b] is 'inactive' for cref
+					else{
+						*(ccomp+1)=1; // class Parts[a][b] is 'active' for cref
+						hasActive=1;
+					}
+				}
+				// see if partition a has at least one active class.if not then we're done with cref
+				if (hasActive < 1){
+				   done=1;	
+				   break;
+				}
+						
+			}			
+			
+			if (done > 0){ 
+				// remove class j from partition i
+				
+				*cref = -1; // mark for deletion later
+				continue; // move on to class Parts[i][j+1]			
+			}			
+						
+			// now we adopt more aggressive measures. we find the match with the largest weight which has class Parts[i][j] for partition i. 
+			// We get rid of Parts[i][j] if this weight is not gt T as no other feasible match containing class Parts[i][j] can be gt T.		
+			
+			// (To implement later:) To reduce complexity, determine the order the partitions are to be explored based on the cardinality of the active classes of each partition.
+			// Note that if there are ALOT of partitions, then sorting the partititions may actually take longer than the time saved by ordering hte
+			// partitions. However, we do not have a lot of partitions, (usually around 10), so sorting time will be trivial compared to exploring time.
+			
+			// explore returns one if there is a feasible matching containing class cref which has weight gt T, and otherwise returns 0
+			//bool found = 1;
+			bool found = explore(Parts, dimClasses, nParts, K, T, i, cref+2, cref_size, cref, cref_size,0);
+			
+			if (found<1){ // There is NO feasible matching with class j (cref)  with weight greater than T, so delete this class from Parts
+				// Parts[i].erase(Parts[i].begin()+j);
+				*cref = -1;
+			}
+		}
+	
+		// Erase from Parts[i] all the classes that's being designated for erasure
+					
+		for (int d = K-1; d > -1; d--){
+			if (*(Parts[i][d]) < 0) Parts[i].erase(Parts[i].begin()+d);
+		}
+
+	}
+	
+	// Print out how many classes are left in each partition
+	//for (int i =0; i < nParts; i++)
+	//	cout << Parts[i].size()<<", ";	
+	//cout << "\n";				
+}
+
+
+// Each class in Parts has its dummy variable set to 0 or 1. Only consider those with its dummy variable set to 1 (the 'active' ones)
+// First element of each class is its original index, second is the dummy variable slot.
+bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T, int partref, int* curintx, int size_curintx, int* next,  int size_next, int depth) {
+	
+	
+	if (size_next <= T) return 0;
+	
+	// take the intx of next and cur
+	int* curintx2;
+	int nintx = Util::k_means_cont_table_(curintx,next+2, curintx2, size_curintx, size_next,0);
+	if (nintx <= T) return 0;
+	
+	int old_depth=depth;
+	if (depth == partref) depth = depth + 1; // we skip classes in partref	
+	if (depth == (nParts)) { if (old_depth>0) return 1;}
+	
+	// have not yet reached a leaf, and current weight is still greather than T, so keep on going.
+	
+	curintx2 = new int[nintx]; // put the intersection set in here
+	Util::k_means_cont_table_(curintx,next+2,curintx2, size_curintx, size_next,1);
+	
+	// if (old_depth > 0) {delete[] curintx;} // don't delete when depth == 0 because curintx in that case is a pointer into Parts
+	
+	// we now consider each of the classes in partition (depth+1) in turn
+	bool gt_thresh;
+	int num_classes = (Parts[depth]).size(); // (TO DO) have to figure out how many classes partition (depth) has since some may have being removed from before iterations
+	
+	for (int i=0; i < num_classes; i++){
+		if (*(Parts[depth][i]+1) < 1) continue; // class is not active so move on
+		size_next = (*(dimClasses + depth*K+(*(Parts[depth][i])) ))-2;
+		gt_thresh = explore(Parts,dimClasses, nParts, K, T, partref, curintx2,nintx, Parts[depth][i], size_next, depth+1);
+		if (gt_thresh) return 1;
+	}
+	delete[] curintx2;		
+	return 0;	
+}
+
+// make an intelligent "guess" at the largest weight of all possible feasible matches.
+// we make "n_guesses" guesses and return the largest one. 
+// the largest weight of all feasible matches is guaranteed to be larger than or equal to the returned guess.
+int Util::generatesubmax(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int n_guesses){
+	int guess=0;
+
+	int* perm = new int[nParts];
+	for(int i=0; i<nParts; i++) perm[i]=i;
+	
+	// some temporary variables
+	int* intx;
+	int* intx_next;
+	int nintx;
+	int nintxmax=0;
+	int class_max, class_max_next;
+	int intx_size, part, part_next;
+	int ipold,indsw;
+	
+	for(int i=0; i< n_guesses; i++){
+		// shuffle perm array
+		for(int ip = 0; ip<nParts; ip++){
+			indsw = (rand())%nParts;
+			// swap ip(th) element with the (indsw)th element
+			ipold = perm[ip];
+			perm[ip]=perm[indsw];
+			perm[indsw]=ipold;	
+		}
+		
+		
+		// find the two classes in partitions perm[0] and perm[1] that yield the largest intersection
+		part=*perm;
+		part_next=*(perm+1);
+		for (int a=0; a < K; a++)
+		{
+			if (*(argParts + Indices[part*K+a] + 1) < 1) continue;
+			for (int b=0; b < K; b++)
+			{
+				if (*(argParts + Indices[part_next*K + b] + 1) < 1) continue;
+				nintx = Util::k_means_cont_table_(argParts + Indices[part*K+a]+2,argParts + Indices[part_next*K + b]+2, intx, *(dimClasses + part*K+a)-2,  *(dimClasses + part_next*K + b)-2,0);
+				if (nintx <= nintxmax) continue;
+				nintxmax = nintx;
+				class_max = a;
+				class_max_next = b;
+			}
+		}
+	
+		// no more....
+		if (nintxmax < 1) {continue;}	
+		
+		if (nParts > 2){
+			intx = new int[nintxmax];
+			intx_size = nintxmax;	
+			Util::k_means_cont_table_(argParts + Indices[part*K+class_max]+2,argParts + Indices[part_next*K + class_max_next]+2, intx, *(dimClasses + part*K+class_max)-2, *(dimClasses+part_next*K+class_max_next)-2,1); // get intx
+		}
+		
+		// for each subsequent partition perm[i], i>=2, find the partition that yields the largest weight with the current intx
+		for(int j = 2; j < nParts; j++){
+			part = *(perm+j);
+			nintxmax=0;
+			for(int a = 0; a < K; a++){
+				if (*(argParts + Indices[part*K+a] + 1) < 1) continue; // skip inactive classes
+				nintx =  Util::k_means_cont_table_(intx, argParts + Indices[part*K + a]+2, intx_next, intx_size,  (*(dimClasses + part*K+a))-2,0);
+				if (nintx <= nintxmax) continue;
+				nintxmax = nintx;
+				class_max = a;
+			}
+			
+			// no more stuff....
+			if (nintxmax < 1) {
+				
+				delete[] intx; 
+				break;
+			}
+			
+			
+			intx_next = new int[nintxmax];
+			Util::k_means_cont_table_(intx, argParts + Indices[part*K + class_max]+2, intx_next, intx_size,  *(dimClasses + part*K+class_max)-2,1);
+			delete[] intx;
+			intx = intx_next;
+			intx_size = nintxmax;
+			if (j==nParts - 1) delete[] intx_next;
+			
+		}
+		
+		if (nintxmax > guess) guess = nintxmax;
+			
+	}
+	delete[] perm;
+	return guess;
+}
+
+
+// K is the number of classes in each partition (should be the same for all partitions)
+// the first element of each class is its original index in the partition, and second is dummy var
+// MPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array. The first element is reserved for max_levels (the size of the smallest
+//	partition after pruning).
+//      if nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called
+//      to find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.
+
+// essentially the same as bb_enumerate but with the option to do mpi version. 
+vector<int> Util::bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels) {
+	
+	// Indices is an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
+	// So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
+	// Make a vector of nParts vectors of K int* each
+	 int* Indices = new int[nParts*K];
+	 int ind_c = 0;
+	 for (int i=0; i < nParts; i++){
+		 for(int j = 0; j < K; j++){
+			 Indices[i*K + j] = ind_c;
+			 ind_c = ind_c + *(dimClasses+i*K + j);
+
+		 }
+	 }
+	
+	// return top weighted matches for mpi version
+	if (nTop > 0 && doMPI > 0){ 
+		 // find the nTop largest matches (not required to be mutually feasible)
+		int* matchlist = new int[nTop*nParts];
+		int* costlist=new int[nTop];
+		for (int i=0; i< nTop; i++) {*(costlist+i) = 0;}
+		int matchesFound = Util::findTopLargest(argParts,Indices, dimClasses, nParts, K,  T, matchlist, nTop,costlist,n_guesses);
+		vector<int> ret(nTop*(nParts+1) + 1);
+		ret[0] = matchesFound;
+		int m = nParts + 1;
+		// For each match in matchlist and its corresponding cost in costlist, put them in ret
+		for(int i=0; i < nTop; i++){
+			ret[1+i*m] = *(costlist+i);
+			for (int j=0; j < nParts; j++){
+				ret[1+i*m + 1 + j] = matchlist[i*nParts + j];
+			}
+		}
+		
+		return ret;
+	
+	}
+	
+	// do initial pruning on argParts and return the pruned partitions
+	
+	// Make a vector of nParts vectors of K int* each
+	vector <vector <int*> > Parts(nParts,vector<int*>(K));
+	ind_c = 0;
+	int argParts_size=0;
+	for (int i=0; i < nParts; i++){
+		for(int j = 0; j < K; j++){
+			Parts[i][j]=argParts + ind_c;
+			ind_c = ind_c + *(dimClasses+i*K + j);
+			argParts_size = argParts_size + *(dimClasses+i*K + j);
+			
+		}
+	}
+	
+	// in the following we call initial_prune with Parts which is a vector. This is not the most 
+	// efficient since vector does not allow for direct addressing. But since initial_prune doesn't have very high complexity, and
+	// the running time for 7 partitions with 288 classes per partition is a couple of minutes at most, i'll just leave it for now.....
+	
+	Util::initial_prune(Parts, dimClasses, nParts, K,T);
+	for(int i = 0; i < nParts; i++){
+		for(int j=0; j < K; j++){
+			*(argParts + Indices[i*K + j]+1) = -1;
+		}
+	}
+	
+	int num_classes;
+	int old_index;
+	for(int i=0; i<nParts; i++){
+		num_classes = Parts[i].size();// number of classes in partition i after pruning
+		for (int j=0; j < num_classes; j++){
+			old_index = *(Parts[i][j]);
+			//cout << "old_index: " << old_index<<"\n";
+			*(argParts + Indices[i*K + old_index]+1) = 1;
+		}
+	}
+	
+	
+	if (doMPI > 0){
+		// turn argParts into vector ret and return ret
+		vector<int> ret(argParts_size); 
+		for(int i=0; i < argParts_size; i++)
+			ret[i]= (*(argParts+i));
+		
+		return ret;
+	}
+	
+	// if we're not doing mpi then keep going and call branchMPI and return the output
+	//cout <<"begin partition matching\n";
+	int* dummy;
+	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,Levels, K,0,n_guesses,-1, dummy);
+	//cout <<"done with partition matching \n";
+	//cout<<"total cost: "<<*output<<"\n";
+	//cout<<"number of matches: "<<*(output+1)<<"\n";
+	// now go check if the matches are sensical! i.e, if the matches are feasible, if the sum of the match weights in output is equal to *output, and if each match in output has weight at least T
+	bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
+	
+	// something is wrong with output of branchMPI!
+	if (correct < 1){
+		cout << "something is wrong with output of branchMPI!\n";
+		vector<int> ret(1);
+		ret[0]=-1;
+		return ret;
+	}
+	
+	// output is not nonsense, so now put it into a single dimension vector and return
+	// output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
+	// and the rest is the list of matches. output is one dimensional
+	
+	int output_size = 2+ *(output+1) * nParts;
+	vector<int> ret(output_size);
+	for (int i = 0; i < output_size; i++){
+		ret[i]=*(output+i);
+	}	
+	return ret;
+	
+}
+
+// an interface function between python code and branchMPI. Doesn't do much except compute Indices, call branchMPI, and check if the output make sense (i.e., feasible etc),
+// and process the output to return to python as a vector.
+// nFirst is the number of matches in firstmatches
+vector<int> Util::branchMPIpy_(int* argParts, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int n_guesses, int nFirst, int* firstmatches){
+	//cout<<"branchMPIpy_ called\n";
+	// if nLevels == K, then we  compute nLevels - which is the number of active classes of the partition with the smallest number of active classes
+	// this is not really necessary but would save a call to findTopLargest in branchMPI
+	int num_active;
+	int* Indices = new int[nParts*K];
+	// Make a vector of nParts vectors of K int* each
+	int ind_c = 0;
+	for (int i=0; i < nParts; i++){
+		num_active = 0;
+		for(int j = 0; j < K; j++){
+			Indices[i*K + j] = ind_c; // offset from argParts of the first element of the jth class of the i-th partition
+			if (*(argParts+ind_c + 1) == 1) num_active = num_active + 1;
+			ind_c = ind_c + *(dimClasses+i*K + j);
+		}
+		
+		if (num_active < nLevels) {nLevels = num_active;}
+	}
+	
+	
+	//add in code for dynamically changing levels
+	
+	//cout<<"num levels "<<nLevels<<"\n";
+	//cout<<"calling branchMPI\n";
+	
+	int* output = Util::branchMPI(argParts, Indices, dimClasses, nParts, K, T,  Levels,  nLevels, 0,n_guesses, nFirst,firstmatches);
+	 
+	// call sanity check on outupt to make sure the returned matches are feasible with cost over the threshold T
+	//cout<<"total cost: "<<*output<<"\n";
+	//cout<<"number of matches: "<<*(output+1)<<"\n";
+	// now go check if the matches are sensical! i.e, if the matches are feasible, if the sum of the match weights in output is equal to *output, and if each match in output has weight at least T
+	bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
+	
+	// something is wrong with output of branchMPI!
+	if (correct < 1){
+		cout << "something is wrong with output of branchMPI!\n";
+		vector<int> ret(1);
+		ret[0]=-1;
+		return ret;
+	}
+	
+	// output is not nonsense, so now put it into a single dimension vector and return
+	// output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
+	// and the rest is the list of matches. output is one dimensional
+	
+	int output_size = 2+ *(output+1) * nParts;
+	vector<int> ret(output_size);
+	for (int i = 0; i < output_size; i++){
+		ret[i]=*(output+i);
+	}	
+	return ret;
+} 
+
+// same as branch except the nFirst (=Levels[0]) possibilites for the first match are already chosen
+// firstmatches stores the matches and corresponding cost, where each match is preceded by its cost....
+// output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
+// and the rest is the list of matches. output is in one dimensional form.
+int* Util::branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches) {
+	
+	// Base Case: we're at a leaf, no more feasible matches possible
+	if (curlevel > nLevels-1){
+		int* res = new int[2];
+		*res = 0;
+		*(res+1)=0;
+		return res;
+	}
+	
+	
+	// We may still find more feasible matchings with cost gt T, so explore level curlevel
+	int nBranches = *(Levels + curlevel);
+	
+	// MPI: the first match is already chosen in MPI version, so we are going to branch only once at level 0 
+	if (curlevel==0 && nFirst > 0)
+	{
+		nBranches = nFirst;
+	}
+	
+	// call findTopLargest to get the nBranches feasible matchings with the largest weight (gt T) over all other feasible matches
+	
+	int* matchlist = new int[nBranches*nParts];
+	int* costlist = new int[nBranches];// cost of each of the nBranches matches. If cost[i] < T then that means findTopLargest found less than i+1 matches
+					   // with cost > T
+	
+	for (int i=0; i < nBranches; i++)
+		*(costlist+i)=0;
+	
+	// each class in the matches found by findTopLargest is encoded by the original index of the first element of the class in argPart
+	// each match contains nParts classes, with the i-th class belonging to the i-th partition.
+	
+	// MPI: first match is already chosen, so copy the match in first match over to matchlist, compute weight of match, and set costlist to the weight	
+	if (curlevel == 0 && nFirst > 0){
+		for(int i = 0; i < nBranches; i++){
+			*(costlist+i) = *(firstmatches +i*(nParts+1));
+			for (int j=0; j< nParts; j++)
+				*(matchlist + i*nParts +j) = *(firstmatches +i*(nParts+1) + 1 + j);
+		}
+	}
+	else 
+		Util::findTopLargest(argParts,Indices, dimClasses, nParts, K,  T, matchlist, nBranches,costlist,n_guesses);
+	
+	// if there are no feasible matches with cost gt T, then return 0
+	if (costlist[0]<= T){
+		int* res = new int[2];
+		*res = 0;
+		*(res+1)=0;
+		return res;
+	}
+	
+	int* maxreturn = new int[2];//initialize to placeholder
+	*maxreturn=0;
+	*(maxreturn+1)=0;
+	
+	// some temporary variables
+	int old_index;
+	int totalcost;
+	int nmatches;
+	int offset;
+	
+	for(int i=0; i < nBranches ; i++){
+	
+		// consider the i-th match returned by findTopLargest
+		
+		if (costlist[i] <= T) break; 
+		
+		// mark the classes in the i-th match of matchlist as taken (using the dummy variable and -2), and then call branch again on argParts. 
+		// After branch returns, compute overall cost, unmark  the classes just marked as 1 again in preparation for next loop.
+		
+		for(int j=0; j < nParts; j++){
+			// matchlist[i*nParts + j] is the original index of the class belonging to the j-th partition in the i-th match.
+			old_index=matchlist[i*nParts + j];
+			*(argParts + Indices[j*K+old_index] + 1) = -2;
+		}
+		
+		
+		int* ret = Util::branchMPI(argParts, Indices, dimClasses, nParts, K, T, Levels, nLevels, curlevel+1,n_guesses, nFirst, firstmatches);
+		
+		// first element of ret is the total cost of all the matches in ret, and second element is the number of matches in ret
+		totalcost = costlist[i] + *ret;
+		
+		
+		 if (totalcost > *maxreturn) // option 1
+		{
+			nmatches = 1 + *(ret+1);
+			delete[] maxreturn; // get rid of the old maxreturn
+			maxreturn = new int[2+nmatches*nParts];
+			*maxreturn = totalcost;
+			*(maxreturn + 1)= nmatches;
+			int nret = 2+(nmatches-1)*nParts;
+			for(int iret=2; iret <nret;iret++) *(maxreturn+iret)=*(ret+iret);
+			for(int imax=0; imax<nParts;imax++) *(maxreturn+nret+imax)=matchlist[i*nParts + imax];
+		}
+		
+		
+		delete[] ret;
+		
+		// unmark the marked classes in preparation for the next iteration
+	
+		for(int j=0; j < nParts; j++){
+			// matchlist[i*nParts + j] is the original index of the class belonging to the j-th partition in the i-th match.
+			old_index=matchlist[i*nParts + j];
+			*(argParts + Indices[j*K+old_index] + 1) = 1;
+		}
+		
+	}
+	
+	delete[] matchlist;
+	delete[] costlist;
+	
+	return maxreturn;
+	
+}
