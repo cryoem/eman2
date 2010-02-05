@@ -793,9 +793,9 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 	// Min/max modifications to weighting
 	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_xsize())/minres;		//cutoff in pixels
+	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
 	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_xsize())/maxres;
+	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
 	else pmax=0;
 
 //	printf("%f\t%f\n",pmin,pmax);
@@ -1047,6 +1047,8 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int sweight = params.set_default("sweight", 1);
 	int nweight = params.set_default("nweight", 0);
 	int zeromask = params.set_default("zeromask",0);
+	float minres = params.set_default("minres",500.0);
+	float maxres = params.set_default("maxres",10.0);
 
 	if (zeromask) {
 		image=image->copy();
@@ -1144,6 +1146,13 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	vector<float> amp;
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
+	// Min/max modifications to weighting
+	float pmin,pmax;
+	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	else pmin=0;
+	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	else pmax=0;
+
 	double sum=0.0, norm=0.0;
 
 	for (int i=0; i<ny/2; i++) {
@@ -1151,6 +1160,9 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		if (sweight) weight*=fsc[(ny2)*2+i];
 		if (ampweight) weight*=amp[i];
 		if (snrweight) weight*=snr[i];
+		if (pmin>0) weight*=(tanh(5.0*(i-pmin)/pmin)+1.0)/2.0;
+		if (pmax>0) weight*=(1.0-tanh(i-pmax))/2.0;
+		
 		sum+=weight*fsc[ny2+i];
 		norm+=weight;
 //		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
