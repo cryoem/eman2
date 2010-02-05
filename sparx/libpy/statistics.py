@@ -8552,126 +8552,217 @@ def avg_3D_pixel_error(t1, t2, r,nx,ny,nz):
 	return total_error/total_voxels
 
 
-def compare_fra(file1name,file2name,file3name,Threshold,r,nx,ny,nz):
-	"""
-		PARAMETERS
-			file1name, file2name, file3name   -  The name of files containing the alignment angles. For each file, we assume the first 
-							     three elements of the i-th row correspond to the i-th set of Euler angles.	
-			Threshold                         -  A float
-			r 				  -  Approximate radius of the sphere which contains the object
-			nx, ny, nz 			  -  Size of the image in the x, y and z directions
-		USAGE
-			The function writes three files: avgPixError13.txt, avgPixError12.txt, avgPixError23.txt
+	
+# PART is a list of arrays
+# Assumes all partitions have the SAME number of classes
+# output:
+# MATCH is a list of arrays, where each array is a match
+# STB_PART is a list of lists, each list in the list, i.e.STB_PART[0] is a stable set (i.e., the common intersection of a matching)
+# For consistency with k_means_stab_pwa, STB_PART will be initialized to be a list of K lists, and of course some will be empty
+def k_means_stab_bbenum(PART, T=10, nguesses=5,levels=[], doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+	
+	from copy import deepcopy
+	
+	
+	MATCH=[]
+	
+	# do MPI_init: compute pruned partitions and Njobs top matches and return
+	if doMPI_init:
+		newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, nguesses=nguesses, levels=levels, DoMPI_init=True,Njobs=njobs)
+		return newParts, topMatches, class_dim,num_found
+	
+	if do_mpi:
+		MATCH,cost= k_means_match_bbenum(PART, T=T, nguesses=nguesses, levels=levels, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
+		return MATCH,cost
+		
+	if do_mpi==False and doMPI_init == False:
+		MATCH= k_means_match_bbenum(PART, T=T, nguesses=nguesses, levels=levels, DoMPI=False)
+	
+	
+	K=len(PART[0])
+	np = len(PART)
+	
+	STB_PART = [[] for i in xrange(K)]
+	nm       = len(MATCH)
+	CT_t     = [0] * K
+	CT_s     = [0] * K
+	ST       = [0] * K
+	ct_t     = 0
+	ct_s     = 0
+	st       = 0
+
+
+	for k in xrange(nm):
+		kk   = int(MATCH[k][0]) # due to numpy obj
+		vmax = [0] * np
+		vmin = [0] * np
+		for i in xrange(np):
+		    vmax[i] = max(PART[i][int(MATCH[k][i])])
+		    vmin[i] = min(PART[i][int(MATCH[k][i])])
+
+		vmax = int(max(vmax))
+		vmin = int(min(vmin))
+		vd   = vmax - vmin + 1
+
+		asg = [0] * vd
+		for i in xrange(np):
+		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
+
+		stb  = []
+		for i in xrange(vd):
+		    if asg[i] != 0:
+			CT_t[kk] += 1
+			if asg[i] == np:
+			    CT_s[kk] += 1
+			    stb.append(i + vmin)
+
+		STB_PART[kk] = deepcopy(stb)
+
+	for k in xrange(K):
+		if CT_t[k] == 0: continue
+		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
+
+	if sum(CT_t) == 0:
+		st = 0
+	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
+
+	return MATCH, STB_PART, CT_s, CT_t, ST, st
+
+# DO NOT copy memory - could lead to crashes	
+# This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
+def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
+	from numpy import array, append, insert
+	
+	MATCH=[]
+	output=[]
+	
+	
+	if DoMPI==True and DoMPI_init==False:
+	
+		if len(levels)<1:	
+			for i in xrange(K):
+				levels.append(1)
+
+		ar_levels = array(levels, 'int32')
+		ar_class_dim	= array(c_dim,'int32')	
+		ar_newParts = array(PART, 'int32')
+		firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
+		output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
+	else:
+		K = len(PART[0])
+		np=len(PART)
+
+		# serialize all the arguments in preparation for passing into c++ function
+		if len(levels)<1:	
+			for i in xrange(K):
+				levels.append(1)
+
+		ar_levels = array(levels, 'int32')
+		ar_argParts = array([],'int32')
+		class_dim=[]
+		for i in xrange(np):
+			for j in xrange(K):
+				class_dim.append(PART[i][j].size+2)
+				ar_argParts = append(ar_argParts,[j,0])
+				ar_argParts=append(ar_argParts,PART[i][j])
+		
+						
+		ar_class_dim = array(class_dim,'int32')
+		#################################################################################################
+		# if DoMPI_init = True, then compute new parts and Njobs top matches and return that
+		if DoMPI_init:
+			newParts=Util.bb_enumerateMPI(ar_argParts,ar_class_dim,np,K,T,0,nguesses,True,ar_levels)
+			# newParts a list 
+			ar_newParts = array(newParts,'int32')
+			# find top weighted matches in pruned partitions
+			topMatches=Util.bb_enumerateMPI(ar_newParts,ar_class_dim,np,K,T,Njobs,nguesses,True,ar_levels)
+			# topMatches is ordered in ascending order according to cost
+			# first element of topMatches is the number of matches it contains
 			
-			avgPixError12.txt is generated as follows.
-			
-			Use rotation_between_anglesets to find the overall 3D rotation between the Eulerian angles 
-			in file1name and the Eulerian angles in file2name.
-			
-			If the i-th angle in file file1name, after overall rotation is applied, and file file2name have average pixel error 
-			(computed using avg_3D_pixel_error) less than Threshold, then the 2-tuple consisting of i and the pixel error is 
-			written to the file avgPixError12.txt.
-		 
-			Similarly, avgPixError13.txt (avgPixError23.txt) is generated by first using rotation_between_anglesets to find the overall 3D rotation 
-			between the Eulerian angles in file1name (file2name) and the Eulerian angles in file3name.
-			If the i-th angle in file file1name (file2name), after overall rotation is applied, and file file3name have average pixel error 
-			less than Threshold, then the 2-tuple consisting of i and the pixel error is written to the file avgPixError13.txt (avgPixError23.txt).
-			
-	"""
+			return newParts,topMatches[1:],class_dim,topMatches[0]
+		#################################################################################################
 
-	from statistics import avg_3D_pixel_error
-	from utilities  import read_text_file, write_text_rows, rotation_between_anglesets
+		# Single processor version
 
-	a = read_text_file(file1name,-1)
-	b = read_text_file(file2name,-1)
-	c = read_text_file(file3name,-1)
-
-	asg1=[]
-	alen = len(a[0])
-	for row in xrange(alen):
-		asg1.append([a[0][row],a[1][row],a[2][row]])
-
-	blen=len(b[0])
-	asg2 = []
-	for row in xrange(blen):
-		asg2.append([b[0][row],b[1][row],b[2][row]])
-
-	clen=len(c[0])
-	asg3 = []
-	for row in xrange(clen):
-		asg3.append([c[0][row],c[1][row],c[2][row]])
-
-	##############################################################################################
-	# Find overall rotation between two angle sets, and then apply it to one of the angle sets
-
-	asgLen = len(asg1)
-
-	# compute rotation between asg1 and asg2
-	phi12,theta12,psi12 = rotation_between_anglesets(asg1,asg2)
-	# apply rotation [phi12,theta12,psi12] to asg1
-	t12 = Transform({'type':'spider','phi':phi12,'theta':theta12,'psi':psi12})
-	asg12=[]
-	for i in xrange(asgLen):
-		t1= Transform({'type':'spider','phi':asg1[i][0],'theta':asg1[i][1],'psi':asg1[i][2]})
-		t_comp= t1*t12
-		rot = t_comp.get_rotation('spider')
-		asg12.append([rot['phi'],rot['theta'],rot['phi']])
+		output = Util.bb_enumerateMPI(ar_argParts, array(class_dim,'int32'),np,K,T,levels[0], nguesses,False,ar_levels)
+	
+	# first element of output is the total  cost of the solution, second element is the number of matches
+	# in the output solution, and then follows the list of matches.
+	
+	# convert each match into an array and insert into MATCH
+	num_matches = output[1]
+	
+	for j in xrange(num_matches):
+		# get the j-th match
+		ar_match = array(output[j*np + 2: j*np + 2+np],'int32')
+		MATCH.append(ar_match)
+	
+	
+	if DoMPI:
+		return MATCH, output[0]
+	else:
+		return MATCH
+# match is a list, where every five tuple corresponds to a match
+def k_means_stab_getinfo(PART, match):
+	
+	from copy import deepcopy
+	from numpy import array
+	K=len(PART[0])
+	np = len(PART)
+	
+	MATCH=[]
+	
+	# convert argument match to a list of arrays, where each array is a match
+	len_match = len(match)
+	if (len_match % np) != 0:
+		print "something wrong in k_means_stab_getinfo"
+		sys.exit()
+	num_matches = len_match/np
+	for i in xrange(num_matches):
+		MATCH.append(array(match[i*np:(i+1)*np]))
+	
+	STB_PART = [[] for i in xrange(K)]
+	nm       = len(MATCH)
+	CT_t     = [0] * K
+	CT_s     = [0] * K
+	ST       = [0] * K
+	ct_t     = 0
+	ct_s     = 0
+	st       = 0
 
 
-	# compute rotation between asg1 and asg3
-	phi13,theta13,psi13 = rotation_between_anglesets(asg1,asg3)
-	# apply rotation [phi13,theta13,psi13] to asg1
-	t13 = Transform({'type':'spider','phi':phi13,'theta':theta13,'psi':psi13})
-	asg13=[]
-	for i in xrange(asgLen):
-		t1= Transform({'type':'spider','phi':asg1[i][0],'theta':asg1[i][1],'psi':asg1[i][2]})
-		t_comp= t1*t13
-		rot = t_comp.get_rotation('spider')
-		asg13.append([rot['phi'],rot['theta'],rot['phi']])
+	for k in xrange(nm):
+		kk   = int(MATCH[k][0]) # due to numpy obj
+		vmax = [0] * np
+		vmin = [0] * np
+		for i in xrange(np):
+		    vmax[i] = max(PART[i][int(MATCH[k][i])])
+		    vmin[i] = min(PART[i][int(MATCH[k][i])])
 
+		vmax = int(max(vmax))
+		vmin = int(min(vmin))
+		vd   = vmax - vmin + 1
 
-	# compute rotation between asg2 and asg3
-	phi23,theta23,psi23 = rotation_between_anglesets(asg2,asg3)
-	# apply rotation [phi23,theta23,psi23] to asg2
-	t23 = Transform({'type':'spider','phi':phi23,'theta':theta23,'psi':psi23})
-	asg23=[]
-	for i in xrange(asgLen):
-		t2= Transform({'type':'spider','phi':asg2[i][0],'theta':asg2[i][1],'psi':asg2[i][2]})
-		t_comp= t2*t23
-		rot = t_comp.get_rotation('spider')
-		asg23.append([rot['phi'],rot['theta'],rot['phi']])
+		asg = [0] * vd
+		for i in xrange(np):
+		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
 
-	##############################################################################################
-	# Compute pixel error for each entry of asg12 and asg2 
-	# (asg13 and asg3, asg23 and asg3 respectively) and return a list of the pixel errors that are below a certain threshold
+		stb  = []
+		for i in xrange(vd):
+		    if asg[i] != 0:
+			CT_t[kk] += 1
+			if asg[i] == np:
+			    CT_s[kk] += 1
+			    stb.append(i + vmin)
 
-	# Compute average pixel error for each entry of asg12 and asg2 
-	avgPixError12=[]
-	for i in xrange(asgLen):
-		T = Transform({'type':'spider','phi':asg12[i][0],'theta':asg12[i][1],'psi':asg12[i][2]})
-		T0 = Transform({'type':'spider','phi':asg2[i][0],'theta':asg2[i][1],'psi':asg2[i][2]})
-		error = avg_3D_pixel_error(T,T0, r, nx,ny,nz)
-		if error < Threshold:
-			avgPixError12.append([i,error])
-	write_text_rows(avgPixError12,'avgPixError12.txt')		
+		STB_PART[kk] = deepcopy(stb)
 
-	# Compute average pixel error for each entry of asg12 and asg2 
-	avgPixError13=[]
-	for i in xrange(asgLen):
-		T = Transform({'type':'spider','phi':asg13[i][0],'theta':asg13[i][1],'psi':asg13[i][2]})
-		T0 = Transform({'type':'spider','phi':asg3[i][0],'theta':asg3[i][1],'psi':asg3[i][2]})
-		error = avg_3D_pixel_error(T,T0, r, nx,ny,nz)
-		if error < Threshold:
-			avgPixError13.append([i,error])	
-	write_text_rows(avgPixError13,'avgPixError13.txt')
+	for k in xrange(K):
+		if CT_t[k] == 0: continue
+		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
 
-	# Compute average pixel error for each entry of asg23 and asg3 
-	avgPixError23=[]
-	for i in xrange(asgLen):
-		T = Transform({'type':'spider','phi':asg23[i][0],'theta':asg23[i][1],'psi':asg23[i][2]})
-		T0 = Transform({'type':'spider','phi':asg3[i][0],'theta':asg3[i][1],'psi':asg3[i][2]})
-		error = avg_3D_pixel_error(T,T0, r, nx,ny,nz)
-		if error < Threshold:
-			avgPixError23.append([i,error])	
-	write_text_rows(avgPixError23,'avgPixError23.txt')
+	if sum(CT_t) == 0:
+		st = 0
+	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
 
+	return MATCH, STB_PART, CT_s, CT_t, ST, st
