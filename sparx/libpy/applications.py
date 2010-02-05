@@ -10653,6 +10653,10 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
 	
+	elif match == 'bbenum':
+		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	
 	if TXT:
 		count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
 		logging.info('... Export %i stable class averages: averages_grp_i.txt (rejected %i images)' % (count_k, len(id_rejected)))
@@ -10668,7 +10672,8 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	logging.info('... Done')
 
 # K-means main stability stream command line
-def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9, flagnorm = False):
+# added argument num_first_matches (jia)
+def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, match = 'pwa', maxit = 1e9, flagnorm = False, num_first_matches=1):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg
@@ -10769,7 +10774,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			crit       = k_means_criterion(Cls, 'CHD')
 			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
-	
+			
 	if myid == main_node:
 		# end of classification
 		print_end_msg('k-means')
@@ -10785,7 +10790,101 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		elif match == 'pwa':
 			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_pwa(ALL_PART)
 			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	
+		# To do the non-mpi version of bbenum......
+		#elif match == 'bbenum':
+			#MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(ALL_PART)
+			#logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+	
+		
+	if match == 'bbenum':
+		# Njobs is the number of possibilities for the first match to consider. 
+		Njobs = num_first_matches
+		if Njobs % ncpu != 0:
+			Njobs = Njobs + (ncpu - (Njobs%ncpu))
+		if myid==main_node:
+			# ALL_PART is only at main_node, so main node has to compute initial partition and top matches
+			nParts = len(ALL_PART)
+			nClasses = len(ALL_PART[0])
+			newPart, topmatches,class_dim,num_matches = k_means_stab_bbenum(ALL_PART, doMPI_init=True, njobs=Njobs)
+			
+			Njobs = num_matches
+			# concatenate newPart and topmatches into one list and send to all the other nodes
+			len_newpart= len(newPart)
+			newPart.extend(class_dim)
+			newPart.extend(topmatches)
+			newPart.insert(0,len_newpart)
+			newPart.insert(0,nParts)
+			newPart.insert(0,nClasses)
+			newPart.insert(0, num_matches)
+			for n in xrange(ncpu):
+				if n != main_node:
+					mpi_send(len(newPart), 1,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+					mpi_send(newPart, len(newPart), MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			newPart = newPart[4:len_newpart+4]
+		else:
+			ln = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			lis = mpi_recv(ln[0], MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			temp=[]
+			for l in xrange(ln[0]): 
+				temp.append(int(lis[l]))
+			# unpack into newPart and topmatches
+			num_matches = temp[0]
+			Njobs = num_matches
+			nClasses= temp[1]
+			nParts = temp[2]
+			len_newparts= temp[3]
+			newPart=temp[4:len_newparts+4]
+			class_dim = temp[len_newparts+4: len_newparts+4+(nClasses*nParts)]
+			topmatches=temp[len_newparts+4+(nClasses*nParts):]
 
+
+		N_start, N_stop = MPI_start_end(Njobs-1, ncpu, myid)
+		
+		# have main_node send K and np along with newparts and topmatches....
+
+		MATCH, mcost = k_means_stab_bbenum(newPart, do_mpi=True, K=nClasses, np=nParts, cdim = class_dim, nstart=N_start, nstop=N_stop, top_Matches=topmatches)	
+			# all the nodes (other than main node) send ONLY their MATCH and total cost to main node. Given MATCH, main node can 
+			# quickly compute the rest.....
+			#print topmatches
+
+		if myid == main_node:
+			# serialize MATCH. MATCH is a list of array objects
+			MATCH_list = []
+			len_match = len(MATCH)
+			for i in xrange(len_match):
+				MATCH_list += map(int,MATCH[i])
+			# main node rcvs MATCH_list. First element of the list is the total cost, so main node only unpacks the one with the largest cost!
+			MAX_MATCH=MATCH_list
+			max_cost = mcost
+			for n in xrange(ncpu):
+				if n != main_node:
+					ln = mpi_recv(1,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+					lis = mpi_recv(ln[0], MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+					cost = int(lis[0])
+					if cost > max_cost:
+						MAX_MATCH=[]
+						for l in xrange(1,ln[0]): 
+							MAX_MATCH.append(int(lis[l]))
+			# now main node takes MAX_MATCH and computes the other stuff like stab_list, etc.
+			MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_getinfo(ALL_PART, MAX_MATCH)
+			logging.info('... Stability: %5.2f %% (%d objects)' % (sum(ST) / float(len(ST)), sum(CT_s)))
+		else:
+			# serialize MATCH. MATCH is a list of array objects
+			MATCH_list = []
+			len_match = len(MATCH)
+			for i in xrange(len_match):
+				MATCH_list += map(int,MATCH[i])
+			MATCH_list.insert(0,mcost)
+			# send to main node
+			mpi_send(len(MATCH_list), 1,MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(MATCH_list, len(MATCH_list), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
+			
+				
+	#########################
+	# end of partition matching
+	
+	if myid == main_node:	
 		# export the stable class averages
 		if TXT:	count_k, id_rejected = k_means_stab_export_txt(STB_PART, outdir, th_nobj)
 		else:   count_k, id_rejected = k_means_stab_export(STB_PART, stack, outdir, th_nobj, CTF)
