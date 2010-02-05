@@ -324,6 +324,30 @@ int pyk_means_cont_table(array& grp1, array& grp2, array& stb, long int s1, long
     return EMAN::Util::k_means_cont_table_(pt_grp1, pt_grp2, pt_stb, s1, s2, flag);
 }
 
+// bb_enumerate is locate in util_sparx.cpp
+void pybb_enumerate(array& parts, array& classDims, int nParts, int nClasses, int T, int nguesses, array& levels) {
+    int* pt_parts = get_iptr(parts);
+    int* pt_classDims = get_iptr(classDims);
+    int* pt_levels = get_iptr(levels);
+    return EMAN::Util::bb_enumerate_(pt_parts, pt_classDims, nParts, nClasses,T,nguesses, pt_levels);
+}
+
+// bb_enumerateMPI is locate in util_sparx.cpp
+vector<int> pybb_enumerateMPI(array& parts, array& classDims, int nParts, int nClasses, int T, int nTop, int nguesses, bool doMPI, array& Levels) {
+    int* pt_parts = get_iptr(parts);
+    int* pt_classDims = get_iptr(classDims);
+    int* pt_Levels = get_iptr(Levels);
+    return EMAN::Util::bb_enumerateMPI_(pt_parts, pt_classDims, nParts, nClasses,T,nTop,nguesses,doMPI,pt_Levels);
+}
+
+// bb_enumerate is locate in util_sparx.cpp
+vector<int> pybranchMPIpy(array& parts, array& classDims, int nParts, int nClasses, int T, array& Levels, int nLevels, int nguesses,int nFirst , array& firstmatches) {
+    int* pt_parts = get_iptr(parts);
+    int* pt_classDims = get_iptr(classDims);
+    int* pt_Levels = get_iptr(Levels);
+    int* pt_firstmatches = get_iptr(firstmatches);
+    return EMAN::Util::branchMPIpy_(pt_parts, pt_classDims, nParts, nClasses,T,pt_Levels, nLevels, nguesses, nFirst, pt_firstmatches);
+}
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
@@ -492,6 +516,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("sdot",   &pysdot  )
 		.def("readarray", &readarray )
 		.def("k_means_cont_table", &pyk_means_cont_table)
+		.def("bb_enumerate", &pybb_enumerate)
+		.def("bb_enumerateMPI", &pybb_enumerateMPI)
+		.def("branchMPIpy", &pybranchMPIpy)
 		.def("Normalize_ring", &EMAN::Util::Normalize_ring)
 		.def("image_mutation", &EMAN::Util::image_mutation)
 		.def("list_mutation", &EMAN::Util::list_mutation)
@@ -643,6 +670,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("sdot")
 		.staticmethod("readarray")
 		.staticmethod("k_means_cont_table")
+		.staticmethod("bb_enumerate")
+		.staticmethod("bb_enumerateMPI")
+		.staticmethod("branchMPIpy")
 		.staticmethod("Normalize_ring")
 		.staticmethod("image_mutation")
 		.staticmethod("list_mutation")
