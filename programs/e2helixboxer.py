@@ -390,9 +390,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.app = app
         self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
         self.setWindowTitle("e2helixboxer")
-               
-        self.main_image = EMImage2DModule(application=self.app)
+        
+        self.main_image = None #Will be an EMImage2DModule instance
         self.helix_viewer = None #Will be an EMImage2DModule instance
+
         self.write_helix_files_dlg = None
         
         self.color = (0, 0, 1)
@@ -408,18 +409,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 self.micrograph_filepath = micrograph_filepath
             img = EMData(self.micrograph_filepath)
             self.load_micrograph(img)
-                
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
-        QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
-        self.connect(self.load_boxes_button, QtCore.SIGNAL("clicked()"), self.load_boxes )
+            
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
         self.connect(self.load_boxes_action, QtCore.SIGNAL("triggered()"), self.load_boxes)
         self.connect(self.load_micrograph_action, QtCore.SIGNAL("triggered()"), self.open_micrograph)
         self.connect(self.write_action, QtCore.SIGNAL("triggered()"), self.write_output)
         self.connect(self.quit_action, QtCore.SIGNAL("triggered()"), self.close)
-        get_application().show_specific(self.main_image)
+        
         
     def __create_ui(self):
         
@@ -448,10 +445,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.img_quality_combobox.setCurrentIndex(2)
         self.img_quality_label.setBuddy(self.img_quality_combobox)
 
-        self.load_boxes_button = QtGui.QPushButton(self.tr("&Load Boxes"))
+        self.micrograph_table = QtGui.QTableWidget(1,2)
+        self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
         
         self.status_bar = QtGui.QStatusBar()
-        self.status_bar.showMessage("Ready",10000)
+        #self.status_bar.showMessage("Ready",10000)
         
         
         widthLayout = QtGui.QHBoxLayout()
@@ -470,6 +468,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.vbl.addWidget(self.menu_bar)
         self.vbl.addLayout(widthLayout)
         self.vbl.addLayout(qualityLayout)
+        self.vbl.addWidget(self.micrograph_table)
         self.vbl.addWidget(self.status_bar)
 
     def color_boxes(self):
@@ -498,6 +497,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
             self.helix_viewer.setWindowTitle("Current Boxed helix")
             self.helix_viewer.get_qt_widget().resize(300,800)
+        QtCore.QObject.connect(self.helix_viewer.emitter(), QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
         self.helix_viewer.set_data(helix_emdata)
 
         get_application().show_specific(self.helix_viewer)
@@ -528,6 +528,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         returns the current width for the helices
         """
         return self.box_width_spinbox.value()
+    def helix_viewer_closed(self):
+        """
+        This should execute when self.helix_viewer is closed.
+        """
+        self.helix_viewer = None
     def load_boxes(self):
         """
         load boxes from a file selected in a file browser dialog
@@ -561,13 +566,27 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.main_image.updateGL()
     
     def load_micrograph(self, micrograph_emdata):
+        """
+        This displays a micrograph in self.main_image, resetting member variables that refer to other micrographs.
+        If self.main_image == None, a new EMImage2DModule is instatiated.
+        @micrograph_emdata: the EMData object that holds the micrograph to display
+        """
         self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
         self.current_boxkey = None
         self.initial_helix_box_data_tuple = None
         self.click_loc = None #Will be (x,y) tuple
+        
+        if not self.main_image:
+            self.main_image = EMImage2DModule(application=self.app)
+            QtCore.QObject.connect(self.main_image.emitter(),QtCore.SIGNAL("module_closed"), self.main_image_closed)
+            QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
+            QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
+            QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
         self.main_image.set_data( micrograph_emdata, self.micrograph_filepath )
         self.main_image.shapes = EMShapeDict()
         self.main_image.shapechange=1
+        get_application().show_specific(self.main_image)
+        
         self.helices_dict = db_get_helices_dict(self.micrograph_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
         
         if self.get_db_item("helixboxes") == None:
@@ -592,13 +611,32 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.main_image.optimally_resize()
         
-
         width = 100
         if self.helices_dict:
             first_coords = self.helices_dict.keys()[0]
             width = first_coords[4]
         self.box_width_spinbox.setValue(width)
-
+    def main_image_closed(self):
+        """
+        This should execute when self.main_image is closed.
+        """
+        if self.helix_viewer:
+            self.helix_viewer.closeEvent(None)
+        self.main_image = None
+    def open_micrograph(self):
+        """
+        loads a file browser to select a micrograph to display in the self.main_image
+        """
+        micrograph_filepath = str( QtGui.QFileDialog.getOpenFileName() )
+        if not micrograph_filepath:
+            return
+        else:
+            if sys.version_info >= (2, 6):
+                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
+            else:
+                self.micrograph_filepath = micrograph_filepath
+            img = EMData(self.micrograph_filepath)
+        self.load_micrograph(img)
     def width_changed(self, width):
         """
         updates the widths of the boxed helices when the user changes the width to use for helices
@@ -681,17 +719,6 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         boxList = db[self.micrograph_filepath] #Get a copy of the db in memory
         boxList.append(tuple(box_coords))
         db[self.micrograph_filepath] = boxList #Needed to save changes to disk
-    def open_micrograph(self):
-        micrograph_filepath = str( QtGui.QFileDialog.getOpenFileName() )
-        if not micrograph_filepath:
-            return
-        else:
-            if sys.version_info >= (2, 6):
-                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
-            else:
-                self.micrograph_filepath = micrograph_filepath
-            img = EMData(self.micrograph_filepath)
-        self.load_micrograph(img)
     def remove_box_from_db(self, box_coords):
         """
         removes the coordinates for a helix in the e2helixboxer database for the current micrograph
@@ -794,6 +821,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                     self.main_image.updateGL()
                     self.initial_helix_box_data_tuple = emshape_tuple[4:9]
                     self.edit_mode = "2nd_point"
+                    
+                    helix = get_helix_from_coords( self.main_image.get_data(), *self.initial_helix_box_data_tuple )
+                    self.display_helix(helix)
                 
             elif self.edit_mode == "delete":
                 pass
@@ -818,6 +848,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 box.getShape()[7] = second[1]
                 self.main_image.shapechange=1
                 self.main_image.updateGL()
+                
+                box_coords = tuple( box.getShape()[4:9] )
+                helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
+                self.display_helix(helix)
 
     def mouse_up(self, event, cursor_loc):
         """
@@ -832,12 +866,11 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             if self.initial_helix_box_data_tuple in self.get_db_item("helixboxes"):
                 self.remove_box_from_db(self.initial_helix_box_data_tuple)
             box = self.main_image.get_shapes().get(self.current_boxkey)
-            box_coords = box.getShape()[4:9]
-            self.add_box_to_db(box_coords)
+            box_coords = tuple( box.getShape()[4:9] )
             helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
-            data_tuple = tuple(box.getShape()[4:9])
-            self.helices_dict[data_tuple] = helix
+            self.helices_dict[box_coords] = helix
             
+            self.add_box_to_db(box_coords)
             self.display_helix(helix)
         
         self.click_loc = None
