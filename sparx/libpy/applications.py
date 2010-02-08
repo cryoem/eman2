@@ -947,10 +947,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						        Util.image_mutation(tsavg[isav], mutation_rate[to_break])
 						tsavg[isav].write_image(os.path.join(outdir, "avg_after_merge%02d.hdf"%(ipt)), isav)
 				        if option == 6 and to_break < len(mutation_rate):
-				        	alpha_list_new = Util.list_mutation(alpha_list_new, mutation_rate[to_break])
-				        	sx_list_new = Util.list_mutation(sx_list_new, mutation_rate[to_break])
-				        	sy_list_new = Util.list_mutation(sy_list_new, mutation_rate[to_break])
-				        	mirror_list_new = Util.list_mutation(mirror_list_new, mutation_rate[to_break], True)
+				        	alpha_list_new = Util.list_mutation(alpha_list_new, mutation_rate[to_break], 0.0, 360.0, 8, False)
+				        	sx_list_new = Util.list_mutation(sx_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+				        	sy_list_new = Util.list_mutation(sy_list_new, mutation_rate[to_break], -3.0, 3.0, 4, False)
+				        	mirror_list_new = Util.list_mutation(mirror_list_new, mutation_rate[to_break], 0, 1, 1, True)
 				else:
 					index = range(number_of_ave)
 					shuffle(index)  		       
