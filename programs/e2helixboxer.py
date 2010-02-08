@@ -156,7 +156,16 @@ def db_save_coords(micrograph_filepath, output_dir=""):
     db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
     box_coords_list = db[micrograph_filename]
     save_coords(box_coords_list, micrograph_name, output_dir)
-    
+
+def db_get_item(micrograph_filepath, key):
+    """
+    gets the value stored in the e2helixboxer database for the specified micrograph and key 
+    """
+    db_name = E2HELIXBOXER_DB + key
+    db = db_open_dict(db_name)
+    val = db[micrograph_filepath]
+    db_close_dict(db_name)
+    return val
 def db_get_helices_dict(micrograph_filepath):
     """
     gets a dictionary of helices
@@ -398,6 +407,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.color = (0, 0, 1)
         self.selected_color = (0, 1, 0)
+        self.micrograph_list = [] # [micrograph1_filepath, micrograph2_filepath, ...]
         self.counter = counterGen()
 
         self.__create_ui()
@@ -408,10 +418,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             else:
                 self.micrograph_filepath = micrograph_filepath
             img = EMData(self.micrograph_filepath)
+            if not self.micrograph_filepath in self.micrograph_list:
+                self.micrograph_list.append(self.micrograph_filepath)
+                self.micrograph_list.sort() 
             self.load_micrograph(img)
             
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
+        self.connect( self.micrograph_table, QtCore.SIGNAL("currentCellChanged (int,int,int,int)"), self.micrograph_table_selection)
         self.connect(self.load_boxes_action, QtCore.SIGNAL("triggered()"), self.load_boxes)
         self.connect(self.load_micrograph_action, QtCore.SIGNAL("triggered()"), self.open_micrograph)
         self.connect(self.write_action, QtCore.SIGNAL("triggered()"), self.write_output)
@@ -564,6 +578,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.add_box_to_db(coords)
 
         self.main_image.updateGL()
+        self.update_micrograph_table()
     
     def load_micrograph(self, micrograph_emdata):
         """
@@ -616,6 +631,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             first_coords = self.helices_dict.keys()[0]
             width = first_coords[4]
         self.box_width_spinbox.setValue(width)
+        self.update_micrograph_table()
     def main_image_closed(self):
         """
         This should execute when self.main_image is closed.
@@ -623,6 +639,20 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         if self.helix_viewer:
             self.helix_viewer.closeEvent(None)
         self.main_image = None
+    def micrograph_table_selection(self, row, column):
+        """
+        When a new cell in the micrograph table is selected that is for a different 
+        micrograph than the current one, the new micrograph is loaded.
+        """
+        if row >= 0: #will be -1 when all rows are removed as first step of self.update_micrograph_table()
+            print (row, column)
+            new_filepath = str( self.micrograph_table.item(row,0).toolTip() )
+            assert new_filepath in self.micrograph_list
+            print new_filepath
+            if new_filepath != self.micrograph_filepath:
+                self.micrograph_filepath = new_filepath
+                micrograph = EMData(self.micrograph_filepath)
+                self.load_micrograph(micrograph)
     def open_micrograph(self):
         """
         loads a file browser to select a micrograph to display in the self.main_image
@@ -635,8 +665,36 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
             else:
                 self.micrograph_filepath = micrograph_filepath
+            if not self.micrograph_filepath in self.micrograph_list:
+                self.micrograph_list.append(self.micrograph_filepath)
+                self.micrograph_list.sort() 
             img = EMData(self.micrograph_filepath)
         self.load_micrograph(img)
+    def update_micrograph_table(self):
+        """
+        sets the micrograph table cells to the data from self.micrograph_list
+        """
+        self.micrograph_table.setRowCount( 0 )
+        i = 0
+        for micrograph_filepath in self.micrograph_list:
+            file = os.path.basename(micrograph_filepath)
+            micrograph = os.path.splitext(file)[0]
+            boxes = db_get_item(micrograph_filepath, "helixboxes")
+            if boxes:
+                num_boxes = len(boxes)
+            else:
+                num_boxes = 0
+            micrograph_item = QtGui.QTableWidgetItem(micrograph)
+            micrograph_item.setToolTip(micrograph_filepath)
+            num_boxes_item = QtGui.QTableWidgetItem(str(num_boxes))
+            self.micrograph_table.insertRow(i)
+            self.micrograph_table.setItem(i,0, micrograph_item)
+            self.micrograph_table.setItem(i,1, num_boxes_item)
+            if micrograph_filepath == self.micrograph_filepath:
+                self.micrograph_table.setCurrentCell(i,0)
+            i+=1
+        self.micrograph_table.sortItems(0)
+            
     def width_changed(self, width):
         """
         updates the widths of the boxed helices when the user changes the width to use for helices
