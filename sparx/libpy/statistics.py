@@ -1305,7 +1305,7 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 	else:
 		for i in xrange(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  Util.mul_img(ima, mask)
 				fftip(ima)
