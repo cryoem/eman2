@@ -60,7 +60,18 @@ def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = No
     (x0,y0) = (0,0)
     particles = []
     while y0 + ysize <= helix.get_ysize():
-        particles.append( helix.get_clip(Region(x0, y0, xsize, ysize)) )
+        ptcl = helix.get_clip(Region(x0, y0, xsize, ysize))
+        if helix.has_attr("helix_source_coords"):
+            hcoords = helix.get_attr("helix_source_coords")
+            l_vect = (hcoords[2]-hcoords[0], hcoords[3] - hcoords[1])
+            length = sqrt(l_vect[0]**2+l_vect[1]**2)
+            l_uvect = (l_vect[0]/length, l_vect[1]/length)
+            x1 = hcoords[0] + y0*l_uvect[0]
+            y1 = hcoords[1] + y0*l_uvect[1]
+            x2 = x1 + px_length*l_uvect[0]
+            y2 = y1 + px_length*l_uvect[1]
+            ptcl["helix_ptcl_source_coords"] = (x1, y1, x2, y2, px_width) 
+        particles.append( ptcl )
         y0 += px_step
     
     return particles
@@ -94,6 +105,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     tr.set_rotation({"type":"2d", "alpha":rot_angle})
     helix_dimensions = ( int(round(width)), int(round(length)), 1 )
     helix = micrograph.get_rotated_clip( tr, helix_dimensions )
+    helix["helix_source_coords"] = (x1, y1, x2, y2, width)
     return helix
 
 def load_coords(coords_filepath):
@@ -180,6 +192,7 @@ def db_get_helices_dict(micrograph_filepath):
     helices_dict = {}
     for coords in box_coords_list:
         helix = get_helix_from_coords(micrograph, *coords)
+        helix["ptcl_source_image"] = micrograph_filepath
         helices_dict[tuple(coords)] = helix
     return helices_dict
 
@@ -355,7 +368,8 @@ class EMWriteHelixFiles(QtGui.QDialog):
         writes the coordinates for the helices, the image data for the helices, and the image data 
         for the particles to files if each of those options are checked
         """
-        micrograph_filename = os.path.basename(self.parentWidget().micrograph_filepath)
+        micrograph_filepath = self.parentWidget().micrograph_filepath
+        micrograph_filename = os.path.basename(micrograph_filepath)
         micrograph_name = os.path.splitext( micrograph_filename )[0]
         output_dir = str(self.output_dir_line_edit.text())
         helices_dict = self.parentWidget().helices_dict
@@ -420,7 +434,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             img = EMData(self.micrograph_filepath)
             if not self.micrograph_filepath in self.micrograph_list:
                 self.micrograph_list.append(self.micrograph_filepath)
-                self.micrograph_list.sort() 
+                self.micrograph_list.sort()
             self.load_micrograph(img)
             
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
@@ -574,6 +588,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             key = self.generate_emshape_key()
             self.main_image.add_shape(key, emshape)
             helix = get_helix_from_coords(self.main_image.get_data(), *coords)
+            helix["ptcl_source_image"] = self.micrograph_filepath
             self.helices_dict[coords] = helix
             self.add_box_to_db(coords)
 
@@ -710,6 +725,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             old_coords = old_emshape.getShape()[4:9]
             new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
             helix = get_helix_from_coords( self.main_image.get_data(), *new_coords )
+            helix["ptcl_source_image"] = self.micrograph_filepath
             
             self.remove_box_from_db(old_coords)
             self.add_box_to_db(new_coords)
@@ -881,6 +897,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                     self.edit_mode = "2nd_point"
                     
                     helix = get_helix_from_coords( self.main_image.get_data(), *self.initial_helix_box_data_tuple )
+                    helix["ptcl_source_image"] = self.micrograph_filepath
                     self.display_helix(helix)
                 
             elif self.edit_mode == "delete":
@@ -909,6 +926,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                 
                 box_coords = tuple( box.getShape()[4:9] )
                 helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
+                helix["ptcl_source_image"] = self.micrograph_filepath
                 self.display_helix(helix)
 
     def mouse_up(self, event, cursor_loc):
@@ -926,6 +944,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             box = self.main_image.get_shapes().get(self.current_boxkey)
             box_coords = tuple( box.getShape()[4:9] )
             helix = get_helix_from_coords( self.main_image.get_data(), *box_coords )
+            helix["ptcl_source_image"] = self.micrograph_filepath
             self.helices_dict[box_coords] = helix
             
             self.add_box_to_db(box_coords)
