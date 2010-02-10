@@ -55,7 +55,7 @@ def main():
 	parser.add_option("--CUDA",       action="store_true", default=False,     help="Use CUDA version")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
 	parser.add_option("--normalize",  action="store_true", default=False,     help="Normalize images under the mask")
-	parser.add_option('--init_method', type='string',    default='rnd',     help='Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rns)')
+	parser.add_option('--init_method', type='string',      default='rnd',     help='Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rnd)')
 
 	(options, args) = parser.parse_args()
     	if len(args) < 2 or len(args) > 3:
