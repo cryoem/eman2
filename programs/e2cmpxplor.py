@@ -56,14 +56,15 @@ read into memory. Do not use it on large sets of particles !!!
 
 	(options, args) = parser.parse_args()
 	
-	
+	if len(args)<2 :
+		print "Error, please specify projection file and particles file"
+		sys.exit(1)
 	
 	logid=E2init(sys.argv)
 	
 	em_app = EMStandAloneApplication()
-	window = EMSimmxExplorer(application=em_app)
-	if len(args) > 0: window.set_projection_file(args[0])
-	if len(args) > 1: window.set_particle_file(args[1])
+	window = EMCmpExplorer(application=em_app)
+	window.set_data(args[0],args[1])
 
 	em_app.show()
 	em_app.execute()
@@ -87,7 +88,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		self.current_particle = 0 				# keep track of the current particle
 		self.current_projection = None 			# keep track of the current projection
 
-		self.ptcl_display = EMImageMx				# display all particles
+		self.ptcl_display = None			# display all particles
 		self.mx_display = None 					# mx display module for displaying projection and aligned particle
 		self.lay = None 						# 2d plot for displaying comparison between particle and projection
 		
@@ -95,63 +96,34 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		'''
 		Initialize data
 		'''
+		if not file_exists(projections): raise RuntimeError("%s does not exist" %self.projection_file)
+		if not file_exists(particles): raise RuntimeError("%s does not exist" %self.particle_file)
 		
 		
 		# Deal with particles
 		self.ptcl_data=EMData.read_images(particles,range(200))
-		self.ptcl_display = EMImageMXModule()
+		if self.ptcl_display==None : 
+			self.ptcl_display = EMImageMXModule()
+			self.ptcl_display.set_mouse_mode("App")
 		self.ptcl_display.set_data(self.ptcl_data)
-		QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("mx_image_selected"),self.ptcl_selected)		
-		QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
-			
-	def get_num_particles(self):
-		if self.ptcl_data==None : return 0
-		return len(self.ptcl_data)
-		
-	def init_vitals(self):
-		'''
-		Vital information
-		'''
-		if not file_exists(self.projection_file): raise RuntimeError("%s does not exist, this is vital" %self.projection_file)
-		if not file_exists(self.particle_file): raise RuntimeError("%s does not exist, this is vital" %self.particle_file)
+		QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("mx_image_selected"),self.ptcl_selected)		
+		QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 
 		# deal with projections
 		self.proj_data=EMData.read_images(projections)
 
-
-		self.num_particles = ny
-		
-		eulers = get_eulers_from(self.projection_file)
-		
+		eulers = [i["xform.projection"] for i in self.proj_data]
 		self.specify_eulers(eulers)
 		
-		self.projections = EMData().read_images(self.projection_file)
-		
-		self.__update_cmp_attribute(False)
-		
-		self.set_emdata_list_as_data(self.projections,"cmp")
-		
-	def __update_cmp_attribute(self,update=True):
-		'''
-		Uses self.current_particle to update the cmp attribute in the projections
-		'''
-		e = EMData()
-		for i in range(len(self.projections)):
-			r = Region(i,self.current_particle,1,1)
-			e.read_image(self.simmx_file,0,False,r)
-			self.projections[i].set_attr("cmp",-e.get(0))		# We plot -1* values so taller peaks are better...
-		
-		self.regen_dl()
+		for i in self.proj_data : i["cmp"]=0.0
+		self.set_emdata_list_as_data(self.proj_data,"cmp")
+
+	def get_num_particles(self):
+		if self.ptcl_data==None : return 0
+		return len(self.ptcl_data)
 		
 	def render(self):
 		if self.inspector == None: self.get_inspector()
-		if self.projections == None:
-			try:self.init_vitals()
-			except: return
-			#except:
-			#	self.get_inspector()
-			#	print "failed to initialize vital information"
-			#	return
 			
 		EM3DSymViewerModule.render(self)
 	
@@ -164,8 +136,8 @@ class EMCmpExplorer(EM3DSymViewerModule):
 			QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
 
-		if self.frc_display == None:
-			self.frc_display = EMPlot2DModule()
+		#if self.frc_display == None:
+			#self.frc_display = EMPlot2DModule()
 #			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
 		self.update_display(False)
@@ -259,35 +231,83 @@ class EMCmpExplorer(EM3DSymViewerModule):
 			self.inspector=EMSimmxXplorInspector(self)
 		return self.inspector
 	
+	def ptcl_selected(self,event,lc):
+		"""slot for image selection events from image mx"""
+		self.set_ptcl_idx(lc[0])
+	
 	def set_ptcl_idx(self,idx):
+		"""Select the index of the current particle to use for comparisons"""
 		if self.current_particle != idx:
 			self.current_particle = idx
-			self.__update_cmp_attribute()
+
+			progress = QtGui.QProgressDialog("Computing alignments", "Abort", 0, len(self.proj_data),None)
+			progress.show()
+			# redetermines particle alignments
+			# then we can quickly compute a series of different similarity values
+			ptcl=self.ptcl_data[idx]
+			for i,p in enumerate(self.proj_data):
+				ali=p.align("rotate_translate_flip",ptcl,{},"dot",{})
+				ali=p.align("refine",ptcl,{"xform.align2d":ali["xform.align2d"]},"dot",{})
+				p["ptcl.align2d"]=ali["xform.align2d"]
+				progress.setValue(i)
+				QtCore.QCoreApplication.instance().processEvents()
+			
+			progress.close()
+			self.set_cmp("dot:normalize=1")
 			self.update_display(True)
+	
+	def set_cmp(self,cmpstring):
+		"""Select the comparator. Passed as a standard name:attr=value:attr=value string"""
+		cmpopt=parsemodopt(str(cmpstring))
 		
+		progress = QtGui.QProgressDialog("Computing similarities", "Abort", 0, len(self.proj_data),None)
+		progress.show()
+		for i,p in enumerate(self.proj_data):
+			ali=p.copy()
+			ali.transform(p["ptcl.align2d"])
+			p["cmp"]=-self.ptcl_data[self.current_particle].cmp(cmpopt[0],ali,cmpopt[1])
+			progress.setValue(i)
+			QtCore.QCoreApplication.instance().processEvents()
+			
+		progress.close()
+		self.regen_dl(True)
+		EM3DSymViewerModule.render(self)
+	
 class EMSimmxXplorInspector(EMSymInspector):
 	def get_desktop_hint(self):
 		return "inspector"
 	
-	def __init__(self,target,enable_trace=False,enable_og=False) :
-		self.ptcl_slider = None
-		self.combo = None
-		
+	def __init__(self,target,enable_trace=False,enable_og=False) :		
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
-		if self.target().projection_file == None:
-			self.add_simmx_dir_data_widgets()
-		else: self.add_simmx_options()
+		self.add_cmp_options()
 		
 #	def __del__(self):
 #		print "simmx xplor died"
 		
-	def add_simmx_options(self):
-		self.simmx_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_tab)
+	def add_cmp_options(self):
+		self.cmp_tab= QtGui.QWidget()
+		vbl = QtGui.QVBoxLayout(self.cmp_tab)
 		
-		self.__init_ptcl_slider(vbl)	
-		self.tabwidget.insertTab(0,self.simmx_tab,"Simmx")
+		self.cmp_combo=QtGui.QComboBox()
+		self.cmp_combo.setEditable(True)
+		self.cmp_combo.setInsertPolicy(self.cmp_combo.InsertAlphabetically)
+		self.cmp_combo.addItem("dot:normalize=1")
+		self.cmp_combo.addItem("phase:snrweight=1")
+		self.cmp_combo.addItem("phase:snrweight=1:minres=200:maxres=5")
+		self.cmp_combo.addItem("phase:snrweight=1:minres=200:maxres=10")
+		self.cmp_combo.addItem("phase:snrweight=1:minres=200:maxres=15")
+		self.cmp_combo.addItem("phase:snrweight=1:minres=100:maxres=15")
+		self.cmp_combo.addItem("phase:snrweight=1:minres=50:maxres=15")
+		self.cmp_combo.addItem("frc:snrweight=1")
+		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=5")
+		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=10")
+		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=15")
+		vbl.addWidget(self.cmp_combo)
+		
+		self.tabwidget.insertTab(0,self.cmp_tab,"Cmp")
 		self.tabwidget.setCurrentIndex(0)
+		
+		self.connect(self.cmp_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.cmp_changed)
 		
 	def __init_ptcl_slider(self,layout):
 		if self.combo == None: n = self.target().get_num_particles()
@@ -308,165 +328,25 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)
 		layout.addWidget(self.ptcl_slider)
-		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged(int)"), self.set_ptcl_idx)
+		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged(int)"), self.on_)
 		
 		
 	def set_ptcl_idx(self,val):
 		self.target().set_ptcl_idx(val)
 		self.score_option_changed() # this might be a hack - it forces the cylinder heights to update.
 	
-	def add_simmx_dir_data_widgets(self):
-		self.data = simmx_xplore_dir_data()
-		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
-		
-		self.simmx_dir_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
-		
-		# This is the combo-box with the list of refine_* directories
-		combo_entries = [d[0] for d in self.data]
-		combo_entries.sort()
-		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
-		for e in combo_entries: self.combo.addItem(e)
-			
-		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
-		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
-			
-		vbl.addWidget(self.combo)
-		
-		self.list_widget = QtGui.QListWidget(None)
-		
-		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-		self.list_widget.setMouseTracking(True)
-		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
-	
-		self.update_simmx_list(True)
-		vbl.addWidget(self.list_widget)
-		self.tabwidget.insertTab(0,self.simmx_dir_tab,"Simmx")
-		self.tabwidget.setCurrentIndex(0)
-		
-		self.update_target()
-		
-		if self.ptcl_slider == None:
-			self.__init_ptcl_slider(vbl)
-		else:
-			dir = str(self.combo.currentText())
-			data = (d for d in self.data if d[0] == dir).next()
-			n = EMUtil.get_image_count(data[1])
-			if n == None: n = 0
-			else: n -= 1
-			self.ptcl_slider.setRange(0,n)
-			
-		
-	def update_target(self,update=False):
-		simmx_file = self.simmx_selection()
-		if simmx_file == None:
-			return
-		
-		dir = str(self.combo.currentText())
-		data = (d for d in self.data if d[0] == dir).next()
-		
-		self.target().set_particle_file(data[1])
-		
-		try:
-			idx = ( i for i in range(len(data[3])) if data[3][i] == simmx_file ).next()
-		except:
-			return
-		projection_file = data[2][idx]
-		
-		self.target().set_simmx_file(simmx_file)
-		self.target().set_projection_file(projection_file)
-		if update: 
-			self.target().init_vitals()
-			self.target().update_display()
-			self.target().updateGL()
 		
 	def simmx_selection(self):
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		if len(selected_items) == 0: return None
 		else: return str(selected_items[0].text())
-		
-	def update_simmx_list(self,first_time=False):
-		selected_items = self.list_widget.selectedItems() # need to preserve the selection
-		
-		dir = str(self.combo.currentText())
-		
-		data = (d for d in self.data if d[0] == dir).next()
-#	
-#		
-		s_text = None
-		if len(selected_items) == 1 :
-			s_text = str(selected_items[0].text())
-			
-		self.list_widget.clear()
-		for i,vals in enumerate(data[3]):
-			choice = vals
-			
-			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
-			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
-			elif choice == s_text:
-				self.list_widget.setItemSelected(a,True)
-				
-				
-	def on_combo_change(self,s):
-		self.update_simmx_list()
-		self.update_target(True)
-		
-	def list_widget_item_clicked(self,item):
-		self.update_target(True)
-		
 
-def simmx_xplore_dir_data():
-	'''
-	Returns a list containing the names of files that can be used by e2simmxplor
-	Format - [refine_dir, particle_file,[projection_00,projection_01..],[simmx_00, simmx_01..]]
-	'''
-	dirs,files = get_files_and_directories()
-	
-	dirs.sort()
-	for i in range(len(dirs)-1,-1,-1):
-		if len(dirs[i]) != 9:
-			dirs.pop(i)
-		elif dirs[i][:7] != "refine_":
-			dirs.pop(i)
-		else:
-			try: int(dirs[i][7:])
-			except: dirs.pop(i)
-	
-	
-	ret = []
-	
-	for dir in dirs:
-		# Get the name of the input 3-D Model
-		register_db_name = "bdb:"+dir+"#register"
-		if not db_check_dict(register_db_name): continue
-		db = db_open_dict(register_db_name,ro=True)
-		if not db.has_key("cmd_dict"): continue
-		# need to be able to get the input data
-		cmd = db["cmd_dict"]
-		if cmd==None or not cmd.has_key("input"): continue
-		inp = cmd["input"]
-		
-		dcts=db_list_dicts("bdb:"+dir)		# list all databases
-		projs = []
-		simxs  = []
-		for name in dcts:
-			if "simmx" in name :
-				num=name.split("_")[1]		# we assume names of the form simmx_12_ext
-				name="bdb:%s#%s"%(dir,name)
-				namep="bdb:%s#projections_%s"%(dir,num)
-				
-				if db_check_dict(namep) :
-					projs.append(namep)
-					simxs.append(name)
-				
-		if len(projs) > 0:
-			projs.reverse()
-			simxs.reverse()
-			ret.append([dir,inp,projs,simxs])
-	
-	return ret
+	def cmp_changed(self,s):
+		"When a new comapartor string is selected"
+		self.target().set_cmp(s)
+#		self.target.regen_dl()
+			
+
 	
 if __name__ == '__main__':
 	main()

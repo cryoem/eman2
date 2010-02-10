@@ -1200,7 +1200,7 @@ class EMSymViewerWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMat
 #		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.5,.5,.5, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [.3,.3,.3, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [.1,.1,.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
@@ -1739,6 +1739,7 @@ class EMSymInspector(QtGui.QWidget):
 	def cylinder_log_clicked(self,val):
 		self.target().set_log_scale(val)
 		self.target().regen_dl()
+		
 	def score_option_changed(self):
 		if self.busy: return
 		s = str(self.score_options.currentText())
