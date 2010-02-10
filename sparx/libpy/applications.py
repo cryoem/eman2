@@ -4593,7 +4593,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		user_func = user_functions.factory[user_func_name]
 		print_begin_msg("ali3d_m_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
-		print_msg("Reference volume            : %s\n"%(ref_vol))	
+		print_msg("Reference volumes           : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("User function               : %s\n"%(user_func_name))
@@ -5157,7 +5157,7 @@ def get_refiparams(nx):
 	v = K/2.0/N
 	return {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  Focus on intersubunit region	
@@ -5550,7 +5550,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		print_end_msg("ali3d_em_MPI")
 
 
-def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  The original, fully operational version	
