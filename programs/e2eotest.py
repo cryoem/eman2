@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--iteration",default=None,type="string",help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
 	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used for class alignment (but not averaging).")
 	parser.add_option("--sym", dest = "sym", type="string", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default=None)
-	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
 	
@@ -123,6 +123,7 @@ def main():
 			options.cafile = "bdb:"+options.path+"#classes_"+options.iteration+"_" + tag
 			options.model = "bdb:"+options.path+"#threed_"+options.iteration+"_" + tag
 			options.resultfile = "bdb:"+options.path+"#cls_result_"+options.iteration+"_" + tag
+			options.verbose = options.verbose - 1
 			
 			cmd = get_classaverage_cmd(options)
 			cmd += " --%s" %tag

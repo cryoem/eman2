@@ -53,7 +53,7 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 1)", default=1)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
-	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 
@@ -64,7 +64,7 @@ def main():
 	if (len(args)<2 ): parser.error("Input and output files required")
 	
 	if (options.check): 
-		options.verbose = True # turn verbose on if the user is only checking...
+		options.verbose = 9 # turn verbose on if the user is only checking...
 		
 	if ( options.nofilecheck == False ):
 		options.simmxfile = args[0]
@@ -72,7 +72,7 @@ def main():
 		
 	error = check(options,True)
 	
-	if (options.verbose):
+	if (options.verbose > 0):
 		if (error):
 			print "e2classify.py command line arguments test.... FAILED"
 		else:
@@ -137,7 +137,7 @@ def check(options,verbose):
 	error = False
 	
 	if (options.sep < 1):
-		if verbose:
+		if verbose>0:
 			print "Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep)
 		error = True
 	
@@ -146,18 +146,18 @@ def check(options,verbose):
 	if ( options.nofilecheck == False ):
 		if os.path.exists(options.outfile):
 			if (not options.force):
-				if verbose:
+				if verbose>0:
 					print "File %s exists, will not write over, exiting" %options.outfile
 				error = True
 		
 		if not os.path.exists(options.simmxfile) and not db_check_dict(options.simmxfile):
-			if verbose:
+			if verbose>0:
 				print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)
 			error = True
 		else:
 			num_sim =  EMUtil.get_image_count(options.simmxfile)
 			if (num_sim != 5):
-				if verbose:
+				if verbose>0:
 					print "Error, the similarity matrix did not contain 5 images - be sure to use the --saveali argument when running e2simmx.py"
 				error = True
 	

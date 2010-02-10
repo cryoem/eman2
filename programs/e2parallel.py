@@ -69,7 +69,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 
 	parser.add_option("--server",type="string",help="Specifies host of the server to connect to",default="localhost")
 	parser.add_option("--port",type="int",help="Specifies server port, default is automatic assignment",default=-1)
-	parser.add_option("--verbose",type="int",help="debugging level (0-9) default=0)",default=0)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
@@ -77,16 +77,16 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))
 
 	if args[0]=="dcserver" :
-		rundcserver(options.port,options.verbose)
+		rundcserver(options.port,options.verbose-1)
 		
 	elif args[0]=="dcclient" :
-		rundcclient(options.server,options.port,options.verbose)
+		rundcclient(options.server,options.port,options.verbose-1)
 		
 	elif args[0]=="dckill" :
-		killdcserver(options.server,options.port,options.verbose)
+		killdcserver(options.server,options.port,options.verbose-1)
 	
 	elif args[0]=="dckillclients" :
-		killdcclients(options.server,options.port,options.verbose)
+		killdcclients(options.server,options.port,options.verbose-1)
 
 	elif args[0]=="precache" :
 		precache(args[1:])

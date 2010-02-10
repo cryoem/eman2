@@ -54,7 +54,7 @@ def main():
 	parser.add_option("--iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--nmodels", type = "int", default=0, help = "The number of models to simultaneously reconstruct")	
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify th command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
 	
 	# options associated with e2project3d.py

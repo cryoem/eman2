@@ -90,6 +90,7 @@ map to the center of the volume."""
 	parser.add_option("--center",  type="string",  default="a", help="center: c - coordinates, a - center of gravity, n - no" )
 	parser.add_option("--O",  action="store_true", default=False, help="use O system of coordinates")
 	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

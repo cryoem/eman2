@@ -104,7 +104,7 @@ def main():
 	parser.add_option("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
 	
-	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing.")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 
@@ -147,7 +147,7 @@ def main():
 	nslice=tmp["nz"]
 	apix=tmp["apix_x"]
 	
-	if options.verbose: print "Image dimensions %d x %d"%(nx,ny)
+	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
 
 	# parse the padding options, to make sure we have a 2 or 3 tuple for each
 	try :
@@ -156,7 +156,7 @@ def main():
 			s=options.pad.split(",")
 			options.pad=(int(s[0]),int(s[1]))
 		else : options.pad=(int(options.pad),int(options.pad))
-		if options.verbose : print "Pad to %d x %d"%(options.pad[0],options.pad[1])
+		if options.verbose>0 : print "Pad to %d x %d"%(options.pad[0],options.pad[1])
 	except:
 		print "Couldn't parse pad option :",options.pad
 		exit(1)
@@ -167,7 +167,7 @@ def main():
 			s=options.padvol.split(",")
 			padvol=(int(s[0]),int(s[1]),int(s[2]))
 		else : padvol=(int(options.padvol),int(options.padvol),int(options.padvol))
-		if options.verbose : print "Padded volume to reconstruct %d x %d x %d"%(padvol[0],padvol[1],padvol[2])
+		if options.verbose>0 : print "Padded volume to reconstruct %d x %d x %d"%(padvol[0],padvol[1],padvol[2])
 	except:
 		print "Couldn't parse padvol option :",options.padvol
 		exit(1)
@@ -178,7 +178,7 @@ def main():
 			s=options.outsize.split(",")
 			outsize=(int(s[0]),int(s[1]),int(s[2]))
 		else : outsize=(int(options.outsize),int(options.outsize),int(options.outsize))
-		if options.verbose : print "Final output volume %d x %d x %d"%(outsize[0],outsize[1],outsize[2])
+		if options.verbose>0 : print "Final output volume %d x %d x %d"%(outsize[0],outsize[1],outsize[2])
 	except:
 		print "Couldn't parse outsize option :",options.outsize
 		exit(1)
@@ -189,7 +189,7 @@ def main():
 	a = parsemodopt(options.recon_type)
 	a[1]["size"]=padvol
 	a[1]["sym"] = options.sym
-	a[1]["verbose"] = options.verbose
+	a[1]["verbose"] = options.verbose - 1
 	recon=Reconstructors.get(a[0], a[1])
 	
 	start=None
@@ -201,7 +201,7 @@ def main():
 
 	#########################################################
 	# The actual reconstruction
-	output=reconstruct(data,recon,options.preprocess,options.pad,options.iter,options.keep,options.keepsig,start,options.startweight,options.verbose)
+	output=reconstruct(data,recon,options.preprocess,options.pad,options.iter,options.keep,options.keepsig,start,options.startweight,options.verbose-1)
 	#
 	########################################################3
 	
@@ -262,7 +262,7 @@ def main():
 	
 	# write the reconstruction to disk
 	output.write_image(options.output,0)
-	if options.verbose:
+	if options.verbose>0:
 			print "Output File: "+options.output
 
 	if options.dbls:
@@ -389,12 +389,12 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	for it in xrange(niter) :
 		output=None		# deletes the results from the previous iteration if any
 		
-		if verbose: print "Initializing the reconstructor ..."
+		if verbose>0: print "Initializing the reconstructor ..."
 
 		if start : recon.setup(start,startweight)
 		else : recon.setup()
 		
-		if verbose:print "Inserting Slices (%d)"%len(data)
+		if verbose>0:print "Inserting Slices (%d)"%len(data)
 		
 		ptcl=0
 		for i,elem in enumerate(data):
@@ -403,7 +403,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			# If the image is below the quality cutoff, skip it
 			try:
 				if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0 : 
-					if verbose : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
+					if verbose>0 : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
 					if it==niter-1 : 
 						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
 						else : excluded.append(elem["fileslice"])
@@ -431,7 +431,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	#		if i==7 : display(img)
 			
 			rd=elem["xform"].get_rotation("eman")
-			if verbose : print " %d/%d\r"%(i,len(data)),
+			if verbose>0 : print " %d/%d\r"%(i,len(data)),
 			sys.stdout.flush()
 	#		print "%d.\t%6.2f  %6.2f  %6.2f"%(i,rd["az"],rd["alt"],rd["phi"])
 			ptcl+=elem["weight"]
@@ -441,7 +441,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			recon.insert_slice(img,elem["xform"],elem["weight"])
 		
 		if it!=niter-1:
-			if verbose: print "\t   az      alt    phi  \t tweight      norm     absqual    weight"
+			if verbose>0: print "\t   az      alt    phi  \t tweight      norm     absqual    weight"
 			for i,elem in enumerate(data):
 				
 				try:
@@ -459,17 +459,17 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
 
 				rd=elem["xform"].get_rotation("eman")
-				if verbose : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
+				if verbose>0 : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
 
 				recon.determine_slice_agreement(img,elem["xform"],elem["weight"],True)
 
 				# These are the parameters returned by determine_slice_agreement. Since the images may be reloaded, we cache them in the data dictionary
 				for i in ("reconstruct_weight","reconstruct_norm","reconstruct_absqual"):
 					elem[i]=img[i]
-					if verbose : print "%8.3g  "%elem[i],
+					if verbose>0 : print "%8.3g  "%elem[i],
 				elem["norm"]*=img["reconstruct_norm"]
 				
-				if verbose : print "%d"%int(elem["weight"])
+				if verbose>0 : print "%d"%int(elem["weight"])
 
 			# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
 			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
@@ -498,11 +498,11 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			qmean=sum(qlist)/len(qlist)
 			qsigma=sum([i*i for i in qlist])/len(qlist)-qmean**2
 			qcutoff=qmean-qsigma*keep
-			if verbose: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f"%(qmean,qsigma,qcutoff)
+			if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f"%(qmean,qsigma,qcutoff)
 		else:
 			qlist.sort()
 			qcutoff=qlist[-int(keep*len(qlist))]
-			if verbose: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f"%(qlist[0],qlist[-1],qcutoff)
+			if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f"%(qlist[0],qlist[-1],qcutoff)
 
 		
 
@@ -515,7 +515,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 		print "Warning, error setting reconstruction attributes"
 #	progress += 10
 #	E2progress(logid,float(progress)/total_progress)
-	if verbose : print "Finished Reconstruction"
+	if verbose>0 : print "Finished Reconstruction"
 
 	return output
 	

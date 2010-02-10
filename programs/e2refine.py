@@ -47,7 +47,7 @@ def main():
 	#options associated with e2refine.py
 	parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
 	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
 	parser.add_option("--model", dest="model", type="string",default="threed.0a.mrc", help="The name 3D image that will seed the refinement")
@@ -292,7 +292,7 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 		e2make3dcmd += " --pad=%d" %options.pad
 		
 	if (options.verbose):
-		e2make3dcmd += " -v"
+		e2make3dcmd += " --verbose=" + str(options.verbose - 1)
 	
 	if ( check ):
 		e2make3dcmd += " --check"	
@@ -333,7 +333,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 		e2cacmd += " --usefilt=%s" %options.usefilt
 	
 	if (options.verbose):
-		e2cacmd += " -v"
+		e2cacmd += " --verbose=" + str(options.verbose - 1)
 		
 	if options.parallel: e2cacmd += " --parallel=%s" %options.parallel
 
@@ -361,7 +361,7 @@ def get_classify_cmd(options,check=False,nofilecheck=False):
 	e2classifycmd = "e2classify.py %s %s --sep=%d -f" %(options.simmxfile,options.classifyfile,options.sep)
 	
 	if (options.verbose):
-		e2classifycmd += " -v"
+		e2classifycmd += " --verbose=" + str(options.verbose - 1)
 	
 	if ( check ):
 		e2classifycmd += " --check"	
@@ -397,7 +397,7 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	
 	if (options.verbose):
-		e2simmxcmd += " --verbose=1"
+		e2simmxcmd += " --verbose=" + str(options.verbose - 1)
 	
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	
@@ -440,7 +440,7 @@ def get_projection_cmd(options,check=False):
 		e2projcmd += " --check"	
 		
 	if (options.verbose):
-		e2projcmd += " -v"
+		e2projcmd += " --verbose=" + str(options.verbose - 1)
 	
 	return e2projcmd
 	
@@ -451,8 +451,8 @@ def check_projection_args(options):
 	print "#### Test executing projection command: %s" %cmd
 	return ( os.system(cmd) != 0 )
 
-def check(options,verbose=False):
-	if (verbose):
+def check(options,verbose=0):
+	if (options.verbose>0):
 		print ""
 		print "#### Testing directory contents and command line arguments for e2refine.py"
 	
@@ -484,7 +484,7 @@ def check(options,verbose=False):
 		
 		if nx1 != nx2 or ny1 != ny2:
 			error = True
-			if verbose: print "Error, the dimensions of particle data (%i x %i) and the usefilt data (%i x %i) do not match" %(nx1,ny1,nx2,ny2)
+			if options.verbose>0: print "Error, the dimensions of particle data (%i x %i) and the usefilt data (%i x %i) do not match" %(nx1,ny1,nx2,ny2)
 	
 	if not file_exists(options.model):
 		print "Error: 3D image %s does not exist" %options.model
@@ -529,7 +529,7 @@ def check(options,verbose=False):
 		(xsize, ysize ) = gimme_image_dimensions2D(options.input);
 		(xsize3d,ysize3d,zsize3d) = gimme_image_dimensions3D(options.model)
 		
-		if (verbose):
+		if (options.verbose>0):
 			print "%s contains %d images of dimensions %dx%d" %(options.input,EMUtil.get_image_count(options.input),xsize,ysize)
 			print "%s has dimensions %dx%dx%d" %(options.model,xsize3d,ysize3d,zsize3d)
 		
@@ -567,7 +567,7 @@ def check(options,verbose=False):
   			print "dc parallel options must be formatted like 'dc:localhost:9990'"
   			error = True
  
-	if (verbose):
+	if (options.verbose>0):
 		if (error):
 			s = "FAILED"
 		else:

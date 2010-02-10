@@ -71,7 +71,7 @@ handled this way."""
 #	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
 	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
-	parser.add_option("--verbose","-v",action="store_true",help="Verbose output",default=False)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
@@ -82,7 +82,7 @@ handled this way."""
 
 	logid=E2init(sys.argv)
 	
-	if options.verbose : print "Beginning MSA"
+	if options.verbose>0 : print "Beginning MSA"
 	if options.gsl : mode="svd_gsl"
 	else : mode="pca_large"
 	#elif options.lowmem : mode="pca_large"
@@ -106,9 +106,9 @@ handled this way."""
 	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode)
 	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	
-	if options.verbose : print "MSA complete"
+	if options.verbose>0 : print "MSA complete"
 	for j,i in enumerate(out):
-		if options.verbose : print "Eigenvalue: ",i.get_attr("eigval")
+		if options.verbose>0 : print "Eigenvalue: ",i.get_attr("eigval")
 		i.write_image(args[1],j)
 		
 	E2end(logid)

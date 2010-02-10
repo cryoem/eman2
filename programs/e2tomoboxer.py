@@ -65,6 +65,7 @@ for tomographic analysis."""
 	parser.add_option("--invertoutput",action="store_true",help="If writing output only, this will invert the pixel intensities of the boxed files",default=False)
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

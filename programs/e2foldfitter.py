@@ -85,6 +85,7 @@ both box sizes should be multiples of 8."""
 
 	parser.add_option("--shrink", "-S", type="int", help="shrink factor for initial search, default=auto", default=0)
 	parser.add_option("--epsilon","-E", type="float",help="final target accuracy, default=.01",default=.01)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

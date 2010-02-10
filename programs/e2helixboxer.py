@@ -967,7 +967,10 @@ For example:
 e2helixboxer.py ????.mrc --boxwidth=256
 """
     parser = OptionParser(usage=usage,version=EMANVERSION)
+    
     parser.add_option("--boxwidth","-B",type="int",help="Box width in pixels",default=128)
+    parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+    
     (options, args) = parser.parse_args()
     if len(args) > 0:
         filename= args[0]

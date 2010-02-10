@@ -284,7 +284,7 @@ class EMParallelSimMX:
 							continue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
-							if self.options.verbose: 
+							if self.options.verbose>0: 
 								print "%d/%d\r"%(len(self.tids),len(blocks))
 								sys.stdout.flush()
 								
@@ -523,7 +523,7 @@ def main():
 	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is 5, c x r images instead of 1. Images are (score,dx,dy,da,flip). ",default=False)
-	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_option("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
@@ -546,7 +546,7 @@ def main():
 	
 	error = check(options,True)
 	
-	if (options.verbose):
+	if options.verbose>0:
 		if (error):
 			print "e2simmx.py command line arguments test.... FAILED"
 		else:
@@ -619,7 +619,7 @@ def main():
 		mxout.append(mxout[0].copy()) # dy
 		mxout.append(mxout[0].copy()) # alpha (angle)
 		mxout.append(mxout[0].copy()) # mirror
-	if options.verbose: print "Computing Similarities"
+	if options.verbose>0: print "Computing Similarities"
 
 	# Read all c images, then read and compare one r image at a time
 	cimgs=EMData.read_images(args[0],range(*crange))
@@ -649,7 +649,7 @@ def main():
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
 		
-		if options.verbose: 
+		if options.verbose>0: 
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
 		
@@ -692,7 +692,7 @@ def main():
 					mxout[3].set_value_at(c,r,0,v[3])
 					mxout[4].set_value_at(c,r,0,v[4])
 	
-	if options.verbose : print"\nSimilarity computation complete"
+	if options.verbose>0 : print"\nSimilarity computation complete"
 	
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
@@ -739,11 +739,11 @@ def check(options,verbose):
 	error = False
 	if ( options.nofilecheck == False ):
 		if not file_exists(options.datafile) and not db_check_dict(options.datafile):
-			if verbose:
+			if verbose>0:
 				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.reffile)
 			error = True
 		if not file_exists(options.reffile) and not db_check_dict(options.reffile):
-			if verbose:
+			if verbose>0:
 				print "Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile)
 			error = True
 		
@@ -751,22 +751,22 @@ def check(options,verbose):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
 			if ( xsize != pxsize ):
-				if verbose:
+				if verbose>0:
 					print "Error - the (x) dimension of the reference images %d does not match that of the particle data %d" %(xsize,pxsize)
 				error = True
 			elif ( ysize != pysize ):
-				if verbose:
+				if verbose>0:
 					print "Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize)
 				error = True
 				
 		if  file_exists(options.outfile):
 			if ( not options.force):
-				if verbose:
+				if verbose>0:
 					print "Error: File %s exists, will not write over - specify the force option" %options.outfile
 				error = True
 	
 	if (options.cmp == None or options.cmp == ""):
-		if verbose:
+		if verbose>0:
 			print "Error: the --cmp argument must be specified"
 		error = True
 	else:
@@ -785,7 +785,7 @@ def check(options,verbose):
 	
 	if (options.saveali):
 		if   (options.align == None or options.align == ""):
-			if verbose:
+			if verbose>0:
 				print "Error: the --align argument must be specified if --saveali is specificed"
 			error = True
 		else:
@@ -793,7 +793,7 @@ def check(options,verbose):
 				error = True
 		
 		if ( (options.aligncmp == None or options.aligncmp == "") and options.saveali):
-			if verbose:
+			if verbose>0:
 				print "Error: the --aligncmp argument must be specified if --saveali is specificed"
 			error = True
 		else:
@@ -807,7 +807,7 @@ def check(options,verbose):
 				error = True
 			
 			if ( options.raligncmp == None or options.raligncmp == ""):
-				if verbose:
+				if verbose>0:
 					print "Error: the --raligncmp argument must be specified if --ralign is specificed"
 			else:
 				if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):

@@ -139,7 +139,7 @@ def main():
 					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
 	parser.add_option("--split", metavar="n", type="int",
 					help="Splits the input file into a set of n output files")
-	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [0-4]",default=1)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)

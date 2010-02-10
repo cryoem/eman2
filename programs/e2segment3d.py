@@ -50,7 +50,7 @@ def main():
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output. Default 0.")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
 						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processors -v' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
 	parser.add_option("--output", default=None, type="string",help="Name of output file for segmented volume")
@@ -67,17 +67,17 @@ def main():
 
 	E2n=E2init(sys.argv)
 
-	if options.verbose: print "Reading volume"
+	if options.verbose>0: print "Reading volume"
 	volume=EMData(args[0],0)
 	
-	if options.verbose: print "Executing segmentation"
+	if options.verbose>0: print "Executing segmentation"
 	(processorname, param_dict) = parsemodopt(options.process)
 	seg=volume.process(processorname,param_dict)
 	seg["apix_x"]=volume["apix_x"]
 	seg["apix_y"]=volume["apix_y"]
 	seg["apix_z"]=volume["apix_z"]
 	
-	if options.verbose: print "Writing output"
+	if options.verbose>0: print "Writing output"
 	if options.output!=None : seg.write_image(options.output,0)
 	
 	# make a list of 3-tuples for the center locations

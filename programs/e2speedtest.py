@@ -63,6 +63,7 @@ improved with time."""
     parser.add_option("--refine",action="store_true",help="refine alignment",default=False)
     parser.add_option("--big",action="store_true",help="big size test",default=False)
     parser.add_option("--size",type=int,help="Size of particles, 96 default for comparisons",default=96)
+    parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
     
     (options, args) = parser.parse_args()
     

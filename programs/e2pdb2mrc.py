@@ -71,6 +71,7 @@ using 1/2 width of Gaussian in Fourier space."""
 	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

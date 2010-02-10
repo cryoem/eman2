@@ -455,7 +455,7 @@ class EMClassAveTask(EMTask):
 		self.norm - None or [string,dict], if not None this is data is used to perform normalization on raw and filtered images
 		self.culling - True of False, indicating whether bad quality particles should be culled
 		self.ref - None or an EMData - the reference image used for final alignment
-		self.verbose - False or some value that evaluates to True (depends what the calling program supplied) 
+		self.verbose - [0-9] (depends what the calling program supplied) 
 		'''
 		raw_data_name=self.data["input"][0]
 		ptcl_indices = self.data["input"][1]
@@ -499,7 +499,7 @@ class EMClassAveTask(EMTask):
 			idx = self.data["ref"][1]
 			ref = EMData(ref_data_name,idx)
 		
-		verbose = False
+		verbose = 0
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
 			verbose = self.options["verbose"]
 			
@@ -1056,7 +1056,7 @@ class EMClassAveTaskDC(EMClassAveTask):
 		self.norm - None or [string,dict], if not None this is data is used to perform normalization
 		self.culling - True of False, indicating whether bad quality particles should be culled
 		self.ref - None or an EMData - the reference image used for final alignment
-		self.verbose - False or some value that evaluates to True (depends what the calling program supplied) 
+		self.verbose - [0 - 9] (depends what the calling program supplied) 
 		'''
 		cache_name=self.data["input"][1]
 		image_cache=db_open_dict(cache_name)
@@ -1142,7 +1142,7 @@ def main():
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
-	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -1160,11 +1160,11 @@ def main():
 	
 	(options, args) = parser.parse_args()
 		
-	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
+	if (options.check): options.verbose = 9 # turn verbose on if the user is only checking...
 	
 	error = check(options,True)
 	
-	if (options.verbose):
+	if (options.verbose>0):
 		if (error):
 			print "e2classaverage.py command line arguments test.... FAILED"
 		else:
@@ -1184,7 +1184,7 @@ def main():
 	
 	E2end(logger)
 
-def check(options,verbose=False):
+def check(options,verbose=0):
 	error = False
 	if ( options.nofilecheck == False ):
 		

@@ -147,7 +147,7 @@ class EMParallelProject3D:
 							
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(task_customers)/float(num_tasks))
-							if self.options.verbose: 
+							if self.options.verbose>0: 
 								print "%d/%d\r"%(num_tasks-len(task_customers),num_tasks)
 								sys.stdout.flush()
 								
@@ -224,7 +224,7 @@ def main():
 	#parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
-	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
@@ -232,7 +232,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	if ( options.check ): options.verbose = True
+	if ( options.check ): options.verbose = 9
 	
 	if len(args) < 1:
 		parser.error("Error: No input file given")
@@ -240,11 +240,11 @@ def main():
 	options.model = args[0]
 	error = check(options,True)
 	
-	if ( options.verbose ):
+	if ( options.verbose>0 ):
 		if (error):
 			print "e2project3d.py command line arguments test.... FAILED"
 		else:
-			if (options.verbose):
+			if (options.verbose>0):
 				print "e2project3.py command line arguments test.... PASSED"
 
 	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
@@ -277,11 +277,11 @@ def main():
 	eulers = sym_object.gen_orientations(og_name, og_args)
 		
 	# generate and save all the projections to disk - that's it, that main job is done
-	if ( options.verbose ):
+	if ( options.verbose>0 ):
 		print "Generating and saving projections..."
 	generate_and_save_projections(options, data, eulers, options.smear)
 	
-	if ( options.verbose ):
+	if ( options.verbose>0 ):
 		print "%s...done" %progname
 	
 	E2end(logger)
@@ -325,28 +325,28 @@ def generate_and_save_projections(options, data, eulers, smear=0):
 			print "Error: Cannot write to file %s"%options.outfile
 			exit(1)
 		
-		if (options.verbose):
+		if (options.verbose>0):
 			d = euler.get_params("eman")
 			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, d["az"], d["alt"], d["phi"])
 
-def check(options, verbose=False):
+def check(options, verbose=0):
 	
 	error = False
 	
 	if ( not options.sym ):
-		if verbose:
+		if verbose>0:
 			print "Error: you must specify the sym argument"
 		error = True
 	else:
 		try: sym = parsesym(options.sym)
 		except Exception, inst:
-			if ( verbose ):
+			if verbose>0:
 				print type(inst)     # the exception instance
 				print inst.args      # arguments stored in .args:
 			error = True
 	
 	if ( not options.orientgen ):
-		if verbose:
+		if verbose>0:
 			print "Error: you must specify the orientgen argument"
 		error = True
 	elif ( check_eman2_type(options.orientgen,OrientGens,"Orientgen") == False ):
@@ -356,18 +356,18 @@ def check(options, verbose=False):
 		error = True
 
 	if not os.path.exists(options.model) and not db_check_dict(options.model):
-		if verbose:
+		if verbose>0:
 			print "Error: 3D image %s does not exist" %options.model
 		error = True
 	
 	if ( options.force and options.append):
-		if verbose:
+		if verbose>0:
 			print "Error: cannot specify both append and force"
 		error = True
 		
 	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
 		if ( not options.force ):
-			if verbose:
+			if verbose>0:
 				print "Error: output file exists, use -f to overwrite or -a to append. No action taken"
 			error = True
 			

@@ -1,4 +1,4 @@
-#!/usr/local/EMAN2/python/Python-2.5.4-ucs4/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 #
@@ -73,6 +73,7 @@ adjustment in the EMAN1 ctfit program."""
 	parser.add_option("--ac", type="float", help="Set amplitude contrast (percentage, default=10).", default=10.)
 	parser.add_option("--sf", type="string", help="The name of a file containing a structure factor curve.", default="NULL")
 	parser.add_option("--debug", action="store_true", default=False)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args) < 1 :

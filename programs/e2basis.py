@@ -67,7 +67,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser.add_option("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
 	parser.add_option("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
-	parser.add_option("--verbose", metavar="n", type="int", help="Give verbose output, higher numbers = more detail")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)

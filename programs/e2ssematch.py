@@ -62,6 +62,7 @@ sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=10.0)
 	parser.add_option("--skelpath","-K",type="string",help="Optional (recommended) output from the e2skelpath.py program")
 #	parser.add_option("--lengthmatchmatrix",type="string",help="Writes an image containing an exhaustive comparison of predicted vs SSE helix lengths as a matrix",default=None)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")

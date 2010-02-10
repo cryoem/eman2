@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--path",type="string",default=None,help="Path for the refinement, default=auto")
 	parser.add_option("--iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
 	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
 	parser.add_option("--maxshift", default=-1, type="int", help="Maximum particle translation in x and y")
@@ -297,7 +297,7 @@ def get_classaverage_extras(options):
 def run(command):
 	"Execute a command with optional verbose output"
 	global options
-	if options.verbose : print "***************",command
+	if options.verbose>0 : print "***************",command
 	error = system(command)
 	if error==11 :
 		pass
@@ -329,7 +329,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 		if (options.classralign != None):
 			e2cacmd += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
 	
-	if (options.verbose):
+	if (options.verbose>0):
 		e2cacmd += " -v"
 	
 	if ( check ):

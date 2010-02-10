@@ -90,6 +90,8 @@ images far from focus."""
 	parser.add_option("--debug",action="store_true",default=False)
 	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
 	parser.add_option("--source_image",type="string",default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:

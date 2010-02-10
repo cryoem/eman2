@@ -61,6 +61,7 @@ def main():
 	parser.add_option("--op",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
 	parser.add_option("--outfile",type="string",help="The output file name, may not be required",default="")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")

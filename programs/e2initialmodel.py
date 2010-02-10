@@ -60,7 +60,7 @@ def main():
 	parser.add_option("--tries", type="int", default=10, help="The number of different initial models to generate in search of a good one")
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
 	parser.add_option("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False)
-	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--orientgen",type="string", default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens")
 
 	# Database Metadata storage
@@ -73,7 +73,7 @@ def main():
 	for i in ptcls: i.process_inplace("normalize.edgemean",{})
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
-	if verbose : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
+	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
@@ -99,14 +99,14 @@ def main():
 
 	# We make one new reconstruction for each loop of t 
 	for t in range(options.tries):
-		if verbose: print "Try %d"%t
+		if verbose>0: print "Try %d"%t
 		threed=[make_random_map(boxsize)]		# initial model
 		apply_sym(threed[0],options.sym)		# with the correct symmetry
 		
 		# This is the refinement loop
 		for it in range(options.iter):
 			E2progress(logid,(it+t*options.iter)/float(options.tries*options.iter))
-			if verbose : print "Iteration %d"%it
+			if verbose>0 : print "Iteration %d"%it
 			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
 			for i in projs : i.process_inplace("normalize.edgemean")
@@ -195,7 +195,7 @@ def main():
 				#aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
-		if verbose : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
+		if verbose>0 : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
 
 		results.append((bss,threed[-1],aptcls,projs,threed[0]))
 		results.sort()

@@ -68,6 +68,7 @@ background."""
 	parser.add_option("--box", "-S", type="int", help="size in pixels of the power spectra", default=256)
 	parser.add_option("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
 	parser.add_option("--nopad",action="store_true", help="No padding between boxes")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")

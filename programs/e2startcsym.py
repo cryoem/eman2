@@ -59,6 +59,8 @@ def main():
 	parser.add_option("--nosym", action="store_true", help="Skips the initial symmetry search.")
 	parser.add_option("--fixrot", metavar="side-angle", type="float", help="Used to correct side view orientation when startcsym makes a mistake.")
 	
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:

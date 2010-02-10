@@ -143,7 +143,8 @@ Processes a tomographic tilt series"""
 	parser.add_option("--tiltaxis",type="float",help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
 	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
 	parser.add_option("--nozero",action="store_true",default=False,help="Do not allow 0-translations between images")
-#	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

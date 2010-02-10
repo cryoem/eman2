@@ -63,7 +63,7 @@ def main():
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
-	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
@@ -89,7 +89,7 @@ def main():
 		############### Step 1 - classify the reference images
 
 		# compute the reference self-similarity matrix
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali --force"%(args[0],args[0],args[3],options.shrinks1)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali --force --verbose=d%"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
 		os.system(cmd)
@@ -145,8 +145,8 @@ def main():
 				
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s  --saveali --force"%(args[4],args[1],args[5],options.shrinks1,
-			options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s  --saveali --force --verbose=d%"%(args[4],args[1],args[5],options.shrinks1,
+			options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		if options.exclude!=None : cmd+=" --exclude="+options.exclude
 		print "executing ",cmd
@@ -179,14 +179,14 @@ def main():
 	mx.write_image(args[2],0)
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp)
+	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=d%"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	
 	if ( options.ralign != None ):
 		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)
 	
-	if (options.verbose):
-		cmd += " --verbose=%d"%options.verbose
+	if options.verbose>0:
+		cmd += " --verbose=%d"%options.verbose-1
 	
 	if options.parallel: cmd += " --parallel=%s" %options.parallel
 	

@@ -63,6 +63,7 @@ def main():
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	
 	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

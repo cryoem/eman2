@@ -53,6 +53,7 @@ def main():
 
 	parser.add_option("--nmerged",type="int",help="Number of merged references to generate. Default = sqrt(#proj*nbest)",default=0)
 	parser.add_option("--nbest",type="int",help="This will associate each projection with the best N merged references",default=3)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	#parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
 	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")

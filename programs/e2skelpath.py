@@ -54,6 +54,7 @@ def main():
 # 	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 # 	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
  	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
+ 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
