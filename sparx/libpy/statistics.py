@@ -1318,12 +1318,10 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
 	if myid == main_node:
 		Util.mul_scalar(var, 1.0/float(nima-1))
-		var.set_value_at(0, 0, 1.0)
+		if var.get_value_at(0, 0) < 0.0:	var.set_value_at(0, 0, 0.0)		
 		st = Util.infomask(var, None, True)
 		if st[2] < 0.0:  ERROR("Negative variance!", "varf2_MPI", 1)
-
 		from fundamentals import rot_avg_table
-
 		return var, rot_avg_table(Util.pack_complex_to_real(var))
 	else:
 		return  EMData(), [0]  # return minimum what has to be returned, but no meaning.
