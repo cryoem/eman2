@@ -119,6 +119,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		self.ptcl_data=[i for i in EMData.read_images(self.particle_file,range(200)) if i!=None]
 		if self.shrink>1 :
 			for i in self.ptcl_data : i.process_inplace("math.meanshrink",{"n":self.shrink})
+		for i in self.ptcl_data : i.process_inplace("normalize.edgemean",{})
 
 		if self.ptcl_display==None : 
 			self.ptcl_display = EMImageMXModule()
@@ -131,6 +132,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		self.proj_data=EMData.read_images(self.projection_file)
 		if self.shrink>1 :
 			for i in self.proj_data : i.process_inplace("math.meanshrink",{"n":self.shrink})
+		for i in self.proj_data : i.process_inplace("normalize.edgemean",{})
 
 		eulers = [i["xform.projection"] for i in self.proj_data]
 		self.specify_eulers(eulers)
@@ -169,7 +171,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 #			self.frc_display.optimally_resize()
 		else:
 			self.mx_display.updateGL()
-			self.frc_display.updateGL()
+#			self.frc_display.updateGL()
 			
 		if object_number != self.special_euler:
 			self.special_euler = object_number
@@ -181,66 +183,20 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		'''
 		if self.mx_display == None : return
 		
-		data = []
-		projection = EMData()
-		projection.read_image(self.projection_file,self.current_projection)
+		if self.current_particle<0 or self.current_projection==None : return
 		
-		if self.particle_file != None:
-			r = Region(self.current_projection,self.current_particle,1,1)
-			e = EMData()
-			d = {}
-			e.read_image(self.simmx_file,0,False,r)
-			simval=e.get(0)
-			e.read_image(self.simmx_file,1,False,r)
-			d["tx"] = e.get(0)
-			e.read_image(self.simmx_file,2,False,r)
-			d["ty"] =  e.get(0)
-			e.read_image(self.simmx_file,3,False,r)
-			d["alpha"] = e.get(0)
-			e.read_image(self.simmx_file,4,False,r)
-			d["mirror"] = bool(e.get(0))
-			d["type"] = "2d"
-			t = Transform(d)
-			
-			particle = EMData()
-			#n = EMUtil.get_image_count(self.particle_file)
-			particle.read_image(self.particle_file,self.current_particle)
-			particle.transform(t)
-			particle.process_inplace("normalize.toimage",{"to":projection})
-			if particle["norm_mult"]<0 : particle*=-1.0
-			
-			particle_masked=particle.copy()
-			tmp=projection.process("threshold.notzero")
-			particle_masked.mult(tmp)
-			
-			projection["cmp"]=0
-			particle["cmp"]=simval
-			particle_masked["cmp"]=0
-			self.mx_display.set_data([projection,particle,particle_masked])
-			
-			if self.frc_display != None :
-				try : apix=particle["ctf"].apix
-				except: apix=particle["apix_x"]
-				
-				frc=projection.calc_fourier_shell_correlation(particle)
-				frcm=projection.calc_fourier_shell_correlation(particle_masked)
-				nf=len(frc)/3
-				self.frc_display.set_data(([i/apix for i in frc[:nf]],frc[nf:nf*2]),"frc")
-				self.frc_display.set_data(([i/apix for i in frcm[:nf]],frcm[nf:nf*2]),"frcm")
-				
-				try : 
-					ctf=particle["ctf"]
-					ds=1.0/(ctf.apix*particle["ny"])
-					snr=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_SNR)
-					ses=[i*ds for i in range(particle["ny"]/2)]
-					self.frc_display.set_data((ses,snr),"SNR",color=1)
+		dlist=[]
+		dlist.append(self.proj_data[self.current_projection].copy())
+		dlist[0].transform(dlist[0]["ptcl.align2d"])
+		dlist.append(self.ptcl_data[self.current_particle].copy())
+		dlist[1].process_inplace("filter.matchto",{"to":dlist[0]})
+		dlist[1].process_inplace("normalize.toimage",{"to":dlist[0]})
+		dlist.append(dlist[1].copy())
+		dlist[2].sub(dlist[0])
+		
+		self.mx_display.set_data(dlist)
+		
 
-					amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP)
-					self.frc_display.set_data((ses,amp),"CTF",color=2)
-				except : ctf=None
-
-		else:
-			self.mx_display.set_data([projection])
 		if update: self.mx_display.updateGL()
 			
 	def on_mx_display_closed(self):
@@ -285,10 +241,16 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		ropt=parsemodopt(self.refine)
 		rcmp=parsemodopt(self.refinecmp)
 		for i,p in enumerate(self.proj_data):
-			ali=p.align(aopt[0],ptcl,aopt[1],acmp[0],acmp[1])
-			if self.refine!="" :
-				ropt[1]["xform.align2d"]=ali["xform.align2d"]
-				ali=p.align(ropt[0],ptcl,ropt[1],rcmp[0],rcmp[1])
+			try:
+				ali=p.align(aopt[0],ptcl,aopt[1],acmp[0],acmp[1])
+				if self.refine!="" :
+					ropt[1]["xform.align2d"]=ali["xform.align2d"]
+					ali=p.align(ropt[0],ptcl,ropt[1],rcmp[0],rcmp[1])
+			except:
+				print traceback.print_exc()
+				QtGui.QMessageBox.warning(None,"Error","Problem with alignment parameters")
+				progress.close()
+				return
 			p["ptcl.align2d"]=ali["xform.align2d"]
 			progress.setValue(i)
 			QtCore.QCoreApplication.instance().processEvents()
@@ -304,7 +266,6 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		
 	def update_cmp(self):
 		cmpopt=parsemodopt(self.simcmp)
-		print cmpopt
 		
 		progress = QtGui.QProgressDialog("Computing similarities", "Abort", 0, len(self.proj_data),None)
 		progress.show()
@@ -312,7 +273,12 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		for i,p in enumerate(self.proj_data):
 			ali=p.copy()
 			ali.transform(p["ptcl.align2d"])
-			p["cmp"]=-ptcl.cmp(cmpopt[0],ali,cmpopt[1])
+			try : p["cmp"]=-ptcl.cmp(cmpopt[0],ali,cmpopt[1])
+			except:
+				print traceback.print_exc()
+				QtGui.QMessageBox.warning(None,"Error","Invalid similarity metric string, or other comparison error")
+				progress.close()
+				return
 			progress.setValue(i)
 			QtCore.QCoreApplication.instance().processEvents()
 			
