@@ -626,7 +626,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						else:
 					        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
 				        	if old_ali_params[im*4+3] == mirror:
-			        			this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
+							this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 			        			pixel_error += this_error
 				        	else:
 				        		mirror_change += 1
@@ -1479,7 +1479,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		else:
 			disp.append(disp[i-1]+recvcount[i-1])
 
-	again = True
+	again = 1
 	total_iter = 0
 	cs = [0.0]*2
 
@@ -1521,7 +1521,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			del ave1, ave2
 			bcast_EMData_to_all(tavg, myid, main_node)
 				
-			if  Fourvar:  
+			if Fourvar:  
 				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
 
 			if myid == main_node:
@@ -1555,21 +1555,20 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				print_msg(msg)
 				
 				if a1 < a0:
-					if auto_stop: 
-						again = False
-						break
+					if auto_stop: 	again = 0
 				else:	a0 = a1
 			else:
 				tavg = model_blank(nx, nx)
 				cs = [0.0]*2
 
+			if auto_stop:
+				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				if int(again[0]) == 0: break
+
 			if Fourvar:  del vav
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = map(float, cs)
-			if auto_stop:
-				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-				if not again: break
 			if total_iter != max_iter*len(xrng):
 				if CUDA:
 					old_ali_params = all_ali_params[:]
