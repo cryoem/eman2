@@ -181,6 +181,8 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
+	init();
+	
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
