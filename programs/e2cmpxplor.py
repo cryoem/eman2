@@ -85,12 +85,20 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		self.projection_file = projection_file 	# a projection file produced by e2project3d
 		self.particle_file = particle_file 		# A file containing particles to be examined
 
-		self.current_particle = 0 				# keep track of the current particle
+		self.current_particle = -1 				# keep track of the current particle
 		self.current_projection = None 			# keep track of the current projection
 
 		self.ptcl_display = None			# display all particles
 		self.mx_display = None 					# mx display module for displaying projection and aligned particle
 		self.lay = None 						# 2d plot for displaying comparison between particle and projection
+		
+		self.simcmp = "dot:normalize=1"
+		self.align = "rotate_translate_flip"
+		self.aligncmp = "dot"
+		self.refine = "refine"
+		self.refinecmp = "dot:normalize=1"
+		self.shrink=1
+		
 		
 	def set_data(self,projections,particles):
 		'''
@@ -99,18 +107,30 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		if not file_exists(projections): raise RuntimeError("%s does not exist" %self.projection_file)
 		if not file_exists(particles): raise RuntimeError("%s does not exist" %self.particle_file)
 		
+		self.projection_file = projections 	# a projection file produced by e2project3d
+		self.particle_file = particles 		# A file containing particles to be examined
+		self.set_shrink(self.shrink)
 		
+	def set_shrink(self,shrink):
+		"""This actually loads the data ..."""
+		
+		self.shrink=shrink
 		# Deal with particles
-		self.ptcl_data=EMData.read_images(particles,range(200))
+		self.ptcl_data=[i for i in EMData.read_images(self.particle_file,range(200)) if i!=None]
+		if self.shrink>1 :
+			for i in self.ptcl_data : i.process_inplace("math.meanshrink",{"n":self.shrink})
+
 		if self.ptcl_display==None : 
 			self.ptcl_display = EMImageMXModule()
 			self.ptcl_display.set_mouse_mode("App")
+			QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("mx_image_selected"),self.ptcl_selected)		
+			QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 		self.ptcl_display.set_data(self.ptcl_data)
-		QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("mx_image_selected"),self.ptcl_selected)		
-		QtCore.QObject.connect(self.ptcl_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 
 		# deal with projections
-		self.proj_data=EMData.read_images(projections)
+		self.proj_data=EMData.read_images(self.projection_file)
+		if self.shrink>1 :
+			for i in self.proj_data : i.process_inplace("math.meanshrink",{"n":self.shrink})
 
 		eulers = [i["xform.projection"] for i in self.proj_data]
 		self.specify_eulers(eulers)
@@ -235,42 +255,70 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		"""slot for image selection events from image mx"""
 		self.set_ptcl_idx(lc[0])
 	
+	def set_alignment(self,align,aligncmp,refine,refinecmp):
+		"""sets alignment algorithms and recomputes"""
+		self.align = str(align)
+		self.aligncmp = str(aligncmp)
+		self.refine = str(refine)
+		self.refinecmp = str(refinecmp)
+
+		self.update_align()
+
+
+
 	def set_ptcl_idx(self,idx):
 		"""Select the index of the current particle to use for comparisons"""
 		if self.current_particle != idx:
 			self.current_particle = idx
+			self.update_align()
 
-			progress = QtGui.QProgressDialog("Computing alignments", "Abort", 0, len(self.proj_data),None)
-			progress.show()
-			# redetermines particle alignments
-			# then we can quickly compute a series of different similarity values
-			ptcl=self.ptcl_data[idx]
-			for i,p in enumerate(self.proj_data):
-				ali=p.align("rotate_translate_flip",ptcl,{},"dot",{})
-				ali=p.align("refine",ptcl,{"xform.align2d":ali["xform.align2d"]},"dot",{})
-				p["ptcl.align2d"]=ali["xform.align2d"]
-				progress.setValue(i)
-				QtCore.QCoreApplication.instance().processEvents()
-			
-			progress.close()
-			self.set_cmp("dot:normalize=1")
-			self.update_display(True)
+	def update_align(self):
+		if self.current_particle<0 : return
+		ptcl=self.ptcl_data[self.current_particle]
+		
+		progress = QtGui.QProgressDialog("Computing alignments", "Abort", 0, len(self.proj_data),None)
+		progress.show()
+		# redetermines particle alignments
+		# then we can quickly compute a series of different similarity values
+		aopt=parsemodopt(self.align)
+		acmp=parsemodopt(self.aligncmp)
+		ropt=parsemodopt(self.refine)
+		rcmp=parsemodopt(self.refinecmp)
+		for i,p in enumerate(self.proj_data):
+			ali=p.align(aopt[0],ptcl,aopt[1],acmp[0],acmp[1])
+			if self.refine!="" :
+				ropt[1]["xform.align2d"]=ali["xform.align2d"]
+				ali=p.align(ropt[0],ptcl,ropt[1],rcmp[0],rcmp[1])
+			p["ptcl.align2d"]=ali["xform.align2d"]
+			progress.setValue(i)
+			QtCore.QCoreApplication.instance().processEvents()
+		
+		progress.close()
+		self.update_cmp()
+#		self.update_display(True)
 	
 	def set_cmp(self,cmpstring):
 		"""Select the comparator. Passed as a standard name:attr=value:attr=value string"""
-		cmpopt=parsemodopt(str(cmpstring))
+		self.simcmp=str(cmpstring)
+		self.update_cmp()
+		
+	def update_cmp(self):
+		cmpopt=parsemodopt(self.simcmp)
+		print cmpopt
 		
 		progress = QtGui.QProgressDialog("Computing similarities", "Abort", 0, len(self.proj_data),None)
 		progress.show()
+		ptcl=self.ptcl_data[self.current_particle]
 		for i,p in enumerate(self.proj_data):
 			ali=p.copy()
 			ali.transform(p["ptcl.align2d"])
-			p["cmp"]=-self.ptcl_data[self.current_particle].cmp(cmpopt[0],ali,cmpopt[1])
+			p["cmp"]=-ptcl.cmp(cmpopt[0],ali,cmpopt[1])
 			progress.setValue(i)
 			QtCore.QCoreApplication.instance().processEvents()
 			
 		progress.close()
-		self.regen_dl(True)
+		self.set_emdata_list_as_data(self.proj_data,"cmp")
+#		self.regen_dl(True)
 		EM3DSymViewerModule.render(self)
 	
 class EMSimmxXplorInspector(EMSymInspector):
@@ -286,7 +334,30 @@ class EMSimmxXplorInspector(EMSymInspector):
 		
 	def add_cmp_options(self):
 		self.cmp_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.cmp_tab)
+		gridl = QtGui.QGridLayout(self.cmp_tab)
+		
+		self.cmp_shrinkl=QtGui.QLabel("Shrink:")
+		gridl.addWidget(self.cmp_shrinkl,0,1)
+		
+		self.cmp_shrink=QtGui.QSpinBox()
+		self.cmp_shrink.setRange(1,5)
+		self.cmp_shrink.setValue(1)
+		gridl.addWidget(self.cmp_shrink,0,2)
+		
+		self.cmp_ali=QtGui.QLineEdit("rotate_translate_flip")
+		gridl.addWidget(self.cmp_ali,1,0,1,2)
+		
+		self.cmp_alicmp=QtGui.QLineEdit("dot")
+		gridl.addWidget(self.cmp_alicmp,1,2,1,2)
+		
+		self.cmp_refine=QtGui.QLineEdit("refine")
+		gridl.addWidget(self.cmp_refine,2,0,1,2)
+		
+		self.cmp_refinecmp=QtGui.QLineEdit("dot:normalize=1")
+		gridl.addWidget(self.cmp_refinecmp,2,2,1,2)
+		
+		self.cmp_realignb=QtGui.QPushButton("Set Alignment")
+		gridl.addWidget(self.cmp_realignb,3,2)
 		
 		self.cmp_combo=QtGui.QComboBox()
 		self.cmp_combo.setEditable(True)
@@ -302,34 +373,15 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=5")
 		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=10")
 		self.cmp_combo.addItem("frc:snrweight=1:minres=200:maxres=15")
-		vbl.addWidget(self.cmp_combo)
+		gridl.addWidget(self.cmp_combo,4,0,1,4)
 		
 		self.tabwidget.insertTab(0,self.cmp_tab,"Cmp")
 		self.tabwidget.setCurrentIndex(0)
 		
 		self.connect(self.cmp_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.cmp_changed)
-		
-	def __init_ptcl_slider(self,layout):
-		if self.combo == None: n = self.target().get_num_particles()
-		else:
-			dir = str(self.combo.currentText())
-			data = (d for d in self.data if d[0] == dir).next()
-			n = EMUtil.get_image_count(data[1])
-		
-		if n == None: n = 0
-		else: n -= 1
-		#self.ptcl_slider = ValSlider(None,(0,n),"Particle:")
-		#self.ptcl_slider.setValue(self.target().current_particle)
-		#self.ptcl_slider.setIntonly(True)
-		#layout.addWidget(self.ptcl_slider)
-		#self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
-		self.ptcl_slider=QtGui.QSpinBox()
-		self.ptcl_slider.setRange(0,1000)
-		self.ptcl_slider.setSingleStep(1)
-		self.ptcl_slider.setValue(0)
-		layout.addWidget(self.ptcl_slider)
-		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged(int)"), self.on_)
-		
+		self.connect(self.cmp_realignb, QtCore.SIGNAL("clicked(bool)"), self.cmp_realign)
+#		self.connect(self.cmp_shrink, QtCore.SIGNAL("valueChanged(int)"), self.ali_changed)
+
 		
 	def set_ptcl_idx(self,val):
 		self.target().set_ptcl_idx(val)
@@ -345,7 +397,12 @@ class EMSimmxXplorInspector(EMSymInspector):
 		"When a new comapartor string is selected"
 		self.target().set_cmp(s)
 #		self.target.regen_dl()
-			
+	
+	def cmp_realign(self,b):
+		"Redo alignment of current particle with new parameters"
+		shrink=self.cmp_shrink.value()
+		if self.target().shrink!=shrink : self.target().set_shrink(shrink)
+		self.target().set_alignment(str(self.cmp_ali.text()),str(self.cmp_alicmp.text()),str(self.cmp_refine.text()),str(self.cmp_refinecmp.text()))
 
 	
 if __name__ == '__main__':
