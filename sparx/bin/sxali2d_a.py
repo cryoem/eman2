@@ -80,7 +80,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from applications import ali2d_a
+		from development import ali2d_a
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
