@@ -3045,7 +3045,7 @@ def align_diff(data1, data2=None):
 			cosi += cos((alpha2-alpha1)*pi/180.0)
 			sini += sin((alpha2-alpha1)*pi/180.0)
 	if cosi > 0.0:
-		if sini > 0.0:
+		if sini >= 0.0:
 			alphai = atan(sini/cosi)/pi*180.0
 		else:
 			alphai = atan(sini/cosi)/pi*180.0+360.0
