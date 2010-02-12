@@ -237,7 +237,7 @@ def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length
                 if do_edge_norm:
                     ptcl.process_inplace("normalize.edgemean")
                 ptcl.write_image(ptcl_filepath, i) #appending to the image stack
-        except:
+        except ImageWriteException, e:
             for i in range(len(particles)):
                 ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
                 if os.access(ptcl_filepath, os.F_OK):
