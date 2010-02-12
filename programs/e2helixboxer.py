@@ -61,8 +61,8 @@ def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = No
     particles = []
     while y0 + ysize <= helix.get_ysize():
         ptcl = helix.get_clip(Region(x0, y0, xsize, ysize))
-        if helix.has_attr("helix_source_coords"):
-            hcoords = helix.get_attr("helix_source_coords")
+        if helix.has_attr("ptcl_helix_coords"):
+            hcoords = helix.get_attr("ptcl_helix_coords")
             l_vect = (hcoords[2]-hcoords[0], hcoords[3] - hcoords[1])
             length = sqrt(l_vect[0]**2+l_vect[1]**2)
             l_uvect = (l_vect[0]/length, l_vect[1]/length)
@@ -70,7 +70,7 @@ def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = No
             y1 = hcoords[1] + y0*l_uvect[1]
             x2 = x1 + px_length*l_uvect[0]
             y2 = y1 + px_length*l_uvect[1]
-            ptcl["helix_ptcl_source_coords"] = (x1, y1, x2, y2, px_width) 
+            ptcl["ptcl_source_coords"] = ( (x1+x2)/2.0, (y1+y2)/2.0) 
         particles.append( ptcl )
         y0 += px_step
     
@@ -105,7 +105,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     tr.set_rotation({"type":"2d", "alpha":rot_angle})
     helix_dimensions = ( int(round(width)), int(round(length)), 1 )
     helix = micrograph.get_rotated_clip( tr, helix_dimensions )
-    helix["helix_source_coords"] = (x1, y1, x2, y2, width)
+    helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
     return helix
 
 def load_coords(coords_filepath):
@@ -229,13 +229,23 @@ def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length
     (path, ext) = os.path.splitext(ptcl_filepath)
     if as_stack:
         ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
-        if os.access(ptcl_filepath, os.F_OK):
-            os.remove(ptcl_filepath)
-        for i in range(len(particles)):
-            ptcl = particles[i]
-            if do_edge_norm:
-                ptcl.process_inplace("normalize.edgemean")
-            ptcl.write_image(ptcl_filepath, i) #appending to the image stack
+        try:
+            if os.access(ptcl_filepath, os.F_OK):
+                os.remove(ptcl_filepath)
+            for i in range(len(particles)):
+                ptcl = particles[i]
+                if do_edge_norm:
+                    ptcl.process_inplace("normalize.edgemean")
+                ptcl.write_image(ptcl_filepath, i) #appending to the image stack
+        except:
+            for i in range(len(particles)):
+                ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
+                if os.access(ptcl_filepath, os.F_OK):
+                    os.remove(ptcl_filepath)
+                ptcl = particles[i]
+                if do_edge_norm:
+                    ptcl.process_inplace("normalize.edgemean")
+                ptcl.write_image(ptcl_filepath)
     else:
         for i in range(len(particles)):
             ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
@@ -296,8 +306,6 @@ class EMWriteHelixFiles(QtGui.QDialog):
         self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("&Normalize Edge-Mean"))
         self.ptcls_edgenorm_checkbox.setChecked(False)
         self.ptcls_filename_line_edit = QtGui.QLineEdit()
-        self.ptcls_as_stack_checkbox = QtGui.QCheckBox(self.tr("&As Stack"))
-        self.ptcls_as_stack_checkbox.setChecked(True)
         ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
         self.ptcls_overlap_spinbox = QtGui.QSpinBox()
         self.ptcls_overlap_spinbox.setMaximum(1000)
@@ -356,7 +364,6 @@ class EMWriteHelixFiles(QtGui.QDialog):
         
         ptcls_opts_layout = QtGui.QVBoxLayout()
         ptcls_opts_layout.addWidget(self.ptcls_edgenorm_checkbox)
-        ptcls_opts_layout.addWidget(self.ptcls_as_stack_checkbox)
         ptcls_opts_layout.addLayout(ptcls_overlap_layout)
         ptcls_opts_layout.addLayout(ptcls_width_layout)
         ptcls_opts_layout.addLayout(ptcls_length_layout)
@@ -393,21 +400,12 @@ class EMWriteHelixFiles(QtGui.QDialog):
                 px_width = self.ptcls_width_spinbox.value()
                 helix = helices_dict[coords_key]
                 do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
-                as_stack = self.ptcls_as_stack_checkbox.isChecked()
 
                 ptcl_dir = str(self.ptcls_dir_line_edit.text())
                 ptcl_fname = str(self.ptcls_filename_line_edit.text())
                 ptcl_filepath = os.path.join(ptcl_dir, ptcl_fname)
                 
-                try:
-                    save_particles(helix, i, ptcl_filepath, px_overlap, px_length, px_width, do_edge_norm, as_stack)
-                except RunTimeError, e:
-                    if as_stack:
-                        message = "RunTimeError encountered. Likely, the image format being used to save particles does not support stacks." + str(e)
-                    else:
-                        message = str(e)
-                    err_message_dlg = QtGui.QErrorMessage(self)
-                    err_message_dlg.showMessage(message)
+                save_particles(helix, i, ptcl_filepath, px_overlap, px_length, px_width, do_edge_norm)
                 i += 1
             pass
         if self.helices_groupbox.isChecked():
