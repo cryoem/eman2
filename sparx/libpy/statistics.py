@@ -8509,47 +8509,6 @@ class pcanalyzer:
 			print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
 		return kstep
 
-# Computes the average pixel error between two projection directions
-# Input: 
-#	 t1 is the projection transformation of the first projection, and t2 of the second one.
-#	 Both t1 and t2 are Transformation objects
-#        r is the radius of the object
-#        nx,ny,nz are the dimensions of the image size in the x,y and z directions respectively
- 
-
-def avg_3D_pixel_error(t1, t2, r,nx,ny,nz):
-	"""
-		PARAMETERS
-			t1         - projection transformation of the first projection
-			t2         - projection transformation of the second projection
-			r          - radius of the object
-			nx, ny, nz - dimensions of the image size in the x, y and z directions respectively.
-	
-	"""
-
-	from math import sin, cos, pi, sqrt
-	t3 = t2*t1.inverse()
-
-	cx = int(nx/2)
-	cy = int(ny/2)
-	cz = int(nz/2)
-
-	total_error = 0
-	total_voxels = 0
-
-	for i in xrange(nx - 1):
-    		for j in xrange(ny - 1):
-        		for k in xrange(nz-1):
-            			v = Vec3f( i - cx, j - cy, k - cz)
-            			if sqrt(v[0]**2 + v[1]**2 + v[2]**2) <= r:
-                			d = t3*v - v
-                			error = sqrt(d[0]**2 + d[1]**2 + d[2]**2)
-                			total_error = total_error + error
-                			total_voxels = total_voxels + 1
-
-	return total_error/total_voxels
-
-
 	
 # PART is a list of arrays
 # Assumes all partitions have the SAME number of classes
@@ -8764,3 +8723,66 @@ def k_means_stab_getinfo(PART, match):
 	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
 
 	return MATCH, STB_PART, CT_s, CT_t, ST, st
+
+
+
+def pixel_error_angle_sets(agls1, agls2,Threshold,r):
+	""" 	
+	  Input: Two lists, i-th element of each list is either a list of the three Eulerian angles [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
+	         Or, the two lists can be a list of Transform objects. The two lists have the same length and the i-th element of one list is assumed to correspond to the i-th element of the
+		 second list. 
+		 Threshold is a float.
+		 r is the radius of the object.
+	  Output: 1. Uses rotation_between_anglesets to find the overall 3D rotation between the two sets of Eulerian angles using second list as reference
+	  	  2. The overall rotation found by rotation_between_anglesets is applied to the first list (agls1) 
+		  3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_pixel_error) less than Threshold, then append the list 
+		     [i, p], where p is the pixel error, into the output list.
+	"""
+	from alignment import max_3D_pixel_error
+	from utilities  import read_text_file, write_text_rows, rotation_between_anglesets
+	import types
+	
+	N = len(agls1)
+	if N != len(agls2):
+		print 'Both lists must have the same length'
+		return [-1]
+	if N < 2:
+		print 'At least two orientations are required in each list'
+		return [-1]
+		
+	
+	##############################################################################################
+	# Find overall rotation between two angle sets, and then apply it to one of the angle sets
+
+	# compute rotation between asg1 and asg2
+	phi12,theta12,psi12 = rotation_between_anglesets(agls1,agls2)
+	# apply rotation [phi12,theta12,psi12] to asg1
+	t12 = Transform({'type':'spider','phi':phi12,'theta':theta12,'psi':psi12})
+	agls12=[]
+	
+	# if agls1 is a list of list
+	if type(agls1[0]) == types.ListType:
+		for i in xrange(N):
+			t1= Transform({'type':'spider','phi':agls1[i][0],'theta':agls1[i][1],'psi':agls1[i][2]})
+			agls12.append(t1*t12)
+	else: # must be list of transform objects
+		for i in xrange(N):
+			agls12.append(agls1[i]*t12)
+	##############################################################################################
+	# Compute pixel error for each entry of asg12 and asg2 
+	# (asg13 and asg3, asg23 and asg3 respectively) and return a list of the pixel errors that are below a certain threshold
+
+	# Compute average pixel error for each entry of asg12 and asg2 
+	avgPixError12=[]
+	if type(agls2[0]) == types.ListType:
+		for i in xrange(N):
+			error = max_3D_pixel_error(agls12[i],Transform({'type':'spider','phi':agls2[i][0],'theta':agls2[i][1],'psi':agls2[i][2]}) , r)
+			if error < Threshold:
+				avgPixError12.append([i,error])
+	else:# agls2 is a list of transforms
+		for i in xrange(N):
+			error = max_3D_pixel_error(agls12[i],agls2[i] , r)
+			if error < Threshold:
+				avgPixError12.append([i,error])
+			
+	return avgPixError12
