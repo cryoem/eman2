@@ -237,7 +237,7 @@ def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length
                 if do_edge_norm:
                     ptcl.process_inplace("normalize.edgemean")
                 ptcl.write_image(ptcl_filepath, i) #appending to the image stack
-        except ImageWriteException, e:
+        except RuntimeError, e:
             for i in range(len(particles)):
                 ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
                 if os.access(ptcl_filepath, os.F_OK):
@@ -393,7 +393,7 @@ class EMWriteHelixFiles(QtGui.QDialog):
         helices_dict = self.parentWidget().helices_dict
         
         if self.ptcls_groupbox.isChecked():
-            i = 1
+            i = 0
             for coords_key in helices_dict:
                 px_overlap = self.ptcls_overlap_spinbox.value()
                 px_length = self.ptcls_length_spinbox.value()
@@ -412,7 +412,7 @@ class EMWriteHelixFiles(QtGui.QDialog):
             helix_dir = str(self.helices_dir_line_edit.text())
             helix_fname = str(self.helices_filename_line_edit.text()) 
             helix_filepath = os.path.join(helix_dir, helix_fname)
-            i = 1
+            i = 0
             for coords_key in helices_dict:
                 helix = helices_dict[coords_key]
                 save_helix(helix, helix_filepath, i)
