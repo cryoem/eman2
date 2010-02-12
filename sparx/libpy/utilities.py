@@ -2930,21 +2930,25 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def ave_ali_err(stack1, stack2=None, r=25):
+
+def align_diff(data1, data2=None):
 	
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters.	
+	'''
+
 	from sys import exit
 	from math import cos, sin, pi, atan
 	from utilities import get_params2D, combine_params2
 	
-	nima = EMUtil.get_image_count(stack1)
-	data1 = EMData.read_images(stack1)
+	nima = len(data1)
 
-	if stack2 != None: 
-		nima2 = EMUtil.get_image_count(stack2)
+	if data2 != None: 
+		nima2 = len(data2)
 		if nima2 != nima:
 			print "Error: Number of images don't agree!"
 			exit(0)
-		data2 = EMData.read_images(stack2)
 
 	# Read the alignment parameters and determine the relative mirrorness
 	cosi = 0.0
@@ -2954,7 +2958,7 @@ def ave_ali_err(stack1, stack2=None, r=25):
 	ali_params2 = []
 	for i in xrange(nima):
 		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
-		if stack2 != None:
+		if data2 != None:
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
 		else:
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d_ideal")
@@ -3017,18 +3021,33 @@ def ave_ali_err(stack1, stack2=None, r=25):
 	sxi /= mirror_same
 	syi /= mirror_same
 			
+	return alphai, sxi, syi, mirror
+
+
+def ave_ali_err(data1, data2=None, r=25):
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters. It also calculates the mirror consistent
+	rate and average pixel error between two sets of parameters.
+	'''
+	from utilities import get_params2D, combine_params2
+	from math import sqrt, sin, pi
+	
+	alphai, sxi, syi, mirror = align_diff(data1, data2)
+
 	# Determine the average pixel error
 	err = 0.0
+	nima = len(data1)
+	mirror_same = 0
 	for i in xrange(nima):
-		mirror1 = ali_params1[i*4+3]
-		mirror2 = ali_params2[i*4+3]
+		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
+		if data2 != None:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
+		else:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i], "xform.align2d_ideal")
+		
 		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
-			alpha1 = ali_params1[i*4]
-			alpha2 = ali_params2[i*4]
-			sx1 = ali_params1[i*4+1]
-			sx2 = ali_params2[i*4+1]
-			sy1 = ali_params1[i*4+2]
-			sy2 = ali_params2[i*4+2]
+			mirror_same += 1
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, sxi, syi, 0)
 			err += abs(sin((alpha12-alpha2)/180.0*pi/2))*(r*2)+sqrt((sx12-sx2)**2+(sy12-sy2)**2)
 	
