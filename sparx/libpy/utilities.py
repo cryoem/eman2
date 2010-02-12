@@ -2950,7 +2950,8 @@ def set_pixel_size(img, pixel_size):
 def angle_diff(data1, data2=None):
 	
 	'''
-	This function determines the relative angle between two sets of angles.	
+	This function determines the relative angle between two sets of angles.
+	The resulting angle has to be addded (modulo 360) to the first set.
 	'''
 
 	from math import cos, sin, pi, atan
