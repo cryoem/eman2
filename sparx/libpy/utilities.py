@@ -373,65 +373,65 @@ def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 
 
 def bracket(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
-    """Given a function and distinct initial points, search in the downhill
-    direction (as defined by the initital points) and return new points
-    xa, xb, xc that bracket the minimum of the function:
-    f(xa) > f(xb) < f(xc)
-    """
-    _gold = 1.618034
-    _verysmall_num = 1e-21
-    fa = apply(func, (xa,)+args)
-    fb = apply(func, (xb,)+args)
-    if (fa < fb):                      # Switch so fa > fb
-        dum = xa; xa = xb; xb = dum
-        dum = fa; fa = fb; fb = dum
-    xc = xb + _gold*(xb-xa)
-    fc = apply(func, (xc,)+args)
-    funcalls = 3
-    iter = 0
-    while (fc < fb):
-        tmp1 = (xb - xa)*(fb-fc)
-        tmp2 = (xb - xc)*(fb-fa)
-        val = tmp2-tmp1
-        if abs(val) < _verysmall_num:
-            denom = 2.0*_verysmall_num
-        else:
-            denom = 2.0*val
-        w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
-        wlim = xb + grow_limit*(xc-xb)
-        if iter > maxiter:
-            raise RuntimeError, "Too many iterations."
-        iter += 1
-        if (w-xc)*(xb-w) > 0.0:
-            fw = apply(func, (w,)+args)
-            funcalls += 1
-            if (fw < fc):
-                xa = xb; xb=w; fa=fb; fb=fw
-                return xa, xb, xc, fa, fb, fc, funcalls
-            elif (fw > fb):
-                xc = w; fc=fw
-                return xa, xb, xc, fa, fb, fc, funcalls
-            w = xc + _gold*(xc-xb)
-            fw = apply(func, (w,)+args)
-            funcalls += 1
-        elif (w-wlim)*(wlim-xc) >= 0.0:
-            w = wlim
-            fw = apply(func, (w,)+args)
-            funcalls += 1
-        elif (w-wlim)*(xc-w) > 0.0:
-            fw = apply(func, (w,)+args)
-            funcalls += 1
-            if (fw < fc):
-                xb=xc; xc=w; w=xc+_gold*(xc-xb)
-                fb=fc; fc=fw; fw=apply(func, (w,)+args)
-                funcalls += 1
-        else:
-            w = xc + _gold*(xc-xb)
-            fw = apply(func, (w,)+args)
-            funcalls += 1
-        xa=xb; xb=xc; xc=w
-        fa=fb; fb=fc; fc=fw
-    return xa, xb, xc, fa, fb, fc, funcalls
+	"""Given a function and distinct initial points, search in the downhill
+	direction (as defined by the initital points) and return new points
+	xa, xb, xc that bracket the minimum of the function:
+	f(xa) > f(xb) < f(xc)
+	"""
+	_gold = 1.618034
+	_verysmall_num = 1e-21
+	fa = apply(func, (xa,)+args)
+	fb = apply(func, (xb,)+args)
+	if (fa < fb):			   # Switch so fa > fb
+	    dum = xa; xa = xb; xb = dum
+	    dum = fa; fa = fb; fb = dum
+	xc = xb + _gold*(xb-xa)
+	fc = apply(func, (xc,)+args)
+	funcalls = 3
+	iter = 0
+	while (fc < fb):
+	    tmp1 = (xb - xa)*(fb-fc)
+	    tmp2 = (xb - xc)*(fb-fa)
+	    val = tmp2-tmp1
+	    if abs(val) < _verysmall_num:
+		denom = 2.0*_verysmall_num
+	    else:
+		denom = 2.0*val
+	    w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
+	    wlim = xb + grow_limit*(xc-xb)
+	    if iter > maxiter:
+		raise RuntimeError, "Too many iterations."
+	    iter += 1
+	    if (w-xc)*(xb-w) > 0.0:
+		fw = apply(func, (w,)+args)
+		funcalls += 1
+		if (fw < fc):
+		    xa = xb; xb=w; fa=fb; fb=fw
+		    return xa, xb, xc, fa, fb, fc, funcalls
+		elif (fw > fb):
+		    xc = w; fc=fw
+		    return xa, xb, xc, fa, fb, fc, funcalls
+		w = xc + _gold*(xc-xb)
+		fw = apply(func, (w,)+args)
+		funcalls += 1
+	    elif (w-wlim)*(wlim-xc) >= 0.0:
+		w = wlim
+		fw = apply(func, (w,)+args)
+		funcalls += 1
+	    elif (w-wlim)*(xc-w) > 0.0:
+		fw = apply(func, (w,)+args)
+		funcalls += 1
+		if (fw < fc):
+		    xb=xc; xc=w; w=xc+_gold*(xc-xb)
+		    fb=fc; fc=fw; fw=apply(func, (w,)+args)
+		    funcalls += 1
+	    else:
+		w = xc + _gold*(xc-xb)
+		fw = apply(func, (w,)+args)
+		funcalls += 1
+	    xa=xb; xb=xc; xc=w
+	    fa=fb; fb=fc; fc=fw
+	return xa, xb, xc, fa, fb, fc, funcalls
 
 def ce_fit(inp_image, ref_image, mask_image):
 	""" Fit the histogram of the input image under mask with the reference image.
@@ -2776,10 +2776,10 @@ def nearest_ang( vecs, phi, tht ) :
 	best_i = -1
 
 	for i in xrange( len(vecs) ):
-	    s = abs(vecs[i][0]*vec[0] + vecs[i][1]*vec[1] + vecs[i][2]*vec[2])
-	    if s > best_s:
-		best_s = s
-	    	best_i = i
+		s = abs(vecs[i][0]*vec[0] + vecs[i][1]*vec[1] + vecs[i][2]*vec[2])
+		if s > best_s:
+			best_s = s
+			best_i = i
 
 	return best_i
 
@@ -2792,6 +2792,22 @@ def assign_projangles(projangles, refangles):
 		mm = nearest_ang( refnormal, projangles[i][0], projangles[i][1] )
 		assignments[mm].append(i)
 	return assignments
+
+def cone_ang( projangles, phi, tht, ant ) :
+	from utilities import getvec
+	from math import cos, pi
+	vec = getvec( phi, tht )
+
+	cone = cos(ant*pi/180.0)
+	la = []
+	for i in xrange( len(projangles) ):
+		vec  = getvec( phi, tht )
+		vecs = getvec( projangles[i][0], projangles[i][1] )
+		s = abs(vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2])
+		if s >= cone:
+			la.append(i)
+
+	return la
 
 def disable_bdb_cache():
 
@@ -2931,6 +2947,43 @@ def set_pixel_size(img, pixel_size):
 		img.set_attr("ctf", cc)
 
 
+def angle_diff(data1, data2=None):
+	
+	'''
+	This function determines the relative angle between two sets of angles.	
+	'''
+
+	from math import cos, sin, pi, atan
+	from utilities import get_params2D, combine_params2
+	
+	nima = len(data1)
+
+	if data2 != None: 
+		nima2 = len(data2)
+		if nima2 != nima:
+			print "Error: List lengths do not agree!"
+			return 0
+
+	# Read the alignment parameters and determine the relative mirrorness
+	cosi = 0.0
+	sini = 0.0
+
+	# Determine the relative angle
+	for i in xrange(nima):
+		cosi += cos((data2[i]-data1[i])*pi/180.0)
+		sini += sin((data2[i]-data1[i])*pi/180.0)
+	if cosi > 0.0:
+		alphai = atan(sini/cosi)/pi*180.0
+	elif cosi < 0.0:
+		alphai = atan(sini/cosi)/pi*180.0+180.0
+	else:
+		if sini > 0.0:
+			alphai = 90.0
+		else:
+			alphai = 270.0
+
+	return (alphai+360.0)%360.0
+
 def align_diff(data1, data2=None):
 	
 	'''
@@ -2977,8 +3030,8 @@ def align_diff(data1, data2=None):
 	else:
 		mirror_same = nima-mirror_same
 		mirror = 1
-	
-	# Determine the relative angle	
+
+	# Determine the relative angle
 	for i in xrange(nima):
 		mirror1 = ali_params1[i*4+3]
 		mirror2 = ali_params2[i*4+3]
@@ -2993,13 +3046,13 @@ def align_diff(data1, data2=None):
 	if cosi > 0.0:
 		alphai = atan(sini/cosi)/pi*180.0
 	elif cosi < 0.0:
-		alphai = atan(sini/cosi)/pi*180.0+180.0		
+		alphai = atan(sini/cosi)/pi*180.0+180.0
 	else:
 		if sini > 0.0:
 			alphai = 90.0
 		else:
 			alphai = -90.0
-			
+
 	# Determine the relative shift
 	sxi = 0.0
 	syi = 0.0
@@ -3017,10 +3070,10 @@ def align_diff(data1, data2=None):
 			if mirror1 == 0: sxi += sx2-sx12
 			else: sxi -= sx2-sx12
 			syi += sy2-sy12
-			
+
 	sxi /= mirror_same
 	syi /= mirror_same
-			
+
 	return alphai, sxi, syi, mirror
 
 
