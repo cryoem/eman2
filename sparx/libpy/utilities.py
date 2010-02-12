@@ -2951,7 +2951,7 @@ def angle_diff(data1, data2=None):
 	
 	'''
 	This function determines the relative angle between two sets of angles.
-	The resulting angle has to be addded (modulo 360) to the first set.
+	The resulting angle has to be added (modulo 360) to the first set.
 	'''
 
 	from math import cos, sin, pi, atan
@@ -2985,6 +2985,7 @@ def angle_diff(data1, data2=None):
 
 	return (alphai+360.0)%360.0
 
+
 def align_diff(data1, data2=None):
 	
 	'''
@@ -2992,7 +2993,6 @@ def align_diff(data1, data2=None):
 	the two sets of alignment parameters.	
 	'''
 
-	from sys import exit
 	from math import cos, sin, pi, atan
 	from utilities import get_params2D, combine_params2
 	
@@ -3002,7 +3002,7 @@ def align_diff(data1, data2=None):
 		nima2 = len(data2)
 		if nima2 != nima:
 			print "Error: Number of images don't agree!"
-			exit(0)
+			return 0.0, 0.0, 0.0, 0
 
 	# Read the alignment parameters and determine the relative mirrorness
 	cosi = 0.0
@@ -3045,14 +3045,17 @@ def align_diff(data1, data2=None):
 			cosi += cos((alpha2-alpha1)*pi/180.0)
 			sini += sin((alpha2-alpha1)*pi/180.0)
 	if cosi > 0.0:
-		alphai = atan(sini/cosi)/pi*180.0
+		if sini > 0.0:
+			alphai = atan(sini/cosi)/pi*180.0
+		else:
+			alphai = atan(sini/cosi)*pi*180.0+360.0
 	elif cosi < 0.0:
 		alphai = atan(sini/cosi)/pi*180.0+180.0
 	else:
 		if sini > 0.0:
 			alphai = 90.0
 		else:
-			alphai = -90.0
+			alphai = 270.0
 
 	# Determine the relative shift
 	sxi = 0.0
