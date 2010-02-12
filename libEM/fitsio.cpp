@@ -94,12 +94,20 @@ bool FitsIO::is_valid(const void *first_block, off_t)
 	return false;
 }
 
-int FitsIO::read_header(Dict & dict, int, const Region * area, bool )
+int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
 //	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
 //	dict["apix_y"] = mrch.ylen / (mrch.ny - 1);
+	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
 	init();
 
 	if (area) throw ImageReadException(filename,"Area reading not supported for FITS format");
@@ -147,8 +155,8 @@ int FitsIO::write_header(const Dict & , int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	check_write_access(rw_mode, image_index, 1);
-
+//	check_write_access(rw_mode, image_index, 1);
+	LOGWARN("FITS write is not supported.");
 	EXITFUNC;
 	return 0;
 }

@@ -172,9 +172,16 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 
 	//single image format, index can only be zero
-	image_index = 0;
-	check_read_access(image_index);
+	if(image_index == -1) {
+		image_index = 0;
+	}
 
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
+
+	init();
+	
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 	check_region(area, IntSize(nx1, ny1));
@@ -205,7 +212,9 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 	ENTERFUNC;
 
 	//single image format, index can only be zero
-	image_index = 0;
+	if(image_index != 0) {
+		throw ImageWriteException(filename, "MRC file does not support stack.");
+	}
 	check_write_access(rw_mode, image_index);
 
 	nx = (png_uint_32) (int) dict["nx"];

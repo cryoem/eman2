@@ -152,13 +152,20 @@ bool TiffIO::is_valid(const void *first_block)
 	return result;
 }
 
-int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
+int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
+	init();
+	
 	//single image format, index can only be zero
-	img_index = 0;
-	check_read_access(img_index);
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
 
 	int nx = 0;
 	int ny = 0;
@@ -209,13 +216,13 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	return 0;
 }
 
-int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
+int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	//single image format, index can only be zero
-	img_index = 0;
-	check_read_access(img_index, rdata);
+	image_index = 0;
+	check_read_access(image_index, rdata);
 
 	int nx = 0;
 	int ny = 0;
@@ -390,7 +397,9 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	ENTERFUNC;
 
 	//support single image TIFF only, index must be zero
-	image_index = 0;
+	if(image_index != 0) {
+		throw ImageWriteException(filename, "MRC file does not support stack.");
+	}
 	check_write_access(rw_mode, image_index);
 
 	nx = (unsigned int) (int) dict["nx"];

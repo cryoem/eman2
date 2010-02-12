@@ -275,6 +275,15 @@ bool V4L2IO::is_valid(const void *first_block)
 int V4L2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
+	
 	if (!initialized) init();
 	
 	dict["nx"] = (int)(v4l2_fmt.fmt.pix.width);
@@ -291,6 +300,7 @@ int V4L2IO::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;	
+	LOGWARN("V4L write is not supported.");
 	EXITFUNC;
 	return 1;	// No write capability
 }

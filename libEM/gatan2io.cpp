@@ -116,8 +116,15 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
 {
 	ENTERFUNC;
 	//single image format, index can only be zero
-	image_index = 0;
-	check_read_access(image_index);
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
+
+	init();
 	
 	if (is_complex_mode()) {
 		throw ImageReadException(filename, "Cannot read complex Gatan2 files");

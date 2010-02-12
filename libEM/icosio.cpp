@@ -117,8 +117,16 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 
 	//single image format, index can only be zero
-	image_index = 0;
-	check_read_access(image_index);
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
+	if(image_index != 0) {
+		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	}
+
+	init();
+	
 	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz),false,false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -141,7 +149,9 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 	ENTERFUNC;
 	int err = 0;
 	//single image format, index can only be zero
-	image_index = 0;
+	if(image_index != 0) {
+		throw ImageWriteException(filename, "MRC file does not support stack.");
+	}
 	check_write_access(rw_mode, image_index, 1);
 
 	icosh.stamp = STAMP;

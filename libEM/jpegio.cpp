@@ -104,6 +104,10 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
+	//single image format, index can only be zero
+	if(image_index != 0) {
+		throw ImageWriteException(filename, "MRC file does not support stack.");
+	}
 	check_write_access(rw_mode, image_index);
 
 	if ((int) dict["nz"] != 1) {
