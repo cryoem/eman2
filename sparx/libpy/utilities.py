@@ -3048,7 +3048,7 @@ def align_diff(data1, data2=None):
 		if sini > 0.0:
 			alphai = atan(sini/cosi)/pi*180.0
 		else:
-			alphai = atan(sini/cosi)*pi*180.0+360.0
+			alphai = atan(sini/cosi)/pi*180.0+360.0
 	elif cosi < 0.0:
 		alphai = atan(sini/cosi)/pi*180.0+180.0
 	else:
