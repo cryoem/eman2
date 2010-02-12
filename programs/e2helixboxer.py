@@ -70,7 +70,7 @@ def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = No
             y1 = hcoords[1] + y0*l_uvect[1]
             x2 = x1 + px_length*l_uvect[0]
             y2 = y1 + px_length*l_uvect[1]
-            ptcl["ptcl_source_coords"] = ( (x1+x2)/2.0, (y1+y2)/2.0) 
+            ptcl["ptcl_source_coord"] = ( (x1+x2)/2.0, (y1+y2)/2.0) 
         particles.append( ptcl )
         y0 += px_step
     
