@@ -61,6 +61,7 @@ Various utilities related to BDB databases."""
 	parser.add_option("--filtexclude",type="string",help="Exclude dictionary names containing the specified string",default=None)
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
+	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
 
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
@@ -139,15 +140,39 @@ Various utilities related to BDB databases."""
 		except: 
 			print "Error reading ",path
 			continue
+
+		if options.dump :
+			for db in dbs:
+				print "##### ",db
+				dct=db_open_dict(path+db)
+				
+				#### Dump
+				keys=dct.keys()
+				keys.sort()
+				for k in keys:
+					v=dct[k]
+					print "%s : "%k,
+					if isinstance (v,list) or isinstance(v,tuple)  :
+						for i in v: print "\n\t%s"%i,
+						print ""
+					elif isinstance(v,dict) :
+						ks2=v.keys()
+						ks2.sort()
+						for i in ks2:
+							print "\n\t%s : %s"%(i,v[i]),
+						print ""
+					else : print str(v)
 			
 		# long listing, one db per line
-		if options.long :
+		elif options.long :
 			width=maxname+3
 			fmt="%%-%ds %%-07d %%14s  %%s"%width
 			fmt2="%%-%ds (not an image stack)"%width
 			total=[0,0]
 			for db in dbs:
 				dct=db_open_dict(path+db)
+								
+				### Info on all particles
 				if options.all :
 					for i in range(len(dct)):
 						im=dct[i]
