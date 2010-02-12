@@ -61,6 +61,7 @@ def main():
 	parser.add_option("--MPI",      action="store_true", default=False,         help="whether to use MPI version")
 	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
+	parser.add_option("--n",        action="store_true", default=False,         help="new")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -78,6 +79,15 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
+		if(options.n):
+			from development import ali3d_n
+			global_def.BATCH = True
+			ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				options.yr, options.ts, options.delta, options.an,
+				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				options.function, options.Fourvar, options.debug, options.MPI)
+			global_def.BATCH = False
+			sys.exit()
 		from applications import ali3d_d
 		global_def.BATCH = True
 		ali3d_d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
