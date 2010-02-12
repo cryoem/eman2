@@ -236,6 +236,15 @@ def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length
             if do_edge_norm:
                 ptcl.process_inplace("normalize.edgemean")
             ptcl.write_image(ptcl_filepath, i) #appending to the image stack
+    else:
+        for i in range(len(particles)):
+            ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
+            if os.access(ptcl_filepath, os.F_OK):
+                os.remove(ptcl_filepath)
+            ptcl = particles[i]
+            if do_edge_norm:
+                ptcl.process_inplace("normalize.edgemean")
+            ptcl.write_image(ptcl_filepath)
 
 
 def db_save_particles(micrograph_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
@@ -289,7 +298,6 @@ class EMWriteHelixFiles(QtGui.QDialog):
         self.ptcls_filename_line_edit = QtGui.QLineEdit()
         self.ptcls_as_stack_checkbox = QtGui.QCheckBox(self.tr("&As Stack"))
         self.ptcls_as_stack_checkbox.setChecked(True)
-        self.ptcls_as_stack_checkbox.setEnabled(False)
         ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
         self.ptcls_overlap_spinbox = QtGui.QSpinBox()
         self.ptcls_overlap_spinbox.setMaximum(1000)
@@ -385,12 +393,21 @@ class EMWriteHelixFiles(QtGui.QDialog):
                 px_width = self.ptcls_width_spinbox.value()
                 helix = helices_dict[coords_key]
                 do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
+                as_stack = self.ptcls_as_stack_checkbox.isChecked()
 
                 ptcl_dir = str(self.ptcls_dir_line_edit.text())
                 ptcl_fname = str(self.ptcls_filename_line_edit.text())
                 ptcl_filepath = os.path.join(ptcl_dir, ptcl_fname)
                 
-                save_particles(helix, i, ptcl_filepath, px_overlap, px_length, px_width, do_edge_norm)
+                try:
+                    save_particles(helix, i, ptcl_filepath, px_overlap, px_length, px_width, do_edge_norm, as_stack)
+                except RunTimeError, e:
+                    if as_stack:
+                        message = "RunTimeError encountered. Likely, the image format being used to save particles does not support stacks." + str(e)
+                    else:
+                        message = str(e)
+                    err_message_dlg = QtGui.QErrorMessage(self)
+                    err_message_dlg.showMessage(message)
                 i += 1
             pass
         if self.helices_groupbox.isChecked():
