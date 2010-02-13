@@ -284,7 +284,7 @@ def main():
 	
 
 def get_classaverage_extras(options):
-	s = " --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
+	s = " --align=%s:maxshift=%d --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
 	if options.classkeepsig:
 		s += " --keepsig"
 	if options.classralign != None:
@@ -330,7 +330,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 			e2cacmd += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
 	
 	if (options.verbose>0):
-		e2cacmd += " -v"
+		e2cacmd += " -verbose=%d"%(options.verbose-1)
 	
 	if ( check ):
 		e2cacmd += " --check"	
