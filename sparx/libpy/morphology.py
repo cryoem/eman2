@@ -315,7 +315,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 		ctf[i]=ctf[i]*Res_TE[i]
 	dis = defocus_L2_euc(ctf, Res_roo, i_start, i_stop)
 	return [defocus, dis]
-	
+
 def defocus_L2_euc(v1,v2, ist,istp):
 	from math import sqrt
 	dis    = 0.0
@@ -330,7 +330,7 @@ def defocus_L2_euc(v1,v2, ist,istp):
 	else:	
 		res = sqrt(dis)/sqrt(pw_sum)/tfeq	
 		return res
-		
+
 def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100, ampcont=0.0):
 	"""
 		Use specified frequencies area (istart-istop)to estimate defocus
@@ -384,7 +384,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 	        		       defocus  = dz
 	        		       diff_min = diff
 	        		       xscore   = diff_min
-	              			 
+
 		dz_low = defocus-step*2
 		if( dz_low < 0 ): 	dz_low=0.0
 		dz_high = defocus + step*2
@@ -488,7 +488,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 			return res
 		if(writetodoc[0] == "l"): 	return res
 		if(writetodoc[0] == "w"): 	out.close()
-		
+
 def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix_of_micrograph="roo", docf="a",skip="#",print_screen="no"):
 	"""
 		Estimate defocus using user defined 1D power spectrum area
@@ -498,7 +498,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	"""
 	import os
 	import sys
-	if os.path.exists(indir) == False					     : 	ERROR("roodir doesn't exist", "defocus_get_fast",1)
+	if os.path.exists(indir) == False: 	ERROR("roodir doesn't exist", "defocus_get_fast",1)
 	flist = os.listdir(indir)
 	for i, v in enumerate(flist):
 		micname                  = os.path.join(indir,v)
@@ -752,7 +752,7 @@ def imf_B_factor_get(res_N,x,ctf_params):
 	xopt1 = fmin(residuals_B2, p, (res_N,ctf[1][0:nx-1], x))
 	print  xopt
 	return xopt
-	
+
 def imf_residuals_B1(p,y,x):
 	"""
 		Give the initial guess of B-factor
@@ -761,9 +761,9 @@ def imf_residuals_B1(p,y,x):
 	C,B = p
 	err = 0.0
 	for i in xrange(len(y)):
-		err+= abs(y[i] - C*exp(-B*x[i]*x[i]))
+		err+= abs(y[i] - C*exp(-B*x[i]*x[i]))  # should be 4*B
 	return err
-	
+
 def imf_residuals_B2(p,y,ctf,x):
 	"""
 		fit B-factor in case of considering CTF effect
@@ -772,9 +772,9 @@ def imf_residuals_B2(p,y,ctf,x):
 	C,B = p
 	err = 0.0
 	for i in xrange(len(y)):
-		err+= abs(y[i] - ctf[i]*C*exp(-B*x[i]*x[i]))
+		err+= abs(y[i] - ctf[i]*C*exp(-B*x[i]*x[i]))  # should be 4*B
 	return err
-	
+
 def imf_params_get(fstrN, fstrP, ctf_params, pu, nrank, q, lowf=0.01):
 	"""
 		Extract image formation paramters using optimization method
@@ -810,7 +810,7 @@ def imf_params_get(fstrN, fstrP, ctf_params, pu, nrank, q, lowf=0.01):
 		res_N[i]*= q
 	params.append(res_N)
 	return params
-	
+
 def imf_fit_pu(res_P, x, ctf_params, pu, C, B, q, w):
 	from scipy.optimize import fmin
 	res   = []
@@ -858,7 +858,7 @@ def residuals_lsq_peak(p,y,x,c):
 		tmp2 = exp(c1)*exp(c2/(x[i] + c3)**2)
 		err.append(abs(y[i] - tmp2 - d1*tmp1))
 	return err
-	
+
 def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0):
 	"""
 		calculate signal residual from 1D rotationally averaged power spectra 

@@ -450,7 +450,7 @@ class memory_store:
     
     def get_image(self, id):
         return self.m_imgs[id]
-          
+
 def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, CTF=False, snr=1.0, sign=1, myseed=None ):
 	from random import seed
 	from random import randint
@@ -479,12 +479,12 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 	proj = EMData()
 	proj.read_image(proj_stack,list_proj[0])
-	
+
 	size = proj.get_xsize()
 	if size != proj.get_ysize():
 		print "Image projections must be square!"
 		return None
-	
+
 	#for j in xrange(nimages):
 	#    proj = EMData()
 	#    proj.read_image(proj_stack, j)
