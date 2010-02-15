@@ -425,7 +425,7 @@ class EMHelixBoxerWidget(QtGui.QWidget):
     """
     the GUI widget which contains the settings for boxing helices and writing results to files
     """
-    def __init__(self, micrograph_filepath, app):
+    def __init__(self, micrograph_filepaths, app, box_width):
         """
         @micrograph_filepath: the path to the image file for the micrograph
         @app: the application to which this widget belongs
@@ -437,26 +437,31 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.main_image = None #Will be an EMImage2DModule instance
         self.helix_viewer = None #Will be an EMImage2DModule instance
-
         self.write_helix_files_dlg = None
         
         self.color = (0, 0, 1)
         self.selected_color = (0, 1, 0)
-        self.micrograph_list = [] # [micrograph1_filepath, micrograph2_filepath, ...]
         self.counter = counterGen()
 
         self.__create_ui()
+
+        if sys.version_info >= (2, 6):
+            self.micrograph_list = [ os.path.relpath(path) for path in micrograph_filepaths ] #os.path.relpath is new in Python 2.6
+        else:
+            self.micrograph_list = micrograph_filepaths # [micrograph1_filepath, micrograph2_filepath, ...]
         
-        if micrograph_filepath:
-            if sys.version_info >= (2, 6):
-                self.micrograph_filepath = os.path.relpath(micrograph_filepath) #os.path.relpath is new in Python 2.6
-            else:
-                self.micrograph_filepath = micrograph_filepath
+        if len(self.micrograph_list) > 0:
+            self.micrograph_filepath = self.micrograph_list[0]
+        else:
+            self.micrograph_filepath = None
+        self.update_micrograph_table()
+        if self.micrograph_filepath:
             img = EMData(self.micrograph_filepath)
-            if not self.micrograph_filepath in self.micrograph_list:
-                self.micrograph_list.append(self.micrograph_filepath)
-                self.micrograph_list.sort() 
             self.load_micrograph(img)
+        
+        if box_width > 0:
+            self.box_width_spinbox.setValue(box_width)
+            self.width_changed(box_width)
             
         self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
         self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
@@ -472,10 +477,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         
         self.menu_bar = QtGui.QMenuBar(self)
         self.file_menu = QtGui.QMenu(self.tr("&File"))
-        self.write_coords_action = QtGui.QAction(self.tr("Save Helix &Coordinates"), self)
-        self.write_images_action = QtGui.QAction(self.tr("&Save Helix Images"), self)
-        self.load_boxes_action = QtGui.QAction(self.tr("Load &Boxes"), self)
         self.load_micrograph_action = QtGui.QAction(self.tr("&Open Micrograph"), self)
+        self.write_coords_action = QtGui.QAction(self.tr("Save &Coordinates"), self)
+        self.write_images_action = QtGui.QAction(self.tr("Save &Images"), self)
+        self.load_boxes_action = QtGui.QAction(self.tr("&Load Coordinates"), self)
         self.quit_action = QtGui.QAction(self.tr("&Quit"), self)
         self.file_menu.addAction(self.load_micrograph_action)
         self.file_menu.addAction(self.load_boxes_action)
@@ -992,36 +997,20 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         self.edit_mode = None
         self.current_boxkey = None #We are done editing the box
         self.initial_helix_box_data_tuple = None
-
         
 def main():
-    progname = os.path.basename(sys.argv[0])
-    usage = """%prog [options] <image>....
-
-used to box helices
-
-For example:
-
-e2helixboxer.py ????.mrc --boxwidth=256
-"""
+    usage = """e2helixboxer.py [options] <image1> <image2> ..."""
     parser = OptionParser(usage=usage,version=EMANVERSION)
-    
-    parser.add_option("--boxwidth","-B",type="int",help="Box width in pixels",default=128)
-    parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-    
+    parser.add_option("--box-width", "-w", type="int", dest="box_width", help="Box width in pixels", default=-1)
     (options, args) = parser.parse_args()
-    if len(args) > 0:
-        filename= args[0]
-        (path, basename) = os.path.split(filename)
-    else:
-        filename = None
-        (path, basename) = (None, None)
-    logid=E2init(sys.argv)
+    
+    logid=E2init(sys.argv)    
     
     app = EMStandAloneApplication()
-    helixboxer = EMHelixBoxerWidget(filename, app)
+    helixboxer = EMHelixBoxerWidget(args, app, options.box_width)
     helixboxer.show()
     app.execute()
+    
     E2end(logid)
 
 if __name__ == '__main__':
