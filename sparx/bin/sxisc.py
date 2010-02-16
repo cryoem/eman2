@@ -55,7 +55,7 @@ def main():
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 
-	from applications import isc
+	from development import isc
 	global_def.BATCH = True
 	isc(args[0], options.align, options.clustering, options.realign, options.use_deci_data)
 	global_def.BATCH = False
