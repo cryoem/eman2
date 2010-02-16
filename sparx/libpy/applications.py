@@ -1163,7 +1163,7 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	from alignment    	import kbt
 	from utilities    	import model_circle, amoeba, compose_transform2, drop_image, get_arb_params, get_image, get_params2D, set_params2D
 	from alignment    	import fine_2D_refinement, crit2d
-	from statistics   	import add_oe_series, ave_var_series, fsc_mask
+	from statistics   	import add_oe_series, fsc_mask
 	from filter 		import filt_from_fsc_bwt,filt_table
 	from morphology         import ctf_2, ctf_1d
 	import os
