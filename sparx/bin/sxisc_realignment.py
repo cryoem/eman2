@@ -58,7 +58,7 @@ def main():
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		from applications import isc_realignment, isc_realignment_MPI
+		from development import isc_realignment, isc_realignment_MPI
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
