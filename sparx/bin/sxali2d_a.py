@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--option", type="int",   default=0,              help="The option of using the genetic algorithm")
 	parser.add_option("--number_of_ave", type="int",    default=16,     help="Number of averages for the alignment")
 	parser.add_option("--crossover_rate", type="float",   default=0.9,  help="Crossover rate of the genetic algorithm")
-	parser.add_option("--mutation_rate", type="string",   default="0.001 0.002 0.005",     help="Mutation rate of the genetic algorithm")
+	parser.add_option("--mutation_rate", type="string",   default="0.1 0.2 0.5",     help="Mutation rate of the genetic algorithm")
 	parser.add_option("--max_merge", type="int",   default=50,          help="The maximum merge allowed")
 	parser.add_option("--grid_size", type="int",   default=32,          help="Size of the chessboard")
 	parser.add_option("--max_avg",   type="int",   default=100,         help="Maximum average allowed in the best solutions")

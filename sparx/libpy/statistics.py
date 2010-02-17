@@ -6113,6 +6113,7 @@ def isc_read_conf(conf_file):
 	cfgali['snr']        = float(cfgali['snr'])
 	cfgali['ou']         = int(cfgali['ou'])
 	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
+	cfgali['n_ave']      = int(cfgali['n_ave'])
 	cfgali['cuda']       = eval(cfgali['cuda'])
 	cfgali['n_gpu']      = int(cfgali['n_gpu'])
 
