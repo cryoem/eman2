@@ -2911,10 +2911,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
 					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
-				from utilities    import get_params_proj
-				print  im, get_params_proj(data[im])
-				from sys import exit
-				exit()
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
@@ -9495,4 +9491,3 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False):
 		ave.write_image('ave_' + name, 0)
 	else:
 		ave.write_image(name_out, 0)
-

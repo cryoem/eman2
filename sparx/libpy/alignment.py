@@ -1116,9 +1116,9 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
-	
+
 	ID = data.get_attr("ID")
-	
+
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
