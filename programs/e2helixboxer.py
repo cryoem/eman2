@@ -551,14 +551,10 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
             self.helix_viewer.setWindowTitle("Current Boxed helix")
             self.helix_viewer.get_qt_widget().resize(300,800)
+            self.helix_viewer.set_scale(1)
         QtCore.QObject.connect(self.helix_viewer.emitter(), QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
         self.helix_viewer.set_data(helix_emdata)
-
         get_application().show_specific(self.helix_viewer)
-        #scale = 100.0 / self.get_width()
-        self.helix_viewer.set_scale(1)
-        if self.helix_viewer.inspector:
-            self.helix_viewer.inspector.set_scale(1)
         self.helix_viewer.updateGL()
     def closeEvent(self, event):
         """
@@ -903,6 +899,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
             self.main_image.del_shape(box_key)
             self.main_image.updateGL()
             self.current_boxkey = None
+            (row, col) = (self.micrograph_table.currentRow(), 1)
+            num_boxes = int(str( self.micrograph_table.item(row,col).text() ))
+            self.micrograph_table.item(row,col).setText(str(num_boxes-1))
         else:
             self.current_boxkey = box_key
             self.initial_helix_box_data_tuple = tuple( self.main_image.get_shapes().get(box_key).getShape()[4:9] )
@@ -931,6 +930,9 @@ class EMHelixBoxerWidget(QtGui.QWidget):
                     helix = get_helix_from_coords( self.main_image.get_data(), *self.initial_helix_box_data_tuple )
                     helix["ptcl_source_image"] = self.micrograph_filepath
                     self.display_helix(helix)
+                    (row, col) = (self.micrograph_table.currentRow(), 1)
+                    num_boxes = int(str( self.micrograph_table.item(row,col).text() ))
+                    self.micrograph_table.item(row,col).setText(str(num_boxes+1))
                 
             elif self.edit_mode == "delete":
                 pass
