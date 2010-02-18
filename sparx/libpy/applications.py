@@ -386,14 +386,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				all_ctf_params.append(ctf_params.ampcont)
 			if adw:
 				if im == 0:
-					ctf1 = ctf_1d(nx2, ctf_params)
+					ctf1 = ctf_1d(nx*2, ctf_params)
 					nc = len(ctf1)
 					ctf2 = [0.0]*nc
 					for k in xrange(nc):
 						ctf1[k] = abs(ctf1[k])
 						ctf2[k] = ctf1[k] * ctf1[k]
 				else:
-					tmp = ctf_1d(nx2, ctf_params)
+					tmp = ctf_1d(nx*2, ctf_params)
 					for k in xrange(nc):
 						ctf1[k] += abs(tmp[k])
 						ctf2[k] += tmp[k] * tmp[k]
@@ -410,13 +410,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if adw:
 			ctf1 = mpi_reduce(ctf1, nc, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			ctf2 = mpi_reduce(ctf2, nc, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			adw_table = [0.0]*nc
-			for k in xrange(nc):
-				if ctf1[k] > 0.001:
-					ww = 1.0/Ng+float(Ng-1)/Ng*(snr*ctf2[k]+1)/(snr*ctf1[k])
-				else:
-					ww = 1.0/Ng+float(Ng-1)/Ng/(snr*0.001)
-				adw_table[k] = ww/(ctf2[k]*snr+1.0)
+			if myid == main_node:			
+				adw_table = [0.0]*nc
+				for k in xrange(nc):
+					if ctf1[k] > 0.001:
+						ww = 1.0/Ng+float(Ng-1)/Ng*(snr*ctf2[k]+1)/(snr*ctf1[k])
+					else:
+						ww = 1.0/Ng+float(Ng-1)/Ng/(snr*0.001)
+					adw_table[k] = ww/(ctf2[k]*snr+1.0)
 		else:
 			reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 			ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
