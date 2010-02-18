@@ -323,6 +323,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
+		print_msg("Use new CTF correction      : %s\n"%(adw))
+		if adw:
+			print_msg("Number of groups            : %d\n"%(Ng))
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
