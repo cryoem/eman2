@@ -864,3 +864,34 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 		return None
 	else:
 		return dynamic_func
+
+
+
+
+def julien( ref_data ):
+        from utilities    import print_msg
+        from filter       import fit_tanh, filt_tanl
+        from utilities    import center_2D
+        #  Prepare the reference in 2D alignment, i.e., low-pass filter and center.
+        #  Input: list ref_data
+        #   0 - mask
+        #   1 - center flag
+        #   2 - raw average
+        #   3 - fsc result
+        #  Output: filtered, centered, and masked reference image
+        #  apply filtration (FRC) to reference image:
+        global  ref_ali2d_counter
+        ref_ali2d_counter += 1
+        ref_ali2d_counter  = ref_ali2d_counter % 50
+        print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+        fl = min(0.1+ref_ali2d_counter*0.003, 0.4)
+        aa = 0.1
+        msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+        print_msg(msg)
+        tavg = filt_tanl(ref_data[2], fl, aa)
+        cs = [0.0]*2
+        if(ref_data[1] > 0):
+                tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
+                msg = "Center x = %10.3f, y       = %10.3f\n"%(cs[0], cs[1])
+                print_msg(msg)
+        return  tavg, cs
