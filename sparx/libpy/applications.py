@@ -33,9 +33,9 @@ from global_def import *
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar = False, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
+		CTF=False, snr=1.0, Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, user_func_name, CUDA, GPU)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
@@ -236,7 +236,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar = False, user_func_name="ref_ali2d", CUDA=False, GPU=0):
+			Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -355,7 +355,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ctf_params = ima.get_attr("ctf")
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
 		from filter import filt_ctf
-		from morphology   import ctf_img
+		from morphology   import ctf_img, ctf_1d
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -377,7 +377,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 			if CUDA:
 				all_ctf_params.append(ctf_params.defocus)
 				all_ctf_params.append(ctf_params.cs)
@@ -385,6 +384,21 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				all_ctf_params.append(ctf_params.apix)
 				all_ctf_params.append(ctf_params.bfactor)
 				all_ctf_params.append(ctf_params.ampcont)
+			if adw:
+				if im == 0:
+					ctf1 = ctf_1d(nx2, ctf_params)
+					nc = len(ctf1)
+					ctf2 = [0.0]*nc
+					for k in xrange(nc):
+						ctf1[k] = abs(ctf1[k])
+						ctf2[k] = ctf1[k] * ctf1[k]
+				else:
+					tmp = ctf_1d(nx2, ctf_params)
+					for k in xrange(nc):
+						ctf1[k] += abs(tmp[k])
+						ctf2[k] += tmp[k] * tmp[k]
+			else:
+				Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.append(alpha)
@@ -393,8 +407,19 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			all_ali_params.append(mirror)
 
 	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-		ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+		if adw:
+			ctf1 = mpi_reduce(ctf1, nc, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			ctf2 = mpi_reduce(ctf2, nc, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			adw_table = [0.0]*nc
+			for k in xrange(nc):
+				if ctf1[k] > 0.001:
+					ww = 1.0/Ng+float(Ng-1)/Ng*(snr*ctf2[k]+1)/(snr*ctf1[k])
+				else:
+					ww = 1.0/Ng+float(Ng-1)/Ng/(snr*0.001)
+				adw_table[k] = ww/(ctf2[k]*snr+1.0)
+		else:
+			reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+			ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	else:  ctf_2_sum = None
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -450,7 +475,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			reduce_EMData_to_root(ave2, myid, main_node)
 			if myid == main_node:
 				print_msg("Iteration #%4d\n"%(total_iter))
-				if CTF:  tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+				if CTF: 
+					if adw: tavg = filt_table(Util.addn_img(ave1, ave2), adw_table) 
+					else:	tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:	 tavg = (ave1+ave2)/nima
 				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
