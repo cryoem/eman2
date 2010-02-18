@@ -695,9 +695,14 @@ class EMHelixBoxerWidget(QtGui.QWidget):
         """
         selector = EMSelectorModule(single_selection=False,save_as_mode=False)
         new_micrographs = selector.exec_()
-        if sys.version_info >= (2, 6):
-            new_micrographs = [os.path.relpath(path) for path in new_micrographs] #os.path.relpath is new in Python 2.6
-        self.micrograph_filepath_set.update(set(new_micrographs))
+        if isinstance(new_micrographs, str): #Just one file was selected
+            if sys.version_info >= (2, 6):
+                new_micrographs = os.path.relpath(new_micrographs) #os.path.relpath is new in Python 2.6
+            self.micrograph_filepath_set.add(new_micrographs)
+        else: #Multiple files were selected
+            if sys.version_info >= (2, 6):
+                new_micrographs = [os.path.relpath(path) for path in new_micrographs] #os.path.relpath is new in Python 2.6
+            self.micrograph_filepath_set.update(set(new_micrographs))
         self.update_micrograph_table()
     def update_micrograph_table(self):
         """
