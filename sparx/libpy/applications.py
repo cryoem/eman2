@@ -408,13 +408,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				adw_img = Util.mult_scalar(ctf_2_sum, snr)
 				adw_img += 1.0
 				Util.div_filter(adw_img, ctf_abs_sum)
-				Util.mult_scalar(adw_img, float(Ng-1)/Ng/snr)
+				Util.mul_scalar(adw_img, float(Ng-1)/Ng/snr)
 				adw_img += 1.0/Ng
-				Util.mult_scalar(adw_img, snr)
-				Util.mult_scalar(ctf_2_sum, snr)
+				Util.mul_scalar(adw_img, snr)
+				Util.mul_scalar(ctf_2_sum, snr)
 				ctf_2_sum += 1.0
 		else:
-			ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+			if myid == main_node:
+				ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 	else:  ctf_2_sum = None
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
