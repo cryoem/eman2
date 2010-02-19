@@ -89,7 +89,7 @@ def main():
 		############### Step 1 - classify the reference images
 
 		# compute the reference self-similarity matrix
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali --force --verbose=d%"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=dot --cmp=phase --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
 		os.system(cmd)
@@ -145,7 +145,7 @@ def main():
 				
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s  --saveali --force --verbose=d%"%(args[4],args[1],args[5],options.shrinks1,
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s --ralign=%s --raligncmp=%s --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		if options.exclude!=None : cmd+=" --exclude="+options.exclude
@@ -179,7 +179,7 @@ def main():
 	mx.write_image(args[2],0)
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=d%"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
+	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	
 	if ( options.ralign != None ):
