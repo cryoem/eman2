@@ -389,14 +389,14 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				all_ctf_params.append(ctf_params.ampcont)
 			if adw:
 				if im == 0:
-					ctf1 = ctf_1d(nx*2, ctf_params)
+					ctf1 = ctf_1d(nx, ctf_params)
 					nc = len(ctf1)
 					ctf2 = [0.0]*nc
 					for k in xrange(nc):
 						ctf1[k] = abs(ctf1[k])
 						ctf2[k] = ctf1[k] * ctf1[k]
 				else:
-					tmp = ctf_1d(nx*2, ctf_params)
+					tmp = ctf_1d(nx, ctf_params)
 					for k in xrange(nc):
 						ctf1[k] += abs(tmp[k])
 						ctf2[k] += tmp[k] * tmp[k]
