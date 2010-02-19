@@ -44,6 +44,7 @@ public:
 
 static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
+/** same function than Util::coveig but wrapped to use directly in python code */
 static Dict coveig_for_py(int ncov, const vector<float>& covmatpy);
 
 static Dict ExpMinus4YSqr(float ymax,int nsamples);
@@ -62,6 +63,40 @@ static void colreverse(float* beg, float* end, int nx);
 
 static void slicereverse(float* beg, float* end, int nx,int ny);
 
+/**
+ * Performs inplace integer cyclic shift as specified by the "dx","dy","dz" parameters on a 3d volume.
+ * Implements the inplace swapping using reversals as descibed in  also:
+ * http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
+ * @author  Phani Ivatury
+ * @date 18-2006
+ * @see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
+ *
+ *
+ * A[0] A[1] A[2] A[3] A[4] A[5] A[6] A[7] A[8] A[9]
+ *
+ * 10   20   30   40   50   60   70   80   90   100
+ * ------------
+ *   m = 3 (shift left three places)
+ *
+ *   Reverse the items from 0..m-1 and m..N-1:
+ *
+ *   30   20   10   100  90   80   70   60   50   40
+ *
+ *   Now reverse the entire sequence:
+ *
+ *   40   50   60   70   80   90   100  10   20   30
+ *
+ *
+ *   cycl_shift() in libpy/fundementals.py calls this function
+ *
+ *   Usage:
+ *   EMData *im1 = new EMData();
+ *   im1->set_size(70,80,85);
+ *   im1->to_one();
+ *   Dict params; params["dx"] = 10;params["dy"] = 10000;params["dz"] = -10;
+ *   Utils::cyclicshift(im1,params);
+ *   im1.peak_search(1,1)
+ *   */
 static void cyclicshift(EMData* image, Dict params);
 
 static Dict im_diff(EMData* V1, EMData* V2, EMData* mask=0);
@@ -399,8 +434,32 @@ class FakeKaiserBessel : public KaiserBessel {
 		 */
 		static float quadri_background(float x, float y, int nx, int ny, float* image, int xnew, int ynew);
 
+		// Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
+		/* Commented by Zhengfan Yang on 04/20/07
+		This function is written to replace get_pixel_conv(), which is too slow to use in practice.
+		I made the following changes to get_pixel_conv():
+		1. Use the same data passing scheme as quadri() and move the function from emdata_sparx.cpp to util_sparx.cpp
+		2. Reduce usage of i0win_tab (from 98 calls to 14 calls in 2D case, from 1029 calls to 21 calls in 3D case!)
+		3. Unfold the 'for' loop
+		4. Reduce the usage of multiplications through some bracketing (from 98 times to 57 times in 2D case, from 1029 times to 400 times in 3D case)
+
+		The shortcoming of this routine is that it only works for window size N=7. In case you want to use other window
+		size, say N=5, you can easily modify it by referring my code.
+		*/
 		static float get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb);
 
+		// Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
+		/* Commented by Zhengfan Yang on 04/20/07
+		This function is written to replace get_pixel_conv(), which is too slow to use in practice.
+		I made the following changes to get_pixel_conv():
+		1. Use the same data passing scheme as quadri() and move the function from emdata_sparx.cpp to util_sparx.cpp
+		2. Reduce usage of i0win_tab (from 98 calls to 14 calls in 2D case, from 1029 calls to 21 calls in 3D case!)
+		3. Unfold the 'for' loop
+		4. Reduce the usage of multiplications through some bracketing (from 98 times to 57 times in 2D case, from 1029 times to 400 times in 3D case)
+
+		The shortcoming of this routine is that it only works for window size N=7. In case you want to use other window
+		size, say N=5, you can easily modify it by referring my code.
+		*/
         static float get_pixel_conv_new_background(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb, int xnew, int ynew);
 
 		static std::complex<float> extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb);
@@ -456,8 +515,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftr_d(double *xcmplx, int nv);
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
+
+	/** This function conducts the Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 	static void  Normalize_ring(EMData* ring, const vector<int>& numr);
+
+	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	/*
@@ -477,13 +540,53 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+
+	/**
+	 * checks both straight & mirrored position
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	*/
 	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag);
+
+	/**
+	 * checks both straight & mirrored positions
+	 * Find only positions within +/-pis_max of 0 and 180 (for helcal use)
+	 * input - fourier transforms of rings!
+	 * circ1 already multiplied by weights!
+	*/
 	static Dict Crosrng_psi_0_180(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
 	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
 
+	/**
+	 * checks both straight & mirrored positions
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	 * returns EM object with 1D ccf
+	*/
 	static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
+
+	/**
+	 * checks both straight & mirrored positions
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	 * returns EM object with 1D ccf
+	*/
 	static void Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float *q, float *t);
+
+	/**
+	 * This program is half of the Crosrng_msg. It only checks straight position.
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	 * returns EM object with 1D ccf
+	*/
 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
+
+	/**
+	 * This program is half of the Crosrng_msg. It only checks mirrored position.
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	 * returns EM object with 1D ccf
+	*/
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 
 	static vector<float> Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr );
@@ -492,44 +595,148 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 	static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 
+	// helper functions for ali2d_ra
 	static float ener(EMData* ave, vector<int> numr);
 
 	static float ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float> tot);
 
-        // k-means helper
-        static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
-        static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
-        static int k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag);
-	
+	/** k-means helper */
+	static Dict min_dist_real(EMData* image, const vector<EMData*>& data);
+
+	/** helper function for k-means */
+	static Dict min_dist_four(EMData* image, const vector<EMData*>& data);
+
+	/** helper to create the contengency table for partition matching (k-means)
+	 * flag define is the list of stable obj must be store to stb, but the size st
+	 * must be know before. The trick is first start wihtout the flag to get number
+	 * of elements stable, then again with the flag to get the list. This avoid to
+	 * have two differents functions for the same thing.
+	 * */
+	static int k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag);
+
 	// branch and bound matching algorithm
+
+	/** K is the number of classes in each partition (should be the same for all partitions)
+	 * the first element of each class is its original index in the partition, and second is dummy var
+	 *
+	 * Turn the one dimensional Parts into vectors for easier manipulation
+	 * While we're at it, construct Indices, an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
+	 * So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
+	 *
+	 * will delete this soon.... use bb_enumerateMPI instead
+	 * */
 	static void bb_enumerate_(int* Parts, int* classDims, int nParts, int nClasses, int T, int n_guesses, int* levels);
+
+	/** initial_prune removes all classes C from Parts where there does not exist ANY feasible matching containing class C which has weight gt T.
+	 * The first element of each class is its original index, and second is dummy variable
+	*/
 	static void initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T);
+
+	/** Each class in Parts has its dummy variable set to 0 or 1. Only consider those with its dummy variable set to 1 (the 'active' ones)
+	 * First element of each class is its original index, second is the dummy variable slot.
+	*/
 	static bool explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T, int partref, int* curintx, int
-	size_curintx, int* next, int size_next, int depth);
+			size_curintx, int* next, int size_next, int depth);
+
 	static int* branch(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel, int n_guesses);
+
+	/** find max_num_matches feasible matches (if possible) which has weight gt T, and weight gteq weight of all other feasible matches.
+	 * return the results in the pre-allocated arrays matchlist and costlist.
+	 * Each match is a sequence (stored in a 1D array) of nParts numbers, where the i-th element in the sequence is the original index of the class from the i-th
+	 * partition.
+	 * Those classes in argParts whose dummy variable is 1 are the classes which are not yet used (i.e., those which can be used to construct the feasible matches)
+	 * returns the number of matches found. it's less than the number request if there aren't that many that's over the threshold
+	*/
 	static int findTopLargest(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int max_num_matches, int*
-	costlist, int n_guesses);
+			costlist, int n_guesses);
+
+	/** make an intelligent "guess" at the largest weight of all possible feasible matches.
+	 * we make "n_guesses" guesses and return the largest one.
+	 * the largest weight of all feasible matches is guaranteed to be larger than or equal to the returned guess.
+	*/
 	static int generatesubmax(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int n_guesses);
+
+	/** return the weight of the largest weighted feasible match, along with the match in the (preallocated) argument curmax.
+	 * The returned weight has to be gt newT. If there is no such feasible matching, return 0 as *curmax
+	*/
 	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curmax);
+
 	static int* explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curintx, int size_curintx, int* next, int
-	size_next, int depth);
+			size_next, int depth);
+
+	/** First element of output is total cost of the matches in the output
+	 * Second element of output is the total number of matches in output
+	 * So output has 2+(*(output+1))nParts elements.
+	*/
 	static bool sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* output);
-	
+
+	/** K is the number of classes in each partition (should be the same for all partitions)
+	 * the first element of each class is its original index in the partition, and second is dummy var
+	 * MPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array. The first element is reserved for max_levels (the size of the smallest
+	 * partition after pruning).
+	 * if nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called
+	 * to find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.
+	 *
+	 * essentially the same as bb_enumerate but with the option to do mpi version.
+	*/
 	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels);
+
+	/** an interface function between python code and branchMPI.
+	 * Doesn't do much except compute Indices, call branchMPI,
+	 * and check if the output make sense (i.e., feasible etc),
+	 * and process the output to return to python as a vector.
+	 * nFirst is the number of matches in firstmatches */
 	static vector<int> branchMPIpy_(int* argParts, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int n_guesses, int nFirst, int* firstmatches);
-	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches); 
-	
-        // new code common-lines
-        static vector<double> cml_weights(const vector<float>& cml);
-        static vector<int> cml_line_insino(vector<float> Rot, int i_prj, int n_prj);
-        static vector<int> cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines);
-        static vector<double> cml_init_rot(vector<float> Ori);
-        static vector<float> cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps);
-        static vector<double> cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines);
-        static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj);
-        static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
-        static void set_line(EMData* img, int posline, EMData* line, int offset, int length);
-        static void cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines);
+
+	/** same as branch except the nFirst (=Levels[0]) possibilites for the first match are already chosen
+	 * firstmatches stores the matches and corresponding cost, where each match is preceded by its cost....
+	 * output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
+	 * and the rest is the list of matches. output is in one dimensional form.
+	*/
+	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches);
+
+	// new code common-lines
+
+	//helper function for the weights calculation by Voronoi to Cml
+	static vector<double> cml_weights(const vector<float>& cml);
+
+	/** 2009-03-25 15:35:53 JB. This function calculates common-lines between sinogram */
+	static vector<int> cml_line_insino(vector<float> Rot, int i_prj, int n_prj);
+
+	/** 2009-03-30 15:35:07 JB. This function calculates all common-lines between sinogram */
+	static vector<int> cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines);
+
+	/** 2009-03-25 15:35:05 JB. This function prepare rotation matrix for common-lines */
+	static vector<double> cml_init_rot(vector<float> Ori);
+
+	/** 2009-03-25 15:35:37 JB. this function update only one rotation amtrix according a new orientation*/
+	static vector<float> cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps);
+
+	/** 2009-03-26 10:46:14 JB. This function calculate all common-lines in space for Voronoi */
+	static vector<double> cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines);
+
+	/** 2009-03-26 11:37:53 JB. This function spin all angle psi and evaluate the partial discrepancy belong common-lines */
+	static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj);
+
+	/** 2009-03-30 15:44:05 JB. Compute the discrepancy belong all common-lines */
+	static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
+
+	/**  This function drop a line (line) to an 2D image (img).
+	 *  The position of the line to the image is defined by (postline).
+	 *  The part of the line paste is defined by (offset), the begin position
+	 *  and (length) the size.
+	 */
+	static void set_line(EMData* img, int posline, EMData* line, int offset, int length);
+
+	/** This function prepare the line from sinogram by cutting off some frequencies,
+	 * and creating the mirror part (complexe conjugate of the first part). Then
+	 * both lines (mirror and without) are drop to the sinogram.
+	 * line is in Fourrier space, ilf low frequency, ihf high frequency, nblines
+	 * number of lines of the half sinogram (the non miror part), sino the sinogram,
+	 * pos_line the position of the line in the sino.
+	 */
+	static void cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines);
+
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same
 	 * and then the initial start pixel is calculated with respect to the
@@ -557,7 +764,10 @@ class FakeKaiserBessel : public KaiserBessel {
                                           */
 	static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
+
+	/** Recreates a n-d image using its compressed 1-D form and the mask */
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
+
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
 	static vector<float> pw_extract(vector<float>pw, int n, int iswi,float ps);
 	static vector<float> call_cl1(long int *k,long int *n, float *ps, long int *iswi, float *pw, float *q2, double *q, double *x, double *res, double *cu, double *s, long int *iu);
@@ -629,30 +839,79 @@ class FakeKaiserBessel : public KaiserBessel {
 private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
+
+	/** formerly known as apmq
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * */
 	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	/** formerly known as apnq DO NOT CONSIDER MIRROR
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * */
 	static vector<float> multiref_polar_ali_2d_nom(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	/** formerly known as apmq
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * */
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	/** formerly known as apmq
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * Search for peaks only within +/-psi_max from 0 and 180 (helical)
+	 * */
 	static vector<float> multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	/** formerly known as apmq
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * */
 	static vector<float> multiref_polar_ali_2d_local_psi(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny);
 
+	/** Determine shift and rotation between image and one reference
+	 * image (crefim, weights have to be applied) using quadratic
+	 * interpolation, return a list of peaks  PAP  07/21/08
+	 *
+	 * ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
+	 * margin is needed for peak search and both arrays are initialized with -1.0e20
+	 * */
 	static void multiref_peaks_ali2d(EMData* image, EMData* crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm);
 
+	/** Determine shift and rotation between image and one reference
+	 * image (crefim, weights have to be applied) using quadratic
+	 * interpolation, return a list of peaks  PAP  07/21/08
+	 *
+	 * ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
+	 * margin is needed for peak search and both arrays are initialized with -1.0e20
+	 * */
 	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm,
 	     EMData *peaks_compress, EMData *peakm_compress);
 
+	/** Determine shift and rotation between image and one reference
+	 * image (crefim, weights have to be applied) using quadratic
+	 * interpolation
+	 * */
 	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, float xrng, float yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, double T);
      /*
@@ -701,9 +960,19 @@ public:
 	//static vector<float> cluster_equalsize(EMData* d, int m);
 	static vector<float> cluster_equalsize(EMData* d);
 	static vector<float> vareas(EMData* d);
+
+	/**
+	 * This function returns a 2-D slice from a 3-D EMData object
+	 * dim denotes the slice is perpendicular to which dimension
+	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
+	*/
 	static EMData* get_slice(EMData *vol, int dim, int index);
+
 	static void image_mutation(EMData *img, float mutation_rate);
+
+	/** The purpose of this function is to convert a list to grey code and mutate them and convert them back */
 	static void array_mutation(float* list, int len_list, float mutation_rate, float min_val, float max_val, int K, int is_mirror);
+
 	static vector<float> list_mutation(vector<float> list, float mutation_rate, float min_val, float max_val, int K, int is_mirror);
 	/*
 			To restrict the value to [0, nx)
