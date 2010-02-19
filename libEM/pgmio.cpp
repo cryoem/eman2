@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "pgmio.h"
@@ -41,7 +41,7 @@
 #ifdef _WIN32
 	//MS Visual Studio.NET does not supply isnan()
 	//they have _isnan() in <cfloat>
-	#include <cfloat>	
+	#include <cfloat>
 #endif
 
 using namespace EMAN;
@@ -50,7 +50,7 @@ const char *PgmIO::MAGIC_BINARY = "P5";
 const char *PgmIO::MAGIC_ASCII = "P2";
 
 PgmIO::PgmIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true), 
+:	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true),
 	initialized(false), nx(0), ny(0), maxval(0), minval(0),
 	file_offset(0), rendermin(0), rendermax(0)
 {}
@@ -70,13 +70,13 @@ namespace
 	{
 		char buf[32];
 		int c = 0;
-	
+
 		int i = 0;
 		while (!isspace(c = getc(in))) {
 			buf[i] = static_cast < char >(c);
 			i++;
 		}
-	
+
 		return atoi(buf);
 	}
 }
@@ -84,7 +84,7 @@ namespace
 void PgmIO::init()
 {
 	ENTERFUNC;
-	
+
 	if (initialized) {
 		return;
 	}
@@ -121,7 +121,7 @@ void PgmIO::init()
 		if (nx <= 0 || ny <= 0) {
 			throw ImageReadException(filename, "file size < 0");
 		}
-		
+
 		file_offset = portable_ftell(pgm_file);
 	}
 	EXITFUNC;
@@ -141,7 +141,7 @@ bool PgmIO::is_valid(const void *first_block)
 int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
@@ -152,19 +152,19 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	init();
-	
+
 	check_read_access(image_index);
 	check_region(area, IntSize(nx, ny));
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-			
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
-			
+
 	dict["max_gray"] = maxval;
 	dict["min_gray"] = minval;
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -174,10 +174,10 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 {
 	ENTERFUNC;
 	int err = 0;
-	
+
 	//single image format, index can only be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "PGM file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index);
 
@@ -190,25 +190,25 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 	else {
 		nx = dict["nx"];
 		ny = dict["ny"];
-		
+
 		if(dict.has_key("min_grey")) minval = dict["min_gray"];
 		if(dict.has_key("max_grey")) maxval = dict["max_gray"];
-		
+
 		//if we didn't get any good values from attributes, assign to 255 by default
 #ifdef _WIN32
 		if (maxval<=minval || _isnan(minval) || _isnan(maxval)) {
 #else
 			if (maxval<=minval || std::isnan(minval) || std::isnan(maxval)) {
-#endif	//_WIN32	
+#endif	//_WIN32
 			maxval = 255;
 		}
-		
+
 		if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];	// float value representing black in the output
 		if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];	// float value representign white in the output
 
 		fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
 	}
-	
+
 	EXITFUNC;
 	return err;
 }
@@ -226,17 +226,17 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	unsigned char *cdata = (unsigned char *) (data);
 	size_t mode_size = sizeof(unsigned char);
-	
-	EMUtil::process_region_io(cdata, pgm_file, READ_ONLY, image_index, 
+
+	EMUtil::process_region_io(cdata, pgm_file, READ_ONLY, image_index,
 							  mode_size, nx, ny, 1, area, true);
 
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
 	for (int k = xlen * ylen - 1; k >= 0; k--) {
-		data[k] = static_cast < float >(cdata[k]);	
+		data[k] = static_cast < float >(cdata[k]);
 	}
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -245,20 +245,20 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 /*	if(area && (area->size[0]!=nx || area->size[1]!=ny)) {
 		throw ImageWriteException("N/A", "No region writing for PGM images");
 	}
 */
-	
+
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, IntSize(nx, ny));
-	
+
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	getRenderMinMax(data, nx, ny, rendermin, rendermax);
-	
+
 	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
 
 	int old_add = 0;
@@ -266,7 +266,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	for( int j=0; j<ny; ++j ) {
 		for( int i=0; i<nx; ++i) {
 			old_add = j*nx+i;
-			new_add = (ny-1-j)*nx + i; 
+			new_add = (ny-1-j)*nx + i;
 			if( data[old_add]<rendermin ) {
 				cdata[new_add] = 0;
 			}
@@ -279,12 +279,12 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 	}
-	
-	size_t mode_size = sizeof(unsigned char);	
+
+	size_t mode_size = sizeof(unsigned char);
 	//fwrite(cdata, nx, ny, pgm_file);
 	EMUtil::process_region_io(cdata, pgm_file, WRITE_ONLY, image_index,
 							  mode_size, nx, ny, 1, area);
-	
+
 	free(cdata);
 	EXITFUNC;
 	return 0;

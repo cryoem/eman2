@@ -181,7 +181,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	init();
-	
+
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 	check_region(area, IntSize(nx1, ny1));
@@ -213,7 +213,7 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 
 	//single image format, index can only be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "PNG file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index);
 
@@ -328,7 +328,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	if (!rendermin && !rendermax) getRenderMinMax(data, nx, ny, rendermin, rendermax);
-	
+
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];
 

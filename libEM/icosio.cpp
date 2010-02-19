@@ -126,7 +126,7 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	init();
-	
+
 	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz),false,false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -150,7 +150,7 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 	int err = 0;
 	//single image format, index can only be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "ICOS file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index, 1);
 

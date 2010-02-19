@@ -157,7 +157,7 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 
 	init();
-	
+
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
@@ -398,7 +398,7 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 
 	//support single image TIFF only, index must be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "TIFF file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index);
 

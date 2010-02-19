@@ -118,7 +118,7 @@ bool AmiraIO::is_valid(const void *first_block)
 int AmiraIO::read_header(Dict & dict, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
@@ -127,7 +127,7 @@ int AmiraIO::read_header(Dict & dict, int image_index, const Region *, bool)
 	if(image_index != 0) {
 		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
 	}
-	
+
 	init();
 
 	char ll[MAXPATHLEN+10];
@@ -207,7 +207,7 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 
 	//single image format, index can only be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "Amira file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index, 1);
 

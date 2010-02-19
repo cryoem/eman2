@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifdef EM_JPEG
@@ -53,7 +53,7 @@ JpegIO::~JpegIO()
 		fclose(jpeg_file);
 		jpeg_file = 0;
 	}
-	
+
 }
 
 void JpegIO::init()
@@ -106,7 +106,7 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	//single image format, index can only be zero
 	if(image_index != 0) {
-		throw ImageWriteException(filename, "MRC file does not support stack.");
+		throw ImageWriteException(filename, "JPEG file does not support stack.");
 	}
 	check_write_access(rw_mode, image_index);
 
@@ -169,7 +169,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 			else cdata[j]=(int)((data[i*nx+j]-rendermin)/(rendermax-rendermin)*256.0);
 		}
 		jpeg_write_scanlines(&cinfo, rp, 1);
-	}	
+	}
 
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
