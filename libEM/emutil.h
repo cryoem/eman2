@@ -260,8 +260,7 @@ namespace EMAN
 		 */
 		static bool is_same_size(const EMData * image1, const EMData * image2);
 
-		/** Check whether two EMData images have the same CTF.
-		 * parameters.
+		/** Check whether two EMData images have the same CTF parameters.
 		 * @param image1 The first EMData image.
 		 * @param image2 The second EMData image.
 		 * @return whether two EMData images have the same CTF.

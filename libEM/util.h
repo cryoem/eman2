@@ -535,6 +535,10 @@ namespace EMAN
 		* @exception EmptyContainerException when the argument vector is empty
 		*/
 		static Dict get_stats( const vector<float>& data );
+
+		/** Performs the same calculations as in get_stats, but uses a single pass, optimized c approach
+		 * Should perform better than get_stats
+		*/
 		static Dict get_stats_cstyle( const vector<float>& data );
 
 		/** Search the best FFT size with good primes. It supports
@@ -594,7 +598,7 @@ namespace EMAN
 		{
 			return sqrtf(x * x + y * y);
 		}
-		
+
 		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);
 		 * @param[in] x The first number.
 		 * @param[in] y The second number.
@@ -655,14 +659,14 @@ namespace EMAN
 		 * @param[in] y The second number
 		 * @return sqrt(x*x+y*y)
 		*/
-		static float hypot_fast(int x, int y); 
+		static float hypot_fast(int x, int y);
 
 		/** Euclidean distance in 2D for integers computed fast using a cached lookup table
 		 * @param[in] x The first number
 		 * @param[in] y The second number
 		 * @return (int)round(sqrt(x*x+y*y))
 		*/
-		static short hypot_fast_int(int x, int y); 
+		static short hypot_fast_int(int x, int y);
 
 		/** A fast way to calculate a floor, which is largest integral
 		 * value not greater than argument.
@@ -862,7 +866,7 @@ namespace EMAN
 			}
 			return r;
 		}
-		
+
 		/** Calculate the angular phase difference between two r/i vectors
 		 *
 		 * @param[in] r1/i1 first vector, 2 floats
@@ -872,7 +876,7 @@ namespace EMAN
 		static inline float angle_err_ri(float r1,float i1,float r2,float i2) {
 			if ((r1==0 && i1==0) || (r2==0 && i2==0)) return 0;
 //			printf("%f\t%f\t%f\n",r1*r2+i1*i2,hypot(r1,i1),hypot(r2,i2));
-//			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));		
+//			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));
 			return fast_acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));		// fast_acos also tolerates values very slightly above 1
 		}
 
@@ -898,10 +902,10 @@ namespace EMAN
 			int i = fpclassify(*p_f);
 			if ( i == FP_NAN || i == FP_INFINITE) return 0;
 			#endif	//_WIN32 || __APPLE__
-			
+
 			return 1;
 		}
-		
+
 		static inline int goodf(const double *p_f)
 		{
 			//This is the old way to judge a good float, which cause problem on
@@ -918,7 +922,7 @@ namespace EMAN
 			int i = fpclassify(*p_f);
 			if ( i == FP_NAN || i == FP_INFINITE) return 0;
 			#endif	//_WIN32 || __APPLE__
-			
+
 			return 1;
 		}
 

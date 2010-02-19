@@ -929,9 +929,6 @@ Dict Util::get_stats( const vector<float>& data )
 
 Dict Util::get_stats_cstyle( const vector<float>& data )
 {
-	// Performs the same calculations as in get_stats, but uses a single pass, optimized c approach
-	// Should perform better than get_stats
-
 	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
 
 	double square_sum = 0.0, sum = 0.0, cube_sum = 0.0, quart_sum = 0.0;
@@ -1030,8 +1027,8 @@ int Util::calc_best_fft_size(int low)
 #include "byteorder.h"
 // This is the structure of a broadcast packet
 // Transmitter assumes little endian
-struct BPKT { 
-	char hdr[4]; 
+struct BPKT {
+	char hdr[4];
 	int uid; 	// user id on transmitter
 	int len; 	// length of total object
 	int oseq; 	// object id
