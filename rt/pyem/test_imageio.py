@@ -102,8 +102,13 @@ class TestEMIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try:
+			e.write_image(filename, -1)
+		except RuntimeError, runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
 		
 	def test_read_write_em(self):
 		"""test write-read em  .............................."""
@@ -146,8 +151,13 @@ class TestIcosIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try: 
+			e.write_image(filename, -1)
+		except RuntimeError, runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
 		
 	def test_read_write_icos(self):
 		"""test write-read icos.............................."""
@@ -162,8 +172,13 @@ class TestPNGIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try:
+			e.write_image(filename, -1)	
+		except RuntimeError, runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
 		
 	def no_test_read_write_png(self):
 		"""test write-read png .............................."""
@@ -178,8 +193,13 @@ class TestVTKIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try:
+			e.write_image(filename, -1)
+		except RuntimeError, runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")	
+		finally:
+			os.unlink(filename)
 	
 	def test_read_write_vtk(self):
 		"""test write-read vtk .............................."""
@@ -194,8 +214,13 @@ class TestXPLORIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try: 
+			e.write_image(filename, -1)
+		except RuntimeError, runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
 
 	def no_test_read_write_xplor(self):
 		"""test write-read xplor  ..........................."""
@@ -560,8 +585,13 @@ class TestMrcIO(ImageI0Tester):
 		e = EMData()
 		e.set_size(32,32)
 		e.to_zero()
-		e.write_image(filename, -1)
-		os.unlink(filename)
+		try: 
+			e.write_image(filename, -1)
+		except RuntimeError, runtime_err:
+				err_type = exception_type(runtime_err)
+				self.assertEqual(err_type, "ImageWriteException")	
+		finally:
+			os.unlink(filename)
 	
 	def test_overwrite(self):
 		"""test overwrite mrc image file ...................."""
