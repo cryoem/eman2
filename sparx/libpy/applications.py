@@ -393,7 +393,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			Util.add_img2(ctf_2_sum, ctfimg)
 			if adw:
 				Util.add_img_abs(ctf_abs_sum, ctfimg)
-
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.append(alpha)
@@ -406,7 +405,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if adw:
 			reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
 			if myid == main_node:
-				adw_img = Util.mult_scaler(ctf_2_sum, snr)
+				adw_img = Util.mult_scalar(ctf_2_sum, snr)
 				adw_img += 1.0
 				Util.div_filter(adw_img, ctf_abs_sum)
 				Util.mult_scalar(adw_img, float(Ng-1)/Ng/snr)
