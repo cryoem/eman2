@@ -17429,6 +17429,25 @@ void Util::add_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+void Util::add_img_abs(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img_ptr[i] += abs(img1_ptr[i]);
+	img->update();
+
+	EXITFUNC;
+}
+
 void Util::add_img2(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
