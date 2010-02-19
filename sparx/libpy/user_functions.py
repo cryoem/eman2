@@ -762,7 +762,8 @@ class factory_class:
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
 		self.contents["constant"]           = constant
-		
+		self.contents["julien"]             = julien		 		
+
 	def __getitem__(self,index):
 
 		if (type(index) is str):
