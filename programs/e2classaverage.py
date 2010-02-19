@@ -364,12 +364,12 @@ class EMGenClassAverages:
 		
 		if hasattr(self.options, "resultmx") and self.options.resultmx != None:
 			# note the order is important!
-			self.classes.write_image(self.options.resultmx,-1)
-			self.weights.write_image(self.options.resultmx,-1)
-			self.dx.write_image(self.options.resultmx,-1)
-			self.dy.write_image(self.options.resultmx,-1)
-			self.da.write_image(self.options.resultmx,-1)
-			self.dflip.write_image(self.options.resultmx,-1)
+			self.classes.write_image(self.options.resultmx,0)
+			self.weights.write_image(self.options.resultmx,1)
+			self.dx.write_image(self.options.resultmx,2)
+			self.dy.write_image(self.options.resultmx,3)
+			self.da.write_image(self.options.resultmx,4)
+			self.dflip.write_image(self.options.resultmx,5)
 			
 
 	def __write_class_data(self,rslts):

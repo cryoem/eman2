@@ -1150,9 +1150,10 @@ of these occasional errors"""
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
-			n=loads(self.bdb.get(fkey+dumps(key,-1)))
 			if r.has_key("data_path"): return r["data_path"]
-			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
+			else :
+				n=loads(self.bdb.get(fkey+dumps(key,-1)))
+				return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 		return None
 
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0,region=None,idx=0):
