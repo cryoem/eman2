@@ -1,36 +1,36 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -62,7 +62,7 @@ void EmimIO::init()
 	if (initialized) {
 		return;
 	}
-	
+
 	initialized = true;
 	bool is_new_file = false;
 	emim_file = sfopen(filename, rw_mode, &is_new_file);
@@ -86,7 +86,7 @@ void EmimIO::init()
 bool EmimIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-	
+
 	if (!first_block) {
 		return false;
 	}
@@ -113,8 +113,11 @@ bool EmimIO::is_valid(const void *first_block)
 int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	image_index = 0;
 	check_read_access(image_index);
 
@@ -163,18 +166,18 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, data);
-	
+
 	off_t imgsize = (off_t)efh.nx * (off_t)efh.ny * (off_t)efh.nz * (off_t)sizeof(float) + (off_t)sizeof(EmimImageHeader);
 	off_t offset = (off_t)sizeof(EmimFileHeader) + imgsize * (off_t)(image_index+1);
 	portable_fseek(emim_file, offset, SEEK_SET);
-		
+
 	unsigned char *cdata = (unsigned char *) data;
 	EMUtil::process_region_io(cdata, emim_file, READ_ONLY, 0, sizeof(float),
 							  efh.nx, efh.ny, efh.nz, area);
-		
+
 	become_host_endian(data, efh.nx * efh.ny * efh.nz);
-		
-	
+
+
 	EXITFUNC;
 	return err;
 }

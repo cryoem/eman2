@@ -149,6 +149,9 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 	ENTERFUNC;
 	int err = 0;
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	if(image_index != 0) {
 		throw ImageWriteException(filename, "ICOS file does not support stack.");
 	}

@@ -206,6 +206,10 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 	int err = 0;
 
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
+
 	if(image_index != 0) {
 		throw ImageWriteException(filename, "Amira file does not support stack.");
 	}

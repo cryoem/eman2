@@ -1,36 +1,36 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -736,32 +736,35 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	int err = 0;
-	
+
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	image_index = 0;
 	check_read_access(image_index);
 
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
 	TagGroup root_group(dm3file, tagtable, "");
 	root_group.read(true);
-		
+
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
-		
+
 	check_region(area, IntSize(nx, ny));
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-			
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
-			
+
 	dict["DM3.exposure_number"] = tagtable->get_int("Exposure Number");
 	dict["DM3.exposure_time"] = tagtable->get_double("Exposure (s)");
 	dict["DM3.zoom"] = tagtable->get_double("Zoom");
 	dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
 	dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
-			
+
 	dict["DM3.frame_type"] = tagtable->get_string("Processing");
 	dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
 	dict["DM3.camera_y"] = tagtable->get_int("Active Size (pixels) #1");
@@ -779,7 +782,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, rdata);
-	
+
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
 
 	TagGroup root_group(dm3file, tagtable, "");

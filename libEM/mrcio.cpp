@@ -182,6 +182,9 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	ENTERFUNC;
 
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	if(image_index != 0) {
 		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
 	}
@@ -297,6 +300,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	ENTERFUNC;
 
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	if(image_index != 0) {
 		throw ImageWriteException(filename, "MRC file does not support stack.");
 	}

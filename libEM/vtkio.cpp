@@ -215,6 +215,9 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 	ENTERFUNC;
 
 	//single image format, index can only be zero
+	if(image_index == -1) {
+		image_index = 0;
+	}
 	if(image_index != 0) {
 		throw ImageWriteException(filename, "VTK file does not support stack.");
 	}
