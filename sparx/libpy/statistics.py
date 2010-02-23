@@ -7792,15 +7792,16 @@ def table_stat(X):
 	  Basic statistics of numbers stored in a list
 	"""
 	av = X[0]
-	va = X[0]
+	va = X[0]*X[0]
 	mi = X[0]
 	ma = X[0]
-	for i in xrange(1,len(X)):
+	N = len(X)
+	for i in xrange(1,N):
 		av += X[i]
 		va += X[i]*X[i]
 		mi = min(mi, X[i])
 		ma = max(ma, X[i])
-	return  av/len(X),(va - av*av/len(X))/float(len(X)-1) , mi, ma
+	return  av/N,(va - av*av/N)/float(N-1) , mi, ma
 
 def get_power_spec(stack_file, start_particle, end_particle):
 	# computes the rotationally averaged power spectra of a series of images, e.g. a defocus group
