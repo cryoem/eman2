@@ -122,7 +122,9 @@ This program will print out some information about the image.
 			for i in imgn:
 				d=EMData(imagefile,i)
 				print "%d."%i,
-				for k in d.get_attr_dict():
+				keys=d.get_attr_dict().keys()
+				keys.sort()
+				for k in keys:
 					print "\t%s: %s"%(k,str(d[k]))
 				print
 			

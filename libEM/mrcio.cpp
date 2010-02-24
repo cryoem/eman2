@@ -197,9 +197,9 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["apix_y"] = mrch.ylen / mrch.my;
 	dict["apix_z"] = mrch.zlen / mrch.mz;
 
-	dict["minimum"] = mrch.amin;
-	dict["maximum"] = mrch.amax;
-	dict["mean"] = mrch.amean;
+	dict["MRC.minimum"] = mrch.amin;
+	dict["MRC.maximum"] = mrch.amax;
+	dict["MRC.mean"] = mrch.amean;
 	dict["datatype"] = to_em_datatype(mrch.mode);
 
 	if (is_complex_mode()) {
@@ -417,6 +417,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amin = dict["minimum"];
 	mrch.amax = dict["maximum"];
 	mrch.amean = dict["mean"];
+	mrch.rms = dict["sigma"];
 
 	/** the folowing lines are commented out.
 	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
@@ -464,9 +465,6 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	sprintf(mrch.map, "MAP ");
 	mrch.machinestamp = generate_machine_stamp();
-	if(dict.has_key("MRC.rms")) {
-		mrch.rms = (float)dict["MRC.rms"];
-	}
 
 	MrcHeader mrch2 = mrch;
 

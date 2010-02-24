@@ -4405,7 +4405,7 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 
 void FourierToCenterProcessor::process_inplace(EMData * image)
 {
-	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
+//	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
 
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
@@ -4426,6 +4426,29 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 	float tmp[2];
 	float* p1;
 	float* p2;
+
+	// This will tackle the 'normalization' images which come out of the Fourier reconstructor. 
+	// ie- real-space 1/2 FFt images centered on the corner
+	if ( !image->is_complex() ) {
+		if (nz!=1 && !yodd && !zodd) {
+			for (int x=0; x<nx; x++) {
+				for (int y=0; y<ny; y++) {
+					for (int z=0; z<nz/2; z++) {
+						int y2=(y+ny/2)%ny;
+						int z2=(z+nz/2)%nz;		// %nz should be redundant here
+						size_t i=x+y*nx+z*nxy;
+						size_t i2=x+y2*nx+z2*nxy;
+						float swp=rdata[i];
+						rdata[i]=rdata[i2];
+						rdata[i2]=swp;
+					}
+				}
+			}
+			
+			return;
+		}
+		else throw ImageFormatException("Can not Fourier origin shift an image that is not complex unless it is even in ny,nz and nx=ny/2+1");
+	}
 
 	if (yodd){
 		// In 3D this is swapping the bottom slice (with respect to the y direction) and the middle slice,
