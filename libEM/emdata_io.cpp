@@ -179,9 +179,10 @@ void EMData::write_image(const string & filename, int img_index,
 	}
 	else {
 		update_stat();
-		if (img_index < 0) {
-			img_index = imageio->get_nimg();
-		}
+		/* Let each image format decide how to deal with negative image_index*/
+//		if (img_index < 0) {
+//			img_index = imageio->get_nimg();
+//		}
 		LOGVAR("header write %d",img_index);
 		int err = imageio->write_header(attr_dict, img_index, region, filestoragetype,
 										use_host_endian);
