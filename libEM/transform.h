@@ -218,7 +218,7 @@ namespace EMAN
 			Vec3f get_pre_trans() const;
 
 			/** 2D version of getting the translation vector as though this object was MSRT_ not MTSR, where T_ is what you want
-			 * Note M means post x mirror, T means translation, S means scale, and R means rotaiton
+			 * Note M means post x mirror, T means translation, S means scale, and R means rotation
 			 * @return the pre translation vector
 			 */
 			Vec2f get_pre_trans_2d() const;
