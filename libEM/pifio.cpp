@@ -263,6 +263,10 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
+	if(image_index<0) {
+		image_index = get_nimg();
+	}
+
 	check_write_access(rw_mode, image_index);
 
 	if (area) {

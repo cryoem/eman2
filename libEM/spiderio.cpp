@@ -348,6 +348,10 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 {
 	ENTERFUNC;
 
+	if (image_index<0) {
+		image_index = get_nimg();
+	}
+
 	if(is_new_file) {	//for a new file write overall header first
 		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, 1, 0, use_host_endian);
 	}

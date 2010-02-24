@@ -265,6 +265,10 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 {
 	ENTERFUNC;
 
+	if(image_index<0) {
+		image_index = get_nimg();
+	}
+
 	check_write_access(rw_mode, image_index);
 	nz = dict["nz"];
 	if (nz > 1 && image_index != 0) {
