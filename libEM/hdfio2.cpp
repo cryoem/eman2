@@ -818,6 +818,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 #endif
 	ENTERFUNC;
 	init();
+	
+	if(image_index<0) {
+		image_index = get_nimg();
+	}
 
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
