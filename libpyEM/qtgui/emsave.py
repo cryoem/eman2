@@ -250,7 +250,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 
 		out_file = tmp_file_object.get_tmp_file_name()
 		try:
-			self.__item.write_image(out_file)
+			self.__item.write_image(out_file, -1)
 		except:
 			msg = QtGui.QMessageBox()
 			msg.setText("An exception occured while writing %s, please try again" %out_file)
