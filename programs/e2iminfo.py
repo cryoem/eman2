@@ -83,7 +83,7 @@ This program will print out some information about the image.
 			nimg = EMUtil.get_image_count(imagefile)
 			imgtype = EMUtil.get_image_type(imagefile)
 			imgtypename = EMUtil.get_imagetype_name(imgtype)
-			if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not stat: 
+			if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not options.stat: 
 				image_index = -1
 				
 			d=EMData()
