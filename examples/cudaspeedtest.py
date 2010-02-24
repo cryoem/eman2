@@ -262,14 +262,14 @@ def test_main():
 		
 		t = time()
 		for i in test_range:
-			b = a[i%2].process("math.transform",{"transform":tr})
+			b = a[i%2].process("xform",{"transform":tr})
 			#c.print_this()
 
 		gpu_times.append(time()-t)
 		a = [test_image(0,size=(dims,dims)) for i in (0,1)]
 		t = time()
 		for i in test_range:
-			b = a[i%2].process("math.transform",{"transform":tr})
+			b = a[i%2].process("xform",{"transform":tr})
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 		
@@ -281,7 +281,7 @@ def test_main():
 		
 		t = time()
 		for i in range(10):
-			b = a[i%2].process("math.transform",{"transform":tr})
+			b = a[i%2].process("xform",{"transform":tr})
 			#c.print_this()
 
 		gpu_times.append(time()-t)
@@ -289,7 +289,7 @@ def test_main():
 		a = [test_image_3d(0,size=(dims,dims,dims)) for i in (0,1)]
 		t = time()
 		for i in range(10):
-			b = a[i%2].process("math.transform",{"transform":tr})
+			b = a[i%2].process("xform",{"transform":tr})
 		cpu_times.append(time()-t)
 		print dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1]
 	

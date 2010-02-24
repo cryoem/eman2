@@ -134,7 +134,7 @@ def main():
 				tmp=EMData(args[0],j)
 	#			print ref_orts[0][i[0],j],"\t",ref_orts[1][i[0],j],"\t",ref_orts[2][i[0],j],"\t",int(ref_orts[3][i[0],j])
 				xf=Transform({"type":"2d","tx":ref_orts[0][i[0],j],"ty":ref_orts[1][i[0],j],"alpha":ref_orts[2][i[0],j],"mirror":bool(ref_orts[3][i[0],j])})
-				tmp.process_inplace("math.transform",{"transform":xf})
+				tmp.process_inplace("xform",{"transform":xf})
 	#			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
 				avg.add(tmp)
 

@@ -333,7 +333,7 @@ class EMBootStrappedAverages:
 				d["alt"] = images[5].get(i,j)
 				d["phi"] = images[6].get(i,j)
 				t = Transform(d)
-				image_1.process_inplace("math.transform",{"transform":t})
+				image_1.process_inplace("xform",{"transform":t})
 				
 				image_2 += image_1
 				image_2.set_attr("src_image",current_files[j]) # so we can recollect how it was created

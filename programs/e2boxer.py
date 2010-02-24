@@ -1258,7 +1258,7 @@ class SwarmBoxer:
 	def try_to_center_ref(self,box_num):
 		if self.templates:
 			shrink = self.get_subsample_rate()
-			scaled_template = self.templates[-1].process("math.transform.scale",{"scale":shrink,"clip":self.particle_diameter})
+			scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
 			scaled_template.process_inplace("xform.centeracf")
 			box = self.target().get_box(box_num)
 			dx,dy = self.xform_center_propagate([box.x,box.y],self.target().current_file(),scaled_template,self.particle_diameter)
@@ -1360,7 +1360,7 @@ class SwarmBoxer:
 		soln = BoxingTools.auto_correlation_pick(correlation,self.peak_score,searchradius,self.profile,exclusion_image,self.profile_trough_point,mode)
 		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
 		
-		scaled_template = self.templates[-1].process("math.transform.scale",{"scale":shrink,"clip":self.particle_diameter})
+		scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
 		scaled_template.process_inplace("xform.centeracf")
 		boxes = []
 		for b in soln:

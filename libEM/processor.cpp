@@ -85,9 +85,9 @@ const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
 const string ToZeroProcessor::NAME = "threshold.belowtozero";
 const string Rotate180Processor::NAME = "math.rotate.180";
-const string TransformProcessor::NAME = "math.transform";
+const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "math.translate.int";
-const string ScaleTransformProcessor::NAME = "math.transform.scale";
+const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
@@ -4171,7 +4171,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		}
 		Transform t(array);
 		Dict params("transform",(Transform*)&t);
-		image->process_inplace("math.transform",params);
+		image->process_inplace("xform",params);
 		EXITFUNC;
 		return;
 	}
@@ -8447,11 +8447,11 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 		}
 		Transform t;
 		t.set_scale(scale);
-		image->process_inplace("math.transform",Dict("transform",&t));
+		image->process_inplace("xform",Dict("transform",&t));
 	} else if (scale < 1) {
 		Transform t;
 		t.set_scale(scale);
-		image->process_inplace("math.transform",Dict("transform",&t));
+		image->process_inplace("xform",Dict("transform",&t));
 		if ( clip != 0) {
 			image->clip_inplace(r);
 		}
@@ -8505,14 +8505,14 @@ EMData* ScaleTransformProcessor::process(const EMData* const image) {
 		Transform t;
 		t.set_scale(scale);
 		if (ret != 0) {
-			ret->process_inplace("math.transform",Dict("transform",&t));
+			ret->process_inplace("xform",Dict("transform",&t));
 		} else {
-			ret = image->process("math.transform",Dict("transform",&t));
+			ret = image->process("xform",Dict("transform",&t));
 		}
 	} else if (scale < 1) {
 		Transform t;
 		t.set_scale(scale);
-		ret = image->process("math.transform",Dict("transform",&t));
+		ret = image->process("xform",Dict("transform",&t));
 		if ( clip != 0) {
 			ret->clip_inplace(r);
 		}

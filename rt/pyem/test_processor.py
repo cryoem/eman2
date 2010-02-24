@@ -1476,7 +1476,7 @@ class TestProcessor(unittest.TestCase):
 			a = test_image(1,size=(n,n))
 			b = a.copy()
 			a.process_inplace("xform.flip",{"axis":"x"})
-			b.process_inplace("math.transform",{"transform":t})
+			b.process_inplace("xform",{"transform":t})
 			if n % 2 == 0:
 				r = Region(1,0,n,n)
 				aa = a.get_clip(r)
@@ -1485,12 +1485,12 @@ class TestProcessor(unittest.TestCase):
 			self.assertEqual(a==b, True)
 				
 		# The 3D test is not as important as the 2D case (above), but it being true means we're in good shape - future
-		# developers won't inadvertently make mistakes by interchanging the xform.flip and math.transform processors
+		# developers won't inadvertently make mistakes by interchanging the xform.flip and xform processors
 		for n in [8,9]:
 			a = test_image_3d(6,size=(n,n,n))
 			b = a.copy()
 			a.process_inplace("xform.flip",{"axis":"x"})
-			b.process_inplace("math.transform",{"transform":t})
+			b.process_inplace("xform",{"transform":t})
 			if n % 2 == 0:
 				r = Region(1,0,0,n,n,n)
 				aa = a.get_clip(r)

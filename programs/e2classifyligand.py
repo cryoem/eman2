@@ -151,8 +151,8 @@ ligand/no-ligand contrast in individual images:
 			
 			statn.append(j)
 			if options.ref1 and options.ref2 :
-				projc=proj.process("math.transform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
-				projc2=proj2.process("math.transform",{"transform":ptclxf})
+				projc=proj.process("xform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
+				projc2=proj2.process("xform",{"transform":ptclxf})
 				cmp1=ptcl.cmp(simcmp[0],projc, simcmp[1])
 				cmp2=ptcl.cmp(simcmp[0],projc2,simcmp[1])
 				result=cmp1-cmp2
@@ -166,13 +166,13 @@ ligand/no-ligand contrast in individual images:
 				
 				# generate a list of aligned particles in each group
 				#ali=EMData(args[0],j)
-				#ali.process_inplace("math.transform",{"transform":ptclxf.inverse()})
+				#ali.process_inplace("xform",{"transform":ptclxf.inverse()})
 				#if result > .01 : p3.append(ali)
 				#elif result <-.01 : p1.append(ali)
 				#else : p2.append(ali)
 				
 			if options.maskfile:
-				projmc=projm.process("math.transform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
+				projmc=projm.process("xform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
 				ptcl2=ptcl.copy()
 				projmc2=projmc.copy()  # 1-mask
 				projmc2.mult(-1.0)
@@ -190,7 +190,7 @@ ligand/no-ligand contrast in individual images:
 				
 				# generate a list of aligned particles in each group
 				#ali=EMData(args[0],j)
-				#ali.process_inplace("math.transform",{"transform":ptclxf.inverse()})
+				#ali.process_inplace("xform",{"transform":ptclxf.inverse()})
 				#if result > 1.5 : p3.append(ali)
 				#elif result <.5 : p1.append(ali)
 				#else : p2.append(ali)
@@ -232,7 +232,7 @@ ligand/no-ligand contrast in individual images:
 		#display((sum(p1)/len(p1),sum(p2)/len(p2),sum(p3)/len(p3),proj))
 			
 			# for debugging
-			#oproj=EMData(args[2],i).process("math.transform",{"transform":ptclxf})
+			#oproj=EMData(args[2],i).process("xform",{"transform":ptclxf})
 			#ptcl.process_inplace("normalize.toimage",{"to":oproj})
 			#display((ptcl,projc,oproj))
 			#time.sleep(2)

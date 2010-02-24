@@ -76,7 +76,7 @@ class TestAligner(unittest.TestCase):
 						self.failIf(fabs(params["ty"] + dy) > 1)
 						self.failIf(fabs(params["tz"] + dz) > 1)
 						
-						f = e.process("math.transform",{"transform":t})
+						f = e.process("xform",{"transform":t})
 						self.assertEqual(f==g,True)
 						
 								
@@ -97,7 +97,7 @@ class TestAligner(unittest.TestCase):
 					self.failIf(fabs(params["tx"]+ dx) > 1)
 					self.failIf(fabs(params["ty"] + dy) > 1)
 					
-					f = e.process("math.transform",{"transform":t})
+					f = e.process("xform",{"transform":t})
 					self.assertEqual(f==g,True)
 
 
@@ -133,7 +133,7 @@ class TestAligner(unittest.TestCase):
 					self.failIf( result > 3 ) # 3 seems accurate enough
 						
 					# we have to do it this way because of double to float conversions
-					f = ref.process("math.transform",{"transform":t})
+					f = ref.process("xform",{"transform":t})
 					dif = f-g
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)
@@ -211,7 +211,7 @@ class TestAligner(unittest.TestCase):
 #					self.failIf( result > 3 ) # 3 seems accurate enough
 					
 					# we have to do it this way because of double to float conversions
-					f = ref.process("math.transform",{"transform":t})
+					f = ref.process("xform",{"transform":t})
 					dif = f-g
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)
@@ -255,7 +255,7 @@ class TestAligner(unittest.TestCase):
 					self.failIf( result > 3 ) # 3 seems accurate enough
 					self.failIf( t1.get_mirror() != mirror)
 					
-#					f = e.process("math.transform",{"transform":t1})
+#					f = e.process("xform",{"transform":t1})
 #					dif = f-g
 #					dif.process_inplace("math.absvalue")
 #					print dif["mean"]
@@ -351,7 +351,7 @@ class TestAligner(unittest.TestCase):
 #					self.failIf( params2["mirror"] != params["mirror"] ) # 3 seems accurate enough
 #					
 					# we have to do it this way because of double to float conversions
-					f = ref.process("math.transform",{"transform":t1})
+					f = ref.process("xform",{"transform":t1})
 					dif = f-g
 					dif.process_inplace("math.absvalue")
 					self.failIf(dif["mean"] > 0.01)

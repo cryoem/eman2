@@ -243,7 +243,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 
 	// Return the result
 	Transform tmp(Dict("type","2d","alpha",rot_angle));
-	cf=this_img->process("math.transform",Dict("transform",(Transform*)&tmp));
+	cf=this_img->process("xform",Dict("transform",(Transform*)&tmp));
 //	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 //	Dict d("type","2d","alpha",rot_angle);
 //	t->set_rotation(d);
@@ -313,7 +313,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 
 	Transform rot;
 	rot.set_rotation(Dict("type","2d","alpha",(float)(a*180./M_PI)));
-	EMData* rslt = this_img->process("math.transform",Dict("transform",&rot));
+	EMData* rslt = this_img->process("xform",Dict("transform",&rot));
 	rslt->set_attr("xform.align2d",&rot);
 //
 //	Transform* t = get_set_align_attr("xform.align2d",rslt,this_img);
@@ -776,7 +776,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 		t.set_mirror(true);
 	}
 
-	EMData* ret = this_img->process("math.transform",Dict("transform",&t));
+	EMData* ret = this_img->process("xform",Dict("transform",&t));
 	ret->set_attr("xform.align2d",&t);
 
 	return ret;
@@ -934,7 +934,7 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 		t.set_mirror(true);
 	}
 
-	EMData* rslt = this_img->process("math.transform",Dict("transform",&t));
+	EMData* rslt = this_img->process("xform",Dict("transform",&t));
 	rslt->set_attr("xform.align2d",&t);
 
 	return rslt;
@@ -965,7 +965,7 @@ static double refalifn(const gsl_vector * v, void *params)
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
+	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
@@ -1117,11 +1117,11 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 		tsoln.set_mirror(mirror);
 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
-		result = this_img->process("math.transform",Dict("transform",&tsoln));
+		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align2d",&tsoln);
 	} else { // The refine aligner failed - this shift went beyond the max shift
 //		printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
-		result = this_img->process("math.transform",Dict("transform",t));
+		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align2d",t);
 	}
 
@@ -1208,7 +1208,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Transform soln = refalin3d_perturb(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
 
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&soln));
+	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
@@ -1238,7 +1238,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	Transform t(d);
 	t.set_trans((float)x,(float)y,(float)z);
 	t.set_mirror(mirror);
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
+	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
@@ -1352,11 +1352,11 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 
 		Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
 
- 		result = this_img->process("math.transform",Dict("transform",&tsoln));
+ 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 
 	} else { // The refine aligner failed - this shift went beyond the max shift
-		result = this_img->process("math.transform",Dict("transform",t));
+		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
 	}
 
@@ -1379,7 +1379,7 @@ EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
-	EMData* soln = this_img->process("math.transform",t);
+	EMData* soln = this_img->process("xform",t);
 	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
 
@@ -1456,7 +1456,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				d["phi"] = phi;
 				d["az"] = az;
 				Transform t(d);
-				EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+				EMData* transformed = this_img->process("xform",Dict("transform",&t));
 				EMData* ccf = transformed->calc_ccf(to);
 
 				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
@@ -1499,7 +1499,7 @@ EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & c
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
-	EMData* soln = this_img->process("math.transform",t);
+	EMData* soln = this_img->process("xform",t);
 	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
 
@@ -1579,7 +1579,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
 			params["phi"] = phi;
 			Transform t(params);
-			EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			EMData* ccf = transformed->calc_ccf(to);
 			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 			Dict altered_cmp_params(cmp_params);

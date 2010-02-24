@@ -500,7 +500,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly, this way we only do 2d translation,scaling and mirroring
 
 	if (tmp.is_identity()) return_slice=slice->copy();
-	else return_slice = slice->process("math.transform",Dict("transform",&tmp));
+	else return_slice = slice->process("xform",Dict("transform",&tmp));
 
 	return_slice->process_inplace("xform.phaseorigin.tocorner");
 
@@ -1066,7 +1066,7 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 	bool mirror = tmp.get_mirror();
 	EMData* slice = 0;
 	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
-		slice = input_slice->process("math.transform",Dict("transform",&tmp));
+		slice = input_slice->process("xform",Dict("transform",&tmp));
 	} else if ( mirror == true ) {
 		slice = input_slice->process("xform.flip",Dict("axis","x"));
 	}

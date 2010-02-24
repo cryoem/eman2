@@ -605,7 +605,7 @@ class EMClassAveTask(EMTask):
 			
 #			test = True
 #			if test:
-#				test_ali = averages[-1].process("math.transform",{"transform":ref_ali})
+#				test_ali = averages[-1].process("xform",{"transform":ref_ali})
 #				ali = self.__align(averages[-1],test_ali).get_attr("xform.align2d")
 #				print "double chekc is", ali
 #				
@@ -782,7 +782,7 @@ class EMClassAveTask(EMTask):
 		for ptcl_idx,ali in alis.items():
 			image = images[ptcl_idx]
 			
-			aligned = image.process("math.transform",{"transform":ali})
+			aligned = image.process("xform",{"transform":ali})
 			
 			sims[ptcl_idx] = aligned.cmp(self.options["cmp"][0],average,self.options["cmp"][1])
 				
@@ -843,7 +843,7 @@ class EMClassAveTask(EMTask):
 				ali_parms = aligned.get_attr("xform.align2d")
 				ali_parms.invert()
 				alis[ptcl_idx] = ali_parms
-				aligned = image.process("math.transform",{"transform":(ali_parms)})
+				aligned = image.process("xform",{"transform":(ali_parms)})
 								
 				np += 1
 				running_average.add(aligned) # now add the image
@@ -885,7 +885,7 @@ class EMClassAveTask(EMTask):
 		np = 0 # number of particles in the average
 		for ptcl_idx,ali in self.data["init_alis"].items():
 			image = images[ptcl_idx]			
-			rslt = image.process("math.transform",{"transform":ali})
+			rslt = image.process("xform",{"transform":ali})
 					
 			np += 1
 			weight = self.data["weights"][ptcl_idx]
@@ -953,7 +953,7 @@ class EMClassAveTask(EMTask):
 			inclusion[ptcl_idx] = True
 			record.append(ptcl_idx)
 			image = images[ptcl_idx]			
-			rslt = image.process("math.transform",{"transform":ali})
+			rslt = image.process("xform",{"transform":ali})
 		
 			np += 1
 			averager.add_image(rslt)
@@ -1005,7 +1005,7 @@ class EMClassAveTask(EMTask):
 				continue
 			record.append(ptcl_idx)
 			image = images[ptcl_idx]			
-			rslt = image.process("math.transform",{"transform":ali})
+			rslt = image.process("xform",{"transform":ali})
 		
 			np += 1
 			averager.add_image(rslt)

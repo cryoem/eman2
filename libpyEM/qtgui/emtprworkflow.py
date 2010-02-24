@@ -237,7 +237,7 @@ class EMReconstructAliFile(WorkFlowTask):
 			
 		nx,ny,nz = gimme_image_dimensions3D(params["alifile"][0])
 		if params["scale"] != 1.0 or params["clip"] != nx:
-			options.preprocess = "math.transform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
+			options.preprocess = "xform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
 			string_args.append("preprocess")
 		self.spawn_single_task('e2make3d.py',options,string_args,bool_args,additional_args,temp_file_name)
 		
@@ -966,7 +966,7 @@ class E2TomoScaleClipTask(E2TomoFilterParticlesTask):
 			cmd = "e2proc3d.py"
  			cmd += " "+name
  			cmd += " "+outnames[i]
- 			cmd += " --process=math.transform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
+ 			cmd += " --process=xform.scale:scale=%s:clip=%s" %(params["scale"],params["clip"])
  			success = (os.system(cmd) in (0,12))
  			if not success:
  				progress.close()

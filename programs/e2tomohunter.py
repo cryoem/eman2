@@ -108,7 +108,7 @@ def gen_average(options,args,logid=None):
 			if t == None:
 				raise RuntimeError("An error occured trying to retrieve the alignment data using the given ali set")
 			
-		image.process_inplace("math.transform",{"transform":t})
+		image.process_inplace("xform",{"transform":t})
 		if average == None: average = image
 		else: average = average + image
 		if logid: E2progress(logid,(i+1)/float(total_prog))
