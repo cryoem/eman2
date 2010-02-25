@@ -908,7 +908,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
 
-	
+
 def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
@@ -925,45 +925,39 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 	else:  n = len(input_stack)
 	ima = get_im(input_stack, 0)
 	nx  = ima.get_xsize()
-	ny  = ima.get_xsize()
 
 	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	nx2 = 2*nx
-	ny2 = 2*ny
-	ave       = EMData(nx2, ny2, 1, False)
+	ctf_abs_sum = EMData(nx, nx, 1, False)
+	ctf_2_sum = EMData(nx, nx, 1, False)
+
+	Ave = EMData(nx, nx, 1, False)
 
 	for i in xrange(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
+		ctfimg = ctf_img(nx, ctf_params)
+		Util.add_img2(ctf_2_sum, ctfimg)
+		Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
-		Util.add_img(ave, oc)
-		if(i == 0):
-			ctf1 = ctf_1d(nx2, ctf_params)
-			nc = len(ctf1)
-			ctf2 = [0.0]*nc
-			for k in xrange(nc):
-				ctf1[k] = abs(ctf1[k])
-				ctf2[k] = ctf1[k] * ctf1[k]
-		else:
-			tmp = ctf_1d(nx2, ctf_params)
-			for k in xrange(nc):
-				ctf1[k] += abs(tmp[k])
-				ctf2[k] += tmp[k] * tmp[k]
-			
-	for k in xrange(nc):
-		if ctf1[k] > 0.001:
-			ww = 1.0/Ng+float(Ng-1)/Ng*(SNR*ctf2[k]+1)/(SNR*ctf1[k])
-		else:
-			ww = 1.0/Ng+float(Ng-1)/Ng/(SNR*0.001)
-		tmp[k] = ww/(ctf2[k]*SNR+1.0)
-	ave = filt_table(ave, tmp)
-	del tmp, ctf1, ctf2
+		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
+		Util.add_img(Ave, oc)
+
+	adw_img = Util.mult_scalar(ctf_2_sum, SNR)
+	adw_img += 1.0
+	Util.div_filter(adw_img, ctf_abs_sum)
+	Util.mul_scalar(adw_img, float(Ng-1)/Ng/SNR)
+	adw_img += 1.0/Ng
+	Util.mul_scalar(adw_img, SNR)
+	Util.mul_scalar(ctf_2_sum, SNR)
+	ctf_2_sum += 1.0
+
+	ave = fft(Util.divn_filter(Util.muln_img(Ave, adw_img), ctf_2_sum))
+
 	# variance
-	var = EMData(nx,ny)
+	var = EMData(nx, nx)
 	var.to_zero()
 	for i in xrange(n):
 		ima = get_im(input_stack, i)
@@ -972,11 +966,11 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
-		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
+		Util.sub_img(ima, oc)
 		Util.add_img2(var, ima)
-	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
 	Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
+
 
 def ssnr2d(data, mask = None, mode=""):
 	'''
