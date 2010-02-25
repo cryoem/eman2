@@ -231,7 +231,86 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 		e        = filt_btwl(img, frequency_low, frequency_high)
 	return Util.decimate(e, int(decimation), int(decimation), 1)
 
+def subsample(image, subsample_rate=1.0):
+	if subsample_rate == 1.0: return  image.copy()
+	xsize = image.get_xsize()
+	ysize = image.get_ysize()
+	template_min = 15
+	frequency_cutoff = 0.5*subsample_rate
+	sb = Util.sincBlackman(template_min, frequency_cutoff, 1999) # 1999 taken directly from util_sparx.h
+	return image.downsample(sb, subsample_rate)
+	#return smallimage.get_clip(Region(int(xcorner*subsample_rate+0.5),int(ycorner*subsample_rate+0.5),int(xsize*subsample_rate+0.5),int(ysize*subsample_rate+0.5)))
 
+def resample(img, sub_rate=0.5, frequency_low=0.0, frequency_high=0.0):
+	"""
+		Window image to FFT-friendly size, apply Butterworth low pass filter,
+		and subsample 2D image
+		sub_rate < 1.0, subsampling rate
+		fit_to_fft will change the ouput image size to an fft_friendly size
+	"""
+
+	from filter       import filt_btwl
+	from fundamentals import smallprime, window2d, rtshg, fdecimate, fpol
+	from utilities    import get_pixel_size, set_pixel_size
+	
+	if type(img) == str:
+		from utilities    import get_image
+		img = get_image(img)
+	apix = get_pixel_size(img)
+	if sub_rate == 1.0: return  img.copy()
+	elif sub_rate < 1.0:
+		nx = img.get_xsize()
+		ny = img.get_ysize()
+		new_nx   = int(nx*sub_rate+0.5)
+		new_ny   = int(ny*sub_rate+0.5)
+		if( abs(1.0-new_nx/sub_rate/nx) < 0.05 and abs(1.0-new_ny/sub_rate/ny) < 0.05):  # we tolerate 0.05% error, as per Steve's request
+			sub_rate = float(new_nx)/nx
+			e = fdecimate(img, new_nx, new_ny)
+		else:
+			if frequency_low <= 0.0:
+				frequency_low = 0.5*sub_rate - 0.02
+				if(frequency_low <= 0.0): ERROR("Butterworth pass_band frequency is too low","resample",1)		 
+				frequency_high = min(0.5*sub_rate + 0.02, 0.499)
+			if frequency_high == 0.0: frequency_high = frequency_low + 0.1
+			e        = filt_btwl(img, frequency_low, frequency_high, False)
+			if(nx != ny):
+				#  rtshg  will  not  work  for  rectangular  images
+				nn = max(nx, ny)
+				e = Util.pad(e, nn, nn,  1, 0, 0, 0, "circumference")
+				nx = nn
+				ny = nn
+			#  if possible, first do the truncation in Fourier space to save the memory overhead
+			tsub_rate = sub_rate
+			if(new_nx+7<nx):  # 7 is margin needed to reduce artifacts in rtshg
+				ti = new_nx+7
+				e = fdecimate(e, ti, ti)
+				tsub_rate = sub_rate/(float(ti)/nx)  # adjust subsample rate to account for Fourier truncation
+			e = Util.window( rtshg(e, scale = tsub_rate), new_nx, new_ny, 1, 0,0,0)
+	else:  #  sub_rate>1
+		nx     = img.get_xsize()
+		ny     = img.get_ysize()
+		new_nx = int(nx*sub_rate+0.5)
+		new_ny = int(ny*sub_rate+0.5)
+		if( abs(1.0-new_nx/sub_rate/nx) < 0.05 and abs(1.0-new_ny/sub_rate/ny) < 0.05):  # we tolerate 0.05% error, as per Steve's request
+			sub_rate = float(new_nx)/nx
+			e = fpol(img, new_nx, new_ny)
+		else:
+			if nx != ny:
+				#  rtshg  will  not  work  for  rectangular  images
+				nn = max(new_nx, new_ny)
+				e = Util.pad(e, nn, nn,  1, 0, 0, 0, "circumference")
+				e = Util.window( rtshg(e, scale = sub_rate), new_nx, new_ny, 1, 0,0,0)
+			else:
+				e = rtshg(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"), scale = sub_rate)
+
+	# Automatically adjust pixel size for ctf parameters
+	from utilities import get_pixel_size, set_pixel_size
+	apix = get_pixel_size(e)
+	apix /= sub_rate
+	set_pixel_size(e, apix)
+		
+	return 	e
+'''
 def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_high=0.0, num_prime=3):
 	"""
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
@@ -297,7 +376,7 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 	set_pixel_size(e, apix)
 		
 	return 	e
-
+'''
 def prepi(image):
 	M = image.get_xsize()
 # pad two times

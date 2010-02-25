@@ -6368,7 +6368,7 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 				e1  *= scanner_param_a # Check the local scanner
 				e1  += scanner_param_b
 		e                    = e1*contrast_invert
-		if  gridding : e1    = resample(e, scaling_ratio, 1) # resample will pad image to four times 
+		if  gridding : e1    = resample(e, scaling_ratio) # resample will pad image two times 
 		else         : e1    = image_decimate(e, scaling_ratio, 1)
 		f_micrograph         = "micrograph_"+tifname[len(indir)+1:]+"."+ output_extension
 		f_micname            = os.path.join(outdir, f_micrograph)
