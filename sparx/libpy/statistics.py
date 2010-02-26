@@ -6096,6 +6096,10 @@ def isc_read_conf(conf_file):
 	cfgrali['snr']       = float(cfgrali['snr'])
 	cfgrali['ou']        = int(cfgrali['ou'])
 	cfgrali['nb_cpu']    = int(cfgrali['nb_cpu'])
+	cfgrali['cuda']	     = eval(cfgrali['cuda'])
+	cfgrali['n_gpu']     = int(cfgrali['n_gpu'])
+	cfgrali['adw'] 	     = eval(cfgrali['adw'])
+	cfgrali['Ng']	     = int(cfgrali['Ng'])	
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
@@ -6110,6 +6114,8 @@ def isc_read_conf(conf_file):
 	cfgali['n_ave']      = int(cfgali['n_ave'])
 	cfgali['cuda']       = eval(cfgali['cuda'])
 	cfgali['n_gpu']      = int(cfgali['n_gpu'])
+	cfgali['adw']        = eval(cfgali['adw'])
+	cfgali['Ng'] 	     = int(cfgali['Ng'])
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
