@@ -139,9 +139,9 @@ std::complex<float> EMData::get_complex_at(const int &x,const int &y,const int &
 size_t EMData::get_complex_index(const int &x,const int &y,const int &z) const {
 	if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
 	if (x<0) {
-		return -x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+		return -x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	}
-	return x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+	return x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 }
 
 size_t EMData::get_complex_index(int x,int y,int z,const int &subx0,const int &suby0,const int &subz0,const int &fullnx,const int &fullny,const int &fullnz) const {
@@ -157,7 +157,7 @@ if (z<0) z=fullnz+z;
 
 if (x<subx0||y<suby0||z<subz0||x>=subx0+nx||y>=suby0+ny||z>=subz0+nz) return nxyz;
 
-return (x-subx0)*2+(y-suby0)*nx+(z-subz0)*nx*ny;
+return (x-subx0)*2+(y-suby0)*(size_t)nx+(z-subz0)*(size_t)nx*(size_t)ny;
 }
 
 
@@ -184,13 +184,13 @@ if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return;
 
 size_t idx;
 if (x<0) {
-	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	idx=-x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	rdata[idx]=(float)val.real();
 	rdata[idx+1]=-(float)val.imag();
 	return;
 }
 
-idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+idx=x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 rdata[idx]=(float)val.real();
 rdata[idx+1]=(float)val.imag();
 
@@ -211,13 +211,13 @@ if (x>=nx/2 || y>ny/2 || z>nz/2 || x<=-nx/2 || y<-ny/2 || z<-nz/2) return nxyz;
 
 size_t idx;
 if (x<0) {
-	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	idx=-x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	rdata[idx]+=(float)val.real();
 	rdata[idx+1]-=(float)val.imag();
 	return idx;
 }
 
-idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+idx=x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 rdata[idx]+=(float)val.real();
 rdata[idx+1]+=(float)val.imag();
 
@@ -250,7 +250,7 @@ if (z<0) z=fullnz+z;
 
 if (x<subx0||y<suby0||z<subz0||x>=subx0+nx||y>=suby0+ny||z>=subz0+nz) return nxyz;
 
-size_t idx=(x-subx0)*2+(y-suby0)*nx+(z-subz0)*nx*ny;
+size_t idx=(x-subx0)*2+(y-suby0)*(size_t)nx+(z-subz0)*(size_t)nx*ny;
 rdata[idx]+=(float)val.real();
 rdata[idx+1]+=cc*(float)val.imag();
 return idx;

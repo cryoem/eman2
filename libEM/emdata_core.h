@@ -278,9 +278,9 @@ size_t get_complex_index(int x,int y,int z,const int &subx0,const int &suby0,con
 inline size_t get_complex_index_fast(const int &x,const int &y,const int &z) const {
 //	if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
 	if (x<0) {
-		return -x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+		return (size_t)x*-2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	}
-	return x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+	return x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 }
 
 /** Set complex<float> value at x,y. This assumes the image is
@@ -332,13 +332,13 @@ inline size_t add_complex_at_fast(const int &x,const int &y,const int &z,const s
 
 size_t idx;
 if (x<0) {
-	idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
+	idx=-x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	rdata[idx]+=(float)val.real();
 	rdata[idx+1]-=(float)val.imag();
 	return idx;
 }
 
-idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
+idx=x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 rdata[idx]+=(float)val.real();
 rdata[idx+1]+=(float)val.imag();
 

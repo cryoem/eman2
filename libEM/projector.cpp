@@ -924,7 +924,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 					float u = y2 - y;
 					float v = z2 - z;
 
-					size_t ii = (size_t) (x + y * nx + z * xy);
+					size_t ii = (size_t) ((size_t)x + (size_t)y * nx + (size_t)z * xy);
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
 					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;
