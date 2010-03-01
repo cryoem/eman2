@@ -6099,7 +6099,7 @@ def isc_read_conf(conf_file):
 	cfgrali['cuda']	     = eval(cfgrali['cuda'])
 	cfgrali['n_gpu']     = int(cfgrali['n_gpu'])
 	cfgrali['adw'] 	     = eval(cfgrali['adw'])
-	cfgrali['Ng']	     = int(cfgrali['Ng'])	
+	cfgrali['ng']	     = int(cfgrali['ng'])	
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
@@ -6115,7 +6115,7 @@ def isc_read_conf(conf_file):
 	cfgali['cuda']       = eval(cfgali['cuda'])
 	cfgali['n_gpu']      = int(cfgali['n_gpu'])
 	cfgali['adw']        = eval(cfgali['adw'])
-	cfgali['Ng'] 	     = int(cfgali['Ng'])
+	cfgali['ng'] 	     = int(cfgali['ng'])
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
