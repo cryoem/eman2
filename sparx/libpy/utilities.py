@@ -2986,7 +2986,7 @@ def angle_diff(data1, data2=None):
 	return (alphai+360.0)%360.0
 
 
-def align_diff(data1, data2=None):
+def align_diff(data1, data2=None, suffix="_ideal"):
 	
 	'''
 	This function determines the relative angle, shifts and mirrorness between
@@ -3015,7 +3015,7 @@ def align_diff(data1, data2=None):
 		if data2 != None:
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d_ideal")
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
 		ali_params1.append(alpha1)
 		ali_params1.append(sx1)
 		ali_params1.append(sy1)
@@ -3081,7 +3081,7 @@ def align_diff(data1, data2=None):
 	return alphai, sxi, syi, mirror
 
 
-def ave_ali_err(data1, data2=None, r=25):
+def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	'''
 	This function determines the relative angle, shifts and mirrorness between
 	the two sets of alignment parameters. It also calculates the mirror consistent
@@ -3090,7 +3090,7 @@ def ave_ali_err(data1, data2=None, r=25):
 	from utilities import get_params2D, combine_params2
 	from math import sqrt, sin, pi
 	
-	alphai, sxi, syi, mirror = align_diff(data1, data2)
+	alphai, sxi, syi, mirror = align_diff(data1, data2, suffix)
 
 	# Determine the average pixel error
 	err = 0.0
@@ -3101,7 +3101,7 @@ def ave_ali_err(data1, data2=None, r=25):
 		if data2 != None:
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i], "xform.align2d_ideal")
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
 		
 		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
 			mirror_same += 1

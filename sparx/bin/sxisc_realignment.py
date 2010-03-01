@@ -57,6 +57,7 @@ def main():
 	parser.add_option('--GPU',	type='int',	       default=0,	       help='Number of GPU')
 	parser.add_option('--adw', 	action='store_true',   default=False,		help='adw')
 	parser.add_option('--Ng',	type='int',		default=0,		help='Ng')
+	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
 	(options, args) = parser.parse_args()
 	if len(args) != 4:
     		print "usage: " + usage
@@ -72,11 +73,11 @@ def main():
 		if options.MPI:
 			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
 					    options.maxit, options.function, options.th_err, options.snr, options.CTF, 
-					    options.Fourvar, options.ali,options.CUDA,options.GPU,options.adw,options.Ng)
+					    options.Fourvar, options.ali,options.CUDA,options.GPU,options.adw,options.Ng, options.num_ali)
 		else:
 			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
 				options.maxit, options.function, options.th_err, options.snr, options.CTF,
-				options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw,options.Ng)
+				options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw,options.Ng, options.num_ali)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
