@@ -39,6 +39,62 @@ def counterGen():
         i += 1
         yield i
 
+def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
+    """
+    Gets the rectangular helix of the image specified by the coordinates.
+    @micrograph: the EMData object which holds the micrograph from which helices and particles are chosen
+    @x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @width: the width in pixels of the rectangle
+    @return: the rectangular EMData helix specified by the coordinates and width 
+    """
+    l_vect = (x2-x1, y2-y1)
+    length = sqrt(l_vect[0]**2+l_vect[1]**2)
+    assert length != 0
+    l_uvect = (l_vect[0]/length, l_vect[1]/length)
+    centroid = ( (x1+x2)/2.0, (y1+y2)/2.0 )
+    
+    #Rotate so that the length is parallel to the y-axis
+    #Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
+    rot_angle = 180/pi*acos( l_uvect[1] )
+    #Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+    if l_uvect[0] < 0:
+        rot_angle *= -1 #rotate the box clockwise
+    
+    tr = Transform()
+    tr.set_trans(centroid)
+    tr.set_rotation({"type":"2d", "alpha":rot_angle})
+    helix_dimensions = ( int(round(width)), int(round(length)), 1 )
+    helix = micrograph.get_rotated_clip( tr, helix_dimensions )
+    helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
+    return helix
+
+def get_particle_centroids(helix_coords, px_overlap, px_length = None, px_width = None):
+    (x1,y1,x2,y2,w) = helix_coords
+    l_vect = (x2-x1,y2-y1)
+    helix_length = sqrt(l_vect[0]**2+l_vect[1]**2)
+    l_uvect = (l_vect[0]/helix_length, l_vect[1]/helix_length)
+    w_uvect = (-l_uvect[1],l_uvect[0])
+    
+    if not px_width:
+        px_width = w
+    if not px_length:
+        px_length = px_width
+    assert px_length > px_overlap, "The overlap must be smaller than the particle length"
+    
+    px_step = px_length - px_overlap
+    l = px_length/2.0 #distance from (x1, y1) on the helix axis
+    ptcl_coords = []
+    while l < helix_length - px_length/2.0 + px_step:
+        (x,y) = (x1 + l*l_uvect[0], y1 + l*l_uvect[1])
+        ptcl_coords.append((x,y))
+        l += px_step
+    
+    print ptcl_coords
+    return ptcl_coords
+
 def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = None ):
     """
     Gets the square/rectangular "particles" inside a rectangular helix.
@@ -76,37 +132,23 @@ def get_particles_from_helix( helix, px_overlap, px_length = None, px_width = No
     
     return particles
 
-def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
-    """
-    Gets the rectangular helix of the image specified by the coordinates.
-    @micrograph: the EMData object which holds the micrograph from which helices and particles are chosen
-    @x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
-    @y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
-    @x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
-    @y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
-    @width: the width in pixels of the rectangle
-    @return: the rectangular EMData helix specified by the coordinates and width 
-    """
-    l_vect = (x2-x1, y2-y1)
-    length = sqrt(l_vect[0]**2+l_vect[1]**2)
-    assert length != 0
-    l_uvect = (l_vect[0]/length, l_vect[1]/length)
-    centroid = ( (x1+x2)/2.0, (y1+y2)/2.0 )
-    
-    #Rotate so that the length is parallel to the y-axis
-    #Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
-    rot_angle = 180/pi*acos( l_uvect[1] )
-    #Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
-    if l_uvect[0] < 0:
-        rot_angle *= -1 #rotate the box clockwise
-    
-    tr = Transform()
-    tr.set_trans(centroid)
-    tr.set_rotation({"type":"2d", "alpha":rot_angle})
-    helix_dimensions = ( int(round(width)), int(round(length)), 1 )
-    helix = micrograph.get_rotated_clip( tr, helix_dimensions )
-    helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
-    return helix
+def get_unrotated_particles(helix_emdata, helix_coords, px_overlap, px_length = None, px_width = None):
+    #Will be square
+    if not px_length and not px_width:
+        side = helix_coords[0][4]
+    elif not px_length:
+        side = px_width
+    elif not px_width:
+        side = px_length
+    else:
+        side = max(px_length, px_width)
+    centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
+    particles = []
+    for centroid in centroids:
+        ptcl= helix_emdata.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
+        ptcl["ptcl_source_coord"] = tuple(centroid)
+        particles.append(ptcl)
+    return particles
 
 def load_coords(coords_filepath):
     """
@@ -217,36 +259,25 @@ def db_save_helices(micrograph_filepath, output_type = "hdf", output_dir=""):
         save_helix(helix, micrograph_name, i, output_type, output_dir)
         i+=1
 
-def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length = None, px_width = None, do_edge_norm=False, as_stack=True):
+def save_particles(particles, helix_num, ptcl_filepath, do_edge_norm=False):
     """
     saves the particles in a helix to a stack file
-    @helix_emdata: the EMData object containing the image data for the helix
+    @particles: a list of EMData particles
     @helix_num: the number used to identify this helix among all those boxed in the micrograph
     @ptcl_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
-    @px_overlap, @px_length, @px_width: see get_particles_from_helix() function
+    @do_edge_norm: Apply the processor "normalize.edgemean" to each particle before saving
     """
-    particles = get_particles_from_helix(helix_emdata, px_overlap, px_length, px_width)
     (path, ext) = os.path.splitext(ptcl_filepath)
-    if as_stack:
-        ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
-        try:
-            if os.access(ptcl_filepath, os.F_OK):
-                os.remove(ptcl_filepath)
-            for i in range(len(particles)):
-                ptcl = particles[i]
-                if do_edge_norm:
-                    ptcl.process_inplace("normalize.edgemean")
-                ptcl.write_image(ptcl_filepath, i) #appending to the image stack
-        except RuntimeError, e:
-            for i in range(len(particles)):
-                ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
-                if os.access(ptcl_filepath, os.F_OK):
-                    os.remove(ptcl_filepath)
-                ptcl = particles[i]
-                if do_edge_norm:
-                    ptcl.process_inplace("normalize.edgemean")
-                ptcl.write_image(ptcl_filepath)
-    else:
+    ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
+    try:
+        if os.access(ptcl_filepath, os.F_OK):
+            os.remove(ptcl_filepath)
+        for i in range(len(particles)):
+            ptcl = particles[i]
+            if do_edge_norm:
+                ptcl.process_inplace("normalize.edgemean")
+            ptcl.write_image(ptcl_filepath, i) #appending to the image stack
+    except RuntimeError, e:
         for i in range(len(particles)):
             ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
             if os.access(ptcl_filepath, os.F_OK):
@@ -255,7 +286,6 @@ def save_particles(helix_emdata, helix_num, ptcl_filepath, px_overlap, px_length
             if do_edge_norm:
                 ptcl.process_inplace("normalize.edgemean")
             ptcl.write_image(ptcl_filepath)
-
 
 def db_save_particles(micrograph_filepath, px_overlap, px_length = None, px_width = None, output_type = "hdf", output_dir=""):
     pass
@@ -300,6 +330,8 @@ class EMWriteHelixFiles(QtGui.QDialog):
         self.ptcls_groupbox.setCheckable(True)
         self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("&Normalize Edge-Mean"))
         self.ptcls_edgenorm_checkbox.setChecked(False)
+        self.ptcls_unrotated_checkbox = QtGui.QCheckBox(self.tr("&Unrotated"))
+        self.ptcls_unrotated_checkbox.setChecked(False)
         ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
         self.ptcls_overlap_spinbox = QtGui.QSpinBox()
         self.ptcls_overlap_spinbox.setMaximum(1000)
@@ -348,6 +380,7 @@ class EMWriteHelixFiles(QtGui.QDialog):
         
         ptcls_opts_layout = QtGui.QVBoxLayout()
         ptcls_opts_layout.addWidget(self.ptcls_edgenorm_checkbox)
+        ptcls_opts_layout.addWidget(self.ptcls_unrotated_checkbox)
         ptcls_opts_layout.addLayout(ptcls_overlap_layout)
         ptcls_opts_layout.addLayout(ptcls_width_layout)
         ptcls_opts_layout.addLayout(ptcls_length_layout)
@@ -400,6 +433,7 @@ class EMWriteHelixFiles(QtGui.QDialog):
         writes the image data for the helices and particles to files if each of those options are checked
         """
         helices_dict = self.parentWidget().helices_dict
+        micrograph = self.parentWidget().main_image.get_data()
         
         if self.ptcls_groupbox.isChecked():
             i = 0
@@ -407,11 +441,15 @@ class EMWriteHelixFiles(QtGui.QDialog):
                 px_overlap = self.ptcls_overlap_spinbox.value()
                 px_length = self.ptcls_length_spinbox.value()
                 px_width = self.ptcls_width_spinbox.value()
-                helix = helices_dict[coords_key]
                 do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
+                are_rotated = not self.ptcls_unrotated_checkbox.isChecked()
                 ptcl_filepath = str(self.ptcls_path_line_edit.text())
                 
-                save_particles(helix, i, ptcl_filepath, px_overlap, px_length, px_width, do_edge_norm)
+                if self.ptcls_unrotated_checkbox.isChecked():
+                    particles = get_unrotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
+                else:
+                    particles = get_particles_from_helix(helices_dict[coords_key], px_overlap, px_length, px_width)
+                save_particles(particles, i, ptcl_filepath, do_edge_norm)
                 i += 1
             pass
         if self.helices_groupbox.isChecked():
@@ -421,7 +459,6 @@ class EMWriteHelixFiles(QtGui.QDialog):
                 helix = helices_dict[coords_key]
                 save_helix(helix, helix_filepath, i)
                 i += 1
-        
         self.hide()
         
 
