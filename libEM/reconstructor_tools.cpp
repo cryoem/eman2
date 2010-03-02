@@ -87,7 +87,7 @@ void FourierPixelInserter3D::init()
 	ny2=ny/2;
 	nz2=nz/2;
 	
-	if (data->has_attr("subvolume_x0") and data->has_attr("subvolume_full_nx")) {
+	if (data->has_attr("subvolume_x0") && data->has_attr("subvolume_full_nx")) {
 		subx0=data->get_attr("subvolume_x0");
 		suby0=data->get_attr("subvolume_y0");
 		subz0=data->get_attr("subvolume_z0");

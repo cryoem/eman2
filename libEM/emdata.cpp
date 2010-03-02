@@ -918,7 +918,7 @@ float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, floa
 
 	t = t2*t1.inverse();
 	for (int i=0; i<int(2*M_PI*r0+0.5); i++) {
-		Vec3f v = Vec3f(r0*cos(i), r0*sin(i), 0);
+		Vec3f v = Vec3f(r0*cos((float)i), r0*sin((float)i), 0);
 		Vec3f d = t*v-v;
 		float dd = d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
 		if (dd > ddmax) ddmax = dd; 
@@ -2181,7 +2181,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					float a = 0;
 
 					if (y != ny / 2 || x != 0) {
-						a = (atan2(y1, x1) - a0) / da;
+						a = (atan2((float)y1, (float)x1) - a0) / da;
 					}
 
 					int i = (int)(floor(a));

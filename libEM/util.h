@@ -926,8 +926,9 @@ namespace EMAN
 			return 1;
 		}
 
-
+#ifndef _WIN32
 		static string recv_broadcast(int port);
+#endif	//_WIN32
 
 		/** Get the current time in a string with format "mm/dd/yyyy hh:mm".
 		 * @return The current time string.

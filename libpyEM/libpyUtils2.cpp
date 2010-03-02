@@ -319,11 +319,11 @@ void readarray( object& f, array& x, int size)
 
 
 // k_means_cont_table_ is locate to util_sparx.cpp
-int pyk_means_cont_table(array& grp1, array& grp2, array& stb, long int s1, long int s2, int flag) {
-    int* pt_grp1 = get_iptr(grp1);
-    int* pt_grp2 = get_iptr(grp2);
+int pyk_means_cont_table(array& group1, array& group2, array& stb, long int s1, long int s2, int flag) {
+    int* pt_group1 = get_iptr(group1);
+    int* pt_group2 = get_iptr(group2);
     int* pt_stb  = get_iptr(stb);
-    return EMAN::Util::k_means_cont_table_(pt_grp1, pt_grp2, pt_stb, s1, s2, flag);
+    return EMAN::Util::k_means_cont_table_(pt_group1, pt_group2, pt_stb, s1, s2, flag);
 }
 
 // bb_enumerate is locate in util_sparx.cpp
@@ -532,7 +532,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("get_stats_cstyle", &EMAN::Util::get_stats_cstyle, args("data"), "Get the mean, standard deviation, skewness and kurtosis of the input data\n \ndata - the vector of input data\n \nexception EmptyContainerException when the argument vector is empty\n\nPerforms the same calculations as in get_stats, but uses a single pass, optimized c approach\nShould perform better than get_stats")
 		.def("angle_sub_2pi", &EMAN::Util::angle_sub_2pi, args("x", "y"), "Calculate the difference of 2 angles and makes the\nequivalent result to be less than Pi.\n \nx - The first angle.\ny - The second angle.\n \nreturn The difference of 2 angles.")
 		.def("angle_sub_pi", &EMAN::Util::angle_sub_pi, args("x", "y"), "Calculate the difference of 2 angles and makes the\nequivalent result to be less than Pi/2.\n \nx - The first angle.\ny - The second angle.\n \nreturn The difference of 2 angles.")
+#ifndef _WIN32
 		.def("recv_broadcast", &EMAN::Util::recv_broadcast, args("port"), "")
+#endif	//_WIN32
 		.def("get_time_label", &EMAN::Util::get_time_label, "Get the current time in a string with format 'mm/dd/yyyy hh:mm'.\n \nreturn The current time string.")
 		.def("eman_copysign", &EMAN::Util::eman_copysign, args("a", "b"), "copy sign of a number. return a value whose absolute value\nmatches that of 'a', but whose sign matches that of 'b'.  If 'a'\nis a NaN, then a NaN with the sign of 'b' is returned.\nIt is exactly copysign() on non-Windows system.\n \na - The first number.\nb - The second number.\n \nreturn Copy sign of a number.")
 		.def("eman_erfc", &EMAN::Util::eman_erfc, args("x"), "complementary error function. It is exactly erfc() on\nnon-Windows system. On Windows, it tries to simulate erfc().\n \nThe erf() function returns the error function of x; defined as\nerf(x) = 2/sqrt(pi)* integral from 0 to x of exp(-t*t) dt\n \nThe erfc() function returns the complementary error function of x, that\nis 1.0 - erf(x).\n \nx - A float number.\n \nreturn The complementary error function of x.")
@@ -552,7 +554,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("saxpy",  &pysaxpy, args("n", "alpha", "x", "incx", "y", "incy"), "")
 		.def("sdot",   &pysdot, args("n", "x", "incx", "y", "incy"), "")
 		.def("readarray", &readarray, args("f", "x", "size"), "")
-		.def("k_means_cont_table", &pyk_means_cont_table, args("grp1", "grp2", "stb", "s1", "s2", "flag"), "k_means_cont_table_ is locate to util_sparx.cpp\nhelper to create the contengency table for partition matching (k-means)\nflag define is the list of stable obj must be store to stb, but the size st\nmust be know before. The trick is first start wihtout the flag to get number\nof elements stable, then again with the flag to get the list. This avoid to\nhave two differents functions for the same thing.")
+		.def("k_means_cont_table", &pyk_means_cont_table, args("group1", "group2", "stb", "s1", "s2", "flag"), "k_means_cont_table_ is locate to util_sparx.cpp\nhelper to create the contengency table for partition matching (k-means)\nflag define is the list of stable obj must be store to stb, but the size st\nmust be know before. The trick is first start wihtout the flag to get number\nof elements stable, then again with the flag to get the list. This avoid to\nhave two differents functions for the same thing.")
 		.def("bb_enumerate", &pybb_enumerate, args("parts", "classDims", "nParts", "nClasses", "T", "nguesses", "levels"), "bb_enumerate is locate in util_sparx.cpp\nK is the number of classes in each partition (should be the same for all partitions)\nthe first element of each class is its original index in the partition, and second is dummy var\n\nTurn the one dimensional Parts into vectors for easier manipulation\nWhile we're at it, construct Indices, an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition\nSo Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition\n\nwill delete this soon.... use bb_enumerateMPI instead")
 		.def("bb_enumerateMPI", &pybb_enumerateMPI, args("parts", "classDims", "nParts", "nClasses", "T", "nTop", "nguesses", "doMPI", "levels"), "bb_enumerateMPI is locate in util_sparx.cpp\nK is the number of classes in each partition (should be the same for all partitions)\nthe first element of each class is its original index in the partition, and second is dummy var\nMPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array.\nThe first element is reserved for max_levels (the size of the smallest\npartition after pruning).\nif nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called\nto find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.\nessentially the same as bb_enumerate but with the option to do mpi version.")
 		.def("branchMPIpy", &pybranchMPIpy, args("parts", "classDims", "nParts", "nClasses", "T", "levels", "nlevels", "nguesses", "nFirst", "firstmatches"), "an interface function between python code and branchMPI.\nDoesn't do much except compute Indices, call branchMPI,\nand check if the output make sense (i.e., feasible etc),\nand process the output to return to python as a vector.\nnFirst is the number of matches in firstmatches")
@@ -588,7 +590,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("div_img")
 		.staticmethod("div_filter")
 		.staticmethod("histogram")
+#ifndef _WIN32
 		.staticmethod("recv_broadcast")
+#endif	//_WIN32
 		.staticmethod("Crosrng_ms")
 		.staticmethod("Crosrng_sm_psi")
 		.staticmethod("Crosrng_ns")

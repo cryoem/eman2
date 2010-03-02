@@ -1022,6 +1022,7 @@ int Util::calc_best_fft_size(int low)
 	return 1;
 }
 
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include "byteorder.h"
@@ -1088,6 +1089,7 @@ string Util::recv_broadcast(int sock) {
 	}
 
 }
+#endif	//_WIN32
 
 string Util::get_time_label()
 {

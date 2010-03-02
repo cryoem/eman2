@@ -829,7 +829,7 @@ EMData *FourierReconstructor::finish(bool doift)
 
 	image->update();
 	
-	if (params.has_key("savenorm") and strlen((const char *)params["savenorm"])>0) {
+	if (params.has_key("savenorm") && strlen((const char *)params["savenorm"])>0) {
 		if (tmp_data->get_ysize()%2==0 && tmp_data->get_zsize()%2==0) tmp_data->process_inplace("xform.fourierorigin.tocenter");
 		tmp_data->write_image((const char *)params["savenorm"]);
 	}
