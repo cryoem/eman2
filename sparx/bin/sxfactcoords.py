@@ -11,12 +11,13 @@ import sys
       
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol"
+	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol  --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--rad",       type="int",    default=-1,     help="radius of mask")
 	parser.add_option("--neigvol",   type="int",    default=-1,     help="number of eigvenvectors to use (default all)")
 	parser.add_option("--fl",        type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",        type="float",  default=0.0,    help="fall-off of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--CTF",       action="store_true", default=False,  help="Use CTF")
 	parser.add_option("--MPI",       action="store_true",           help="use MPI")
 
 	(options, args) = parser.parse_args()
@@ -44,7 +45,7 @@ def main():
 		global_def.BATCH = True
 		if( get_im( stacks[0]).get_zsize() == 1 ):
 			from applications import factcoords_prj
-			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.MPI)
+			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)
 		else:
 			from applications import factcoords_vol
 			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.MPI)
