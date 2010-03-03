@@ -87,14 +87,14 @@ def main():
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.debug, options.MPI)
 			global_def.BATCH = False
-			sys.exit()
-		from applications import ali3d_d
-		global_def.BATCH = True
-		ali3d_d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+		else:
+			from applications import ali3d_d
+			global_def.BATCH = True
+			ali3d_d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 			options.yr, options.ts, options.delta, options.an,
 			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 			options.function, options.Fourvar, options.debug, options.MPI)
-		global_def.BATCH = False
+			global_def.BATCH = False
 
 if __name__ == "__main__":
 	main()
