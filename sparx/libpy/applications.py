@@ -9064,7 +9064,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 		ltot = 0
 		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
-def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, MPI=False):
+def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, CTF = False, MPI=False):
 	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection   import prgs, prep_vol
 	from filter       import filt_ctf, filt_tanl
@@ -9108,10 +9108,10 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		exp_prj = get_im( fname, imgid )
 
 		phi,theta,psi,s2x,s2y = get_params_proj(exp_prj)
-		ctf = exp_prj.get_attr("ctf")
+		if CTF:  ctf = exp_prj.get_attr("ctf")
 
 		ref_prj = prgs( avgvol, kb, [phi, theta, psi, -s2x, -s2y] )
-		ref_prj = filt_ctf( ref_prj, ctf )
+		if  CTF:  ref_prj = filt_ctf( ref_prj, ctf )
 		if(fl > 0.0):  exp_prj = filt_tanl(exp_prj, fl, aa)
 		#ltot += 1
 		#ref_prj.write_image("projection.hdf",ltot)
@@ -9122,7 +9122,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		for j in xrange( neigvol ) :
 
 			ref_eigprj = prgs( eigvols[j], kb, [phi, theta, psi, -s2x, -s2y] )
-			ref_eigprj = filt_ctf( ref_eigprj, ctf )
+			if  CTF:  ref_eigprj = filt_ctf( ref_eigprj, ctf )
 
 			d.append( diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j]/nrmd )
         		#print  i,j,d[-1]
