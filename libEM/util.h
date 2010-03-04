@@ -877,7 +877,7 @@ namespace EMAN
 			if ((r1==0 && i1==0) || (r2==0 && i2==0)) return 0;
 //			printf("%f\t%f\t%f\n",r1*r2+i1*i2,hypot(r1,i1),hypot(r2,i2));
 //			return acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));
-			return fast_acos((r1*r2+i1*i2)/(hypot(r1,i1)*hypot(r2,i2)));		// fast_acos also tolerates values very slightly above 1
+			return fast_acos((r1*r2+i1*i2)/(float)(hypot(r1,i1)*hypot(r2,i2)));		// fast_acos also tolerates values very slightly above 1
 		}
 
 		/** Check whether a number is a good float. A number is a good

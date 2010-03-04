@@ -760,10 +760,10 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	EMData * result = image->copy();
 	
 	int nseg = params.set_default("nseg",12);
-	float thr = params.set_default("thr",-1.0e30);
+	float thr = params.set_default("thr",-1.0e30f);
 	int ampweight = params.set_default("ampweight",1);
-	float maxsegsize = params.set_default("maxsegsize",10000.0);
-	float minsegsep = params.set_default("minsegsep",0.0);
+	float maxsegsize = params.set_default("maxsegsize",10000.0f);
+	float minsegsep = params.set_default("minsegsep",0.0f);
 	int maxiter = params.set_default("maxiter",100);
 	int maxvoxmove = params.set_default("maxvoxmove",25);
 	int verbose = params.set_default("verbose",0);
@@ -793,14 +793,14 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 						continue;
 					}
 					int bcls=-1;			// best matching class		
-					float bdist=nx+ny+nz;	// distance for best class
+					float bdist=(float)(nx+ny+nz);	// distance for best class
 					for (int c=0; c<nseg; c++) { 
 						float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
 						if (d<bdist) { bdist=d; bcls=c; }
 					}
 					if ((int)result->get_value_at(x,y,z)!=bcls) pixmov++;
 					if (bdist>maxsegsize) result->set_value_at(x,y,z,-1);		// pixel is too far from any center
-					else result->set_value_at(x,y,z,bcls);		// set the pixel to the class number
+					else result->set_value_at(x,y,z,(float)bcls);		// set the pixel to the class number
 				}
 			}
 		}
@@ -836,7 +836,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 					centers[c*3]=  Util::get_frand(0.0f,(float)nx);
 					centers[c*3+1]=Util::get_frand(0.0f,(float)ny);
 					centers[c*3+2]=Util::get_frand(0.0f,(float)nz);
-				} while (image->get_value_at(centers[c*3],centers[c*3+1],centers[c*3+2])<thr);		// This makes sure the new point is inside density
+				} while (image->get_value_at((int)centers[c*3],(int)centers[c*3+1],(int)centers[c*3+2])<thr);		// This makes sure the new point is inside density
 			}
 			// center of mass
 			else {
@@ -856,7 +856,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 							centers[c1*3]=  Util::get_frand(0.0f,(float)nx);
 							centers[c1*3+1]=Util::get_frand(0.0f,(float)ny);
 							centers[c1*3+2]=Util::get_frand(0.0f,(float)nz);
-						} while (image->get_value_at(centers[c1*3],centers[c1*3+1],centers[c1*3+2])<thr);
+						} while (image->get_value_at((int)centers[c1*3],(int)centers[c1*3+1],(int)centers[c1*3+2])<thr);
 					}
 				}
 			}
@@ -864,7 +864,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 
 		
 		if (verbose) printf("Iteration %3d: %6ld voxels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
-		if (nreseed==0 && pixmov<maxvoxmove) break;		// termination conditions met
+		if (nreseed==0 && pixmov<(size_t)maxvoxmove) break;		// termination conditions met
 	}
 	
 	result->set_attr("segment_centers",centers);
@@ -1086,11 +1086,11 @@ void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask,
 
 //	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
 	for (c=2; c<radial_mask.size(); c++) if (radial_mask[c-1]<=radial_mask[c]) break;
-	if (c>highpass) c=highpass;		// the *2 is for the 2x oversampling
+	if (c>highpass) c=(unsigned int)highpass;		// the *2 is for the 2x oversampling
 
 	radial_mask[0]=0.0;
 //	for (int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?radial_mask[c+1]/radial_mask[i]:1.0);
-	for (unsigned int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?0.0:1.0);
+	for (unsigned int i=1; i<radial_mask.size(); i++) radial_mask[i]=(i<=c?0.0f:1.0f);
 
 	printf("%f %d\n",highpass,c);
 //	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
@@ -1435,7 +1435,7 @@ void ToMinvalProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	float minval = params.set_default("minval",0.0);
+	float minval = params.set_default("minval",0.0f);
 	float newval = params.set_default("newval",minval);
 
 	size_t size = (size_t)image->get_xsize() *
@@ -5533,7 +5533,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		image->translate(dx, dy, dz);
 
 		Transform t;
-		t.set_trans(dx,dy,dz);
+		t.set_trans((float)dx,(float)dy,(float)dz);
 
 		if (nz > 1) {
 			image->set_attr("xform.align3d",&t);
@@ -5580,7 +5580,7 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 		if ( dims == 3 ) dz = -int(pcog[2]+0.5);
 
 		Transform t;
-		t.set_trans(dx,dy,dz);
+		t.set_trans((float)dx,(float)dy,(float)dz);
 		if (dims == 3) image->set_attr("xform.align3d",&t);
 		else if (dims == 2) image->set_attr("xform.align2d",&t);
 
@@ -6059,7 +6059,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
+		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
 	}
 
 	delete sf;
@@ -6080,7 +6080,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0*n))/radial_mask[i]);
+		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
 	}
 
 }
@@ -7163,7 +7163,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 				float r=hypot(x-(float)i,y-(float)j);
 #endif	//_WIN32
 				if (r<.5) continue;
-				image->set_value_at(i,j,cos(2*pi*r/wavelength+phase)/r);
+				image->set_value_at(i,j,cos(2*(float)pi*r/wavelength+phase)/r);
 			}
 		}
 	}
@@ -7173,7 +7173,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 				for(int i=0; i<nx; ++i) {
 					float r=Util::hypot3(x-(float)i,y-(float)j,z-(float)k);
 					if (r<.5) continue;
-					image->set_value_at(i,j,k,cos(2*pi*r/wavelength+phase)/(r*r));
+					image->set_value_at(i,j,k,cos(2*(float)pi*r/wavelength+phase)/(r*r));
 				}
 			}
 		}
@@ -8431,7 +8431,7 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 	}
 	else
 	{
-		clip = scale*image->get_xsize();
+		clip = (int)(scale*image->get_xsize());
 	}
 
 	Region r;
@@ -8487,7 +8487,7 @@ EMData* ScaleTransformProcessor::process(const EMData* const image) {
 	}
 	else
 	{
-		clip = scale*image->get_xsize();
+		clip = (int)(scale*image->get_xsize());
 	}
 
 	Region r;
@@ -8701,7 +8701,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Transform t;
-		t.set_trans(0.,ny*4.*yinc-ny/2,0);
+		t.set_trans(0.,ny*4.0f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) 2.*xinc*nx;
@@ -8713,7 +8713,7 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	{
 		Transform t;
-		t.set_trans(0.,ny*5.5*yinc-ny/2,0);
+		t.set_trans(0.,ny*5.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) 1.5*xinc*nx;
@@ -8737,7 +8737,7 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	{
 		Transform t;
-		t.set_trans(0.,ny*8.5*yinc-ny/2,0);
+		t.set_trans(0.,ny*8.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) .75*xinc*nx;
@@ -8762,7 +8762,7 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	{
 		Transform t;
-		t.set_trans(0.,ny*16.5*yinc-ny/2,0);
+		t.set_trans(0.,ny*16.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) 1.5*xinc*nx;
@@ -8786,7 +8786,7 @@ void TestTomoImage::process_inplace( EMData* image )
 
 	{
 		Transform t;
-		t.set_trans(0.,ny*13.5*yinc-ny/2,0);
+		t.set_trans(0.,ny*13.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float).75*xinc*nx;
@@ -8890,7 +8890,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Rotated ellipsoids
 	{
 		Transform t;
-		t.set_trans(nx*6.8*xinc-nx/2,ny*16*yinc-ny/2,0);
+		t.set_trans(nx*6.8f*xinc-nx/2,ny*16*yinc-ny/2,0);
 		Dict rot;
 		rot["type"] = "eman";
 		rot["az"] = 43.0f;
@@ -8905,7 +8905,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	}
 	{
 		Transform t;
-		t.set_trans(nx*7.2*xinc-nx/2,ny*16*yinc-ny/2,0);
+		t.set_trans(nx*7.2f*xinc-nx/2,ny*16*yinc-ny/2,0);
 		Dict rot;
 		rot["type"] = "eman";
 		rot["az"] = 135.0f;
@@ -8922,7 +8922,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Dense small ellipsoids
 	{
 		Transform t;
-		t.set_trans(nx*3.5*xinc-nx/2,ny*8*yinc-ny/2,0);
+		t.set_trans(nx*3.5f*xinc-nx/2,ny*8*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) .5*xinc*nx;
@@ -8934,13 +8934,13 @@ void TestTomoImage::process_inplace( EMData* image )
 		t.set_trans(nx*8*xinc-nx/2,ny*18*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*14*xinc-nx/2,ny*18.2*yinc-ny/2,0);
+		t.set_trans(nx*14*xinc-nx/2,ny*18.2f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
 		t.set_trans(nx*18*xinc-nx/2,ny*14*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*17*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		t.set_trans(nx*17*xinc-nx/2,ny*7.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 	}
 
@@ -8960,7 +8960,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Insert small cluster of spheres
 	{
 		Transform t;
-		t.set_trans(nx*14*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		t.set_trans(nx*14*xinc-nx/2,ny*7.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) .5*xinc*nx;
@@ -8971,7 +8971,7 @@ void TestTomoImage::process_inplace( EMData* image )
 	}
 	{
 		Transform t;
-		t.set_trans(nx*15*xinc-nx/2,ny*7.5*yinc-ny/2,0);
+		t.set_trans(nx*15*xinc-nx/2,ny*7.5f*yinc-ny/2,0);
 		Dict d;
 		d["transform"] = &t;
 		d["a"] = (float) .25*xinc*nx;
@@ -8980,31 +8980,31 @@ void TestTomoImage::process_inplace( EMData* image )
 		d["fill"] = .35;
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*13.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		t.set_trans(nx*13.5f*xinc-nx/2,ny*6.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*14.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		t.set_trans(nx*14.5f*xinc-nx/2,ny*6.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*15.5*xinc-nx/2,ny*6.5*yinc-ny/2,0);
+		t.set_trans(nx*15.5f*xinc-nx/2,ny*6.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		t.set_trans(nx*14*xinc-nx/2,ny*5.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*14*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		t.set_trans(nx*14*xinc-nx/2,ny*5.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*15*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		t.set_trans(nx*15*xinc-nx/2,ny*5.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*16*xinc-nx/2,ny*5.5*yinc-ny/2,0);
+		t.set_trans(nx*16*xinc-nx/2,ny*5.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*14.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
+		t.set_trans(nx*14.5f*xinc-nx/2,ny*4.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 
-		t.set_trans(nx*15.5*xinc-nx/2,ny*4.5*yinc-ny/2,0);
+		t.set_trans(nx*15.5f*xinc-nx/2,ny*4.5f*yinc-ny/2,0);
 		image->process_inplace("testimage.ellipsoid",d);
 	}
 	// Insert feducials around the outside of the "cell"
@@ -9032,7 +9032,7 @@ void HistogramBin::process_inplace(EMData *image)
 {
 	float min = image->get_attr("minimum");
 	float max = image->get_attr("maximum");
-	float nbins = params.set_default("nbins",default_bins);
+	float nbins = (float)params.set_default("nbins",default_bins);
 	bool debug = params.set_default("debug",false);
 
 	vector<int> debugscores;
@@ -9787,21 +9787,21 @@ float ModelHelixProcessor::radprofile(float r, int type)
 		// now the fitting to the original profile
 		if (r >= 20)
 			return 0; //We don't want that part of the polynomial --> goes way below zero
-		static float an[15] = { -3.9185246832229140e-16,
-				3.3957205298900993e-14, 2.0343351971222658e-12,
-				-4.4935965816879751e-10, 3.0668169835080933e-08,
-				-1.1904544689091790e-06, 2.9753088549414953e-05,
-				-4.9802112876220150e-04, 5.5900917825309360e-03,
-				-4.0823714462925299e-02, 1.8021733669148599e-01,
-				-4.0992557296268717e-01, 3.3980328566901458e-01,
-				-3.6062024812411908e-01, 1.0000000000000000e+00 };
+		static float an[15] = { -3.9185246832229140e-16f,
+				3.3957205298900993e-14f, 2.0343351971222658e-12f,
+				-4.4935965816879751e-10f, 3.0668169835080933e-08f,
+				-1.1904544689091790e-06f, 2.9753088549414953e-05f,
+				-4.9802112876220150e-04f, 5.5900917825309360e-03f,
+				-4.0823714462925299e-02f, 1.8021733669148599e-01f,
+				-4.0992557296268717e-01f, 3.3980328566901458e-01f,
+				-3.6062024812411908e-01f, 1.0000000000000000e+00f };
 
 		ret = an[0];
 		for (int i = 1; i < 15; i++) {
 			ret = ret * r + an[i];
 		}
 	}
-	return ret;
+	return (float)ret;
 }
 
 void ModelEMCylinderProcessor::process_inplace(EMData * in)
@@ -9815,7 +9815,7 @@ void ModelEMCylinderProcessor::process_inplace(EMData * in)
 	int nz = cyl->get_zsize();
 
 	int type = params.set_default("type", 2);
-	float len = params.set_default("len", 10.8); //in angstroms
+	float len = params.set_default("len", 10.8f); //in angstroms
 	int x0 = params.set_default("x0", -1); //in voxels -- default value changed a few lines down
 	int y0 = params.set_default("y0", -1); //in voxels
 	int z0 = params.set_default("z0", -1); //in voxels
@@ -9843,7 +9843,7 @@ void ModelEMCylinderProcessor::process_inplace(EMData * in)
 			for (int i = 0; i < nx; i++, dat++) {
 				x = i - x0;//coordinate sys centered on cylinder
 				y = j - y0;//coordinate sys centered on cylinder
-				float radius = hypot(x * apix_x, y * apix_y);
+				float radius = (float)hypot(x * apix_x, y * apix_y);
 				if ((k > cyl_k_min) && (k < cyl_k_max))
 					*dat += radprofile(radius, type); //pointer arithmetic for array done in loop
 				//else
@@ -9934,7 +9934,7 @@ EMData* BinarySkeletonizerProcessor::process(EMData * image)
 	int min_srfcw = params.set_default("min_surface_width", 4);
 	//cout << "PeformPureJuSkeletonization" << endl;
 	Volume* vskel = VolumeSkeletonizer::PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
-	VolumeSkeletonizer::CleanUpSkeleton(vskel, 4, 0.01);
+	VolumeSkeletonizer::CleanUpSkeleton(vskel, 4, 0.01f);
 	//cout << "skeletonization done" << endl;
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
 	EMData* skel = vskel->get_emdata();

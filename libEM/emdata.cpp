@@ -2154,8 +2154,8 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 {
 	ENTERFUNC;
 
-	a0=a0*M_PI/180.0;
-	da=da*M_PI/180.0;
+	a0=a0*M_PI/180.0f;
+	da=da*M_PI/180.0f;
 
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("no 3D image");

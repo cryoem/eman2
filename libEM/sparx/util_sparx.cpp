@@ -720,8 +720,8 @@ float Util::quadri_background(float xx, float yy, int nxdata, int nydata, float*
 
 	// wrap around is not done circulantly; if (x,y) is not in the image, then x = xnew and y = ynew
 	if ( (x < 1.0) || ( x >= (float)(nxdata+1) ) || ( y < 1.0 ) || ( y >= (float)(nydata+1) )){
-	      x = xnew;
-		  y = ynew;
+	      x = (float)xnew;
+		  y = (float)ynew;
      }
 
 
@@ -1184,8 +1184,8 @@ float  Util::get_pixel_conv_new_background(int nx, int ny, int nz, float delx, f
 		delx = argdelx;
 		// the wrap around is not done circulantly for 2D case; if (argdelx, argdely) is not in the image, then make them (xnew, ynew) which is definitely in the image
 		if ((delx < 0.0f) || (delx >= (float) (nx)) || (dely < 0.0f) || (dely >= (float) (ny)) ){
-	        delx = (float)xnew*2.0;
-	        dely = (float)ynew*2.0;
+	        delx = (float)xnew*2.0f;
+	        dely = (float)ynew*2.0f;
 		}
 
 		int inxold = int(round(delx));
@@ -4594,15 +4594,15 @@ vector<float> Util::cml_update_rot(vector<float> Rot, int iprj, float nph, float
     sth = sin(th);
     sps = sin(ps);
     // fill rotation matrix
-    Rot[ind] = cph*cps-cth*sps*sph;
-    Rot[ind+1] = cph*sps+cth*cps*sph;
-    Rot[ind+2] = sth*sph;
-    Rot[ind+3] = -sph*cps-cth*sps*cph;
-    Rot[ind+4] = -sph*sps+cth*cps*cph;
-    Rot[ind+5] = sth*cph;
-    Rot[ind+6] = sth*sps;
-    Rot[ind+7] = -sth*cps;
-    Rot[ind+8] = cth;
+    Rot[ind] = (float)(cph*cps-cth*sps*sph);
+    Rot[ind+1] = (float)(cph*sps+cth*cps*sph);
+    Rot[ind+2] = (float)(sth*sph);
+    Rot[ind+3] = (float)(-sph*cps-cth*sps*cph);
+    Rot[ind+4] = (float)(-sph*sps+cth*cps*cph);
+    Rot[ind+5] = (float)(sth*cph);
+    Rot[ind+6] = (float)(sth*sps);
+    Rot[ind+7] = (float)(-sth*cps);
+    Rot[ind+8] = (float)(cth);
 
     return Rot;
 }
@@ -4612,7 +4612,7 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
     int a = i_prj*9;
     int i, b, c;
     int n1=0, n2=0;
-    float vmax = 1 - 1.0e-6;
+    float vmax = 1 - 1.0e-6f;
     double r11, r12, r13, r23, r31, r32, r33;
 
     c = 0;
@@ -4629,14 +4629,14 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
 	    r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
 	    if (r33 > vmax) {
 		n2 = 270;
-		n1 = 270 + nint180(rad_deg*atan2(r12, r11));
+		n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
 	    }
 	    else if (r33 < -vmax) {
 		n2 = 270;
-		n1 = 270 - nint180(rad_deg*atan2(r12, r11));
+		n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
 	    } else {
-		n2 = nint180(rad_deg*atan2(r31, -r32));
-		n1 = nint180(rad_deg*atan2(r13, r23));
+		n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
+		n1 = nint180((float)(rad_deg*atan2(r13, r23)));
 		if (n1 < 0) {n1 += 360;}
 		if (n2 <= 0) {n2 = abs(n2);}
 		else {n2 = 360 - n2;}
@@ -4661,7 +4661,7 @@ vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_
     vector<int> com(2*n_lines);
     int a=0, b, c, l;
     int n1=0, n2=0, mem=-1;
-    float vmax = 1 - 1.0e-6;
+    float vmax = 1 - 1.0e-6f;
     double r11, r12, r13, r23, r31, r32, r33;
     c = 0;
     for (l=0; l<n_lines; ++l){
@@ -4682,14 +4682,14 @@ vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_
 	r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
 	if (r33 > vmax) {
 	    n2 = 270;
-	    n1 = 270 + nint180(rad_deg*atan2(r12, r11));
+	    n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
 	}
 	else if (r33 < -vmax) {
 	    n2 = 270;
-	    n1 = 270 - nint180(rad_deg*atan2(r12, r11));
+	    n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
 	} else {
-	    n2 = nint180(rad_deg*atan2(r31, -r32));
-	    n1 = nint180(rad_deg*atan2(r13, r23));
+	    n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
+	    n1 = nint180((float)(rad_deg*atan2(r13, r23)));
 	    if (n1 < 0) {n1 += 360;}
 	    if (n2 <= 0) {n2 = abs(n2);}
 	    else {n2 = 360 - n2;}
@@ -4953,8 +4953,8 @@ Dict Util::min_dist_four(EMData* image, const vector<EMData*>& data) {
 	return retvals;
 }
 
-int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag) {
-    long int d2 = grp2[s2 - 1] - grp2[0];
+int Util::k_means_cont_table_(int* group1, int* group2, int* stb, long int s1, long int s2, int flag) {
+    long int d2 = group2[s2 - 1] - group2[0];
     long int p2 = 0;
     long int i1 = 0;
     long int i2 = 0;
@@ -4965,29 +4965,29 @@ int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long 
     int stop2 = 0;
 
     for (i=0; i<s1; i++) {
-	p2 = (long int)s2 * (double)grp1[i] / (double)d2;
+	p2 = (long int)(s2 * (double)group1[i] / (double)d2);
 	if (p2 >= s2) {p2 = s2 - 1;}
 	i1 = p2;
 	i2 = p2;
 	max = s2;
-	if (grp1[i] < grp2[0] || grp1[i] > grp2[s2 - 1]) {continue;}
+	if (group1[i] < group2[0] || group1[i] > group2[s2 - 1]) {continue;}
 
 	stop1 = 0;
 	stop2 = 0;
 	while (max--) {
-	    if (grp1[i] == grp2[i1]) {
-		if (flag) {stb[cont] = grp1[i];}
+	    if (group1[i] == group2[i1]) {
+		if (flag) {stb[cont] = group1[i];}
 		cont++;
 		break;
 	    }
-	    if (grp2[i1] < grp1[i]) {stop1=1;}
-	    if (grp1[i] == grp2[i2]) {
-		if (flag) {stb[cont] = grp1[i];}
+	    if (group2[i1] < group1[i]) {stop1=1;}
+	    if (group1[i] == group2[i2]) {
+		if (flag) {stb[cont] = group1[i];}
 		cont++;
 		break;
 	    }
-	    if (grp2[i2] > grp1[i]) {stop2=1;}
-	    //printf("i1 %li i2 %li    v2 %i v2 %i   stop1 %i stop2 %i\n", i1, i2, grp2[i1], grp2[i2], stop1, stop2);
+	    if (group2[i2] > group1[i]) {stop2=1;}
+	    //printf("i1 %li i2 %li    v2 %i v2 %i   stop1 %i stop2 %i\n", i1, i2, group2[i1], group2[i2], stop1, stop2);
 
 	    if (stop1 & stop2) {break;}
 	    i1--;
@@ -4995,7 +4995,7 @@ int Util::k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long 
 	    if (i1 < 0) {i1 = 0;}
 	    if (i2 >= s2) {i2 = s2 - 1;}
 	}
-	//printf("v1: %i    ite: %li   cont: %li\n", grp1[i], s2-max, cont);
+	//printf("v1: %i    ite: %li   cont: %li\n", group1[i], s2-max, cont);
     }
 
     return cont;
@@ -17814,9 +17814,9 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 	}
 	bool nomirror = (theta<90.0) || (theta==90.0) && (psi<psi_max);
 	if (!nomirror) {
-		phi = fmod(phi+540.0, 360.0);
+		phi = fmod(phi+540.0f, 360.0f);
 		theta = 180-theta;
-		psi = fmod(540.0-psi, 360.0);
+		psi = fmod(540.0f-psi, 360.0f);
 	}
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
@@ -18112,11 +18112,11 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 
 	vector<float> a(6);
 	a[0] = ccf[select].value;
-	a[1] = ccf[select].i;
-	a[2] = ccf[select].j;
-	a[3] = ccf[select].k;
-	a[4] = ccf[select].mirror;
-	a[5] = select;
+	a[1] = (float)ccf[select].i;
+	a[2] = (float)ccf[select].j;
+	a[3] = (float)ccf[select].k;
+	a[4] = (float)ccf[select].mirror;
+	a[5] = (float)select;
 	return a;
 }
 
@@ -19387,7 +19387,7 @@ void Util::array_mutation(float *list, int len_list, float mutation_rate, float 
 	if (is_mirror != 0) {
 		for (int i=0; i<len_list; i++) {
 			int r = rand()%10000;
-			float f = r/10000.0;
+			float f = r/10000.0f;
 			if (f < mutation_rate) list[i] = 1-list[i];
 		}
 	} else {
@@ -19420,7 +19420,7 @@ void Util::array_mutation(float *list, int len_list, float mutation_rate, float 
 			bool changed = false;
 			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
 				int r = rand()%10000;
-				float f = r/10000.0;
+				float f = r/10000.0f;
 				if (f < mutation_rate) {
 					*p = 1-*p;
 					changed = true;
@@ -19440,7 +19440,7 @@ vector<float> Util::list_mutation(vector<float> list, float mutation_rate, float
 	if (is_mirror != 0) {
 		for (vector<float>::iterator q=list.begin(); q!=list.end(); q++) {
 			int r = rand()%10000;
-			float f = r/10000.0;
+			float f = r/10000.0f;
 			if (f < mutation_rate) *q = 1-*q;
 		}
 	} else {
@@ -19473,7 +19473,7 @@ vector<float> Util::list_mutation(vector<float> list, float mutation_rate, float
 			bool changed = false;
 			for (vector<int>::iterator p=gray.begin(); p!=gray.end(); p++) {
 				int r = rand()%10000;
-				float f = r/10000.0;
+				float f = r/10000.0f;
 				if (f < mutation_rate) {
 					*p = 1-*p;
 					changed = true;
@@ -19658,7 +19658,7 @@ int* Util::branch(int* argParts, int* Indices, int* dimClasses, int nParts, int 
 	int old_index;
 	int totalcost;
 	int nmatches;
-	int offset;
+	//int offset;
 
 	for(int i=0; i < nBranches ; i++){
 
@@ -20353,7 +20353,7 @@ int* Util::branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, i
 	int old_index;
 	int totalcost;
 	int nmatches;
-	int offset;
+	//int offset;
 
 	for(int i=0; i < nBranches ; i++){
 

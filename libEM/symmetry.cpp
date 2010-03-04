@@ -294,7 +294,7 @@ float EmanOrientationGenerator::get_az_delta(const float& delta,const float& alt
 
 	return (float)(EMConsts::rad2deg*h);*/
 
-	return altitude==0?360.0:delta/sin(tmp);
+	return altitude==0?360.0f:delta/sin(tmp);
 
 }
 

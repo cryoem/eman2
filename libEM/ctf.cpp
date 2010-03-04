@@ -609,7 +609,7 @@ vector<float> EMAN2Ctf::to_vector() const
 	vctf.push_back(cs);
 	vctf.push_back(apix);
 	vctf.push_back(dsbg);
-	vctf.push_back(background.size());
+	vctf.push_back((float)background.size());
 	for (unsigned int i=0; i<background.size(); i++) vctf.push_back(background[i]);
 	vctf.push_back((float)snr.size());
 	for (unsigned int j=0; j<snr.size(); j++) vctf.push_back(snr[j]);
@@ -711,7 +711,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				norm+=e;
 //				printf("%d\t%f\t%f\t%f\t%f\n",k,e,snr[k],sum,norm);
 			}
-			r[i]=norm==0?0:sum/norm;
+			r[i]=(float)(norm==0?0:sum/norm);
 			s+=ds;
 		}
 		r[0]=0;

@@ -136,8 +136,8 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 		
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
-		float h=1.0/EMConsts::I2G;
-		size_t idx;
+		float h=1.0f/EMConsts::I2G;
+		//size_t idx;
 		float r, gg;
 		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
@@ -159,7 +159,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 		return true;
 	} 
 	else {					// for subvolumes, not optimized yet
-		size_t idx;
+		//size_t idx;
 		float r, gg;
 		int pc=0;
 		for (int k = z0 ; k <= z0 + 1; k++) {
@@ -204,10 +204,10 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 		
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 //		float h=2.0/EMConsts::I3G;
-		float h=32.0/((8.0+Util::hypot3(xx,yy,zz))*EMConsts::I3G);
+		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G);
 //		float w=weight;
-		float w=weight/(1.0+6.0*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0)+8*Util::fast_exp(-h*3.0));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
-		size_t idx;
+		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
+		//size_t idx;
 		float r, gg;
 		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
@@ -254,11 +254,11 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 		
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 //		float h=2.0/EMConsts::I3G;
-		float h=32.0/((8.0+Util::hypot3(xx,yy,zz))*EMConsts::I3G); 
-		float w=weight/(1.0+6.0*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0)+8*Util::fast_exp(-h*3.0)+
-			6.0*Util::fast_exp(-h*4.0)+24.0*Util::fast_exp(-h*5.0)+24.0*Util::fast_exp(-h*6.0)+12.0*Util::fast_exp(-h*8.0)+
-			24.0*Util::fast_exp(-h*9.0)+8.0*Util::fast_exp(-h*12.0));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
-		size_t idx;
+		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G); 
+		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f)+
+			6.0f*Util::fast_exp(-h*4.0f)+24.0f*Util::fast_exp(-h*5.0f)+24.0f*Util::fast_exp(-h*6.0f)+12.0f*Util::fast_exp(-h*8.0f)+
+			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
+		//size_t idx;
 		float r, gg;
 		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
@@ -291,7 +291,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 	if (x0<-6||y0<-3||z0<-3||x0>nx+6||y0>ny+3||z0>nz+3) return false;
 
-	size_t idx;
+	//size_t idx;
 	float r, gg;
 	for (int k = z0 - 1; k <= z0 + 1; k++) {
 		for (int j = y0 - 1; j <= y0 + 1; j++) {
@@ -325,7 +325,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 	if (x0 <= 2)
 		l = 0;
 
-	size_t ii;
+	//size_t ii;
 	float r, gg;
 	for (int k = z0 - 2; k <= z0 + 2; k++) {
 		for (int j = y0 - 2; j <= y0 + 2; j++) {
@@ -353,7 +353,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 			return false;
 
-		size_t ii;
+		//size_t ii;
 		float r, gg;
 		for (int k = z0 - 2; k <= z0 + 2; k++) {
 			for (int j = y0 - 2; j <= y0 + 2; j++) {

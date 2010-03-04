@@ -278,8 +278,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp)
 				// x=0
 				int i=(y%ny)*subnx+(z%nz)*subnx*subny;
 				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny;
-				float ar=(rdata[i]+rdata[i2])/2.0;
-				float ai=(rdata[i+1]-rdata[i2+1])/2.0;
+				float ar=(rdata[i]+rdata[i2])/2.0f;
+				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;
 				rdata[i2]=ar;
 				rdata[i+1]=ai;
@@ -295,8 +295,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp)
 				// x=0
 				int i=(y%ny)*subnx+(z%nz)*subnx*subny+subnx-2;
 				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny+subnx-2;
-				float ar=(rdata[i]+rdata[i2])/2.0;
-				float ai=(rdata[i+1]-rdata[i2+1])/2.0;
+				float ar=(rdata[i]+rdata[i2])/2.0f;
+				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;
 				rdata[i2]=ar;
 				rdata[i+1]=ai;
@@ -379,7 +379,7 @@ void FourierReconstructor::setup()
 
 	}
 	else {
-		subx0=suby0=subz0=0.0;
+		subx0=suby0=subz0=0;
 		subnx=nx;
 		subny=ny;
 		subnz=nz;
@@ -455,7 +455,7 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 	}
 	else {
-		subx0=suby0=subz0=0.0;
+		subx0=suby0=subz0=0;
 		subnx=nx;
 		subny=ny;
 		subnz=nz;
@@ -567,15 +567,15 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 
-	float inx=input_slice->get_xsize();		// x/y dimensions of the input image
-	float iny=input_slice->get_ysize();
+	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
+	float iny=(float)(input_slice->get_ysize());
 
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
 			for (int x = 0; x <=  inx/2; x++) {
 
-				float rx = (float) x/(inx-2.0);	// coords relative to Nyquist=.5
+				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
 				float ry = (float) y/iny;
 
 				Vec3f coord(rx,ry,0);
@@ -653,8 +653,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	float *dat = input_slice->get_data();
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 
-	float inx=input_slice->get_xsize();		// x/y dimensions of the input image
-	float iny=input_slice->get_ysize();
+	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
+	float iny=(float)(input_slice->get_ysize());
 
 	double dot=0;		// summed pixel*weight dot product
 	double vweight=0;		// sum of weights
@@ -687,7 +687,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 				zz=zz*nz;
 
 
-				int idx = x * 2 + inx*(y<0?iny+y:y);
+				int idx = (int)(x * 2 + inx*(y<0?iny+y:y));
 				dt2[0] = dat[idx];
 				dt2[1] = dat[idx+1];
 
@@ -706,7 +706,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	dot/=sqrt(power*power2);		// normalize the dot product
 	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
 	input_slice->set_attr("reconstruct_absqual",(float)dot);
-	float rw=weight<=0?1.0:1.0/weight;
+	float rw=weight<=0?1.0f:1.0f/weight;
 	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
 	input_slice->set_attr("reconstruct_weight",(float)vweight/(float)(subnx*subny*subnz));
 //	printf("** %g\t%g\t%g\t%g ##\n",dot,vweight,power,power2);
@@ -749,7 +749,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
 					
 					dt[0]+=gg*rdata[idx];
-					dt[1]+=(i<0?-1.0:1.0)*gg*rdata[idx+1];
+					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
 					dt[2]+=norm[idx/2];
 					normsum+=gg;				
 				}
@@ -771,7 +771,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
 					
 					dt[0]+=gg*rdata[idx];
-					dt[1]+=(i<0?-1.0:1.0)*gg*rdata[idx+1];
+					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
 					dt[2]+=norm[idx/2];
 					normsum+=gg;				
 				}

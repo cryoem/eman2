@@ -2154,8 +2154,8 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 				// if (xold,yold) is outside the image, then let xold = ix and yold = iy
 
                 if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny)) ){
-				    xold = ix;
-					yold = iy;
+				    xold = (float)ix;
+					yold = (float)iy;
 				}	
 
 				int xfloor = int(xold);
@@ -2228,9 +2228,9 @@ EMData::rot_scale_trans_background(const Transform &RA) {
 					// if (xold,yold,zold) is outside the image, then let xold = ix, yold = iy and zold=iz
 
                     if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
-				         xold = ix;
-					     yold = iy;
-						 zold = iz;
+				         xold = (float)ix;
+					     yold = (float)iy;
+						 zold = (float)iz;
 					}	
 					
 					int IOX = int(xold);

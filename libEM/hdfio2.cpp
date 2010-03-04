@@ -105,8 +105,8 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 //	unsigned int * uia;
 	double d;
 	char *s;
-	vector <float> fv(pts);
-	vector <int> iv(pts);
+	vector <float> fv((size_t)pts);
+	vector <int> iv((size_t)pts);
 //	vector <unsigned int> uiv(pts);
 
 	float *matrix;
@@ -121,7 +121,7 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 			ret=EMObject(i);
 		}
 		else {
-			ia=(int *)malloc(pts*sizeof(int));
+			ia=(int *)malloc((size_t)pts*sizeof(int));
 			H5Aread(attr,H5T_NATIVE_INT,ia);
 			for (i=0; i<pts; i++) iv[i]=ia[i];
 			free(ia);
@@ -148,7 +148,7 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 				ret=EMObject(f);
 			}
 			else {
-				fa=(float *)malloc(pts*sizeof(float));
+				fa=(float *)malloc((size_t)pts*sizeof(float));
 				H5Aread(attr,H5T_NATIVE_FLOAT,fa);
 				for (i=0; i<pts; i++) fv[i]=fa[i];
 				free(fa);
@@ -665,24 +665,24 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		int nx1, ny1, nz1;	//dimensions of the sub-region, actual region read form file
  		if(rank == 3) {
 			hsize_t     doffset[3];             /* hyperslab offset in the file */
-			doffset[2] = area->x_origin() < 0 ? 0 : area->x_origin();
-			doffset[1] = area->y_origin() < 0 ? 0 : area->y_origin();
-			doffset[0] = area->z_origin() < 0 ? 0 : area->z_origin();
-			x0 = doffset[0];
-			y0 = doffset[1];
-			z0 = doffset[2];
+			doffset[2] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
+			doffset[1] = (hsize_t)(area->y_origin() < 0 ? 0 : area->y_origin());
+			doffset[0] = (hsize_t)(area->z_origin() < 0 ? 0 : area->z_origin());
+			x0 = (int)doffset[0];
+			y0 = (int)doffset[1];
+			z0 = (int)doffset[2];
 
-			z1 = area->x_origin() + area->get_width();
-			z1 = z1 > nx ? nx : z1;
+			z1 = (int)(area->x_origin() + area->get_width());
+			z1 = (int)(z1 > nx ? nx : z1);
 
-			y1 = area->y_origin() + area->get_height();
-			y1 = y1 > ny ? ny : y1;
+			y1 = (int)(area->y_origin() + area->get_height());
+			y1 = (int)(y1 > ny ? ny : y1);
 			if(y1 <= 0) {
 				y1 = 1;
 			}
 
-			x1 = area->z_origin() + area->get_depth();
-			x1 = x1 > nz ? nz : x1;
+			x1 = (int)(area->z_origin() + area->get_depth());
+			x1 = (int)(x1 > nz ? nz : x1);
 			if(x1 <= 0) {
 				x1 = 1;
 			}
@@ -701,25 +701,25 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 			dims[0] = dcount[2]?dcount[2]:1;
 			dims[1]	= dcount[1]?dcount[1]:1;
 			dims[2] = dcount[0]?dcount[0]:1;
-			nx1 = dims[0];
-			ny1 = dims[1];
-			nz1 = dims[2];
+			nx1 = (int)dims[0];
+			ny1 = (int)dims[1];
+			nz1 = (int)dims[2];
 
 			memoryspace = H5Screate_simple(3, dims, NULL);
  		}
  		else if(rank == 2) {
  			hsize_t     doffset[2];             /* hyperslab offset in the file */
-			doffset[1] = area->x_origin() < 0 ? 0 : area->x_origin();
-			doffset[0] = area->y_origin() < 0 ? 0 : area->y_origin();
-			x0 = doffset[0];
-			y0 = doffset[1];
+			doffset[1] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
+			doffset[0] = (hsize_t)(area->y_origin() < 0 ? 0 : area->y_origin());
+			x0 = (int)doffset[0];
+			y0 = (int)doffset[1];
 			z0 = 1;
 
-			y1 = area->x_origin() + area->get_width();
-			y1 = y1 > nx ? nx : y1;
+			y1 = (int)(area->x_origin() + area->get_width());
+			y1 = (int)(y1 > nx ? nx : y1);
 
-			x1 = area->y_origin() + area->get_height();
-			x1 = x1 > ny ? ny : x1;
+			x1 = (int)(area->y_origin() + area->get_height());
+			x1 = (int)(x1 > ny ? ny : x1);
 			if(x1 <= 0) {
 				x1 = 1;
 			}
@@ -737,10 +737,10 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 			/*Define memory dataspace - the memory we will created for the region*/
 			hsize_t     dims[2];              /* size of the region in the memory */
-			dims[0] = dcount[1]?dcount[1]:1;
-			dims[1]	= dcount[0]?dcount[0]:1;
-			nx1 = dims[0];
-			ny1 = dims[1];
+			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
+			dims[1]	= (hsize_t)(dcount[0]?dcount[0]:1);
+			nx1 = (int)dims[0];
+			ny1 = (int)dims[1];
 			nz1 = 1;
 
 			memoryspace = H5Screate_simple(2, dims, NULL);
@@ -947,22 +947,22 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hid_t spc=H5Dget_space(ds);
 	if(area) {
 		hsize_t doffset[3];		/*hyperslab offset in the file*/
-		doffset[0] = area->x_origin();
-		doffset[1] = area->y_origin();
-		doffset[2] = area->z_origin();
+		doffset[0] = (hsize_t)(area->x_origin());
+		doffset[1] = (hsize_t)(area->y_origin());
+		doffset[2] = (hsize_t)(area->z_origin());
 
 		hsize_t dcount[3];		/*size of the hyperslab in the file*/
-		dcount[0] = area->get_width();
-		dcount[1] = area->get_height()?area->get_height():1;
-		dcount[2] = area->get_depth()?area->get_depth():1;
+		dcount[0] = (hsize_t)(area->get_width());
+		dcount[1] = (hsize_t)(area->get_height()?area->get_height():1);
+		dcount[2] = (hsize_t)(area->get_depth()?area->get_depth():1);
 
 		H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
 
 		/*Create memory space with size of the region.*/
 		hsize_t dims[3];	/*size of the region in the memory*/
-		dims[0] = area->get_width();
-		dims[1] = area->get_height()?area->get_height():1;
-		dims[2] = area->get_depth()?area->get_depth():1;
+		dims[0] = (hsize_t)(area->get_width());
+		dims[1] = (hsize_t)(area->get_height()?area->get_height():1);
+		dims[2] = (hsize_t)(area->get_depth()?area->get_depth():1);
 
 		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
 		H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, spc, H5P_DEFAULT, data);

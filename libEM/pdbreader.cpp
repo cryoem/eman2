@@ -130,9 +130,9 @@ void PDBReader::set_points_array(double *p)
 vector<float> PDBReader::get_x() {
 	if (count_stop == 0) {count_stop = atomName.size();}
 	for (int i=0; i<count_stop; i++) {
-        	x.push_back(points[4*i]);
-       	 	y.push_back(points[4*i + 1]);
-        	z.push_back(points[4*i + 2]);
+        	x.push_back((float)points[4*i]);
+       	 	y.push_back((float)points[4*i + 1]);
+        	z.push_back((float)points[4*i + 2]);
 		resNum.push_back(pointInfo[2*i+1]);
     	}
 
@@ -281,7 +281,7 @@ void PDBReader::save_to_pdb(const char *file) const {
 void PDBReader::save_to_pdb(const char *file) const {
 	FILE *fp = fopen(file, "w");
 	int m = 0;
-	for (int i =0; i< lines.size(); i++) {
+	for (size_t i =0; i< lines.size(); i++) {
 		char liner [200];
 		strcpy (liner, lines[i].c_str());
 		if (strncmp(liner, "ATOM", 4) != 0) {

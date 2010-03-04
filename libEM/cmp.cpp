@@ -738,8 +738,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	int snrfn = params.set_default("snrfn",0);
 	int ampweight = params.set_default("ampweight",0);
 	int zeromask = params.set_default("zeromask",0);
-	float minres = params.set_default("minres",500.0);
-	float maxres = params.set_default("maxres",10.0);
+	float minres = params.set_default("minres",500.0f);
+	float maxres = params.set_default("maxres",10.0f);
 
 	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
 
@@ -802,8 +802,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 	// We use 'soft' edges for the Fourier cutoffs to minimize issues with pixel interpolation
 	for (int i = 0; i < np; i++) {
-		if (pmin>0) snr[i]*=(tanh(5.0*(i-pmin)/pmin)+1.0)/2.0;
-		if (pmax>0) snr[i]*=(1.0-tanh(i-pmax))/2.0;
+		if (pmin>0) snr[i]*=(tanh(5.0f*(i-pmin)/pmin)+1.0f)/2.0f;
+		if (pmax>0) snr[i]*=(1.0f-tanh(i-pmax))/2.0f;
 //		printf("%d\t%f\n",i,snr[i]);
 	}
 
@@ -863,8 +863,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 			for (int y = 0; y < ny; y++) {
 				for (int x = 0; x < nx2; x ++) {
 					float a;
-					if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
-					else a=1.0;
+					if (ampweight) a= (float)hypot(with_fft_data[i],with_fft_data[i+1]);
+					else a=1.0f;
 					sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
 					norm += a;
 					i += 2;
@@ -880,8 +880,8 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 				if (r>=ny2) { i+=2; continue; }		// we only have snr values to the box radius
 				
 				float a;
-				if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
-				else a=1.0;
+				if (ampweight) a= (float)hypot(with_fft_data[i],with_fft_data[i+1]);
+				else a=1.0f;
 				a*=snr[r];
 				sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
 				norm += a;
@@ -893,12 +893,12 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		for (int z = 0; z < nz; z++){
 			for (int y = 0; y < ny; y++) {
 				for (int x = 0; x < nx2; x ++) {
-					int r=Util::hypot3(x,y>ny/2?ny-y:y,z>nz/2?nz-z:z);
+					int r=(int)Util::hypot3(x,y>ny/2?ny-y:y,z>nz/2?nz-z:z);
 					if (r>=ny2) { i+=2; continue; }		// we only have snr values to the box radius
 					
 					float a;
-					if (ampweight) a= hypot(with_fft_data[i],with_fft_data[i+1]);
-					else a=1.0;
+					if (ampweight) a= (float)hypot(with_fft_data[i],with_fft_data[i+1]);
+					else a=1.0f;
 					a*=snr[r];
 					sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
 					norm += a;
@@ -1047,8 +1047,8 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int sweight = params.set_default("sweight", 1);
 	int nweight = params.set_default("nweight", 0);
 	int zeromask = params.set_default("zeromask",0);
-	float minres = params.set_default("minres",500.0);
-	float maxres = params.set_default("maxres",10.0);
+	float minres = params.set_default("minres",500.0f);
+	float maxres = params.set_default("maxres",10.0f);
 
 	if (zeromask) {
 		image=image->copy();

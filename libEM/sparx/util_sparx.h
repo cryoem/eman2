@@ -612,7 +612,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * of elements stable, then again with the flag to get the list. This avoid to
 	 * have two differents functions for the same thing.
 	 * */
-	static int k_means_cont_table_(int* grp1, int* grp2, int* stb, long int s1, long int s2, int flag);
+	static int k_means_cont_table_(int* group1, int* group2, int* stb, long int s1, long int s2, int flag);
 
 	// branch and bound matching algorithm
 
