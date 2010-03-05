@@ -6804,12 +6804,11 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("type", EMObject::INT, "Radial profile of density method -- 0 = pure Gaussian falloff; \
-					1 = pure Gaussian falloff + dip, so mean is zero; 2 = polynomial fitting of real helix density");
-			d.put("len", EMObject::FLOAT, "cylinder length in angstroms");
-			d.put("x0", EMObject::INT, "x coordinate in pixels for the midpoint of the cylinder's axis");
-			d.put("y0", EMObject::INT, "y coordinate in pixels for the midpoint of the cylinder's axis");
-			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis");
+			d.put("type", EMObject::INT, "Radial profile of density method, defaults to 2: 0 = pure Gaussian falloff; 1 = Gaussian falloff + dip, so mean is zero; 2 = polynomial fitting of real helix density");
+			d.put("length", EMObject::FLOAT, "cylinder length in angstroms, defaults to 3 turns (16.2 Angstroms)");
+			d.put("x0", EMObject::INT, "x coordinate in pixels for the midpoint of the cylinder's axis, defaults to center of map");
+			d.put("y0", EMObject::INT, "y coordinate in pixels for the midpoint of the cylinder's axis, defaults to center of map");
+			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis, defaults to center of map");
 			//TODO: Check with Matt Baker about description strings
 			return d;
 		}
@@ -6839,8 +6838,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("len", EMObject::FLOAT, "Helix length in angstroms.");
-			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis");
+			d.put("length", EMObject::FLOAT, "Helix length in angstroms.");
+			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis, defaults to center of map");
 			return d;
 		}
 		
