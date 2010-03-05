@@ -2986,7 +2986,7 @@ def angle_diff(data1, data2=None):
 	return (alphai+360.0)%360.0
 
 
-def align_diff(data1, data2=None, suffix="_ideal"):
+def align_diff_params(ali_params1, ali_params2):
 	
 	'''
 	This function determines the relative angle, shifts and mirrorness between
@@ -2994,38 +2994,20 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	'''
 
 	from math import cos, sin, pi, atan
-	from utilities import get_params2D, combine_params2
+	from utilities import combine_params2
 	
-	nima = len(data1)
-
-	if data2 != None: 
-		nima2 = len(data2)
-		if nima2 != nima:
-			print "Error: Number of images don't agree!"
-			return 0.0, 0.0, 0.0, 0
+	nima = len(ali_params1)/4
+	nima2 = len(ali_params2)/4
+	if nima2 != nima:
+		print "Error: Number of images don't agree!"
+		return 0.0, 0.0, 0.0, 0
+	else:
+		del nima2
 
 	# Read the alignment parameters and determine the relative mirrorness
-	cosi = 0.0
-	sini = 0.0
 	mirror_same = 0
-	ali_params1 = []
-	ali_params2 = []
 	for i in xrange(nima):
-		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
-		if data2 != None:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
-		else:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
-		ali_params1.append(alpha1)
-		ali_params1.append(sx1)
-		ali_params1.append(sy1)
-		ali_params1.append(mirror1)
-		ali_params2.append(alpha2)
-		ali_params2.append(sx2)
-		ali_params2.append(sy2)
-		ali_params2.append(mirror2)
-		if mirror1 == mirror2:	mirror_same += 1
-
+		if ali_params1[i*4+3] == ali_params2[i*4+3]: mirror_same += 1
 	if mirror_same > nima/2:
 		mirror = 0
 	else:
@@ -3033,6 +3015,8 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 		mirror = 1
 
 	# Determine the relative angle
+	cosi = 0.0
+	sini = 0.0
 	for i in xrange(nima):
 		mirror1 = ali_params1[i*4+3]
 		mirror2 = ali_params2[i*4+3]
@@ -3081,6 +3065,43 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	return alphai, sxi, syi, mirror
 
 
+def align_diff(data1, data2=None, suffix="_ideal"):
+	
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters.	
+	'''
+	from utilities import get_params2D
+	
+	nima = len(data1)
+
+	if data2 != None: 
+		nima2 = len(data2)
+		if nima2 != nima:
+			print "Error: Number of images don't agree!"
+			return 0.0, 0.0, 0.0, 0
+
+	# Read the alignment parameters and determine the relative mirrorness
+	ali_params1 = []
+	ali_params2 = []
+	for i in xrange(nima):
+		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
+		if data2 != None:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
+		else:
+			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
+		ali_params1.append(alpha1)
+		ali_params1.append(sx1)
+		ali_params1.append(sy1)
+		ali_params1.append(mirror1)
+		ali_params2.append(alpha2)
+		ali_params2.append(sx2)
+		ali_params2.append(sy2)
+		ali_params2.append(mirror2)
+
+	return align_diff_params(ali_params1, ali_params2)
+
+
 def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	'''
 	This function determines the relative angle, shifts and mirrorness between
@@ -3102,6 +3123,33 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
 		else:
 			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
+		
+		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
+			mirror_same += 1
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, sxi, syi, 0)
+			err += abs(sin((alpha12-alpha2)/180.0*pi/2))*(r*2)+sqrt((sx12-sx2)**2+(sy12-sy2)**2)
+	
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+
+
+def ave_ali_err_params(ali_params1, ali_params2, r=25):
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters. It also calculates the mirror consistent
+	rate and average pixel error between two sets of parameters.
+	'''
+	from utilities import combine_params2
+	from math import sqrt, sin, pi
+	
+	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
+
+	# Determine the average pixel error
+	nima = len(ali_params1)/4
+	mirror_same = 0
+	err = 0.0
+	for i in xrange(nima):
+		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
+		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
 		
 		if mirror == 0 and mirror1 == mirror2 or mirror == 1 and mirror1 != mirror2: 
 			mirror_same += 1
