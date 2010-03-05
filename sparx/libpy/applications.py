@@ -8109,13 +8109,13 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 						print "Invalid operation!"
 						return
 					else:
-						img.set_attr(p, 0.0)
+						img.set_attr(p, 0)
 				elif one:
 					if p[:6] == "xform." or p == "ctf":
 						print "Invalid operation!"
 						return
 					else:
-						img.set_attr(p, 1.0)
+						img.set_attr(p, 1)
 				elif randomize:
 					if p[:13] == "xform.align2d":
 						alpha = random()*360.0
