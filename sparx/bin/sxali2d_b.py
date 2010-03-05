@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --number_of_ave=number_of_ave --CTF --snr=SNR --function=user_function_name --restart=0 --MPI"
+	usage = progname + " stack outdir nodelist <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --maxit=max_iter --num_ali=number_of_alignment --CTF --snr=SNR --function=user_function_name --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="int",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",    type="int",  default=-1,            help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -63,13 +63,13 @@ def main():
 	parser.add_option("--proc", type="int", default=4,                 help="number of processors available")
 	(options, args) = parser.parse_args()
 	
-	if len(args) < 2 or len(args) > 3:
+	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+		if len(args) == 3: mask = None
+		else:              mask = args[3]
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -81,7 +81,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		ali2d_b(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.num_ali, options.max_merge, \
+		ali2d_b(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.num_ali, options.max_merge, \
 			options.CTF, options.Fourvar, options.adw, options.Ng, options.snr, options.function, options.CUDA, options.GPU, options.proc, options.thr)
 		global_def.BATCH = False
 
