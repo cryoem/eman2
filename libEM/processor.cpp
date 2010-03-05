@@ -9785,7 +9785,7 @@ float ModelHelixProcessor::radprofile(float r, int type)
 		//float an[11]={2.847024584977009e-10,-3.063997224364090e-08,1.418801040660860e-06,-3.678676414383996e-05,5.804871622801710e-04,-5.640340018430164e-03,3.208802421493864e-02,-9.068475313823952e-02,7.097329559749284e-02,-9.993347339658298e-02,1.000000000000000e+00};
 
 		// now the fitting to the original profile
-		if (r >= 20)
+		if (r >= 12.2)
 			return 0; //We don't want that part of the polynomial --> goes way below zero
 		static float an[15] = { -3.9185246832229140e-16f,
 				3.3957205298900993e-14f, 2.0343351971222658e-12f,
@@ -9815,7 +9815,7 @@ void ModelEMCylinderProcessor::process_inplace(EMData * in)
 	int nz = cyl->get_zsize();
 
 	int type = params.set_default("type", 2);
-	float len = params.set_default("len", 10.8f); //in angstroms
+	float len = params.set_default("length", 16.2); //in angstroms
 	int x0 = params.set_default("x0", -1); //in voxels -- default value changed a few lines down
 	int y0 = params.set_default("y0", -1); //in voxels
 	int z0 = params.set_default("z0", -1); //in voxels
@@ -9863,7 +9863,7 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 	float apix_x = cyl->get_attr("apix_x"); //TODO: Ask Matt if I correctly handled cases where apix_x != apix_y or apix_x != apix_z are not equal
 	float apix_y = cyl->get_attr("apix_y");
 	float apix_z = cyl->get_attr("apix_z");
-	float lengthAngstroms = params["len"];
+	float lengthAngstroms = params["length"];
 	int z0 = params.set_default("z0", -1); //in voxels
 
 	if (z0 < 0 || z0 >= nz)
