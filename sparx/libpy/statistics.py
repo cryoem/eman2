@@ -8645,9 +8645,10 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 		#################################################################################################
 
 		# Single processor version
-
-		output = Util.bb_enumerateMPI(ar_argParts, array(class_dim,'int32'),np,K,T,levels[0], nguesses,False,ar_levels)
-	
+		print "calling Util.bb_enumerateMPI"
+		output = Util.bb_enumerateMPI(ar_argParts, array(class_dim,'int32'),np,K,T,levels[0], nguesses,False, ar_levels)
+		print "done calling bb_enumerateMPI"
+		
 	# first element of output is the total  cost of the solution, second element is the number of matches
 	# in the output solution, and then follows the list of matches.
 	
