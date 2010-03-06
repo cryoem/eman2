@@ -716,10 +716,6 @@ if ENABLE_GUI:
             else:
                 self.micrograph_filepath_set = set(micrograph_filepaths) # [micrograph1_filepath, micrograph2_filepath, ...]
             self.update_micrograph_table()
-            
-            if box_width > 0:
-                self.box_width_spinbox.setValue(box_width)
-                self.width_changed(box_width)
                 
             self.connect(self.box_width_spinbox, QtCore.SIGNAL("valueChanged(int)"), self.width_changed)
             self.connect( self.img_quality_combobox, QtCore.SIGNAL("currentIndexChanged(int)"), self.set_image_quality )
@@ -732,6 +728,9 @@ if ENABLE_GUI:
             
             self.micrograph_table.setCurrentCell(0,0) #self.micrograph_table_selection() will display this micrograph
             
+            if box_width > 0:
+                self.box_width_spinbox.setValue(box_width)
+                self.width_changed(box_width)
             
         def __create_ui(self):
             
