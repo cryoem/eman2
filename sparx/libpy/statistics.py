@@ -8620,15 +8620,22 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 				levels.append(1)
 
 		ar_levels = array(levels, 'int32')
-		ar_argParts = array([],'int32')
+
+		#ar_argParts = array([],'int32')
+		onedParts = []
 		class_dim=[]
 		for i in xrange(np):
 			for j in xrange(K):
 				class_dim.append(PART[i][j].size+2)
-				ar_argParts = append(ar_argParts,[j,0])
-				ar_argParts=append(ar_argParts,PART[i][j])
+				onedParts.append(j)
+				onedParts.append(0)
+				pSize = PART[i][j].size
+				for p in xrange(pSize):
+					onedParts.append(PART[i][j][p])
+				#ar_argParts = append(ar_argParts,[j,0])
+				#ar_argParts=append(ar_argParts,PART[i][j])
+		ar_argParts = array(onedParts,'int32')
 		
-						
 		ar_class_dim = array(class_dim,'int32')
 		#################################################################################################
 		# if DoMPI_init = True, then compute new parts and Njobs top matches and return that
@@ -8645,9 +8652,7 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 		#################################################################################################
 
 		# Single processor version
-		print "calling Util.bb_enumerateMPI"
-		output = Util.bb_enumerateMPI(ar_argParts, array(class_dim,'int32'),np,K,T,levels[0], nguesses,False, ar_levels)
-		print "done calling bb_enumerateMPI"
+		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T,levels[0], nguesses,False, ar_levels)
 		
 	# first element of output is the total  cost of the solution, second element is the number of matches
 	# in the output solution, and then follows the list of matches.
