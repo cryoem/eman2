@@ -336,13 +336,9 @@ void pybb_enumerate(array& parts, array& classDims, int nParts, int nClasses, in
 
 // bb_enumerateMPI is locate in util_sparx.cpp
 vector<int> pybb_enumerateMPI(array& parts, array& classDims, int nParts, int nClasses, int T, int nTop, int nguesses, bool doMPI, array& Levels) {
-    std::cout << "convert parts\n";
     int* pt_parts = get_iptr(parts);
-    std::cout << "convert classDIms\n";
     int* pt_classDims = get_iptr(classDims);
-    std::cout << "convert Levels\n";
     int* pt_Levels = get_iptr(Levels);
-     std::cout << "call bb_enumerateMPI_\n";
     return EMAN::Util::bb_enumerateMPI_(pt_parts, pt_classDims, nParts, nClasses,T,nTop,nguesses,doMPI,pt_Levels);
 }
 
