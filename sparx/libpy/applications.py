@@ -5725,12 +5725,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
           ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
-	  rmin, rmax, fract, npad, sym, user_func_name, datasym,
+	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	  fourvar, debug = False, MPI = False):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
 			ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
-			rmin, rmax, fract, npad, sym, user_func_name, datasym,
+			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
 		return
 
@@ -5916,15 +5916,16 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
 
+
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
 	ts, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
-	rmin, rmax, fract, npad, sym, user_func_name, datasym,
+	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
 	from fundamentals   import rot_avg_image
@@ -6007,10 +6008,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		print_msg("initial symmetry - angle                  : %f\n"%(dphi))
 		print_msg("initial symmetry - axial rise             : %f\n"%(dp))
 		print_msg("Maximum iteration                         : %i\n"%(max_iter))
-		print_msg("CTF correction                            : %s\n"%(CTF))
+		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 		print_msg("Symmetry group                            : %s\n"%(sym))
 		print_msg("symmetry doc file                         : %s\n"%(datasym))
+		print_msg("number of times initial symmetry is imposed: %i\n"%(nise))
 		print_msg("npad                                      : %i\n"%(npad))
 		print_msg("User function                             : %s\n\n"%(user_func_name))
 
@@ -6199,12 +6201,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				ref_data = [vol]
 				#  call user-supplied function to prepare reference image, i.e., filter it
 				vol = user_func(ref_data)
-				if(total_iter > 2):
-					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
+				if(total_iter > nise):
+					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin) 
+					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 				else:
-					#  in the first two steps the symmetry is imposed
+					#  in the first nise steps the symmetry is imposed
 					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
-				print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+					print_msg("Imposed delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
@@ -6224,7 +6227,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
-
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""

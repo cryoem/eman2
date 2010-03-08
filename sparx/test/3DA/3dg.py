@@ -13,9 +13,17 @@ vol.read_image("../model001.tcp")
 #info(e)
 nx = vol.get_xsize()
 r = nx//2-2
-delta=3.0
-'''
+delta = 2.0
 angles=even_angles(delta,0.,90.,0,359.99,"S")
+
+#la = cone_ang(fangles, 45.0, 45.0, 12.0)
+#print len(la)
+#exit()
+#angles = [None]*len(la)
+#for i in xrange(len(la)):
+#	angles[i] = fangles[la[i]]
+#del fangles
+'''
 i1 = len(angles)
 at = even_angles(delta,0.,180.,0,359.99,"S")
 i2 = len(at)
@@ -23,7 +31,13 @@ i2 = len(at)
 for i in xrange(i2-i1):
 	angles.append(at[i+i1-1])
 '''
-angles=even_angles(delta,0.,179.9,0.0,359.99,"S", phiEqpsi="Minus")
+#delta=0.4
+#angles=even_angles(delta,41.,42.9,101.0,129.99,"S", phiEqpsi="Minus")
+#for i in xrange(len(angles)):
+#	angles.append( [180.+angles[i][0], 180.-angles[i][1], 180.-angles[i][2] ])
+# 
+#for i in xrange(len(angles)):	print angles[i]
+#exit()
 volft,kb=prep_vol(vol)
 
 stack_data="bdb:data"
@@ -46,9 +60,9 @@ for i in xrange(nangles):
 	#proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
 	proj = project(vol, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y], r)
 	#apply CTF
-	defocus = randint(3,4)*100.0
+	#defocus = randint(3,3)*100.0
 	#proj = projo.copy()
-	proj = filt_ctf(proj, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
+	#proj = filt_ctf(proj, generate_ctf([defocus, 2.0, 300.0, 2.5, 0.0, 0.1]))
 	#if(i == 0): st = Util.infomask(proj,None,True)
 	#proj += model_gauss_noise(st[1]*3.,nx,nx)
 	# Set all parameters for the new 2D image
@@ -57,7 +71,7 @@ for i in xrange(nangles):
 	# CTF parameters, if defocus zero, they are undetermined
 	#set_ctf(proj, [defocus, 2.0, 300.0, 2.5, 0.0, 0.1])
 	# flags describing the status of the image (1 = true, 0 = false)
-	proj.set_attr('group', i%3)
+	#proj.set_attr('group', i%3)
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.write_image(stack_data, i)
 exit()
