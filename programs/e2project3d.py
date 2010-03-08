@@ -152,7 +152,7 @@ class EMParallelProject3D:
 								sys.stdout.flush()
 								
 						task_customers.pop(i)
-						print "Task",tids.pop(i),"complented"
+						print "Task",tids.pop(i),"completed"
 						print "These tasks are remaining:",tids
 						
 				if len(task_customers) == 0: break

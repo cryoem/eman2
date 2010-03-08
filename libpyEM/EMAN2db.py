@@ -185,6 +185,7 @@ def db_parse_path(url):
 	# if we're here we need to deal with ?keys
 	u2=url[2].split(",")
 	if len(u2)==1 :
+		u2=u2.lower()
 		if u2[0][:7]=="select." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")

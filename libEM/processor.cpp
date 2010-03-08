@@ -1004,6 +1004,7 @@ void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mas
 {
 	Assert(radial_mask.size() > 0);
 	float x = 0.0f , step = 0.5f/radial_mask.size();
+	printf("%d %f %f\n",radial_mask.size(),lowpass,step);
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		if (x <= lowpass) {
 			radial_mask[i] = 1.0f;
