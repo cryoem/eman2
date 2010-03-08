@@ -80,7 +80,7 @@ properly configured SSH client on the local machine, and SSH server running on t
 		# Open the remote SSH process
 		host=args[-1].split(":")[0]
 		try :
-			ssh=Popen(("ssh",host,"e2ssh.py --client"),stdin=PIPE,stdout=PIPE)
+			ssh=Popen(("ssh",host,"e2scp.py --client"),stdin=PIPE,stdout=PIPE)
 		except:
 			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
 			traceback.print_exc()
@@ -88,7 +88,9 @@ properly configured SSH client on the local machine, and SSH server running on t
 		
 		while 1:
 			ln=ssh.stdout.readline().strip()
-			if len(ln)==0 : continue
+			if len(ln)==0 : 
+				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
+				sys.exit(3)
 			if ln=="HELO" : 
 				if options.verbose : print "Connection established"
 				break
@@ -208,7 +210,7 @@ def scp_client():
 	stdout=sys.stdout
 	stdin=sys.stdin
 	
-	stdout.write("HELO/n")
+	stdout.write("HELO\n")
 	
 	while 1:
 		stdout.flush()
