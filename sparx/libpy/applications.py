@@ -3630,7 +3630,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=frec)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
@@ -3825,8 +3825,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 			from time import localtime, strftime
 			#if(myid == main_node):
 			#	print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
-			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, info=frec)
+			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, finfo=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, finfo=frec)
 			if(myid == 0):
 				print_msg( "Time to compute 3D: %d\n" % (time()-start_time) );start_time = time()
 
@@ -4036,7 +4036,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		#print 'computing Fourier variance'
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=frec)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
@@ -4252,7 +4252,7 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=finfo)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=finfo)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:
 			varf = 1.0/varf
@@ -4645,7 +4645,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, info=finfo)
+		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=finfo)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:
 			varf = 1.0/varf
