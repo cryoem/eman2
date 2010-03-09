@@ -402,7 +402,7 @@ def good_size(size):
 	for i in sizes :
 		if i>=size: return i
 	
-	return Util.calc_best_fft_size(size)
+	return Util.calc_best_fft_size(int(size))
 
 def parsesym(optstr):
 	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
