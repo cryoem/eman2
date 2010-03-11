@@ -47,16 +47,17 @@ import atexit
 def main():
 	global debug
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <path or db> ... <target>
+	usage = """%prog [options] <base path> <path or db> ... <target>
 	
 This program is used to copy directories or files including BDB databases between machines. Requires a
 properly configured SSH client on the local machine, and SSH server running on target machine. EMAN2
 must be installed on both machines. Syntax is not quite the same as scp.
 
+- The first argument is a 'base path' for the source. Other source paths are relative to this path
 - Sources may be of the form: path, bdb:path
 - Target may not include bdb: specifiers, but must be a directory (local or remote)
 - If target is remote it should be user@host:path
-- If sources are remote, first arg should be user@host. Other sources are implicitly referenced against remote home directory
+- If sources are remote, first arg should be user@host:path. Sources are implicitly referenced against this path
 - Only one of source/target may be remote
 - user is not optional in remote specification
 """
@@ -79,9 +80,34 @@ must be installed on both machines. Syntax is not quite the same as scp.
 		print "Remote specification may not be in both source and target"
 		sys.exit(1)
 	
+	if "bdb:" in args[0].lower() or "bdb:" in args[-1].lower():
+		print "Neither source base path or destination path  may be a bdb specifier"
+		sys.exit(1)
+	
 	if '@' in args[0] : 
-		userhost=args[0]
+		userhost=args[0].split(":")[0]
 		ssh=scp_proxy(userhost)
+		
+		# remote basepath
+		try: remotepath=args[0].split(":")[1]
+		except: remotepath="."
+		
+		# local base path
+		basepath=args[-1]
+		
+		for a in args[1:-1]:
+			sources=ssh.listrecurse(a,remotepath)
+			
+			if options.verbose : print len(sources)," source files in ",a
+			
+			for s in sources:
+				if s[:4].lower()=="bdb:" :
+					if options.verbose>1 : print "Read %s as %s"%("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
+					ssh.getbdb("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
+				else:
+					if options.verbose>1 : print "Read %s as %s"%(remotepath+"/"+s,basepath+"/"+s)
+					ssh.getfile(remotepath+"/"+s,basepath+"/"+s)
+		
 
 	# target is remote
 	elif '@' in args[-1] :
@@ -90,20 +116,25 @@ must be installed on both machines. Syntax is not quite the same as scp.
 		
 		# create the target path
 		remotepath=args[-1][args[-1].find(":")+1:]
+		if options.verbose>1 : print "Create remote path: ",remotepath
 		ssh.mkdir(remotepath)
 		
-		for a in args[:-1]:
-			sources=get_dir_list_recurse(a)
+		# local base path
+		basepath= args[0]
+		
+		for a in args[1:-1]:
+			sources=get_dir_list_recurse(a,basepath)
 			
 			if options.verbose : print len(sources)," source files in ",a
 		
 			for s in sources:
 				if s[:4].lower()=="bdb:" :
-					ssh.putbdb(s,s.replace(a,remotepath))
+					if options.verbose>1 : print "Write %s as %s"%("bdb:"+basepath+s[4:],"bdb:"+remotepath+"/"+s[4:])
+					ssh.putbdb("bdb:"+basepath+"/"+s[4:],"bdb:"+remotepath+"/"+s[4:])
 				else:
-					ssh.putfile(s,s.replace(a,remotepath))
+					if options.verbose>1 : print "Write %s as %s"%(basepath+"/"+s,remotepath+"/"+s)
+					ssh.putfile(basepath+"/"+s,remotepath+"/"+s)
 				
-				if options.verbose>1 : print "Wrote %s as %s"%(s,s.replace(a,remotepath))
 					
 		
 		
@@ -181,11 +212,13 @@ def recv_bdb(stdin,path):
 	"Receives a BDB from stdin as a set of None terminated compressed pickled key/value pairs"
 	try :os.makedirs(path[4:].split("#")[0])
 	except: pass
+#	sys.stderr.write("open %s\n"%path)
 	db=db_open_dict(path)
+	db.realopen()
 	db.bdb.truncate()			# empty the existing database
 	while (1):
 		k=read_obj(stdin)
-		if k==None or len(k)==0 : break
+		if k==None or (isinstance(k,str) and len(k)==0) : break
 		db[k]=read_obj(stdin)
 	db.close()
 
@@ -201,10 +234,21 @@ def get_bdb_list(path):
 			
 	return ["%s#%s"%(path,d) for d in dicts]
 
-def get_dir_list_recurse(path):
+def get_dir_list_recurse(path,basepath=None):
 	"Recursively lists the contents of a directory, including BDB contents"
 	
-	try : flist=os.listdir(path)
+	if ("EMAN2DB") in path:
+		print "ERROR : EMAN2DB may not be specified as a path to copy. Use bdb: specifier instead."
+		return []
+	
+	if path[:4].lower()=="bdb:" :
+		if basepath!=None : return get_bdb_list("bdb:"+basepath+"/"+path[4:])
+		return get_bdb_list(path)
+		
+	if basepath!=None : path=basepath+"/"+path
+	
+	try :
+		flist=os.listdir(path)
 	except: return []
 	
 	rlist=[]
@@ -214,6 +258,7 @@ def get_dir_list_recurse(path):
 		elif os.path.isdir(fpath) : rlist.extend(get_dir_list_recurse(fpath))
 		elif os.path.isfile(fpath) : rlist.append(fpath)
 		
+	if basepath!=None : return [i.replace(basepath+"/","") for i in rlist]
 	return rlist
 	
 	
@@ -235,20 +280,23 @@ def scp_client():
 		if com=="mkdir" :
 			path=stdin.readline().strip()
 			if path[:4].lower()=="bdb:" : path=path[4:].split("#")[0]
-			try : os.makedirs(path)
-			except:
-				client_error('Failed to makedirs %s'%path)
-				continue
+			if not os.path.exists(path) : 
+				try : os.makedirs(path)
+				except:
+					client_error(stdout,'Failed to makedirs %s'%path)
+					continue
 			stdout.write("OK\n")
 			continue
 		
 		# List a path. Returns #\npath\npath... where # is the number of returned lines
 		if com=="listrecurse" :
 			path=stdin.readline().strip()
+			basepath=stdin.readline().strip()
+			if len(basepath)==0 : basepath=None
 			if path[:4].lower()=="bdb:" :
 				plist=get_bdb_list(path)
 			else :
-				plist=get_dir_list_recurse(path)
+				plist=get_dir_list_recurse(path,basepath)
 			
 			stdout.write("%d\n"%len(plist))
 			for p in plist : stdout.write(p+"\n")
@@ -300,7 +348,7 @@ def scp_client():
 		
 		# puts a bdb dict as a set of None terminated key/value pairs
 		if com=="putbdb" :
-			path=stdin.readline.strip()
+			path=stdin.readline().strip()
 			recv_bdb(stdin,path)
 			continue
 		
@@ -333,9 +381,11 @@ class scp_proxy:
 	def close(self):
 		"""Close the connection"""
 		if self.ssh!=None :
-			self.stdin.write("exit\n")
+			try:
+				self.stdin.write("exit\n")
 #			self.stdin.flush()
-			self.ssh.kill()
+				self.ssh.kill()
+			except: pass
 			self.ssh=None
 
 	def mkdir(self,path):
@@ -343,12 +393,13 @@ class scp_proxy:
 		
 		self.stdin.write("mkdir\n%s\n"%path)
 		self.stdin.flush()
-		r=ssh.stdout.readline().strip()
+		r=self.stdout.readline().strip()
 		if r!="OK" : raise Exception,"Error in creating remote path (%s)"%(r)
 
-	def listrecurse(self,path):
-		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier"""
-		self.stdin.write("listrecurse\n%s\n"%path)
+	def listrecurse(self,path,basepath=""):
+		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier. If specified
+		will reference paths with respect to basepath."""
+		self.stdin.write("listrecurse\n%s\n%s\n"%(path,basepath))
 		r=int(self.stdout.readline().strip())
 		ret=[]
 		for i in xrange(r):
