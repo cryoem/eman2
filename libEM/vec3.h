@@ -265,6 +265,34 @@ namespace EMAN
 			return vec[i];
 		}
 
+		/** For python __len__
+		 *
+		 * @return the number of elements in this container. it's always 3.
+		 * */
+		int number_of_element()
+		{
+			return 3;
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the first element
+		 * */
+		Type * begin()
+		{
+			return &vec[0];
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the one beyond the last element.
+		 * */
+		Type * end()
+		{
+			return &vec[3];
+		}
 
 		/** 'this' += v; Add the 2 vectors by adding item by item.
 		 * @param v The vector used to be added to 'this' vector.
@@ -641,6 +669,36 @@ namespace EMAN
 		 * @return The ith item of the vector.
 		 */
 		inline Type at(int i) { return vec[i]; }
+
+
+		/** For python __len__
+		 *
+		 * @return the number of elements in this container. it's always 2.
+		 * */
+		int number_of_element()
+		{
+			return 2;
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the first element
+		 * */
+		Type * begin()
+		{
+			return &vec[0];
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the one beyond the last element.
+		 * */
+		Type * end()
+		{
+			return &vec[2];
+		}
 
 
 		/** 'this' += v; Add the 2 vectors by adding item by item.
