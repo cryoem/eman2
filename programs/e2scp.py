@@ -89,15 +89,22 @@ must be installed on both machines. Syntax is not quite the same as scp.
 		ssh=scp_proxy(userhost)
 		
 		# create the target path
-		ssh.mkdir(args[-1][args[-1].find(":")+1:])
+		remotepath=args[-1][args[-1].find(":")+1:]
+		ssh.mkdir(remotepath)
 		
-		sources=[]
 		for a in args[:-1]:
-			sources.extend(get_dir_list_recurse(a))
+			sources=get_dir_list_recurse(a)
 			
-		if options.verbose : print len(sources)," source files"
+			if options.verbose : print len(sources)," source files in ",a
 		
-		print sources
+			for s in sources:
+				if s[:4].lower()=="bdb:" :
+					ssh.putbdb(s,s.replace(a,remotepath))
+				else:
+					ssh.putfile(s,s.replace(a,remotepath))
+				
+				if options.verbose>1 : print "Wrote %s as %s"%(s,s.replace(a,remotepath))
+					
 		
 		
 
@@ -152,6 +159,8 @@ def send_file(stdout,path):
 
 def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
+	try :os.makedirs(os.path.dirname(path))
+	except: pass
 	out=file(path,"w")
 	while 1:
 		chunk=read_chunk(stdin)
@@ -170,6 +179,8 @@ def send_bdb(stdout,path):
 
 def recv_bdb(stdin,path):
 	"Receives a BDB from stdin as a set of None terminated compressed pickled key/value pairs"
+	try :os.makedirs(path[4:].split("#")[0])
+	except: pass
 	db=db_open_dict(path)
 	db.bdb.truncate()			# empty the existing database
 	while (1):
@@ -380,7 +391,7 @@ class scp_proxy:
 		self.stdin.flush()
 		recv_bdb(self.stdout,localpath)
 		
-	def putdbdb(self,localpath,remotepath):
+	def putbdb(self,localpath,remotepath):
 		"""Copies a local BDB to a remote machine"""
 		self.stdin.write("putbdb\n%s\n"%(remotepath))
 		self.stdin.flush()
