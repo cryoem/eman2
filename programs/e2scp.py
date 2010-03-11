@@ -42,6 +42,7 @@ from cPickle import dumps,loads,dump,load
 from zlib import compress,decompress
 from subprocess import Popen,PIPE
 import traceback
+import atexit
 
 def main():
 	global debug
@@ -49,11 +50,14 @@ def main():
 	usage = """%prog [options] <path or db> ... <target>
 	
 This program is used to copy directories or files including BDB databases between machines. Requires a
-properly configured SSH client on the local machine, and SSH server running on target machine. 
+properly configured SSH client on the local machine, and SSH server running on target machine. EMAN2
+must be installed on both machines. Syntax is not quite the same as scp.
 
-- Sources may be of the form: path, bdb:path, user@host:path, user@host:bdb:path
+- Sources may be of the form: path, bdb:path
 - Target may not include bdb: specifiers, but must be a directory (local or remote)
-- Only sources or target may include user@host specification, not both.
+- If target is remote it should be user@host:path
+- If sources are remote, first arg should be user@host. Other sources are implicitly referenced against remote home directory
+- Only one of source/target may be remote
 - user is not optional in remote specification
 """
 
@@ -71,32 +75,29 @@ properly configured SSH client on the local machine, and SSH server running on t
 		sys.exit(0)
 
 	# Make sure at most one of source or dest is remote
-	if '@' in args[-1] and '@' in "".join(args[:-1]) :
+	if '@' in args[-1] and '@' in args[0] :
 		print "Remote specification may not be in both source and target"
 		sys.exit(1)
 	
+	if '@' in args[0] : 
+		userhost=args[0]
+		ssh=scp_proxy(userhost)
+
 	# target is remote
-	if '@' in args[-1] :
-		# Open the remote SSH process
-		host=args[-1].split(":")[0]
-		try :
-			ssh=Popen(("ssh",host,"e2scp.py --client"),stdin=PIPE,stdout=PIPE)
-		except:
-			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
-			traceback.print_exc()
-			sys.exit(2)
+	elif '@' in args[-1] :
+		userhost=args[-1].split(":")[0]
+		ssh=scp_proxy(userhost)
 		
-		while 1:
-			ln=ssh.stdout.readline().strip()
-			if len(ln)==0 : 
-				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
-				sys.exit(3)
-			if ln=="HELO" : 
-				if options.verbose : print "Connection established"
-				break
-			if options.verbose >1 : print "*** ",ln
+		# create the target path
+		ssh.mkdir(args[-1][args[-1].find(":")+1:])
 		
+		sources=[]
+		for a in args[:-1]:
+			sources.extend(get_dir_list_recurse(a))
+			
+		if options.verbose : print len(sources)," source files"
 		
+		print sources
 		
 		
 
@@ -147,6 +148,7 @@ def send_file(stdout,path):
 		if len(data)==0 :break
 		write_chunk(stdout,data)
 		if len(data)<1000000 : break
+	write_chunk(stdout,None)
 
 def recv_file(stdin,path):
 	"Receives a file into path. Reads a set of chunks terminated with a zero-length chunk"
@@ -176,7 +178,7 @@ def recv_bdb(stdin,path):
 		db[k]=read_obj(stdin)
 	db.close()
 
-def get_bdb_list(ath):
+def get_bdb_list(path):
 	"Given a bdb:* path, returns a list of items in the path"
 	
 	dicts=db_list_dicts(path)
@@ -216,7 +218,7 @@ def scp_client():
 		stdout.flush()
 		try : com=stdin.readline().strip()
 		except : break
-		if com=="bye" :
+		if com=="exit" :
 			break
 		# mkdir command. Specify path to create. Returns 'OK' on success
 		if com=="mkdir" :
@@ -291,7 +293,100 @@ def scp_client():
 			recv_bdb(stdin,path)
 			continue
 		
+class scp_proxy:
+	def __init__(self,userhost,verbose=0):
+		"""Opens a connection to the remote host and establishes the remote client. userhost should be of the form "user@host"""
+		self.verbose=verbose
+		# Open the remote SSH process
+		try :
+			self.ssh=Popen(("ssh",userhost,"e2scp.py --client"),stdin=PIPE,stdout=PIPE)
+			self.stdout=self.ssh.stdout		# read from this
+			self.stdin=self.ssh.stdin		# write to this
+		except:
+			print "ssh to remote machine failed : ",("ssh",host,"e2ssh.py --client")
+			traceback.print_exc()
+			sys.exit(2)
 		
+		while 1:
+			ln=self.stdout.readline().strip()
+			if len(ln)==0 : 
+				print "Error running e2scp.py on the remote machine. EMAN2 installed ?"
+				sys.exit(3)
+			if ln=="HELO" : 
+				if self.verbose : print "Connection established"
+				break
+			if self.verbose >1 : print "*** ",ln
+		
+		atexit.register(self.close)
+		
+	def close(self):
+		"""Close the connection"""
+		if self.ssh!=None :
+			self.stdin.write("exit\n")
+#			self.stdin.flush()
+			self.ssh.kill()
+			self.ssh=None
+
+	def mkdir(self,path):
+		"""Create a path on the remote host, at all necessary levels"""
+		
+		self.stdin.write("mkdir\n%s\n"%path)
+		self.stdin.flush()
+		r=ssh.stdout.readline().strip()
+		if r!="OK" : raise Exception,"Error in creating remote path (%s)"%(r)
+
+	def listrecurse(self,path):
+		"""Recursively list the contents of a remote path, may be a directory or a BDB specifier"""
+		self.stdin.write("listrecurse\n%s\n"%path)
+		r=int(self.stdout.readline().strip())
+		ret=[]
+		for i in xrange(r):
+			ret.append(self.stdout.readline().strip())
+			
+		return ret
+	
+	def getheader(self,path,n):
+		"""Return the header of a remote image as a dictionary"""
+		self.stdin.write("getheader\n%s\n%d\n"%(path,n))
+		self.stdin.flush()
+		return read_obj(self.stdout,img)
+		
+	def getimage(self,path,n):
+		"""Return a single reomote EMData object from a file"""
+		self.stdin.write("getimage\n%s\n%d\n"%(path,n))
+		self.stdin.flush()
+		return read_obj(self.stdout,img)
+		
+	def putimage(self,path,n,img):
+		"""Write a single EMData object into a remote file""" 
+		self.stdin.write("putimage\n%s\n%d\n"%(path,n))
+		self.write_obj(self.stdin,img)
+		self.stdin.flush()
+		
+	def getfile(self,remotepath,localpath):
+		"""Retrieve a single binary remote file and write to path. Streams for minimal memory usage."""
+		self.stdin.write("getfile\n%s\n"%(remotepath))
+		self.stdin.flush()
+		recv_file(self.stdout,localpath)
+		
+	def putfile(self,localpath,remotepath):
+		self.stdin.write("putfile\n%s\n"%(remotepath))
+		self.stdin.flush()
+		send_file(self.stdin,localpath)
+		
+	def getbdb(self,remotepath,localpath):
+		"""Copyies a remote BDB to a local machine"""
+		self.stdin.write("getbdb\n%s\n"%(remotepath))
+		self.stdin.flush()
+		recv_bdb(self.stdout,localpath)
+		
+	def putdbdb(self,localpath,remotepath):
+		"""Copies a local BDB to a remote machine"""
+		self.stdin.write("putbdb\n%s\n"%(remotepath))
+		self.stdin.flush()
+		send_bdb(self.stdin,localpath)
+
+
 		
 if __name__ == "__main__":
 	main()
