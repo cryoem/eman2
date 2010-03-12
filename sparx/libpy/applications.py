@@ -6117,8 +6117,26 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				#	peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				#else:           
 				peak, phihi[im], sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				#Jeanmod: wrap y-shifts back into box within rise of one helical unit,also correct phi
+				dyi=(syi/dp)-(syi//dp)
+				if dyi < -0.5:
+					dyi=dyi+1.0
+					synew=dyi*dp
+					phim=phihi[im]+abs(dphi)*(syi-synew)/abs(dp)
+					phinew=phim-360*(phim//360)
+				elif dyi > 0.5:
+					dyi=dyi-1.0
+					synew=dyi*dp
+					phim=phihi[im]+abs(dphi)*(syi-synew)/abs(dp)
+					phinew=phim-360*(phim//360)
+				else:
+					phinew=phihi[im]
+					synew=syi
+				paramali = get_params_proj(data[im])
+				set_params_proj(data[im], [phinew, paramali[1], paramali[2], paramali[3], synew])
 				sx += sxi
-				sy += syi
+				sy += synew
+				#end of Jeanmod
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
