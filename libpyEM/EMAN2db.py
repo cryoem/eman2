@@ -885,12 +885,12 @@ class DBDict:
 		
 
 		self.bdb=db.DB(self.dbenv)		# we don't check BDB_CACHE_DISABLE here, since self.dbenv will already be None if its set
-		if self.file==None : file=self.name+".bdb"
-		else : file=self.file
+		if self.file==None : lfile=self.name+".bdb"
+		else : lfile=self.file
 #		print "open ",self.path+"/"+file,self.name,ro
 		if ro : 
 			try:
-				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+				self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
 			except db.DBNoSuchFileError:
 				self.bdb=None
 				self.lock.release()
@@ -908,12 +908,12 @@ class DBDict:
 			self.isro=True
 		else : 
 			try: 
-				self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+				self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 			except :
 				self.bdb=None
 				self.lock.release()
 				traceback.print_exc()
-				print "Unable to open read/write ",self.name
+				print "Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile)
 				return
 			#except: 
 				## try one more time... this shouldn't be necessary...
@@ -1197,7 +1197,9 @@ of these occasional errors"""
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")
-					ret.read_data(p,int(l),region,rnx,rny,rnz)
+					if p[0]=='/' or p[0]=='\\' : ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
+					else : 
+						ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
 					except: raise KeyError,"Undefined data location key for : ",key
@@ -1219,8 +1221,8 @@ of these occasional errors"""
 		'''
 		I have to support the image_type and read_header parameters even though they are not used -
 		this is so this function can be used interchangeably with EMData.write_image 
-		'''
-		"Alternative to x[key]=val with transaction set"
+		
+		Alternative to x[key]=val with transaction set'''
 		self.realopen()
 		if (val==None) :
 			try:

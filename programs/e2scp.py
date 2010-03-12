@@ -84,6 +84,7 @@ must be installed on both machines. Syntax is not quite the same as scp.
 		print "Neither source base path or destination path  may be a bdb specifier"
 		sys.exit(1)
 	
+	# source is remote
 	if '@' in args[0] : 
 		userhost=args[0].split(":")[0]
 		ssh=scp_proxy(userhost)
@@ -96,6 +97,7 @@ must be installed on both machines. Syntax is not quite the same as scp.
 		basepath=args[-1]
 		
 		for a in args[1:-1]:
+			print a,remotepath
 			sources=ssh.listrecurse(a,remotepath)
 			
 			if options.verbose : print len(sources)," source files in ",a
@@ -136,8 +138,9 @@ must be installed on both machines. Syntax is not quite the same as scp.
 					ssh.putfile(basepath+"/"+s,remotepath+"/"+s)
 				
 					
-		
-		
+	else: 
+		print "Local copying not supported, at least one of source/target must be user@hostname:path"
+	
 
 def client_error(stdout,msg):
 	"Return an error to the server in the form of !!!!message\n"

@@ -113,6 +113,7 @@ Various utilities related to BDB databases."""
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			
+			vspath=os.path.realpath(vstack.path)
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,with_keys=True)
 				if dct==vstack : continue
@@ -123,7 +124,18 @@ Various utilities related to BDB databases."""
 					except:
 						print "error reading ",db,n 
 						continue
-					d["data_path"]=dct.get_data_path(n)
+					# This block converts an absolute path to the actual data to a relatataiveve path
+					try: 
+						dpath=os.path.realpath(dct.get_data_path(n))
+						pfx=len(os.path.commonprefix((vspath,dpath)))
+						if pfx==len(dpath) : ndd=0
+						else: ndd=dpath[pfx:].count("/")
+#						print vspath,dpath,dpath[pfx:],ndd
+						dpath="../"*ndd+dpath[pfx:]
+					except :
+						print "error with data_path ",db,n
+						continue
+					d["data_path"]=dpath
 					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
