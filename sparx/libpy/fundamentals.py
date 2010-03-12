@@ -256,11 +256,13 @@ def resample(img, sub_rate=0.5, frequency_low=0.0, frequency_high=0.0):
 	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_ysize()
+	if(nz > 1 or ny = 1):  ERROR("Only 2D images allowed","resample",1)
 	apix = get_pixel_size(img)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
-		nx = img.get_xsize()
-		ny = img.get_ysize()
 		new_nx   = int(nx*sub_rate+0.5)
 		new_ny   = int(ny*sub_rate+0.5)
 		if( abs(1.0-new_nx/sub_rate/nx) < 0.05 and abs(1.0-new_ny/sub_rate/ny) < 0.05):  # we tolerate 0.05% error, as per Steve's request
@@ -287,8 +289,6 @@ def resample(img, sub_rate=0.5, frequency_low=0.0, frequency_high=0.0):
 				tsub_rate = sub_rate/(float(ti)/nx)  # adjust subsample rate to account for Fourier truncation
 			e = Util.window( rtshg(e, scale = tsub_rate), new_nx, new_ny, 1, 0,0,0)
 	else:  #  sub_rate>1
-		nx     = img.get_xsize()
-		ny     = img.get_ysize()
 		new_nx = int(nx*sub_rate+0.5)
 		new_ny = int(ny*sub_rate+0.5)
 		if( abs(1.0-new_nx/sub_rate/nx) < 0.05 and abs(1.0-new_ny/sub_rate/ny) < 0.05):  # we tolerate 0.05% error, as per Steve's request
