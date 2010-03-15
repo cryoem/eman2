@@ -1734,7 +1734,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, (int)(mirrort))
 			set_params2D(data[im-image_start], [alphan, sxn, syn, int(mn), scale])
 			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
@@ -8531,7 +8531,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 		if  MPI:
 			total_sum_scale = mpi_reduce( sum_scale, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
 			total_sum_scale = mpi_bcast( total_sum_scale, 1, MPI_FLOAT, 0, MPI_COMM_WORLD)
-			sum_scale = float(total_sum_scale[0][0])
+			sum_scale = float(total_sum_scale[0])
 
 		avg_scale = sum_scale/img_number
 
