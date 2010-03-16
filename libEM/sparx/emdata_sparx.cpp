@@ -4958,7 +4958,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			for (int i = 0; i<nx; i++) {
 				int ix = i - nxc;
 				float d2 = (float)(ix*ix + jj);
-				if(d2 <= r2 && d2>=minrad) {
+				if(d2 <= r2 && d2>=ir) {
 					int nq = 1;
 					for ( int ist = -nst; ist <= nst; ist++) {
 						float zold = (k*pixel_size + ist*dp)/pixel_size;
