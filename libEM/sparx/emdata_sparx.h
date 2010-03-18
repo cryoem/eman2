@@ -305,7 +305,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_trans(const Transform &RA);
+	EMData* rot_scale_trans(const Transform &RA);
 
 		/** Rotate-Shift-Scale image
 		 *
@@ -319,7 +319,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_trans_background(const Transform &RA);
+	EMData* rot_scale_trans_background(const Transform &RA);
 
 		/*
 				To restrict the value to [0, nx)
