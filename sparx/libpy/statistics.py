@@ -8642,8 +8642,13 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 				onedParts.append(j)
 				onedParts.append(0)
 				pSize = PART[i][j].size
-				for p in xrange(pSize):
-					onedParts.append(PART[i][j][p])
+				if pSize > 1:
+					for p in xrange(pSize):
+						onedParts.append(PART[i][j][p])
+				if pSize == 1:
+					onedParts.append(PART[i][j])
+				if pSize == 0:
+					print "EMPTY CLASS encountered in matching algorithm. This should not happen!"	
 				#ar_argParts = append(ar_argParts,[j,0])
 				#ar_argParts=append(ar_argParts,PART[i][j])
 		ar_argParts = array(onedParts,'int32')
