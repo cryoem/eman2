@@ -3337,6 +3337,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	if (scale == 0.0f) scale = 1.0f;
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
+	float cir = (nxhalf-1)*(nxhalf-1);
 
 	if (!is_shuffled()) fft_shuffle();
 
@@ -3344,6 +3345,8 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 
+	
+	
 	ang = ang*(float)DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = sin(ang);
@@ -3353,7 +3356,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 		for (int ix = 0; ix <= nxhalf; ix++) {
 			float nuxold = (ix*cang - ysang)*scale;
 			float nuyold = (ix*sang + ycang)*scale;
-			result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			if (nuxold*nuxold+nuyold*nuyold<cir) result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
 			//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 		}
 	}

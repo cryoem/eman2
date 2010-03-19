@@ -390,12 +390,14 @@ def prepi(image):
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	#out = rotshift2dg(image, angle*pi/180., sx, sy, kb,alpha)
 # first pad it with zeros in Fourier space
-	o = image.FourInterpol(2*M, 2*M, 1, 0)
+	q = image.FourInterpol(2*M, 2*M, 1, 0)
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	q = Processor.EMFourierFilter(o, params)
-	o = fft(q)
-	return  o, kb
+	q = Processor.EMFourierFilter(q, params)
+	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : 0.25, "dopad" : False}
+	q = Processor.EMFourierFilter(q, params)
+	return fft(q), kb
 
 def prepg(image, kb):
 	M = image.get_xsize()
