@@ -45,7 +45,6 @@
 
 /* Matrix size */
 #define PI (3.14159265358979f)
-#define NIMAGE_ROW (512)
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
 __global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING);
@@ -73,17 +72,18 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	float x, y, ang;
 
 	int BLOCK_SIZE = RING_LENGTH/2+1;
+	int NIMAGE_ROW = 65535/NX;  // The maximum size of each dimension of a grid of thread blocks is 65535
 	int NROW = NIMAGE/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
-	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;
+	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;  // For a texture reference bound to linear memory, the maximum width is 2^27
 	int NTEXTURE = NIMAGE/NIMAGE_IN_TEXTURE;
 	int NIMAGE_LEFT_TEXTURE = NIMAGE%NIMAGE_IN_TEXTURE;
 
-	int IMAGE_PER_BATCH1 = 65535/NRING;
+	int IMAGE_PER_BATCH1 = 65535/NRING;            // The maximum FFT per batch is 65535
 	int IMAGE_BATCH1 = NIMAGE/IMAGE_PER_BATCH1;
 	int IMAGE_LEFT_BATCH1 = NIMAGE%IMAGE_PER_BATCH1;
 	int POINTS_PER_IMAGE = 2*(2*KX+1)*(2*KY+1);
-	int IMAGE_PER_BATCH2 = 65535/POINTS_PER_IMAGE;
+	int IMAGE_PER_BATCH2 = 65535/POINTS_PER_IMAGE; // The maximum FFT per batch is 65535
 	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
 	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
@@ -180,10 +180,8 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 		}
 
 	/* Fill the matrix for the coordinates of shifts for reference images (currently hard-wired to 0.0) */
-	for (i = 0; i < 1; i++) {
-		shifts_ref[i*2] = 0.0;
-		shifts_ref[i*2+1] = 0.0;
-	}
+	shifts_ref[0] = 0.0;
+	shifts_ref[1] = 0.0;
 
 	/* Copy the matrix for the coordinates of sampling points to the video card */
 	cudaMemcpy(d_points, points, RING_LENGTH*NRING*2*sizeof(float), cudaMemcpyHostToDevice);
@@ -360,6 +358,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	float *d_ali_params;	
 	int padded_size = (NX*2+2)*(NY*2);
 
+	int NIMAGE_ROW = 65535/NX;
 	int NROW = NIMA/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMA%NIMAGE_ROW;
 
