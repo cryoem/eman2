@@ -561,9 +561,9 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		1. linear    interpolation
 		2. quadratic interpolation
 		3. gridding
-		mode specifies what will be put in corners, should they stick up:
+		mode specifies what will be put in corners, should they stick out:
 		background - leave original values
-		cyclic - use pixels from the image using wrap around transformation
+		cyclic - use pixels from the image using wrap-around transformation
 		
 	"""
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift2D", 1)
