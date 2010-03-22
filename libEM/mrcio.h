@@ -155,6 +155,12 @@ namespace EMAN
 		/** generate the machine stamp used in MRC image format. */
 		static int generate_machine_stamp();
 		void swap_header(MrcHeader& mrch);
+		
+		/** This is a utility function used to calculate new min/max/mean/sigma
+		 * when write MRC file as 16 bit or 8 bit. It will write new set of 
+		 * min/max/mean/sigma to mrch.
+		 * this function needs get the output data storage type from mrch.mode.*/
+		void update_stat(void* data);
 	};
 }
 

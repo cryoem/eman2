@@ -622,6 +622,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 		ptr_data = cdata;
+		update_stat((void *)cdata);
 	}
 	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
 		sdata = new short[size];
@@ -637,6 +638,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 		ptr_data = sdata;
+		update_stat((void *)sdata);
 	}
 	else if (mrch.mode == MRC_USHORT) {
 		usdata = new unsigned short[size];
@@ -652,6 +654,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 		ptr_data = usdata;
+		update_stat((void *)usdata);
 	}
 
 	// New way to write data which includes region writing.
@@ -725,6 +728,118 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	return 0;
 }
 
+void MrcIO::update_stat(void* data)
+{
+	size_t size =  mrch.nx * mrch.ny * mrch.nz;
+	float v = 0.0f;	//variable to hold pixel value
+	double sum = 0.0;
+	double square_sum = 0.0;
+	double mean = 0.0;
+	float min, max;
+	
+	unsigned char * cdata = 0;
+	short * sdata = 0;
+	unsigned short * usdata = 0;
+	
+	if (mrch.mode == MRC_UCHAR) {
+		max = 0.0f;
+		min = UCHAR_MAX;
+		cdata = (unsigned char *)data;
+		
+		for (size_t i = 0; i < size; ++i) {
+			v = (float)(cdata[i]);
+#ifdef _WIN32
+			max = _cpp_max(max,v);
+			min = _cpp_min(min,v);
+#else
+			max=std::max<float>(max,v);
+			min=std::min<float>(min,v);
+#endif	//_WIN32
+			
+			sum += v;
+			square_sum += v * v;
+		}
+	}
+	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
+		max = (float)SHRT_MIN;
+		min = (float)SHRT_MAX;
+		sdata = (short *)data;
+		
+		for (size_t i = 0; i < size; ++i) {
+			v = (float)(sdata[i]);
+#ifdef _WIN32
+			max = _cpp_max(max,v);
+			min = _cpp_min(min,v);
+#else
+			max=std::max<float>(max,v);
+			min=std::min<float>(min,v);
+#endif	//_WIN32
+			
+			sum += v;
+			square_sum += v * v;
+		}
+	}
+	else if (mrch.mode == MRC_USHORT) {
+		max = 0.0f;
+		min = (float)USHRT_MAX;
+		usdata = (unsigned short*)data;
+		
+		for (size_t i = 0; i < size; ++i) {
+			v = (float)(usdata[i]);
+#ifdef _WIN32
+			max = _cpp_max(max,v);
+			min = _cpp_min(min,v);
+#else
+			max=std::max<float>(max,v);
+			min=std::min<float>(min,v);
+#endif	//_WIN32
+			
+			sum += v;
+			square_sum += v * v;
+		}
+	}
+	else {
+		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
+	}
+	
+	mean = sum/size;
+#ifdef _WIN32
+	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / size)/(size-1)));
+#else
+	float sigma = (float)std::sqrt(std::max<float>(0.0,(square_sum - sum*sum / size)/(size-1)));
+#endif	//_WIN32
+
+	/*change mrch.amin/amax/amean.rms here*/
+	mrch.amin = min;
+	mrch.amax = max;
+	mrch.amean = (float)mean;
+	mrch.rms = sigma;
+	
+	MrcHeader mrch2 = mrch;
+
+//endian issue, can't get use_host_endian argument
+//	bool opposite_endian = false;
+
+//	if (!is_new_file) {
+//		if (is_big_endian != ByteOrder::is_host_big_endian()) {
+//			opposite_endian = true;
+//		}
+//
+//		portable_fseek(mrcfile, 0, SEEK_SET);
+//	}
+//	
+//	if (opposite_endian || !use_host_endian) {
+//		swap_header(mrch2);
+//	}
+
+	portable_fseek(mrcfile, 0, SEEK_SET);
+	
+	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
+		throw ImageWriteException(filename, "MRC header");
+	}
+	
+	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
+}
 
 bool MrcIO::is_complex_mode()
 {
