@@ -693,7 +693,7 @@ class EMImage2DModule(EMGUIModule):
 				
 	def set_data(self,incoming_data,file_name="",retain_current_settings=True):
 		"""You may pass a single 2D image or a list of images"""
-		from emimagemx import EMDataListCache
+		from emimagemx import EMDataListCache,EMLightWeightParticleCache
 		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
 		
@@ -708,14 +708,14 @@ class EMImage2DModule(EMGUIModule):
 		fourier = False
 		
 		# it's a 3D image
-		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and data.get_zsize() != 1:
+		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
 			data = []
 			for z in range(incoming_data.get_zsize()):
 				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
 				data.append(image)
 		
 		
-		if isinstance(data,list) or isinstance(data,EMDataListCache):
+		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
 			if self.list_data == None and self.list_idx > len(data): self.list_idx = len(data)/2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
 			if d.is_complex():
@@ -767,7 +767,7 @@ class EMImage2DModule(EMGUIModule):
 		self.inspector_update(use_fourier=fourier)
 		self.force_display_update()
 		
-		if not isinstance(data,list) and not isinstance(data,EMDataListCache):
+		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache):
 			self.get_inspector().disable_image_range()
 		
 	def load_default_scale_origin(self,size_specified=None):
