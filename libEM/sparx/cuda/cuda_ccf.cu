@@ -72,10 +72,14 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	float x, y, ang;
 
 	int BLOCK_SIZE = RING_LENGTH/2+1;
-	int NIMAGE_ROW = 65535/NX;  // The maximum size of each dimension of a grid of thread blocks is 65535
+	// For a texture reference bound to a two-dimensional CUDA array,
+	// the maximum width is 2^16 (=65536)and the maximum height is 2^15 (=32768)
+	int NIMAGE_ROW = 32768/NX;
 	int NROW = NIMAGE/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
-	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;  // For a texture reference bound to linear memory, the maximum width is 2^27
+	// For a texture reference bound to linear memory, the maximum width is 2^27
+	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;  
+
 	int NTEXTURE = NIMAGE/NIMAGE_IN_TEXTURE;
 	int NIMAGE_LEFT_TEXTURE = NIMAGE%NIMAGE_IN_TEXTURE;
 
@@ -358,7 +362,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	float *d_ali_params;	
 	int padded_size = (NX*2+2)*(NY*2);
 
-	int NIMAGE_ROW = 65535/NX;
+	int NIMAGE_ROW = 32768/NX;
 	int NROW = NIMA/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMA%NIMAGE_ROW;
 
