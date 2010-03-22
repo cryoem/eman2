@@ -449,7 +449,7 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 	ENTERFUNC;
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if(bitspersample == CHAR_BIT) {
 		unsigned char *cdata = new unsigned char[nx*ny];

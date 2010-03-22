@@ -328,21 +328,6 @@ namespace EMAN
 		 */
 		FILE *sfopen(const string & filename, IOMode mode,
 					 bool * is_new = 0, bool overwrite = false);
-
-		/** Calculate the min and max pixel value acceptedfor image nomalization,
-		 * if we did not get them from image attribute dictionary, or they are not
-		 * valid values
-		 * rendermin = mean - 3*sigma
-		 * rendermax = mean + 3*sigma
-		 *
-		 * @param[in] data 2D image's data array
-		 * @param[in] nx x dimension size
-		 * @param[in] ny y dimension size
-		 * @param[out] rendermin the minmal value for normalization
-		 * @param[out] rendermax the maximum value for normalization
-		 * @param[in] nz z dimension size
-		 * */
-		void getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax, const int nz = 1);
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to

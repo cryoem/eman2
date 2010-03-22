@@ -603,7 +603,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	float rendermin = 0.0f;
 	float rendermax = 0.0f;
-	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	unsigned char *cdata = 0;
 	short *sdata = 0;

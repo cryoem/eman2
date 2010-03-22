@@ -157,7 +157,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	int nx=cinfo.image_width,ny=cinfo.image_height;
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx+1);
 

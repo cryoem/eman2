@@ -330,7 +330,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	check_write_access(rw_mode, image_index, 1, data);
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	if (!rendermin && !rendermax) getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];

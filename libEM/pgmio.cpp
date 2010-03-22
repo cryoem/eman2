@@ -260,7 +260,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	check_region(area, IntSize(nx, ny));
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
 
