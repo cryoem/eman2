@@ -222,7 +222,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	Input:
 	   stack_name - name of the file with projection data.
 	   
-	   list_proj - 
+	   list_proj -  list of projections to be used in the reconstruction
 
 	   symmetry - Point group of the target molecule (defaults to "C1")
 	   
@@ -708,24 +708,6 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	dm=[0.0]*(9*ntripletsWnsym)
 	ss=[0.0]*(6*ntripletsWnsym)
 	count = 0
-	"""
-	for i in xrange(nimages):
-		if type(stack_name) == types.StringType:
-			B.read_image(stack_name,list_proj[i], True)
-			RA = B.get_attr( "xform.projection" )
-		else:  
-			RA = stack_name[list_proj[i]].get_attr( "xform.projection" )
-		for j in xrange(nsym):
-			Tf = RA.get_sym(symmetry,j) #Tf.get_rotation()
-			angdict = Tf.get_rotation("spider")
-			PHI   = angdict["phi"]
-			THETA = angdict["theta"]
-			PSI   = angdict["psi"]
-			DMnSS = Util.CANG(PHI,THETA,PSI)
-			dm[(count*9) :(count+1)*9] = DMnSS["DM"]
-			ss[(count*6) :(count+1)*6] = DMnSS["SS"]
-			count += 1
-	"""
 	from utilities import get_params_proj
 	for i in xrange(nimages):
 		if type(stack_name) == types.StringType:
