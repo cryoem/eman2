@@ -73,7 +73,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 
 	int BLOCK_SIZE = RING_LENGTH/2+1;
 	// For a texture reference bound to a two-dimensional CUDA array,
-	// the maximum width is 2^16 (=65536)and the maximum height is 2^15 (=32768)
+	// the maximum width is 2^16 (=65536) and the maximum height is 2^15 (=32768)
 	int NIMAGE_ROW = 32768/NX;
 	int NROW = NIMAGE/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
