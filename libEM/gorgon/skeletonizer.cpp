@@ -58,6 +58,39 @@ const float MAP_ERR_VAL = 100.0f;
 				return true;
 			}
 		}
+
+		// Based on NonManifoldMesh<TVertex, TEdge, TFace>::NonManifoldMesh(Volume * sourceVol)
+		void VolumeSkeletonizer::MarkSurfaces(Volume* skeleton) {
+
+			int faceNeighbors[3][3][3] = {	{{1,0,0}, {1,0,1}, {0,0,1}},
+											{{1,0,0}, {1,1,0}, {0,1,0}},
+											{{0,1,0}, {0,1,1}, {0,0,1}} };
+			int indices[4];
+			bool faceFound;
+
+			for (int z = 0; z < skeleton->getSizeZ(); z++) {
+				for (int y = 0; y < skeleton->getSizeY(); y++) {
+					for (int x = 0; x < skeleton->getSizeX(); x++) {
+
+						indices[0] = skeleton->getIndex(x,y,z);
+						for (int n = 0; n < 3; n++) {
+							faceFound = true;
+							for (int m = 0; m < 3; m++) {
+								indices[m+1] = skeleton->getIndex(x+faceNeighbors[n][m][0], y+faceNeighbors[n][m][1], z+faceNeighbors[n][m][2]);
+								faceFound = faceFound && (skeleton->getDataAt(indices[m+1]) > 0);
+							}
+							if (faceFound) {
+								for (int m = 0; m < 4; m++) {
+									skeleton->setDataAt(indices[m], SURFACE_VAL);
+								}
+							}
+						}
+
+					}
+				}
+			}
+		}
+
 		void VolumeSkeletonizer::CleanUpSkeleton(Volume * skeleton, int minNumVoxels, float valueThreshold) {
 			
 			//Get the indices of voxels that are above the threshold, i.e. part of the skeleton

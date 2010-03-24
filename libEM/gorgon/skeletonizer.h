@@ -22,6 +22,7 @@ namespace wustl_mm {
 			static Volume * PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth);
 			//Volume * PerformImmersionSkeletonizationAndPruning(Volume * sourceVol, Volume * preserveVol, double startGray, double endGray, double stepSize, int smoothingIterations, int smoothingRadius, int minCurveSize, int minSurfaceSize, int maxCurveHole, int maxSurfaceHole, string outputPath, bool doPruning, double pointThreshold, double curveThreshold, double surfaceThreshold);
 			static void CleanUpSkeleton(Volume * skeleton, int minNumVoxels = 4, float valueThreshold = 0.5); //Added for EMAN2
+			static void MarkSurfaces(Volume* skeleton); //Added for EMAN2
 			
 		private:
 			static bool Are26Neighbors(Vec3<int> u, Vec3<int> v); //Added for EMAN2
