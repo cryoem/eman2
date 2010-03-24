@@ -40,9 +40,19 @@
 	#pragma warning(disable:4819)
 #endif	//_WIN32
 
+#define PI 3.14159265358979323846f // ming
+
 #include <cfloat>
 #include <complex>
 #include <fstream>
+#include "cmp.h"
+
+#include <log.h>//ming
+#include "emfft.h"//ming
+#include "Euler.h"//ming
+
+#include "fftw.h" //ming add
+#include "rfftw.h" // ming add
 
 #include "sparx/fundamentals.h"
 #include "emutil.h"
@@ -71,6 +81,19 @@ namespace EMAN
 	class Transform3D;
 	class Transform;
 	class GLUtil;
+/******************Ming Begin*********************/
+	#define EMDATA_SWAPPED	(1<<4)		// Data is swapped (may be offloaded if memory is tight)
+	#define EMDATA_COMPLEX	1
+	#define EMDATA_BUSY		(1<<2)		// someone is modifying data
+
+	#define EMDATA_RI		(1<<1)		// real/imaginary or amp/phase
+	#define EMDATA_NODATA	(1<<10)		// no actual data
+	#define EMDATA_HASCTF	(1<<6)		// has CTF info
+	//float ctf[11];		// ctf parameters, check HASCTF flag before using // ming add
+	//#define CTFOS	5			// curve oversampling, generates ny*CTFOS/2 points
+
+
+/**************Ming end*************/
 
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
@@ -87,10 +110,29 @@ namespace EMAN
 	*/
 	class EMData
 	{
+		/**********************Ming begin****************************/
+		int rocount;
+		float dx,dy,dz;
+		double sigma;
+		double mean;
+		EMData *parent;		// if this image was generated from another, this is it
+		Euler euler;		// orientation of slice or model  //ming added
+
+		MapInfoType map_type; //ming add
+		float xorigin, yorigin, zorigin;	// the origin coordinates in Angstrom for the first pixel (0,0,0). ming add
+		float pixel;		// A/pixel (or voxel) // ming add
+		int minloc,maxloc;	// location of min and max value
+		float min,max;		// image density limits
+		double sumsq;
+		float mean2,sigma2;	// these are statistics for a 4 pixel strip at the edge of the image
+		int tmp;			// # of temp file when swapped out
+
+		/****************Ming end*****************/
 		friend class GLUtil;
 
 		/** For all image I/O */
 		#include "emdata_io.h"
+
 
 		/** For anything read/set image's information */
 		#include "emdata_metadata.h"
@@ -110,6 +152,9 @@ namespace EMAN
 		/** This is for CUDA related functionality */
 		#include "emdata_cuda.h"
 #endif // EMAN2_USING_CUDA
+
+	//	void realupdate(); // Ming
+		EMData *doFFT();		//Ming, obvious, note that result is initially R,I not A,P
 
 	static int totalalloc;
 	public:
@@ -229,6 +274,79 @@ namespace EMAN
 		 */
 		void scale(float scale_factor);
 
+/******************** Ming begin *******************************/
+		/** Ming, FRM2D function
+		 * @declaration
+		 *
+		 * this COM() calculate the center
+		 * of mass		 *
+		 */
+		void COM(int intonly, float &xm, float &ym);
+		//void normalize();
+		// void doneData();
+		// float *getData();
+		int waitReady(int ro);
+		int swapin();
+		//inline float Sigma() { if (flags&EMDATA_NEEDUPD) realupdate(); return sigma; }// ming, realupdate()
+		//inline float Mean() { if (flags&EMDATA_NEEDUPD) realupdate(); return mean; } // ming
+		void fastTranslate(int inplace=1);			// fast integer-only translation
+		void zero(float sigma=0);		// clears the image to zero
+		//EMData *unwrap_largerR(int r1=-1,int r2=-1,int xs=-1, float rmax=-1);         // for FRM2D, get polar sampling with large radius
+		EMData * unwrap_largerR(int r1,int r2,int xs, float rmax_f);
+		void norm_frm2d();
+		// float *getDataRO();	// Returns data pointer for reading only
+		//int setSize(int x,int y=1, int z=1);
+		EMData *oneDfftPolar(int size, float rmax, float MAXR);
+		float* makeFRM2D_H_hat(float rhomax, float rhomin, float rmaxH, int size, float tstep, float r_size);
+		void exact_COM(int intonly, float *Dens_r, float &cx, float &cy);
+		//EMData *frm2dAlignFlip(EMData *drf, float &dot_frm, EMData *with, int usedot, float *raw_hhat, float rmax, float MAXR_f, float tstep, float angstep, float r_size, float &com_self_x, float &com_self_y, float &com_with_x, float &com_with_y, int neg_rt);
+		//float frm2dAlign(EMData *with, float *frm2dhhat, EMData* selfpcsfft, float rmax, float MAXR_f, float tstep, float angstep, float r_size, float &com_self_x,float &com_self_y, float &com_with_x, float &com_with_y, int neg_rt);
+		inline void setRAlign(float Alt,float Az,float Phi) {
+			if (!Util::goodf(&Alt)) Alt=0;
+			if (!Util::goodf(&Az)) Az=0;
+			if (!Util::goodf(&Phi)) Phi=0;
+			euler.setAngle(Alt,Az,Phi);
+		}
+		//inline void setRAlign(Euler *ang) { euler=*ang; } //ming
+		//inline void setTAlign(float x,float y,float z) { dx=x; dy=y; dz=z; }
+		void rotateAndTranslate(float scale=1.0,float dxc=0,float dyc=0,float dzc=0,int r=0);
+										// rotate and translate using current settings
+										// behavior changes if parent is/not set
+
+		inline int isComplex() { if (flags&EMDATA_COMPLEX) return 1; else return 0; }
+
+		float *fsc(EMData *with);	// returns the Fourier ring/shell correlation coef.
+									// as an array with ysize/2 elements (corners not calculated)
+									// the calling process must free the array
+
+	//ming,	float fscmp(EMData *with,float *snr=NULL);	// returns a quality factor based on FSC between images
+						// larger numbers indicate a better match
+		inline void setFlipped(int f) { if (f) flags|=EMDATA_FLIP; else flags&=~EMDATA_FLIP; }
+		//inline Euler *getEuler() { return &euler; }
+		void refineAlign(EMData *with,int mode=2,float *snr=NULL);
+		inline MapInfoType get_map_type() const {return map_type;}
+		inline void setXYZOrigin(float x, float y, float z) {xorigin=x; yorigin=y; zorigin=z; };
+		inline float getXorigin() { return xorigin; };
+		inline float getYorigin() { return yorigin; };
+		inline float getZorigin() { return zorigin; };
+		inline void setPixel(float pix) { pixel=pix; }
+		inline float eman1_Pixel() { return pixel; } // eman2 geometry.h has this function
+		inline int hasCTF() { if ((flags&EMDATA_HASCTF)) return 1; else return 0; }
+		inline float SQR(float x) { return x*x; }
+		inline float Dx() { return dx; }
+		inline float Dy() { return dy; }
+		inline float Dz() { return dz; }
+		inline float alt() { return euler.alt(); }	// dax
+	//	inline void update() { flags|=EMDATA_CHANGED; }
+
+	//ming	inline MapInfoType get_map_type() const {return map_type;}
+	//ming 	MapInfoType get_map_type() const;
+
+
+
+
+
+/*******************Ming end******************************/
 
 		/** Translate this image.
 		 * @param dx Translation distance in x direction.
@@ -609,6 +727,8 @@ namespace EMAN
 		 */
 		float calc_dist(EMData * second_img, int y_index = 0) const;
 
+		EMData * calcFLCF(EMData *with, int r, int type); //ming test
+
 		/** Calculates the cross correlation with local normalization
 		 * between 2 images. This is a faster version of local correlation
 		 * that make use of Fourier convolution and correlation.
@@ -781,7 +901,7 @@ namespace EMAN
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,
 //			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
-			EMDATA_BUSY = 1 << 3,	   // someone is modifying data, NO LONGER USED
+		// ming comment,	EMDATA_BUSY = 1 << 3,	   // someone is modifying data, NO LONGER USED
 			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file
 			EMDATA_NEEDUPD = 1 << 5,   // needs a real update
 //			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
@@ -958,7 +1078,6 @@ namespace EMAN
 		// 		EMData* get_cut_slice(const Transform& tr);
 
 	};
-
 
 	EMData * operator+(const EMData & em, float n);
 	EMData * operator-(const EMData & em, float n);
