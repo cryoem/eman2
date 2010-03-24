@@ -90,7 +90,6 @@ namespace EMAN
 
 		virtual EMData *align(EMData * this_img, EMData * to_img) const = 0;
 
-
 		/** To align 'this_img' with another image passed in through
 		 * its parameters. The alignment uses a user-given comparison
 		 * method to compare the two images. If none is given, a default
@@ -110,7 +109,6 @@ namespace EMAN
 		 */
 		virtual string get_name() const = 0;
 
-
 		virtual string get_desc() const = 0;
 		/** Get the Aligner parameters in a key/value dictionary.
 		 * @return A key/value pair dictionary containing the parameters.
@@ -119,7 +117,6 @@ namespace EMAN
 		{
 			return params;
 		}
-
 
 		/** Set the Aligner parameters using a key/value dictionary.
 		 * @param new_params A dictionary containing the new parameters.
@@ -779,59 +776,6 @@ namespace EMAN
 			static const string NAME;
 	};
 
-	class FRM2DAligner:public Aligner
-		{
-		  public:
-	 		virtual EMData * align(EMData * this_img, EMData * to_img,
-	 					const string& cmp_name, const Dict& cmp_params=Dict()) const; //ming add ="frc"
-
-			virtual EMData * align(EMData * this_img, EMData * to_img) const
-			{
-				return align(this_img, to_img, "", Dict());
-			}
-
-			string get_name() const
-			{
-				return NAME;
-			}
-
-			string get_desc() const
-			{
-				return "FRM2D use two rotational parameter and one translational parameter";
-			}
-
-			static Aligner *NEW()
-			{
-				return new FRM2DAligner();
-			}
-
-		//	static float  frm_2d_Align(EMData *with, float *frm2dhhat, EMData* selfpcsfft, float rmaxH, float MAXR_f, float tstep, float angstep, float r_size_flo,
-			//	   float &com_self_x, float &com_self_y, float &com_with_x, float &com_with_y, int neg_rt, const string & cmp_name, const Dict& cmp_params); // FRM2D aligner sub_class
-
-
-
-			/** Add your aligner parameter names and types in
-			 * get_param_types(). For available parameter types, please
-			 * refer class EMObject.
-			 *
-			 * As an example, XYZAligner has 3 parameters:
-			 *    EMData *with;
-			 *    int param1;
-			 *    float param2;
-			 */
-		virtual	TypeDict get_param_types() const
-			{
-				TypeDict d;
-
-				d.put("p_max", EMObject::FLOAT,"p_max is");
-				d.put("angstep", EMObject::FLOAT, "angstep means for each circle, how many points we choose." );
-				d.put("maxshift",EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
-
-				return d;
-			}
-
-			static const string NAME;
-		};
 
 	class CUDA_Aligner
 	{
@@ -853,7 +797,7 @@ namespace EMAN
 		vector<float> ali2d_single_iter(EMData *ref_image, vector<float> ali_params, float csx, float csy, int id, int silent);
 
 	  private:
-	    float *image_stack, *image_stack_filtered;
+	        float *image_stack, *image_stack_filtered;
 		float *ccf;
 		int NIMA, NX, NY, RING_LENGTH, NRING, OU, KX, KY;
 		bool CTF;

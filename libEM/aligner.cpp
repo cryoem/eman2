@@ -41,9 +41,6 @@
 #include "symmetry.h"
 #include <gsl/gsl_multimin.h>
 #include "plugins/aligner_template.h"
-#include <log.h>
-#include "List.h"// ming add
-
 
 #ifdef EMAN2_USING_CUDA
 	#include <sparx/cuda/cuda_ccf.h>
@@ -66,7 +63,6 @@ const string RefineAligner::NAME = "refine";
 const string Refine3DAligner::NAME = "refine.3d";
 const string RT3DGridAligner::NAME = "rt.3d.grid";
 const string RT3DSphereAligner::NAME = "rt.3d.sphere";
-const string FRM2DAligner::NAME = "FRM2D";
 
 template <> Factory < Aligner >::Factory()
 {
@@ -82,7 +78,6 @@ template <> Factory < Aligner >::Factory()
 	force_add<Refine3DAligner>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
-	force_add<FRM2DAligner>();
 //	force_add<XYZAligner>();
 }
 
@@ -248,7 +243,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 
 	// Return the result
 	Transform tmp(Dict("type","2d","alpha",rot_angle));
-	cf=this_img->process("math.transform",Dict("transform",(Transform*)&tmp));
+	cf=this_img->process("xform",Dict("transform",(Transform*)&tmp));
 //	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 //	Dict d("type","2d","alpha",rot_angle);
 //	t->set_rotation(d);
@@ -318,7 +313,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 
 	Transform rot;
 	rot.set_rotation(Dict("type","2d","alpha",(float)(a*180./M_PI)));
-	EMData* rslt = this_img->process("math.transform",Dict("transform",&rot));
+	EMData* rslt = this_img->process("xform",Dict("transform",&rot));
 	rslt->set_attr("xform.align2d",&rot);
 //
 //	Transform* t = get_set_align_attr("xform.align2d",rslt,this_img);
@@ -595,11 +590,11 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 	int ur2 = this_shrunk_2->get_ysize() / 2 - 2 - half_maxshift;
 	for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
 		for (int dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
-			#ifdef	_WIN32
-				if (_hypot(dx, dy) <= half_maxshift) {
-			#else
-					if (hypot(dx, dy) <= half_maxshift) {
-			#endif
+#ifdef	_WIN32
+			if (_hypot(dx, dy) <= half_maxshift) {
+#else
+			if (hypot(dx, dy) <= half_maxshift) {
+#endif
 				EMData *uw = this_shrunk_2->unwrap(4, ur2, xst / 2, dx, dy, true);
 				EMData *uwc = uw->copy();
 				EMData *a = uw->calc_ccfx(to_shrunk_unwrapped);
@@ -781,7 +776,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 		t.set_mirror(true);
 	}
 
-	EMData* ret = this_img->process("math.transform",Dict("transform",&t));
+	EMData* ret = this_img->process("xform",Dict("transform",&t));
 	ret->set_attr("xform.align2d",&t);
 
 	return ret;
@@ -939,7 +934,7 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 		t.set_mirror(true);
 	}
 
-	EMData* rslt = this_img->process("math.transform",Dict("transform",&t));
+	EMData* rslt = this_img->process("xform",Dict("transform",&t));
 	rslt->set_attr("xform.align2d",&t);
 
 	return rslt;
@@ -970,7 +965,7 @@ static double refalifn(const gsl_vector * v, void *params)
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
+	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
@@ -1122,11 +1117,11 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 		tsoln.set_mirror(mirror);
 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
-		result = this_img->process("math.transform",Dict("transform",&tsoln));
+		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align2d",&tsoln);
 	} else { // The refine aligner failed - this shift went beyond the max shift
 //		printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
-		result = this_img->process("math.transform",Dict("transform",t));
+		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align2d",t);
 	}
 
@@ -1213,7 +1208,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Transform soln = refalin3d_perturb(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
 
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&soln));
+	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
@@ -1243,7 +1238,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	Transform t(d);
 	t.set_trans((float)x,(float)y,(float)z);
 	t.set_mirror(mirror);
-	EMData *tmp = this_img->process("math.transform",Dict("transform",&t));
+	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
@@ -1357,11 +1352,11 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 
 		Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
 
- 		result = this_img->process("math.transform",Dict("transform",&tsoln));
+ 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 
 	} else { // The refine aligner failed - this shift went beyond the max shift
-		result = this_img->process("math.transform",Dict("transform",t));
+		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
 	}
 
@@ -1384,7 +1379,7 @@ EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
-	EMData* soln = this_img->process("math.transform",t);
+	EMData* soln = this_img->process("xform",t);
 	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
 
@@ -1461,7 +1456,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				d["phi"] = phi;
 				d["az"] = az;
 				Transform t(d);
-				EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+				EMData* transformed = this_img->process("xform",Dict("transform",&t));
 				EMData* ccf = transformed->calc_ccf(to);
 
 				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
@@ -1504,7 +1499,7 @@ EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & c
 	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
 	t["transform"] = tr;
-	EMData* soln = this_img->process("math.transform",t);
+	EMData* soln = this_img->process("xform",t);
 	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
 
@@ -1584,7 +1579,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
 			params["phi"] = phi;
 			Transform t(params);
-			EMData* transformed = this_img->process("math.transform",Dict("transform",&t));
+			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			EMData* ccf = transformed->calc_ccf(to);
 			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 			Dict altered_cmp_params(cmp_params);
@@ -1615,410 +1610,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	delete sym; sym = 0;
 	return solns;
+
 }
-
-static float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfpcsfft, int p_max_input,int rsize, float &com_this_x, float &com_this_y, float &com_with_x, float &com_with_y,const string & cmp_name, const Dict& cmp_params)
-{ // ming, this_img is the image to be aligned, selfpcsfft is aligned this_img
-
-	int size=rsize;
-	float dx,dy;
-	int bw=size/2;
-
-	unsigned long tsize=2*size;
-	unsigned long ind1=0, ind2=0, ind3=0, ind4=0, ind41=0;
-	unsigned long index0=0;
-	int i=0, j=0, m=0, n=0, r=0;
-	int tm=0, tm1=0, ipm=0, tipm=0, tipm1=0, loop_rho=0, rho_best=0;
-
- 	float* gnr2   = new float[size*2];
- 	float* maxcor = new float[size+1];                  // MAXR need change
-
- 	int p_max=p_max_input;
-	float* result = new float[5*(p_max+1)];
-	fftw_real * c = new fftw_real[size * size];   // ming, correlation of real space
-	fftw_complex * C = new fftw_complex[size * (bw+1)]; // ming, correlation in fourier space which is complex number.
-	rfftwnd_plan pinv;                           // Inverse 2D FFW plan; see FFTW menu p.7-11
-	pinv = rfftw2d_create_plan(size, size, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);  //out-of-place translation
-	float *self_sampl_fft = selfpcsfft->get_data(); // ming f(r)
-	float maxcor_sofar=0.0f;
-	int p=0;
-
-	for(p=0; p<=p_max; p++){
-		ind1=p*size*bw;
-		int r_va1=1;
-		int r_va2=size;
-		for (i=0;i<size;i++)
-			for (j=0;j<bw+1;j++){
-				C[i*(bw+1) + j].im = 0.0f;
-			}
-
-    	for(n=0;n<bw;n++){                                // loop for n
-    		ind2 = (ind1+n);
-      		index0=n*(bw+1);
-			for(r=r_va1;r<=r_va2;r++) {
-      			ind3 = (ind2 + r*bw)*size;
-      			for(m=0;m<size;m++){              // take back hat{h(n,r,p)}(m)
-      				ind4 = (ind3+m)*2;
-				    ind41= ind4+1;
-				    tm=m*2;
-				    tm1=tm+1;
-				    gnr2[tm]  = frm2dhhat[ind4];
-				    gnr2[tm1] = frm2dhhat[ind41];
-				}
-      			for(m=0;m<bw;m++){
-      			    tm=m*2; tm1=tm+1;
-					ipm=index0+m; tipm=ipm*2; tipm1=tipm+1;               // index0=n*(bw+1)
-      				float tempr = self_sampl_fft[tm + r*(size+2)] * r;
-      				float tempi = self_sampl_fft[tm1+ r*(size+2)] * r;
-      				float gnr2_r = gnr2[tm];
-      				float gnr2_i = gnr2[tm1];
-					C[n*(bw+1) + m].re += gnr2_r * tempr + gnr2_i * tempi;     //  m,+n
-					C[n*(bw+1) + m].im += gnr2_i * tempr - gnr2_r * tempi;     // (a+ib)(c-id)=(ac+bd)+i(bc-ad)
-					if(n != 0){					// m,-n
-      				   	if(m != 0){
-				      		int ssize = tsize-tm;	// ssize = 2*size-2m
-				      		int ssize1= ssize+1;
-				      		float gnr2_r = gnr2[ssize];
-				      		float gnr2_i = gnr2[ssize1];
-					   		C[(size-n)*(bw+1) + m].re += gnr2_r * tempr - gnr2_i * tempi;   // (a-ib)(c-id)=(ac-bd)-i(ad+bc)
-				      		C[(size-n)*(bw+1) + m].im -= gnr2_i * tempr + gnr2_r * tempi;// hhat*f(r)
-				      	}
-				   		else{
-				   			C[(size-n)*(bw+1) + m].re += *(gnr2)  * tempr - *(gnr2+1)* tempi;
-				   			C[(size-n)*(bw+1) + m].im -= *(gnr2+1)* tempr + *(gnr2)  * tempi;
-				   		}
-			       	}
-				}
-			}
-        }
-
-		rfftwnd_one_complex_to_real(pinv, C, c); // ming, this c has valuce at m n and rho
-		//c=C->do_ift();
-		float tempr=0.0f, corre_fcs=999.0f;
-
-  	    int n_best=0, m_best=0;
-  		for(n=0;n<size;n++){			// move Tri_2D to Tri = c(phi,phi';rho)
-  		  	float temp=0.0f;
-  		  	for(m=0;m<size;m++){
-				temp=c[n*size + m];
-				if(temp>tempr) {
-					tempr=temp;
-					n_best=n;
-					m_best=m;
-				}
-  		   	}
-  		}
-
-  		float corre,Phi2,Phi,Tx,Ty,Vx, Vy;;
-  		//EMData *this_tmp;
-  	//	bw=size;
-  		//for (n_best=0;n_best<bw;n_best++)
-  			//for (m_best=0;m_best<2*bw;m_best++){
-  		//n_best=0;
-  		//m_best=70;
-  		Phi2= n_best*PI/bw;  // ming this is reference image rotation angle
-  		Phi = m_best*PI/bw;   // ming this is particle image rotation angle
-  		Vx =  p*cos(Phi);//should use the angle of the centered one
-  		Vy = -p*sin(Phi);
-  		//Tx = Vx+(floor(com_this_x+0.5) - floor(com_with_x+0.5));//ming, delete vx vy
-  		Tx=Vx+(floor(com_this_x+0.5) - floor(com_with_x+0.5));
-  		Ty=Vy+(floor(com_this_y+0.5) - floor(com_with_y+0.5));
-  		//Ty = Vy+(floor(com_this_y+0.5) - floor(com_with_y+0.5));
-  		dx = -Tx;	// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
-  		dy = -Ty;	// need to convert to raw image
-		//float corre;//**** Using FSC as the similarity criterion, 7/13/04 ****
-		//ming comment, EMData *this_tmp = this->copy();
-  		EMData *this_tmp=this_img->copy();//ming change to to
-		this_tmp->rotate(-(Phi2-Phi)*180.0,0.0,0.0);
-		this_tmp->translate(dx,dy,0.0);
-		//EMData *with_tmp=to->copy();
-		//this_tmp->translate(-delta_x,-delta_y,0.0);
-		//this_tmp->rotateAndTranslate();		// rotateAndTranslate: Trans first then rotation
-		corre=this_tmp->cmp(cmp_name,to,cmp_params);
-		printf("corre=%f n_best=%d m_best=%d p=%d\n",corre,n_best,m_best,p);
-  			//}
-		delete this_tmp;
-		//float corre_fcs=0.0f;
-		if(corre<=corre_fcs) { //ming, cmp use smaller value stands for more similarity
-			corre_fcs=corre;
-			result[0+5*p] = float(p);	// rho
-			result[1+5*p] = corre;		// correlation_fcs
-			result[2+5*p] = (Phi2-Phi)*180.0;	// rotation angle
-			result[3+5*p] = Tx;		// Translation_x
-			result[4+5*p] = Ty;		// Translation_y
-		}
-		maxcor[p]=corre_fcs;               		//  maximum correlation for current rho
-		if(corre_fcs<maxcor_sofar) {
-			maxcor_sofar=corre_fcs;   		// max correlation up to current rho
-		    rho_best=p;				// the rho value with maxinum correlation value
-		}
-		if(p>=4){
-			if(maxcor[p] < maxcor[p-1] && maxcor[p-1] < maxcor[p-2]&& maxcor[p-2] < maxcor[p-3] && maxcor[p-3] < maxcor[p-4]){
-				loop_rho=1;
-				break; //exit p loop
-			}
-		}
-	}
-	//}
-	if(loop_rho == 1)
-		p=p+1;
-	int rb5=5*rho_best;
-	float fsc      = result[1+rb5];
-	float ang_keep = result[2+rb5];
-	//float ang_keep=150.;
-	float Tx       = result[3+rb5];
-	float Ty       = result[4+rb5];
-	delete[] gnr2;
-	delete[] maxcor;
-	delete[] result;
-	delete c;
-	c = 0;
-	delete C;
-	C = 0;
-	rfftwnd_destroy_plan(pinv);
-	            //==2: when Projection image is the one involve (T & R)
-	dx = -Tx;		// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
-	dy = -Ty;		// need to convert to raw image
-	//ming comment, this->setRAlign(-ang_keep,0,0);
-
-	this_img->rotate(-ang_keep,0,0); // ming change this to this_img??
-	//ming comment, this->setTAlign(dx,dy,0);
-	this_img->translate(dx,dy,0.0); // ming change this to this_img
-    //this_img->rotate_translate(-ang_keep,0.0,0.0,dx,dy,0.0);
-	//Transform rot;
-	//rot.set_rotation(Dict("type","eman","az",-ang_keep));
-	//this_img->process_inplace("math.transform",Dict("transform",(Transform *) &rot));
-	//ming comment, this->rotateAndTranslate();             // rotateAndTranslate: Trans first then rotation
-	//ming, this_img->rotateAndTranslate(); // ming change this to this_img
-	float fsc_best=this_img->cmp(cmp_name,to,cmp_params);
-	printf("rho_best=%d fsc=%f fsc_best=%f dx=%f dy=%f ang_keep=%f com_withx=%f com_selfx=%f com_selfy=%f\n",rho_best,fsc,fsc_best,dx,dy,ang_keep,com_with_x,com_this_x,com_this_y);
-	return fsc;     // return the fsc coefficients
-} // FRM2D aligner sub_class
-
-
-EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
-			const string & cmp_name, const Dict& cmp_params) const
-{
-	if (!this_img) {
-		return 0;
-	}
-	if (to && !EMUtil::is_same_size(this_img, to))
-		throw ImageDimensionException("Images must be the same size to perform translational alignment");
-
-	int nx=this_img->get_xsize();
-	int ny=this_img->get_ysize();
-	int size = (int) floor(PI*ny/4.0);
-	size =Util::calc_best_fft_size(size);//ming   bestfftsize(size);
-	int MAXR=ny/2;
-/******************ming begin calculate exact of center of mass of reference image*********************************/
-	/*int max_ext=(floor)(sqrt((float)(nx*nx+ny*ny))+0.5); // ming change d to this_img
-	float *Int_g = (float *)malloc((max_ext+1)*sizeof(float));
-
-	int MAXR=ny/2;
-	float *sum_samp=(float *)malloc(((int)MAXR+1)*size*sizeof(float)); // Steve's suggestion
-	for (int m=0;m<size*(int)(MAXR+1);m++)
-		sum_samp[m] = 0.0;
-
-	EMData *d_ref, *ref_pcs;
-	d_ref = to->copy(); // ming change avg to to
-	ref_pcs=d_ref->unwrap_largerR(0,(int)MAXR,size,(float)MAXR);
-	//ref_pcs=d_ref->unwrap(0,(int)MAXR,size);
-
-	delete d_ref; // not need this pointer anymore
-	float *data_ref=ref_pcs->get_data(); // ming change getDataRO() to get_data()
-	for (int r=0;r<=MAXR;r++)
-		for (int k=0;k<size;k++) {
-			sum_samp[k+r*size] += data_ref[k+r*size];
-		}
-	ref_pcs->update(); // ming change doneData() to update()
-	delete ref_pcs; // ming, some problem happend here, ref_pcs cannot be deleted? fixed.
-	//ming,data_ref = NULL;
-	for(int r=0;r<=max_ext;r++) {
-		Int_g[r]=0.0f;
-		if (r<=MAXR){
-			for (int i=0;i<size;i++) {
-		    	Int_g[r] += sum_samp[i+r*size];
-			}
-		}
-	}
-	free(sum_samp);// Steve's suggestion
-	EMData *d_frm=to->copy();
-	float com_self_x=0.,com_self_y=0.;
-	d_frm->exact_COM(1,Int_g, com_self_x, com_self_y);
-	free(Int_g);
-
-	delete d_frm;
-*/
-
-	EMData *this_temp=this_img->copy(); // ming change avg to to
-	FloatPoint com_test;
-	com_test=this_temp->calc_center_of_mass();//ming add
-	float com_this_x=com_test[0];
-	float com_this_y=com_test[1];
-	delete this_temp;
-	this_temp=to->copy();
-	com_test=this_temp->calc_center_of_mass();
-	float com_with_x=com_test[0];
-	float com_with_y=com_test[1];
-	delete this_temp;
-
-
-	float dx=-(com_with_x - nx/2); //ming
-	float dy=-(com_with_y - ny/2); //ming
-	//avg_frm->translate(-dx,-dy,0.0);
-	EMData *avg_frm=to->copy();
-	EMData *withpcs=avg_frm->unwrap_largerR(0,MAXR,size,float(MAXR)); // ming, something wrong inside this subroutine
-	EMData *withpcsfft=withpcs->oneDfftPolar(size, MAXR, MAXR);
-	//EMData *withpcsfft=withpcs->do_fft();
-	//withpcsfft->ap2ri();
-	float *sampl_fft = withpcsfft->get_data(); // ming change getDataRO() to get_data
-	delete avg_frm;
-	delete withpcs;
-
-	int bw=size/2.;
-	unsigned long ind1=0, ind2=0, ind3=0, ind4=0, ind41=0;
-	float pi2=2.0*PI, r2;
-	fftw_complex * gnr2_in = new fftw_complex[size];
-	fftw_complex * gnr2 = new fftw_complex[size];
-	fftw_plan planc_fftw;			// plan for 1D FFTW (Forward), complex->complex  to get gnr2
-	planc_fftw = fftw_create_plan(size, FFTW_FORWARD, FFTW_ESTIMATE );    // out-of-plalce transform, see FFTW menu p.3-4
-	int p_max=params.set_default("p_max",5);
-	float *frm2dhhat=0;
-	if( (frm2dhhat = (float *) malloc( (p_max+1)*(size+2)*bw*size*2* sizeof(float)) ) == NULL ) {
-		cout <<"Error in allocating memory 13. \n";
-		exit(1);
-	}
-	float *sb=0, *cb=0;		// sin(beta) and cos(beta) for get h_hat, 300>size
-	if( (sb = new float[size]) == NULL || (cb = new float[size]) == NULL) {
-		cout <<"can't allocate more memory, terminating. \n";
-		exit(1);
-	}
-	for(int i=0;i<size;i++) {        // beta sampling, to calculate beta' and r'
-		float beta=i*PI/bw;
-	   	sb[i]=sin(beta);
-	   	cb[i]=cos(beta);
-	}
-	for(int p=0; p<=p_max; p++){
-		ind1=p*size*bw;
-    	float pp2 = p*p;
-		int r_va1 = 1;
-		int r_va2 = size;
-
-   		for(int n=0;n<bw;n++){         /* loop for n */
-       		int tn=n*2;
-       		int tn1=tn+1;
-    		ind2 = ind1+n;
-      		for(int r=r_va1;r<=r_va2;r++) {
-				ind3 = (ind2+r*bw)*size;
-        		float rr2 = r*r;
-				float rp2 = r*p;
-       			for(int i=0;i<size;i++){                            // beta sampling, to get beta' and r'
-       				if(p==0) r2 = (float) r;
-       				else     r2 = std::sqrt((float)(rr2+pp2-2.0*rp2*cb[i]));   // r2->r'
-       		 		int r1=floor(r2+0.5);                        // for computing gn(r')
-       				if(r1>MAXR){
-       					gnr2_in[i].re  = 0.0f;
-       					gnr2_in[i].im  = 0.0f;
-       				}
-       				else{
-       					float gn_r = sampl_fft[tn +r1*(size+2)];           // real part of gn(r')
-       					float gn_i = sampl_fft[tn1+r1*(size+2)];           // imaginary part of gn(r')
-						float sb2, cb2, cn, sn;
-						if(n != 0){
-							if(r2 != 0.0){
-								if(p==0) {
-									sb2=sb[i];
-									cb2=cb[i];
-								}
-								else{
-									sb2=r*sb[i]/r2;
-									cb2=(r*cb[i]-p)/r2;
-								}
-							}
-        					else{
-								sb2=0.0;
-								cb2=1.0;
-							}
-        					if(sb2>1.0) sb2= 1.0f;
-        					if(sb2<-1.0)sb2=-1.0f;
-        					if(cb2>1.0) cb2= 1.0f;
-        					if(cb2<-1.0)cb2=-1.0f;
-        					float beta2=atan2(sb2,cb2);
-        					if(beta2<0.0) beta2 += pi2;
-        					float nb2=n*beta2;
-        					cn=cos(nb2);
-							sn=sin(nb2);
-						}
-        				else{
-							cn=1.0f; sn=0.0f;
-						}
-						gnr2_in[i].re =   cn*gn_r - sn*gn_i;	     // exp(-i*n*beta')*gn(r')
-						gnr2_in[i].im = -(cn*gn_i + sn*gn_r);
-        			}
-        		}
-
-        		fftw_one(planc_fftw, gnr2_in, gnr2);
-				for(int m=0;m<size;m++){                                     // store hat{h(n,r,p)}(m)
-					ind4 = (ind3+m)*2;
-					ind41 = ind4+1;
-					frm2dhhat[ind4]  = gnr2[m].re;
-					frm2dhhat[ind41] = gnr2[m].im;
-				}
-			}
-		}
-	}
-	delete[] sb;
-	delete[] cb;
-	delete [] gnr2_in;
-	gnr2_in = 0;
-	delete [] gnr2;
-	gnr2 = 0;
-	fftw_destroy_plan(planc_fftw);
-	delete withpcsfft;
-
-	float dot_frm0=0.0f, dot_frm1=0.0f;
-	EMData *da_nFlip=0, *da_yFlip=0;
-	for (int iFlip=0;iFlip<=1;iFlip++){
-		EMData *dr_frm=0;
-		if (iFlip==0) {
-			dr_frm=this_img->copy();
-			da_nFlip=this_img->copy();
-		}   //ming, this actually refer to this_img  //delete dr_frm somewhere
-		else {
-			dr_frm=this_img->copy();
-			da_yFlip=this_img->copy();
-		}
-		if(iFlip==1) com_this_x=nx-com_this_x;   //ming   // image mirror about Y axis, so y keeps the same
-
-		dx=-(com_this_x - nx/2); //ming
-		dy=-(com_this_y - ny/2); //ming
-		// ming comment, dr_frm->setTAlign(dx,dy,0);
-		dr_frm->translate(dx,dy,0.0); // this
-		EMData *selfpcs = dr_frm->unwrap_largerR(0,MAXR,size, (float)MAXR);
-		EMData *selfpcsfft = selfpcs->oneDfftPolar(size, MAXR, MAXR);
-		//EMData *selfpcsfft = selfpcs->do_fft();	// 1DFFT of polar sampling
-		//selfpcsfft->ap2ri();
-		delete dr_frm;
-		delete selfpcs;
-		if(iFlip==0)
-			dot_frm0=frm_2d_Align(da_nFlip,to, frm2dhhat, selfpcsfft, p_max, size, com_this_x, com_this_y, com_with_x, com_with_y,cmp_name,cmp_params);
-		else
-			dot_frm1=frm_2d_Align(da_yFlip,to, frm2dhhat, selfpcsfft, p_max, size, com_this_x, com_this_y, com_with_x, com_with_y,cmp_name,cmp_params);
-		delete selfpcsfft;
-	}
-	if(dot_frm0 <= dot_frm1) {
-		delete da_yFlip;
-		printf("best_corre=%f, no flip\n",dot_frm0);
-		return da_nFlip;
-	}
-	else {
-		delete da_nFlip;
-		printf("best_corre=%f, flipped\n",dot_frm1);
-		return da_yFlip;
-	}
-// **********************ming end
-}
-
 
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
@@ -2260,5 +1853,3 @@ map<string, vector<string> > EMAN::dump_aligners_list()
 {
 	return dump_factory_list < Aligner > ();
 }
-
-
