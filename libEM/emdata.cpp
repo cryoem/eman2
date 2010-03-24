@@ -38,10 +38,16 @@
 #include "ctf.h"
 #include "processor.h"
 #include "aligner.h"
-#include "cmp.h"
+#include "cmp.h"  // comparision method header file
 #include "emfft.h"
 #include "projector.h"
 #include "geometry.h"
+#include "mrc.h" // ming add
+
+#include <log.h>//ming
+#include "Euler.h" // ming add
+#include "List.h" //ming
+#include "util.h" // ming add
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -52,9 +58,21 @@
 #include <algorithm> // fill
 #include <cmath>
 
+
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
 #endif	//WIN32
+
+/****************Ming begin***************/
+#ifdef WIN32
+	#include <windows.h>
+	#define MAXPATHLEN (MAX_PATH*4)
+#else
+#include <sys/param.h>
+#endif	//WIN32
+
+/************Ming end*******************/
+
 
 #define EMDATA_EMAN2_DEBUG 0
 
@@ -67,7 +85,10 @@ using namespace EMAN;
 using namespace std;
 using namespace boost;
 
+
 int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
+
+
 
 EMData::EMData() :
 #ifdef EMAN2_USING_CUDA
@@ -2360,10 +2381,8 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 			if (weight_radial) val *=  ypr1;
 			dd[x + y * xs] = val;
 		}
-
 	}
 	ret->update();
-
 	EXITFUNC;
 	return ret;
 }
@@ -3025,13 +3044,6 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
 
-	size_t P = 0;
-	for(size_t i = 0; i < mask->get_size(); ++i){
-		if (mask->get_value_at(i) != 0){
-			++P;
-		}
-	}
-	float normfac = 1.0f/(float)P;
 
 //	bool undoclip = false;
 
@@ -3041,18 +3053,30 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	if (ny == 1) r = Region((mnx-nxc)/2,nxc);
 	else if (nz == 1) r = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
 	else r = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
-	mask->clip_inplace(r,0);
+	mask->clip_inplace(r,1.0); //ming change 0.0 to 1.0
+
+// ming move the following from above
+	size_t P = 0;
+	for(size_t i = 0; i < mask->get_size(); ++i){
+		if (mask->get_value_at(i) != 0){
+			++P;
+		}
+	}
+
+	float normfac = 1.0f/(float)P;
+
+
 	//Region r((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
 	//mask->clip_inplace(r);
 	//undoclip = true;
 	//}
-
 
 	// Here we generate the local average of the squares
 	Region r2;
 	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
 	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
 	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
+
 	EMData* squared = get_clip(r2,get_edge_mean());
 	EMData* tmp = squared->copy();
 	Dict pow;
@@ -3068,12 +3092,10 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	s->sub(*m);
 	// Here we finally generate the standard deviation image
 	s->process_inplace("math.sqrt");
-
 //	if ( undoclip ) {
 //		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
 //		mask->clip_inplace(r);
 //	}
-
 	if (maskflag) {
 		delete mask;
 		mask = 0;
@@ -3084,20 +3106,121 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 		else r = Region((nxc-mnx)/2, (nyc-mny)/2,(nzc-mnz)/2,mnx,mny,mnz);
 		mask->clip_inplace(r);
 	}
-
 	delete squared;
 	delete m;
-
 	s->process_inplace("xform.phaseorigin.tocenter");
 	Region r3;
 	if (ny == 1) r3 = Region((nxc-nx)/2,nx);
 	else if (nz == 1) r3 = Region((nxc-nx)/2, (nyc-ny)/2,nx,ny);
 	else r3 = Region((nxc-nx)/2, (nyc-ny)/2,(nzc-nz)/2,nx,ny,nz);
 	s->clip_inplace(r3);
+	//s->process_inplace("xform.phaseorigin.tocorner");//ming add
 	EXITFUNC;
 	return s;
-
 }
+
+/*
+EMData *EMData::calcFLCF(EMData *with, int r, int type) {
+
+  EMData *f1, *f2, *sqf1, *ccf, *conv1, *conv2, *f, *fones,*mask, *v, *lcf;
+  float NM;
+  int nx, ny, nz, i, j, k;
+  f1=this->copy();//target map //ming
+  f2=with->copy();//search object //ming
+  nx=f1->get_xsize();
+  ny=f1->get_ysize();
+  nz=f1->get_zsize();
+  float N=(nx*ny*nz);
+/////////////////setting min to zero in images/////////////////
+  float f1min,f2min;
+  f1min=f1->Min();
+  f1->add(-f1min); //ming change addConst to add
+  f2min=f2->Min();
+  f2->add(-f2min);
+////////////////////////////////////////////////////////////////////
+/////////////////////making a binary mask with radius r////////////////
+  fones=f1->copy();//ming, fones is M
+  fones->one();
+  fones->applyMask(r,type);//
+  //ming, fones->toCorner();
+  fones->process_inplace("xform.phaseorigin.tocorner");
+////////////////////////////////////////////////////////////////
+////////////////counting non-zero pixels P in the mask////////////////
+  float *fonesd;
+  fonesd=fones->get_data();
+  NM=0.0;
+  for (i=0;i<nx*ny*nz;i++){
+    if (fonesd[i]==1.0) NM=NM+1.0;
+    else NM=NM;
+  }
+  fones->update(); //  doneData->update()
+////////////////////////////////////////////////////////////////
+///////////////////calculate mean and sigma///////////////////////////////////////
+  float *map,sq,sd,mean;
+  f2->applyMask(r,type);
+  map=f2->get_data();
+  float lsum=0.0;
+  float sumsq=0.0;
+  for (i=0;i<nx*ny*nz;i++){
+	  lsum+=map[i];
+	  sumsq+=(map[i]*map[i]);
+  }
+  sq=((NM*sumsq-lsum*lsum)/(NM*NM));
+  mean=lsum/NM;
+  sd=std::sqrt(sq);
+///////////////////////////////////////////////////////
+///////////////////normalize S so that simga=1 mean=0/////////////////////////
+  float th=0.00001;
+  if (sq<0.0)	printf("calcLCF: sd < 0!\n");return NULL;
+  if(sq>th)
+	  for(i=0;i<nx*ny*nz;i++) map[i]=(map[i]-mean)/sd;
+  else
+	  for(i=0;i<nx*ny*nz;i++) map[i]=map[i]-mean;
+  f2->update();// ming
+  f2=f2->copy();//ming?
+  f2->applyMask(r,type);
+  //ming,f2->toCorner();
+  f2->process_inplace("xform.phaseorigin.tocorner");
+  //////////////////////////////////////////////////////////////
+//////////////////////////////////////////x-correlation between "target map" and "search object"//////////////////////////
+  ccf=f1->calc_ccf(f2); //conv(T*S)
+  ccf->mult(N); // ming change
+/////////////convolution between "target map" and masked region of ones This would give the local average T_M of the target//////////
+  conv1=f1->convolute(fones);
+  conv1->mult(N);
+  conv1->mult((float) 1.0/NM);
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////convolution between masked "target map"^2 and masked region of ones///////////////////
+  sqf1=f1->copy();//ming
+  sqf1->realFilter(18);//x^2  squaring "target map"
+  conv2=sqf1->convolute(fones);
+  conv2->mult(N);
+//////////////////////////////////////////////////////////////////////////////////
+///////////////compute variance sigma_mt of masked traget map////////////////
+  conv1->realFilter(18);// (T_M)^2
+  conv1->mult(float(1.0/(NM*NM))); // (T_M)^2/P^2
+  v=conv2->copy();
+  v->sub(conv1); //ming
+  v->mult((float)1.0/(NM));//then compute std deviation
+  v->realFilter(19);//sqrt
+//////////////////////////////////////////////////////////////////
+  f=ccf->copy();
+  f->mult((float)1.0/NM);
+  float *lcfd,*vdd;
+  lcfd=f->get_data();
+  vdd=v->get_data();
+  for (i=0;i<nx*ny*nz;i++){
+    if (vdd[i]>0.0) lcfd[i]=lcfd[i]/vdd[i];
+    else lcfd[i]=lcfd[i];
+  }
+  f->update();//ming
+  v->update();//ming
+  lcf=f->copy();
+  delete f1;delete f2;delete sqf1;delete ccf;
+  delete conv1;delete conv2;delete f;delete fones;delete v;
+  return lcf;
+}*/
+
 
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
 // This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003). But the contents of this function have changed dramatically since you wrote that comment (d.woolford).
@@ -3122,10 +3245,12 @@ EMData *EMData::calc_flcf(EMData * with)
 	// Get the local sigma image
 	EMData* s = calc_fast_sigma_image(ones);
 	// The local normalized correlation
+	//EMData* corr;
 	EMData* corr = calc_ccf(with_resized);
 	corr->div(*s);
 
-	delete with_resized; delete ones;
+	delete with_resized;
+	delete ones;
 	delete s;
 
 	EXITFUNC;
@@ -3821,4 +3946,1730 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 		attr_dict[host_endian] = "little";
 	}
 }
+// Ming, the following lines added for new aligner "FRM2D"
+// Determine center of mass (more or less), move object to the COM, RETURN COMs, YCong
 
+// return a random number between lo and hi
+float frand(float lo, float hi)
+{
+static int f=1;
+
+if (f) { srandom(time(0)); f=0; }
+
+return ((float)random()/2147483647.0*(hi-lo)+lo);
+}
+
+float grand(float mean,float sigma)
+{
+float x,y,r,f;
+
+do {
+	x=frand(-1.0,1.0);
+	y=frand(-1.0,1.0);
+	r=x*x+y*y;
+} while (r>1.0||r==0);
+
+f=sqrt(-2.0*log(r)/r);
+return x*f*sigma+mean;
+}
+
+
+void *List::objectAt(int nn)
+{
+if (this==NULL || nn<0 || nn>=n) return NULL;
+return items[nn];
+}
+
+void Euler::init() {
+strcpy(sym,"i");
+nsym=1;
+csym=0;
+}
+void Euler::rectify(){
+#ifdef DEBUG0
+	printf("rectify %f,%f,%f ->",alt_,az_,phi_);
+#endif
+	if (!Util::goodf(&phi_)) phi_=0;//ming change
+	if (!Util::goodf(&alt_)) alt_=0; // ming change
+	if (!Util::goodf(&az_)) az_=0; // ming change
+	if (sqrt(alt_*alt_) <= .0001) { az_ += phi_; phi_=0;}
+
+	phi_=fmod(phi_,(float)(2.0*PI));
+	if (phi_<0) phi_+=2.0*PI;
+
+	az_=fmod(az_,(float)(2.0*PI));
+	if (az_<0) az_+=2.0*PI;
+#ifdef DEBUG0
+	printf(" %f,%f,%f\n",alt_,az_,phi_);
+#endif
+}
+Euler::Euler() {
+alt_=0.; az_=0.; phi_=0.;
+init();
+} // already rectified
+
+Euler::~Euler() {
+}
+
+void Euler::setAngle(float a1, float a2, float a3, int typ){
+#ifdef DEBUG0
+	printf("setAngle %f %f %f %d\n",a1,a2,a3,typ);
+#endif
+	alt_ =a1 ; az_ = a2 ; phi_ = a3;
+	if (typ == IMAGIC) { /*az_ +=PI; phi_ +=PI;*/} // then a1= beta, a2=gamma, a3=alpha
+	if (typ == SPIDER) { az_ = a2-PI/2.-PI; phi_ = a3+PI/2.-PI;}    // then a1=theta, a2=phi, a3=gamma
+    	if (typ !=EMAN && typ !=IMAGIC && typ != SPIDER) {
+			printf("unknown declaration of type for Euler constructor /n");}
+			rectify();
+}
+float  Euler::az() const {return az_  ;}
+
+float  Euler::alt() const { return alt_ ;}
+float  Euler::phi() const { return phi_ ;}
+
+
+void EMData::zero(float sig) {
+	get_data(); // ming change getData() to get_data()
+	if (sig==0) memset(rdata,0,nx*ny*nz*sizeof(float));
+	else {
+		int i;
+		for (i=0; i<nx*ny*nz; i++) rdata[i]=grand(0,sig);
+	}
+	//ming comment doneData();
+	update();
+}
+
+void EMData::rotateAndTranslate(float scale,float dxc,float dyc,float dzc,int r) {
+	float *ddata,*sdata;
+	float yy,x2,y2,z2,x2c,y2c;
+	int x, y, z;
+	float t,u,v,p0,p1,p2,p3,em,fl;
+	//static int *limit = (int *)malloc(4),nsz,nrad;
+	int k0,k1,k2,k3;
+	int i,j,k,ii,jj;
+	int nx2=nx, ny2=ny;	// deal with the special case of rotating different size parent to this. only 2D is supported now
+
+	// This delays in case of a radius mismatch in parallel processing
+	/*while (r>0 && nsz) usleep(1000);
+
+	if (r && r!=abs(nlimit)) {
+		nlimit=r;
+		limit=(int *)realloc(limit,r*2sizeof(int));
+	}*/
+
+	r=r*r;
+
+	if (scale!=0) scale=1.0/scale; else scale=1.0;
+
+	if (parent) {
+		sdata=parent->get_data(); // ming change getDataRO() to get_data()
+		ddata=get_data(); // ming change getData() to get_data()
+		nx2=parent->get_xsize(); //ming
+		ny2=parent->get_ysize(); // ming
+	}
+	else {
+		sdata=get_data(); // ming change getData() to get_data()
+		//ddata=(float *)Smalloc(nx*ny*nz*sizeof(float),1);
+		ddata=(float *)malloc(nx*ny*nz*sizeof(float));
+	}
+
+	if (nz==1) {
+		//em=edgeMean();
+		em=0;
+		float mx0=scale*cos(euler.alt());
+		float mx1=scale*sin(euler.alt());
+		x2c=nx/2.0-dxc-dx;
+		y2c=ny/2.0-dyc-dy;
+		for (j=0,y=-ny/2.0+dxc; j<ny; j++,y+=1.0) {
+			for (i=0,x=-nx/2.0+dyc; i<nx; i++,x+=1.0) {
+
+				if (r && (i-nx/2)*(j-nx/2)>r) {
+					ddata[i+j*nx]=0;
+					continue;
+				}
+
+		// rotate coordinates
+				x2=(mx0*x+mx1*y)+x2c;
+				y2=(-mx1*x+mx0*y)+y2c;
+
+				if (x2<0||x2>nx2-1.0||y2<0||y2>ny2-1.0) {
+//			ddata[i+j*nx]=em;
+//			ddata[i+j*nx]=grand(Mean(),Sigma());
+//			ddata[i+j*nx]=Mean();
+					ddata[i+j*nx]=0;
+					continue;
+				}
+
+				ii=Util::fast_floor(x2);
+				jj=Util::fast_floor(y2);
+				k0=ii+jj*nx;
+				k1=k0+1;
+				k2=k0+nx+1;
+				k3=k0+nx;
+
+				if (ii==nx2-1) { k1--; k2--; }
+				if (jj==ny2-1) { k2-=nx2; k3-=nx2; }
+
+		// no interpolation
+		//ddata[i+j*nx]=sdata[ii+jj*nx];
+
+		// bilinear interpolation of raw data
+				t=(x2-(float)ii);
+				u=(y2-(float)jj);
+				float tt=1.0-t;
+				float uu=1.0-u;
+
+				p0=sdata[k0]*tt*uu;
+				p1=sdata[k1]*t*uu;
+				p3=sdata[k3]*tt*u;
+				p2=sdata[k2]*t*u;
+				ddata[i+j*nx]=p0+p1+p2+p3;
+			}
+		}
+	}
+    else if(get_map_type() == ICOS5F_HALF) { // to deal with the special icosahedral 5fold half map which has 2fold axis on y
+	//else if(1==1) { // ming add
+		float mx[9];
+		float x3,y3,z3, x4,y4,z4;
+		int l=0,xy;
+
+		mx[0]=scale*(cos(euler.phi())*cos(euler.az())-cos(euler.alt())*sin(euler.az())*sin(euler.phi()));
+		mx[1]=-scale*(sin(euler.phi())*cos(euler.az())+cos(euler.alt())*sin(euler.az())*cos(euler.phi()));
+		mx[2]=scale*sin(euler.alt())*sin(euler.az());
+		mx[3]=scale*(cos(euler.phi())*sin(euler.az())+cos(euler.alt())*cos(euler.az())*sin(euler.phi()));
+		mx[4]=scale*(-sin(euler.phi())*sin(euler.az())+cos(euler.alt())*cos(euler.az())*cos(euler.phi()));
+		mx[5]=-scale*sin(euler.alt())*cos(euler.az());
+		mx[6]=scale*sin(euler.alt())*sin(euler.phi());
+		mx[7]=scale*sin(euler.alt())*cos(euler.phi());
+		mx[8]=scale*cos(euler.alt());
+
+		for (int p = 0; p < 9; p++) {
+			printf("%4.2f ", mx[p]);
+		}
+		printf("\n");
+
+
+		xy=nx*ny;
+		printf("in rotation\n");
+		for (int k=0; k<nz; k++) {
+			for (int j=-ny/2; j<ny-ny/2; j++) {
+				for (int i=-nx/2; i<nx-nx/2; i++, l++) {
+					x2=mx[0]*i+mx[1]*j+mx[2]*k+nx/2;
+					y2=mx[3]*i+mx[4]*j+mx[5]*k+ny/2;
+					z2=mx[6]*i+mx[7]*j+mx[8]*k+0/2;
+
+					if (x2<0||y2<0||z2<=-(nz-1)|| x2>=nx||y2>=ny||z2>=nz-1) {
+						continue;
+					}
+
+					if(z2<0){
+						x2=nx/2*2-x2;
+						z2=-z2;
+					}
+
+					x=Util::fast_floor(x2);
+					y=Util::fast_floor(y2);
+					z=Util::fast_floor(z2);
+
+					t=x2-x;
+					u=y2-y;
+					v=z2-z;
+
+				// real part
+					ii=(int)(x+y*nx+z*xy);
+
+			 	ddata[l]+=	Util::trilinear_interpolate(sdata[ii],sdata[ii+1],sdata[ii+nx],sdata[ii+nx+1],
+							sdata[ii+nx*ny],sdata[ii+xy+1],sdata[ii+xy+nx],sdata[ii+xy+nx+1],
+							t,u,v);
+				}
+			}
+		}
+	}
+	else {
+		float mx[9];
+		float x3,y3,z3, x4,y4,z4;
+		int l,xy,mr;
+
+		mx[0]=scale*(cos(euler.phi())*cos(euler.az())-cos(euler.alt())*sin(euler.az())*sin(euler.phi()));
+		mx[1]=-scale*(sin(euler.phi())*cos(euler.az())+cos(euler.alt())*sin(euler.az())*cos(euler.phi()));
+		mx[2]=scale*sin(euler.alt())*sin(euler.az());
+		mx[3]=scale*(cos(euler.phi())*sin(euler.az())+cos(euler.alt())*cos(euler.az())*sin(euler.phi()));
+		mx[4]=scale*(-sin(euler.phi())*sin(euler.az())+cos(euler.alt())*cos(euler.az())*cos(euler.phi()));
+		mx[5]=-scale*sin(euler.alt())*cos(euler.az());
+		mx[6]=scale*sin(euler.alt())*sin(euler.phi());
+		mx[7]=scale*sin(euler.alt())*cos(euler.phi());
+		mx[8]=scale*cos(euler.alt());
+
+		x4=(mx[0]*(-nx/2.0+dxc)+mx[1]*(-ny/2.0+dyc)+mx[2]*(-nz/2.0+dzc))+nx/2.0-dxc-dx;
+		y4=(mx[3]*(-nx/2.0+dxc)+mx[4]*(-ny/2.0+dyc)+mx[5]*(-nz/2.0+dzc))+ny/2.0-dyc-dy;
+		z4=(mx[6]*(-nx/2.0+dxc)+mx[7]*(-ny/2.0+dyc)+mx[8]*(-nz/2.0+dzc))+nz/2.0-dzc-dz;
+
+		xy=nx*ny;
+		if (nx>ny && nx>nz) mr=(nx-2)*(nx-2)/4;
+		else if (ny>nz) mr=(ny-2)*(ny-2)/4;
+		else mr=(nz-2)*(nz-2)/4;
+
+		for (k=-nz/2,l=0; k<nz/2; k++,x4+=mx[2],y4+=mx[5],z4+=mx[8]) {
+			x3=x4;
+			y3=y4;
+			z3=z4;
+			for (j=-ny/2; j<ny/2; j++,x3+=mx[1],y3+=mx[4],z3+=mx[7]) {
+				x2=x3;
+				y2=y3;
+				z2=z3;
+				for (i=-nx/2; i<nx/2; i++,l++,x2+=mx[0],y2+=mx[3],z2+=mx[6]) {
+
+					if (x2<0||y2<0||z2<0|| x2>=nx-1||y2>=ny-1||z2>=nz-1) {
+//				if (i*i+j*j+k*k>=mr) {
+						ddata[l]=0;
+						continue;
+					}
+
+					x=Util::fast_floor(x2);
+					y=Util::fast_floor(y2);
+					z=Util::fast_floor(z2);
+
+					t=x2-x;
+					u=y2-y;
+					v=z2-z;
+
+				// real part
+					ii=(int)(x+y*nx+z*xy);
+
+				ddata[l]=Util::trilinear_interpolate(sdata[ii],sdata[ii+1],sdata[ii+nx],sdata[ii+nx+1],
+					sdata[ii+nx*ny],sdata[ii+xy+1],sdata[ii+xy+nx],sdata[ii+xy+nx+1],
+					t,u,v);
+				}
+			}
+		}
+
+/*	for (k=0,z=-nz/2.0+dzc; k<nz; k++,z+=1.0) {
+		for (j=0,y=-ny/2.0+dyc; j<ny; j++,y+=1.0) {
+			for (i=0,x=-nx/2.0+dxc; i<nx; i++,x+=1.0) {
+				x2=(mx[0]*x+mx[1]*y+mx[2]*z)+nx/2.0-dxc-dx;
+				y2=(mx[3]*x+mx[4]*y+mx[5]*z)+ny/2.0-dyc-dy;
+				z2=(mx[6]*x+mx[7]*y+mx[8]*z)+nz/2.0-dzc-dz;
+
+				if (x2<0||y2<0||z2<0|| x2>=nx-1||y2>=ny-1||z2>=nz-1) {
+					ddata[i+j*nx+k*nx*ny]=0;
+					continue;
+				}
+
+				t=x2-floor(x2);
+				u=y2-floor(y2);
+				v=z2-floor(z2);
+
+				// real part
+				ii=(int)(floor(x2)+floor(y2)*nx+floor(z2)*nx*ny);
+
+				ddata[i+j*nx+k*nx*ny]=trilin(sdata[ii],sdata[ii+1],sdata[ii+nx],sdata[ii+nx+1],
+					sdata[ii+nx*ny],sdata[ii+nx*ny+1],sdata[ii+nx*ny+nx],sdata[ii+nx*ny+nx+1],
+					t,u,v);
+			}
+		}
+	}*/
+
+	}
+	float pixel=1.0f;// ming add
+   setXYZOrigin(getXorigin()+nx/2*pixel*(1-scale)-dx*scale*pixel,
+				getYorigin()+ny/2*pixel*(1-scale)-dy*scale*pixel,
+				getZorigin()+nz/2*pixel*(1-scale)-dz*scale*pixel
+			);
+
+   setPixel(eman1_Pixel()*scale);
+   float ctf[11];// ming add
+ if (hasCTF()) ctf[10]*=scale;
+	if (parent) parent->update(); // ming change doneData() to update()
+	else {
+		free(rdata);
+		rdata=ddata;
+		dx=dy=dz=0;
+		setRAlign(0,0,0);
+//	flags&=~EMDATA_FLIP;
+	}
+	//ming comment, doneData();
+
+	update();
+	return;
+}
+
+
+
+
+// This does fast integer-only translation
+void EMData::fastTranslate(int inplace) {
+	float *d;
+	float *dd;
+	int x0,x1,x2,y0,y1,y2;
+
+	if (parent&&(!inplace)) {
+		//ming comment, d=parent->getDataRO();
+		d=parent->get_data(); // ming change getData
+		//ming comment, dd=getData();
+		dd=get_data(); //ming change
+	}
+	else {
+		d=dd=get_data(); // ming change
+	}
+
+
+	if (nz==1) {
+		if (dx<0) { x0=0; x1=get_xsize(); x2=1; } //ming
+		else { x0=get_xsize()-1; x1= -1; x2=-1; } // ming
+
+		if (dy<0) { y0=0; y1=get_ysize(); y2=1; } // ming
+		else { y0=get_ysize()-1; y1=-1; y2=-1; }  //ming
+
+		for (int x=x0; x!=x1; x+=x2) {
+			for (int y=y0; y!=y1; y+=y2) {
+				int xp=x-dx;
+				int yp=y-dy;
+				if (xp<0||yp<0||xp>=get_xsize()||yp>=get_ysize()) { dd[x+y*get_xsize()]=0; continue; } // ming
+				dd[x+y*get_xsize()]=d[xp+yp*get_xsize()]; // ming
+			}
+		}
+
+		// ming comment, doneData();
+		if (d==dd) dx=dy=0;
+		else parent->update(); // ming change doneData() to update()
+	}
+	else {
+	   Util::error(ERR_ERROR,"Sorry, 3d translateFast not supported yet");
+	}
+
+}
+
+/******ming
+EMData *EMData::doFFT() {	// obvious, note that result is R,I not A,P
+	EMData *dat;
+	float *d,re,im,norm;
+	int i,j,k,l,ii,jj,dim;
+	char s[80],*t;
+	mrcH *newh;
+	rfftwnd_plan cplan;
+
+	if (flags&EMDATA_COMPLEX) return this;	// already complex, just return
+
+	if (nx!=Util::npfa(nx) || (ny!=Util::npfa(ny)&&ny!=1) || (nz!=Util::npfa(nz)&&nz!=1)) { Util::error("Invalid FFT size!",ERR_ERROR); return NULL; }
+
+	getData();	// we open for writing so nobody else does a fft at the same time
+
+	//flags|=EMDATA_NEWFFT;		// disable caching
+
+	if (fft) {
+		if (!(flags&EMDATA_NEWFFT)) {
+			i=flags;
+			doneData();
+			flags=i&~EMDATA_BUSY;
+			//		printf("old ok\n");
+			return fft;
+		}
+		fft->setSize(nx+2,ny,nz);
+		dat=fft;
+		//	printf("old fft\n");
+	}
+	else {
+		//	printf("new fft\n");
+		dat=copyHead();
+		//	sprintf(s,"FFT %s",name);
+		//	dat->setName(s);
+		fft=dat;
+		fft->setSize(nx+2,ny,nz);
+	}
+
+
+	if (ny==1) dim=1;
+	else if (nz==1) dim=2;
+	else dim=3;
+
+	cplan=makeplan(dim,nx,ny,nz,1);
+	d=dat->getData();
+
+	// 1d
+	if (ny==1) {
+		j=0;
+		k=1;
+		rfftwnd_one_real_to_complex(cplan,(fftw_real *)rdata,(fftw_complex *)d);
+	}
+	// 2d
+	else if (nz==1) {
+		rfftwnd_one_real_to_complex(cplan,(fftw_real *)rdata,(fftw_complex *)d);
+
+		// This 'rotates' the data vertically by ny/2
+		l=ny/2*(nx+2);
+		for (i=0; i<ny/2; i++) {
+			for (j=0; j<nx+2; j++) {
+				k=j+i*(nx+2);
+				re=d[k];
+				d[k]=d[k+l];
+				d[k+l]=re;
+			}
+		}
+	}
+	// 3d
+	else {
+		rfftwnd_one_real_to_complex(cplan,(fftw_real *)rdata,(fftw_complex *)d);
+
+		// in the y,z plane, swaps quadrants I,III and II,IV
+		// this is the 'rotation' in y and z
+		t=(char *)malloc(sizeof(float)*(nx+2));
+
+		k=(nx+2)*ny*(nz+1)/2;
+		l=(nx+2)*ny*(nz-1)/2;
+		jj=(nx+2)*sizeof(float);
+		for (j=ii=0; j<nz/2; j++) {
+			for (i=0; i<ny; i++,ii+=nx+2) {
+				memcpy(t,d+ii,jj);
+				if (i<ny/2) {
+					memcpy(d+ii,d+ii+k,jj);
+					memcpy(d+ii+k,t,jj);
+				}
+				else {
+					memcpy(d+ii,d+ii+l,jj);
+					memcpy(d+ii+l,t,jj);
+				}
+			}
+		}
+		free(t);
+	}
+
+	fft=dat;
+//	dat->multConst(1.0/(nx*ny*nz));
+	for (i=0; i<dat->xSize()*dat->ySize()*dat->zSize(); i++) d[i]*=(1.0/(nx*ny*nz));
+	dat->doneData();
+//	dat->update();
+	dat->flags|=EMDATA_COMPLEX|EMDATA_RI;
+	i=flags;	// we didn't acutally change 'this', so we don't need an update
+	doneData();
+	flags=i&~(EMDATA_NEWFFT|EMDATA_BUSY);
+	return dat;
+}
+
+float *EMData::fsc(EMData *with) {
+if (!with || !this) { Util::error(ERR_ERROR,"Null FSC"); return NULL; }
+
+ if (with->get_xsize() != get_xsize() || with->ySize() != ySize() || with->zSize()!=zSize()) {
+	error(ERR_ERROR,"Size mismatch in FSC");
+	return NULL;
+}
+
+float *ret = (float *)calloc(1,get_ysize()/2*sizeof(float));
+float *n1 = (float *)calloc(1,get_ysize()/2*sizeof(float));
+float *n2 = (float *)calloc(1,get_ysize()/2*sizeof(float));
+
+EMData *f1;
+if (isComplex()) f1=this; else f1=doFFT();
+f1->ap2ri();
+
+EMData *f2;
+if (with->isComplex()) f2=with; else f2=with->doFFT();
+f2->ap2ri();
+
+float *d1 = f1->getDataRO();
+float *d2 = f2->getDataRO();
+
+if (nz==1) {
+	int i,j;
+
+	for (j=0; j<ySize(); j++) {
+		for (i=0; i<f1->xSize(); i+=2) {
+			float r=hypot((float)(i/2),(float)j-ySize()/2);
+			int ri=round(r);
+			if (ri<1||ri>=ySize()/2) continue;
+			int ii=i+j*f1->xSize();
+			ret[ri]+=d1[ii]*d2[ii]+d1[ii+1]*d2[ii+1];
+			n1[ri]+=d1[ii]*d1[ii]+d1[ii+1]*d1[ii+1];
+			n2[ri]+=d2[ii]*d2[ii]+d2[ii+1]*d2[ii+1];
+		}
+	}
+}
+else {
+	int i,j,k;
+
+	for (k=0; k<zSize(); k++) {
+		for (j=0; j<ySize(); j++) {
+			for (i=0; i<f1->xSize(); i+=2) {
+				float r=sqrt(hypot3((float)(i/2),(float)j-ySize()/2,(float)k-zSize()/2));
+				int ri=round(r);
+				if (ri<1||ri>=ySize()/2) continue;
+				int ii=i+j*f1->xSize()+k*f1->xSize()*ySize();
+				ret[ri]+=d1[ii]*d2[ii]+d1[ii+1]*d2[ii+1];
+				n1[ri]+=d1[ii]*d1[ii]+d1[ii+1]*d1[ii+1];
+				n2[ri]+=d2[ii]*d2[ii]+d2[ii+1]*d2[ii+1];
+			}
+		}
+	}
+}
+
+int i;
+for (i=0; i<ySize()/2; i++) ret[i]=ret[i]/(sqrt(n1[i]*n2[i]));
+
+f1->doneData();
+f2->doneData();
+ret[0]=1.0;
+free(n1);
+free(n2);
+return ret;
+}
+
+// similarity between 2 images using FSC. Larger is better.
+float EMData::fscmp(EMData *with,float *snr) {
+static float *dfsnr = NULL; //(float *)malloc(200*sizeof(float));
+static int nsnr=0;
+
+float *FSC = fsc(with);
+int i;
+int CTFOS=5; // ming add
+
+if (!snr) {
+	snr=dfsnr;
+
+	int NP=ceil(CTFOS*std::sqrt(2.0)*ny/2)+2;//??
+
+	if (nsnr!=NP) {
+		nsnr=NP;
+		dfsnr=(float *)realloc(dfsnr,NP*sizeof(float));
+		snr=dfsnr;
+
+//		float w=SQR(xSize()/4.0);
+		float w=SQR(get_xsize()/8.0); // ming
+		for (int i=0; i<NP; i++) {
+			float x2=SQR(i/(float)CTFOS);
+			snr[i]=(1.0-exp(-x2/4.0))*exp(-x2/w);
+		}
+//		save_data(0,1.0/CTFOS, snr, NP, "filt.txt");
+	}
+}
+//save_data(0,1.0, FSC, ny/2, "fsc.txt");
+
+float sum=0,norm=0;
+for (i=0; i<ny/2; i++) {
+
+	sum+=FSC[i]*i*snr[i*CTFOS+CTFOS/2];
+	norm+=i*snr[i*CTFOS+CTFOS/2];
+//	sum+=FSC[i]*snr[i*CTFOS+CTFOS/2];
+//	norm+=snr[i*CTFOS+CTFOS/2];
+}
+
+//for (i=0; i<ny/2; i++) FSC[i]=FSC[i]*i*snr[i*CTFOS+CTFOS/2];
+//save_data(0,1.0, FSC, ny/2, "fsc2.txt");
+
+free(FSC);
+return sum/norm;
+}
+
+
+void EMData::realupdate() {
+	int i,j,k,l,di,n=0;
+	double u,v,w;
+	double m,s,t,m2,s2;
+
+	if (nx==0 || ny==0 || nz==0) { set_size(2,2,2); zero(); } // ming chang all setSize to set_size
+
+	flags&=~EMDATA_NEEDUPD;
+
+	max=-1.0e20; // meaning?
+	min=-max;  // meaning?
+	m=m2=0;
+	s=s2=0;
+
+	// getDataRO();		//dangerous not to, but causes problems
+
+	//for (i=0; i<200; i++) hist[i]=0;
+	if ((flags&EMDATA_COMPLEX)&& !(flags&EMDATA_RI)) di=2; else di=1;
+
+	// pass 1, statistics
+	for (j=0,i=0; j<nz; j++) {
+		for (k=0; k<ny; k++) {
+			for (l=0; l<nx; l+=di,i+=di) {
+				v=rdata[i];
+				//			if (!(finite(v))) printf("wrong number at x,y,z=%d,%d,%d = %f\n",l,k,j,v);
+				//	if (v>1e5) { printf(" %d,%d=%f\n",i%nx,i/nx,v); continue; }
+				if (v>max) { max=v; maxloc=i; }
+				if (v<min) { min=v; minloc=i; }
+				m+=v;
+				s+=v*v;
+				if (v!=0) n++;
+
+				//			if (k<4 || l<4 || k>ny-5 || l>nx-5) {
+				//m2+=v;
+				//s2+=v*v;
+			//}
+			}
+		}
+	}
+
+	sumsq=s*di;
+	mean=m*di/(double)(nx*ny*nz);
+	sigma=s*di/(double)(nx*ny*nz)-mean*mean;
+	if (sigma<0) sigma=0; // in case of roundoff errors for v small sigma
+	//if (fabs(sigma)<1.0e-10) sigma=0;		// could be that a 'zero' is a bit off due to rounding
+	sigma=std::sqrt(sigma);
+
+	if (n==0) n=1;
+	mean2=m*di/(double)(n);
+	sigma2=s*di/(double)(n)-mean2*mean2;
+	if (sigma2<0) sigma2=0;	// in case of roundoff errors for v small sigma
+	sigma2=std::sqrt(sigma2);
+
+	//histmax=max;
+	//histmin=min;
+
+	//	printf("!!! %d %g %g %g %g\n",(nx*ny*nz),min,max,(float)m,(float)s);
+	//	printf("!!! %d %g %g %g %g\n",(nx*ny*nz),min,max,mean,sigma);
+
+	if (!finite(mean) || !finite(sigma)) {
+		char st[120];
+		sprintf(st,"ERROR - Bad statistics on this data set! %d %g %g",(nx*ny*nz),min,max);
+		//	for (i=0; i<110; i++) printf("%5.3g\t",rdata[i+6050]);
+		//	printf("\n");
+
+		Util::error(st,ERR_ERROR);
+
+		zero();
+		//	kill(0,16);
+		return;
+	}
+
+	//printf("ru min %f max %f mean %f sigma %f\n",min,max,mean,sigma);
+
+	//if (histmax-mean>sigma*3.0) histmax=mean+sigma*3.0;
+	//if (mean-histmin>sigma*3.0) histmin=mean-sigma*3.0;
+	//if (histmax==histmin) histmax+=.0001;
+	//if (max==min) max+=.0001;
+
+	// pass 2, histogram
+	//calcHist(histmin ,histmax);
+
+	return;
+}
+***********ming*****/
+
+/*************** ming begin comment
+float *EMData::getDataRO()	// This returns a pointer to the raw float data
+{
+	//if (flags&EMDATA_BUSY || !rdata) return NULL;
+
+	waitReady(1);
+	if (flags&EMDATA_SWAPPED) swapin();
+	rocount++;
+	return rdata;
+}
+******** ming end******************/
+
+/********************
+float EMData::frm2dAlign(EMData *with, float *frm2dhhat, EMData* selfpcsfft, float rmaxH, float MAXR_f, float tstep, float angstep, float r_size_flo, float &com_self_x, float &com_self_y, float &com_with_x, float &com_with_y, int neg_rt)
+{ // this is the core part of FRM2D aligner
+	float nang=angstep;
+	int size=(int)(nang+0.5f);
+	// float nang = 360.0/angstep;
+	// size = (int)(nang+0.5f);
+	int bw=size/2;
+	unsigned long tsize2=(size+2)*size;
+	unsigned long tsize=2*size;
+	unsigned long size2=size*size;
+	unsigned long ind1=0, ind2=0, ind3=0, ind4=0, ind41=0;
+	unsigned long index0=0, indexn=0, indexn2=0;
+	int i=0, j=0, k=0, m=0, n=0, r=0;
+	int tm=0, tm1=0, ipm=0, tipm=0, tipm1=0, loop_rho=0, rho_best=0;
+	float rhomax=0.0f, rhomin = 0.0f;  // ming, rhomax is maximum distance difference between max distance of  image to center
+
+	int MAXR = (int)(MAXR_f+0.5f);
+	//float p=0.0;
+	FILE *outs;
+
+
+	int r_size=(int)(r_size_flo);
+ 	int p_max=r_size-(int)(rmaxH);
+	//if(neg_rt==1) p_max=4;
+	if(neg_rt==2) p_max=5; // ming remove the comment
+
+	float* gnr2   = new float[size*2];
+ 	float* maxcor = new float[MAXR+1];                  // MAXR need change
+	float* result = new float[5*(p_max+1)];
+	if( gnr2 == NULL || maxcor == NULL || result == NULL){
+		cout <<"can't allocate more memory, terminating. \n";
+		exit(1);
+	}
+
+
+
+ 	// The following 2 blocks are for inverse 2D FFT of Tri_2D (2D correlation value)
+	//fftw_real c[size][size];
+	//fftw_complex C[size][bw+1];
+	  fftw_real * c = new fftw_real[size * size];   // ming, correlation of real space
+	  fftw_complex * C = new fftw_complex[size * (bw+1)]; // ming, correlation in fourier space which is complex number.
+
+	 rfftwnd_plan pinv;                           // Inverse 2D FFW plan; see FFTW menu p.7-11
+	 pinv = rfftw2d_create_plan(size, size, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);  //out-of-place translation
+
+	float *self_sampl_fft = selfpcsfft->get_data(); // ming change getDataRO() to get_data()
+	selfpcsfft->update();   // ming change doneData() to update()                            //~~~ delete self_sampl_fft somewhere
+
+	float maxcor_sofar=0.0f;
+	int p=0;
+	//printf("pi_max=%f, rhomax=%f\n",(rhomax-rhomin)/tstep, rhomax); // ming
+	//for(pi=0; pi<=int((rhomax-rhomin)/tstep+0.5f); pi++){     // loop for rho->p
+
+	for(p=0; p<=p_max; p++){
+		//float p = rhomin + pi * tstep;
+		ind1 = p*r_size*bw;
+		int r_va1 = p-rmaxH;
+		if(r_va1 < 1) r_va1 = 1;
+		int r_va2 = p+rmaxH;
+
+		for (i=0;i<size;i++)
+			for (j=0;j<bw+1;j++){
+				//C[i][j].re = 0.0f;
+				//C[i*(bw+1) + j].re = 0.0f;
+				//C[i][j].im = 0.0f;
+			C[i*(bw+1) + j].im = 0.0f;
+			}
+
+    	for(n=0;n<bw;n++){                                // loop for n
+      		ind2 = (ind1+n);
+      		index0=n*(bw+1);
+
+      			//for(r=1;r<=(r_size-1);r++) {          // add terms corresponding to r to each integral
+      		for(r=r_va1;r<=r_va2;r++) {
+      			ind3 = (ind2 + r*bw)*size;
+
+      			for(m=0;m<size;m++){              // take back hat{h(n,r,p)}(m)
+      				ind4 = (ind3+m)*2;
+      				ind41= ind4+1;
+      				tm=m*2; tm1=tm+1;
+					//printf("p, n, r,m =%d, %d, %d, %d\n", p,n,r,m);
+      				gnr2[tm]  = frm2dhhat[ind4];
+      				gnr2[tm1] = frm2dhhat[ind41];
+      			}
+
+				/****** integral( h(+-n,r,p)(m)*conjugate(fm(r)) ) ******/
+
+				/* The m is positive because only positive m is need to compute Tri_2D,  *
+				*  since its inverse FT is real.  (see the FFTW manu., for complex to    *
+				*  real (inverse FFT), the complex array containes only half-size of the *
+				*  last demesion, like X(n1*n2*...*(nd/2+1)), since                      *
+				*  X[j1,j2,...,jd] = X[n1-j1,n2-j2,...,nd-jd]*, with hermitian symmetry).*
+				*  Only 1 index can be restricted to positive value, so n has both       *
+				*  + and - value                                                         *
+
+      			for(m=0;m<bw;m++){
+      				tm=m*2; tm1=tm+1;
+      				ipm=index0+m; tipm=ipm*2; tipm1=tipm+1;               // index0=n*(bw+1)
+
+      				float tempr = self_sampl_fft[tm + r*(size+2)] * r;
+      				float tempi = self_sampl_fft[tm1+ r*(size+2)] * r;
+      				float gnr2_r = gnr2[tm];
+      				float gnr2_i = gnr2[tm1];
+
+					//C[n][m].re += gnr2_r * tempr + gnr2_i * tempi;     //  m,+n
+					//C[n][m].im += gnr2_i * tempr - gnr2_r * tempi;     // (a+ib)(c-id)=(ac+bd)+i(bc-ad)
+					C[n*(bw+1) + m].re += gnr2_r * tempr + gnr2_i * tempi;     //  m,+n
+					C[n*(bw+1) + m].im += gnr2_i * tempr - gnr2_r * tempi;     // (a+ib)(c-id)=(ac+bd)+i(bc-ad)
+
+      				if(n != 0){					// m,-n
+      					int imm=index0-m; int timm=imm*2;	// timm = n*(size+2)+2m
+      					int veri =tsize2-timm;			// veri = (size-n)(size+2)+2m
+      					int veri1=veri+1;		// Tri_2D size:  m: 0->(size+2), n: 0->(size-1)
+      					if(m != 0){
+      						int ssize = tsize-tm;	// ssize = 2*size-2m
+      						int ssize1= ssize+1;
+      						float gnr2_r = gnr2[ssize];
+      						float gnr2_i = gnr2[ssize1];
+							//C[size-n][m].re += gnr2_r * tempr - gnr2_i * tempi;   // (a-ib)(c-id)=(ac-bd)-i(ad+bc)
+						//C[size-n][m].im -= gnr2_i * tempr + gnr2_r * tempi;
+      						C[(size-n)*(bw+1) + m].re += gnr2_r * tempr - gnr2_i * tempi;   // (a-ib)(c-id)=(ac-bd)-i(ad+bc)
+      						C[(size-n)*(bw+1) + m].im -= gnr2_i * tempr + gnr2_r * tempi;
+   						}
+   						else{
+						//C[size-n][m].re += *(gnr2)  * tempr - *(gnr2+1)* tempi;
+						//C[size-n][m].im -= *(gnr2+1)* tempr + *(gnr2)  * tempi;
+   							C[(size-n)*(bw+1) + m].re += *(gnr2)  * tempr - *(gnr2+1)* tempi;
+   							C[(size-n)*(bw+1) + m].im -= *(gnr2+1)* tempr + *(gnr2)  * tempi;
+   						}
+   					}
+   				}
+   			}
+   	    }
+
+		// 2D inverse FFT to the correlation coefficients matrix c(phi,phi')
+		//rfftwnd_one_complex_to_real(pinv, &C[0][0], &c[0][0]);
+
+		rfftwnd_one_complex_to_real(pinv, C, c);
+
+   		float tempr=0.0f, corre_fcs=-999.0f;
+   		int n_best=0, m_best=0;
+   		for(n=0;n<size;n++){			// move Tri_2D to Tri = c(phi,phi';rho)
+   			float temp=0.0f;
+   			for(m=0;m<size;m++){
+			//temp=c[n][m];
+   				temp=c[n*size + m];
+   				if(temp>tempr) {
+   					tempr=temp;
+   					n_best=n;
+   					m_best=m;
+   				}
+   			}
+   		}
+	//printf("rho=%d, maxcor_r=%f\n",p,tempr);
+	/* **************************************************************
+	*     Print results (since we just keep the largest corr value, *
+	*     we don't need the loop for ifit)                          *
+	*     V-> vector, distance is Rho                               *
+	*     T = V-(comH-comL) = V+comL-comH 				*
+	*     T is the vector by which the hi map has to be displaced   *
+	*     H is the both Rot & Tran one; L is the only Rot one       *
+	*     here, H is with (raw images); L is self (ref image)       *
+	*****************************************************************
+   		float Phi2= n_best*PI/bw;  // ming this is reference image rotation angle
+   		float Phi = m_best*PI/bw;   // ming this is particle image rotation angle
+   		float Vx,Vy, Tx, Ty;
+   		if(neg_rt==1) {
+   			Vx =  p*cos(Phi2);	//should use the angle of the centered one
+   			Vy = -p*sin(Phi2);
+   		}
+   		else if(neg_rt==2) {
+   			Vx =  p*cos(Phi);
+   			Vy = -p*sin(Phi);
+   		}
+   		Tx = Vx + (floor(com_self_x+0.5f) - floor(com_with_x+0.5f));
+   		Ty = Vy + (floor(com_self_y+0.5f) - floor(com_with_y+0.5f));
+   		dx = -Tx;	// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
+   		dy = -Ty;	// need to convert to raw image
+
+
+
+		//**** Using FSC as the similarity criterion, 7/13/04 ****
+   		float corre;
+
+
+   		if(neg_rt==1){	// 9/6/04 ycong, fix projection image while move raw image, help to get better correlation
+   			EMData *with_tmp = with->copy();
+   			EMData *this_tmp = this->copy();
+   			with_tmp->setRAlign((Phi2-Phi),0,0);
+   			with_tmp->setTAlign(Tx,Ty,0);
+
+   			with_tmp->rotateAndTranslate();
+
+    	//ming comment,	corre=with_tmp->fscmp(this);
+   			corre=with_tmp->cmp("frc",this,{});
+   			printf("corre=%f\n",corre);
+   			if(with_tmp){
+   				delete with_tmp; with_tmp=0;
+   			}
+   			if(this_tmp){
+   				delete this_tmp; this_tmp=0;
+   			}
+   		}
+   		else if(neg_rt==2) {
+   			EMData *this_tmp = this->copy();
+   			this_tmp->setRAlign(-(Phi2-Phi),0,0);
+   			this_tmp->setTAlign(dx,dy,0);
+
+   			this_tmp->rotateAndTranslate();		// rotateAndTranslate: Trans first then rotation
+    	//ming comment	corre=this_tmp->fscmp(with);
+
+   			this_tmp->cmp(cmp_name,with,cmp_params);
+   			printf("p_max=%d, ok??\n",p_max);
+   			delete this_tmp;
+   		}
+   		if(corre>=corre_fcs) {
+  			corre_fcs=corre;
+   			result[0+5*p] = float(p);	// rho
+   			result[1+5*p] = corre;		// correlation_fcs
+   			result[2+5*p] = Phi2-Phi;	// rotation angle
+   			result[3+5*p] = Tx;		// Translation_x
+   			result[4+5*p] = Ty;		// Translation_y
+		//printf("##rho=%d, corr=(%f, %f), rot=%f, Trans=(%f, %f)\n",p,tempr,corre,(Phi2-Phi)*180.0/PI,Tx,Ty);
+   		}
+   		maxcor[p]=corre_fcs;               		//  maximum correlation for current rho
+   		if(corre_fcs>maxcor_sofar) {
+   			maxcor_sofar=corre_fcs;   		// max correlation up to current rho
+   			rho_best=p;				// the rho value with maxinum correlation value
+   		}
+
+		// if ok to exit early
+   		if(p>=4){
+   			if(   maxcor[p  ] < maxcor[p-1] && maxcor[p-1] < maxcor[p-2]
+		   && maxcor[p-2] < maxcor[p-3] && maxcor[p-3] < maxcor[p-4]){
+			//rhomax = rhomin + (p-4)*tstep;     // new rhomax
+			loop_rho=1;
+			break;           //exit p loop
+   			}
+   		}
+	}
+
+	if(loop_rho == 1)
+		p=p+1;
+	int rb5=5*rho_best;
+//printf("****** The best fit:  rho_max/best=(%d/%d), corr=%f, rot_trans = (%f; %f, %f) *******\n", p, int(result[0+rb5]), result[1+rb5],result[2+rb5]*180/PI,result[3+rb5],result[4+rb5]);
+	float rho_keep = result[0+rb5];
+	float fsc      = result[1+rb5];
+	float ang_keep = result[2+rb5];
+	float Tx       = result[3+rb5];
+	float Ty       = result[4+rb5];
+	//printf("****** The best fit:  rho_max/best=(%d/%d), corr=%f, rot_trans = (%f; %f, %f) *******\n", p, int(rho_keep), fsc,ang_keep*180/PI,Tx,Ty);
+
+
+// ming comment,	doneData();
+	delete[] gnr2;
+	delete[] maxcor;
+	delete[] result;
+	//delete selfpcsfft;
+
+	delete c;
+	c = 0;
+	delete C;
+	C = 0;
+	rfftwnd_destroy_plan(pinv);
+	//self_sampl_fft=NULL;
+
+	if (!neg_rt) {
+		this->setRAlign(ang_keep,0,0);
+		this->setTAlign(0,0,0);
+		this->rotateAndTranslate();
+		this->setTAlign(Tx,Ty,0);
+		this->fastTranslate();
+		dx = Tx;
+		dy = Ty;
+	}
+	else if(neg_rt==1){		//this output style is for matching EMAN data style and "refine" case
+		this->setRAlign(-ang_keep,0,0);
+		this->setTAlign(0,0,0);
+		this->rotateAndTranslate();
+		//this->writeIMAGIC("rot_this.hed",-1);
+
+		dx = -Tx;
+		dy = -Ty;
+		this->setTAlign(dx,dy,0);
+		this->fastTranslate();
+		//for matching the following "classesbymra.C" coordinate convert style
+        float cdx= (-Tx)*cos(-ang_keep)+(-Ty)*sin(-ang_keep);
+       	float cdy=-(-Tx)*sin(-ang_keep)+(-Ty)*cos(-ang_keep);     //this two lines are rotation matrix
+
+       	setRAlign(-ang_keep,0,0);
+       	setTAlign(cdx,cdy,0);
+       	//printf("%f, %f  \n", cdx, cdy);
+	}
+	else if(neg_rt==2){             //==2: when Projection image is the one involve (T & R)
+		dx = -Tx;		// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
+		dy = -Ty;		// need to convert to raw image
+		this->setRAlign(-ang_keep,0,0);
+		this->setTAlign(dx,dy,0);
+		this->rotateAndTranslate();             // rotateAndTranslate: Trans first then rotation
+	}
+	return fsc;     // return the fsc coefficients
+}
+******************/
+
+
+
+//using fscmp() function as similarity criterion, works pretty good, check more about the "ALTCMP" value, ycong 6/26/04
+/*******************ming
+EMData *EMData::frm2dAlignFlip(EMData *drf, float &dot_frm, EMData *with, int usedot, float *raw_hhat, float rmax, float MAXR_f, float tstep, float angstep, float r_size, float &com_self_x, float &com_self_y, float &com_with_x, float &com_with_y, int neg_rt)
+{
+	float dot_frm0=0.0f, dot_frm1=0.0f;
+	int size=(int)(angstep+0.5f);
+	int MAXR = (int)(MAXR_f+0.5f);
+	EMData *da_nFlip=0, *da_yFlip=0;
+	//EMData *selfpcs=0;
+
+	for (int iFlip=0;iFlip<=1;iFlip++){
+		EMData *dr_frm=0;
+		if (iFlip==0) { dr_frm=this->copy(); da_nFlip=this->copy();}     //delete dr_frm somewhere
+		else          { dr_frm=drf->copy();  da_yFlip=drf->copy();}
+
+		if(iFlip==1) com_self_x=dr_frm->get_xsize()-com_self_x;   //ming   // image mirror about Y axis, so y keeps the same
+
+		dx=-(com_self_x - dr_frm->get_xsize()/2); //ming
+		dy=-(com_self_y - dr_frm->get_ysize()/2); //ming
+
+		dr_frm->setTAlign(dx,dy,0);
+
+
+		dr_frm->fastTranslate(); //ming, something wrong in this function
+		//dr_frm->writeIMAGIC("dr_frm.hed",-1);
+
+
+
+		EMData *selfpcs = dr_frm->unwrap_largerR(0,MAXR,size, rmax);
+		EMData *selfpcsfft = selfpcs->oneDfftPolar(size, rmax, MAXR);	// 1DFFT of polar sampling
+		delete dr_frm;
+		delete selfpcs;
+
+		if(iFlip==0)
+			dot_frm0=da_nFlip->frm2dAlign(with, raw_hhat, selfpcsfft, rmax, MAXR, tstep, angstep, r_size, com_self_x, com_self_y, com_with_x, com_with_y,neg_rt);
+		else
+			dot_frm1=da_yFlip->frm2dAlign(with, raw_hhat, selfpcsfft, rmax, MAXR, tstep, angstep, r_size, com_self_x, com_self_y, com_with_x, com_with_y,neg_rt);
+
+		delete selfpcsfft;
+		// selfpcsfft was deleted at frm2dAlign();
+	}
+
+	float d1,d2;
+	if (usedot) {
+		d1=da_nFlip->dot(with);
+		d2=da_yFlip->dot(with);
+		if (usedot==2) printf("%f vs %f  (%1.1f, %1.1f  %1.2f) (%1.1f, %1.1f  %1.2f)\n",
+		d1,d2,da_nFlip->Dx(),da_nFlip->Dy(),da_nFlip->alt()*180./PI,da_yFlip->Dx(),da_yFlip->Dy(),da_yFlip->alt()*180./PI);
+	}
+	else {
+//#ifdef ALTCMP
+		//ming comment, d1=da_nFlip->fscmp(with);
+		d1=da_nFlip->cmp("frc",with,{});
+		//ming comment, d2=da_yFlip->fscmp(with);
+		d2=da_yFlip->cmp("frc",with,{});
+		//printf("if ALTCMP d1,d2=%f, %f",d1,d2);
+//#else
+//		d1=2.0-da_nFlip->lcmp(with,1);
+//		d2=2.0-da_yFlip->lcmp(with,1);
+//		printf("else d1,d2=%f, %f",d1,d2);
+//#endif
+	}
+
+	if(d1 >= d2) {
+		da_nFlip->setFlipped(0);
+		dot_frm=dot_frm0;              // cross corallation coefficient
+		delete da_yFlip;
+		return da_nFlip;
+	}
+	else {
+		da_yFlip->setFlipped(1);
+		dot_frm=dot_frm1;
+		delete da_nFlip;
+		return da_yFlip;
+	}
+}
+*****ming*****/
+
+
+// ~~~~~ determine exactly COM of raw image,  Yao Cong ~~~~
+void EMData::exact_COM(int intonly,float *Dens_r, float &cx, float &cy){
+
+	int r;
+	int flag_com;           /* signals the finding of the best comL */
+	int icurr, jcurr;       /* current values of the position in cormax */
+	float comLx0, comLy0;   /* initial comL */
+	float cormax[12][12];   /* max correlation as a function of comL */
+	float ccLx, ccLy;       /* corrections to comL */
+	float comgfac;          /* factor for comL correction (see details below) */
+	float corM;             /* maximum correlation as a function of comL */
+	float temp=0.0f, tempi, tempj;
+
+	norm_frm2d();
+	//this->writeIMAGIC("exax.hed",-1);
+
+	float *d=get_data(); // ming change getData() to get_data()
+
+	for(int i=-5;i<=5;i++)                         /* initialize cormax */
+		for(int j=-5;j<=5;j++) {
+			cormax[i+5][j+5]=-1.0;     /* max correlation as a function of comL */
+		}
+
+	comgfac=0.02*(get_xsize()+get_ysize()); // ming           /* ratio between grid spacing of cormax to that of phiL */
+	ccLx=0.0f; ccLy=0.0f;
+	icurr=0;jcurr=0;
+	comLx0=cx; comLy0=cy;                      /* save initial comL */
+	flag_com=0;
+
+	do{
+		cx=comLx0+ccLx; cy=comLy0+ccLy;
+		//printf("cx=%f, %f\n", cx,cy);
+
+		float corr_ab=0.0f;
+		for (int i=0; i<get_xsize(); i++){//ming
+			for (int j=0; j<get_ysize(); j++){//ming
+				//float r_2;//ming
+				float r_2 = std::sqrt((float)((i-cx)*(i-cx) + (j-cy)*(j-cy)));
+				int r_1 = floor(r_2);
+				int r_3 = r_1 + 1;
+				float Int_g2 = (r_2-r_1)*Dens_r[r_3] + (r_3-r_2)*Dens_r[r_1];  // from g1 & g3, get g2
+				corr_ab += d[i+j*get_xsize()] * Int_g2;       //ming               // c(alpha,beta)
+      			}
+		}
+		//printf("corr_ab=%f \n", corr_ab);
+
+		if(flag_com==0){
+			//printf("curr = %d %d %f\n", icurr, jcurr,corr_ab);
+			cormax[icurr+5][jcurr+5]=corr_ab;
+			corM=-1.0;
+			for(int i=-5;i<=5;i++)                    // look for the maximum of cormax
+				for(int j=-5;j<=5;j++)
+					if(cormax[i+5][j+5]>corM){
+						corM=cormax[i+5][j+5];
+						icurr=i; jcurr=j;
+					}
+
+			if(cormax[icurr+4][jcurr+5]<0){
+				icurr--;
+				ccLx=icurr*comgfac; ccLy=jcurr*comgfac;
+			}
+			else if(cormax[icurr+6][jcurr+5]<0){
+				icurr++;
+				ccLx=icurr*comgfac; ccLy=jcurr*comgfac;
+			}
+			else if(cormax[icurr+5][jcurr+4]<0){
+				jcurr--;
+				ccLx=icurr*comgfac; ccLy=jcurr*comgfac;
+			}
+			else if(cormax[icurr+5][jcurr+6]<0){
+				jcurr++;
+				ccLx=icurr*comgfac; ccLy=jcurr*comgfac;
+			}
+			// determine point based on parabola
+			else{
+				float f000=cormax[icurr+5][jcurr+5];
+				float f100=cormax[icurr+4][jcurr+5];
+				float f200=cormax[icurr+6][jcurr+5];
+				float f010=cormax[icurr+5][jcurr+4];
+				float f020=cormax[icurr+5][jcurr+6];
+
+				if((temp=f100+f200-2*f000)==0)
+					tempi=0.0;
+				else
+					tempi=(f100-f200)/(2*temp);
+				ccLx=(icurr+tempi)*comgfac;
+
+				if((temp=f010+f020-2*f000)==0)
+					tempj=0.0;
+				else
+					tempj=(f010-f020)/(2*temp);
+				ccLy=(jcurr+tempj)*comgfac;
+
+				flag_com=1;
+			}
+		}
+		else
+			break;
+	}while(1);
+	//ming comment, doneData();
+
+	if (intonly >0) {
+		cx = floor(cx+.5);
+		cy = floor(cy+.5);
+	}
+
+	dx=-(cx-get_xsize()/2);//ming
+	dy=-(cy-get_ysize()/2);//ming
+
+	parent=NULL;                   // parent=NULL -> parent image is allowed to be changed inplace
+	fastTranslate();               // default is 1 -> in-place trans;
+
+}
+
+float* EMData::makeFRM2D_H_hat(float rhomax, float rhomin, float rmaxH, int size, float tstep, float r_size_flo)
+{
+	int bw=size/2;
+	unsigned long tsize2=(size+2)*size;
+	unsigned long tsize=2*size;
+	unsigned long size2=size*size;
+	unsigned long ind1=0, ind2=0, ind3=0, ind4=0, ind41=0;
+	float pi2=2.0*PI, r2;
+	FILE *outs;
+	int r_size=(int)(r_size_flo);
+	int p_max=r_size-(int)(rmaxH);
+	//printf("nx=%f, %f %f  %d, %f %f\n", rhomax, rhomin, rmaxH, size, tstep, r_size);
+
+	//fftw_complex gnr2_in[size], gnr2[size];
+	fftw_complex * gnr2_in = new fftw_complex[size];
+	fftw_complex * gnr2 = new fftw_complex[size];
+	fftw_plan planc_fftw;			// plan for 1D FFTW (Forward), complex->complex  to get gnr2
+	planc_fftw = fftw_create_plan(size, FFTW_FORWARD, FFTW_ESTIMATE );    // out-of-plalce transform, see FFTW menu p.3-4
+
+ 	float *frm2dhhat=0;
+	//cout << "size:" << 10*(r_size+1)*bw*size*2 * sizeof(float) << endl;
+	if( (frm2dhhat = (float *) malloc( (p_max+1)*(r_size+2)*bw*size*2 * sizeof(float)) ) == NULL ) {
+	//if( (frm2dhhat = malloc(sizeof(float)*(int(rhomax/tstep+0.5f)+1)*(r_size+1)*bw*size*2)) == NULL ) {
+		cout <<"Error in allocating memory 13. \n";
+		exit(1);
+	}
+
+	float *sb=0, *cb=0;		// sin(beta) and cos(beta) for get h_hat, 300>size
+	if( (sb = new float[size]) == NULL || (cb = new float[size]) == NULL) {
+		cout <<"can't allocate more memory, terminating. \n";
+		exit(1);
+	}
+	for(int i=0;i<size;i++) {        // beta sampling, to calculate beta' and r'
+		float beta=i*PI/bw;
+	   	sb[i]=sin(beta);
+	   	cb[i]=cos(beta);
+	}
+
+	float *sampl_fft = get_data(); // ming change getDataRO() to get_data
+
+	//compute H_hat
+	//for(pi=0; pi<=int((rhomax-rhomin)/tstep+0.5f); pi++){                 // loop for rho->p
+	for(int p=0; p<=p_max; p++){
+		ind1=p*r_size*bw;
+		//printf("p=%d, ind1=%d\n", p, ind1);
+
+    	float pp2 = p*p;
+		int r_va1 = p-rmaxH;
+		if(r_va1 < 1) r_va1 = 1;
+		int r_va2 = p+rmaxH;
+
+   		for(int n=0;n<bw;n++){         /* loop for n */
+       		int tn=n*2;
+       		int tn1=tn+1;
+    		ind2 = ind1+n;
+
+      			//for(int r=1;r<=(r_size-1);r++) {     // add terms corresponding to r to each integral
+			//for(int r=1;r<=55;r++) {
+			for(int r=r_va1;r<=r_va2;r++) {
+				ind3 = (ind2+r*bw)*size;
+        		float rr2 = r*r;
+				float rp2 = r*p;
+       			for(int i=0;i<size;i++){                            // beta sampling, to get beta' and r'
+       				if(p==0) r2 = (float) r;
+       				else     r2 = std::sqrt((float)(rr2+pp2-2.0*rp2*cb[i]));   // r2->r'
+       		 		int r1=floor(r2+0.5);                        // for computing gn(r')
+       				if(r1>rmaxH){
+       					gnr2_in[i].re  = 0.0f;
+       					gnr2_in[i].im  = 0.0f;
+       				}
+       				else{
+       					float gn_r = sampl_fft[tn +r1*(size+2)];           // real part of gn(r')
+       					float gn_i = sampl_fft[tn1+r1*(size+2)];           // imaginary part of gn(r')
+						float sb2, cb2, cn, sn;
+						if(n != 0){
+							if(r2 != 0.0){
+								if(p==0) {
+									sb2=sb[i];
+									cb2=cb[i];
+								}
+								else{
+									sb2=r*sb[i]/r2;
+									cb2=(r*cb[i]-p)/r2;
+								}
+							}
+        					else{
+								sb2=0.0;
+								cb2=1.0;
+							}
+        					if(sb2>1.0) sb2= 1.0f;
+        					if(sb2<-1.0)sb2=-1.0f;
+        					if(cb2>1.0) cb2= 1.0f;
+        					if(cb2<-1.0)cb2=-1.0f;
+        					float beta2=atan2(sb2,cb2);
+        					if(beta2<0.0) beta2 += pi2;
+        					float nb2=n*beta2;
+        					cn=cos(nb2);
+							sn=sin(nb2);
+						}
+        				else{
+							cn=1.0f; sn=0.0f;
+						}
+
+						gnr2_in[i].re =   cn*gn_r - sn*gn_i;	     // exp(-i*n*beta')*gn(r')
+						gnr2_in[i].im = -(cn*gn_i + sn*gn_r);
+        			}
+        		}  /* for i */
+
+        		fftw_one(planc_fftw, gnr2_in, gnr2);
+
+				for(int m=0;m<size;m++){                                     // store hat{h(n,r,p)}(m)
+					ind4 = (ind3+m)*2;
+					ind41 = ind4+1;
+					frm2dhhat[ind4]  = gnr2[m].re;
+					frm2dhhat[ind41] = gnr2[m].im;
+				}   /* m */
+			}   /* r */
+		}   /* n */
+	}  /* p */
+
+	// ming comment, doneData();
+	delete[] sb;
+	delete[] cb;
+	delete [] gnr2_in;
+	gnr2_in = 0;
+	delete [] gnr2;
+	gnr2 = 0;
+	fftw_destroy_plan(planc_fftw);
+	return frm2dhhat;
+}
+
+
+
+
+//1D FFT of polar coordinate sampling
+// r<rmax, do the 1D FFT, otherwise padding with 0
+// Yao Cong   5/31/04
+EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR value here later!!
+
+    fftw_real * in = new fftw_real[size]; //ming
+	fftw_real * out = new fftw_real[size]; // ming
+	rfftw_plan p; //ming
+	p = rfftw_create_plan(size, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+
+	float *pcs=get_data(); // ming change getDataRO() to get_data(), this read the image information for the pointer which call this function
+
+	EMData *imagepcsfft = new EMData; // ming, create a new image object pointer *imagepcsfft
+	imagepcsfft->set_size((size+2), (int)MAXR+1, 1);            //"setSize" comes together with "new EMData" , ming, define the new image size
+	float *d=imagepcsfft->get_data(); // ming change getData() to get_data(), read the original image data to pointer d
+	for(int row=0; row<=(int)MAXR; row++){
+		if(row<=(int)rmax) {
+			for(int i=0; i<size;i++){
+				in[i] = pcs[i+row*size]; // ming
+			}
+			rfftw_one(p,in,out);	// 1D real FFTW, details see FFTW menu p.6-7 //ming
+
+
+			d[0+row*(size+2)] = out[0];//ming
+			d[1+row*(size+2)] = 0.0;
+			for (int k=1; k<(size+1)/2;k++){
+				 d[2*k+row*(size+2)]   = out[k];
+				 d[2*k+1+row*(size+2)] = out[size-k];
+			}
+			if(size%2 == 0){                                     // size is even
+				d[size  +row*(size+2)] = out[size/2];
+				d[size+1+row*(size+2)] = 0.0;
+			}
+		}
+		else{
+			for(int j=0;j<size+2;j++)
+				d[j+row*(size+2)] = 0.0;
+		}
+	}
+
+	delete in;
+	in = 0;
+	delete out;
+	out = 0;
+
+	rfftw_destroy_plan(p);
+	// ming comment, doneData();
+	imagepcsfft->update(); // ming change doneData() to update()
+	//delete this;
+	return imagepcsfft;
+}
+
+
+
+/*****************ming comment*
+int EMData::setSize(int x,int y, int z) {
+
+	if (waitReady(0)) return -1;
+
+	if (x<=0) x=1;
+	if (y<=0) y=1;
+	if (z<=0) z=1;
+	if (y==1&&z!=1) { y=z; z=1; }
+	if (x==1&&y!=1) { x=y; y=1; }
+	nx=x;
+	ny=y;
+	nz=z;
+	if (flags&EMDATA_NODATA) {
+		if (rdata) free(rdata);
+		rdata=NULL;
+	}
+	//else rdata=(float *)Srealloc(rdata,x*y*z*sizeof(float),1);
+	else rdata=(float *)realloc(rdata,x*y*z*sizeof(float));
+	update();
+	flags&= ~EMDATA_SWAPPED;
+	if (supp) { free(supp); supp=NULL; }
+	return 0;
+}
+ming comment ***********************8*/
+
+
+void EMData::norm_frm2d() {
+
+	unsigned long i;
+	unsigned int nvox=get_xsize()*get_ysize();//ming
+	float maxmap=0.0f, minmap=0.0f;
+	float temp=0.0f, diff_den=0.0f, norm=0.0f;
+	float cut_off_va =0.0f;
+	float* data;
+
+	//writeIMAGIC("norm_in",-1);
+	//ming comment, data = getData();
+	data=get_data();
+
+	// rescale the map
+	maxmap=-1000000.0f;
+	minmap=1000000.0f;
+	for (i=0;i<nvox;i++){
+		if(data[i]>maxmap) maxmap=data[i];
+		if(data[i]<minmap) minmap=data[i];
+	}
+	diff_den = maxmap-minmap;
+	//printf("max, min =%f, %f\n", maxmap, minmap);
+
+	for(i=0;i<nvox;i++) {
+		temp = (data[i]-minmap)/diff_den;
+		if(cut_off_va != 0.0) {               // cut off the lowerset ?% noisy information
+	 		if(temp < cut_off_va)
+	   			data[i] = 0.0f;                   // set the empty part density=0.0
+	 		else
+	   			data[i] = temp-cut_off_va;
+		}
+		else{
+			data[i] = temp;
+			//printf("%3.1f ",data[i]);
+		}
+	}
+
+	// normalize the image
+	for(i=0;i<nvox;i++) {
+		temp=data[i];
+		norm += temp*temp;
+	}
+	//norm = sqrt(norm); // ming, temporary comment it, after figure out uncomment it
+	for(i=0;i<nvox;i++){
+		data[i] /= norm;                      //  y' = y/norm(y)
+		//printf("%6.4f ",data[i]);
+	}
+
+	// ming comment, doneData();
+	update();
+	//writeIMAGIC("norm_out",-1);
+
+}
+
+
+/**** ming begin***/
+EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
+	//int i,r;
+	float *d,*dd;
+	int do360=2;
+	int rmax = (int)(rmax_f+0.5f);
+	norm_frm2d();
+	//ming comment, d=getDataRO();
+	d=get_data(); // ming change getaDataRO() to eman2 get_data()
+	//writeIMAGIC("for_samp.hed",-1);
+
+	if (xs<1) {
+		xs = (int) floor(do360*PI*get_ysize()/4); // ming
+		xs=Util::calc_best_fft_size(xs); // ming
+	}
+	if (r1<0) r1=0;
+	float maxext=ceil(0.6*std::sqrt((double)(get_xsize()*get_xsize()+get_ysize()*get_ysize())));// ming add std::
+	//printf("maxext=%f\n",maxext);
+	if (r2<r1) r2=(int)maxext;
+	EMData *ret = new EMData;	     // here r2=MAXR, so ret size is (size*(MAXR+1))
+
+	ret->set_size(xs,r2+1,1);    //ming, problem is here         //EMAN style: ret->setSize(xs,ySize()/2-5,1);
+	//dd=ret->getData();  // something wrong with this part
+
+	dd=ret->get_data();
+
+	for (int i=0; i<xs; i++) {
+		float si=sin(i*PI*2/xs);
+		float co=cos(i*PI*2/xs);
+		for (int r=0; r<=maxext; r++) {
+			float x=(r+r1)*co+get_xsize()/2; // ming
+			float y=(r+r1)*si+get_ysize()/2; // ming
+			if(x<0.0 || x>=get_xsize()-1.0 || y<0.0 || y>=get_ysize()-1.0 || r>rmax){    //Ming , ~~~~ rmax need pass here
+				for(;r<=r2;r++)                                   // here r2=MAXR
+					dd[i+r*xs]=0.0;
+        		break;
+		    }
+			int x1=floor(x);
+			int y1=floor(y);
+			float t=x-x1;
+			float u=y-y1;
+			float f11= d[x1+y1*get_xsize()]; // ming
+			float f21= d[(x1+1)+y1*get_xsize()]; // ming
+			float f12= d[x1+(y1+1)*get_xsize()]; // ming
+			float f22= d[(x1+1)+(y1+1)*get_xsize()]; // ming
+			dd[i+r*xs] = (1-t)*(1-u)*f11+t*(1-u)*f21+t*u*f22+(1-t)*u*f12;
+		}
+	}
+
+	update();
+	// ming comment, doneData();
+
+	ret->update(); // ming change doneData() to update() since the data is changed
+
+	return ret;
+}
+/***ming end****************/
+
+
+
+int EMData::swapin() {
+	//const int MAXPATHLEN=1024; // MING
+	char s[MAXPATHLEN];
+	FILE *in;
+	//const char  *ERR_EXIT, *ERR_CRIT;// ming add
+	if (!(flags&EMDATA_SWAPPED)) return 0;
+   // int tmp;// ming add
+	sprintf(s,"/usr/tmp/tmp.%d",tmp);
+	in=fopen(s,"rb");
+	if (!in) { Util::error("ERROR: Swap file missing!",ERR_EXIT); return -1; }
+	//rdata=(float *)Smalloc(nx*ny*nz*sizeof(float),1);
+	rdata=(float *)malloc(nx*ny*nz*sizeof(float));
+
+
+	if (!rdata) { Util::error("Cannot swap in, not enough memory!",ERR_CRIT); return -1; }
+	if(fread(rdata,sizeof(float)*nx,ny*nz,in)!=ny*nz) {
+		Util::error("ERROR: Swap file incomplete!",ERR_EXIT);
+		return -1;
+	}
+	flags&=~EMDATA_SWAPPED;
+	return 0;
+}
+
+int EMData::waitReady(int ro)
+{
+/*
+if (ro) {
+while (flags&EMDATA_BUSY) sleep(1);
+}
+else {
+while ((flags&EMDATA_BUSY) || (rocount)) sleep(1);
+}
+	*/
+
+	// for debugging only
+	if (ro) {
+		while (flags&EMDATA_BUSY) {
+			printf("Busy 1 (%p)\n",this);
+#ifdef ALPHA
+			sleep(1);
+#else
+			usleep(100);
+#endif
+		}
+	}
+	else {
+		if ((flags&EMDATA_BUSY) || (rocount)) {
+		printf("Busy 0.%d (%p),%d,%d\n",rocount,this,flags,EMDATA_BUSY);
+		while ((flags&EMDATA_BUSY) || (rocount)) {
+#ifdef ALPHA
+			sleep(1);
+
+#else
+		 usleep(100);
+#endif
+			}
+			printf("Busy done 0.%d (%p)\n",rocount,this);
+		}
+	}
+
+	return 0;
+}
+
+/********* ming begin
+float *EMData::getData() {	// This returns a pointer to the raw float data
+	//if (flags&EMDATA_BUSY || rocount>0 || !rdata) return NULL;
+
+	waitReady(0);
+
+	if (flags&EMDATA_SWAPPED) swapin();
+	flags|=EMDATA_BUSY;
+	return rdata;
+}
+
+
+void EMData::doneData() // MUST be called when the data is no longer being
+// modified. Another getData while the data is
+// out will return NULL
+{
+	if (flags&EMDATA_BUSY) {
+		flags&=(~EMDATA_BUSY);
+		update();
+	}
+	else {
+		rocount--;
+		if (rocount<0) rocount=0;
+	}
+
+	return;
+}
+
+
+void EMData::normalize() {
+	int i,di=1;
+	float f,*data;
+	float nor,s;
+
+	if ((flags&EMDATA_COMPLEX) && !(flags&EMDATA_RI)) di=2;
+
+	s=Sigma();			// need pointer for goodf
+
+
+	if ( !Util::goodf(&s)) { zero(); return; }// ming
+
+
+	if (s==0 ) return;
+	// ming comment, data=getData();
+    data=get_data(); // ming change getData() to get_data()
+
+	// this normalizes to sigma excluding pixels which are exactly zero
+	//s=Sigma2();
+	//if (s>0 && goodf(&s)) nor=s;
+	//else nor=Sigma();
+
+	// The above may be risky, we'll return to the standard normalization
+	nor=Sigma();
+
+	//printf("%f %f \n",nor,Sigma());
+
+	for (i=0; i<nx*ny*nz; i+=di) {
+		data[i]=(data[i]-Mean())/nor;
+	}
+
+	// ming comment, doneData();
+	update();
+}
+
+
+
+void EMData::COM(int intonly, float &xm, float &ym) {
+	float m=0.0f;
+	float zm=0.0f;
+	int i,j,k;
+
+
+	//norm_frm2d();
+//ming comment,	normalize();      //EMAN way to do normalize
+
+	//this->writeIMAGIC("test-print.hed",-1);
+
+    //ming comment, getData();
+	get_data(); //ming change getData() to get_data()
+
+	for (i=0; i<nx; i++) {
+		for (j=0; j<ny; j++) {
+			for (k=0; k<nz; k++) {
+				float tempt = rdata[i+nx*j+k*nx*ny];
+				//printf("COM  %f\n",tempt);
+			    if (tempt<Sigma()*0.75+Mean()) continue; // may help since protein is denser
+				xm+=(float)i*tempt;
+				ym+=(float)j*tempt;
+				zm+=(float)k*tempt;
+				m+=tempt;
+				//printf("%f  (%f, %f, %f) (%d %d %d) \n",tempt,xm,ym,zm,i,j,k);
+			}
+		}
+	}
+	// ming comment, doneData();
+	xm/=m;
+	ym/=m;
+	zm/=m;
+
+	//(intonly == 2) { xm=150; ym=153;zm=0;}
+	//printf("%f  %f  %f\n",xm,ym,zm);
+	if (intonly >0) {
+		xm=floor(xm+.5);
+		ym=floor(ym+.5);
+		zm=floor(zm+.5);
+
+		dx=-(xm-nx/2);
+		dy=-(ym-ny/2);
+		if (nz>1) dz=-(zm-nz/2);
+	}
+	else {
+		dx=-(xm-nx/2);
+		dy=-(ym-ny/2);
+		if (nz>1) dz=-(zm-nz/2);
+	}
+	//printf("~~~ dx, dy=%5.2f, %5.2f, %f, %f--> \n",dx,dy, xm,ym);
+	parent=NULL;                   // parent=NULL -> parent image is allowed to be changed inplace
+
+	if(intonly!=3) fastTranslate();               // default is 1 -> in-place trans;
+}
+
+// ~~~~~ determine exactly COM of raw image,  Yao Cong ~~~~
+*************ming end *********/
