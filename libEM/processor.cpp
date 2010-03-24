@@ -9933,8 +9933,13 @@ EMData* BinarySkeletonizerProcessor::process(EMData * image)
 	float threshold = params["threshold"];
 	int min_curvew = params.set_default("min_curve_width", 4);
 	int min_srfcw = params.set_default("min_surface_width", 4);
+	bool mark_surfaces = params.set_default("mark_surfaces", true);
 	Volume* vskel = VolumeSkeletonizer::PerformPureJuSkeletonization(vimage, "unused", static_cast<double>(threshold), min_curvew, min_srfcw);
 	//VolumeSkeletonizer::CleanUpSkeleton(vskel, 4, 0.01f);
+	if (mark_surfaces) {
+		VolumeSkeletonizer::MarkSurfaces(vskel);
+	}
+
 	vskel->getVolumeData()->owns_emdata = false; //ensure the EMData object will remain when the Volume and its VolumeData object are freed
 	EMData* skel = vskel->get_emdata();
 	skel->update();

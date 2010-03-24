@@ -6871,6 +6871,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("threshold", EMObject::FLOAT, "Threshold value.");
 			d.put("min_curve_width", EMObject::INT, "Minimum curve width.");
 			d.put("min_surface_width", EMObject::INT, "Minimum surface width.");
+			d.put("mark_surfaces", EMObject::BOOL, "Mark surfaces with a value of 2.0f, whereas curves are 1.0f.");
 			return d;
 		}
 		static const string NAME;
