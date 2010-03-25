@@ -509,8 +509,10 @@ namespace EMAN
 							   int dy = 0, bool do360 = false, bool weight_radial=true) const;
 
 		EMData * unwrap_largerR(int r1,int r2,int xs, float rmax_f);
+#ifdef FFTW2
 		EMData *oneDfftPolar(int size, float rmax, float MAXR);
-
+#endif	//FFTW2
+		
 		/** multiplies by a radial function in fourier space.
 		 *
 		 * @param x0  starting point x coordinate.

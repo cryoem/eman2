@@ -63,7 +63,9 @@ const string RefineAligner::NAME = "refine";
 const string Refine3DAligner::NAME = "refine.3d";
 const string RT3DGridAligner::NAME = "rt.3d.grid";
 const string RT3DSphereAligner::NAME = "rt.3d.sphere";
+#ifdef FFTW2
 const string FRM2DAligner::NAME = "FRM2D";
+#endif	//FFTW2
 
 template <> Factory < Aligner >::Factory()
 {
@@ -79,7 +81,9 @@ template <> Factory < Aligner >::Factory()
 	force_add<Refine3DAligner>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
+#ifdef	FFTW2
 	force_add<FRM2DAligner>();
+#endif	//FFTW2
 //	force_add<XYZAligner>();
 }
 
@@ -1614,7 +1618,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 }
 
-
+#ifdef	FFTW2
 namespace {
 float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfpcsfft, int p_max_input,int rsize, float &com_this_x, float &com_this_y, float &com_with_x, float &com_with_y,const string & cmp_name, const Dict& cmp_params)
 {
@@ -1964,6 +1968,7 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 		return da_yFlip;
 	}
 }
+#endif	//FFTW2
 
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;

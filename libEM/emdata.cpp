@@ -3782,6 +3782,7 @@ EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
 	return ret;
 }
 
+#ifdef FFTW2
 EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR value here later!!
 
     fftw_real * in = new fftw_real[size]; //ming
@@ -3826,6 +3827,7 @@ EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR va
 	//delete this;
 	return imagepcsfft;
 }
+#endif	//FFTW2
 
 
 #ifdef EMAN2_USING_CUDA

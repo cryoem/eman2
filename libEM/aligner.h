@@ -775,7 +775,8 @@ namespace EMAN
 			
 			static const string NAME;
 	};
-
+	
+#ifdef	FFTW2 
 	class FRM2DAligner:public Aligner
 		{
 			public:
@@ -801,16 +802,17 @@ namespace EMAN
 				{
 					return new FRM2DAligner();
 				}
-			virtual	TypeDict get_param_types() const
-			{
-					TypeDict d;
-					d.put("p_max", EMObject::FLOAT,"p_max is");
-					return d;
-			}
-
-			static const string NAME;
+				virtual	TypeDict get_param_types() const
+				{
+						TypeDict d;
+						d.put("p_max", EMObject::FLOAT,"p_max is");
+						return d;
+				}
+	
+				static const string NAME;
 	};
-
+#endif	//FFTW2
+	
 	class CUDA_Aligner
 	{
 	  public:
