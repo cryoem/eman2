@@ -417,17 +417,17 @@ def main():
     
     if options.gui:
         if ENABLE_GUI:
+            logid=E2init(sys.argv)
             app = EMStandAloneApplication()
             helixboxer = EMHelixBoxerWidget(args, app, options.helix_width)
             helixboxer.show()
             app.execute()
+            E2end(logid)
         else:
             return
     else:
-        if len(args) > 1:
-            print 'Multiple micrographs can only be specified with the "--gui" option'
-            return
-        else:
+        if len(args) == 1:
+            logid=E2init(sys.argv)
             micrograph_filepath = args[0]
             if options.helix_coords:
                 db_save_helix_coords(micrograph_filepath, options.helix_coords, helix_width)
@@ -437,8 +437,14 @@ def main():
                 db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
             if options.ptcl_images:
                 db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean)
-    
-    E2end(logid)
+            E2end(logid)
+        elif len(args) == 0:
+            print 'You must specify a micrograph file or use the "--gui" option.'
+            return
+        elif len(args) > 1:
+            print 'Multiple micrographs can only be specified with the "--gui" option'
+            return
+
 
 if ENABLE_GUI:
     class EMWriteHelixFiles(QtGui.QDialog):
@@ -1018,15 +1024,15 @@ if ENABLE_GUI:
             if self.helix_viewer:
                 self.display_helix(EMData(10,10))
     #    def write_coords(self):
-    #    	"""
-    #    	Save boxed helix coordinates to tab separated text file.
-    #    	"""
-    #    	(micrograph_dir, micrograph_filename) = os.path.split(self.micrograph_filepath)
-    #    	default_filename = os.path.splitext(micrograph_filename)[0] + "_boxes.txt"
-    #    	file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
-    #    	file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
-    #    	file_dlg.selectFile(default_filename)
-    #    	if file_dlg.exec_():
+    #        """
+    #        Save boxed helix coordinates to tab separated text file.
+    #        """
+    #        (micrograph_dir, micrograph_filename) = os.path.split(self.micrograph_filepath)
+    #        default_filename = os.path.splitext(micrograph_filename)[0] + "_boxes.txt"
+    #        file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
+    #        file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+    #        file_dlg.selectFile(default_filename)
+    #        if file_dlg.exec_():
     #            file_path = file_dlg.selectedFiles()[0]
     #            file_path = str(file_path)
     #            print file_path
