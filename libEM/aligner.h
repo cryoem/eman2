@@ -776,6 +776,40 @@ namespace EMAN
 			static const string NAME;
 	};
 
+	class FRM2DAligner:public Aligner
+		{
+			public:
+				virtual EMData * align(EMData * this_img, EMData * to_img,
+						const string& cmp_name, const Dict& cmp_params=Dict()) const; //ming add ="frc"
+
+				virtual EMData * align(EMData * this_img, EMData * to_img) const
+				{
+					return align(this_img, to_img, "", Dict());
+				}
+
+				string get_name() const
+				{
+					return NAME;
+				}
+
+				string get_desc() const
+				{
+					return "FRM2D uses two rotational parameters and one translational parameter";
+				}
+
+				static Aligner *NEW()
+				{
+					return new FRM2DAligner();
+				}
+			virtual	TypeDict get_param_types() const
+			{
+					TypeDict d;
+					d.put("p_max", EMObject::FLOAT,"p_max is");
+					return d;
+			}
+
+			static const string NAME;
+	};
 
 	class CUDA_Aligner
 	{

@@ -508,6 +508,8 @@ namespace EMAN
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 							   int dy = 0, bool do360 = false, bool weight_radial=true) const;
 
+		EMData * unwrap_largerR(int r1,int r2,int xs, float rmax_f);
+		EMData *oneDfftPolar(int size, float rmax, float MAXR);
 
 		/** multiplies by a radial function in fourier space.
 		 *

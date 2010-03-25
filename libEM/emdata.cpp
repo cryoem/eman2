@@ -3706,6 +3706,128 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 	EXITFUNC;
 }
 
+EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
+	float *d,*dd;
+	int do360=2;
+	int rmax = (int)(rmax_f+0.5f);
+	unsigned long i;
+	unsigned int nvox=get_xsize()*get_ysize();//ming
+	float maxmap=0.0f, minmap=0.0f;
+	float temp=0.0f, diff_den=0.0f, norm=0.0f;
+	float cut_off_va =0.0f;
+
+	d=get_data();
+	maxmap=-1000000.0f;
+	minmap=1000000.0f;
+	for (i=0;i<nvox;i++){
+		if(d[i]>maxmap) maxmap=d[i];
+		if(d[i]<minmap) minmap=d[i];
+	}
+	diff_den = maxmap-minmap;
+	for(i=0;i<nvox;i++) {
+		temp = (d[i]-minmap)/diff_den;
+		if(cut_off_va != 0.0) {               // cut off the lowerset ?% noisy information
+	 		if(temp < cut_off_va)
+	   			d[i] = 0.0f;                   // set the empty part density=0.0
+	 		else
+	   			d[i] = temp-cut_off_va;
+		}
+		else	d[i] = temp;
+	}
+
+	for(i=0;i<nvox;i++) {
+		temp=d[i];
+		norm += temp*temp;
+	}
+	for(i=0;i<nvox;i++)		d[i] /= norm;                      //  y' = y/norm(y)
+
+	if (xs<1) {
+		xs = (int) floor(do360*M_PI*get_ysize()/4); // ming
+		xs=Util::calc_best_fft_size(xs); // ming
+	}
+	if (r1<0) r1=0;
+	float maxext=ceil(0.6*std::sqrt((double)(get_xsize()*get_xsize()+get_ysize()*get_ysize())));// ming add std::
+
+	if (r2<r1) r2=(int)maxext;
+	EMData *ret = new EMData;
+
+	ret->set_size(xs,r2+1,1);
+
+	dd=ret->get_data();
+
+	for (int i=0; i<xs; i++) {
+		float si=sin(i*M_PI*2/xs);
+		float co=cos(i*M_PI*2/xs);
+		for (int r=0; r<=maxext; r++) {
+			float x=(r+r1)*co+get_xsize()/2; // ming
+			float y=(r+r1)*si+get_ysize()/2; // ming
+			if(x<0.0 || x>=get_xsize()-1.0 || y<0.0 || y>=get_ysize()-1.0 || r>rmax){    //Ming , ~~~~ rmax need pass here
+				for(;r<=r2;r++)                                   // here r2=MAXR
+					dd[i+r*xs]=0.0;
+        		break;
+		    }
+			int x1=floor(x);
+			int y1=floor(y);
+			float t=x-x1;
+			float u=y-y1;
+			float f11= d[x1+y1*get_xsize()]; // ming
+			float f21= d[(x1+1)+y1*get_xsize()]; // ming
+			float f12= d[x1+(y1+1)*get_xsize()]; // ming
+			float f22= d[(x1+1)+(y1+1)*get_xsize()]; // ming
+			dd[i+r*xs] = (1-t)*(1-u)*f11+t*(1-u)*f21+t*u*f22+(1-t)*u*f12;
+		}
+	}
+	update();
+	ret->update();
+	return ret;
+}
+
+EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR value here later!!
+
+    fftw_real * in = new fftw_real[size]; //ming
+	fftw_real * out = new fftw_real[size]; // ming
+	rfftw_plan p; //ming
+	p = rfftw_create_plan(size, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+
+	float *pcs=get_data();
+	EMData *imagepcsfft = new EMData;
+	imagepcsfft->set_size((size+2), (int)MAXR+1, 1);
+	float *d=imagepcsfft->get_data();
+	for(int row=0; row<=(int)MAXR; row++){
+		if(row<=(int)rmax) {
+			for(int i=0; i<size;i++){
+				in[i] = pcs[i+row*size]; // ming
+			}
+			rfftw_one(p,in,out);	// 1D real FFTW, details see FFTW menu p.6-7 //ming
+			d[0+row*(size+2)] = out[0];//ming
+			d[1+row*(size+2)] = 0.0;
+			for (int k=1; k<(size+1)/2;k++){
+				 d[2*k+row*(size+2)]   = out[k];
+				 d[2*k+1+row*(size+2)] = out[size-k];
+			}
+			if(size%2 == 0){                                     // size is even
+				d[size  +row*(size+2)] = out[size/2];
+				d[size+1+row*(size+2)] = 0.0;
+			}
+		}
+		else{
+			for(int j=0;j<size+2;j++)
+				d[j+row*(size+2)] = 0.0;
+		}
+	}
+
+	delete in;
+	in = 0;
+	delete out;
+	out = 0;
+
+	rfftw_destroy_plan(p);
+	imagepcsfft->update();
+	//delete this;
+	return imagepcsfft;
+}
+
+
 #ifdef EMAN2_USING_CUDA
 EMData* EMData::cut_slice_cuda(const Transform& transform)
 {
