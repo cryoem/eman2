@@ -645,7 +645,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 
 	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*4.0,B);
 		
-	for (int i=0; i<radial_mask.size(); i++) radial_mask[i]=exp(-B*pow(i*ds,2.0)/4.0);
+	for (int i=0; i<radial_mask.size(); i++) radial_mask[i]=exp(-B*pow(i*ds,2.0f)/4.0f);
 
 	free(x);
 	free(y);
