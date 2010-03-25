@@ -211,6 +211,15 @@ int calc_max_index() const;
  */
 vector<Pixel> calc_highest_locations(float threshold);
 
+/** Calculate and return a sorted list of N highest pixels in the map
+ *
+ * @param threshold The specified pixel value. Returned pixels
+ *        should have higher values than it.
+ * @return A sorted list of pixels with their values, and
+ *     locations. Their values are higher than threshold.
+ */
+vector<Pixel> calc_n_highest_locations(int n);
+
 
 /** Calculates the mean pixel values around the (1 pixel) edge
  * of the image.

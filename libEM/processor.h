@@ -359,7 +359,7 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/** Same as FourierProcessor, except first computes the current image radial power spectrum and passes it to the processor
-	 * and radial oversampling is only 2x
+	 * (no radial oversampling, number of elements = radius)
 	 * @param cutoff_abs Processor radius in terms of Nyquist (0-.5).
 	 * @param cutoff_pixels Width in Fourier pixels (0 - size()/2).
 	 * @param cutoff_freq Resolution in 1/A (0 - 1 / size*apix).
@@ -935,6 +935,64 @@ The basic design of EMAN Processors: <br>\
 		
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
+	};
+
+	/**processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass))
+	 */
+	class LowpassAutoBProcessor:public FourierAnlProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new LowpassAutoBProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "This processor sharpens a map based on the concept that the power spectrum should be roughly flat over the ~15 A-Nyquist resolution range, then combines this inverse B-factor with the specified low-pass Gaussian filter parameters to produce a single aggregate Gaussian filter.";
+		}
+		
+		static const string NAME;
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d = FourierAnlProcessor::get_param_types();
+			d.put("bfactor", EMObject::FLOAT, "B-factor in terms of e^-(B s^2/4)");
+			d.put("verbose", EMObject::INT, "Print information about the determined B-factor");
+			return d;
+		}
+
+	  protected:
+		virtual void preprocess(EMData * image) {
+			if(params.has_key("apix")) {
+				image->set_attr("apix_x", (float)params["apix"]);
+				image->set_attr("apix_y", (float)params["apix"]);
+				image->set_attr("apix_z", (float)params["apix"]);
+			}
+			float apix=(float)image->get_attr("apix_x");
+
+			const Dict dict = image->get_attr_dict();
+			if (params.has_key("cutoff_abs")) {
+				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0);
+			}
+			else if( params.has_key("cutoff_freq") ) {
+				float val =  (float)params["cutoff_freq"] * apix;
+				params["cutoff_abs"] = val;
+				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0);
+			}
+			else if( params.has_key("cutoff_pixels") ) {
+				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
+				params["cutoff_abs"] = val;
+				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0);
+			}
+		}
+		
+		void create_radial_func(vector < float >&radial_mask,EMData *image) const;
 	};
 
 	/** This processor attempts to remove the low resolution peak present in all cryoEM data
@@ -4930,7 +4988,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation.");
+			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation. If negative, will use the -n highest valued pixels in the map instead.");
 			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");

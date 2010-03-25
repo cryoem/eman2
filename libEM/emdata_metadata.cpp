@@ -547,6 +547,43 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 	return result;
 }
 
+vector<Pixel> EMData::calc_n_highest_locations(int n)
+{
+	ENTERFUNC;
+
+	vector<Pixel> result;
+
+	int di = 1;
+	if (is_complex() && !is_ri()) {
+		di = 2;
+	}
+
+	// initialize with n elements
+	float * data = get_data();
+	for ( int i=0; i<n; i++) result.push_back(Pixel(0,0,0,data[0]));
+
+	int nxy = nx * ny;
+
+	for (int j = 0; j < nz; ++j) {
+		size_t cur_z = j * nxy;
+
+		for (int k = 0; k < ny; ++k) {
+			size_t cur_y = k * nx + cur_z;
+
+			for (int l = 0; l < nx; l += di) {
+				float v =data[l + cur_y];
+				if (v<result[n-1].value) continue;
+				for (vector<Pixel>::iterator i=result.begin(); i<result.end(); i++) {
+					if (v>(*i).value) { result.insert(i,Pixel(l, k, j, v)); result.pop_back(); break; }
+				}
+			}
+		}
+	}
+
+	EXITFUNC;
+	return result;
+}
+
 
 float EMData::get_edge_mean() const
 {

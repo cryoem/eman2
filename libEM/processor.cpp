@@ -223,6 +223,7 @@ const string NewHighpassTopHatProcessor::NAME = "filter.highpass.tophat";
 const string NewBandpassTopHatProcessor::NAME = "filter.bandpass.tophat";
 const string NewHomomorphicTopHatProcessor::NAME = "filter.homomorphic.tophat";
 const string NewLowpassGaussProcessor::NAME = "filter.lowpass.gauss";
+const string LowpassAutoBProcessor::NAME="filter.lowpass.autob";
 const string NewHighpassGaussProcessor::NAME = "filter.highpass.gauss";
 const string NewBandpassGaussProcessor::NAME = "filter.bandpass.gauss";
 const string NewHomomorphicGaussProcessor::NAME = "filter.homomorphic.gauss";
@@ -264,6 +265,7 @@ template <> Factory < Processor >::Factory()
 	force_add<HighpassButterworthProcessor>();
 	force_add<AmpweightFourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
+	force_add<LowpassAutoBProcessor>();
 
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
@@ -615,6 +617,41 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const{
+	float apix=(float)image->get_attr("apix_x");
+	int verbose=(int)params["verbose"];
+	if (apix<=0 || apix>7.0) throw ImageFormatException("0 < apix_x < 7.0");
+	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled 
+	int start=(int)floor(1.0/(15.0*ds));
+
+	int N=(radial_mask.size()-start-2);
+	float *x=(float *)malloc(N*sizeof(float));
+	float *y=(float *)malloc(N*sizeof(float));
+	for (int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
+		x[i-start]=sqrt(ds*i);
+		if (radial_mask[i]>0) y[i-start]=log(radial_mask[i]); // ok
+		else if (i>start) y[i-start]=y[i-start-1];		// not good
+		else y[i-start]=0.0;							// bad
+		if (verbose>1) printf("%f\t%f\n",x[i-start],y[i-start]);
+	}
+	
+	float slope=0,intercept=0;
+	Util::calc_least_square_fit(N, x,y,&slope,&intercept,1);
+ 
+	if (verbose) printf("slope=%f  intercept=%f\n",slope,intercept);
+	
+	float B=(float)params["bfactor"]+slope*4.0;
+
+	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*4.0,B);
+		
+	for (int i=0; i<radial_mask.size(); i++) radial_mask[i]=exp(-B*pow(i*ds,2.0)/4.0);
+
+	free(x);
+	free(y);
+ }
+	
+
 
 void LowpassFourierProcessor::preprocess(EMData * image)
 {
@@ -1004,7 +1041,7 @@ void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mas
 {
 	Assert(radial_mask.size() > 0);
 	float x = 0.0f , step = 0.5f/radial_mask.size();
-	printf("%d %f %f\n",radial_mask.size(),lowpass,step);
+	printf("%d %f %f\n",(int)radial_mask.size(),lowpass,step);
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		if (x <= lowpass) {
 			radial_mask[i] = 1.0f;
@@ -6397,16 +6434,26 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	float *dat = image->get_data();
 	float *dat2 = amask->get_data();
-
-	// start with an initial sphere
 	int i,j,k;
 	size_t l = 0;
-	for (k = -nz / 2; k < nz / 2; ++k) {
-		for (j = -ny / 2; j < ny / 2; ++j) {
-			for (i = -nx / 2; i < nx / 2; ++i,++l) {
-				if (abs(k) > radius || abs(j) > radius || abs(i) > radius) continue;
-				if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;
-				dat2[l] = 1.0f;
+
+	// Seeds with the highest valued peaks
+	if (radius <0) {
+		vector<Pixel> maxs=image->calc_n_highest_locations(-radius);
+		
+		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++)
+			amask->set_value_at((*i).x,(*i).y,(*i).z,1.0);
+	}
+	// Seeds with a sphere
+	else {
+		// start with an initial sphere
+		for (k = -nz / 2; k < nz / 2; ++k) {
+			for (j = -ny / 2; j < ny / 2; ++j) {
+				for (i = -nx / 2; i < nx / 2; ++i,++l) {
+					if (abs(k) > radius || abs(j) > radius || abs(i) > radius) continue;
+					if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;
+					dat2[l] = 1.0f;
+				}
 			}
 		}
 	}
