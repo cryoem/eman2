@@ -621,34 +621,51 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const{
 	float apix=(float)image->get_attr("apix_x");
 	int verbose=(int)params["verbose"];
-	int adaptnoise=params.set_default("adaptnoise",0);
+//	int adaptnoise=params.set_default("adaptnoise",0);
+	float noisecutoff=(float)params.set_default("noisecutoff",0.0);
 	if (apix<=0 || apix>7.0) throw ImageFormatException("0 < apix_x < 7.0");
 	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled 
 	int start=(int)floor(1.0/(15.0*ds));
+	int end=radial_mask.size()-2;
+	if (noisecutoff>0) end=(int)floor(noisecutoff/ds);
+	if (end>radial_mask.size()-2) {
+		printf("WARNING: specified noisecutoff too close to Nyquist, reset !");
+		end=radial_mask.size()-2;
+	}
+	if (end<start+2) {
+		printf("WARNING: noise cutoff too close to 15 A ! Results will not be good...");
+		start=end-5;
+	}
 
 	int N=(radial_mask.size()-start-2);
 	float *x=(float *)malloc(N*sizeof(float));
 	float *y=(float *)malloc(N*sizeof(float));
 	float *dy=(float *)malloc(N*sizeof(float));
 	for (int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
-		x[i-start]=sqrt(ds*i);
+		x[i-start]=pow(ds*i,2.0);
 		if (radial_mask[i]>0) y[i-start]=log(radial_mask[i]); // ok
 		else if (i>start) y[i-start]=y[i-start-1];		// not good
 		else y[i-start]=0.0;							// bad
-		if (i<radial_mask.size()-3) dy[i-start]=y[i-start]-y[i-start-1];	// creates a 'derivative' of sorts
-		if (verbose>1) printf("%f\t%f\n",x[i-start],y[i-start]);
+		if (i<radial_mask.size()-3) dy[i-start]=y[i-start]-y[i-start-1];	// creates a 'derivative' of sorts, for use in adaptnoise
+		if (verbose>2) printf("%f\t%f\n",x[i-start],y[i-start]);
 	}
 	
 	float slope=0,intercept=0;
-	Util::calc_least_square_fit(N, x,y,&slope,&intercept,1);
+	Util::calc_least_square_fit(end-start, x,y,&slope,&intercept,1);
  
 	if (verbose) printf("slope=%f  intercept=%f\n",slope,intercept);
 	
-	float B=(float)params["bfactor"]+slope*4.0;
+	float B=(float)params["bfactor"]+slope*4.0/2.0;		// *4 is for Henderson definition, 2.0 is for intensity vs amplitude
+	float B2=(float)params["bfactor"];
 
-	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*4.0,B);
-		
-	for (int i=0; i<radial_mask.size(); i++) radial_mask[i]=exp(-B*pow(i*ds,2.0f)/4.0f);
+	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*2.0,B);
+	
+	float cutval=exp(-B*pow(end*ds,2.0f)/4.0f)/exp(-B2*pow(end*ds,2.0f)/4.0f);
+	for (int i=0; i<radial_mask.size(); i++) {
+		if (i<=end) radial_mask[i]=exp(-B*pow(i*ds,2.0f)/4.0f);
+		else radial_mask[i]=cutval*exp(-B2*pow(i*ds,2.0f)/4.0f);
+	}
+	if (verbose>1) Util::save_data(0,ds,radial_mask,"filter.txt");
 
 	free(x);
 	free(y);

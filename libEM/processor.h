@@ -963,7 +963,8 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d = FourierAnlProcessor::get_param_types();
 			d.put("bfactor", EMObject::FLOAT, "B-factor in terms of e^-(B s^2/4)");
-			d.put("adaptnoise", EMObject::INT, "Dual linear fit separating lower resolution signal from higher resolution noise. Noise region not upweighted.");
+			d.put("noisecutoff", EMObject::FLOAT, "Spatial frequency past which inverse-B will not be applied");
+//			d.put("adaptnoise", EMObject::INT, "Dual linear fit separating lower resolution signal from higher resolution noise. Noise region not upweighted.");
 			d.put("verbose", EMObject::INT, "Print information about the determined B-factor");
 			return d;
 		}

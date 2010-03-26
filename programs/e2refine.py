@@ -505,9 +505,9 @@ def check(options,verbose=0):
 		
 	if options.automask3d:
 		vals = options.automask3d.split(",")
-		mapping = ["threshold","radius","nshells","nshellsgauss"]
-		if len(vals) != 4:
-			print "If specified, the automask3d options must provide 4 parameters, for example --automask3d=1.7,30,5,5"
+		mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
+		if len(vals) != 5:
+			print "If specified, the automask3d options must provide 5 parameters (threshold,radius,nshells,nshellsgauss,nmaxseed), for example --automask3d=1.7,0,5,5,3"
 			error = True
 		else:
 			# Here I turn options.automask3d into what we would have expected if the user was supplying the whole processor argument,

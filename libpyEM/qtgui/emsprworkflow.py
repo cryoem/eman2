@@ -5073,12 +5073,13 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 		
 		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=0.7),choices=None)
 		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=def_rad),choices=None)
+		pamnmax =  ParamDef(name="amnmax",vartype="int",desc_short="NMax",desc_long="Number of highest value voxels to use as a seed",property=None,defaultunits=db.get("amradius",dfl=def_rad),choices=None)
 		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=def_mask_dltn),choices=None)
 		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=def_mask_dltn),choices=None)
 		
 		pautomask.dependents = ["amthreshold","amradius","amnshells","amnshellsgauss"] # these are things that become disabled when the pautomask checkbox is checked etc
 		
-		params.append([pamthreshold,pamradius])
+		params.append([pamthreshold,pamnmax,pamradius])
 		params.append([pamnshells,pamngaussshells])
 
 		#db_close_dict(self.form_db_name)
@@ -5283,16 +5284,16 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 				
 		if params["automask3d"]:
 			# the user wants to do automasking
-			names = ["amthreshold","amradius","amnshells","amnshellsgauss"]
+			names = ["amthreshold","amradius","amnshells","amnshellsgauss","amnmax"]
 			arg = ""
 			for i,name in enumerate(names):
 				if not params.has_key(name):
 					error_message.append("Missing automask parameter %s" %name[2:])
 					continue
-				elif i == 1:
-					if params[name] <=0:
-						error_message.append("The automask radius parameter must be greater than 0")
-						continue
+				#elif i == 1:
+					#if params[name] <=0:
+						#error_message.append("The automask radius parameter must be greater than 0")
+						#continue
 				elif i in [2,3]:
 					if params[name] < 0:
 						error_message.append("The automask dilation parameters must be atleast 0")
