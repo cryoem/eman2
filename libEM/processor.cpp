@@ -642,7 +642,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	float *y=(float *)malloc(N*sizeof(float));
 	float *dy=(float *)malloc(N*sizeof(float));
 	for (int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
-		x[i-start]=pow(ds*i,2.0);
+		x[i-start]=ds*ds*i*i;
 		if (radial_mask[i]>0) y[i-start]=log(radial_mask[i]); // ok
 		else if (i>start) y[i-start]=y[i-start-1];		// not good
 		else y[i-start]=0.0;							// bad
