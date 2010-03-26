@@ -963,6 +963,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d = FourierAnlProcessor::get_param_types();
 			d.put("bfactor", EMObject::FLOAT, "B-factor in terms of e^-(B s^2/4)");
+			d.put("adaptnoise", EMObject::INT, "Dual linear fit separating lower resolution signal from higher resolution noise. Noise region not upweighted.");
 			d.put("verbose", EMObject::INT, "Print information about the determined B-factor");
 			return d;
 		}
@@ -4988,7 +4989,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation. If negative, will use the -n highest valued pixels in the map instead.");
+			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation. ");
+			d.put("nmaxseed",EMObject::INT,"Use the n highest valued pixels in the map as a seed. Alternative to radius. Useful for viruses.");
 			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");

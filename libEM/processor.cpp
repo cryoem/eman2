@@ -621,6 +621,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const{
 	float apix=(float)image->get_attr("apix_x");
 	int verbose=(int)params["verbose"];
+	int adaptnoise=params.set_default("adaptnoise",0);
 	if (apix<=0 || apix>7.0) throw ImageFormatException("0 < apix_x < 7.0");
 	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled 
 	int start=(int)floor(1.0/(15.0*ds));
@@ -6419,7 +6420,14 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	}
 	*/
 
-	int radius = params["radius"];
+	int radius=0;
+	if (params.has_key("radius")) {
+		radius = params["radius"];
+	}
+	int nmaxseed=0;
+	if (params.has_key("nmaxseed")) {
+		nmaxseed = params["nmaxseed"];
+	}
 	float threshold = params["threshold"];
 	int nshells = params["nshells"];
 	int nshellsgauss = params["nshellsgauss"];
@@ -6437,15 +6445,16 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	int i,j,k;
 	size_t l = 0;
 
-	// Seeds with the highest valued peaks
-	if (radius <0) {
-		vector<Pixel> maxs=image->calc_n_highest_locations(-radius);
+	// Seeds with the highest valued pixels
+	if (nmaxseed>0) {
+		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
 		
 		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++)
 			amask->set_value_at((*i).x,(*i).y,(*i).z,1.0);
 	}
+	
 	// Seeds with a sphere
-	else {
+	if (radius>0) {
 		// start with an initial sphere
 		for (k = -nz / 2; k < nz / 2; ++k) {
 			for (j = -ny / 2; j < ny / 2; ++j) {
