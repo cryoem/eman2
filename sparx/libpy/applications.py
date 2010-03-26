@@ -38,12 +38,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
 
-	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D, set_params2D
+	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
 	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from utilities    import file_type
+	from utilities    import model_blank, model_circle, file_type
 	import os
 		
 	print_begin_msg("ali2d_c")
@@ -107,8 +107,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg("Stop iteration with         : maxit\n")
 	print_msg("User function               : %s\n"%(user_func_name))
 	print_msg("Using CUDA                  : %s\n"%(CUDA))
-	GPU = 1
-	print_msg("Number of GPUs              : %d\n"%(GPU))
+	if CUDA:
+		GPU = 1
+		print_msg("Number of GPUs              : %d\n"%(GPU))
 
 	if maskfile:
 		import	types
@@ -406,7 +407,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 		print_msg("Using CUDA                  : %s\n"%(CUDA))
-		print_msg("Number of GPUs              : %d\n"%(GPU))
+		if CUDA:
+			print_msg("Number of GPUs              : %d\n"%(GPU))
 
 
 	if maskfile:
