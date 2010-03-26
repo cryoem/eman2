@@ -629,11 +629,13 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	int N=(radial_mask.size()-start-2);
 	float *x=(float *)malloc(N*sizeof(float));
 	float *y=(float *)malloc(N*sizeof(float));
+	float *dy=(float *)malloc(N*sizeof(float));
 	for (int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
 		x[i-start]=sqrt(ds*i);
 		if (radial_mask[i]>0) y[i-start]=log(radial_mask[i]); // ok
 		else if (i>start) y[i-start]=y[i-start-1];		// not good
 		else y[i-start]=0.0;							// bad
+		if (i<radial_mask.size()-3) dy[i-start]=y[i-start]-y[i-start-1];	// creates a 'derivative' of sorts
 		if (verbose>1) printf("%f\t%f\n",x[i-start],y[i-start]);
 	}
 	
@@ -650,6 +652,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 
 	free(x);
 	free(y);
+	free(dy);
  }
 	
 
@@ -6431,6 +6434,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	float threshold = params["threshold"];
 	int nshells = params["nshells"];
 	int nshellsgauss = params["nshellsgauss"];
+	int verbose=params.set_default("verbose",0);
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -6449,8 +6453,10 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	if (nmaxseed>0) {
 		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
 		
-		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++)
+		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++) {
 			amask->set_value_at((*i).x,(*i).y,(*i).z,1.0);
+			if (verbose) printf("Seed at %d,%d,%d (%1.3f)\n",(*i).x,(*i).y,(*i).z,(*i).value);
+		}
 	}
 	
 	// Seeds with a sphere
@@ -6467,10 +6473,14 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		}
 	}
 
+	
 	// iteratively 'flood fills' the map... recursion would be better
 	int done=0;
+	int iter=0;
 	while (!done) {
+		iter++;
 		done=1;
+		if (verbose && iter%10==0) printf("%d iterations\n",iter);
 		for (k=1; k<nz-1; ++k) {
 			for (j=1; j<ny-1; ++j) {
 				for (i=1; i<nx-1; ++i) {
@@ -6487,6 +6497,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	amask->update();
 
+	if (verbose) printf("extending mask\n");
 	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
 
 	bool return_mask = params.set_default("return_mask",false);

@@ -4995,6 +4995,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
+			d.put("verbose", EMObject::INT, "How verbose to be (stdout)");
 			return d;
 		}
 		
