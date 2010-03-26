@@ -38,23 +38,20 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
 
-	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
+	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D, set_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
-	from filter       import filt_ctf, filt_table, filt_tophatb
-	from fundamentals import fshift
+	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from fundamentals import fft, rot_avg_table
-	from utilities    import write_text_file, file_type
+	from utilities    import file_type
 	import os
 		
 	print_begin_msg("ali2d_c")
+	
+	ftp = file_type(stack)
 
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d_c", 1)
 	os.mkdir(outdir)
-
-	import user_functions
-	user_func = user_functions.factory[user_func_name]
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -69,11 +66,13 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	else:
 		auto_stop = False
 
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
 	print_msg("Input stack                 : %s\n"%(stack))
 	print_msg("Output directory            : %s\n"%(outdir))
 	print_msg("Inner radius                : %i\n"%(first_ring))
 
-	if(file_type(stack) == "bdb"):
+	if ftp == "bdb":
 		from EMAN2db import db_open_dict
 		dummy = db_open_dict(stack, True)
 	active = EMUtil.get_all_attributes(stack, 'active')
@@ -97,17 +96,25 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Use Fourier variance        : %s\n"%(Fourvar))
+	print_msg("Use new CTF correction      : %s\n"%(adw))
+	if adw:
+		print_msg("Number of groups            : %d\n"%(Ng))
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
-	if auto_stop:  print_msg("Stop iteration with         : criterion\n")
-	else:           print_msg("Stop iteration with         : maxit\n")
+	if auto_stop:
+		print_msg("Stop iteration with         : criterion\n")
+	else:
+		print_msg("Stop iteration with         : maxit\n")
 	print_msg("User function               : %s\n"%(user_func_name))
+	print_msg("Using CUDA                  : %s\n"%(CUDA))
+	GPU = 1
+	print_msg("Number of GPUs              : %d\n"%(GPU))
 
 	if maskfile:
 		import	types
 		if type(maskfile) is types.StringType:
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask=get_image(maskfile)
+			mask = get_image(maskfile)
 		else:
 			print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -122,7 +129,10 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
-		from morphology   import ctf_img
+		from filter import filt_ctf
+		from morphology import ctf_img
+		if adw:
+			ctf_abs_sum = EMData(nx, nx, 1, False)
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -133,6 +143,11 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			from statistics   import varf
 
 	del ima
+	
+	if CUDA:
+		all_ali_params = []
+		all_ctf_params = []
+	
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -141,39 +156,77 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-	if CTF:  ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+			ctfimg = ctf_img(nx, ctf_params)
+			if CUDA:
+				all_ctf_params.extend([ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont])
+			Util.add_img2(ctf_2_sum, ctfimg)
+			if adw:
+				Util.add_img_abs(ctf_abs_sum, ctfimg)
+		if CUDA:
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			all_ali_params.extend([alpha, sx, sy, mirror])
+	if CTF: 
+		if adw:
+			adw_img = Util.mult_scalar(ctf_2_sum, snr)
+			adw_img += 1.0
+			Util.div_filter(adw_img, ctf_abs_sum)
+			Util.mul_scalar(adw_img, float(Ng-1)/Ng/snr)
+			adw_img += 1.0/Ng
+			Util.mul_scalar(adw_img, snr)
+			Util.mul_scalar(ctf_2_sum, snr)
+			ctf_2_sum += 1.0
+		else: 
+			ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+			
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 
-	# initialize data for the reference preparation function
-	#  mask can be modified in user_function
 	ref_data = [mask, center, None, None]
-
-	cs = [0.0]*2
-	# iterate
-	total_iter = 0
-	a0 = -1e22
 	sx_sum = 0.0
 	sy_sum = 0.0
+	a0 = -1.0e22
+
+	cs = [0.0]*2
+	total_iter = 0
+
 	for N_step in xrange(len(xrng)):
+
+		if CUDA:
+			R = CUDA_Aligner()
+			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
+			for im in xrange(len(data)):	R.insert_image(data[im], im)
+			if CTF:  R.filter_stack(all_ctf_params, 0)
+
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			print_msg("Iteration #%4d\n"%(total_iter))
-			ave1, ave2 = sum_oe(data, "a", CTF, ctf_2_sum)
-			if CTF:  tavg = fft(Util.divn_img(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+			if CUDA:
+				ave1 = model_blank(nx, nx)
+				ave2 = model_blank(nx, nx)
+				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, 0)
+				# Comment by Zhengfan Yang on 02/01/10
+				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
+				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
+				# However, this step is not mandatory.
+				if CTF:
+					ave1 /= (nx*2)**2
+					ave2 /= (nx*2)**2
+			else:
+				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
+			if CTF:
+				if adw: tavg = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+				else:	tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 			else:	 tavg = (ave1+ave2)/nima
-			# write current average
+
 			tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 			frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			if  Fourvar:
-				if  CTF:  vav, rvar = varf2d(data, tavg, mask, "a")
-				else:      vav, rvar = varf(data, tavg, mask, "a")
-				tavg    = fft(Util.divn_img(fft(tavg), vav))
-
+				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
+				else: vav, rvar = varf(data, tavg, mask, "a")
+				tavg = fft(Util.divn_img(fft(tavg), vav))
 				vav_r	= Util.pack_complex_to_real(vav)
 				vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
@@ -197,37 +250,56 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 			# a0 should increase; stop algorithm when it decreases.  However, it will depend on filtration, so it is not wquite right.
 			a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-			msg = "Criterion = %15.8e\n"%(a1)
+			msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
 			print_msg(msg)
 			if total_iter == len(xrng)*max_iter: break
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
 
-			old_ali_params = []
-		        for im in xrange(nima):
-		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
-		        	old_ali_params.append([alphan, sxn, syn, mirror, scale])
+			if CUDA:
+				old_ali_params = all_ali_params[:]
+			else:
+				old_ali_params = []
+			        for im in xrange(nima):
+			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
+		        		old_ali_params.extend([alphan, sxn, syn, mirror])
 
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+			if CUDA:
+				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 0, 1)
+				sx_sum = all_ali_params[-2]
+				sy_sum = all_ali_params[-1]
+				for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
+			else:
+				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 
 		        pixel_error = 0.0
-		        mirror_changed = 0
+		        mirror_consistent = 0
 			pixel_error_list = []
 		        for im in xrange(nima):
-		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
-		        	if old_ali_params[im][3] == mirror:
-		        		this_error = max_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring*2)
+		        	if CUDA:
+					alpha = all_ali_params[im*4]
+					sx = all_ali_params[im*4+1]
+					sy = all_ali_params[im*4+2]
+					mirror = all_ali_params[im*4+3]
+				else:
+			        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
+		        	if old_ali_params[im*4+3] == mirror:
+		        		this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 		        		pixel_error += this_error
 					pixel_error_list.append(this_error)
-		        	else:
-		        		mirror_changed += 1
-			print_msg("Mirror changed = %6.4f%%\n"%(float(mirror_changed)/nima*100))
-			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(pixel_error/float(nima-mirror_changed)))
+					mirror_consistent += 1
+			print_msg("Mirror consistent rate = %6.4f%%\n"%(float(mirror_consistent)/nima*100))
+			print_msg("Among the mirror consistent images, average pixel error is %0.4f, their distribution is:\n"%(float(pixel_error)/float(mirror_consistent)))
  			region, hist = hist_list(pixel_error_list, 20)	
 			for p in xrange(20):
 				print_msg("      %8.4f: %5d\n"%(region[p], hist[p]))
 			print_msg("\n\n\n")
+		if CUDA: R.finish()
+
+	if CUDA:
+		for im in xrange(nima):
+			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
 			
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
@@ -242,10 +314,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter, max_pixel_error
-	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
-	from utilities    import write_text_file, get_params2D, set_params2D
+	from utilities    import get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -285,7 +356,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Inner radius                : %i\n"%(first_ring))
 	
 	if myid == main_node:
-       		if(file_type(stack) == "bdb"):
+       		if ftp == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -387,21 +458,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ctf_params = data[im].get_attr("ctf")
 			ctfimg = ctf_img(nx, ctf_params)
 			if CUDA:
-				all_ctf_params.append(ctf_params.defocus)
-				all_ctf_params.append(ctf_params.cs)
-				all_ctf_params.append(ctf_params.voltage)
-				all_ctf_params.append(ctf_params.apix)
-				all_ctf_params.append(ctf_params.bfactor)
-				all_ctf_params.append(ctf_params.ampcont)
+				all_ctf_params.extend([ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont])
 			Util.add_img2(ctf_2_sum, ctfimg)
 			if adw:
 				Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			all_ali_params.append(alpha)
-			all_ali_params.append(sx)
-			all_ali_params.append(sy)
-			all_ali_params.append(mirror)
+			all_ali_params.extend([alpha, sx, sy, mirror])
 
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
@@ -540,10 +603,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					old_ali_params = []
 				        for im in xrange(len(data)):  
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
-						old_ali_params.append(alpha)
-						old_ali_params.append(sx)
-						old_ali_params.append(sy)
-						old_ali_params.append(mirror)
+						old_ali_params.extend([alpha, sx, sy, mirror])
 
 				if CUDA:
 					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1)
