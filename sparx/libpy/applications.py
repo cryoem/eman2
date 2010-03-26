@@ -9382,8 +9382,7 @@ def plot_projs_distrib(stack, outplot):
 		except RuntimeError:
 			print 'Projection #%d from %s has no angles set!' % (n, stack)
 			sys.exit()
-		phi, the = p[:2]
-		agls.append([phi, the])
+		agls.append(p[:2])
 
 	im = plot_angles(agls)
 	im.write_image(outplot, 0)

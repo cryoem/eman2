@@ -688,16 +688,10 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
 	   
-	nsam = B.get_xsize()
-	nrow = B.get_ysize()
-	nsli = B.get_zsize()
-
-	nx3d = nrow
-	ny3d = nrow
-	nz3d = nrow
+	nx = B.get_xsize()
 
 	CUBE = EMData()
-	CUBE.set_size(nx3d, ny3d, nz3d)
+	CUBE.set_size(nx, nx, nx)
 	CUBE.to_zero()
 
 	RA = Transform()
@@ -725,15 +719,17 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		expdict =  Util.ExpMinus4YSqr(2.0, 1000)
 		exptable = expdict["table"]
 
-	count = 1
+	count = 0
 	for i in xrange(nimages):
 		if type(stack_name) == types.StringType: B.read_image(stack_name,list_proj[i])
 		else : B = stack_name[list_proj[i]].copy()
-		for j in xrange(nsym):
-			DM = dm[((j*nsym+list_proj[i])*9) :(j*nsym+list_proj[i]+1)*9]
+		#for j in xrange(nsym):  # symmetries were bit out on the list
+		for j in xrange(1):
+			DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
 			if   (method=="general"):    Util.WTF(B, ss, const, count, exptable)
 			elif (method=="exact"  ):    Util.WTM(B, ss, const, count)
-			Util.BPCQ(B,CUBE,DM)
+
+			Util.BPCQ(B, CUBE, DM)
 			count += 1
 
 	return CUBE
