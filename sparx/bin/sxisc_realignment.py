@@ -58,6 +58,7 @@ def main():
 	parser.add_option('--adw', 	action='store_true',   default=False,		help='adw')
 	parser.add_option('--Ng',	type='int',		default=0,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
+	parser.add_option('--min_stab_class',	type='int',	default=2,		help='number of alignments which are considered stable')
 	(options, args) = parser.parse_args()
 	if len(args) != 4:
     		print "usage: " + usage
@@ -71,13 +72,11 @@ def main():
 
 		global_def.BATCH = True
 		if options.MPI:
-			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
-					    options.maxit, options.function, options.th_err, options.snr, options.CTF, 
-					    options.Fourvar, options.ali,options.CUDA,options.GPU,options.adw,options.Ng, options.num_ali)
+			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
+					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class)
 		else:
-			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, 
-				options.maxit, options.function, options.th_err, options.snr, options.CTF,
-				options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw,options.Ng, options.num_ali)
+			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
+				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
