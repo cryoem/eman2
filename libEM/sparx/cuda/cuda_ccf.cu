@@ -47,10 +47,10 @@
 #define PI (3.14159265358979f)
 
 __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, int KX, int KY);
-__global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING);
+__global__ void resample_to_polar(float* image, float dx, float dy, int NX, int NY, int RING_LENGTH, int NRING, int offset);
 __global__ void mul_ctf(float *image, int nx, int ny, float defocus, float cs, float voltage, float apix, float bfactor, float ampcont);
 __global__ void add_img(float *image_padded, float *ave1, float *ave2, int nx, int ny, int nima);
-__global__ void rotate_shift(float *image, int nx, int ny);
+__global__ void rotate_shift(float *image, int nx, int ny, int offset);
 
 texture<float, 2, cudaReadModeElementType> tex;
 texture<float, 1, cudaReadModeElementType> texim_subject;
@@ -70,6 +70,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	int i, j, k, index;
 	int ccf_base_addr;
 	float x, y, ang;
+	size_t* offset = (size_t *)malloc(sizeof(size_t));
 
 	int BLOCK_SIZE = RING_LENGTH/2+1;
 	// For a texture reference bound to a two-dimensional CUDA array,
@@ -195,14 +196,14 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	/* Copy the matrix for the coordinates of shifts to the video card */
 	cudaMemcpy(d_shifts_ref, shifts_ref, 2*sizeof(float), cudaMemcpyHostToDevice);
 	cudaGetTextureReference(&texPtr, "texim_shifts");
-	cudaBindTexture(0, texPtr, d_shifts_ref, &channelDesc, 2*sizeof(float));
+	cudaBindTexture(offset, texPtr, d_shifts_ref, &channelDesc, 2*sizeof(float));
 
 	/* Copy the matrix for the reference image to the video card */
 	cudaMemcpyToArray(ref_image_array, 0, 0, ref_image,  NX*NY*sizeof(float), cudaMemcpyHostToDevice);
 	cudaBindTextureToArray(tex, ref_image_array, channelDesc);
-
+	
 	/* Convert the reference image to polar coordinates */
-	resample_to_polar<<<NRING, RING_LENGTH>>>(d_ref_image_polar, 0.0, 0.0, NX, NY, RING_LENGTH, NRING);
+	resample_to_polar<<<NRING, RING_LENGTH>>>(d_ref_image_polar, 0.0, 0.0, NX, NY, RING_LENGTH, NRING, *offset);
 	cudaThreadSynchronize();
 	cudaUnbindTexture(tex);
 
@@ -234,19 +235,19 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 			cudaGetTextureReference(&texPtr, "texim_shifts");
 		    	for (k=0; k<NROW; k++) { 
 		    		cudaBindTextureToArray(tex, subject_image_array[k], channelDesc);
-				cudaBindTexture(0, texPtr, d_shifts_subject+2*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*2*sizeof(float));
+				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*2*sizeof(float));
 
 				/* Convert NIMAGE_ROW subject images to the polar coordinates */
-				resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING);
+				resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING, *offset);
 		    		cudaThreadSynchronize();
 		    		cudaUnbindTexture(tex);
 			}
 			if (NIMAGE_LEFT != 0) {
 		    		cudaBindTextureToArray(tex, subject_image_array_left, channelDesc);
-				cudaBindTexture(0, texPtr, d_shifts_subject+2*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*2*sizeof(float));
-			
+				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*2*sizeof(float));
+
 				/* Convert NIMAGE_LEFT subject images to the polar coordinates */
-				resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING);
+				resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING, *offset);
 		    		cudaThreadSynchronize();
 		    		cudaUnbindTexture(tex);
 			}
@@ -266,10 +267,12 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 			for (k=0; k<NTEXTURE; k++) {
 				cudaBindTexture(0, texPtr, d_subject_image_polar+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING, &channelDesc, NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING*sizeof(float));
 				complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+				cudaThreadSynchronize();
 			}
 			if (NIMAGE_LEFT_TEXTURE != 0) {
 				cudaBindTexture(0, texPtr, d_subject_image_polar+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING, &channelDesc, NIMAGE_LEFT_TEXTURE*(RING_LENGTH+2)*NRING*sizeof(float));
 				complex_mul<<<NIMAGE_LEFT_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+				cudaThreadSynchronize();
 			}
 			cudaUnbindTexture(texim_subject);
 			cudaUnbindTexture(texim_ref);
@@ -303,6 +306,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	cufftDestroy(plan_ccf);
 	cufftDestroy(plan_ccf_rest);
 
+	free(offset);
 	free(points);
 	free(shifts_ref);
 	free(shifts_subject);
@@ -338,6 +342,7 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 		int base_address = im*padded_size;
 		cufftExecR2C(plan_R2C, (cufftReal *)(d_image_padded+base_address), (cufftComplex *)(d_image_padded+base_address));
 		mul_ctf<<<NX+1, NY*2>>>(d_image_padded+base_address, NX*2, NY*2, params[im*6], params[im*6+1], params[im*6+2], params[im*6+3], params[im*6+4], params[im*6+5]);
+		cudaThreadSynchronize();
 		cufftExecC2R(plan_C2R, (cufftComplex *)(d_image_padded+base_address), (cufftReal *)(d_image_padded+base_address));
 	}
 	
@@ -359,7 +364,8 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_params, float *ali_params, float *ave1, float *ave2, int id) {
 
 	float *d_image_padded, *d_ave1, *d_ave2;
-	float *d_ali_params;	
+	float *d_ali_params;
+	size_t* offset = (size_t *)malloc(sizeof(size_t));
 	int padded_size = (NX*2+2)*(NY*2);
 
 	int NIMAGE_ROW = 32768/NX;
@@ -406,21 +412,22 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	cudaMemset(d_image_padded, 0, padded_size*NIMA*sizeof(float));
 
 	cudaGetTextureReference(&texPtr, "texim_ali_params");
+
 	for (int k=0; k<NROW; k++) { 
 		cudaBindTextureToArray(tex, image_array[k], channelDesc);
-		cudaBindTexture(0, texPtr, d_ali_params+4*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*4*sizeof(float));
+		cudaBindTexture(offset, texPtr, d_ali_params+4*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*4*sizeof(float));
 
 		/* Rotate and shift NIMAGE_ROW subject images */
-		rotate_shift<<<GridSize1, NX>>>(d_image_padded+k*NIMAGE_ROW*padded_size, NX, NY);
+		rotate_shift<<<GridSize1, NX>>>(d_image_padded+k*NIMAGE_ROW*padded_size, NX, NY, *offset);
 	        cudaThreadSynchronize();
 		cudaUnbindTexture(tex);
 	}
 	if (NIMAGE_LEFT != 0) {
 		cudaBindTextureToArray(tex, image_array_left, channelDesc);
-		cudaBindTexture(0, texPtr, d_ali_params+4*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*4*sizeof(float));
-		
+		cudaBindTexture(offset, texPtr, d_ali_params+4*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*4*sizeof(float));
+
 		/* Rotate and shift NIMAGE_LEFT subject images */
-		rotate_shift<<<GridSize2, NX>>>(d_image_padded+NROW*NIMAGE_ROW*padded_size, NX, NY);
+		rotate_shift<<<GridSize2, NX>>>(d_image_padded+NROW*NIMAGE_ROW*padded_size, NX, NY, *offset);
 	       	cudaThreadSynchronize();
 		cudaUnbindTexture(tex);
 	}
@@ -431,11 +438,13 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 			int base_address = im*padded_size;
 			cufftExecR2C(plan_R2C, (cufftReal *)(d_image_padded+base_address), (cufftComplex *)(d_image_padded+base_address));
 			mul_ctf<<<NX+1, NY*2>>>(d_image_padded+base_address, NX*2, NY*2, ctf_params[im*6], ctf_params[im*6+1], ctf_params[im*6+2], ctf_params[im*6+3], ctf_params[im*6+4], ctf_params[im*6+5]);
+			cudaThreadSynchronize();
 			cufftExecC2R(plan_C2R, (cufftComplex *)(d_image_padded+base_address), (cufftReal *)(d_image_padded+base_address));
 		}
 	}
 
 	add_img<<<NX, NY>>>(d_image_padded, d_ave1, d_ave2, NX, NY, NIMA);
+	cudaThreadSynchronize();
 	cudaMemcpy(ave1, d_ave1, NX*NY*sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(ave2, d_ave2, NX*NY*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -450,6 +459,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 		cudaFreeArray(image_array[k]);
 	if (NIMAGE_LEFT != 0)
 		cudaFreeArray(image_array_left);
+	free(offset);
 
 	return;
 }
@@ -550,7 +560,7 @@ __global__ void complex_mul(float *ccf, int BLOCK_SIZE, int NRING, int NIMAGE, i
 	ccf[ccf_index+ccf_OFFSET+1] = ccf_m_imag;
 }
 
-__global__ void resample_to_polar(float* image, float sx, float sy, int NX, int NY, int RING_LENGTH, int NRING) {
+__global__ void resample_to_polar(float* image, float sx, float sy, int NX, int NY, int RING_LENGTH, int NRING, int offset) {
 	
 	// Block index
 	int bx = blockIdx.x;
@@ -566,13 +576,13 @@ __global__ void resample_to_polar(float* image, float sx, float sy, int NX, int 
 	int index = bx*RING_LENGTH+tx;
 	float points_x = tex1Dfetch(texim_points, index*2);
 	float points_y = tex1Dfetch(texim_points, index*2+1);
-	float shifts_x = tex1Dfetch(texim_shifts, by*2);
-	float shifts_y = tex1Dfetch(texim_shifts, by*2+1);
+	float shifts_x = tex1Dfetch(texim_shifts, by*2+offset/sizeof(float));
+	float shifts_y = tex1Dfetch(texim_shifts, by*2+1+offset/sizeof(float));
 
 	image[img_index] = tex2D(tex, cnx+points_x+shifts_x, cny+points_y+shifts_y);
 }
 
-__global__ void rotate_shift(float* image, int nx, int ny) {
+__global__ void rotate_shift(float* image, int nx, int ny, int offset) {
 	
 	// Block index
 	int bx = blockIdx.x;
@@ -581,11 +591,11 @@ __global__ void rotate_shift(float* image, int nx, int ny) {
 	// Thread index
 	int tx = threadIdx.x;
 	
-	float alpha = tex1Dfetch(texim_ali_params, bx*4);
-	float sx = tex1Dfetch(texim_ali_params, bx*4+1);
-	float sy = tex1Dfetch(texim_ali_params, bx*4+2);
-	float mirror = tex1Dfetch(texim_ali_params, bx*4+3);
-	
+	float alpha = tex1Dfetch(texim_ali_params, bx*4+offset/sizeof(float));
+	float sx = tex1Dfetch(texim_ali_params, bx*4+1+offset/sizeof(float));
+	float sy = tex1Dfetch(texim_ali_params, bx*4+2+offset/sizeof(float));
+	float mirror = tex1Dfetch(texim_ali_params, bx*4+3+offset/sizeof(float));
+
 	float x, y;
 	
 	int img_index = bx*(nx*2+2)*(ny*2)+(by+(ny>>1))*(nx*2+2)+tx+(nx>>1);
