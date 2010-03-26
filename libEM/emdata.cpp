@@ -3041,12 +3041,11 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	if (ny == 1) r = Region((mnx-nxc)/2,nxc);
 	else if (nz == 1) r = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
 	else r = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
-	mask->clip_inplace(r,0);
+	mask->clip_inplace(r,0.0);
 	//Region r((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
 	//mask->clip_inplace(r);
 	//undoclip = true;
 	//}
-
 
 	// Here we generate the local average of the squares
 	Region r2;
@@ -3054,14 +3053,15 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
 	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
 	EMData* squared = get_clip(r2,get_edge_mean());
+
 	EMData* tmp = squared->copy();
 	Dict pow;
 	pow["pow"] = 2.0f;
 	squared->process_inplace("math.pow",pow);
-	EMData* s = squared->convolute(mask);
+	EMData* s = mask->convolute(squared);//ming, mask squared exchange
 	squared->mult(normfac);
 
-	EMData* m = tmp->convolute(mask);
+	EMData* m = mask->convolute(tmp);//ming, tmp mask exchange
 	m->mult(normfac);
 	m->process_inplace("math.pow",pow);
 	delete tmp; tmp = 0;
@@ -3096,7 +3096,6 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	s->clip_inplace(r3);
 	EXITFUNC;
 	return s;
-
 }
 
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
@@ -3104,30 +3103,47 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 EMData *EMData::calc_flcf(EMData * with)
 {
 	ENTERFUNC;
+	EMData *this_copy=this;
+	this_copy=copy();
 
-	// Ones is a circlular/spherical mask, consisting of 1s.
-	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
+	int mnx = with->get_xsize(); int mny = with->get_ysize(); int mnz = with->get_zsize();
+	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
+
+	// Ones is a circular/spherical mask, consisting of 1s.
+	EMData* ones = new EMData(mnx,mny,mnz);
 	ones->process_inplace("testimage.circlesphere");
 
 	// Get a copy of with, we will eventually resize it
 	EMData* with_resized = with->copy();
-	// Circular/Spherical mask
+	with_resized->process_inplace("normalize");
 	with_resized->mult(*ones);
 
-	// Get with_resized to the right size for the correlation
-	Region r((with->get_xsize()-nx)/2, (with->get_ysize()-ny)/2, (with->get_zsize()-nz)/2,nx,ny,nz);
-	with_resized->clip_inplace(r);
+	EMData* s = calc_fast_sigma_image(ones);// Get the local sigma image
 
-	// The correlation
-	// Get the local sigma image
-	EMData* s = calc_fast_sigma_image(ones);
-	// The local normalized correlation
-	EMData* corr = calc_ccf(with_resized);
+	Region r1;
+	if (ny == 1) r1 = Region((mnx-nxc)/2,nxc);
+	else if (nz == 1) r1 = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
+	else r1 = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
+	with_resized->clip_inplace(r1,0.0);
+
+	Region r2;
+	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
+	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
+	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
+	this_copy->clip_inplace(r2,0.0);
+
+	EMData* corr = this_copy->calc_ccf(with_resized); // the ccf results should have same size as sigma
+
+	corr->process_inplace("xform.phaseorigin.tocenter");
+	Region r3;
+	if (ny == 1) r3 = Region((nxc-nx)/2,nx);
+	else if (nz == 1) r3 = Region((nxc-nx)/2, (nyc-ny)/2,nx,ny);
+	else r3 = Region((nxc-nx)/2, (nyc-ny)/2,(nzc-nz)/2,nx,ny,nz);
+	corr->clip_inplace(r3);
+
 	corr->div(*s);
 
-	delete with_resized; delete ones;
-	delete s;
-
+	delete with_resized; delete ones; delete this_copy; delete s;
 	EXITFUNC;
 	return corr;
 }
@@ -3156,7 +3172,7 @@ EMData *EMData::convolute(EMData * with)
 	else {
 		cf = f1->copy();
 	}
-
+	//printf("cf_x=%d, f1y=%d, thisx=%d, withx=%d\n",cf->get_xsize(),f1->get_ysize(),this->get_xsize(),with->get_xsize());
 	if (with && !EMUtil::is_same_size(f1, cf)) {
 		LOGERR("images not same size");
 		throw ImageFormatException("images not same size");
@@ -3167,16 +3183,16 @@ EMData *EMData::convolute(EMData * with)
 	size_t cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
 
 	float re,im;
+
 	for (size_t i = 0; i < cf_size; i += 2) {
 		re = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
 		im = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
 		rdata2[i]=re;
 		rdata2[i+1]=im;
 	}
-
 	cf->update();
-	EMData *f2 = cf->do_ift();
-
+	EMData *f2 = cf->do_ift();//ming change cf to cf_temp
+	//printf("cf_x=%d, f2x=%d, thisx=%d, withx=%d\n",cf->get_xsize(),f2->get_xsize(),this->get_xsize(),with->get_xsize());
 	if( cf )
 	{
 		delete cf;
