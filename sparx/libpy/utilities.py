@@ -2844,7 +2844,7 @@ def rotation_between_anglesets(agls1, agls2):
 
 	def ori2xyz(ori):
 		if(type(ori) == types.ListType):
-			phi, theta, psi = ori
+			phi, theta, psi = ori[:3]
 		else:
 			# it has to be Transformation object
 			d = ori.get_params("spider")
