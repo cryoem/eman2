@@ -1553,6 +1553,12 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
+	MAX_XRNG = nx/2
+	MAX_YRNG=ny/2
+	if xrng >= MAX_XRNG:
+		ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
+	if yrng >= MAX_YRNG:
+		ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
 	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
