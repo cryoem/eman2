@@ -139,7 +139,7 @@ bool ImagicIO::is_valid(const void *first_block)
 	int hour = data[7];
 	int nx = data[13];
 	int ny = data[12];
-
+	
 	bool data_big_endian = ByteOrder::is_data_big_endian(&headrec);
 
 	if (data_big_endian != ByteOrder::is_host_big_endian()) {
@@ -157,7 +157,7 @@ bool ImagicIO::is_valid(const void *first_block)
 	if (headrec == 1 &&
 		count >= 0 && count < max_dim &&
 		nx > 0 && nx < max_dim &&
-		ny > 0 && ny < max_dim && month >= 0 && month <= 12 && hour >= 0 && hour <= 24) {
+		ny > 0 && ny < max_dim && month >= 0 && hour >= 0 && hour <= 24) {
 		result = true;
 	}
 
