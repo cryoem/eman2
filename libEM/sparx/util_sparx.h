@@ -540,6 +540,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+	static Dict Crosrng_ms_delta(EMData* circ1, EMData* circ2, vector<int> numr, float delta_start, float delta);
 
 	/**
 	 * checks both straight & mirrored position
@@ -848,6 +849,15 @@ public:
 	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	/** formerly known as apmq
+	 * Determine shift and rotation between image and many reference
+	 * images (crefim, weights have to be applied) quadratic
+	 * interpolation
+	 * */
+	static vector<float> multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny, float delta_start, float delta);
 
 	/** formerly known as apnq DO NOT CONSIDER MIRROR
 	 * Determine shift and rotation between image and many reference
