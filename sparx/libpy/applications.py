@@ -5978,12 +5978,11 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
 
-
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
 	ts, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
-
+	
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
@@ -6138,6 +6137,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		pixel_size = data[0].get_attr('pixel_size')
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
+		
 
 	from time import time	
 
@@ -6151,7 +6151,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		recvcount.append( ie - ib )
 
 	pixer = [0.0]*nima
-	phihi = [0.0]*nima
+	#jeanmod
+	modphi = [0.0]*nima
+	#jeanmod
 	total_iter = 0
 	# do the projection matching
 	for N_step in xrange(lstp):
@@ -6173,29 +6175,39 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 			sx = 0.0
 			sy = 0.0
+			
+
 			for im in xrange( nima ):
 
-				#if an[N_step] == -1: 
-				#	peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
-				#else:           
-				peak, phihi[im], sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
-				#Jeanmod: wrap y-shifts back into box within rise of one helical unit,also correct phi
-				dyi=(syi/dp)-(syi//dp)
-				if dyi < -0.5:
-					dyi=dyi+1.0
-					synew=dyi*dp
-					phim=phihi[im]+abs(dphi)*(syi-synew)/abs(dp)
-					phinew=phim-360*(phim//360)
-				elif dyi > 0.5:
-					dyi=dyi-1.0
-					synew=dyi*dp
-					phim=phihi[im]+abs(dphi)*(syi-synew)/abs(dp)
-					phinew=phim-360*(phim//360)
+				peak, phihi, sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
+				dpp=(float(dp)/pixel_size)
+				dyi=(float(syi)/dpp)-int(syi/dpp)
+				jdelta=0.75/dpp # jdelta could be adjustable input parameter
+				if dyi < -0.5-jdelta:
+					eyi=dyi+1.0
+					sytemp=eyi*dpp
+					synew=0.0
+					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+					#print  im," A ",syi,dyi,eyi,synew, phihi[im],phinew[im]
+				elif dyi > 0.5+jdelta:
+					eyi=dyi-1.0
+					sytemp=eyi*dpp
+					synew=0.0
+					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+					#print  im," B ",syi,dyi,eyi,synew, phihi[im],phinew[im]
 				else:
-					phinew=phihi[im]
-					synew=syi
-				paramali = get_params_proj(data[im])
-				set_params_proj(data[im], [phinew, paramali[1], paramali[2], paramali[3], synew])
+					if abs(int(syi/dpp)) > 0:
+					   eyi=dyi
+					   sytemp=eyi*dpp
+					   synew=0.0
+					   phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+					else:
+					   synew=syi
+					   phinew=phihi
+					#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
+				paramalij = get_params_proj(data[im])
+				set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
 				sx += sxi
 				sy += synew
 				#end of Jeanmod
@@ -6216,6 +6228,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			sy = bcast_number_to_all(sy, source_node = main_node)
 			for im in xrange( nima ):
 				paramali = get_params_proj(data[im])
+				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
+				modphi[im]=paramali[0]
+				# end jeanmod
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
 
 			#output pixel errors
@@ -6242,7 +6257,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				#if(im/float(total_nima) > 0.95):  terminate = 1
 				del region, histo
 			#output distribution of phi
-			recvbuf = mpi_gatherv(phihi, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			#jeanmod
+			recvbuf = mpi_gatherv(modphi, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			#end jeanmod
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
@@ -6292,7 +6309,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
-
+			#jeanmod
+			dp = bcast_number_to_all(dp, source_node = main_node)
+			#end jeanmod
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
@@ -6307,6 +6326,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
+
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""
