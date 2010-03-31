@@ -6276,7 +6276,41 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			terminate = int(terminate[0])
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = mpad)
-			else:   vol = recons3d_4nn_MPI(myid, data, npad = npad)
+			else:
+				datap = [None]*(len(data)//2+len(data)%2)
+				for i in xrange(0,len(data),2):
+					datap[i//2] = data[i]
+				vol1 = recons3d_4nn_MPI(myid, datap, npad = npad)
+				datap = [None]*(len(data)//2)
+				for i in xrange(1,len(data),2):
+					datap[i//2] = data[i]
+				vol2 = recons3d_4nn_MPI(myid, datap, npad = npad)
+				del datap
+				if myid == main_node:
+					nx = vol1.get_xsize()
+					ny = vol1.get_ysize()
+					nz = vol1.get_zsize()
+					m = 0
+					for i in xrange(nz//2,nz//2+nz//4):
+						fst = fsc(vol1.get_clip(Region(0,0,i,nx,ny,1)),vol2.get_clip(Region(0,0,i,nx,ny,1)))
+						m += 1
+						if(i == nz//2):
+							frc = [[],[]]
+							for j in xrange(len(fst[0])):
+								frc[0].append(fst[0][j])
+								frc[1].append(fst[1][j])
+						else:
+							for j in xrange(len(fst[0])):
+								frc[0][j] += fst[0][j]
+								frc[1][j] += fst[1][j]
+					del fst
+					for j in xrange(len(frc[0])):
+						frc[1][j] /= m
+					from utilities import write_text_file
+					write_text_file(frc, os.path.join(outdir, "frc%04d.txt"%total_iter))
+				del vol1, vol2
+				vol = recons3d_4nn_MPI(myid, data, npad = npad)
+				
 
 			if myid == main_node:
 				print_msg("\n 3D reconstruction time = %d\n"%(time()-start_time))
