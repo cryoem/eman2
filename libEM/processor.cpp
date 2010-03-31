@@ -637,6 +637,8 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 		start=end-5;
 	}
 
+	FILE *out=NULL;
+	if (verbose>2)  out=fopen("fitplot.txt","w");
 	int N=(radial_mask.size()-start-2);
 	float *x=(float *)malloc(N*sizeof(float));
 	float *y=(float *)malloc(N*sizeof(float));
@@ -647,8 +649,9 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 		else if (i>start) y[i-start]=y[i-start-1];		// not good
 		else y[i-start]=0.0;							// bad
 		if (i<radial_mask.size()-3) dy[i-start]=y[i-start]-y[i-start-1];	// creates a 'derivative' of sorts, for use in adaptnoise
-		if (verbose>2) printf("%f\t%f\n",x[i-start],y[i-start]);
+		if (out) fprintf(out,"%f\t%f\n",x[i-start],y[i-start]);
 	}
+	if (out) fclose(out);
 	
 	float slope=0,intercept=0;
 	Util::calc_least_square_fit(end-start, x,y,&slope,&intercept,1);

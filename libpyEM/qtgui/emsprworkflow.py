@@ -59,7 +59,10 @@ def workflow_path(path="",dir=None):
 		from emselector import folderize
 		dir = folderize(dir)
 		name = path
-		if dir in name:	name = name[len(dir):]
+		if dir in name:
+			if name[:4].lower()=="bdb:" :
+				name="bdb:"+name[len(dir)+4:]
+			else: name = name[len(dir):]
 		
 		return name
 	
@@ -590,9 +593,11 @@ class EMProjectDataDict:
 		and the name (will be the value)
 		'''
 		dict = self.get_data_dict()
+
 		for name in list_of_names:
 			
 			n = workflow_path(name)
+
 			tmp = {}
 			tmp[filt] = n
 			if use_file_tag: dict[get_file_tag(n)] = tmp
@@ -899,7 +904,11 @@ class EMRawDataReportTask(WorkFlowTask):
 				if self.using_file_tags:
 					db_full_names = [get_file_tag(table_widget.convert_text(name)) for name in names]
 					
-					
+				#print names
+				#print project_names
+				#print full_names
+				#print db_full_names
+				
 				for name in db_full_names:
 					if name not in project_names:
 						# this shouldn't happen, but luckily it was here because it alerted me to an error once
@@ -1542,7 +1551,7 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 
 		from emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(particle_names,desc_short="Project Particle Sets",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list,using_file_tags=True)
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list,using_file_tags=False)		# STEVE, changed from true
 		table.add_context_menu_data(context_menu_data)
 		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image",int_lt))
@@ -1746,11 +1755,12 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				self.project_list = project_list
 				
 			def __call__(self,list_of_names,table_widget):
-		
+#				print list_of_names
 				project_db = db_open_dict("bdb:project")
 				project_names = project_db.get(self.project_list,dfl=[])
 				project_name_tags = [get_file_tag(name) for name in project_names]
-				
+#				print project_names,project_name_tags
+
 				for name in list_of_names:
 					if not file_exists(name):
 						EMErrorMessageDisplay.run(["%s does not exists" %name])
@@ -1781,6 +1791,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				em_qt_widget.widget.set_validator(self.validator)
 				files = em_qt_widget.exec_()
 				em_qt_widget.closeEvent(None)
+#				print files
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
@@ -1788,6 +1799,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 					entries = get_table_items_in_column(table_widget,0)
 					entrie_tags = [get_file_tag(str(i.text())) for i in entries]
 					file_tags = [get_file_tag(i) for i in files]
+#					print file_tags
 					error_messages = []
 					for idx,tag in enumerate(file_tags):
 						if tag in entrie_tags:
