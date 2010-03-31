@@ -3223,9 +3223,9 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 			for im in xrange( nima ):
 
-				if an[N_step] == -1: 
+				if an[N_step] == -1:
 					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
-				else:           
+				else:
 					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 
 			if myid == main_node:

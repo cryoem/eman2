@@ -14,11 +14,8 @@ vol.read_image("../model001.tcp")
 nx = vol.get_xsize()
 r = nx//2-2
 delta = 2.0
-angles=even_angles(delta,0.,90.,0,359.99,"S")
-
-#la = cone_ang(fangles, 45.0, 45.0, 12.0)
-#print len(la)
-#exit()
+angles = even_angles(delta,0.,90.,0,359.99,"S")
+write_text_col(angles, "angls.txt")
 #angles = [None]*len(la)
 #for i in xrange(len(la)):
 #	angles[i] = fangles[la[i]]
@@ -53,8 +50,8 @@ defocus = -1
 from random import random,randint
 start =  time()
 for i in xrange(nangles):
-	s2x = 4.0*randint(-1,1)
-	s2y = 4.0*randint(-1,1)
+	#s2x = 4.0*randint(-1,1)
+	#s2y = 4.0*randint(-1,1)
 	#ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
 	if i%100 == 0:   print i
 	#proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
