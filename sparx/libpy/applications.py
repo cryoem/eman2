@@ -6287,6 +6287,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				vol2 = recons3d_4nn_MPI(myid, datap, npad = npad)
 				del datap
 				if myid == main_node:
+					from statistics import fsc
 					nx = vol1.get_xsize()
 					ny = vol1.get_ysize()
 					nz = vol1.get_zsize()
@@ -6301,7 +6302,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 								frc[1].append(fst[1][j])
 						else:
 							for j in xrange(len(fst[0])):
-								frc[0][j] += fst[0][j]
 								frc[1][j] += fst[1][j]
 					del fst
 					for j in xrange(len(frc[0])):
