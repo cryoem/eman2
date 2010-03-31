@@ -278,9 +278,13 @@ def ref_ali3d( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("ref_ali3d\n")
-	cs = [0.0]*3
+        global  ref_ali2d_counter
+        ref_ali2d_counter += 1
 
+        fl = ref_data[2].cmp("dot",ref_data[2], {"negative":0, "mask":ref_data[0]} )
+        print_msg("ref_ali3d    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
+
+	cs = [0.0]*3
 	#filt = filt_from_fsc(fscc, 0.05)
 	#vol  = filt_table(vol, filt)
 	# here figure the filtration parameters and filter vol for the  next iteration
