@@ -2114,7 +2114,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 }
 
 
-vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float> ali_params, float csx, float csy, int id, int silent) {
+vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float> ali_params, float csx, float csy, int id, int silent, float delta) {
 
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
@@ -2148,13 +2148,17 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 
 	float sx_sum = 0.0f;
 	float sy_sum = 0.0f;
+
+	int dl;
+	if (delta == 0.0f) dl = 1;
+	else dl = static_cast<int>(delta/360.0*RING_LENGTH);
 	
 	for (int im=0; im<NIMA; im++) {
 		max_ccf = -1.0e22;
 		for (int kx=-KX; kx<=KX; kx++) {
 			for (int ky=-KY; ky<=KY; ky++) {
 				base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NIMA+im)*(RING_LENGTH+2);
-				for (int l=0; l<RING_LENGTH; l++) {
+				for (int l=0; l<RING_LENGTH; l+=dl) {
 					ts = ccf[base_address+l];
 					tm = ccf[base_address+l+ccf_offset];
 					if (ts > max_ccf) {

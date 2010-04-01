@@ -830,7 +830,7 @@ namespace EMAN
 
 		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int id, int silent);
 
-		vector<float> ali2d_single_iter(EMData *ref_image, vector<float> ali_params, float csx, float csy, int id, int silent);
+		vector<float> ali2d_single_iter(EMData *ref_image, vector<float> ali_params, float csx, float csy, int id, int silent, float delta);
 
 	  private:
 	        float *image_stack, *image_stack_filtered;

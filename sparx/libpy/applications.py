@@ -324,7 +324,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
-
+	
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
@@ -450,10 +450,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		all_ali_params = []
 		all_ctf_params = []
 
-	freeze = [0]*len(data)
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
-		freeze[im] = data[im].get_attr_default('freeze', 0)
 		st = Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
 		if CTF:
@@ -608,7 +606,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
 				if CUDA:
-					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1)
+					if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+					else: delta = 90.0
+					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1, delta)
 					sx_sum = all_ali_params[-2]
 					sy_sum = all_ali_params[-1]
 					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
@@ -627,15 +627,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						sx = all_ali_params[im*4+1]
 						sy = all_ali_params[im*4+2]
 						mirror = all_ali_params[im*4+3]
-						if freeze[im] == 1:
-							all_ali_params[im*4] = old_ali_params[im*4]
-							all_ali_params[im*4+1] = old_ali_params[im*4+1]
-							all_ali_params[im*4+2] = old_ali_params[im*4+2]
-							all_ali_params[im*4+3] = old_ali_params[im*4+3]
 					else:
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
-						if freeze[im] == 1:
-							set_params2D(data[im], [old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], old_ali_params[im*4+3], 1.0])
 			        	if old_ali_params[im*4+3] == mirror:
 		        			this_error = max_pixel_error(old_ali_params[im*4], old_ali_params[im*4+1], old_ali_params[im*4+2], alpha, sx, sy, last_ring*2)
 		        			pixel_error += this_error
