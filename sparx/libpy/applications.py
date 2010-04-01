@@ -267,7 +267,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		        		old_ali_params.extend([alphan, sxn, syn, mirror])
 
 			if CUDA:
-				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 0, 1)
+				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+				else: delta = 90.0
+				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 0, 1, delta)
 				sx_sum = all_ali_params[-2]
 				sy_sum = all_ali_params[-1]
 				for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
