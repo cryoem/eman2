@@ -2150,8 +2150,8 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 	float sy_sum = 0.0f;
 
 	int dl;
-	if (delta == 0.0f) dl = 1;
-	else dl = static_cast<int>(delta/360.0*RING_LENGTH);
+	dl = static_cast<int>(delta/360.0*RING_LENGTH);
+	if (dl<1) { dl = 1; }	
 	
 	for (int im=0; im<NIMA; im++) {
 		max_ccf = -1.0e22;
