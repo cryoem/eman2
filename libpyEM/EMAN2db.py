@@ -858,7 +858,7 @@ class DBDict:
 	def updateold(self,lfile,ro=False):
 		"""Called to update old 4.2 databases with funny problem"""
 		self.bdb=db.DB(self.dbenv)
-		print "Old format DB detected (%s). Upgrading. Please wait."%lfile
+		print "Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile
 		os.rename(self.path+"/"+lfile,self.path+"/"+"old-"+lfile)
 		try:
 			tmpdb=db.DB()
