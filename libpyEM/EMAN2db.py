@@ -855,6 +855,29 @@ class DBDict:
 	def __del__(self):
 		self.close()
 
+	def updateold(self,lfile,ro=False):
+		"""Called to update old 4.2 databases with funny problem"""
+		self.bdb=db.DB(self.dbenv)
+		print "Old format DB detected (%s). Upgrading. Please wait."%lfile
+		os.rename(self.path+"/"+lfile,self.path+"/"+"old-"+lfile)
+		try:
+			tmpdb=db.DB()
+			tmpdb.open(self.path+"/"+"old-"+lfile,self.name)
+		except:
+			print "Error updating %s. Please contact sludtke@bcm.edu."%lfile
+			sys.exit(1)
+		try: 
+			self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+		except:
+			print "Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile
+			sys.exit(1)
+		
+		for k in tmpdb.keys():
+			self.bdb[k]=tmpdb[k]
+		
+		tmpdb.close()
+		print "Conversion complete. (-old file retained as an emergency backup, safe to remove)"
+
 	def realopen(self,ro=False):
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
 		open read-write, it will be opened read-only"""
@@ -891,6 +914,8 @@ class DBDict:
 		if ro : 
 			try:
 				self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
+			except db.DBInvalidArgError:
+				self.updateold(lfile,ro)
 			except db.DBNoSuchFileError:
 				self.bdb=None
 				self.lock.release()
@@ -909,6 +934,8 @@ class DBDict:
 		else : 
 			try: 
 				self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+			except db.DBInvalidArgError:
+				self.updateold(lfile,ro)
 			except :
 				self.bdb=None
 				self.lock.release()
