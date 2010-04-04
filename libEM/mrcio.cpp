@@ -200,6 +200,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["MRC.minimum"] = mrch.amin;
 	dict["MRC.maximum"] = mrch.amax;
 	dict["MRC.mean"] = mrch.amean;
+	dict["mean"] = mrch.amean;
 	dict["datatype"] = to_em_datatype(mrch.mode);
 
 	if (is_complex_mode()) {
@@ -260,6 +261,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["MRC.machinestamp"] = mrch.machinestamp;
 
 	dict["MRC.rms"] = mrch.rms;
+	dict["sigma"] = mrch.rms;
 	dict["MRC.nlabels"] = mrch.nlabels;
 	for (int i = 0; i < mrch.nlabels; i++) {
 		char label[32];

@@ -1073,7 +1073,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 		'''
 		a = EMData()
 		a.read_image(file_name,idx,True)
-		val = a.get_attr("mean")
+		try: val = a.get_attr("mean")
+		except: return ""
 		if val != None:	return str(val)
 		else: return ""
 	
@@ -1083,7 +1084,8 @@ class EMFilterRawDataTask(WorkFlowTask):
 		'''
 		a = EMData()
 		a.read_image(file_name,idx,True)
-		val = a.get_attr("sigma")
+		try: val = a.get_attr("sigma")
+		except: return ""
 		if val != None:	return str(val)
 		else: return ""
 	
