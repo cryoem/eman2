@@ -9204,6 +9204,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 	else:
 		ltot = 0
+		base = 0
 		ltot = spill_out(ltot, base, d, neigvol, foutput)
 
 def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol, fl=0.0, aa=0.0, CTF = False, MPI=False):
