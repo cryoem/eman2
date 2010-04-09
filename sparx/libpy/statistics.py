@@ -948,8 +948,8 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 	adw_img = Util.mult_scalar(ctf_2_sum, SNR)
 	adw_img += 1.0
 	Util.div_filter(adw_img, ctf_abs_sum)
-	Util.mul_scalar(adw_img, float(Ng-1)/Ng/SNR)
-	adw_img += 1.0/Ng
+	Util.mul_scalar(adw_img, float(Ng-1)/(n-1)/SNR)
+	adw_img += float(n-Ng)/(n-1)
 	Util.mul_scalar(adw_img, SNR)
 	Util.mul_scalar(ctf_2_sum, SNR)
 	ctf_2_sum += 1.0

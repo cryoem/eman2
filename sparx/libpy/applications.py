@@ -171,8 +171,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			adw_img = Util.mult_scalar(ctf_2_sum, snr)
 			adw_img += 1.0
 			Util.div_filter(adw_img, ctf_abs_sum)
-			Util.mul_scalar(adw_img, float(Ng-1)/Ng/snr)
-			adw_img += 1.0/Ng
+			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
+			adw_img += float(nima-Ng)/(nima-1)
 			Util.mul_scalar(adw_img, snr)
 			Util.mul_scalar(ctf_2_sum, snr)
 			ctf_2_sum += 1.0
@@ -476,8 +476,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				adw_img = Util.mult_scalar(ctf_2_sum, snr)
 				adw_img += 1.0
 				Util.div_filter(adw_img, ctf_abs_sum)
-				Util.mul_scalar(adw_img, float(Ng-1)/Ng/snr)
-				adw_img += 1.0/Ng
+				Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
+				adw_img += float(nima-Ng)/(nima-1)
 				Util.mul_scalar(adw_img, snr)
 				Util.mul_scalar(ctf_2_sum, snr)
 				ctf_2_sum += 1.0
