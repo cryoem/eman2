@@ -45,7 +45,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from utilities    import model_blank, model_circle, file_type
 	import os
-		
+			
 	print_begin_msg("ali2d_c")
 	
 	ftp = file_type(stack)
@@ -81,6 +81,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if active[im]:  list_of_particles.append(im)
 	del active
 	nima = len(list_of_particles)
+	if Ng == -1:
+		Ng = nima
 	ima  = EMData()
 	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
@@ -327,12 +329,13 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
 	
+		
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
 	ftp = file_type(stack)
-
+	
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
 		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
@@ -372,6 +375,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
+	if Ng == -1:
+		Ng = nima
+		
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
