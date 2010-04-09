@@ -32,10 +32,10 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 
-def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
+def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
 
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
@@ -269,8 +269,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		        		old_ali_params.extend([alphan, sxn, syn, mirror])
 
 			if CUDA:
-				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 1.0 
-				else: delta = 90.0
+				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+				else: delta = dst
 				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 0, 1, delta)
 				sx_sum = all_ali_params[-2]
 				sy_sum = all_ali_params[-1]
@@ -312,7 +312,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	write_headers(stack, data, list_of_particles)
 	print_end_msg("ali2d_c")
 
-def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, \
+def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
@@ -614,8 +614,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
 				if CUDA:
-					if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 1.0 
-					else: delta = 90.0
+					if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+					else: delta = dst
 					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1, delta)
 					sx_sum = all_ali_params[-2]
 					sy_sum = all_ali_params[-1]
