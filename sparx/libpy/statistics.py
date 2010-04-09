@@ -6130,6 +6130,7 @@ def isc_read_conf(conf_file):
 	cfgali['n_gpu']      = int(cfgali['n_gpu'])
 	cfgali['adw']        = eval(cfgali['adw'])
 	cfgali['ng'] 	     = int(cfgali['ng'])
+	cfgali['dst']	     = int(cfgali['dst'])	
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
