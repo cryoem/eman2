@@ -71,6 +71,7 @@ def main():
 	parser.add_option("--simmask",type="string",help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
 	parser.add_option("--twostage", dest="twostage", type = "int", help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0)
+	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	
 	# options associated with e2classify.py
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 1)", default=1)
@@ -390,6 +391,9 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 		except: print options
 	else :
 		e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, image,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
+
+	if options.prefilt : e2simmxcmd+=" --prefilt"
+
 
 	if options.simmask!=None : e2simmxcmd += " --mask=%s"%options.simmask
 	

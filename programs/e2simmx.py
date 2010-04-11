@@ -408,6 +408,8 @@ class EMSimTaskDC(EMTask):
 				else :
 					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
+			if options.has_key("prefilt") :
+				ref=ref.process_inplace("filter.matchto",{"to":ptcl})
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 	
@@ -520,6 +522,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--raligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is 5, c x r images instead of 1. Images are (score,dx,dy,da,flip). ",default=False)
@@ -672,7 +675,7 @@ def main():
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset)
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset,options.prefilt)
 		for c,v in enumerate(row):
 			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
 			else: mxout[0].set_value_at(c,r,0,v[0])
@@ -702,7 +705,7 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
@@ -710,6 +713,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		if subset!=None and i not in subset : 
 			ret[i]=None
 			continue
+		if prefilt :
+			r=r.process_inplace("filter.matchto",{"to":target})
 		if align[0] :
 			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])

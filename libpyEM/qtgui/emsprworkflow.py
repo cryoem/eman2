@@ -3885,11 +3885,12 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.simmx_documentation,choices=None))
 
 		db = db_open_dict(self.form_db_name)
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
+		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=2),choices=[])
 		ptwostage = ParamDef(name="twostage",vartype="int",desc_short="2 Stage Simmx",desc_long="This will determine the orientation in 2 stages, usually 5-10x faster, number specifies shrink factor for first stage, 0 disables",property=None,defaultunits=db.get("twostage",dfl=0),choices=[])
+		pprefilt = ParamDef(name="prefilt",vartype="boolean",desc_short="PS Match Ref",desc_long="Filter references to match particles before alignment. Works best with usefilt -> Wiener filtered particles",property=None,defaultunits=db.get("prefilt",dfl=1),choices=[])
 
 		
-		params.append([pshrink,ptwostage])
+		params.append([pshrink,ptwostage,pprefilt])
 		params.extend(self.get_cls_simmx_params(parameter_prefix="sim"))
 		
 		#db_close_dict(self.form_db_name)
@@ -4048,6 +4049,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		
 		if include_shrink and options.shrink > 1: string_args.append("shrink") # e2simmx doesn't like it if shrink is 1
 		if options.twostage>0 : string_args.append("twostage")
+		if options.prefilt : string_args.append("prefilt")
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
