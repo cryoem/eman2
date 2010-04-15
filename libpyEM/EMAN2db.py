@@ -749,10 +749,22 @@ class EMAN2DB:
 			self.dbenv.set_lk_max_locks(10000)		# if we don't do this, we can easily run out when dealing with large numbers of files
 			self.dbenv.set_lk_max_objects(10000)
 
-			if(sys.platform != 'win32'):
-				self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
-			else:
-				self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
+			try:
+				if(sys.platform != 'win32'):
+					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
+				else:
+					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
+			except:
+				traceback.print_exc()
+				print """
+========
+ERROR OPENING DATABASE CACHE      (This often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
+also indicate that a program crashed in a bad way causing potential database corruption. You can try running 'e2bdb.py -c', and
+see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*' (or on windows remove the corresponding folder).
+While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the
+only practical option.)
+"""
+				sys.exit(1)
 
 		self.dicts={}
 		#if self.__dbenv.DBfailchk(flags=0) :

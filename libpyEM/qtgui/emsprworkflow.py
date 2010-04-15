@@ -46,6 +46,7 @@ from e2history import HistoryForm
 import time
 from emsave import save_data
 from emimagemx import EMDataListCache
+import traceback
 
 USING_RELATIVE_DIRS = True # used by database infrastructure for recording file names
 
@@ -4049,7 +4050,11 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		
 		if include_shrink and options.shrink > 1: string_args.append("shrink") # e2simmx doesn't like it if shrink is 1
 		if options.twostage>0 : string_args.append("twostage")
-		if options.prefilt : string_args.append("prefilt")
+		try: 
+			if options.prefilt : string_args.append("prefilt")
+		except :
+			traceback.print_exc()
+			print "Error setting prefilt option"
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
