@@ -1263,7 +1263,8 @@ class EMImage2DModule(EMGUIModule):
 	
 		if self.shapelist != 0 and self.display_shapes:
 			GL.glPushMatrix()
-			GL.glTranslate(-int(self.origin[0]),-int(self.origin[1]),0.1)
+			#TODO: change self.render_bitmap()'s C++ functions so this ugly hack isn't necessary.
+			GL.glTranslate(-self.scale*(int(self.origin[0]/self.scale)+0.5),-self.scale*(int(self.origin[1]/self.scale)+0.5),0.1)
 			GL.glScalef(self.scale,self.scale,1.0)
 			GL.glCallList(self.shapelist)
 			GL.glPopMatrix()
