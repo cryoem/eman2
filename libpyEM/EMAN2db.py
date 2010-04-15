@@ -114,8 +114,14 @@ def e2gethome() :
 	if(sys.platform != 'win32'):
 		url=os.getenv("HOME")
 	else:
-		url=os.getenv("HOMEPATH")
-		url=url.replace("\\","/")
+		if(os.getenv("HOMEPATH") == '\\'):
+			#Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
+			url=os.getenv("USERPROFILE")
+			url=url.lstrip('CDEFG:') #could also use substr
+			url=url.replace("\\","/")
+		else:
+			url=os.getenv("HOMEPATH")
+			url=url.replace("\\","/")
 	return url
 
 def e2getcwd() :
