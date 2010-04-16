@@ -66,12 +66,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	else:
 		auto_stop = False
 
-	import user_functions
-	user_func = user_functions.factory[user_func_name]
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Inner radius                : %i\n"%(first_ring))
-
 	if ftp == "bdb":
 		from EMAN2db import db_open_dict
 		dummy = db_open_dict(stack, True)
@@ -81,8 +75,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if active[im]:  list_of_particles.append(im)
 	del active
 	nima = len(list_of_particles)
-	if Ng == -1:
-		Ng = nima
+	if Ng == -1:	Ng = nima
 	ima  = EMData()
 	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
@@ -90,6 +83,12 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
 
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Number of active images     : %s\n"%(nima))
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Inner radius                : %i\n"%(first_ring))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("X search range              : %s\n"%(xrng))
@@ -356,13 +355,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		auto_stop = False
 
 	if myid == main_node:
-		import user_functions
-		user_func = user_functions.factory[user_func_name]
-		print_msg("Input stack                 : %s\n"%(stack))
-		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("Inner radius                : %i\n"%(first_ring))
-	
-	if myid == main_node:
        		if ftp == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
@@ -376,8 +368,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
-	if Ng == -1:
-		Ng = nima
+	if Ng == -1:	Ng = nima
 		
 	if myid != main_node:
 		list_of_particles = [-1]*nima
@@ -396,6 +387,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if last_ring == -1: last_ring = nx/2-2
 
 	if myid == main_node:
+		print_msg("Input stack                 : %s\n"%(stack))
+		print_msg("Number of active images     : %d\n"%(nima))
+		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
 		print_msg("X search range              : %s\n"%(xrng))
@@ -414,6 +409,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			print_msg("Stop iteration with         : criterion\n")
 		else:
 			print_msg("Stop iteration with         : maxit\n")
+
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
 		print_msg("User function               : %s\n"%(user_func_name))
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 		print_msg("Using CUDA                  : %s\n"%(CUDA))
