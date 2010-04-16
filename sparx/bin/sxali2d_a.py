@@ -48,6 +48,7 @@ def main():
 	parser.add_option("--xr",    type="string", default="4 2 1 1",     help="range for translation search in x direction, search is +/xr ")
 	parser.add_option("--yr",    type="string", default="-1",          help="range for translation search in y direction, search is +/yr ")
 	parser.add_option("--ts",    type="string", default="2 1 0.5 0.25",help="step of translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--dst",   type="float",  default=0.0,           help="angle of the shaking alignment ")
 	parser.add_option("--center",type="float",  default=-1,            help="-1. average center method 0.not centered 1.phase approximation 2.cc with Gaussian function 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--maxit", type="float",  default=0,             help="maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
 	parser.add_option("--option", type="int",   default=0,              help="The option of using the genetic algorithm")
@@ -88,7 +89,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.option, options.number_of_ave, options.crossover_rate, options.mutation_rate, options.max_merge, \
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, options.center, options.maxit, options.option, options.number_of_ave, options.crossover_rate, options.mutation_rate, options.max_merge, \
 			options.grid_size, options.max_avg, options.CTF, options.Fourvar, options.adw, options.Ng, options.snr, options.function, options.restart, options.verbose, options.CUDA, options.GPU, options.MPI)
 		global_def.BATCH = False
 
