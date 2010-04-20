@@ -182,7 +182,7 @@ def write_output(args,options,logid):
 			input = args[i]
 			box_list = EMBoxList()
 			box_list.load_boxes_from_database(input)
-			box_list.write_coordinates(input,output,box_size) # input is redundant but it makes output interfaces generic
+			box_list.write_coordinates(input,output,options.boxsize) # input is redundant but it makes output interfaces generic
 	
 			progress += 1.0
 			E2progress(logid,progress/total_progress)
