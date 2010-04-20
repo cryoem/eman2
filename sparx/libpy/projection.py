@@ -274,7 +274,7 @@ def plot_angles(agls):
 			im.set_value_at(int(px), int(py), color)
 
 	# for each angles plot on circle area
-	# agsl: [phi, theta, phi]
+	# agsl: [phi, theta, psi]
 	for i in xrange(len(agls)):
 		if agls[i][1] > 90.0:
 			agls[i][0] = (agls[i][0] + 180.0) % 360.0

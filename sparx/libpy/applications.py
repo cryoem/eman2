@@ -9498,11 +9498,11 @@ def plot_projs_distrib(stack, outplot):
 		im = EMData()
 		im.read_image(stack, n, True)
 		try:
-			p = get_params_proj(im)
+			p0, p1, p2, p3, p4 = get_params_proj(im)
 		except RuntimeError:
 			print 'Projection #%d from %s has no angles set!' % (n, stack)
 			sys.exit()
-		agls.append(p[:2])
+		agls.append([p0, p1])
 
 	im = plot_angles(agls)
 	im.write_image(outplot, 0)
