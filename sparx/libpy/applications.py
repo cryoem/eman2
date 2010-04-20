@@ -33,7 +33,7 @@ from global_def import *
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, adw=False, Ng=1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
 	if MPI:
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
@@ -313,7 +313,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar = False, adw = False, Ng = 10, user_func_name="ref_ali2d", CUDA=False, GPU=0):
+			Fourvar=False, adw=False, Ng=1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
