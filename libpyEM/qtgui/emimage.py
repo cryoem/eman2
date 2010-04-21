@@ -57,7 +57,7 @@ def image_update():
 	from emimage3d import EMImage3DModule
 	for i in EMImage2DModule.allim.keys():
 		try:
-			if i.is_visible() and i.data.get_changecount() !=i.get_last_render_image_display_count():
+			if i.is_visible() and i.data["changecount"] !=i.get_last_render_image_display_count():
 				i.force_display_update()
 				i.force_fft_redo()
 				i.updateGL()
@@ -65,14 +65,14 @@ def image_update():
 	
 	for i in EMImageMXModule.allim.keys():
 		try:
-			if i.is_visible() and i.data[0].get_changecount()!=i.get_last_render_image_display_count():
+			if i.is_visible() and i.data[0]["changecount"]!=i.get_last_render_image_display_count():
 				i.force_display_update()
 				i.updateGL()
 		except: pass
 		
 	for i in EMImage3DModule.allim.keys():
 		try:
-			if i.is_visible() and i.data.get_changecount()!=i.get_last_render_image_display_count():
+			if i.is_visible() and i.data["changecount"]!=i.get_last_render_image_display_count():
 				i.updateGL()
 		except: pass
 	
