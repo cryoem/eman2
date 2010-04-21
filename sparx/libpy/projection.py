@@ -283,7 +283,7 @@ def plot_angles(agls):
 			agls[i][0] = agls[i][0] + 180.0
 			agls[i][1] = 180.0 - float(agls[i][1])
 
-		rc  = rr*sin( agls[i][1] *cnv)
+		rc  = rr*sin( agls[i][1] *conv)
 
 		px  = ri + rc * cos( agls[i][0] * conv )
 		py  = ri + rc * sin( agls[i][0] * conv )
