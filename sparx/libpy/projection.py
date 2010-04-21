@@ -275,38 +275,24 @@ def plot_angles(agls):
 
 	# for each angles plot on circle area
 	# agsl: [phi, theta, psi]
+	ri = nx//2
+	rr = ri-1
+	conv = pi/180.0
 	for i in xrange(len(agls)):
 		if agls[i][1] > 90.0:
 			agls[i][0] = (agls[i][0] + 180.0) % 360.0
 			agls[i][1] = 180.0 - float(agls[i][1])
-		
-		rc  = sin((agls[i][1] / 180.0) * pi)
-		rc *= ((nx - 1) / 2)
 
-		px  = nx / 2.0 + rc * cos((fmod(agls[i][0], 360.0) / 180.0) * pi)
-		py  = nx / 2.0 + rc * sin((fmod(agls[i][0], 360.0) / 180.0) * pi)
+		rc  = rr*sin((agls[i][1] / 180.0) * pi)
 
-		if px > nx - 1: px = nx - 1
-		if px < 0:  px = 0
-		px = int(px)
+		px  = ri + rc * cos( agls[i][0] * conv )
+		py  = ri + rc * sin( agls[i][0] * conv )
 
-		if py > nx - 1: py = nx - 1
-		if py < 0:  py = 0
-		py = int(py)
+		px = min(max(int(px),0), nx-1)
 
-		#if agls[i][1] > 90: style = 2
-		#else:               style = 1
-		style = 1
+		py = min(max(int(py),0), nx-1)
 
-		for cx in xrange(px - c, px + c + 1, style):
-			if cx > nx - 1: cx = nx - 1
-			if cx < 0:  cx = 0
-			im.set_value_at(cx, py, 1.0 + im.get_value_at(cx, py))
-
-		for cy in xrange(py - c, py + c + 1, style):
-			if cy > nx - 1: cy = nx - 1
-			if cy < 0:  cy = 0
-			im.set_value_at(px, cy, 1.0 + im.get_value_at(cx, py))
+		im.set_value_at(px, py, 1.0 + im.get_value_at(px, py))
 
 	return im
 
