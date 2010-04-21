@@ -1159,7 +1159,11 @@ class EMImageMXModule(EMGUIModule):
 	def render(self):
 		if not self.data : return
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
-		self.image_change_count = self.data["changecount"] # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		try: 
+			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		except:
+			try: self.image_change_count = self.data["changecount"]
+			except: pass
 
 		render = False
 		
