@@ -247,9 +247,9 @@ def plot_angles(agls):
 	# var
 	nx = 256
 	im = model_blank(nx, nx)
+	"""
 	c  = 2
 	kc = 10
-
 	# draw reperes
 	for i in xrange(nx):
 		im.set_value_at(i, int(nx / 2.0), 0.006)
@@ -272,7 +272,7 @@ def plot_angles(agls):
 			px = nx / 2.0 + (rc - 1) / 2.0 * cos(a)
 			py = nx / 2.0 + (rc - 1) / 2.0 * sin(a)
 			im.set_value_at(int(px), int(py), color)
-
+	"""
 	# for each angles plot on circle area
 	# agsl: [phi, theta, psi]
 	ri = nx//2
@@ -280,10 +280,10 @@ def plot_angles(agls):
 	conv = pi/180.0
 	for i in xrange(len(agls)):
 		if agls[i][1] > 90.0:
-			agls[i][0] = (agls[i][0] + 180.0) % 360.0
+			agls[i][0] = agls[i][0] + 180.0
 			agls[i][1] = 180.0 - float(agls[i][1])
 
-		rc  = rr*sin((agls[i][1] / 180.0) * pi)
+		rc  = rr*sin( agls[i][1] *cnv)
 
 		px  = ri + rc * cos( agls[i][0] * conv )
 		py  = ri + rc * sin( agls[i][0] * conv )
