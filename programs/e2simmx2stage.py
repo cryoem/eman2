@@ -125,7 +125,8 @@ def main():
 			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 			quals.sort()
 #			for j in xrange(4): classes[quals[j][1]].append(i)		# we used to associate each reference with 3 closest centers
-			classes[quals[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
+#			classes[quals[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
+			for j in xrange(2): classes[quals[j][1]].append(i)		# bring this idea back again with 2 closest centers
 
 		# now generate an averaged reference for each center
 		print "Averaging each center"
@@ -174,8 +175,8 @@ def main():
 		vals=[(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)]
 		vals.sort()
 		
-		# then set the corresponding values in the best 5 stage 1 classes in the full matrix to 0
-		for j in xrange(5):
+		# then set the corresponding values in the best 4 stage 1 classes in the full matrix to 0
+		for j in xrange(4):
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 			
 	mx.update()

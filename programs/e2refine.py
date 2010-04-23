@@ -185,7 +185,8 @@ def main():
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 			
-		previous_model = options.model
+		try : previous_model = options.filtered_model
+		except : previous_model = options.model
 		number_options_file(i,"threed",options,"model")
 		new_model = options.model
 		if ( os.system(get_make3d_cmd(options)) != 0 ):
