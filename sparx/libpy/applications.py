@@ -75,7 +75,10 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if active[im]:  list_of_particles.append(im)
 	del active
 	nima = len(list_of_particles)
-	if Ng == -1:	Ng = nima
+	if Ng == -1:
+		Ng = nima
+	if Ng == -2:
+		Ng = int(0.98*nima)
 	ima  = EMData()
 	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
@@ -368,7 +371,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
-	if Ng == -1:	Ng = nima
+	if Ng == -1:
+		Ng = nima
+	if Ng == -2:
+		Ng = int(0.98*nima)	
 		
 	if myid != main_node:
 		list_of_particles = [-1]*nima
