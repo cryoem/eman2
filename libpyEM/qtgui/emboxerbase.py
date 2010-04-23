@@ -1064,7 +1064,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		
 		try: self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		except EMUnknownBoxType,data:
-			self.change_event_handler(self.box_to_tool_dict[data.type])
+			self.change_event_handler(data.type)
 			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
 		#self.target().moving_ptcl_established(im,event.x(),event.y())
 		#self.target().get_2d_window().set_active(im,.9,.9,.4)
@@ -1807,7 +1807,6 @@ class EMBoxerModule(PyQt4.QtCore.QObject):
 			self.inspector.set_2d_window_visible(False)
 			
 	def add_tool(self,event_tool_class,**kargs):
-		
 		event_tool = event_tool_class(self,**kargs)
 		if self.current_idx != None: event_tool.set_current_file(self.current_file(),False)
 		
@@ -2444,37 +2443,47 @@ class EMBoxerInspector(QtGui.QWidget):
 		
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
-#		
 		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
-		self.tool_tabs = QtGui.QTabWidget()
-		self.tool_dynamic_vbl.addWidget(self.tool_tabs)
+		
+		hbl = QtGui.QHBoxLayout()
+		current_tool_label = QtGui.QLabel("Current Boxing Tool:")
+		self.current_tool_combobox = QtGui.QComboBox()
+		hbl.addWidget(current_tool_label)
+		hbl.addWidget(self.current_tool_combobox)
+		
+		self.tools_stacked_widget = QtGui.QStackedWidget()
+		self.tool_dynamic_vbl.addLayout(hbl)
+		self.tool_dynamic_vbl.addWidget(self.tools_stacked_widget)
 		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
 		layout.addWidget(self.tool_button_group_box,0,)
 			
-		QtCore.QObject.connect(self.tool_tabs,QtCore.SIGNAL("currentChanged(int)"),self.tool_tab_changed)
+		QtCore.QObject.connect(self.current_tool_combobox, QtCore.SIGNAL("activated(int)"), self.current_tool_combobox_changed)
 	
 	def add_mouse_tool(self,mouse_tool,):
-		icon = mouse_tool.icon()
-		if icon != None:
-			self.tool_tabs.addTab(mouse_tool.get_widget(),icon,mouse_tool.unique_name())
-		else:
-			self.tool_tabs.addTab(mouse_tool.get_widget(),mouse_tool.unique_name())
-			
+#		icon = mouse_tool.icon()
+#		if icon != None:
+#			self.tool_tabs.addTab(mouse_tool.get_widget(),icon,mouse_tool.unique_name())
+#		else:
+#			self.tool_tabs.addTab(mouse_tool.get_widget(),mouse_tool.unique_name())
+		self.tools_stacked_widget.addWidget(mouse_tool.get_widget())
+		self.current_tool_combobox.addItem(mouse_tool.unique_name()) #Ross
 		self.update()
 		
 	def set_tool_mode(self,name):
 		self.busy = True
-		for i in range(0,self.tool_tabs.count()):
-			if str(self.tool_tabs.tabText(i)) == name:
-				self.tool_tabs.setCurrentIndex(i)
+		for i in range(self.current_tool_combobox.count()):
+			if str(self.current_tool_combobox.itemText(i)) == name:
+				self.current_tool_combobox.setCurrentIndex(i)
+				self.tools_stacked_widget.setCurrentIndex(i)
 				break
 		else:
 			raise RuntimeError("Don't know the tab %s" %name)
 		self.busy = False
-		
-	def tool_tab_changed(self,idx):
+	
+	def current_tool_combobox_changed(self, idx):
 		if self.busy: return
-		self.target().set_main_2d_mouse_mode(str(self.tool_tabs.tabText(idx)))
+		self.tools_stacked_widget.setCurrentIndex(idx)
+		self.target().set_main_2d_mouse_mode(str( self.current_tool_combobox.currentText() ))
 
 	def get_desktop_hint(self):
 		return "inspector"
