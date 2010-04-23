@@ -57,7 +57,7 @@ Output: 1-2-3D filtered image (real or complex).
  */
 EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPlace)
 {
-	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz;
+	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz;f
 	float  dx, dy, dz, omega=0, omegaL=0, omegaH=0;
 	float  center=0, gamma=0, argx, argy, argz;
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
@@ -645,7 +645,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 				      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
-									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+							float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 							switch (undoctf) {
 							case 0:
 							    fp->cmplx(ix,iy,iz) *= tf;
