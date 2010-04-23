@@ -1909,6 +1909,11 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 
 			Iter += 1
 			msg = "ITERATION #%3d        criterion = %20.7e\n\n"%(Iter,a1)
+			
+			for j in xrange(numref):
+				msg = "   group #%3d   number of particles = %7d\n"%(j, refi[j][2])
+				print_msg(msg)
+			
 			print_msg(msg)
 			if a1 < a0:
 				if (auto_stop == True):	again = False
