@@ -1549,7 +1549,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, int(mirrort))
 			set_params2D(data[im], [alphan, sxn, syn, int(mn), scale])
 			if mn == 0: sx_sum[iref] += sxn
 			else: sx_sum[iref] -= sxn
@@ -1847,8 +1847,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			# replace the name of the stack with reference with the current one
 			refim = os.path.join(outdir,"aqm%03d.hdf"%Iter)
 			a1 = 0.0
-			ave_fsc = [0] * 33
-			c_fsc   = 0
+			ave_fsc = []
 			for j in xrange(numref):
 				if refi[j][2] < 4:
 					#ERROR("One of the references vanished","ali2d_m_MPI",1)
@@ -1877,7 +1876,10 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
 				        	
-					if frsc[1][0] == frsc[1][0]: # this manage the problem of NaN return by the function fsc ??				
+					if ave_fsc == []:
+						for i in xrange(len(frsc[1])): ave_fsc.append(frsc[1][i])
+						c_fsc = 1
+					else:
 						for i in xrange(len(frsc[1])): ave_fsc[i] += frsc[1][i]
 						c_fsc += 1
 					#print 'OK', j, len(frsc[1]), frsc[1][0:5], ave_fsc[0:5]			
