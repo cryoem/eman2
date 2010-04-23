@@ -152,6 +152,8 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
+	int zeromask = params.set_default("zeromask",0);
+
 	const float *const y_data = with->get_const_data();
 	const float *const x_data = image->get_const_data();
 	double result = 0.;
@@ -226,7 +228,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		}
 		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0f;
 		}
-	} else {
+	} else {		// real space
 		size_t totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
 		if (params.has_key("mask")) {
 		  EMData* mask;
@@ -239,7 +241,18 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				n++;
 			   }
 		  }
-		} else {
+		} 
+		else if (zeromask) {
+			n=0;
+			for (size_t i = 0; i < totsize; i++) {
+				if (x_data[i]==0 || y_data[i]==0) continue;
+				double temp = x_data[i]- y_data[i];
+				result += temp*temp;
+				n++;
+			}
+			
+		}
+		else {
 		  for (size_t i = 0; i < totsize; i++) {
 				double temp = x_data[i]- y_data[i];
 				result += temp*temp;
