@@ -4384,8 +4384,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "reference image normalize to");
-			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is ignored)");
-			d.put("high_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is ignored)");
+			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
+			d.put("high_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
 			return d;
 		}
 

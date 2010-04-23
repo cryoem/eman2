@@ -216,6 +216,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("mask", EMObject::EMDATA, "image mask");
 			d.put("zeromask", EMObject::INT, "If set, zero pixels in either image will be excluded from the statistics");
+			d.put("normto",EMObject::INT,"If set, 'with' is normalized to 'this' before computing the distance");
 			return d;
 		}
 

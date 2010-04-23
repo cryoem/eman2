@@ -147,12 +147,19 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 
 
-float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
+float SqEuclideanCmp::cmp(EMData * image, EMData *withorig) const
 {
 	ENTERFUNC;
+	EMData *with = withorig;
 	validate_input_args(image, with);
 
 	int zeromask = params.set_default("zeromask",0);
+	int normto = params.set_default("normto",0);
+
+	if (normto) {
+		with = withorig->process("normalize.toimage",Dict("to",image));
+		with->set_attr("deleteme",1);
+	}
 
 	const float *const y_data = with->get_const_data();
 	const float *const x_data = image->get_const_data();
@@ -263,6 +270,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	result/=n;
 
 	EXITFUNC;
+	if (with->has_attr("deleteme")) delete with;
 	return static_cast<float>(result);
 }
 
