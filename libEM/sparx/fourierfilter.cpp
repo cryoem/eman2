@@ -57,7 +57,7 @@ Output: 1-2-3D filtered image (real or complex).
  */
 EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPlace)
 {
-	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz;f
+	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz;
 	float  dx, dy, dz, omega=0, omegaL=0, omegaH=0;
 	float  center=0, gamma=0, argx, argy, argz;
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
