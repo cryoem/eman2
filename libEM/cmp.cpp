@@ -148,7 +148,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 
 //float SqEuclideanCmp::cmp(EMData * image, EMData *withorig) const
-float SqEuclideanCmp::cmp(EMData * withorig, EMData *image) const
+float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 {
 	ENTERFUNC;
 	EMData *with = withorig;
@@ -925,7 +925,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 					sum += Util::angle_err_ri(image_fft_data[i],image_fft_data[i+1],with_fft_data[i],with_fft_data[i+1]) * a;
 					norm += a;
 					i += 2;
-				}
+				} 
 			}
 		}
 		
