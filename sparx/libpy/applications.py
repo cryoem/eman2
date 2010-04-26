@@ -33,7 +33,7 @@ from global_def import *
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, adw=False, Ng=1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, adw=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
 	if MPI:
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
 		return
@@ -102,8 +102,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 	print_msg("Use new CTF correction      : %s\n"%(adw))
-	if adw:
-		print_msg("Number of groups            : %d\n"%(Ng))
+	print_msg("Number of groups            : %d\n"%(Ng))
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	if auto_stop:
@@ -137,8 +136,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
 		from filter import filt_ctf
 		from morphology import ctf_img
-		if adw:
-			ctf_abs_sum = EMData(nx, nx, 1, False)
+		ctf_abs_sum = EMData(nx, nx, 1, False)
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -166,23 +164,21 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if CUDA:
 				all_ctf_params.extend([ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont])
 			Util.add_img2(ctf_2_sum, ctfimg)
-			if adw:
-				Util.add_img_abs(ctf_abs_sum, ctfimg)
+			Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
 	if CTF: 
-		if adw:
-			adw_img = Util.mult_scalar(ctf_2_sum, snr)
-			adw_img += 1.0
-			Util.div_filter(adw_img, ctf_abs_sum)
-			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
-			adw_img += float(nima-Ng)/(nima-1)
-			Util.mul_scalar(adw_img, snr)
-			Util.mul_scalar(ctf_2_sum, snr)
-			ctf_2_sum += 1.0
-		else: 
-			ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+		adw_img = Util.mult_scalar(ctf_2_sum, snr)
+		#adw_img += 1.0
+		Util.div_filter(adw_img, ctf_abs_sum)
+		#Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
+		Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
+		adw_img += float(nima-Ng)/(nima-1)
+		#Util.mul_scalar(adw_img, snr)
+		#Util.mul_scalar(ctf_2_sum, snr)
+		#ctf_2_sum += 1.0
+		#ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 			
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -223,13 +219,14 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			else:
 				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 			if CTF:
-				if adw: tavg = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
-				else:	tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-			else:	 tavg = (ave1+ave2)/nima
+				tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+				tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+			else: tavg = (ave1+ave2)/nima
 
 			tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+			tavg_Ng.write_image(os.path.join(outdir, "aqc_Ng.hdf"), total_iter-1)
 			frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
-			if  Fourvar:
+			if Fourvar:
 				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
 				else: vav, rvar = varf(data, tavg, mask, "a")
 				tavg = fft(Util.divn_img(fft(tavg), vav))
@@ -316,7 +313,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar=False, adw=False, Ng=1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
+			Fourvar=False, adw=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -407,8 +404,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 		print_msg("Use new CTF correction      : %s\n"%(adw))
-		if adw:
-			print_msg("Number of groups            : %d\n"%(Ng))
+		print_msg("Number of groups            : %d\n"%(Ng))
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
@@ -447,8 +443,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
 		from filter import filt_ctf
 		from morphology   import ctf_img
-		if adw:
-			ctf_abs_sum = EMData(nx, nx, 1, False)
+		ctf_abs_sum = EMData(nx, nx, 1, False)
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -475,28 +470,24 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if CUDA:
 				all_ctf_params.extend([ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont])
 			Util.add_img2(ctf_2_sum, ctfimg)
-			if adw:
-				Util.add_img_abs(ctf_abs_sum, ctfimg)
+			Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
 
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-		if adw:
-			reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
-			if myid == main_node:
-				adw_img = Util.mult_scalar(ctf_2_sum, snr)
-				adw_img += 1.0
-				Util.div_filter(adw_img, ctf_abs_sum)
-				Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
-				adw_img += float(nima-Ng)/(nima-1)
-				Util.mul_scalar(adw_img, snr)
-				Util.mul_scalar(ctf_2_sum, snr)
-				ctf_2_sum += 1.0
-		else:
-			if myid == main_node:
-				ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
+		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
+		if myid == main_node:
+			adw_img = Util.mult_scalar(ctf_2_sum, snr)
+			#adw_img += 1.0
+			Util.div_filter(adw_img, ctf_abs_sum)
+			#Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
+			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
+			adw_img += float(nima-Ng)/(nima-1)
+			#Util.mul_scalar(adw_img, snr)
+			#Util.mul_scalar(ctf_2_sum, snr)
+			#ctf_2_sum += 1.0
 	else:  ctf_2_sum = None
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -553,10 +544,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if myid == main_node:
 				print_msg("Iteration #%4d\n"%(total_iter))
 				if CTF: 
-					if adw: tavg = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
-					else:	tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+					tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+					tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:	 tavg = (ave1+ave2)/nima
 				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+				tavg_Ng.write_image(os.path.join(outdir, "aqc_Ng.hdf"), total_iter-1)
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			else:
 				tavg =  model_blank(nx, nx)
