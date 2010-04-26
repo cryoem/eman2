@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment"
+	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment --center=center_type"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",       type="int",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--xr",       type="string",       default="4 2 1 1",      help="range for translation search in x direction, search is +/xr ")
@@ -59,6 +59,7 @@ def main():
 	parser.add_option('--Ng',	type='int',		default=0,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
 	parser.add_option('--min_stab_class',	type='int',	default=2,		help='number of alignments which are considered stable')
+	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	(options, args) = parser.parse_args()
 	if len(args) != 4:
     		print "usage: " + usage
@@ -73,10 +74,10 @@ def main():
 		global_def.BATCH = True
 		if options.MPI:
 			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
-					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class)
+					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
 		else:
 			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
-				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class)
+				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
