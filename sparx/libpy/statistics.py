@@ -6114,6 +6114,7 @@ def isc_read_conf(conf_file):
 	cfgrali['ng']	     = int(cfgrali['ng'])
 	cfgrali['num_ali']   = int(cfgrali['num_ali'])
 	cfgrali['min_stab_class'] = int(cfgrali['min_stab_class'])
+	cfgrali['center']    = int(cfgrali['center'])
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
@@ -6131,6 +6132,7 @@ def isc_read_conf(conf_file):
 	cfgali['adw']        = eval(cfgali['adw'])
 	cfgali['ng'] 	     = int(cfgali['ng'])
 	cfgali['dst']	     = eval(cfgali['dst'])	
+	cfgali['center']     = int(cfgali['center'])
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
