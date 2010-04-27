@@ -1615,16 +1615,26 @@ class EMImage2DModule(EMGUIModule):
 		#self.updateGL()
 	
 	def scr_to_img(self,v0,v1=None):
-		#print v0,v1,"in image2d",self.origin
-		try: return ((v0+self.origin[0])/self.scale,(self.gl_widget.height()-(v1-self.origin[1]))/self.scale)
-		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_widget.height()-(v0[1]-self.origin[1]))/self.scale)
+		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
+		
+		try: img_coords = ( (v0+origin_x)/self.scale, (self.gl_widget.height()-(v1-origin_y))/self.scale )
+		except:	img_coords = ((v0[0]+origin_x)/self.scale,(self.gl_widget.height()-(v0[1]-origin_y))/self.scale)
+		
+#		print "Screen:", v0, v1
+#		print "Img:", img_coords
+#		print "Screen:", self.img_to_scr(img_coords)
+		
+		return img_coords
 
 	def img_to_scr(self,v0,v1=None):
-		#print v0,v1,"in image2d",self.origin
-		if v1==None:
-			v1=v0[1]
-			v0=v0[0]
-		return (v0*self.scale-self.origin[0],self.gl_widget.height()-v1*self.scale+self.origin[1])
+		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
+		
+		try: return (v0*self.scale-origin_x,self.gl_widget.height()-v1*self.scale+origin_y)
+		except: return (v0[0]*self.scale-origin_x,self.gl_widget.height()-v0[1]*self.scale+origin_y)
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
