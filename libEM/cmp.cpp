@@ -137,7 +137,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	avg1 /= double(n);
 	var1 = var1/double(n) - avg1*avg1;
 	avg2 /= double(n);
-	var2 = var1/double(n) - avg2*avg2;
+	var2 = var2/double(n) - avg2*avg2;
 	ccc = ccc/double(n) - avg1*avg2;
 	ccc /= sqrt(var1*var2);
 	ccc *= negative;
