@@ -56,15 +56,12 @@ def main():
 	parser.add_option("--crossover_rate", type="float",   default=0.9,  help="Crossover rate of the genetic algorithm")
 	parser.add_option("--mutation_rate", type="string",   default="0.1 0.2 0.5",     help="Mutation rate of the genetic algorithm")
 	parser.add_option("--max_merge", type="int",   default=50,          help="The maximum merge allowed")
-	parser.add_option("--grid_size", type="int",   default=32,          help="Size of the chessboard")
-	parser.add_option("--max_avg",   type="int",   default=100,         help="Maximum average allowed in the best solutions")
+	parser.add_option("--grid_size", type="int",   default=2,           help="Size of the chessboard (nxn)")
 	parser.add_option("--CTF", action="store_true", default=False,     help="Consider CTF correction during the alignment ")
 	parser.add_option("--Fourvar", action="store_true", default=False,     help="Whether to divided by variance")
-	parser.add_option("--adw", action="store_true", default=False,     help="Whether to use new CTF correction")
 	parser.add_option("--Ng", type="int", default=-1,                   help="Number of groups presumably in the dataset")
 	parser.add_option("--snr",   type="float",  default=1.0,           help="Signal-to-noise ratio of the dataset")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="name of the reference preparation function")
-	parser.add_option("--restart", type="int", default=-1,             help="iteration number to restart from")
 	parser.add_option("--verbose", type="int", default=0,              help="The amount of information to print out")
 	parser.add_option("--CUDA", action="store_true", default=False,    help="use CUDA program")
 	parser.add_option("--GPU", type="int", default=0,                  help="number of GPUs available")
@@ -90,7 +87,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, options.center, options.maxit, options.option, options.number_of_ave, options.crossover_rate, options.mutation_rate, options.max_merge, \
-			options.grid_size, options.max_avg, options.CTF, options.Fourvar, options.adw, options.Ng, options.snr, options.function, options.restart, options.verbose, options.CUDA, options.GPU, options.MPI)
+			options.grid_size, options.CTF, options.Fourvar, options.Ng, options.snr, options.function, options.verbose, options.CUDA, options.GPU, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
