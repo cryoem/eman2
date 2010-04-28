@@ -865,7 +865,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	if dfhint :
 		dfhint=int(dfhint*20.0)
 		rng=range(dfhint-3,dfhint+4)
-	else :rng=range(8,128)
+	else :rng=range(3,128)
 
 
 	# This loop tries to find the best few possible defocuses

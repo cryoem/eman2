@@ -62,18 +62,18 @@ object emdata_getitem(object self, object key) {
             int iz = extract<int>(key[2]);
             if (s.is_complex())
                 return object(s.cmplx(ix,iy,iz));
-            return object(s(ix,iy,iz));
+            return object(s.sget_value_at(ix,iy,iz));
         } else if (2 == size) {
             int ix = extract<int>(key[0]);
             int iy = extract<int>(key[1]);
             if (s.is_complex())
                 return object(s.cmplx(ix,iy));
-            return object(s(ix,iy));
+            return object(s.sget_value_at(ix,iy));
         } else if (1 == size) {
             int ix = extract<int>(key[0]);
             if (s.is_complex())
                 return object(s.cmplx(ix));
-            return object(s(ix));
+            return object(s.sget_value_at(ix));
         } else {
             throw ImageDimensionException("Need 1, 2, or 3 indices.");
         }
