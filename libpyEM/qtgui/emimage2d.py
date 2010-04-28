@@ -831,7 +831,7 @@ class EMImage2DModule(EMGUIModule):
 			self.fmaxden=min(m1,mean+20.0*sigma)
 			self.fcurmin = 0
 			if auto_contrast:
-				self.fcurmax = min(m1,mean+12.0*sigma)
+				self.fcurmax = min(m1,mean+4.0*sigma)
 			else:
 				self.fcurmax = m1
 			
@@ -1103,9 +1103,13 @@ class EMImage2DModule(EMGUIModule):
 				return
 			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
 		elif self.curfft in (2,3) :
-			a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
+			if not self.glflags.npt_textures_unsupported():
+				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
+			else : a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
 		else : 
-			a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+			if not self.glflags.npt_textures_unsupported():
+				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+			else : a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 
 		return a
 
@@ -1190,8 +1194,9 @@ class EMImage2DModule(EMGUIModule):
 			else:
 				self.hist=struct.unpack('256i',a[-1024:])
 				glNewList(self.main_display_list,GL_COMPILE)
-				GL.glRasterPos(0,self.gl_widget.height()-1)
-				GL.glPixelZoom(1.0,-1.0)
+				#GL.glRasterPos(0,self.gl_widget.height()-1)
+				#GL.glPixelZoom(1.0,-1.0)
+				GL.glRasterPos(0,0)
 				GL.glDrawPixels(self.gl_widget.width(),self.gl_widget.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		else:
 			glCallList(self.main_display_list)
