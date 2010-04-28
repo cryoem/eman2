@@ -268,9 +268,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
 		        		old_ali_params.extend([alphan, sxn, syn, mirror])
 
+			if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+			else: delta = dst
 			if CUDA:
-				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
-				else: delta = dst
 				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 0, 1, delta)
 				sx_sum = all_ali_params[-2]
 				sy_sum = all_ali_params[-1]
@@ -613,9 +613,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
+				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+				else: delta = dst
 				if CUDA:
-					if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
-					else: delta = dst
 					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1, delta)
 					sx_sum = all_ali_params[-2]
 					sy_sum = all_ali_params[-1]
