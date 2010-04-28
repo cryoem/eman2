@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d"):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -69,7 +69,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			data[im].set_attr_dict({"select":select, "peak":peakt})
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
-			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
@@ -435,7 +435,7 @@ def ringw_real(numr, mode="F"):
 
 
 
-def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
 	        consider mirror
@@ -454,7 +454,10 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
 			# The following code it used when mirror is considered
-			retvals = Util.Crosrng_ms(crefim, cimage, numr)
+			if delta = 0.0:
+				retvals = Util.Crosrng_ms(crefim, cimage, numr)
+			else:
+				retvals = Util.Crosrng_ms_delta(crefim, cimage, numr, 0.0, delta)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
 			if (qn >= peak or qm >= peak):

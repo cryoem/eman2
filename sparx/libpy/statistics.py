@@ -909,7 +909,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	return ave, var
 
 
-def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
+def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
@@ -933,6 +933,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 
 	Ave = EMData(nx, nx, 1, False)
 
+	if Ng == -1: Ng = n
 	for i in xrange(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
@@ -946,13 +947,14 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = 1):
 		Util.add_img(Ave, oc)
 
 	adw_img = Util.mult_scalar(ctf_2_sum, SNR)
-	adw_img += 1.0
+	#adw_img += 1.0
 	Util.div_filter(adw_img, ctf_abs_sum)
-	Util.mul_scalar(adw_img, float(Ng-1)/(n-1)/SNR)
+	#Util.mul_scalar(adw_img, float(Ng-1)/(n-1)/SNR)
+	Util.mul_scalar(adw_img, float(Ng-1)/(n-1))
 	adw_img += float(n-Ng)/(n-1)
-	Util.mul_scalar(adw_img, SNR)
-	Util.mul_scalar(ctf_2_sum, SNR)
-	ctf_2_sum += 1.0
+	#Util.mul_scalar(adw_img, SNR)
+	#Util.mul_scalar(ctf_2_sum, SNR)
+	#ctf_2_sum += 1.0
 
 	ave = fft(Util.divn_filter(Util.muln_img(Ave, adw_img), ctf_2_sum))
 
