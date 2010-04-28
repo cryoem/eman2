@@ -52,6 +52,7 @@ def main():
 	#options associated with e2refine2d.py
 	parser.add_option("--path",type="string",default=None,help="Path for the refinement, default=auto")
 	parser.add_option("--iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
+	parser.add_option("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
@@ -216,7 +217,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=frc --simalign=rotate_translate_flip:maxshift=%d --center --useali --iterative"%
+		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip:maxshift=%d --center --useali --iterative"%
 		    (options.initial,options.path,it,options.maxshift))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
@@ -232,7 +233,7 @@ def main():
 		# extract the averages with the most particles
 #		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
         # extract the least similar averages
-		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=sqeuclidean"%(options.path,it,options.path,it,options.naliref))
+		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=sqeuclidean --center"%(options.path,it,options.path,it,options.naliref))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
@@ -285,6 +286,8 @@ def main():
 
 def get_classaverage_extras(options):
 	s = " --align=%s:maxshift=%d --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
+
+	if options.automask : s+= " --automask"
 	if options.classkeepsig:
 		s += " --keepsig"
 	if options.classralign != None:

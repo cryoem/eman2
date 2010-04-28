@@ -4871,14 +4871,20 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold", EMObject::FLOAT, "runs from ~ -2 to 2, negative numbers for dark protein and positive numbers for light protein (stain).");
-			d.put("filter", EMObject::FLOAT, "is expressed as a fraction of the fourier radius.");
+			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation. ");
+			d.put("nmaxseed",EMObject::INT,"Use the n highest valued pixels in the map as a seed. Alternative to radius. Useful for viruses.");
+			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
+			d.put("sigma", EMObject::FLOAT, "Alternative to threshold based on mean + x*sigma");
+			d.put("nshells", EMObject::INT, "The number of dilation operations");
+			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");
+			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
+			d.put("verbose", EMObject::INT, "How verbose to be (stdout)");
 			return d;
 		}
 
 		virtual string get_desc() const
 		{
-			return "Attempts to automatically mask out the particle, excluding other particles in the box, etc.";
+			return "2D version of mask.auto3d";
 		}
 
 		static const string NAME;
@@ -4993,6 +4999,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("radius", EMObject::INT,"Pixel radius of a ball which is used to seed the flood filling operation. ");
 			d.put("nmaxseed",EMObject::INT,"Use the n highest valued pixels in the map as a seed. Alternative to radius. Useful for viruses.");
 			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
+			d.put("sigma", EMObject::FLOAT, "Alternative to threshold based on mean + x*sigma");
 			d.put("nshells", EMObject::INT, "The number of dilation operations");
 			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
@@ -5091,13 +5098,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.";
+			return "ToMassCenterProcessor centers image at center of mass. Note: includes only values > mean+0.75*sigma";
 		}
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
+//			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
 			return d;
 		}
 		

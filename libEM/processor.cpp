@@ -5208,204 +5208,114 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	int nz = image->get_zsize();
-	if (nz > 1) {
-		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
-		throw ImageDimensionException("3D model not supported");
+	if (image->get_ndim() != 2) {
+		throw ImageDimensionException("This processor only supports 2D images.");
 	}
 
-	float threshold = params["threshold"];
-	float filter = 0.1f;
-	if (params.has_key("filter")) {
-		filter = params["filter"];
+	/*
+	 The mask writing functionality was removed to comply with an EMAN2 policy which dictates that file io is not allowed from within a processor
+	 To get around this just use the return_mask parameter.
+	string mask_output = params.set_default("write_mask", "");
+	if ( mask_output != "") {
+		if (Util::is_file_exist(mask_output) ) throw InvalidParameterException("The mask output file name already exists. Please remove it if you don't need it.");
+		if (!EMUtil::is_valid_filename(mask_output)) throw InvalidParameterException("The mask output file name type is invalid or unrecognized");
 	}
+	*/
 
-	EMData *d = image->copy();
-
-	if (threshold > 0) {
-		threshold = -threshold;
-		d->mult(-1);
+	int radius=0;
+	if (params.has_key("radius")) {
+		radius = params["radius"];
 	}
+	int nmaxseed=0;
+	if (params.has_key("nmaxseed")) {
+		nmaxseed = params["nmaxseed"];
+	}
+	
+	float threshold=0.0;
+	if (params.has_key("sigma")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
+	else threshold=params["threshold"];
 
+
+	int nshells = params["nshells"];
+	int nshellsgauss = params["nshellsgauss"];
+	int verbose=params.set_default("verbose",0);
+
+	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	d->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", (filter * ny / 2)));
-	d->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 0));
+	EMData *amask = new EMData();
+	amask->set_size(nx, ny);
 
-	d->process_inplace("normalize");
+	float *dat = image->get_data();
+	float *dat2 = amask->get_data();
+	int i,j,k;
+	size_t l = 0;
 
-	int d_nx = d->get_xsize();
-	int d_ny = d->get_ysize();
-	int d_size = d_nx * d_ny;
+	if (verbose) printf("%f\t%f\t%f\n",(float)image->get_attr("mean"),(float)image->get_attr("sigma"),threshold);
 
-	float *dn = (float *) calloc(d_size, sizeof(float));
-	float *dc = (float *) calloc(d_size, sizeof(float));
-	float *dd = d->get_data();
-
-	int k = 0;
-	const float dn_const = 10;
-	float d_sigma = d->get_attr_dict().get("sigma");
-	float threshold_sigma = threshold * d_sigma;
-
-	for (int l = 0; l < d_ny; l++) {
-		for (int j = 0; j < d_nx; j++) {
-#ifdef	_WIN32
-			if (_hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
-#else
-			if (hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
-#endif
-				dn[k] = -dn_const;
+	// Seeds with the highest valued pixels
+	if (nmaxseed>0) {
+		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
+		
+		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++) {
+			amask->set_value_at((*i).x,(*i).y,0,1.0);
+			if (verbose) printf("Seed at %d,%d,%d (%1.3f)\n",(*i).x,(*i).y,(*i).z,(*i).value);
+		}
+	}
+	
+	// Seeds with a circle
+	if (radius>0) {
+		// start with an initial circle
+		l=0;
+		for (j = -ny / 2; j < ny / 2; ++j) {
+			for (i = -nx / 2; i < nx / 2; ++i,++l) {
+				if ( abs(j) > radius || abs(i) > radius) continue;
+//				if ( (j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;		// torn on the whole threshold issue here. Removing it prevents images from being totally masked out
+				if ( (j * j + i * i) > (radius*radius) ) continue;
+				dat2[l] = 1.0f;
 			}
-			else if (dd[k] < threshold_sigma) {
-				dn[k] = dn_const;
-			}
-			else {
-				dn[k] = 0;
-			}
-			k++;
 		}
 	}
 
-	int ch = 1;
-	while (ch) {
-		ch = 0;
-		memcpy(dc, dn, d_size * sizeof(float));
-
-		for (int l = 1; l < d_ny - 1; l++) {
-			for (int j = 1; j < d_nx - 1; j++) {
-				k = j + l * d_nx;
-				if (dn[k] == dn_const) {
-					if (dn[k - 1] == -dn_const || dn[k + 1] == -dn_const ||
-						dn[k - d_nx] == -dn_const || dn[k + d_nx] == -dn_const) {
-						dn[k] = -dn_const;
-						ch = 1;
-					}
+	// iteratively 'flood fills' the map... recursion would be better
+	int done=0;
+	int iter=0;
+	while (!done) {
+		iter++;
+		done=1;
+		if (verbose && iter%10==0) printf("%d iterations\n",iter);
+		for (j=1; j<ny-1; ++j) {
+			for (i=1; i<nx-1; ++i) {
+				l=i+j*nx;
+				if (dat2[l]) continue;
+				if (dat[l]>threshold && (dat2[l-1]||dat2[l+1]||dat2[l+nx]||dat2[l-nx])) {
+					dat2[l]=1.0;
+					done=0;
 				}
 			}
 		}
 	}
 
-	k = 0;
-	float threshold_sigma2 = threshold * d_sigma * 2;
+	amask->update();
 
-	for (int l = 0; l < d_ny; l++) {
-		for (int j = 0; j < d_nx; j++) {
-			if (l == 0 || l == d_ny - 1 || j == 0 || j == d_nx - 1) {
-				dn[k] = -dn_const;
-			}
-			else if (dd[k] > threshold_sigma2 && dn[k] == dn_const) {
-				dn[k] = 0;
-			}
-			k++;
-		}
+	if (verbose) printf("extending mask\n");
+	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
+
+	bool return_mask = params.set_default("return_mask",false);
+	if (return_mask) {
+		// Yes there is probably a much more efficient way of getting the mask itself, but I am only providing a stop gap at the moment.
+		memcpy(dat,dat2,image->get_size()*sizeof(float));
+	} else {
+		image->mult(*amask);
 	}
 
-	ch = 1;
-	const float v_const = 0.25f;
+	// EMAN2 policy is not to allow file io from with a processor
+	//if (mask_output != "") {
+	//	amask->write_image(mask_output);
+	//}
 
-	while (ch) {
-		ch = 0;
-		memcpy(dc, dn, d_size * sizeof(float));
 
-		for (int l = 1; l < d_ny - 1; l++) {
-			for (int j = 1; j < d_nx - 1; j++) {
-				int k = j + l * d_nx;
-
-				if (dn[k] != -dn_const && dn[k] != dn_const) {
-					float v = Util::get_max(dc[k - 1], dc[k + 1], dc[k - d_nx], dc[k + d_nx]);
-					float v2 = Util::get_min(dc[k - 1], dc[k + 1], dc[k - d_nx], dc[k + d_nx]);
-
-					if (v2 >= 0 && v > v_const) {
-						dn[k] = v - v_const;
-					}
-					else if (v <= 0 && v2 < -v_const) {
-						dn[k] = v2 + v_const;
-					}
-					else if (v > .25f && v2 < -v_const) {
-						dn[k] = (v + v2) / 2;
-					}
-					if (dn[k] != dc[k]) {
-						ch++;
-					}
-				}
-			}
-		}
-	}
-
-	for (int k = 0; k < d_size; k++) {
-		if (dn[k] >= -5) {
-			dn[k] = 1;
-		}
-		else {
-			dn[k] = 0;
-		}
-	}
-
-	dn[d_nx * d_ny / 2 + d_nx / 2] = 2;
-	ch = 1;
-	while (ch) {
-		ch = 0;
-		for (int l = 1; l < d_ny - 1; l++) {
-			for (int j = 1; j < d_nx - 1; j++) {
-				int k = j + l * d_nx;
-				if (dn[k] == 1) {
-					float v = Util::get_max(dn[k - 1], dn[k + 1], dn[k - d_nx], dn[k + d_nx]);
-					if (v == 2.0f) {
-						dn[k] = 2.0f;
-						ch = 1;
-					}
-				}
-			}
-		}
-	}
-
-	for (ch = 0; ch < 4; ch++) {
-		memcpy(dc, dn, d_nx * d_ny * sizeof(float));
-
-		for (int l = 1; l < d_ny - 1; l++) {
-			for (int j = 1; j < d_nx - 1; j++) {
-				int k = j + l * d_nx;
-
-				if (dc[k] != 2.0f) {
-					float v = Util::get_max(dc[k - 1], dc[k + 1], dc[k - d_nx], dc[k + d_nx]);
-					if (v == 2.0f) {
-						dn[k] = 2.0f;
-					}
-				}
-			}
-		}
-	}
-
-	for (int k = 0; k < d_size; k++) {
-		if (dn[k] == 2.0f) {
-			dn[k] = 1;
-		}
-		else {
-			dn[k] = 0;
-		}
-	}
-
-	memcpy(dd, dn, d_size * sizeof(float));
-	if( dn )
-	{
-		free(dn);
-		dn = 0;
-	}
-
-	if( dc )
-	{
-		free(dc);
-		dc = 0;
-	}
-
-	d->update();
-
-	image->mult(*d);
-	if( d )
-	{
-		delete d;
-		d = 0;
-	}
+	delete amask;
 }
 
 
@@ -5576,6 +5486,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
+//	int positive = params.set_default("positive",0);
 
 	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
 
@@ -6451,7 +6362,11 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	if (params.has_key("nmaxseed")) {
 		nmaxseed = params["nmaxseed"];
 	}
-	float threshold = params["threshold"];
+	
+	float threshold=0.0;
+	if (params.has_key("sigma")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
+	else threshold=params["threshold"];
+
 	int nshells = params["nshells"];
 	int nshellsgauss = params["nshellsgauss"];
 	int verbose=params.set_default("verbose",0);

@@ -42,6 +42,75 @@ READ_HEADER_ONLY = True
 
 from EMAN2db import EMTask
 
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog <output> [options]
+
+	Produces class averages.
+	Can perform iterative alignment.
+	Provides bootstrapping functionality.
+	"""
+		
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_option("--input", type="string", help="The name of the input particle stack", default=None)
+	parser.add_option("--output", type="string", help="The name of the output class stack", default=None)
+	parser.add_option("--classmx", type="string", help="The name of the initial classification matrix", default=None)
+	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
+	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
+	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
+	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="phase")
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="phase")
+	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
+	parser.add_option("--setsfref",action="store_true",help="This will impose the 1-D structure factor of the reference on the class-average (recommended when a reference is available)",default=False)
+	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
+	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
+	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
+	parser.add_option("--automask",action="store_true",help="Applies a 2-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
+	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
+	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
+	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
+	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
+	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
+	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
+	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
+	parser.add_option("--parallel", default=None, help="parallelism argument")
+
+	
+	(options, args) = parser.parse_args()
+		
+	if (options.check): options.verbose = 9 # turn verbose on if the user is only checking...
+	
+	error = check(options,True)
+	
+	if (options.verbose>0):
+		if (error):
+			print "e2classaverage.py command line arguments test.... FAILED"
+		else:
+			print "e2classaverage.py command line arguments test.... PASSED"
+	
+	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
+	# information to execute this script
+	if error : exit(1)
+	if options.check: exit(0)
+	
+	logger=E2init(sys.argv)
+	
+	class_gen = EMGenClassAverages(options,logger)
+	
+	print "Class averaging"
+	class_gen.execute()
+	
+	E2end(logger)
+
+
 class EMGenClassAverages:
 	'''
 	A utility class that knows how to break the command line into EMClassAveTasks
@@ -73,6 +142,7 @@ class EMGenClassAverages:
 			d["aligncmp"] = parsemodopt(options.aligncmp)
 			d["cmp"] = parsemodopt(options.cmp)
 			d["averager"] = parsemodopt(options.averager)
+			d["automask"] = options.automask
 			
 			if hasattr(options,"ralign") and options.ralign != None: 
 				d["ralign"] = parsemodopt(options.ralign)
@@ -643,8 +713,14 @@ class EMClassAveTask(EMTask):
 			progress += 1
 	  		progress_callback(int(100*(progress/float(total_averages))))
   		else:
-  			averages[-1].process_inplace("xform.centeracf")
-			t = averages[-1].get_attr("xform.align2d")
+  			#averages[-1].process_inplace("xform.centeracf")
+			if self.options["automask"]:
+				msk=average.process("filter.lowpass.gauss",{"cutoff_abs":0.05})
+				msk.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+				msk.process_inplace("mask.auto2d",{"radius":msk["nx"]/10,"sigma":0.3,"nshells":msk["nx"]/20,"nshellsgauss":msk["nx"]/10})
+				average.mult(msk)
+			average.process_inplace("xform.centerofmass", {"int_shift_only":1})
+			t = average.get_attr("xform.align2d")
 			for ptcl_idx,ali in all_alis[-1].items(): all_alis[-1][ptcl_idx] = t*ali # have to update the alignment parameters so that they produce the average in its current position
 		
 		if verbose:
@@ -1117,72 +1193,6 @@ class EMClassAveTaskDC(EMClassAveTask):
 			
 		return ptcl_indices,images,usefilt_images,norm,culling,ref,verbose,sigma_image
 	
-def main():
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <output> [options]
-
-	Produces class averages.
-	Can perform iterative alignment.
-	Provides bootstrapping functionality.
-	"""
-		
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	
-	parser.add_option("--input", type="string", help="The name of the input particle stack", default=None)
-	parser.add_option("--output", type="string", help="The name of the output class stack", default=None)
-	parser.add_option("--classmx", type="string", help="The name of the initial classification matrix", default=None)
-	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
-	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
-	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
-	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="phase")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="phase")
-	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
-	parser.add_option("--setsfref",action="store_true",help="This will impose the 1-D structure factor of the reference on the class-average (recommended when a reference is available)",default=False)
-	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="phase")
-	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
-	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
-	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
-	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
-	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
-	parser.add_option("--normproc",type="string",help="The normalization processor. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
-	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
-	parser.add_option("--idxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
-	parser.add_option("--dbpath", help="Use in conjunction with --idxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
-	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
-	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-	parser.add_option("--parallel", default=None, help="parallelism argument")
-
-	
-	(options, args) = parser.parse_args()
-		
-	if (options.check): options.verbose = 9 # turn verbose on if the user is only checking...
-	
-	error = check(options,True)
-	
-	if (options.verbose>0):
-		if (error):
-			print "e2classaverage.py command line arguments test.... FAILED"
-		else:
-			print "e2classaverage.py command line arguments test.... PASSED"
-	
-	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
-	# information to execute this script
-	if error : exit(1)
-	if options.check: exit(0)
-	
-	logger=E2init(sys.argv)
-	
-	class_gen = EMGenClassAverages(options,logger)
-	
-	print "Class averaging"
-	class_gen.execute()
-	
-	E2end(logger)
 
 def check(options,verbose=0):
 	error = False
