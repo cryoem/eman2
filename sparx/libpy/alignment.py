@@ -454,7 +454,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
 			# The following code it used when mirror is considered
-			if delta = 0.0:
+			if delta == 0.0:
 				retvals = Util.Crosrng_ms(crefim, cimage, numr)
 			else:
 				retvals = Util.Crosrng_ms_delta(crefim, cimage, numr, 0.0, delta)
