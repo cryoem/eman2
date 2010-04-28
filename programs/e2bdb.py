@@ -41,6 +41,7 @@ import time
 import os
 import sys
 import re
+import traceback
 
 def main():
 	global debug
@@ -122,7 +123,8 @@ Various utilities related to BDB databases."""
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
 					except:
-						print "error reading ",db,n 
+						traceback.print_exc()
+						print "---\nerror reading ",db,n 
 						continue
 					# This block converts an absolute path to the actual data to a relatataiveve path
 					try: 

@@ -153,7 +153,8 @@ def main():
 	else : fastseed=""
 
 	# if we aren't given starting class-averages, make some
-	if not options.initial and not "classes_init" in dcts:
+#	if not options.initial and not "classes_init" in dcts:
+	if not options.initial:
 		print "Building initial averages"
 		
 		# make footprint images (rotational/translational invariants)
@@ -217,8 +218,8 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip:maxshift=%d --center --useali --iterative"%
-		    (options.initial,options.path,it,options.maxshift))
+		run("e2stacksort.py %s %s#allrefs_%02d --simcmp=sqeuclidean:normto=1 --simalign=rotational --center --useali --iterative"%
+		    (options.initial,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
