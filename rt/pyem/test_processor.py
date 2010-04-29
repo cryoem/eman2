@@ -1712,7 +1712,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('mask.auto2d', {'threshold':0.5, 'filter':0.1})
+        e.process_inplace('mask.auto2d', {'threshold':0.5})
         
         if(IS_TEST_EXCEPTION):
             #2D image only
