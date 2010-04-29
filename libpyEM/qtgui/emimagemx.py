@@ -2148,6 +2148,12 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.bsnapshot.setEnabled(False)
 			self.bsnapshot.setToolTip("Snap only works on Linux")
 
+		#self.bnorm = QtGui.QPushButton("Norm")
+		#self.bnorm.setCheckable(1)
+		#self.vbl2.addWidget(self.bsnapshot)
+		#self.bnorm.setToolTip("Normalize particles (in memory)")
+
+
 		# This shows the mouse mode buttons
 		self.hbl2 = QtGui.QHBoxLayout()
 		self.hbl2.setMargin(0)
@@ -2233,6 +2239,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		if allow_opt_button:
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
+		#QtCore.QObject.connect(self.bnorm, QtCore.SIGNAL("clicked(bool)"), self.setNorm)
 		QtCore.QObject.connect(self.banim, QtCore.SIGNAL("clicked(bool)"), self.animation_clicked)
 	
 	def add_panel(self,widget,name):
@@ -2352,6 +2359,10 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def save_lst(self):
 		self.target().save_lst()
 			
+	#def setNorm(self,state):
+		#"Set normalization mode"
+		#self.target().set_norm(state)
+
 	def snapShot(self):
 		"Save a screenshot of the current image display"
 		
