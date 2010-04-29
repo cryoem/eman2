@@ -473,7 +473,7 @@ template <> Factory < Processor >::Factory()
 	force_add<CudaMultProcessor>();
 	force_add<CudaCorrelationProcessor>();
 #endif // EMAN2_USING_CUDA
-	
+
 //	force_add<XYZProcessor>();
 }
 
@@ -624,7 +624,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 //	int adaptnoise=params.set_default("adaptnoise",0);
 	float noisecutoff=(float)params.set_default("noisecutoff",0.0);
 	if (apix<=0 || apix>7.0) throw ImageFormatException("0 < apix_x < 7.0");
-	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled 
+	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled
 	int start=(int)floor(1.0/(15.0*ds));
 	int end=radial_mask.size()-2;
 	if (noisecutoff>0) end=(int)floor(noisecutoff/ds);
@@ -652,17 +652,17 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 		if (out) fprintf(out,"%f\t%f\n",x[i-start],y[i-start]);
 	}
 	if (out) fclose(out);
-	
+
 	float slope=0,intercept=0;
 	Util::calc_least_square_fit(end-start, x,y,&slope,&intercept,1);
- 
+
 	if (verbose) printf("slope=%f  intercept=%f\n",slope,intercept);
-	
+
 	float B=(float)params["bfactor"]+slope*4.0/2.0;		// *4 is for Henderson definition, 2.0 is for intensity vs amplitude
 	float B2=(float)params["bfactor"];
 
 	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*2.0,B);
-	
+
 	float cutval=exp(-B*pow(end*ds,2.0f)/4.0f)/exp(-B2*pow(end*ds,2.0f)/4.0f);
 	for (int i=0; i<radial_mask.size(); i++) {
 		if (i<=end) radial_mask[i]=exp(-B*pow(i*ds,2.0f)/4.0f);
@@ -674,7 +674,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	free(y);
 	free(dy);
  }
-	
+
 
 
 void LowpassFourierProcessor::preprocess(EMData * image)
@@ -819,7 +819,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
-	
+
 	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",-1.0e30f);
 	int ampweight = params.set_default("ampweight",1);
@@ -828,21 +828,21 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int maxiter = params.set_default("maxiter",100);
 	int maxvoxmove = params.set_default("maxvoxmove",25);
 	int verbose = params.set_default("verbose",0);
-	
+
 	vector<float> centers(nseg*3);
 	vector<float> count(nseg);
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 //	int nxy=nx*ny;
-	
+
 	// seed
 	for (int i=0; i<nseg*3; i+=3) {
 		centers[i]=  Util::get_frand(0.0f,(float)nx);
 		centers[i+1]=Util::get_frand(0.0f,(float)ny);
 		centers[i+2]=Util::get_frand(0.0f,(float)nz);
 	}
-	
+
 	for (int iter=0; iter<maxiter; iter++) {
 		// **** classify
 		size_t pixmov=0;		// count of moved pixels
@@ -853,9 +853,9 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 						result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
 						continue;
 					}
-					int bcls=-1;			// best matching class		
+					int bcls=-1;			// best matching class
 					float bdist=(float)(nx+ny+nz);	// distance for best class
-					for (int c=0; c<nseg; c++) { 
+					for (int c=0; c<nseg; c++) {
 						float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
 						if (d<bdist) { bdist=d; bcls=c; }
 					}
@@ -865,11 +865,11 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				}
 			}
 		}
-	
+
 		// **** adjust centers
 		for (int i=0; i<nseg*3; i++) centers[i]=0;
 		for (int i=0; i<nseg; i++) count[i]=0;
-	
+
 		// weighted sums
 		for (int z=0; z<nz; z++) {
 			for (int y=0; y<ny; y++) {
@@ -878,7 +878,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 					if (cls==-1) continue;
 					float w=1.0;
 					if (ampweight) w=image->get_value_at(x,y,z);
-					
+
 					centers[cls*3]+=x*w;
 					centers[cls*3+1]+=y*w;
 					centers[cls*3+2]+=z*w;
@@ -886,7 +886,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				}
 			}
 		}
-		
+
 		// now each becomes center of mass, or gets randomly reseeded
 		int nreseed=0;
 		for (int c=0; c<nseg; c++) {
@@ -906,7 +906,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				centers[c*3+2]/=count[c];
 			}
 		}
-		
+
 		// with minsegsep, check separation
 		if (minsegsep>0) {
 			for (int c1=0; c1<nseg-1; c1++) {
@@ -923,11 +923,11 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 			}
 		}
 
-		
+
 		if (verbose) printf("Iteration %3d: %6ld voxels moved, %3d classes reseeded\n",iter,pixmov,nreseed);
 		if (nreseed==0 && pixmov<(size_t)maxvoxmove) break;		// termination conditions met
 	}
-	
+
 	result->set_attr("segment_centers",centers);
 
 	return result;
@@ -1065,7 +1065,9 @@ void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mas
 {
 	Assert(radial_mask.size() > 0);
 	float x = 0.0f , step = 0.5f/radial_mask.size();
+#ifdef DEBUG
 	printf("%d %f %f\n",(int)radial_mask.size(),lowpass,step);
+#endif
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		if (x <= lowpass) {
 			radial_mask[i] = 1.0f;
@@ -1505,7 +1507,7 @@ void ToMinvalProcessor::process_inplace(EMData * image)
 		          (size_t)image->get_zsize();
 	float *data = image->get_data();
 
-	
+
 
 	for (size_t i = 0; i < size; i++) {
 		if (data[i]<minval) data[i]=newval;
@@ -4489,7 +4491,7 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 	float* p1;
 	float* p2;
 
-	// This will tackle the 'normalization' images which come out of the Fourier reconstructor. 
+	// This will tackle the 'normalization' images which come out of the Fourier reconstructor.
 	// ie- real-space 1/2 FFt images centered on the corner
 	if ( !image->is_complex() ) {
 		if (nz!=1 && !yodd && !zodd) {
@@ -4506,7 +4508,7 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 					}
 				}
 			}
-			
+
 			return;
 		}
 		else throw ImageFormatException("Can not Fourier origin shift an image that is not complex unless it is even in ny,nz and nx=ny/2+1");
@@ -5230,7 +5232,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	if (params.has_key("nmaxseed")) {
 		nmaxseed = params["nmaxseed"];
 	}
-	
+
 	float threshold=0.0;
 	if (params.has_key("sigma")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
 	else threshold=params["threshold"];
@@ -5256,13 +5258,13 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	// Seeds with the highest valued pixels
 	if (nmaxseed>0) {
 		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
-		
+
 		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++) {
 			amask->set_value_at((*i).x,(*i).y,0,1.0);
 			if (verbose) printf("Seed at %d,%d,%d (%1.3f)\n",(*i).x,(*i).y,(*i).z,(*i).value);
 		}
 	}
-	
+
 	// Seeds with a circle
 	if (radius>0) {
 		// start with an initial circle
@@ -6362,7 +6364,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	if (params.has_key("nmaxseed")) {
 		nmaxseed = params["nmaxseed"];
 	}
-	
+
 	float threshold=0.0;
 	if (params.has_key("sigma")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
 	else threshold=params["threshold"];
@@ -6387,13 +6389,13 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	// Seeds with the highest valued pixels
 	if (nmaxseed>0) {
 		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
-		
+
 		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++) {
 			amask->set_value_at((*i).x,(*i).y,(*i).z,1.0);
 			if (verbose) printf("Seed at %d,%d,%d (%1.3f)\n",(*i).x,(*i).y,(*i).z,(*i).value);
 		}
 	}
-	
+
 	// Seeds with a sphere
 	if (radius>0) {
 		// start with an initial sphere
@@ -6408,7 +6410,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		}
 	}
 
-	
+
 	// iteratively 'flood fills' the map... recursion would be better
 	int done=0;
 	int iter=0;
