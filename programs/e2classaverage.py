@@ -937,9 +937,9 @@ class EMClassAveTask(EMTask):
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
-					average->mult(-1.0);
-					average->process_inplace("normalize.edgemean");
+				if (average["norm_mult"]<0) {			// This implies a failed normalization
+					average.mult(-1.0);
+					average.process_inplace("normalize.edgemean");
 				}
 			else: average.process_inplace("normalize.edgemean")
 				
@@ -994,9 +994,9 @@ class EMClassAveTask(EMTask):
 			average["apix_x"]=ref["apix_x"]
 			average.process_inplace("filter.matchto",{"to":ref})
 			average.process_inplace("normalize.toimage",{"to":ref})
-			if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
-				average->mult(-1.0);
-				average->process_inplace("normalize.edgemean");
+			if (average["norm_mult"]<0) {			// This implies a failed normalization
+				average.mult(-1.0);
+				average.process_inplace("normalize.edgemean");
 			}
 		else : average.process_inplace("normalize.edgemean")
 
@@ -1058,9 +1058,9 @@ class EMClassAveTask(EMTask):
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
-					average->mult(-1.0);
-					average->process_inplace("normalize.edgemean");
+				if (average["norm_mult"]<0) {			// This implies a failed normalization
+					average.mult(-1.0);
+					average.process_inplace("normalize.edgemean");
 				}
 			else: average.process_inplace("normalize.edgemean")
 			#if norm != None: average.process_inplace(norm[0],norm[1])
@@ -1115,9 +1115,9 @@ class EMClassAveTask(EMTask):
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
-					average->mult(-1.0);
-					average->process_inplace("normalize.edgemean");
+				if (average["norm_mult"]<0) {			// This implies a failed normalization
+					average.mult(-1.0);
+					average.process_inplace("normalize.edgemean");
 				}
 			else : average.process_inplace("normalize.edgemean")
 			
