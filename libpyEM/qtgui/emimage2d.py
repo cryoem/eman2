@@ -300,18 +300,24 @@ class EMImage2DMeasureMode(EMImage2DMouseEvents):
 
 				# displays the pixel value at the current endpoint
 				if inspector.target().curfft :
-					xs=inspector.target().fft.get_xsize()
-					ys=inspector.target().fft.get_ysize()
+					fft=inspector.target().fft
+					if fft==None :
+						fft=inspector.target().list_fft_data[inspector.target().list_idx]
+					xs=fft.get_xsize()
+					ys=fft.get_ysize()
 					x,y=int(lc[0])+1,int(lc[1])
 					if x<xs/2 : x=xs/2-x
 					else : x-=xs/2
 					if y<ys/2 : y+=ys/2
 					else: y-=ys/2
-					val=inspector.target().fft[x,y]
+					val=fft[x,y]
 					inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
 					inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
 				else : 
-					inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
+					try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
+					except:
+						idx=inspector.target().list_idx
+						inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
 					inspector.mtshowval2.setText("  ")
 				#except: pass
 				

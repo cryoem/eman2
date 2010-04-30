@@ -603,7 +603,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 		EMData *fft = image->do_fft();
 		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray,image);
-		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray);
+		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray,0);		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
@@ -6014,7 +6014,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 
 	if (to->is_complex()) {
-		vector<float> rd=to->calc_radial_dist(to->get_ysize(),0,0.5,1);
+		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0,0,1.0,1);
 		for (size_t i=0; i<rd.size(); i++) {
 			sf->set_x(i,i/(apixto*2.0f*rd.size()));
 			sf->set_y(i,rd[i]);
@@ -6022,7 +6022,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 	}
 	else {
 		EMData *tmp=to->do_fft();
-		vector<float> rd=tmp->calc_radial_dist(to->get_ysize(),0,0.5,1);
+		vector<float> rd=tmp->calc_radial_dist(to->get_ysize()/2,0,1.0,1);
 		for (size_t i=0; i<rd.size(); i++) {
 			sf->set_x(i,i/(apixto*2.0f*rd.size()));
 			sf->set_y(i,rd[i]);
@@ -6032,10 +6032,16 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 	float apix=image->get_attr("apix_x");
 
+	sf->write_file("a.txt");
+	Util::save_data(0,sf->get_x(1),radial_mask,"b.txt");
+
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
 		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
+
+	Util::save_data(0,sf->get_x(1),radial_mask,"c.txt");
 
 	delete sf;
 }
@@ -6056,6 +6062,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
 		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
 
 }
