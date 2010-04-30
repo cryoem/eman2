@@ -160,6 +160,10 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 	if (normto) {
 		with = withorig->process("normalize.toimage",Dict("to",image));
 		with->set_attr("deleteme",1);
+		if ((float)(with->get_attr("norm_mult"))<=0) {		// This means the normalization inverted the image, a clear probablity of noise bias, so we undo the normalization
+			delete with;
+			with=withorig;
+		}
 	}
 
 	const float *const y_data = with->get_const_data();
