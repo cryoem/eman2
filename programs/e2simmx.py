@@ -409,7 +409,9 @@ class EMSimTaskDC(EMTask):
 					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
 			if options.has_key("prefilt") :
-				ref=ref.process_inplace("filter.matchto",{"to":ptcl})
+				msk=ref.process("threshold.notzero")					# mask from the projection
+				ref=ref.process_inplace("filter.matchto",{"to":ptcl})	# matched filter
+				ref.mult(msk)											# remask after setsf
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 	
@@ -714,7 +716,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			ret[i]=None
 			continue
 		if prefilt :
+			msk=r.process("threshold.notzero")					# mask from the projection
 			r=r.process_inplace("filter.matchto",{"to":target})
+			r.mult(msk)											# remask after filtering
 		if align[0] :
 			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])

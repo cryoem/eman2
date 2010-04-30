@@ -168,7 +168,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		if resize_necessary:
 			get_application().show_specific(self.mx_display)
 			self.mx_display.optimally_resize()
-			get_application().show_specific(self.frc_display)
+#			get_application().show_specific(self.frc_display)
 #			self.frc_display.optimally_resize()
 		else:
 			self.mx_display.updateGL()
@@ -189,22 +189,24 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		dlist=[]
 		dlist.append(self.proj_data[self.current_projection].copy())	# aligned projection
 		dlist[0].transform(dlist[0]["ptcl.align2d"])					
+		tmp=dlist[0].process("threshold.notzero")
 		dlist.append(self.ptcl_data[self.current_particle].copy())		# original particle
 		dlist[1].process_inplace("normalize.toimage",{"to":dlist[0]})
-		dlist.append(self.ptcl_data[self.current_particle].copy())		# original particle
-		dlist[2].process_inplace("filter.matchto",{"to":dlist[0]})
-		dlist[2].process_inplace("normalize.toimage",{"to":dlist[0]})
-		dlist.append(dlist[1].copy())									# particle with projection subtracted
-		dlist[3].sub(dlist[0])
+		dlist.append(self.proj_data[self.current_projection].copy())	# filtered projection
+		dlist[2].process_inplace("filter.matchto",{"to":dlist[1]})
+		dlist[2].mult(tmp)
+		dlist[2].process_inplace("normalize.toimage",{"to":dlist[1]})
+		dlist.append(dlist[2].copy())									# particle with projection subtracted
+		dlist[3].sub(dlist[1])
 		
-		dlist.append(self.ptcl_data[self.current_particle].copy())		# same as 1 and 2 above, but with a mask
-		tmp=dlist[0].process("threshold.notzero")
-		dlist[4].mult(tmp)
-		dlist[4].process_inplace("filter.matchto",{"to":dlist[0]})
-		dlist[4].mult(tmp)
-		dlist[4].process_inplace("normalize.toimage",{"to":dlist[0]})
-		dlist.append(dlist[3].copy())
-		dlist[5].sub(dlist[0])
+		#dlist.append(self.ptcl_data[self.current_particle].copy())		# same as 1 and 2 above, but with a mask
+		#tmp=dlist[0].process("threshold.notzero")
+		#dlist[4].mult(tmp)
+		#dlist[4].process_inplace("filter.matchto",{"to":dlist[0]})
+		#dlist[4].mult(tmp)
+		#dlist[4].process_inplace("normalize.toimage",{"to":dlist[0]})
+		#dlist.append(dlist[3].copy())
+		#dlist[5].sub(dlist[0])
 		
 		self.mx_display.set_data(dlist)
 		
