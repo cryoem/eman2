@@ -932,11 +932,15 @@ class EMClassAveTask(EMTask):
 #			t = average.get_attr("xform.align2d")
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
 			
+			average["apix_x"]=image["apix_x"]
 			if self.options["setsfref"] and ref!=None :
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				average["apix_x"]=image["apix_x"]
+				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
+					average->mult(-1.0);
+					average->process_inplace("normalize.edgemean");
+				}
 			else: average.process_inplace("normalize.edgemean")
 				
 			average.set_attr("ptcl_repr",np)
@@ -985,11 +989,15 @@ class EMClassAveTask(EMTask):
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
 
+		average["apix_x"]=image["apix_x"]
 		if self.options["setsfref"] and ref!=None :
 			average["apix_x"]=ref["apix_x"]
 			average.process_inplace("filter.matchto",{"to":ref})
 			average.process_inplace("normalize.toimage",{"to":ref})
-			average["apix_x"]=image["apix_x"]
+			if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
+				average->mult(-1.0);
+				average->process_inplace("normalize.edgemean");
+			}
 		else : average.process_inplace("normalize.edgemean")
 
 #		if norm != None: average.process_inplace(norm[0],norm[1])
@@ -1045,11 +1053,15 @@ class EMClassAveTask(EMTask):
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
+			average["apix_x"]=image["apix_x"]
 			if self.options["setsfref"] and ref!=None :
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				average["apix_x"]=image["apix_x"]
+				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
+					average->mult(-1.0);
+					average->process_inplace("normalize.edgemean");
+				}
 			else: average.process_inplace("normalize.edgemean")
 			#if norm != None: average.process_inplace(norm[0],norm[1])
 
@@ -1098,11 +1110,15 @@ class EMClassAveTask(EMTask):
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
+			average["apix_x"]=image["apix_x"]
 			if self.options["setsfref"] and ref!=None :
 				average["apix_x"]=ref["apix_x"]
 				average.process_inplace("filter.matchto",{"to":ref})
 				average.process_inplace("normalize.toimage",{"to":ref})
-				average["apix_x"]=image["apix_x"]
+				if (average->get_attr("norm_mult")<0) {			// This implies a failed normalization
+					average->mult(-1.0);
+					average->process_inplace("normalize.edgemean");
+				}
 			else : average.process_inplace("normalize.edgemean")
 			
 			if norm != None: average.process_inplace(norm[0],norm[1])
