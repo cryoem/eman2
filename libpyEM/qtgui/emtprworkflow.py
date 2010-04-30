@@ -67,7 +67,7 @@ class EMProjectListCleanup:
 
 
 class EMTomoRawDataReportTask(EMRawDataReportTask):
-	'''This form displays tomograms that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
+	'''The tools under this tab are highly experimental. ''' 
 	def __init__(self):
 		EMRawDataReportTask.__init__(self)
 		self.project_list = tpr_raw_data_dict

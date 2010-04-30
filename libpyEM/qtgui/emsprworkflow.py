@@ -816,7 +816,9 @@ class SPRInitTask(WorkFlowTask):
 
 class EMRawDataReportTask(WorkFlowTask):	
 	'''This form displays raw data that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
-	documentation_string = "This forms displays the micrograph and/or ccds images that  you currently have associated with this project"
+	documentation_string = "This page shows raw micrographs/ccd frames currently associated with the project. It is possible to add additional images directly on this panel, which will \
+leave them in-place and not copy them into the project database. This will limit some later operations and leave the project with less metadata at the end, but will save disk space. \
+Note that the data cannot be filtered unless it is imported."
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
 	def __init__(self):
 		WorkFlowTask.__init__(self)
@@ -1047,8 +1049,12 @@ class AddFilesToProjectValidator:
 		return 1
 
 class EMFilterRawDataTask(WorkFlowTask):	
-	documentation_string = "This tool supplies several common image filtering operations.\n"
-	documentation_string += "You can automatically associate the filtered images with the project."	
+	documentation_string = """This tool allows you to import micrographs/ccd frames into the project. This copies the files into the internal \
+project database, and gives an opportunity to apply a number of common filters to the data before importing:
+- Invert - EMAN2 expects particle data to be positive, ie - particles should appear white. If particles are dark, select this.
+- Filter Xray Pixels - Use this for CCD frames. It will remove over-bright individual pixels
+- Associate with project - always select this
+- In-place processing - technically allows processing without importing to the database. Not suggested.s"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Filter Raw Data"
@@ -1103,11 +1109,11 @@ class EMFilterRawDataTask(WorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Filtering Raw Data",desc_long="",property=None,defaultunits=EMFilterRawDataTask.documentation_string,choices=None))
 		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Invert pixel intensities",property=None,defaultunits=db.get("invert",dfl=False),choices=None)
-		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="Filter X-ray pixels",desc_long="Filter X-ray pixels (4*sigma)",property=None,defaultunits=db.get("xraypixel",dfl=False),choices=None)
+		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="Filter X-ray pixels",desc_long="Filter X-ray pixels (4*sigma)",property=None,defaultunits=db.get("xraypixel",dfl=True),choices=None)
 		pnorm = ParamDef(name="norm.edgemean",vartype="boolean",desc_short="Edge norm",desc_long="Normalize using the normalize.edgemean processor",property=None,defaultunits=db.get("norm.edgemean",dfl=True),choices=None)
 		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Generate thumbnail",desc_long="Generate thumbnails for e2boxer",property=None,defaultunits=db.get("thumbs",dfl=True),choices=None)
 		passociate = ParamDef(name="project_associate",vartype="boolean",desc_short="Associate with project",desc_long="Associate filtered images with the project",property=None,defaultunits=db.get("project_associate",dfl=True),choices=None)
-		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="Process images inplace to save disk space",property=None,defaultunits=db.get("inplace",dfl=True),choices=None)
+		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="Process images inplace to save disk space",property=None,defaultunits=db.get("inplace",dfl=False),choices=None)
 		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl="_filt"),choices=None )
 	
 		pinplace.dependents = ["suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
@@ -2100,7 +2106,7 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 
 class E2BoxerAutoTask(E2BoxerTask):
 	'''
-	A task for running automated boxing. Choose the boxing data and the images you wish to aubox, then hit OK to spawn autoboxing processes.
+	DO NOT USE THIS !
 	'''
 	
 	def __init__(self):
@@ -2364,7 +2370,12 @@ def recover_old_boxer_database():
 			
 
 class E2BoxerGuiTask(E2BoxerTask):	
-	documentation_string = "Select the images you want to box, enter your boxsize, and hit OK. This will lauch e2boxer and automatically load the selected images for boxing."
+	documentation_string = """Select the frames you want to select boxes from, enter your boxsize, and hit OK.
+NOTE - SELECTING A GOOD BOX SIZE IS CRITICAL. See the wiki for a list of good sizes. Make sure the box is ~2x the size of your particle. \
+Changing box size later can be very painful, and CTF correction relies on a sufficiently large box (larger than used with EMAN1.
+
+This will lauch e2boxer and automatically load the selected images for boxing. \
+Generally you don't want to work with more than ~10 at a time. To autobox, make sure you select SWARM mode before selecting boxes. """
 	
 	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please import or specify which images you want as part of this project in step 1 of the workflow and try again."
 	
@@ -2778,7 +2789,9 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 
 class CTFReportTask(E2CTFWorkFlowTask):
 	
-	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles associated with the project. It also displays the number of phase flipped and/or wiener filtered images corresponding to each particle set."
+	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles associated with the project. It also displays \
+the number of phase flipped and/or wiener filtered images corresponding to each particle set. Normally you don't do anything on this page other than get a \
+status report on current processing."
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
 	def __init__(self):
 		E2CTFWorkFlowTask.__init__(self)
@@ -2834,7 +2847,15 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 		self.write_db_entries(params)
 			
 class E2CTFAutoFitTask(E2CTFWorkFlowTask):	
-	documentation_string = "Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database."
+	documentation_string = """Select the particles you wish to generate CTF parameters for, enter the appropriate parameters such as microscope voltage etc, and hit OK.\nThis will cause the \
+workflow to spawn processes based on the available CPUs. Once finished the automatically determined CTF parameters will be stored in the EMAN2 database. It is often worthwhile to follow \
+the following pattern:
+1 - autofit
+2 - manually fine-tune parameters for a few sets at different defocuses
+3 - generate a structure factor using these sets
+4 - rerun autofit
+5 - manually check the fitting results. Correct any major errors.
+"""
 	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
 
 	def __init__(self):
@@ -3264,7 +3285,10 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
-	documentation_string = "Select the particle data you wish to evaluate/tweak in the e2ctf interactive interface and hit OK. This will launch e2ctf and the selected images will automatically be loaded for viewing. Once inside the e2ctf interface you can save your tweaked parameters to the database using the Save button."
+	documentation_string = "Autofitting tends to either work very well or get the defocus completely wrong. It is wise to at least quickly go through the data and insure that \
+defocus values are reasonable. If not, roughly adjust the defocus and press the refit button. If you manually vary parameters, press save for each set, or your changes will \
+be lost. B-factors are not as important as in EMAN1, and use the X-ray convention (4x the EMAN1 values). Try to get them in a reasonable range, at least. This is particularly \
+important when manually fitting before determining a structure factor."
 	warning_string = "\n\n\nNOTE: There are no particles associated with the project and/or there are no previously generated CTF parameters for these particles. To establish project particles go to the \"Particles\" task. To generate CTF parameters go to the \"Automated fitting - e2ctf\" task" 
 	def __init__(self):
 		E2CTFWorkFlowTask.__init__(self)
@@ -3440,7 +3464,9 @@ class EMParticleOptions(EMPartSetOptions):
  		 	
 class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
 	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
-	documentation_string = "Choose the data for particle examination" 
+	documentation_string = "On the next screen you will have the opportunity to eliminate 'bad' particles. This page selects which type of particles you \
+want to look at for doing this. Normally Wiener filtered particles are used for this purpose. The selection here has no impact on the output generated from \
+this stage. It is used for display purposes only !" 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Choose Data For Particle Examination"
@@ -4090,12 +4116,12 @@ class E2Refine2DTask(EMClassificationTools):
 		db = db_open_dict(self.form_db_name)
 		
 		params = []		
-		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=db.get("iter",dfl=5),choices=[])
-		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=db.get("naliref",dfl=8),choices=[])
-		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=db.get("nbasisfp",dfl=5),choices=[])
+		piter = ParamDef(name="iter",vartype="int",desc_short="Refinement iterations",desc_long="The number of times the e2refine2d svd-based class averaging procedure is iterated",property=None,defaultunits=db.get("iter",dfl=8),choices=[])
+		pnaliref = ParamDef(name="naliref",vartype="int",desc_short="# alignment references",desc_long="The number of alignment references to use when determining particle orientations",property=None,defaultunits=db.get("naliref",dfl=6),choices=[])
+		pnbasisfp = ParamDef(name="nbasisfp",vartype="int",desc_short="# basis fp",desc_long="The number of MSA basis vectors to use when classifying",property=None,defaultunits=db.get("nbasisfp",dfl=8),choices=[])
 		pncls = ParamDef(name="ncls",vartype="int",desc_short="# classes",desc_long="The number of classes to produce",property=None,defaultunits=db.get("ncls",dfl=32),choices=[])
 
-		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=db.get("normproj",dfl=False),choices=None)
+		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=db.get("normproj",dfl=True),choices=None)
 		
 		project_db = db_open_dict("bdb:project")
 		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
@@ -4297,7 +4323,9 @@ class EMSetsOptions(EMPartSetOptions):
 		self.image_count = False
 
 class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
-	documentation_string = "Choose the data you wish to use for use for running e2refine2d from the list of options below and hit OK. This will pop up a second form asking you to fill in more details.\n\nNote that usually you should have 4 options to choose from below. If you are not seeing all 4 options it means you should go back in the work flow, import particles, and generate phase flipped and Wiener filtered output." 
+	documentation_string = "Select the type of particles you wish to run e2refine2d on. Typically the phase_flipped_hp particles will give the \
+ best results, followed by the phase_flipped particles. Wiener filtered particles have strong contrast, but tend to produce blurry class-averages, \
+ since it is the particles that are filtered, not the averages. After you hit OK, you will be prompted for specific refinement options." 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Choose Particles For e2refine2d"
@@ -4403,7 +4431,10 @@ class E2RefFreeClassAveTool:
 		
 
 class E2Refine2DRunTask(E2Refine2DTask):
-	documentation_string = "Choose which files you want to be part of the input data set, enter the appropriate e2refine2d input parameters, and hit OK. This will cause the workflow to spawn e2refine2d in a separate process. Output data will automatically be stored in the EMAN2 database."
+	documentation_string = "Select a particle set to use for 2-D refinement.  Select how many classes you want to generate. The other options on this page will generally produce \
+reasonably good results with default settings. Normalize projection vectors can make a dramatic improvement on some data sets, but is bad for others. See the e2refine2d.py \
+documentation for other details. Don't forget the other tabs !\
+	"
 	warning_string = "\n\nThere are no files" 
 	def __init__(self,particles,single_selection = False):
 		E2Refine2DTask.__init__(self)
@@ -4897,9 +4928,38 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 	 
 	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
 	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
-	simmx_documentation = "These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.\n\nThe shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time boost, though at the expense of resolution. Note however that the class averaging stage, which  can involve iterative alignment, does not use shrunken data."
-	class_documentation = "Most of these parameters are for e2classaverage with the exception of the \"Class separation\" parameter which is the solely used by e2classify. Classification is first performed using this latter program and the output from e2simmx. This is followed by the class averaging stage. The critical argument for the class averaging procedure is the number of iterations. In early stages of refinement this should be relatively large and it should gradually be reduced as your model converges to the answer."
-	make3d_documentation = "Iterative Fourier inversion is the preferred method of 3D reconstruction in EMAN2."
+	simmx_documentation = """These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. \
+To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record \
+the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.
+- The shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time advantage, though at the expense
+of resolution. Note however that the class averaging stage, which can involve iterative alignment, does not use shrunken data.
+- 2 stage simmx is still experimental. If set to 2 instead of zero, classification will be performed in two stages resulting in a 5-25x speedup, but with a potential decrease in accuracy.
+- PS match ref will force the power spectra of the particle and reference to be the same before comparison. Necessary for some comparators.
+- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmps -v2)
+- Aligner - use default
+- Align comparator and refine align comparator allow you to select which comparators are used for particle->reference alignment. In most cases ccc is adequate, but sometimes you may wish to match the main comparator.
+- Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
+
+For comparators here are some possible choices:
+ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted)
+sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
+phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
+"""
+	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:
+Averaging iterations - Use 6 or 7 when doing intial refinements to eliminate model bias. Use 2 (maybe 1) when pushing resolution
+Class separation - puts each particle in the best 'n' classes, a larger number here combined with a small angular step can somewhat mimic maximum liklihood methods (smoother map at the cost of resolution)
+keep - determines how many 'bad' particles are thrown away either in terms of sigma, or an absolute value (1 keeps 100%, .8 keeps 80%)
+averager - either ctf.auto for ctf amplitude correction or mean for no CTF amplitude correction
+set sf proj - this will filter the class-averages to match the radial power spectrum of the projections. Not good for initial rounds of refinement, but may be useful later.
+"""
+	make3d_documentation = """Parameters for 3D reconstruction:
+- Use the default 'fourier' reconstructor
+pad to - should be some number a bit larger than your box size. This should be a 'good' box size as well (see wiki)
+keep - similar to keep in class-averaging, but determines how many class averages are excluded from the reconstruction
+set SF - This will force the reconstruction to be filtered to match the structure factor determined during CTF correction. If used it should be combined with a gaussian lowpass filter at the targeted resolution
+post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'freq_cutoff=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
+ be somewhat filtered even without this."""
 
 	def __init__(self,ptcls_list,usefilt_ptcls_list):
 		'''
@@ -5433,7 +5493,11 @@ class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
 
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
-	documentation_string = "This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
+	documentation_string = "This selects the type of data to use for the refinement. Normally phase_flipped or phase_flipped_hp will be selected in the top \
+section. Usefilt permits you to use one set of data for alignment and classification, and the set above when actually building a model. This can provide significant \
+benefits in some cases. Normally the wiener_filtered set or None will be selected here. If you are using the 'prefilt' option in the refinement parameters, you \
+should use Wiener filtered particles here. If not, you may experiment both ways. After completing this form, you will be presented with a set of forms with \
+detailed refinement options." 
 	def __init__(self,filt_name,ptcl_opts,choice_subscript=""):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Choose Data For e2refine"
@@ -5557,7 +5621,9 @@ class E2RefineChooseSetsTask(EMChooseTask):
 		self.single_selection = True
 
 class ResolutionReportTask(ParticleWorkFlowTask):
-	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries in the table you will see the convergence plot and any associated resolution curves."
+	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries \
+ in the table you will see the convergence plot (thin lines, NOT useful in measuring resolution) and any associated resolution curve (thick line for resolution \
+ determination, must run eotest first)."
 	warning_string = "\n\n\nNOTE: There are no results available."
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -5735,7 +5801,8 @@ class E2EotestTask(EMClassificationTools,E2Make3DTools):
 	'''
 	 
 	general_documentation = "These are parameters required to run an even-odd test in EMAN2"
-	documentation_string = "This form is used to run e2eotest."
+	documentation_string = "This form allows you to specify parameters for the even-odd resolution test. Normally these parameters should match \
+those used during refinement."
 	warning_string = "\n\n\nThere are no refinement results available to use as the basis of running e2eotest"
 	def __init__(self):
 	 	EMClassificationTools.__init__(self)
