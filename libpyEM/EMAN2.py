@@ -734,7 +734,7 @@ def num_cpus():
 		try:
 			cores = os.getenv("NUMBER_OF_PROCESSORS")
 			if cores < 1: return 1 # just for safety
-			else: return cores
+			else: return int(cores)
 		except:
 			return 1
 	elif platform_string == "Darwin":
