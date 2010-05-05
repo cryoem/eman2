@@ -48,28 +48,34 @@ def main():
 	parser.add_option("--xr", type="float", default=0, help="  range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr", type="float", default=0, help="  range for translation search in y direction, search is +/-yr ")
 	parser.add_option("--ts", type="float", default=1, help="  step of translation search in both directions")
-	parser.add_option("--maxit", type="float", default=10, help="  maximum number of iterations (set to 10) ")
 	parser.add_option("--min_class_size", type="float", default=1, help="  mininum size of class (set to 1) ")
 	parser.add_option("--max_class_size", type="float", default=-1, help="  maximum size of class (set to -1, means can be any number) ")
-	parser.add_option("--split_group", action="store_true", default=False, help=" whether to split group is allowed")
-	parser.add_option("--combine_group", action="store_true", default=False, help=" whether to combine group is allowed")
+	parser.add_option("--split_class", action="store_true", default=False, help=" whether splitting class is allowed")
+	parser.add_option("--combine_class", action="store_true", default=False, help=" whether combining group is allowed")
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference assignment")
 	parser.add_option("--MPI", action="store_true", default=False, help="  whether to use MPI version ")
 
 	(options, args) = parser.parse_args()
-	if len(args) < 2 or len(args) > 3:
+	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit()
+	
+	if len(args) == 4:	mask = args[3]
+	else:	mask = None
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+
+	if options.MPI:
+		from mpi import mpi_init
+		sys.argv = mpi_init(len(sys.argv),sys.argv)		
 		
 	from development import multi_assign
 	global_def.BATCH = True
-	multi_assign(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, 
-			options.min_class_size, options.max_class_size, options.split_group, options.combine_group, options.CTF, options.MPI)
+	multi_assign(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts,  
+			options.min_class_size, options.max_class_size, options.split_class, options.combine_class, options.CTF, options.MPI)
 	global_def.BATCH = False
 
 
