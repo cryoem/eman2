@@ -719,6 +719,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			msk=r.process("threshold.notzero")					# mask from the projection
 			r=r.process_inplace("filter.matchto",{"to":target})
 			r.mult(msk)											# remask after filtering
+
 		if align[0] :
 			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])

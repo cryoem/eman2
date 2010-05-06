@@ -61,6 +61,7 @@ def main():
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
+	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	
 	
 	# options associated with e2classaverage.py

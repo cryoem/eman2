@@ -336,7 +336,10 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	if (options.verbose):
 		e2cacmd += " --verbose=" + str(options.verbose - 1)
-		
+	
+	if options.prefilt:
+		e2cacmd += " --prefilt"
+	
 	if options.parallel: e2cacmd += " --parallel=%s" %options.parallel
 
 		

@@ -58,6 +58,7 @@ def main():
 	parser.add_option("--classmx", type="string", help="The name of the initial classification matrix", default=None)
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
 	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
+	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
 	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="phase")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
@@ -143,6 +144,7 @@ class EMGenClassAverages:
 			d["cmp"] = parsemodopt(options.cmp)
 			d["averager"] = parsemodopt(options.averager)
 			d["automask"] = options.automask
+			if hasattr(options,"prefilt") : d["prefilt"]=True
 			
 			if hasattr(options,"ralign") and options.ralign != None: 
 				d["ralign"] = parsemodopt(options.ralign)
@@ -823,6 +825,11 @@ class EMClassAveTask(EMTask):
 
 		options = self.options
 		this.del_attr("xform.align2d")
+		if options.has_key("prefilt") :
+			to.process_inplace("normalize.edgemean")
+			msk=to.process("threshold.notzero")					# mask from the projection
+			to.process_inplace("filter.matchto",{"to":this})
+			to.mult(msk)											# remask after filtering
 		aligned=this.align(options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 #		print "__align",options["align"][0],to,options["align"][1],options["aligncmp"][0],options["aligncmp"][1]
 		
