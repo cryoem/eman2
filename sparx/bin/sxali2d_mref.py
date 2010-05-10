@@ -40,9 +40,10 @@ import sys, ConfigParser
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " configure_file.cfg"
+
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir", type="float", default=1, help="  inner radius for rotational correlation > 0 (set to 1)")
 	(options, args) = parser.parse_args()
+
 	if len(args) != 1:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
@@ -51,10 +52,10 @@ def main():
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-		
+
 	from development import ali2d_mref
 	global_def.BATCH = True
-	ali2d_mref()
+	ali2d_mref(args[0])
 	global_def.BATCH = False
 
 

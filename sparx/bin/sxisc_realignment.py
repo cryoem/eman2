@@ -56,7 +56,7 @@ def main():
 	parser.add_option('--CUDA',	action='store_true',   default=False,	       help='Use Cuda')
 	parser.add_option('--GPU',	type='int',	       default=0,	       help='Number of GPU')
 	parser.add_option('--adw', 	action='store_true',   default=False,		help='adw')
-	parser.add_option('--Ng',	type='int',		default=0,		help='Ng')
+	parser.add_option('--Ng',	type='int',		default=-1,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
 	parser.add_option('--min_stab_class',	type='int',	default=2,		help='number of alignments which are considered stable')
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
