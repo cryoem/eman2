@@ -276,7 +276,9 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 
 	EXITFUNC;
 	if (with->has_attr("deleteme")) delete with;
-	return static_cast<float>(result);
+	float ret = (float)result;
+	if (!Util::goodf(&ret)) return FLT_MAX;
+	return ret;
 }
 
 

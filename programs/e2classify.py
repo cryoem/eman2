@@ -122,6 +122,7 @@ def main():
 				clsmx[5][ic,iptcl]=simmx[4][cls]
 			simmx[0][cls]=maximum		# this is so the next minimum search gets the next highest value
 			
+		E2end(E2n)
 
 	clsmx[0].write_image(args[1],0)
 	clsmx[1].write_image(args[1],1)

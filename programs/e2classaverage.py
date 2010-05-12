@@ -716,14 +716,17 @@ class EMClassAveTask(EMTask):
 	  		progress_callback(int(100*(progress/float(total_averages))))
   		else:
   			#averages[-1].process_inplace("xform.centeracf")
+
 			if self.options["automask"]:
 				msk=average.process("filter.lowpass.gauss",{"cutoff_abs":0.05})
 				msk.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
 				msk.process_inplace("mask.auto2d",{"radius":msk["nx"]/10,"sigma":0.3,"nshells":msk["nx"]/20,"nshellsgauss":msk["nx"]/10})
 				average.mult(msk)
-			average.process_inplace("xform.centerofmass", {"int_shift_only":1})
-			t = average.get_attr("xform.align2d")
-			for ptcl_idx,ali in all_alis[-1].items(): all_alis[-1][ptcl_idx] = t*ali # have to update the alignment parameters so that they produce the average in its current position
+			if average["sigma"]==0 : print "Warning, average sigma = 0"
+			else :
+				average.process_inplace("xform.centerofmass", {"int_shift_only":1})
+				t = average.get_attr("xform.align2d")
+				for ptcl_idx,ali in all_alis[-1].items(): all_alis[-1][ptcl_idx] = t*ali # have to update the alignment parameters so that they produce the average in its current position
 		
 		if verbose:
 			print "****************** Produced",len(averages),"averages for class",self.data["class_idx"]
