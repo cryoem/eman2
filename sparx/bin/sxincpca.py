@@ -19,7 +19,7 @@ if global_def.CACHE_DISABLE:
 prefix = argv[1]
 start  = atoi(argv[2])
 end    = atoi(argv[3])
-avg    = getImage(argv[4])
+avg    = get_im(argv[4])
 output = argv[5]
 mask   = getImage(argv[6])
 nvec   = atof(argv[7])

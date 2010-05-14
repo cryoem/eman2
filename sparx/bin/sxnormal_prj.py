@@ -33,8 +33,8 @@ def main():
 		exit(-1)
 
 	if len(args)==3 :
-		from utilities import getImage
-		refvol = getImage( args[2] )
+		from utilities import get_im
+		refvol = get_im( args[2] )
 	else:
 		refvol = None
 
