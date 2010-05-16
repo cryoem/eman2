@@ -34,31 +34,31 @@
 
 import os
 import global_def
-from  global_def import *
-from  optparse import OptionParser
+from   global_def import *
+from   optparse import OptionParser
 import sys
 def main():
+
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stackfile output_file  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA"
+	usage = progname + " stackfile output_file  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA --debug"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--K1",          type="int",          default=2,          help=" Mimimum number of Clusters")
-	parser.add_option("--K2",          type="int",          default=3,          help=" Maximum number of Clusters")
-	parser.add_option("--trials",      type="int",          default=1,          help=" Number of trials of K-means")
-	parser.add_option("--opt_method",  type='string',       default="SSE",      help=" K-means method: SSE (default), cla")
-	parser.add_option("--CTF",         action="store_true", default=False,      help=" Perform classification using CTF information")
-	parser.add_option("--rand_seed",   type="int",          default=-1,         help=" random seed of initial (default random)" )
-	parser.add_option("--maxit",       type="int",          default=100,        help=" Mimimum number of iterations within K-means")
-	parser.add_option("--F",           type="float",        default=0.0,        help=" Factor to decrease temperature in simulate annealing, ex.: 0.9")
-	parser.add_option("--T0",          type="float",        default=0.0,        help=" Initial temperature in simulate annealing, ex: 100")
-	parser.add_option("--MPI",         action="store_true", default=False,      help=" whether using MPI version ")
-	parser.add_option("--CUDA",        action="store_true", default=False,      help=" whether using CUDA version")
-	parser.add_option("--debug",       action="store_true", default=False,      help=" ")
+	parser.add_option("--K1",          type="int",          default=2,          help="Mimimum number of clusters")
+	parser.add_option("--K2",          type="int",          default=3,          help="Maximum number of clusters")
+	parser.add_option("--trials",      type="int",          default=1,          help="Number of trials in K-means (default 1)")
+	parser.add_option("--opt_method",  type='string',       default="SSE",      help="K-means method: SSE (default), cla")
+	parser.add_option("--CTF",         action="store_true", default=False,      help="Perform clustering using CTF information")
+	parser.add_option("--rand_seed",   type="int",          default=-1,         help="Random seed of initial (default random)" )
+	parser.add_option("--maxit",       type="int",          default=100,        help="Mimimum number of iterations within K-means")
+	parser.add_option("--F",           type="float",        default=0.0,        help="Factor to decrease temperature in simulated annealing, ex.: 0.9")
+	parser.add_option("--T0",          type="float",        default=0.0,        help="Initial temperature in simulated annealing, ex: 100")
+	parser.add_option("--MPI",         action="store_true", default=False,      help="Use MPI version")
+	parser.add_option("--CUDA",        action="store_true", default=False,      help="Use CUDA version")
+	parser.add_option("--debug",       action="store_true", default=False,      help="Debug output")
+
 	(options, args) = parser.parse_args()
-
-
-    	if len(args) < 2 or len(args) > 3:
-			print "usage: " + usage
-			print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 2 or len(args) > 3:
+				print "usage: " + usage
+				print "Please run '" + progname + " -h' for detailed options"
 	elif options.trials < 1:
 			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
 			sys.exit()
@@ -82,4 +82,4 @@ def main():
 		global_def.BATCH = False
 			
 if __name__ == "__main__":
-	        main()
+		main()
