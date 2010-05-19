@@ -63,6 +63,7 @@ Various utilities related to BDB databases."""
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
 	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
+	parser.add_option("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
 
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
@@ -205,6 +206,27 @@ Various utilities related to BDB databases."""
 				except:
 					print fmt2%db
 			print fmt%("TOTAL",total[0],"",human_size(total[1]))
+		elif options.check :
+			from cPickle import loads
+			for db in dbs:
+				dct=db_open_dict(path+db)
+				dct.realopen()
+				keys=dct.bdb.keys()
+				allkvp={}
+				for k in keys:
+					s1,s2=k.split("\x80",1)		# start of a pickled string. 
+					s2=loads("\x80"+s2)			# the pickled part
+					if len(s1)>0 :				# If anything unpickled, then it is an axbxc prefix identifying the location of a binary
+						st=allkvp.setdefault(s1,set()) # set of all positions seen so far
+						v=loads(dct.bdb.get(k))	# position in binary file
+						if v in st : print "Error: value %d seen multiple times in %s (%s,%s)"%(v,db,s1,s2)
+						st.add(v)
+				print "%s : "%db,
+				for i in allkvp.keys(): 
+					if options.verbose>0 : print "%s %d/%d\t"%(i,len(allkvp[i]),int(max(allkvp[i]))+1),
+					if len(allkvp[i])!=int(max(allkvp[i])+1) : print "\nMismatch found in %s. Could be normal if file has been rewritten multiple times, but is unusual"%db
+				if options.verbose>0 : print ""
+				else : print " done"
 
 		elif options.short :
 			for db in dbs:

@@ -192,12 +192,12 @@ def db_parse_path(url):
 	u2=url[2].split(",")
 	if len(u2)==1 :
 		#u2[0]=u2[0].lower()		
-		if u2[0][:7]=="select." :
+		if u2[0][:7].lower()=="select." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
 			if not ddb.select.has_key(u2[0][7:]) : raise Exception,"Unknown selection list %s"%u2[0][7:]
 			return (url[0],url[1],ddb.select[u2[0][7:]])		# bdb:path/to#dict?select/name
-		elif u2[0][:8]=="exclude." :
+		elif u2[0][:8].lower()=="exclude." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
 			if not ddb.select.has_key(u2[0][8:]) : raise Exception,"Unknown selection list %s"%u2[0][8:]
