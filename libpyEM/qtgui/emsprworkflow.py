@@ -2536,7 +2536,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			bool_args = ["force","write_dbbox","write_ptcls","invert"]
 			additional_args = ["--dbls=%s" %spr_ptcls_dict]
 			temp_file_name = "e2boxer_autobox_stdout.txt"
-			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.spawn_single_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.form.closeEvent(None)
 			self.form = None
@@ -3131,7 +3131,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 #			additional_args = ["--dbds=%s"  %spr_ptcls_dict,"--computesf"] # don't want automatic computesf any more
 			additional_args = ["--dbds=%s"  %spr_ptcls_dict]
 			temp_file_name = "e2ctf_output_stdout.txt"
-			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			# Steve directed that the output writing task should use a single thead on July 3rd 2009
 			#self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
@@ -3269,7 +3269,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			bool_args = ["wiener","phaseflip"]
 			additional_args = []
 			temp_file_name = "e2ctf_output_stdout.txt"
-			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
 			self.form.closeEvent(None)

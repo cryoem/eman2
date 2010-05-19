@@ -223,6 +223,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			#n = EMUtil.get_image_count(self.particle_file)
 			particle.read_image(self.particle_file,self.current_particle)
 			particle.transform(t)
+			particle["xform.align2d"]=t
 			particle.process_inplace("normalize.toimage",{"to":projection})
 			if particle["norm_mult"]<0 : particle*=-1.0
 			

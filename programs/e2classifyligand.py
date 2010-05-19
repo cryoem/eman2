@@ -297,7 +297,7 @@ ligand/no-ligand contrast in individual images:
 	if options.maskfile:
 		for i in statall:
 			if statall[i][0]==None : continue
-			if statall[i][0]<0
+			if statall[i][0]<0:
 				write_particle(args[0],"_low",i)		# low mask density
 				counts[6]+=1
 			else : 

@@ -319,6 +319,8 @@ def db_read_image(self,fsp,*parms):
 	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
+#	print "RI ",fsp,str(parms)
+	
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
 		 
@@ -375,6 +377,7 @@ def db_write_image(self,fsp,*parms):
 	Writes and image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
 	the remaining options are ignored"
 	"""
+#	print "WI ",fsp,str(parms)
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
@@ -1118,7 +1121,7 @@ of these occasional errors"""
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			self.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
+			self.put(fkey+dumps(key,-1),dumps(n,-1),txn=self.txn)		# a special key for the binary location
 			
 			# write the metadata
 			try: del ad["data_path"]
@@ -1287,10 +1290,11 @@ of these occasional errors"""
 			try :
 				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
 			except:
-				if not self.has_key(fkey) : self[fkey]=0
+				if not self.has_key(fkey) : 
+					self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			self.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
+			self.put(fkey+dumps(key,-1),dumps(n,-1),txn=txn)		# a special key for the binary location
 			
 			# write the metadata
 			try: del ad["data_path"]

@@ -1537,6 +1537,12 @@ def xformprint(self) :
 Transform.__repr__=xformprint
 Transform.__str__=xformprint
 
+def regionprint(self) : 
+	try : return "Region(%s)"%self.get_string().replace(";",",")
+	except: return "Region(Error)"
+Region.__repr__=regionprint
+Region.__str__=regionprint
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\
