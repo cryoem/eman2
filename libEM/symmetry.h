@@ -478,7 +478,7 @@ namespace EMAN {
 			TypeDict d;
 			d.put("nsym", EMObject::INT, "The symmetry number of the helix, around the equator.");
 			d.put("equator_range", EMObject::FLOAT, "The amount altitude angles are allowed to vary above and below the equator. Default is 5");
-			d.put("tz", EMObject::FLOAT, "The translational distance (along z) between succesive identical subunits in angstrom (default a/pix is 1)");
+			d.put("tz", EMObject::FLOAT, "The translational distance (along z) between successive identical subunits in angstrom (default a/pix is 1)");
 			d.put("daz", EMObject::FLOAT, "The rotational angle (about z) between successive identical subunits in degrees");
 			d.put("apix", EMObject::FLOAT, "Angstrom per pixel, default is one.");
 			return d;
@@ -518,11 +518,12 @@ namespace EMAN {
 		 * @return the number of symmetric rotations that can be applied without going beyond 360 degrees
 		 * @exception InvalidValueException if d_az (as stored internally in parms) is less than or equal to zero
 			 */
-		virtual int get_nsym() const {
+		virtual int get_nsym() const { return (int)params["nsym"]; }; // ming, this is the number of helix turns
+		/*virtual int get_nsym() const {
 			float daz = params.set_default("daz",0.0f);
 			if ( daz <= 0 ) throw InvalidValueException(daz,"Error, you must specify a positive non zero d_az");
 			return static_cast<int>(360.0/daz);
-		};
+		};*/
 
 			/** Gets the maximum cylcic symmetry exhibited by this object. This is used by OrientationGenerators, and is
 		 * probably not something a general user would utilize.
