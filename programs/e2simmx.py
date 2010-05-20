@@ -120,6 +120,7 @@ class EMParallelSimMX:
 			else: 
 				d["ralign"] = None
 				d["raligncmp"] = None
+			d["prefilt"]=options.prefilt
 			
 			if hasattr(options,"shrink") and options.shrink != None: d["shrink"] = options.shrink
 			else: d["shrink"] = None
@@ -408,9 +409,9 @@ class EMSimTaskDC(EMTask):
 				else :
 					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
-			if options.has_key("prefilt") :
+			if options.has_key("prefilt") and options["prefilt"]:
 				msk=ref.process("threshold.notzero")					# mask from the projection
-				ref=ref.process_inplace("filter.matchto",{"to":ptcl})	# matched filter
+				ref=ref.process("filter.matchto",{"to":ptcl})	# matched filter
 				ref.mult(msk)											# remask after setsf
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
@@ -711,13 +712,14 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
+#	target.write_image("dbug.hdf",-1)
 	for i,r in enumerate(reflist):
 		if subset!=None and i not in subset : 
 			ret[i]=None
 			continue
 		if prefilt :
 			msk=r.process("threshold.notzero")					# mask from the projection
-			r=r.process_inplace("filter.matchto",{"to":target})
+			r=r.process("filter.matchto",{"to":target})
 			r.mult(msk)											# remask after filtering
 
 		if align[0] :
@@ -739,6 +741,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			scale_correction = 1.0
 			if shrink != None: scale_correction = float(shrink)
 			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"])
+#			ta.write_image("dbug.hdf",-1)
+			
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
 		

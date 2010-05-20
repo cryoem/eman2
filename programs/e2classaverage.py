@@ -144,7 +144,6 @@ class EMGenClassAverages:
 			d["cmp"] = parsemodopt(options.cmp)
 			d["averager"] = parsemodopt(options.averager)
 			d["automask"] = options.automask
-			if hasattr(options,"prefilt") : d["prefilt"]=True
 			
 			if hasattr(options,"ralign") and options.ralign != None: 
 				d["ralign"] = parsemodopt(options.ralign)
@@ -154,6 +153,9 @@ class EMGenClassAverages:
 				d["raligncmp"] = None
 			
 			d["keep"] = options.keep
+			
+			if hasattr(options,"prefilt") and options.keepsig != None: d["prefilt"] = options.prefilt 
+			else: d["prefilt"] = False
 			
 			if hasattr(options,"keepsig") and options.keepsig != None: d["keepsig"] = options.keepsig 
 			else: d["keepsig"] = False
@@ -556,6 +558,7 @@ class EMClassAveTask(EMTask):
 				if norm != None:
 					usefilt_image.process_inplace(norm[0],norm[1])
 				usefilt_images[ptcl_idx] = usefilt_image
+				
 		# set a flag that can be used to decide if quality scores need to be
 		# evaluated and used for culling the worst, or least similar, particles
 		# from the class
@@ -829,7 +832,7 @@ class EMClassAveTask(EMTask):
 		options = self.options
 		this.del_attr("xform.align2d")
 		if options.has_key("prefilt") :
-			to.process_inplace("normalize.edgemean")
+			to=to.process("normalize.edgemean")					# make a copy so we don't mess up the original
 			msk=to.process("threshold.notzero")					# mask from the projection
 			to.process_inplace("filter.matchto",{"to":this})
 			to.mult(msk)											# remask after filtering
@@ -917,7 +920,7 @@ class EMClassAveTask(EMTask):
 #				image = self.images[ptcl_idx]
 #			else:
 #				images = self.usefilt_images[ptcl_idx]
-					
+			
 			if (running_average == None):
 				averager.add_image(image)
 				running_average = image.copy()

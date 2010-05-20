@@ -3702,6 +3702,8 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 	EMData *to = params["to"];
 
+	bool ignore_zero = params.set_default("ignore_zero",true);
+	
 	float low_threshold = FLT_MIN;
 	string low_thr_name = "low_threshold";
 	if (params.has_key(low_thr_name)) {
@@ -3726,25 +3728,54 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	float sum_y = 0;
 	int count = 0;
 
-	for (size_t i = 0; i < size; i++) {
-		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
-			count++;
-			sum_x += refp[i];
-			sum_y += rawp[i];
-		}
-	}
-
-	float sum_x_mean = sum_x / count;
+	float sum_x_mean = 0;
 	float sum_tt = 0;
 	float b = 0;
-
-	float t;
-	for (size_t i = 0; i < size; i++) {
-		if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
-			t = refp[i] - sum_x_mean;
-			sum_tt += t * t;
-			b += t * rawp[i];
+	
+	// This is really inefficient, who coded it ?   --steve
+	if (ignore_zero) {
+		for (size_t i = 0; i < size; i++) {
+			if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
+				count++;
+				sum_x += refp[i];
+				sum_y += rawp[i];
+			}
 		}
+
+		sum_x_mean = sum_x / count;
+		sum_tt = 0;
+		b = 0;
+
+		float t;
+		for (size_t i = 0; i < size; i++) {
+			if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0 && rawp[i] != 0.0) {
+				t = refp[i] - sum_x_mean;
+				sum_tt += t * t;
+				b += t * rawp[i];
+			}
+		}
+	}
+	else {
+			for (size_t i = 0; i < size; i++) {
+			if (refp[i] >= low_threshold && refp[i] <= high_threshold) {
+				count++;
+				sum_x += refp[i];
+				sum_y += rawp[i];
+			}
+		}
+
+		sum_x_mean = sum_x / count;
+		sum_tt = 0;
+		b = 0;
+
+		float t;
+		for (size_t i = 0; i < size; i++) {
+			if (refp[i] >= low_threshold && refp[i] <= high_threshold) {
+				t = refp[i] - sum_x_mean;
+				sum_tt += t * t;
+				b += t * rawp[i];
+			}
+		}	
 	}
 
 	b /= sum_tt;

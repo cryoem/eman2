@@ -145,10 +145,18 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		Uses self.current_particle to update the cmp attribute in the projections
 		'''
 		e = EMData()
+		allcmp=[]
 		for i in range(len(self.projections)):
 			r = Region(i,self.current_particle,1,1)
 			e.read_image(self.simmx_file,0,False,r)
-			self.projections[i].set_attr("cmp",-e.get(0))		# We plot -1* values so taller peaks are better...
+			allcmp.append(e.get(0))
+		
+		if min(allcmp)>0 :
+			for i in range(len(self.projections)):
+				self.projections[i].set_attr("cmp",1.0/allcmp[i])		# We plot reciprocalk values so taller peaks are better...
+		else :
+			for i in range(len(self.projections)):
+				self.projections[i].set_attr("cmp",-allcmp[i])		# We plot -1* values so taller peaks are better...
 		
 		self.regen_dl()
 		

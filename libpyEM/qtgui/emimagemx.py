@@ -1492,16 +1492,18 @@ class EMImageMXModule(EMGUIModule):
 					self.font_renderer.render_string(sidx)
 					
 				else : 
-					av=self.data[i].get_attr(v)
-					try:
-						if isinstance(av,float) : avs="%1.4g"%av
-						elif isinstance(av,Transform):
-							t = av.get_rotation("eman")
-							avs = "%1.1f,%1.1f,%1.1f" %(t["az"],t["alt"],t["phi"])
-						elif isinstance(av,EMAN2Ctf):
-							avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
-						else: avs=str(av)
-					except:avs ="---"
+					try :
+						av=self.data[i].get_attr(v)
+						try:
+							if isinstance(av,float) : avs="%1.4g"%av
+							elif isinstance(av,Transform):
+								t = av.get_rotation("eman")
+								avs = "%1.1f,%1.1f,%1.1f" %(t["az"],t["alt"],t["phi"])
+							elif isinstance(av,EMAN2Ctf):
+								avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
+							else: avs=str(av)
+						except:avs ="???"
+					except: avs=""
 					bbox = self.font_renderer.bounding_box(avs)
 					
 					GLUtil.mx_bbox(bbox,txtcol,bgcol)
