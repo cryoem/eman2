@@ -9638,12 +9638,12 @@ def HAC_averages(stack, dendoname, avename, K):
 
 def tomo(box):
 	print "box: ", box
-        cmd = "your_executable -box " + box
+	cmd = "your_executable -box " + box
 
 	print "cmd: ", cmd
 	from os import system
 	status = system( cmd )
-        print 'status: ', status
+	print 'status: ', status
 
 # Calculate averages to a given stack (wrap for ave_var in statistics)
 def ave_ali(name_stack, name_out = None, ali = False, active = False):
