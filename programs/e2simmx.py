@@ -714,6 +714,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	ret=[None for i in reflist]
 #	target.write_image("dbug.hdf",-1)
 	for i,r in enumerate(reflist):
+		if r["sigma"]==0 : continue				# bad reference
 		if subset!=None and i not in subset : 
 			ret[i]=None
 			continue
