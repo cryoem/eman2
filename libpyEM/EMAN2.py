@@ -566,6 +566,23 @@ class EMImage(object):
 			return image.get_qt_widget()
 		else: print "can not instantiate EMImage in non gui mode"
 
+def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
+	"""Will plot pixels in the first image on x vs the same pixel in the second image on y
+	with or without zero pixels"""
+	n=im1["nx"]*im1["ny"]*im1["nz"]	# the x and y arrays will be this long (- zeros)
+	x=[]
+	y=[]
+	s1=im1["sigma"]
+	s2=im2["sigma"]
+	for i in xrange(n):
+		if skipzero and (im1[i]==0 or im2[i]==0) : continue
+		if skipnearzero and (fabs(im1[i])<s1/10.0 or fabs(im2[i])<s2/10.0) : continue
+		x.append(im1[i])
+		y.append(im2[i])
+		
+	plot((x,y))
+	return (x,y)
+
 def plot(data,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	if GUIMode:

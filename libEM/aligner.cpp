@@ -1028,6 +1028,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		return 0;
 	}
 
+	EMData *result;
 	int mode = params.set_default("mode", 0);
 	float saz = 0.0;
 	float sdx = 0.0;
@@ -1044,6 +1045,14 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	} else {
 		t = new Transform(); // is the identity
+	}
+
+	// We do this to prevent the GSL routine from crashing on an invalid alignment
+	if ((float)(this_img->get_attr("sigma"))==0.0 || (float)(to->get_attr("sigma"))==0.0) {
+		result = this_img->process("xform",Dict("transform",t));
+		result->set_attr("xform.align2d",t);
+		delete t;
+		return result;
 	}
 
 	int np = 3;
@@ -1115,7 +1124,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		maxshift = this_img->get_xsize() / 4;
 	}
 	float fmaxshift = static_cast<float>(maxshift);
-	EMData *result;
 	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1))  )
 	{
 //		printf(" Refine good %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
