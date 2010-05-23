@@ -1982,7 +1982,7 @@ def running_time_txt(start_time):
 
 '''
 def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
 	
 	if comm == -1:  comm = MPI_COMM_WORLD
@@ -2028,7 +2028,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 
 '''
 def bcast_array_to_all(data, myid, main_node = 0, comm = -1):
-	from Numeric import array, shape, reshape
+	from numpy import array, shape, reshape
 	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
 	if comm == -1: comm = MPI_COMM_WORLD

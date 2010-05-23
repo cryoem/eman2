@@ -1658,7 +1658,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	from random         import   seed, randint
 	from morphology     import   ctf_2
 	from filter         import   filt_btwl, filt_params
-	from Numeric        import   reshape, shape
+	from numpy          import   reshape, shape
 	from utilities      import   print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys

@@ -7989,17 +7989,17 @@ class def_variancer:
 
 class inc_variancer:
 	def __init__(self, nx, ny, nz):
-		import Numeric
+		import numpy
 		self.nx = nx
 		self.ny = ny
 		self.nz = nz
 		self.ntot = nx*ny*nz
-		self.sum1 = Numeric.array( [0.0]*self.ntot )
-		self.sum2 = Numeric.array( [0.0]*self.ntot )
+		self.sum1 = numpy.array( [0.0]*self.ntot )
+		self.sum2 = numpy.array( [0.0]*self.ntot )
 		self.nimg = 0
 
 	def insert(self, img):
-		from Numeric import reshape
+		from numpy import reshape
 		from utilities import get_image_data
 		data = reshape( get_image_data(img), (self.ntot,) )
 		self.sum1 += data
@@ -8011,7 +8011,7 @@ class inc_variancer:
         def mpi_getvar(self, myid, rootid):
 		from utilities import memory_usage, get_image_data, model_blank
 		from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		from Numeric import reshape
+		from numpy import reshape
 
 		cpy1 = self.sum1.copy()
 		cpy2 = self.sum2.copy()
