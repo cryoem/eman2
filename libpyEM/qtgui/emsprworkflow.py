@@ -3970,17 +3970,17 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		palign =  ParamDef(name=parameter_prefix+"align",vartype="string",desc_short="Aligner",desc_long="The aligner being used",property=None,defaultunits=db.get(parameter_prefix+"align",dfl="rotate_translate_flip"),choices=aligners)
 		palignargs =  ParamDef(name=parameter_prefix+"alignargs",vartype="string",desc_short="params",desc_long="Parameters for the aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get(parameter_prefix+"alignargs",dfl=""),choices=[])
 		
-		paligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits=db.get(parameter_prefix+"aligncmp",dfl="frc"),choices=cmps)
+		paligncmp =  ParamDef(name=parameter_prefix+"aligncmp",vartype="string",desc_short="Align comparator",desc_long="The comparator being used",property=None,defaultunits=db.get(parameter_prefix+"aligncmp",dfl="ccc"),choices=cmps)
 		paligncmpargs =  ParamDef(name=parameter_prefix+"aligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"aligncmpargs",dfl=""),choices=[])	
 		
 		
 		pralign =  ParamDef(name=parameter_prefix+"ralign",vartype="string",desc_short="Refine aligner",desc_long="The refine aligner being used",property=None,defaultunits=db.get(parameter_prefix+"ralign",dfl="None"),choices=["None","refine"])
 		pralignargs =  ParamDef(name=parameter_prefix+"ralignargs",vartype="string",desc_short="params",desc_long="Parameters for this aligner, see \"e2help.py aligners\"",property=None,defaultunits=db.get(parameter_prefix+"ralignargs",dfl=""),choices=[])
 		
-		praligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits=db.get(parameter_prefix+"raligncmp",dfl="frc"),choices=cmps)
+		praligncmp =  ParamDef(name=parameter_prefix+"raligncmp",vartype="string",desc_short="Refine align comparator",desc_long="The comparator being used for refine alignment",property=None,defaultunits=db.get(parameter_prefix+"raligncmp",dfl="ccc"),choices=cmps)
 		praligncmpargs =  ParamDef(name=parameter_prefix+"raligncmpargs",vartype="string",desc_short="params",desc_long="Parameters for thos comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"raligncmpargs",dfl=""),choices=[])	
 		
-		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get(parameter_prefix+"cmp",dfl="frc"),choices=cmps)
+		pcmp  =  ParamDef(name=parameter_prefix+"cmp",vartype="string",desc_short="Main comparator",desc_long="The comparator to determine the final quality metric",defaultunits=db.get(parameter_prefix+"cmp",dfl="ccc"),choices=cmps)
 		pcmpargs =  ParamDef(name=parameter_prefix+"cmpargs",vartype="string",desc_short="params",desc_long="Parameters for the this comparator, see \"e2help.py cmps\"",property=None,defaultunits=db.get(parameter_prefix+"cmpargs",dfl=""),choices=[])	
 	
 		#db_close_dict(self.form_db_name)
