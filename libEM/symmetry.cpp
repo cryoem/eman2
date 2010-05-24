@@ -168,18 +168,18 @@ void OrientationGenerator::get_az_max(const Symmetry3D* const sym, const float& 
 
 	if ( sym->is_d_sym() && alt_iterator == altmax && ( (sym->get_nsym())/2 % 2 == 1 )) {
 		if (inc_mirror) {
-			azmax_adjusted /= 4.0;
+			azmax_adjusted /= 4.0f;
 			d_odd_mirror_flag = true;
 		}
-		else azmax_adjusted /= 2.0;
+		else azmax_adjusted /= 2.0f;
 	}
 	else if (sym->is_d_sym() && alt_iterator == altmax && ( (sym->get_nsym())/2 % 2 == 0 ) && inc_mirror) {
-		azmax_adjusted /= 2.0;
+		azmax_adjusted /= 2.0f;
 	}
 	// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
 	// half the equator is redundant (it is the mirror of the other half)
 	else if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
-		azmax_adjusted /= 2.0;
+		azmax_adjusted /= 2.0f;
 	}
 	// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
 	// full circle, we must not include it
@@ -216,9 +216,9 @@ float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const
 {
 
 //	float delta_soln = 360.0f/sym->get_max_csym();
-	float delta_soln = 180.0;
+	float delta_soln = 180.0f;
 	float delta_upper_bound = delta_soln;
-	float delta_lower_bound = 0.0;
+	float delta_lower_bound = 0.0f;
 
 	int prev_tally = -1;
 	// This is an example of a divide and conquer approach, the possible values of delta are searched
@@ -252,7 +252,7 @@ float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const
 bool OrientationGenerator::add_orientation(vector<Transform>& v, const float& az, const float& alt) const
 {
 	bool randphi = params.set_default("random_phi",false);
-	float phi = 0.0;
+	float phi = 0.0f;
 	if (randphi) phi = Util::get_frand(0.0f,359.99999f);
 	float phitoo = params.set_default("phitoo",0.0f);
 	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
@@ -266,7 +266,7 @@ bool OrientationGenerator::add_orientation(vector<Transform>& v, const float& az
 	if ( phitoo != 0 ) {
 		if (phitoo < 0) return false;
 		else {
-			for ( float p = phitoo; p <= 360.0-phitoo; p+= phitoo )
+			for ( float p = phitoo; p <= 360.0f-phitoo; p+= phitoo )
 			{
 				d["phi"] = fmod(phi+p,360);
 				Transform t(d);
@@ -319,10 +319,10 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8f) ) h = azmax / 2.1f;
 		else if (alt_iterator == 0) h = azmax;
 
-		float az_iterator = 0.0;
+		float az_iterator = 0.0f;
 
 		float azmax_adjusted = azmax;
 		bool d_odd_mirror_flag = false;
@@ -376,7 +376,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 
 	bool perturb = params.set_default("perturb",false);
 
-	float alt_iterator = 0.0;
+	float alt_iterator = 0.0f;
 
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
@@ -387,10 +387,10 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8f) ) h = azmax / 2.1f;
 		else if (alt_iterator == 0) h = azmax;
 
-		float az_iterator = 0.0;
+		float az_iterator = 0.0f;
 
 		float azmax_adjusted = azmax;
 
@@ -467,7 +467,7 @@ vector<Transform> RandomOrientationGenerator::gen_orientations(const Symmetry3D*
 		float u1 =  Util::get_frand(-1.0f,1.0f);
 		float u2 =  Util::get_frand(-1.0f,1.0f);
 		float s = u1*u1 + u2*u2;
-		if ( s > 1.0 ) continue;
+		if ( s > 1.0f ) continue;
 		float alpha = 2.0f*sqrtf(1.0f-s);
 		float x = alpha * u1;
 		float y = alpha * u2;
@@ -476,7 +476,7 @@ vector<Transform> RandomOrientationGenerator::gen_orientations(const Symmetry3D*
 		float altitude = (float)EMConsts::rad2deg*acos(z);
 		float azimuth = (float)EMConsts::rad2deg*atan2(y,x);
 
-		float phi = 0.0;
+		float phi = 0.0f;
 		if ( phitoo ) phi = Util::get_frand(0.0f,359.9999f);
 
 		d["az"] = azimuth; d["phi"] = phi; d["alt"] = altitude;
@@ -502,7 +502,7 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float altmin = 0.0;
+	float altmin = 0.0f;
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()) altmin = delimiters["alt_min"];
@@ -512,7 +512,7 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	for (float alt = altmin; alt <= altmax; alt += delta) {
 		float detaz;
 		int lt;
-		if ((0.0 == alt)||(180.0 == alt)) {
+		if ((0.0f == alt)||(180.0f == alt)) {
 			detaz = 360.0f;
 			lt = 1;
 		} else {
@@ -555,7 +555,7 @@ vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float altmin = 0.0;
+	float altmin = 0.0f;
 	// If it's a h symmetry then the alt iterator starts at very close
 	// to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()) altmin = delimiters["alt_min"];
@@ -565,7 +565,7 @@ vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* c
 	for (float alt = altmin; alt <= altmax; alt += delta) {
 		float detaz;
 		int lt;
-		if ((0.0 == alt)||(180.0 == alt)) {
+		if ((0.0f == alt)||(180.0f == alt)) {
 			detaz = 360.0f;
 			lt = 1;
 		} else {
@@ -602,7 +602,7 @@ int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float altmin = 0.0;
+	float altmin = 0.0f;
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()){
@@ -655,7 +655,7 @@ vector<Transform> SaffOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float altmin = 0.0;
+	float altmin = 0.0f;
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()){
@@ -674,7 +674,7 @@ vector<Transform> SaffOrientationGenerator::gen_orientations(const Symmetry3D* c
 	vector<Transform> ret;
 
 	if (!sym->is_h_sym()) add_orientation(ret,0,0);
-	float az = 0.0;
+	float az = 0.0f;
 	float dz = (float)cos(altmin*EMConsts::deg2rad);
 	for(int i = 1; i < NumPoints; ++i ){
 		float z = dz + Deltaz* (float)i/ float(NumPoints-1);
@@ -1099,7 +1099,7 @@ vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 			if (is_platonic_sym()) {
 				for(const_point_it tmp = points.begin(); tmp != points.end(); ++tmp ) {
 					Vec3f tt = result-(*tmp);
-					if (tt.squared_length() < 0.01) {
+					if (tt.squared_length() < 0.01f) {
 						hit_cache.push_back(i);
 						ret.push_back(t);
 					}
@@ -1108,7 +1108,7 @@ vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 			}
 			else {
 				result -= *point;
-				if (result.squared_length() < 0.05) {
+				if (result.squared_length() < 0.05f) {
 					hit_cache.push_back(i);
 					ret.push_back(t);
 				}
@@ -1152,10 +1152,10 @@ Dict CSym::get_delimiters(const bool inc_mirror) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 
-	if ( inc_mirror ) returnDict["alt_max"] = 180.0;
-	else  returnDict["alt_max"] = 90.0;
+	if ( inc_mirror ) returnDict["alt_max"] = 180.0f;
+	else  returnDict["alt_max"] = 90.0f;
 
-	returnDict["az_max"] = 360.0/(float)nsym;
+	returnDict["az_max"] = 360.0f/(float)nsym;
 
 	return returnDict;
 }
@@ -1324,10 +1324,10 @@ Dict DSym::get_delimiters(const bool inc_mirror) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 
-	returnDict["alt_max"] = 90.0;
+	returnDict["alt_max"] = 90.0f;
 
-	if ( inc_mirror )  returnDict["az_max"] = 360.0/(float)nsym;
-	else returnDict["az_max"] = 180.0/(float)nsym;
+	if ( inc_mirror )  returnDict["az_max"] = 360.0f/(float)nsym;
+	else returnDict["az_max"] = 180.0f/(float)nsym;
 
 	return returnDict;
 }
@@ -1473,11 +1473,11 @@ Dict HSym::get_delimiters(const bool) const {
 
 	float equator_range = params.set_default("equator_range",5.0f);
 
-	returnDict["alt_max"] = 90.0 + equator_range;
+	returnDict["alt_max"] = 90.0f + equator_range;
 
-	returnDict["alt_min"] = 90.0;
+	returnDict["alt_min"] = 90.0f;
 
-	returnDict["az_max"] = 360.0/(float)nsym;
+	returnDict["az_max"] = 360.0f/(float)nsym;
 
 	return returnDict;
 }
@@ -1578,7 +1578,7 @@ void PlatonicSym::init()
 	platonic_params["alt_max"] = alpha;
 
 	// This is half of "theta_c" as in the conventions of the Balwin paper. See also http://blake.bcm.edu/emanwiki/EMAN2/Symmetry.
-	platonic_params["theta_c_on_two"] = 1.0/2.0*acos( cos(cap_sig)/(1.0-cos(cap_sig)));
+	platonic_params["theta_c_on_two"] = 1.0f/2.0f*acos( cos(cap_sig)/(1.0f-cos(cap_sig)));
 
 }
 
@@ -1590,12 +1590,12 @@ Dict PlatonicSym::get_delimiters(const bool inc_mirror) const
 	// For icos and oct symmetries, excluding the mirror means halving az_maz
 	if ( inc_mirror == false )
 		if ( get_name() ==  IcosahedralSym::NAME || get_name() == OctahedralSym::NAME )
-			ret["az_max"] = 0.5*EMConsts::rad2deg * (float) platonic_params["az_max"];
+			ret["az_max"] = 0.5f*EMConsts::rad2deg * (float) platonic_params["az_max"];
 		//else
 		//the alt_max variable should probably be altered if the symmetry is tet, but
 		//this is taken care of in TetSym::is_in_asym_unit
 
-	ret["alt_max"] = EMConsts::rad2deg * (float) platonic_params["alt_max"];
+	ret["alt_max"] = (float)(EMConsts::rad2deg * (float) platonic_params["alt_max"]);
 	return ret;
 }
 
@@ -1613,7 +1613,7 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, c
 
 		float cap_sig = platonic_params["az_max"];
 		float alt_max = platonic_params["alt_max"];
-		if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
+		if ( tmpaz > ( cap_sig/2.0f ) )tmpaz = cap_sig - tmpaz;
 
 		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
 
@@ -1622,7 +1622,7 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, c
 		if ( lower_alt_bound > tmpalt ) {
 			if ( inc_mirror == false )
 			{
-				if ( cap_sig/2.0 < tmpaz ) return false;
+				if ( cap_sig/2.0f < tmpaz ) return false;
 				else return true;
 			}
 			else return true;
@@ -1806,7 +1806,7 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 
 		float cap_sig = platonic_params["az_max"];
 		float alt_max = platonic_params["alt_max"];
-		if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
+		if ( tmpaz > ( cap_sig/2.0f ) )tmpaz = cap_sig - tmpaz;
 
 		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
 
