@@ -416,6 +416,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			# get the image to insert
 			try: 
 				img=elem["data"]
+				if img["sigma"]==0 : contine
 				if not img.has_attr("reconstruct_preproc") :
 					img=recon.preprocess_slice(img,elem["xform"])
 					elem["data"]=img		# cache this for use in later iterations
@@ -425,6 +426,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	#			print traceback.print_exc()
 				if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 				else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
+				if img["sigma"]==0 : continue
 				img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
 				img.mult(elem["norm"])
 	#		img["n"]=i
