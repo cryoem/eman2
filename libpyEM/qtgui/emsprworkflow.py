@@ -4079,8 +4079,9 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		try: 
 			if options.prefilt : string_args.append("prefilt")
 		except :
-			traceback.print_exc()
-			print "Error setting prefilt option"
+			pass
+#			traceback.print_exc()
+#			print "Error setting prefilt option"
 	
 	def check_simmx_page(self,params,options):
 		error_message = []
