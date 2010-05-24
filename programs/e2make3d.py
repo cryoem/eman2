@@ -463,6 +463,12 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				rd=elem["xform"].get_rotation("eman")
 				if verbose>0 : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
 
+				if img["sigma"]==0 :
+					elem["reconstruct_weight"]=0
+					elem["reconstruct_norm"]=0
+					elem["reconstruct_absqual"]=0
+					if verbose>0 : print ""
+					continue
 				recon.determine_slice_agreement(img,elem["xform"],elem["weight"],True)
 
 				# These are the parameters returned by determine_slice_agreement. Since the images may be reloaded, we cache them in the data dictionary
