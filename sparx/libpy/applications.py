@@ -6130,11 +6130,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		data[im].set_attr('ID', list_of_particles[im])
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
-			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filt_ctf(data[im], ctf_params)
-			data[im].set_attr('ctf_applied', 1)
+			st = data[im].get_attr_default("ctf_applied", 0)
+			if(st == 0):
+				ctf_params = data[im].get_attr("ctf")
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
 
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
