@@ -38,6 +38,7 @@
 
 #ifdef _WIN32
 	#pragma warning(disable:4819)
+	#include <cfloat>
 #endif	//_WIN32
 
 #include "sparx/emconstants.h"
@@ -888,40 +889,31 @@ namespace EMAN
 		 */
 		static inline int goodf(const float *p_f)
 		{
-			//This is the old way to judge a good float, which cause problem on
-			//Fedora Core 64 bit system. Now use isinff() and isnanf() on Linux.
-			//#if defined(_WIN32) || defined(__APPLE__)
-			#if defined(_WIN32)
+#ifdef _WIN32
 			// the first is abnormal zero the second is +-inf or NaN
 			if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
 				(((int *) p_f)[0] & 0x7f800000) == 255) {
 				return 0;
 			}
-			#else
+#else	//_WIN32
 			using std::fpclassify;
 			int i = fpclassify(*p_f);
 			if ( i == FP_NAN || i == FP_INFINITE) return 0;
-			#endif	//_WIN32 || __APPLE__
+#endif	//_WIN32
 
 			return 1;
 		}
 
 		static inline int goodf(const double *p_f)
 		{
-			//This is the old way to judge a good float, which cause problem on
-			//Fedora Core 64 bit system. Now use isinff() and isnanf() on Linux.
-			//#if defined(_WIN32) || defined(__APPLE__)
-			#if defined(_WIN32)
-			// the first is abnormal zero the second is +-inf or NaN
-			if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
-				(((int *) p_f)[0] & 0x7f800000) == 255) {
-				return 0;
-			}
-			#else
+#ifdef _WIN32
+			int i = _fpclass(*p_f);
+			if ( i == _FPCLASS_SNAN || i == _FPCLASS_QNAN || i == _FPCLASS_NINF || i == _FPCLASS_PINF) return 0;
+#else	//_WIN32
 			using std::fpclassify;
 			int i = fpclassify(*p_f);
 			if ( i == FP_NAN || i == FP_INFINITE) return 0;
-			#endif	//_WIN32 || __APPLE__
+#endif	//_WIN32
 
 			return 1;
 		}
