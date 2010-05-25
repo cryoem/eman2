@@ -2463,11 +2463,13 @@ class E2BoxerGuiTaskGeneral(E2BoxerGuiTask):
 	
 	
 class E2BoxerOutputTask(E2BoxerTask):	
-	"""Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK.\nThis will cause the workflow to spawn output writing processes using the available CPUs. Note that the bdb option is the preferred output format, in this mode output particles are written directly to the EMAN project database."""
+	"""This task will write the selected particles to output files. The default format is 'BDB', which should be used if you plan to continue processing using the workflow interface. HDF is the only other format which will preserve full metadata. img (IMAGIC) and spi (SPIDER) will lose metadata if used.
+	
+	Select the images you wish to generate output for, enter the box size and normalization etc, and then hit OK."""
 	def __init__(self):
 		E2BoxerTask.__init__(self)
 		self.window_title = "Generate e2boxer Output"
-		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
+		self.output_formats = ["bdb","hdf","img","spi"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
 		recover_old_boxer_database()
 #	def __del__(self):
 #		print "output task dies"
