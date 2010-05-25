@@ -127,7 +127,7 @@ def main():
 	
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym"]
 	
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
