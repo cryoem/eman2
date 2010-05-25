@@ -8821,3 +8821,13 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 				avgPixError12.append([i,error])
 			
 	return avgPixError12
+
+def match_lists(l1, l2):
+	count = 0
+	for l in l1:
+		try:
+			i = l2.index(l)
+			count += 1
+		except:
+			pass
+	return count
