@@ -1560,6 +1560,25 @@ def regionprint(self) :
 Region.__repr__=regionprint
 Region.__str__=regionprint
 
+def set_emdata_array(img, array):
+	"""
+	Return a new EMData object, set its data with a list of float, all all attribute are the same as input image. 
+	The array's size must be the same as the img's size, i.e. nx*ny or nx*ny*nz.
+	img - a EMData object
+	array - a list of float data
+	"""
+	import numpy
+	dict = img.get_attr_dict()
+	
+	if len(array) != dict['nz']*dict['ny']*dict['nx']:
+		print "Error: Array's size does not match nx*ny*nz"
+		return
+	
+	numpy_array = numpy.reshape(numpy.array(array, numpy.float32), (dict['nz'], dict['ny'], dict['nx']))
+	new_img = EMNumPy.numpy2em(numpy_array)
+	new_img.set_attr_dict(dict)
+	return new_img
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\
