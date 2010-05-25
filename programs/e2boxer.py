@@ -119,7 +119,14 @@ e2boxer.py ????.mrc --boxsize=256
 		module = EMBoxerModule(args,options.boxsize)
 		# this is an example of how to add your own custom tools:
 		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
+		
+		#Make the Swarm Tool the default
+		swarm_tool_instance = SwarmTool(object)
+		swarm_tool_name = swarm_tool_instance.unique_name()
+		module.set_inspector_tool_mode(swarm_tool_name) #Set current tool to Swarm mode
+		
 		module.show_interfaces()
+		
 		application.execute()
 		
 	E2end(logid)
