@@ -94,6 +94,15 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 			return get("d",parms);
 		}
 		if (leadingchar == 'h') {
+			int nsym;
+			float daz,tz;
+			string temp;
+			temp=instancename;
+			temp.erase(0,1);
+			sscanf(temp.c_str(),"%d,%f,%f",&nsym,&daz,&tz);
+			parms["nsym"]=nsym;
+			parms["daz"]=daz;
+			parms["tz"]=tz;
 			return get("h",parms);
 		}
 
@@ -1547,10 +1556,11 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 
 Transform HSym::get_sym(const int n) const
 {
-	float daz = params.set_default("daz",0.0f);
-	float apix = params.set_default("apix",1.0f);
-	float dz = params.set_default("tz", 0)/apix;
 
+	float apix = params.set_default("apix",1.0f);
+	float daz= params["daz"];
+	float tz=params["tz"];
+	float dz=tz/apix;
 	Dict d("type","eman");
 	// courtesy of Phil Baldwin
 	d["az"] = n * daz;
