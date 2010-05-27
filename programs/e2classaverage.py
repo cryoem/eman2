@@ -37,7 +37,7 @@ import math
 from copy import deepcopy
 import os
 import sys
-from random import randint
+from random import choice
 
 READ_HEADER_ONLY = True
 
@@ -1041,13 +1041,14 @@ class EMClassAveTask(EMTask):
 		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
 		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
-		for pti in xrange(len(alis.items())):
-			if self.options.resample: 
-				ptcl_idx=randint(0,len(alis.items())-1)
+		keys=alis.keys()
+		for pti in xrange(len(keys)):
+			if self.options["resample"]: 
+				ptcl_idx=choice(keys)
 				ali=alis[ptcl_idx]
 			else:
-				ptcl_idx=pti
-				ali=alis[pti]
+				ptcl_idx=keys[pti]
+				ali=alis[keys[pti]]
 				
 			if ( cullthresh != None ):
 				if ( sims[ptcl_idx] > cullthresh ) :
@@ -1107,13 +1108,14 @@ class EMClassAveTask(EMTask):
 		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
 		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
-		for pti in xrange(len(alis.items())):
-			if self.options.resample: 
-				ptcl_idx=randint(0,len(alis.items())-1)
+		keys=alis.keys()
+		for pti in xrange(len(keys)):
+			if self.options["resample"]: 
+				ptcl_idx=choice(keys)
 				ali=alis[ptcl_idx]
 			else:
-				ptcl_idx=pti
-				ali=alis[pti]
+				ptcl_idx=keys[pti]
+				ali=alis[keys[pti]]
 				
 			if inclusions != None and inclusions[ptcl_idx] == False: 
 				exc_record.append(ptcl_idx)
