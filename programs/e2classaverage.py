@@ -1041,15 +1041,8 @@ class EMClassAveTask(EMTask):
 		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
 		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
-		keys=alis.keys()
-		for pti in xrange(len(keys)):
-			if self.options["resample"]: 
-				ptcl_idx=choice(keys)
-				ali=alis[ptcl_idx]
-			else:
-				ptcl_idx=keys[pti]
-				ali=alis[keys[pti]]
-				
+		
+		for ptcl_idx,ali in alis.items():
 			if ( cullthresh != None ):
 				if ( sims[ptcl_idx] > cullthresh ) :
 					exc_record.append(ptcl_idx)
@@ -1101,6 +1094,8 @@ class EMClassAveTask(EMTask):
 		@param inclusions a dict, keys are parictle indices, values are True or False to indicate inclusion.
 		@return the average
 		'''
+		
+		if self.options["resample"] and self.options["verbose"]>0 : print "Generating resampled average"
 		
 		averager_parms =  self.options["averager"]
 		if sigma: averager_parms[1]["sigma"] = sigma
