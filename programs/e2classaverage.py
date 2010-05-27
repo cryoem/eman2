@@ -1043,7 +1043,7 @@ class EMClassAveTask(EMTask):
 		for pti in xrange(len(alis.items())):
 			if self.options.resample: 
 				ptcl_idx=randint(0,len(alis.items())-1)
-				ali=alis[ptcl_idx)
+				ali=alis[ptcl_idx]
 			else:
 				ptcl_idx=pti
 				ali=alis[pti]
@@ -1109,7 +1109,7 @@ class EMClassAveTask(EMTask):
 		for pti in xrange(len(alis.items())):
 			if self.options.resample: 
 				ptcl_idx=randint(0,len(alis.items())-1)
-				ali=alis[ptcl_idx)
+				ali=alis[ptcl_idx]
 			else:
 				ptcl_idx=pti
 				ali=alis[pti]
