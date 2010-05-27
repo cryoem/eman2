@@ -33,9 +33,9 @@ from global_def import *
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, adw=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, adw, Ng, user_func_name, CUDA, GPU)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPU)
 		return
 
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
@@ -101,7 +101,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Use Fourier variance        : %s\n"%(Fourvar))
-	print_msg("Use new CTF correction      : %s\n"%(adw))
 	print_msg("Number of groups            : %d\n"%(Ng))
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -170,15 +169,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			all_ali_params.extend([alpha, sx, sy, mirror])
 	if CTF: 
 		adw_img = Util.mult_scalar(ctf_2_sum, snr)
-		#adw_img += 1.0
 		Util.div_filter(adw_img, ctf_abs_sum)
-		#Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
 		Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
 		adw_img += float(nima-Ng)/(nima-1)
-		#Util.mul_scalar(adw_img, snr)
-		#Util.mul_scalar(ctf_2_sum, snr)
-		#ctf_2_sum += 1.0
-		#ctf_2_sum += 1.0/snr  # note this is complex addition (1.0/snr,0.0)
 			
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -313,7 +306,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar=False, adw=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
+			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -403,7 +396,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
-		print_msg("Use new CTF correction      : %s\n"%(adw))
 		print_msg("Number of groups            : %d\n"%(Ng))
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -480,14 +472,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
 		if myid == main_node:
 			adw_img = Util.mult_scalar(ctf_2_sum, snr)
-			#adw_img += 1.0
 			Util.div_filter(adw_img, ctf_abs_sum)
-			#Util.mul_scalar(adw_img, float(Ng-1)/(nima-1)/snr)
 			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
 			adw_img += float(nima-Ng)/(nima-1)
-			#Util.mul_scalar(adw_img, snr)
-			#Util.mul_scalar(ctf_2_sum, snr)
-			#ctf_2_sum += 1.0
 	else:  ctf_2_sum = None
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings

@@ -54,7 +54,6 @@ def main():
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment ")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
-	parser.add_option("--adw",      action="store_true", default=False,   help="whether to use new CTF filteration")
 	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filteration")
 	parser.add_option("--function", type="string", default="ref_ali2d",   help="name of the reference preparation function (default ref_ali2d)")
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
@@ -81,7 +80,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.adw, options.Ng, options.function, options.CUDA, options.GPU, options.MPI)
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPU, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
