@@ -1040,7 +1040,14 @@ class EMClassAveTask(EMTask):
 		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
 		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
-		for ptcl_idx,ali in alis.items():
+		for pti in xrange(len(alis.items())):
+			if self.options.resample: 
+				ptcl_idx=randint(0,len(alis.items())-1)
+				ali=alis[ptcl_idx)
+			else:
+				ptcl_idx=pti
+				ali=alis[pti]
+				
 			if ( cullthresh != None ):
 				if ( sims[ptcl_idx] > cullthresh ) :
 					exc_record.append(ptcl_idx)
@@ -1099,7 +1106,14 @@ class EMClassAveTask(EMTask):
 		record = [] # stores the ptcl indices of the included particles, which is then stored as the "class_ptcl_idxs" header attribute
 		exc_record = [] # stores the ptcl indices of the excluded particles, which is then stored as the "exc_class_ptcl_idxs" header attribute
 		np = 0 # number of particles
-		for ptcl_idx,ali in alis.items():
+		for pti in xrange(len(alis.items())):
+			if self.options.resample: 
+				ptcl_idx=randint(0,len(alis.items())-1)
+				ali=alis[ptcl_idx)
+			else:
+				ptcl_idx=pti
+				ali=alis[pti]
+				
 			if inclusions != None and inclusions[ptcl_idx] == False: 
 				exc_record.append(ptcl_idx)
 				continue
