@@ -477,6 +477,7 @@ namespace EMAN {
 		{
 			TypeDict d;
 			d.put("nsym", EMObject::INT, "The symmetry number of the helix, around the equator.");
+			d.put("nstart", EMObject::INT, "The symmetry number of the implicit C symmetry.");//ming add
 			d.put("equator_range", EMObject::FLOAT, "The amount altitude angles are allowed to vary above and below the equator. Default is 5");
 			d.put("tz", EMObject::FLOAT, "The translational distance (along z) between successive identical subunits in angstrom (default a/pix is 1)");
 			d.put("daz", EMObject::FLOAT, "The rotational angle (about z) between successive identical subunits in degrees");
