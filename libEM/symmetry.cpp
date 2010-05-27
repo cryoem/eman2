@@ -94,13 +94,14 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 			return get("d",parms);
 		}
 		if (leadingchar == 'h') {
-			int nsym;
+			int nstart,nsym;
 			float daz,tz;
 			string temp;
 			temp=instancename;
 			temp.erase(0,1);
-			sscanf(temp.c_str(),"%d,%f,%f",&nsym,&daz,&tz);
-			parms["nsym"]=nsym;
+			sscanf(temp.c_str(),"%d,%d,%f,%f",&nstart,&nsym,&daz,&tz);
+			parms["nstart"]=nstart;
+			parms["nsym"]=nstart*nsym;
 			parms["daz"]=daz;
 			parms["tz"]=tz;
 			return get("h",parms);
@@ -1556,18 +1557,23 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 
 Transform HSym::get_sym(const int n) const
 {
-
+	int nstart=params["nstart"];
+	int nsym=params["nsym"];
+	int hsym=nsym/nstart;
 	float apix = params.set_default("apix",1.0f);
 	float daz= params["daz"];
 	float tz=params["tz"];
 	float dz=tz/apix;
 	Dict d("type","eman");
+
 	// courtesy of Phil Baldwin
-	d["az"] = n * daz;
+	//d["az"] = (n%nsym) * 360.0f / nsym;
+	d["az"]=(((int) n/hsym)%nstart)*360.f/nstart+(n%hsym)*daz;
+	//d["az"] = n * daz;
 	d["alt"] = 0.0f;
 	d["phi"] = 0.0f;
 	Transform ret(d);
-	ret.set_trans(0,0,n*dz);
+	ret.set_trans(0,0,(n%hsym)*dz);
 	return ret;
 }
 
