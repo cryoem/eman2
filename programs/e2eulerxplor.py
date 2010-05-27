@@ -44,6 +44,7 @@ from optparse import OptionParser
 from EMAN2 import *
 from emapplication import get_application
 from emimagemx import EMImageMXModule
+from emimage2d import EMImage2DModule
 import os
 import sys
 from libpyGLUtils2 import GLUtil
@@ -567,6 +568,11 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
 			
+			self.proj_class_single = EMImage2DModule(image=None,application=get_application())
+			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
+			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
+			get_application().show_specific(self.proj_class_single)
+			
 		disp = []
 		if self.projection != None: disp.append(self.projection)
 		if self.average != None and self.projection!=None: 
@@ -593,8 +599,10 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			disp.append(self.average)
 
 		self.proj_class_viewer.set_data(disp)
+		self.proj_class_single.set_data(disp)
 		
 		self.proj_class_viewer.updateGL()
+		self.proj_class_single.updateGL()
 		if self.particle_viewer != None:
 			self.mx_image_selected(None,None)
 		if first: self.proj_class_viewer.optimally_resize()
@@ -608,6 +616,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 	def on_mx_view_closed(self):
 		self.proj_class_viewer = None
+		self.proj_class_single = None
 		
 	def on_particle_mx_view_closed(self):
 		self.particle_viewer = None

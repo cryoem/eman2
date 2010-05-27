@@ -849,7 +849,7 @@ class DBDict:
 	nopen=0
 	closelock=threading.Lock()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
-	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
+	def __init__(self,name,filename=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
 		specified. Note that the database is not actually opened until it's used."""
@@ -860,7 +860,7 @@ class DBDict:
 		self.parent=parent
 		self.dbenv=dbenv
 		self.lock=threading.Lock()	# used to reduce thread conflicts
-		self.file=file
+		self.file=filename
 		self.rohint=ro
 		self.lasttime=time.time()		# last time the database was accessed
 		self.opencount=0				# number of times the database has needed reopening
@@ -1149,7 +1149,9 @@ of these occasional errors"""
 			ret=EMData(r["nx"],r["ny"],r["nz"])
 			if r.has_key("data_path"):
 				p,l=r["data_path"].split("*")
-				ret.read_data(p,int(l))
+#				print "read ",os.getcwd(),self.path,p,l
+				if p[0]=='/' : ret.read_data(p,int(l))
+				else : ret.read_data(self.path+"/"+p,int(l))
 			else:
 				try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
 				except: raise KeyError,"Undefined data location key for : ",key
