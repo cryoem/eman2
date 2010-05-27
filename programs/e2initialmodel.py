@@ -226,8 +226,8 @@ def main():
 				pdb[options.dbls] = old_data
 			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
 			for k,l in enumerate(j[2]): 
-				l.write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles
-				j[3][l["match_n"]].write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
+				l.process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles
+				j[3][l["match_n"]].process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
 			
 #		threed[-1].write_image("x.%d.mrc"%t)
 		
