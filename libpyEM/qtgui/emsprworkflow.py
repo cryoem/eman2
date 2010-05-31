@@ -3916,7 +3916,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages in refinement, for speed purposes",property=None,defaultunits=db.get("shrink",dfl=2),choices=[])
 		ptwostage = ParamDef(name="twostage",vartype="int",desc_short="2 Stage Simmx",desc_long="This will determine the orientation in 2 stages, usually 5-10x faster, number specifies shrink factor for first stage, 0 disables",property=None,defaultunits=db.get("twostage",dfl=0),choices=[])
-		pprefilt = ParamDef(name="prefilt",vartype="boolean",desc_short="PS Match Ref",desc_long="Filter references to match particles before alignment. Works best with usefilt -> Wiener filtered particles",property=None,defaultunits=db.get("prefilt",dfl=1),choices=[])
+		pprefilt = ParamDef(name="prefilt",vartype="boolean",desc_short="PS Match Ref",desc_long="Filter references to match particles before alignment. Works best with usefilt -> Wiener filtered particles",property=None,defaultunits=db.get("prefilt",dfl=0),choices=[])
 
 		
 		params.append([pshrink,ptwostage,pprefilt])
@@ -3941,7 +3941,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		
 		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("classkeep",dfl=0.8),choices=[])
 		pkeepsig = ParamDef(name="classkeepsig",vartype="boolean",desc_short="Sigma based",desc_long="If checked the keep value is interpreted in standard deviations from the mean instead of basic ratio",property=None,defaultunits=db.get("classkeepsig",dfl=True),choices=[])
-		prefsf = ParamDef(name="classrefsf",vartype="boolean",desc_short="Set proj SF on avg",desc_long="If checked each class average will be filtered to match the 1-D structure factor of the reference projection",property=None,defaultunits=db.get("classrefsf",dfl=True),choices=[])
+		prefsf = ParamDef(name="classrefsf",vartype="boolean",desc_short="Set proj SF on avg",desc_long="If checked each class average will be filtered to match the 1-D structure factor of the reference projection",property=None,defaultunits=db.get("classrefsf",dfl=False),choices=[])
 		
 		pnormproc =  ParamDef("classnormproc",vartype="string",desc_short="Normalization processor",desc_long="The normalization method applied to the particles before averaging",property=None,defaultunits=db.get("classnormproc",dfl="normalize.edgemean"),choices=["normalize","normalize.edgemean","None"])
 		
@@ -4944,9 +4944,13 @@ of resolution. Note however that the class averaging stage, which can involve it
 - Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
 
 For comparators here are some possible choices:
+
 ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted)
+
 sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+
 frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
+
 phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
 """
 	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:

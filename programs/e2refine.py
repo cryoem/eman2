@@ -55,7 +55,7 @@ def main():
 	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
 	parser.add_option("--mass", default=None, type="float",help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
 	parser.add_option("--apix", default=None, type="float",help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_option("--automask3d", default=None, type="string",help="The 4 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5.")
+	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5.")
 
 	# options associated with e2project3d.py
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")

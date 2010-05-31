@@ -124,7 +124,16 @@ def main():
 			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
 			# apix argument has been specified.
 			cur_map.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
-			if options.automask3d:
+			if options.automask3d: 
+				mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
+				s = "mask.auto3d"
+				for i,p in enumerate(mapping):
+					s += ":"+p+"="+vals[i]
+				s+= ":return_mask=1"
+				options.automask3d = s
+
+				automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
+
 				mask = cur_map.process(automask_parms[0],automask_parms[1])
 				cur_map.mult(mask)
 	
