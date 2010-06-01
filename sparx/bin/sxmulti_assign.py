@@ -53,6 +53,7 @@ def main():
 	parser.add_option("--split_class", action="store_true", default=False, help=" whether splitting class is allowed")
 	parser.add_option("--combine_class", action="store_true", default=False, help=" whether combining group is allowed")
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference assignment")
+	parser.add_option("--deactive", action="store_true", default=False, help=" set particles to inactive")
 	parser.add_option("--MPI", action="store_true", default=False, help="  whether to use MPI version ")
 
 	(options, args) = parser.parse_args()
@@ -75,7 +76,7 @@ def main():
 	from development import multi_assign
 	global_def.BATCH = True
 	multi_assign(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts,  
-			options.min_class_size, options.max_class_size, options.split_class, options.combine_class, options.CTF, options.MPI)
+			options.min_class_size, options.max_class_size, options.split_class, options.combine_class, options.CTF, options.deactive, options.MPI)
 	global_def.BATCH = False
 
 
