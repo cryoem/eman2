@@ -95,11 +95,20 @@ def main():
 		print "You must specify a refinement iteration to use as a basis for the variance map."
 		sys.exit(1)
 
+	if options.automask3d: 
+		vals = options.automask3d.split(",")
+		mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
+		s = "mask.auto3d"
+		for i,p in enumerate(mapping):
+			s += ":"+p+"="+vals[i]
+		s+= ":return_mask=1"
+		options.automask3d = s
+
 	logid=E2init(sys.argv)
 	
 	nprogress=options.nmodels*2.0+1.0
 	# this loops over each of the n models we create to compute the variance
-	for i in xrange(options.nmodels) :
+	for mod in xrange(options.nmodels) :
 		# Compute class-averages with the --resample option
 		options.classifyfile="bdb:%s#classify_%02d"%(options.path,options.iteration)
 		options.projfile="bdb:%s#projections_%02d"%(options.path,options.iteration)
@@ -108,7 +117,7 @@ def main():
 		if ( os.system(get_classaverage_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classaverage_cmd(options)
 			sys.exit(1)
-		E2progress(logid,(i*2.0+1)/nprogress)
+		E2progress(logid,(mod*2.0+1)/nprogress)
 		
 		# build a new 3-D map
 		options.model="bdb:"+options.path+"#variance_threed_tmp"
@@ -116,7 +125,7 @@ def main():
 		if ( os.system(get_make3d_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_make3d_cmd(options)
 			sys.exit(1)
-		E2progress(logid,(i*2.0+2.0)/nprogress)
+		E2progress(logid,(mod*2.0+2.0)/nprogress)
 
 		cur_map=EMData(options.model,0)
 		
@@ -125,12 +134,6 @@ def main():
 			# apix argument has been specified.
 			cur_map.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
 			if options.automask3d: 
-				mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
-				s = "mask.auto3d"
-				for i,p in enumerate(mapping):
-					s += ":"+p+"="+vals[i]
-				s+= ":return_mask=1"
-				options.automask3d = s
 
 				automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 
@@ -138,7 +141,7 @@ def main():
 				cur_map.mult(mask)
 	
 		# now keep a sum of all of the maps and all of the maps^2
-		if i==0 :
+		if mod==0 :
 			mean_map=cur_map
 			sqr_map=cur_map.process("math.squared")
 		else :
@@ -150,12 +153,12 @@ def main():
 	# Ok, all done, now compute the mean and standard deviation. The mean map should look nearly identical to
 	# the original results from the same iteration
 	mean_map.mult(1.0/options.nmodels)
-	mean_map.write_image("bdb:%s#threed_%02d_mean"%options.iteration)
+	mean_map.write_image("bdb:%s#threed_%02d_mean"%(options.path,options.iteration))
 	
 	sqr_map.mult(1.0/options.nmodels)			# pixels are mean x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
-	sqr_map.write_image("bdb:%s#threed_%02d_variance"%options.iteration)
+	sqr_map.write_image("bdb:%s#threed_%02d_variance"%(options.path,options.iteration))
 	
 	E2progress(logid,nprogress/nprogress)
 	
