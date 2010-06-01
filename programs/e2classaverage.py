@@ -317,6 +317,7 @@ class EMGenClassAverages:
 			self.__init_memory(self.options)
 			self.etc=EMTaskCustomer(self.options.parallel)
 			self.etc.precache([self.options.input])
+			if self.options.usefilt: self.etc.precache([self.options.usefilt])
 			tasks=[]
 			for class_idx in xrange(self.class_min,self.class_max+1):
 				ptcl_indices,dcol_idx_cache =  self.__get_class_data(class_idx, self.options)

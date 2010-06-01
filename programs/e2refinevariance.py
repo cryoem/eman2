@@ -153,12 +153,12 @@ def main():
 	# Ok, all done, now compute the mean and standard deviation. The mean map should look nearly identical to
 	# the original results from the same iteration
 	mean_map.mult(1.0/options.nmodels)
-	mean_map.write_image("bdb:%s#threed_%02d_mean"%(options.path,options.iteration))
+	mean_map.write_image("bdb:%s#threed_%02d_mean"%(options.path,options.iteration),0)
 	
 	sqr_map.mult(1.0/options.nmodels)			# pixels are mean x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
-	sqr_map.write_image("bdb:%s#threed_%02d_variance"%(options.path,options.iteration))
+	sqr_map.write_image("bdb:%s#threed_%02d_variance"%(options.path,options.iteration),0)
 	
 	E2progress(logid,nprogress/nprogress)
 	
