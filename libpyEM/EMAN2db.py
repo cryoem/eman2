@@ -756,6 +756,8 @@ class EMAN2DB:
 			self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
 			self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 			self.dbenv.set_lk_max_locks(10000)		# if we don't do this, we can easily run out when dealing with large numbers of files
+			try: self.dbenv.set_lg_regionmax(500000)
+			except: print "Could not alter log region size. Please run e2bdb.py -c"
 			self.dbenv.set_lk_max_objects(10000)
 
 			try:
