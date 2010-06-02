@@ -5365,7 +5365,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 				rotate_3D_shift(dataim, cs)
 				if myid == main_node:
 					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					print_msg(msg)				
+					print_msg(msg)		
 					print_msg("Time to center = %d\n"%(time()-start_time))
 					start_time = time()
 			# compute updated 3D before each chunk
