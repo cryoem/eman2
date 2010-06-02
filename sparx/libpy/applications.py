@@ -6272,7 +6272,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = mpad)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
 			else:
 				datap = [None]*(len(data)//2+len(data)%2)
 				for i in xrange(0,len(data),2):
