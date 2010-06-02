@@ -55,6 +55,8 @@ def main():
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
 	parser.add_option('--min_stab_class',	type='int',	default=2,		help='number of alignments which are considered stable')
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
+	parser.add_option("--CUDA",     action="store_true", default=False,          help="whether to use CUDA ")
+	parser.add_option("--GPU",      type="int",        default=1,            help="the number of GPU to use")
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 
 	(options, args) = parser.parse_args()
@@ -68,12 +70,12 @@ def main():
 
 		if options.MPI:
 			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
 		from development import mref_realignment
 		mref_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, 
-				options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.min_stab_class, options.center, options.MPI)
+				options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.min_stab_class, options.center, options.CUDA, options.GPU, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
