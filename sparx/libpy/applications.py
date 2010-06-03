@@ -217,7 +217,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			else: tavg = (ave1+ave2)/nima
 			tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 			if CTF:
-				tavg_Ng.write_image(os.path.join(outdir, "aqc_Ng.hdf"), total_iter-1)
+				tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
 			frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			if Fourvar:
 				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
@@ -536,7 +536,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				else:	 tavg = (ave1+ave2)/nima
 				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 				if CTF:
-					tavg_Ng.write_image(os.path.join(outdir, "aqc_Ng.hdf"), total_iter-1)
+					tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			else:
 				tavg =  model_blank(nx, nx)
