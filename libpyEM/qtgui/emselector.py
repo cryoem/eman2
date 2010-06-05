@@ -636,6 +636,9 @@ def EMSelectorBaseTemplate(Type):
 				list_widget.addItem(a)
 				self.lock = False
 
+			print self.browse_delegates
+#			self.browse_delegates.sort(key=fspsort)
+
 			for delegate in self.browse_delegates:
 				if delegate.handles_url(url): 
 					items = delegate.get_items(url)
@@ -663,6 +666,13 @@ def EMSelectorBaseTemplate(Type):
 			
 	
 	return EMSelectorBase
+
+def fspsort(x):
+#	print x
+	if x[:4].lower()=="bdb:" : return x
+	if "." not in x : return x
+	y=x.rsplit(".",1)
+	return y[1]+"."+y[0]
 
 EMBrowserType = EMSelectorBaseTemplate(QtGui.QWidget)
 class EMBrowser(EMBrowserType):
@@ -1249,7 +1259,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 			return []
 		
 		dirs.sort()
-		files.sort()
+		files.sort(key=fspsort)
 		 
 		return_items = []
 		
