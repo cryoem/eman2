@@ -1840,20 +1840,41 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		params.append(coord_table)  
 		
 		return params
+
 	
 	def on_form_ok(self,params):
 		if not params.has_key("coordfiles") or len(params["coordfiles"]) == 0:
 			error("Please choose files to import")
 			return
 		
-		from e2boxer import merge_boxes_as_manual_to_db
-		merge_boxes_as_manual_to_db(params["coordfiles"])
+#		from e2boxer import merge_boxes_as_manual_to_db
+#		merge_boxes_as_manual_to_db(params["coordfiles"])
+		pdb=db_open_dict("bdb:.#project")
+		img_list=pdb.get("global.spr_raw_data_dict",dfl={}).keys()
+		if len(img_list)==0 :
+			print "No image files in project !!!"
+			return
+		bdb=db_open_dict("bdb:e2boxercache#boxes")
+		for ff in params["coordfiles"]:
+			f=ff.rsplit("/",1)[-1]
+			fsp=best_match(f,img_list)
+			lns=file(f,"r").readlines()
+			lns=[l.split() for l in lns]
+			bxs=[[int(l[0])+int(l[2])/2,int(l[1])+int(l[3])/2,"manual"] for l in lns]
+			bdb[fsp]=bxs
+			print "imported ",f," into ",fsp
 								
 		self.disconnect_form()
 		self.form.closeEvent(None)
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
+from os.path import commonprefix
+def best_match(name,lst):
+	ml=[(len(commonprefix((name,i))),n) for n,i in enumerate(lst)]
+#	print name,lst,ml
+	if max(ml)[0]==0 : return None
+	return lst[max(ml)[1]]
 		
 class E2BoxerTask(ParticleWorkFlowTask):
 	'''

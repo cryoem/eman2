@@ -636,7 +636,7 @@ def EMSelectorBaseTemplate(Type):
 				list_widget.addItem(a)
 				self.lock = False
 
-			print self.browse_delegates
+#			print self.browse_delegates
 #			self.browse_delegates.sort(key=fspsort)
 
 			for delegate in self.browse_delegates:
