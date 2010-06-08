@@ -6174,7 +6174,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 			sx = 0.0
 			sy = 0.0
-			
+
 
 			for im in xrange( nima ):
 
