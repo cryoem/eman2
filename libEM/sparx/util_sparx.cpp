@@ -5710,6 +5710,11 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize();
+	//  Fix for padding 2x
+        int ntotal = NSAM*NROW;
+	int ipad = 1;
+	NSAM *= ipad;
+	NROW *= ipad;
 	NNNN = NSAM+2-(NSAM%2);
 	NR2  = NROW/2;
 
@@ -5746,16 +5751,18 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 
         EMData* proj_in = PROJ;
 
-	PROJ = PROJ->norm_pad( false, 2);
+	PROJ = PROJ->norm_pad( false, ipad);
 	PROJ->do_fft_inplace();
 	PROJ->update();
+	//cout << " x   "<<PROJ->get_xsize() << " y   "<<PROJ->get_ysize() <<endl;
 	PROJptr = PROJ->get_data();
 
 	float WNRMinv,temp;
 	float osnr = 1.0f/SNR;
-	WNRMinv = 1/W(1,1);
+	WNRMinv = 1.0f/W(1,1);
 	for(int J=1;J<=NROW;J++)
 		for(int I=1;I<=NNNN;I+=2) {
+			//cout << " x   "<<I << " y   "<<J <<endl;
 			KX	    = (I+1)/2;
 			temp	= W(KX,J)*WNRMinv;
 			WW  	= temp/(temp*temp + osnr);
@@ -5769,7 +5776,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
         float* data_src = PROJ->get_data();
         float* data_dst = proj_in->get_data();
 
-        int ntotal = NSAM*NROW;
         for( int i=0; i < ntotal; ++i )
         {
             data_dst[i] = data_src[i];
@@ -5876,7 +5882,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 
         EMData* proj_in = PROJ;
 
-	PROJ = PROJ->norm_pad( false, 2);
+	PROJ = PROJ->norm_pad( false, 1);
 	PROJ->do_fft_inplace();
 	PROJ->update();
 	float *PROJptr = PROJ->get_data();

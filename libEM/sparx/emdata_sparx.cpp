@@ -5240,6 +5240,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	bytes = nx*sizeof(float);
 	EMData* fpimage = copy_head();
 	fpimage->set_size(nxpad+offset, nypad, nzpad);
+	int xstart = 0, ystart = 0, zstart = 0;
 	if( npad > 1) {
         	if( valtype==0 ) {
         	    fpimage->to_zero();
@@ -5249,12 +5250,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
         	    int nxyz = (nxpad+offset)*nypad*nzpad;
         	    for( int i=0; i < nxyz; ++i )  data[i] = val;
         	}
-        }
 
-
-
-	int xstart = 0, ystart = 0, zstart = 0;
-	if (npad > 1) {
 		xstart = (nxpad - nx)/2 + nx%2;
 		if(ny > 1) {
 			ystart = (nypad - ny)/2 + ny%2;
