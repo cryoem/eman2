@@ -19,6 +19,8 @@ def main():
 	parser.add_option("--pca",        action="store_true", default=False, help="run pca" )
 	parser.add_option("--pcamask",    type="string", help="mask for pca" )
 	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
+	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
+	parser.add_option("--n",        action="store_true", default=False,         help="new")
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args)<2 :
@@ -39,10 +41,16 @@ def main():
 			arglist = []
 			for arg in sys.argv:
 				arglist.append( arg )
-			from applications import var_mpi
 
 			global_def.BATCH = True
-			var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+			
+			if(options.n):
+				from development import var_mpi_new
+				var_mpi_new( files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+			else:
+				from applications import var_mpi
+				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+			
 			global_def.BATCH = False
 		else:
 			from applications import defvar

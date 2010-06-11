@@ -8973,7 +8973,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	nx = int(nx[0])
 	if(nx != 0):
-		import sys
+		from sys import exit
 		exit()
 
 	mpi_barrier( MPI_COMM_WORLD )
