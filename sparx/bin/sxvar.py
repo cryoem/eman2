@@ -19,7 +19,6 @@ def main():
 	parser.add_option("--pca",        action="store_true", default=False, help="run pca" )
 	parser.add_option("--pcamask",    type="string", help="mask for pca" )
 	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
-	parser.add_option("--pcanvec",    type="int", help="number of eigvectors computed in PCA")
 	parser.add_option("--n",        action="store_true", default=False,         help="new")
 	(options, args) = parser.parse_args(sys.argv[1:])
 
