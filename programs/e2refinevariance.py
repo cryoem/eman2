@@ -84,6 +84,8 @@ def main():
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_option("--shrink3d",type="int",help="Shrink the class-averages and make a downsampled variance map",default=0)
+	parser.add_option("--keep3d",action="store_true",help="Keep all of the individual 3-D models used to make the variance map. This make take substantial disk space.")
 
 	#lowmem!
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
@@ -109,6 +111,7 @@ def main():
 	nprogress=options.nmodels*2.0+1.0
 	# this loops over each of the n models we create to compute the variance
 	for mod in xrange(options.nmodels) :
+		if options.verbose : print "Class-averaging"
 		# Compute class-averages with the --resample option
 		options.classifyfile="bdb:%s#classify_%02d"%(options.path,options.iteration)
 		options.projfile="bdb:%s#projections_%02d"%(options.path,options.iteration)
@@ -119,6 +122,15 @@ def main():
 			sys.exit(1)
 		E2progress(logid,(mod*2.0+1)/nprogress)
 		
+		if options.verbose : print "Shrinking"
+		# deal with shrink3d
+		if options.shrink3d : 
+			if ( os.system("e2proc2d.py %s %s --meanshrink=%d"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
+				print "Failed to execute CA shrink"
+				sys.exit(1)
+			options.cafile=options.cafile+"_s"
+		
+		if options.verbose : print "3-D Reconstruction"
 		# build a new 3-D map
 		options.model="bdb:"+options.path+"#variance_threed_tmp"
 		print get_make3d_cmd(options)
@@ -128,6 +140,7 @@ def main():
 		E2progress(logid,(mod*2.0+2.0)/nprogress)
 
 		cur_map=EMData(options.model,0)
+		if options.keep3d : cur_map.write_image("var3d_%03d.mrc"%mod,0)
 		
 		if options.mass:
 			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
