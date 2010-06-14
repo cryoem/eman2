@@ -3622,11 +3622,11 @@ c
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
-	
+
 	int jstart = 1+static_cast<int>(delta_start/360.0*maxrin);
 	int jstep = static_cast<int>(delta/360.0*maxrin);
-	if (jstep < 1) { jstep = 1; } 
-	
+	if (jstep < 1) { jstep = 1; }
+
 	for (j=jstart; j<=maxrin; j+=jstep) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
 		if (q(j) >= qn) {
 			qn  = q(j);
@@ -5518,7 +5518,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	float ref_h_diff = ref_h_max - ref_h_min;
 
 	#ifdef _WIN32
-		int hist_len = _MIN((int)size_ref/16,_MIN((int)size_img/16,256));
+		int hist_len = _cpp_min((int)size_ref/16,_cpp_min((int)size_img/16,256));
 	#else
 		int hist_len = std::min((int)size_ref/16,std::min((int)size_img/16,256));
 	#endif	//_WIN32

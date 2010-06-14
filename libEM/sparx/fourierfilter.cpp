@@ -142,8 +142,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	nyp2 = nyp/2; nzp2 = nzp/2;
 	dx = 1.0f/float(nxp);
 #ifdef _WIN32
-	dy = 1.0f/_MAX(float(nyp),1.0f);
-	dz = 1.0f/_MAX(float(nzp),1.0f);
+	dy = 1.0f/_cpp_max(float(nyp),1.0f);
+	dz = 1.0f/_cpp_max(float(nzp),1.0f);
 #else
 	dy = 1.0f/std::max(float(nyp),1.0f);
 	dz = 1.0f/std::max(float(nzp),1.0f);
