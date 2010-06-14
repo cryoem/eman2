@@ -8770,10 +8770,10 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 		 r is the radius of the object.
 	  Output: 1. Uses rotation_between_anglesets to find the overall 3D rotation between the two sets of Eulerian angles using second list as reference
 	  	  2. The overall rotation found by rotation_between_anglesets is applied to the first list (agls1) 
-		  3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_pixel_error) less than Threshold, then append the list 
+		  3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_3D_pixel_error) less than Threshold, then append the list 
 		     [i, p], where p is the pixel error, into the output list.
 	"""
-	from alignment import max_3D_pixel_error
+	from pixel_error import max_3D_pixel_error
 	from utilities  import read_text_file, write_text_rows, rotation_between_anglesets
 	import types
 	

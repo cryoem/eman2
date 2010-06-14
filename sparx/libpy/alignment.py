@@ -1106,7 +1106,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
 	data.set_attr("xform.projection", t2)
-	from alignment import max_3D_pixel_error
+	from pixel_error import max_3D_pixel_error
 	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
@@ -1165,7 +1165,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from alignment import max_3D_pixel_error
+		from pixel_error import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1232,7 +1232,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from alignment import max_3D_pixel_error
+		from pixel_error import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1296,7 +1296,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=N
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from alignment import max_3D_pixel_error
+		from pixel_error import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1639,62 +1639,6 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
 
-def max_pixel_error(alpha1, sx1, sy1, alpha2, sx2, sy2, d):
-	from math import sin, pi, sqrt
-	return abs(sin((alpha1-alpha2)/180.0*pi/2))*d+sqrt((sx1-sx2)**2+(sy1-sy2)**2)
-
-'''
-def max_3D_pixel_error(t1, t2, r):
-	"""
-	  Compute maximum pixel error between two projection directions
-	  assuming object has radius r, t1 is the projection transformation
-	  of the first projection and t2 of the second one, respectively:
-		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t.set_trans(Vec2f(-tx, -ty))
-	  Note the function is symmetric in t1, t2.
-	"""
-	from math import sin, cos, pi, sqrt
-	t3 = t2*t1.inverse()
-	ddmax = 0.0
-	for i in xrange(int(r), int(r)+1):
-		for ang in xrange(int(2*pi*i+0.5)):
-			v = Vec3f(i*cos(ang), i*sin(ang), 0)
-			d = t3*v - v
-			dd = d[0]**2+d[1]**2+d[2]**2
-			if dd > ddmax: ddmax=dd
-	return sqrt(ddmax)
-
-def max_3D_pixel_errorA(t1, t2, r):
-	"""
-	  Compute maximum pixel error between two projection directions
-	  assuming object has radius r, t1 is the projection transformation
-	  of the first projection and t2 of the second one, respectively:
-		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t.set_trans(Vec2f(-tx, -ty))
-	  Note the function is symmetric in t1, t2.
-	"""
-	from math import sin, cos, pi, sqrt
-	t3 = t2*t1.inverse()
-	ddmax = 0.0
-	for i in xrange(int(r)+1):
-		for ang in xrange(int(2*pi*i+0.5)):
-			v = Vec3f(i*cos(ang), i*sin(ang), 0)
-			d = t3*v - v
-			dd = d[0]**2+d[1]**2+d[2]**2
-			if dd > ddmax: ddmax=dd
-	return sqrt(ddmax)
-'''
-
-def max_3D_pixel_error(t1, t2, r):
-	"""
-	  Compute maximum pixel error between two projection directions
-	  assuming object has radius r, t1 is the projection transformation
-	  of the first projection and t2 of the second one, respectively:
-		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t.set_trans(Vec2f(-tx, -ty))
-	  Note the function is symmetric in t1, t2.
-	"""
-	return EMData().max_3D_pixel_error(t1, t2, r)
 
 
 def ali_nvol(v, mask):
