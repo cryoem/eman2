@@ -3337,7 +3337,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	if (scale == 0.0f) scale = 1.0f;
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
-	float cir = (nxhalf-1)*(nxhalf-1);
+	float cir = (float)((nxhalf-1)*(nxhalf-1));
 
 	if (!is_shuffled()) fft_shuffle();
 

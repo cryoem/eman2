@@ -623,8 +623,8 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	int verbose=(int)params["verbose"];
 //	int adaptnoise=params.set_default("adaptnoise",0);
 	float noisecutoff=(float)params.set_default("noisecutoff",0.0);
-	if (apix<=0 || apix>7.0) throw ImageFormatException("0 < apix_x < 7.0");
-	float ds=1.0/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled
+	if (apix<=0 || apix>7.0f) throw ImageFormatException("0 < apix_x < 7.0");
+	float ds=1.0f/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled
 	int start=(int)floor(1.0/(15.0*ds));
 	int end=radial_mask.size()-2;
 	if (noisecutoff>0) end=(int)floor(noisecutoff/ds);
@@ -643,7 +643,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	float *x=(float *)malloc(N*sizeof(float));
 	float *y=(float *)malloc(N*sizeof(float));
 	float *dy=(float *)malloc(N*sizeof(float));
-	for (int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
+	for (unsigned int i=start; i<radial_mask.size()-2; i++ ) {		// -2 is arbitrary because sometimes the last pixel or two have funny values
 		x[i-start]=ds*ds*i*i;
 		if (radial_mask[i]>0) y[i-start]=log(radial_mask[i]); // ok
 		else if (i>start) y[i-start]=y[i-start-1];		// not good
@@ -658,13 +658,13 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 
 	if (verbose) printf("slope=%f  intercept=%f\n",slope,intercept);
 
-	float B=(float)params["bfactor"]+slope*4.0/2.0;		// *4 is for Henderson definition, 2.0 is for intensity vs amplitude
+	float B=(float)params["bfactor"]+slope*4.0f/2.0f;		// *4 is for Henderson definition, 2.0 is for intensity vs amplitude
 	float B2=(float)params["bfactor"];
 
 	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*2.0,B);
 
 	float cutval=exp(-B*pow(end*ds,2.0f)/4.0f)/exp(-B2*pow(end*ds,2.0f)/4.0f);
-	for (int i=0; i<radial_mask.size(); i++) {
+	for (unsigned int i=0; i<radial_mask.size(); i++) {
 		if (i<=end) radial_mask[i]=exp(-B*pow(i*ds,2.0f)/4.0f);
 		else radial_mask[i]=cutval*exp(-B2*pow(i*ds,2.0f)/4.0f);
 	}
@@ -5281,7 +5281,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 
 	float *dat = image->get_data();
 	float *dat2 = amask->get_data();
-	int i,j,k;
+	int i,j;
 	size_t l = 0;
 
 	if (verbose) printf("%f\t%f\t%f\n",(float)image->get_attr("mean"),(float)image->get_attr("sigma"),threshold);
@@ -6045,7 +6045,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 
 	if (to->is_complex()) {
-		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0,0,1.0,1);
+		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0,0,1.0f,1);
 		for (size_t i=0; i<rd.size(); i++) {
 			sf->set_x(i,i/(apixto*2.0f*rd.size()));
 			sf->set_y(i,rd[i]);
@@ -9858,7 +9858,7 @@ void ModelEMCylinderProcessor::process_inplace(EMData * in)
 	int nz = cyl->get_zsize();
 
 	int type = params.set_default("type", 2);
-	float len = params.set_default("length", 16.2); //in angstroms
+	float len = params.set_default("length", 16.2f); //in angstroms
 	int x0 = params.set_default("x0", -1); //in voxels -- default value changed a few lines down
 	int y0 = params.set_default("y0", -1); //in voxels
 	int z0 = params.set_default("z0", -1); //in voxels
