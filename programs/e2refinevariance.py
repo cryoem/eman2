@@ -125,7 +125,7 @@ def main():
 		if options.verbose : print "Shrinking"
 		# deal with shrink3d
 		if options.shrink3d : 
-			if ( os.system("e2proc2d.py %s %s --meanshrink=%d"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
+			if ( os.system("e2proc2d.py %s %s --meanshrink=%d --inplace"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
 				print "Failed to execute CA shrink"
 				sys.exit(1)
 			options.cafile=options.cafile+"_s"
