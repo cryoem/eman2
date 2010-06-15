@@ -6711,7 +6711,7 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 
 def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None):
 	from projection    import   prgs, prep_vol
-	from utilities     import   even_angles, read_txt_col, set_params_proj, model_gauss_noise, info
+	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
 	from string        import   split
 	from filter        import   filt_ctf,filt_gaussl
 	import os
@@ -6720,7 +6720,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	if listagls is None:
 		angles = even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
 	elif(type(listagls) is types.StringType):
-		angles = read_txt_col(listagls, "", "")
+		angles = read_text_row(listagls, "", "")
 	else:
 		angles = listagls
 
@@ -6731,7 +6731,7 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	elif (type(listctfs) is types.StringType):
 		# a string, so assume this is a filename and try to open the file
 		try:
-			ctfs = read_txt_col(listctfs, "", "")
+			ctfs = read_text_row(listctfs, "", "")
 		except:
 			ctfs = [None for ii in xrange(len(angles))]
 	else:

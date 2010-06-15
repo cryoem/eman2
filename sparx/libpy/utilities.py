@@ -1589,7 +1589,7 @@ def read_spider_doc(fnam):
 		line = inf.readline()
 	return data
 		
-def read_txt_col(fnam, format="s", skip=";"):
+def read_text_row(fnam, format="", skip=";"):
 	"""
 	 	Read a column-listed txt file.
 		INPUT: filename: name of the Doc file
@@ -1628,6 +1628,32 @@ def read_txt_col(fnam, format="s", skip=";"):
 		strg=inf.readline()
 	inf.close
 	return data
+
+
+def write_text_row(data, file_name):
+	"""
+	   Write to an ASCII file a list of lists containing floats.
+
+	   filename: name of the text file
+	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
+	         First list will be written as a first line, second as a second, and so on...
+		 If only one list is given, the file will contain one line
+	"""
+	import types
+	outf = open(file_name, "w")
+	if (type(data[0]) == types.ListType):
+		# It is a list of lists
+		for i in xrange(len(data)):
+			for j in xrange(len(data[i])):
+				outf.write("  %12.5g"%data[i][j])
+			outf.write("\n")
+	else:
+		# Single list
+		for j in xrange(len(data)):
+			outf.write("  %12.5g"%data[j])
+		outf.write("  \n")
+	outf.close()
+
 
 def read_text_file(file_name, ncol = 0):
 	"""
@@ -1675,30 +1701,6 @@ def write_text_file(data, file_name):
 		# Single list
 		for j in xrange(len(data)):
 			outf.write("  %12.5g\n"%data[j])
-	outf.close()
-
-def write_text_rows(data, file_name):
-	"""
-	   Write to an ASCII file a list of lists containing floats.
-
-	   filename: name of the text file
-	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
-	         First list will be written as a first line, second as a second, and so on...
-		 If only one list is given, the file will contain one line
-	"""
-	import types
-	outf = open(file_name, "w")
-	if (type(data[0]) == types.ListType):
-		# It is a list of lists
-		for i in xrange(len(data)):
-			for j in xrange(len(data[i])):
-				outf.write("  %12.5g"%data[i][j])
-			outf.write("\n")
-	else:
-		# Single list
-		for j in xrange(len(data)):
-			outf.write("  %12.5g"%data[j])
-		outf.write("  \n")
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):

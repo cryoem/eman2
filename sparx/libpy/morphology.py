@@ -199,14 +199,14 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	"""
 	
 	from math 	import sqrt, atan
-	from utilities 	import read_txt_col
+	from utilities 	import read_text_row
 	roo     = []
 	res     = []
 	if(docf == "a"):
-		TMP_roo = read_txt_col(fnam_roo, "a", skip)
+		TMP_roo = read_text_row(fnam_roo, "a", skip)
 		for i in xrange(len(TMP_roo)):	roo.append(TMP_roo[i][1])
 	else:
-		TMP_roo=read_txt_col(fnam_roo,"s",";")
+		TMP_roo=read_text_row(fnam_roo,"s",";")
  		for i in xrange(len(TMP_roo)):	roo.append(TMP_roo[i][2])
 	Res_roo = []
 	Res_TE  = []	
@@ -282,16 +282,16 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 		3. It returns Euclidean distance for defocus selection 
 	"""
 	from math 	import sqrt, atan
-	from utilities 	import read_txt_col, generate_ctf
+	from utilities 	import read_text_row, generate_ctf
 	roo     = []
 	res     = []
 	if docf == "a":
-		TMP_roo = read_txt_col(fnam_roo, "a", skip)
+		TMP_roo = read_text_row(fnam_roo, "a", skip)
 		for i in xrange(len(TMP_roo)): # remove first record
 			roo.append(TMP_roo[i][1])
 	else:
 		skip = ";"
-		TMP_roo = read_txt_col(fnam_roo, "s", skip)
+		TMP_roo = read_text_row(fnam_roo, "s", skip)
  		for i in xrange(len(TMP_roo)): # remove first record
 	 		roo.append(TMP_roo[i][2])
 	Res_roo = []

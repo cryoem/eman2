@@ -8763,7 +8763,7 @@ def k_means_stab_getinfo(PART, match):
 def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 	""" 	
 	  Input: Two lists, i-th element of each list is either a list of the three Eulerian angles [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
-	         as read by read_txt_col(filename, "")
+	         as read by read_text_row(filename, "")
 	         Or, the two lists can be a list of Transform objects. The two lists have the same length and the i-th element of one list is assumed to correspond to the i-th element of the
 		 second list. 
 		 Threshold is a float.
@@ -8774,7 +8774,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 		     [i, p], where p is the pixel error, into the output list.
 	"""
 	from pixel_error import max_3D_pixel_error
-	from utilities  import read_text_file, write_text_rows, rotation_between_anglesets
+	from utilities  import read_text_file, rotation_between_anglesets
 	import types
 	
 	N = len(agls1)
