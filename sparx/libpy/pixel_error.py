@@ -163,7 +163,7 @@ def align_diff_params(ali_params1, ali_params2):
 			sx2 = ali_params2[i*4+1]
 			sy1 = ali_params1[i*4+2]
 			sy2 = ali_params2[i*4+2]
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, 0.0, 0.0, 0)
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, 0.0, 0.0, 0)
 			if mirror1 == 0: sxi += sx2-sx12
 			else: sxi -= sx2-sx12
 			syi += sy2-sy12
@@ -207,6 +207,35 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	return align_diff_params(ali_params1, ali_params2)
 
 
+def align_diff_textfile(textfile1, textfile2):
+	
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two textfile of alignment parameters
+	'''
+	from utilities import read_text_row
+	
+	ali1 = read_text_row(textfile1, "", "")
+	ali2 = read_text_row(textfile2, "", "")
+
+	nima = len(ali1)
+	nima2 = len(ali2)
+	if nima2 != nima:
+		print "Error: Number of images don't agree!"
+		return 0.0, 0.0, 0.0, 0
+	else:
+		del nima2
+
+	# Read the alignment parameters and determine the relative mirrorness
+	ali_params1 = []
+	ali_params2 = []
+	for i in xrange(nima):
+		ali_params1.extend(ali1[i][0:4])
+		ali_params2.extend(ali2[i][0:4])
+
+	return align_diff_params(ali_params1, ali_params2)
+
+
 def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	'''
 	This function determines the relative angle, shifts and mirrorness between
@@ -232,7 +261,7 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -260,10 +289,58 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, mirror1, alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+
+
+def ave_ali_err_textfile(textfile1, textfile2, r=25):
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters. It also calculates the mirror consistent
+	rate and average pixel error between two sets of parameters.
+	'''
+	from utilities import combine_params2
+	from math import sqrt, sin, pi
+	from utilities import read_text_row
+	
+	ali1 = read_text_row(textfile1, "", "")
+	ali2 = read_text_row(textfile2, "", "")
+
+	nima = len(ali1)
+	nima2 = len(ali2)
+	if nima2 != nima:
+		print "Error: Number of images don't agree!"
+		return 0.0, 0.0, 0.0, 0, 0.0, 0.0
+	else:
+		del nima2
+
+	# Read the alignment parameters
+	ali_params1 = []
+	ali_params2 = []
+	for i in xrange(nima):
+		ali_params1.extend(ali1[i][0:4])
+		ali_params2.extend(ali2[i][0:4])
+
+	# Determine relative angle, shift and mirror
+	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
+
+	# Determine the average pixel error
+	nima = len(ali_params1)/4
+	mirror_same = 0
+	err = 0.0
+	for i in xrange(nima):
+		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
+		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
+		
+		if abs(mirror1-mirror2) == mirror: 
+			mirror_same += 1
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
+	
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+
 
 '''
 
