@@ -36,15 +36,17 @@ from global_def import *
 # scattered all over the places and there are a lot of duplications and confusions.
 #
 # This file contains the following functions:
-# 1. max_2D_pixel_error (originally max_pixel_error, also I changed its input format)
-# 2. max_3D_pixel_error
-# 3. angle_diff
-# 4. align_diff_params
-# 5. align_diff
-# 6. align_diff_textfile (new, not finish yet)
-# 7. ave_ali_err_params
-# 8. ave_ali_err
-# 9. ave_ali_err_textfile (new, not finish yet)
+#  1. max_2D_pixel_error (originally max_pixel_error, also I changed its input format)
+#  2. max_3D_pixel_error
+#  3. angle_diff
+#  4. align_diff_params
+#  5. align_diff
+#  6. align_diff_textfile (new)
+#  7. ave_ali_err_params
+#  8. ave_ali_err
+#  9. ave_ali_err_textfile (new)
+# 10. multi_align_diff_params (new)
+# 11. calc_connect_list (new)
 #
 # Here, align_diff_params() and ave_ali_err_params() takes two lists of alignmnet parameters
 # in the following format:
@@ -341,6 +343,67 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
 
+
+def multi_align_diff_params(ali_params, verbose=0):
+	"""
+	Calculate the mirror consistency and pixel error between different runs of alignment
+	The input is of format:
+		[[alpha1_r1, sx1_s1, sy1_r1, mirror1_r1, alpha2_r1, sx2_r1, sy2_r1, mirror2_r1, ...],
+		 [alpha1_r2, sx1_s2, sy1_r2, mirror1_r2, alpha2_r2, sx2_r2, sy2_r2, mirror2_r2, ...],
+		 [alpha1_r3, sx1_s3, sy1_r3, mirror1_r3, alpha2_r3, sx2_r3, sy2_r3, mirror2_r3, ...],
+		 ...
+		 [alpha1_rn, sx1_sn, sy1_rn, mirror1_rn, alpha2_rn, sx2_rn, sy2_rn, mirror2_rn, ...]]
+	The output are of format here k=n*(n+1)/2:
+		[[pixel_error_1, mirror_consistency_1, i_1, j_1, alpha_1, sx_1, sy_1, mirror_1],
+		 [pixel_error_2, mirror_consistency_2, i_2, j_2, alpha_2, sx_2, sy_2, mirror_2],
+		 [pixel_error_3, mirror_consistency_3, i_3, j_3, alpha_3, sx_3, sy_3, mirror_3],
+		...
+		 [pixel_error_k, mirror_consistency_k, i_k, j_k, alpha_k, sx_k, sy_k, mirror_k]]
+	"""
+	num_ali = len(ali_params)
+	multi_align_results = []
+	for i in xrange(num_ali-1):
+		for j in xrange(i+1, num_ali):
+			alpha, sx, sy, mirror, stab_mirror, pixel_error = ave_ali_err_params(ali_params[i], ali_params[j])
+			if verbose == 1:
+				print "Between trial %d and %d: mirror stability = %6.3f   pixel error = %6.3f"%(i, j, stab_mirror, pixel_error)
+			multi_align_results.append([pixel_error, stab_mirror, i, j, alpha, sx, sy, mirror])
+	return multi_align_results
+	
+
+def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.65):
+	"""
+	Generate the connection list from the multi_align_results, which generally comes from multi_align_diff_params()
+	The connection list will have the following format:
+		[[1, 2, 5], [4, 6], [0, 7]] 
+	"""
+	import sets
+	
+	k = len(multi_align_results)
+	multi_align_results.sort()
+	connect_list = []
+	for i in xrange(k):
+		if multi_align_results[i][0] <= pixel_error_threshold:
+			if multi_align_results[i][1] >= mirror_consistency_threshold: 
+				connect_list.append([multi_align_results[i][2], multi_align_results[i][3]])
+		else:	break
+	to_break = True
+	while to_break:
+		l = len(connect_list)
+		to_break = False
+		for i in xrange(l-1):
+			for j in xrange(i+1, l):
+				set1 = set(connect_list[i])
+				set2 = set(connect_list[j])
+				if list(set1.intersection(set2)) != []:
+					connect_list[i] = list(set1.union(set2))
+					del connect_list[j]
+					to_break = True
+					break
+			if to_break: break
+	max_connect = 0
+	for l in connect_list: max_connect = max(max_connect, len(l))
+	return connect_list, max_connect
 
 '''
 
