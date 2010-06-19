@@ -6313,7 +6313,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 					write_text_file(frc, os.path.join(outdir, "frc%04d.txt"%total_iter))
 				del vol1, vol2
 				vol = recons3d_4nn_MPI(myid, data, npad = npad)
-				
 
 			if myid == main_node:
 				print_msg("\n 3D reconstruction time = %d\n"%(time()-start_time))
@@ -8477,13 +8476,25 @@ def imgstat_inf( stacks, rad ):
 		if len(stacks) == 2:    ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat",1)
 		else:			mask = model_circle( rad, nx, ny, nz )
 
-	
-	for i in xrange(nimg):
-		img = get_im( stacks[0], i )
 
-		[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
+	if(mask == None):
+		for i in xrange(nimg):
+			img = EMData()
+			img.read_image( stacks[0], i, True )  # Does not work!
+			avg = img.get_attr("mean")
+			sigma = img.get_attr("sigma")
+			fmin = img.get_attr("minimum")
+			fmax = img.get_attr("maximum")
 
-		print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
+			print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
+	else:	
+		for i in xrange(nimg):
+
+			img = get_im( stacks[0], i )
+
+			[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
+
+			print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
 
 def imgstat( stacks, ifccc, fscfile, pinf, rad ):
 	if ifccc:
@@ -9171,6 +9182,11 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 	else:
 		eigvols = EMData.read_images(eigvol_stack,range(neigvol))
 
+	from math import sqrt
+	eigvals = [0.0]*neigvol
+	for j in xrange(neigvol):
+		eigvals[j] = sqrt( eigvols[j].get_attr_default('eigval',1.0) )
+		Util.mul_scalar(eigvols[j] , eigvals[j])
 	if( avgvol_stack != None):
 		avgvol = get_im( avgvol_stack )
 
@@ -9190,7 +9206,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 			Util.sub_img(exp_vol, avgvol)
 
 		for j in xrange( neigvol ):
-			d.append( exp_vol.cmp( "dot", eigvols[j], {"negative":0, "mask":m} ) )
+			d.append( exp_vol.cmp( "ccc", eigvols[j], {"negative":0, "mask":m} )*eigvals[j] )
 
 	if  MPI:
 		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send

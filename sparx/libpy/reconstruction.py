@@ -678,8 +678,8 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
 		list_proj  - list of projections to be used in the reconstruction
-		method - "general" Reademacher's Gaussian, "exact" MvHs triangle
-		const  - for "general" 1.0e4 work well, for "exact" it should be the diameter of the object
+		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmtry - point group symmetry of the object
 	""" 
 	import types
@@ -687,7 +687,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
-	   
+
 	nx = B.get_xsize()
 
 	CUBE = EMData()
@@ -713,20 +713,16 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		dm[(count*9) :(count+1)*9] = DMnSS["DM"]
 		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
 		count += 1
-
-	if(method=="general"):
-	# for general weighting tabularize table of exponents
-		expdict =  Util.ExpMinus4YSqr(2.0, 1000)
-		exptable = expdict["table"]
+	if(method=="exact"  ):    const = int(const)
 
 	count = 0
 	for i in xrange(nimages):
 		if type(stack_name) == types.StringType: B.read_image(stack_name,list_proj[i])
-		else : B = stack_name[list_proj[i]].copy()
+		else :                                   B = stack_name[list_proj[i]].copy()
 		#for j in xrange(nsym):  # symmetries were bit out on the list
 		for j in xrange(1):
 			DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
-			if   (method=="general"):    Util.WTF(B, ss, const, count, exptable)
+			if   (method=="general"):    Util.WTF(B, ss, const, count)
 			elif (method=="exact"  ):    Util.WTM(B, ss, const, count)
 
 			Util.BPCQ(B, CUBE, DM)

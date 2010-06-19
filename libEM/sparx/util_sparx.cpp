@@ -5703,7 +5703,7 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 #define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)]
 #define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
 
-void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable)
+void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 {
 	int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
 	float WW,OX,OY,Y;
@@ -5726,29 +5726,23 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	W->to_zero();
 	float *Wptr = W->get_data();
 	float *PROJptr = PROJ->get_data();
-	float indcnst = 1000/2.0;
-	// we create look-up table for 1001 uniformly distributed samples [0,2];
-
 	for (L=1; L<=NANG; L++) {
 		OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
 		OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
 
 		if(OX != 0.0f || OY!=0.0f) {
-			//int count = 0;
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
 				if(JY > NR2) JY=JY-NROW;
 				for(int I=1;I<=NNNN/2;I++) {
 					Y =  fabs(OX * (I-1) + OY * JY);
-					if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
-				    //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
+					if(Y < 2.0f) W(I,J) += exp(-4*Y*Y);
 				}
 			}
 		} else {
 			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
 		}
 	}
-
         EMData* proj_in = PROJ;
 
 	PROJ = PROJ->norm_pad( false, ipad);
@@ -5762,11 +5756,10 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	WNRMinv = 1.0f/W(1,1);
 	for(int J=1;J<=NROW;J++)
 		for(int I=1;I<=NNNN;I+=2) {
-			//cout << " x   "<<I << " y   "<<J <<endl;
-			KX	    = (I+1)/2;
-			temp	= W(KX,J)*WNRMinv;
-			WW  	= temp/(temp*temp + osnr);
-			PROJ(I,J)	*= WW;
+			KX	     = (I+1)/2;
+			temp	     = W(KX,J)*WNRMinv;
+			WW           = temp/(temp*temp + osnr);
+			PROJ(I,J)   *= WW;
 			PROJ(I+1,J) *= WW;
 		}
 	delete W; W = 0;
@@ -5776,10 +5769,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
         float* data_src = PROJ->get_data();
         float* data_dst = proj_in->get_data();
 
-        for( int i=0; i < ntotal; ++i )
-        {
-            data_dst[i] = data_src[i];
-        }
+        for( int i=0; i < ntotal; ++i )  data_dst[i] = data_src[i];
 
         proj_in->update();
 
@@ -5904,10 +5894,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
         float* data_dst = proj_in->get_data();
 
         int ntotal = NSAM*NROW;
-        for( int i=0; i < ntotal; ++i )
-        {
-            data_dst[i] = data_src[i];
-        }
+        for( int i=0; i < ntotal; ++i )  data_dst[i] = data_src[i];
 
         proj_in->update();
 	delete PROJ;
@@ -5925,29 +5912,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   W
 #undef   SS
 #undef   PROJ
-
-//-----------------------------------------------------------------------------------------------------------------------
-Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
-{
-	//exp(-16) is 1.0E-7 approximately)
-	vector<float> expvect;
-
-	double inc = double(ymax)/nsamples;
-	double temp;
-	for(int i =0;i<nsamples;i++) {
-		temp = exp((-4*(i*inc)*(i*inc)));
-		expvect.push_back(float(temp));
-	}
-	expvect.push_back(0.0);
-	Dict lookupdict;
-	lookupdict["table"]    = expvect;
-	lookupdict["ymax"]     = ymax;
-	lookupdict["nsamples"] = nsamples;
-
-	return lookupdict;
-}
-
-//-------------------------------------------------------------------------------------------------------------------------
 
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {

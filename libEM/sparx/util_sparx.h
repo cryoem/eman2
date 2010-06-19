@@ -47,11 +47,9 @@ static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 /** same function than Util::coveig but wrapped to use directly in python code */
 static Dict coveig_for_py(int ncov, const vector<float>& covmatpy);
 
-static Dict ExpMinus4YSqr(float ymax,int nsamples);
+static void WTF(EMData* PROJ,vector<float> SS,float SNR,int K);
 
 static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
-
-static void WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable);
 
 static Dict CANG(float PHI, float THETA, float PSI);
 
