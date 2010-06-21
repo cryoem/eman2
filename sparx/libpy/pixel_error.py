@@ -47,6 +47,7 @@ from global_def import *
 #  9. ave_ali_err_textfile (new)
 # 10. multi_align_diff_params (new)
 # 11. calc_connect_list (new)
+# 12. ali_stable_list (new)
 #
 # Here, align_diff_params() and ave_ali_err_params() takes two lists of alignmnet parameters
 # in the following format:
