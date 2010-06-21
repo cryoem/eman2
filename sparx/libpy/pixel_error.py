@@ -405,6 +405,35 @@ def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_c
 	for l in connect_list: max_connect = max(max_connect, len(l))
 	return connect_list, max_connect
 
+
+def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
+	'''
+	This function determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters. It also calculates the mirror consistent
+	rate and average pixel error between two sets of parameters.
+	'''
+	from utilities import combine_params2
+	from math import sqrt, sin, pi
+	
+	# Determine relative angle, shift and mirror
+	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
+
+	# Determine the average pixel error
+	nima = len(ali_params1)/4
+	ali_list = []
+	for i in xrange(nima):
+		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
+		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
+		
+		if abs(mirror1-mirror2) == mirror: 
+			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			if max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r) < pixel_error_threshold:
+				ali_list.append(1)
+			else:	ali_list.append(0)
+		else:	ali_list.append(0)
+	
+	return ali_list
+
 '''
 
 # These are some obsolete codes, we retain them just in case.
