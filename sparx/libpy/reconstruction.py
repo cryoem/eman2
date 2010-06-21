@@ -722,11 +722,43 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		#for j in xrange(nsym):  # symmetries were bit out on the list
 		for j in xrange(1):
 			DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
+			count += 1   # It has to be there as conting in WTF and WTM start from 1!
 			if   (method=="general"):    Util.WTF(B, ss, const, count)
 			elif (method=="exact"  ):    Util.WTM(B, ss, const, count)
 
 			Util.BPCQ(B, CUBE, DM)
-			count += 1
+
+	return CUBE
+      
+
+def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
+	"""
+	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+		apply it, and backproject.
+		Weigthed back-projection algorithm.
+		stack_name - disk stack with projections or in-core list of images
+		list_proj  - list of projections to be used in the reconstruction
+		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
+		symmtry - point group symmetry of the object
+	""" 
+
+	nx = B.get_xsize()
+	RA = Transform()
+	if(method=="exact"  ):    const = int(const)
+	nsym = 1
+	CUBE = EMData()
+	CUBE.set_size(nx, nx, nx)
+	CUBE.to_zero()
+
+	count = 0
+	for j in xrange(1):
+	  	DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
+	  	count += 1   # It has to be there as conting in WTF and WTM start from 1!
+	  	if   (method=="general"):    Util.WTF(B, ss, const, L)
+	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L)
+
+	  	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
 
 	return CUBE
 

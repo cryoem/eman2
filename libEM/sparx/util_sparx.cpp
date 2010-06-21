@@ -5727,10 +5727,13 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	float *Wptr = W->get_data();
 	float *PROJptr = PROJ->get_data();
 	for (L=1; L<=NANG; L++) {
-		OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
-		OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+		float  tmp1 = SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)) - SS(3,L)*SS(4,K);
+		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) ); 
+		OX = SS(6,K)*tmp2 + SS(5,K)*tmp1;
+		OY = SS(5,K)*tmp2 - SS(6,K)*tmp1;
+	//cout << " OX   "<<OX << " OY   "<<OY <<endl;
 
-		if(OX != 0.0f || OY!=0.0f) {
+		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f) {
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
 				if(JY > NR2) JY=JY-NROW;
