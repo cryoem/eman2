@@ -45,21 +45,22 @@ from optparse import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <raw particle file> <class mx> <projections> 
+	usage = """%prog [options] <raw particle file> <class mx> <projections>
 	
-This will use a volume containing a binary mask and use it to classify a set of particles already refined using e2refine.py.
+This program can use either a 3-D binary mask, or a pair of liganded/unliganded volumes to classify particle data into 2
+(or 4) groups. e2refine.py must be run on the data first. The method using a pair of volumes is much more accurate in
+separating particles.
 
 This is part of a multi-step process for separating ligand bound from ligand free particles, but relies on sufficient
 ligand/no-ligand contrast in individual images:
-1) refine the entire data set with e2refine.py, such that most classes have at least 10-20 particles in them
-2) construct a volume the same size as your reconstruction containing a binary mask, with 1 in the region where the ligand would be
-3) run this program 
+ 1) refine the entire data set with e2refine.py, such that most classes have at least 10-20 particles in them
+ 2) construct a volume the same size as your reconstruction containing a binary mask, with 1 in the region where the ligand would be
+2a) -or- prepare 2 volume files representing the particle with or without associated ligand
+ 3) run this program 
 
 <raw particle file> should be the same file used in the refinement
 <class mx> is one of the classification matrix files from the refinement
 <projections> contains the projections used for class mx
-<mask> is the 3-D mask file identifying the region of interest
-<output file> is a prefix for the classified data"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")

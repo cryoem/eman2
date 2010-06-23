@@ -58,7 +58,7 @@ def main():
 		dl.sort()
 		
 		# extract an array of various parameters
-		parmlist=[(" ","it","shr","sep","2s","simcmp","simr","simrcmp","clsit","clscmp","clsr","clsrcmp","csf","3sf","3post","initmdl")]
+		parmlist=[(" ","it","shr","sep","2s","simcmp","simr","simrcmp","clsit","clscmp","clsr","clsrcmp","csf","3sf","3post","initmdl","sym")]
 		for d in dl:
 			if not os.path.isdir(d) : continue
 			try :
@@ -69,7 +69,7 @@ def main():
 				continue
 			try:
 				p=[d,parms["iter"],parms.get("shrink",1),parms["sep"],parms.get("twostage",0),parms["simcmp"],parms["simralign"][:1],parms["simraligncmp"],parms["classiter"],
-					parms["classcmp"],parms["classralign"][:1],parms["classraligncmp"],parms["classrefsf"][-2:-1],parms["m3dsetsf"],parms["m3dpostprocess"],parms["model"]]
+					parms["classcmp"],parms["classralign"][:1],parms["classraligncmp"],parms["classrefsf"][-2:-1],parms["m3dsetsf"],parms["m3dpostprocess"],parms["model"],parms["sym"]]
 			except:
 				print d, "incomplete parameters"
 				continue

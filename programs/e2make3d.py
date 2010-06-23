@@ -46,7 +46,7 @@ import traceback
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + """ <inputfile> [options]
+	usage = progname + """ [options]
 	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
 	
 	WARNING - the icosahedral symmetry axes are aligned dirrently in eman1 and eman2 - that means

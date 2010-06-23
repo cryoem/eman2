@@ -54,9 +54,10 @@ def main():
 	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
 	parser.add_option("--mass", default=None, type="float",help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
 	parser.add_option("--apix", default=None, type="float",help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_option("--automask3d", default=None, type="string",help="The 4 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5.")
+	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells, ngaussshells and nmaxseed. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nmaxseed=10:nshells=5:ngaussshells=5.")
 	parser.add_option("--nmodels", type="int", help="The number of different bootstrap models to generate for the variance computation. Default=10", default=10)
 	parser.add_option("--iteration", type="int", help="The refinement iteration to use as a basis for the variance map", default=-1)
+	parser.add_option("--volfiles",action="store_true",help="This will bypass the construction of the individual resampled models, and use files previously generated with the --keep3d options",default=False)
 
 	# options associated with e2project3d.py
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
@@ -101,8 +102,12 @@ def main():
 		vals = options.automask3d.split(",")
 		mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
 		s = "mask.auto3d"
-		for i,p in enumerate(mapping):
-			s += ":"+p+"="+vals[i]
+		try:
+			for i,p in enumerate(mapping):
+				s += ":"+p+"="+vals[i]
+		except:
+			print "Error: automask3d requires 5 parameters now. See the Wiki."
+			sys.exit(1)
 		s+= ":return_mask=1"
 		options.automask3d = s
 
@@ -111,36 +116,48 @@ def main():
 	nprogress=options.nmodels*2.0+1.0
 	# this loops over each of the n models we create to compute the variance
 	for mod in xrange(options.nmodels) :
-		if options.verbose : print "Class-averaging"
-		# Compute class-averages with the --resample option
-		options.classifyfile="bdb:%s#classify_%02d"%(options.path,options.iteration)
-		options.projfile="bdb:%s#projections_%02d"%(options.path,options.iteration)
-		options.cafile="bdb:"+options.path+"#variance_classes_tmp"
-		print get_classaverage_cmd(options)
-		if ( os.system(get_classaverage_cmd(options)) != 0 ):
-			print "Failed to execute %s" %get_classaverage_cmd(options)
-			sys.exit(1)
-		E2progress(logid,(mod*2.0+1)/nprogress)
-		
-		if options.verbose : print "Shrinking"
-		# deal with shrink3d
-		if options.shrink3d : 
-			if ( os.system("e2proc2d.py %s %s --meanshrink=%d --inplace"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
-				print "Failed to execute CA shrink"
+		if options.volfiles :
+			options.model="var3d_%03d.mrc"%mod
+		else:
+			if options.verbose : print "Class-averaging"
+			# Compute class-averages with the --resample option
+			options.classifyfile="bdb:%s#classify_%02d"%(options.path,options.iteration)
+			options.projfile="bdb:%s#projections_%02d"%(options.path,options.iteration)
+			options.cafile="bdb:"+options.path+"#variance_classes_tmp"
+			print get_classaverage_cmd(options)
+			if ( os.system(get_classaverage_cmd(options)) != 0 ):
+				print "Failed to execute %s" %get_classaverage_cmd(options)
 				sys.exit(1)
-			options.cafile=options.cafile+"_s"
-		
-		if options.verbose : print "3-D Reconstruction"
-		# build a new 3-D map
-		options.model="bdb:"+options.path+"#variance_threed_tmp"
-		print get_make3d_cmd(options)
-		if ( os.system(get_make3d_cmd(options)) != 0 ):
-			print "Failed to execute %s" %get_make3d_cmd(options)
-			sys.exit(1)
-		E2progress(logid,(mod*2.0+2.0)/nprogress)
+			E2progress(logid,(mod*2.0+1)/nprogress)
+			
+			# deal with shrink3d
+			if options.shrink3d : 
+				if options.verbose : print "Shrinking"
+				print "e2proc2d.py %s %s --meanshrink=%d --inplace --writejunk"%(options.cafile,options.cafile+"_s",options.shrink3d)
+				if ( os.system("e2proc2d.py %s %s --meanshrink=%d --inplace --writejunk"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
+					print "Failed to execute CA shrink"
+					sys.exit(1)
+				options.cafile=options.cafile+"_s"
+			
+			if options.verbose : print "3-D Reconstruction"
+			# build a new 3-D map
+			options.model="bdb:"+options.path+"#variance_threed_tmp"
+			print get_make3d_cmd(options)
+			if ( os.system(get_make3d_cmd(options)) != 0 ):
+				print "Failed to execute %s" %get_make3d_cmd(options)
+				sys.exit(1)
+			E2progress(logid,(mod*2.0+2.0)/nprogress)
+
+			# enforce symmetry
+			os.system("e2proc3d.py %s %s --sym=%s"%(options.model,options.model,options.sym))
+
+		if options.verbose : print "Post-processing"
 
 		cur_map=EMData(options.model,0)
-		if options.keep3d : cur_map.write_image("var3d_%03d.mrc"%mod,0)
+		nx=cur_map["nx"]
+		ny=cur_map["ny"]
+		nz=cur_map["nz"]
+		apix=cur_map["apix_x"]
 		
 		if options.mass:
 			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
@@ -152,6 +169,9 @@ def main():
 
 				mask = cur_map.process(automask_parms[0],automask_parms[1])
 				cur_map.mult(mask)
+		
+		# Write the individual models to MRC files
+		if options.keep3d and not options.volfiles : cur_map.write_image("var3d_%03d.mrc"%mod,0)
 	
 		# now keep a sum of all of the maps and all of the maps^2
 		if mod==0 :
@@ -168,9 +188,57 @@ def main():
 	mean_map.mult(1.0/options.nmodels)
 	mean_map.write_image("bdb:%s#threed_%02d_mean"%(options.path,options.iteration),0)
 	
-	sqr_map.mult(1.0/options.nmodels)			# pixels are mean x^2
+	# Now compute the variance from the two maps
+	sqr_map.mult(1.0/options.nmodels)			# pixels are mean of x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
+	
+	### Symmetry downweighting
+	weight=EMData(nx,ny,nz)
+	weight.to_zero()
+	weight["apix_x"]=apix
+	weight["apix_y"]=apix
+	weight["apix_z"]=apix
+	
+	w=weight.copy()
+	# A line along Z
+	for i in xrange(0,nz): w[nx/2,ny/2,i]=1.0
+
+	# replicate the line under symmetry
+	t=Transform()
+	ns=t.get_nsym(options.sym)
+	for i in xrange(ns):
+		t2=t.get_sym(options.sym,i)
+		wc=w.process("xform",{"transform":t2})		# transformed version of weight
+		weight.add(wc)
+	
+	weight.process_inplace("threshold.clampminmax",{"minval":1.0,"maxval":500.0})	# 60 would really normally be the max here, but with helical symmetry supported...
+
+	# This filters the duplication map similarly to the actual map, approximating the exaggeration in variance
+	if options.m3dpostprocess :
+		tv=weight[nx/2,ny/2,nz/4]
+		(processorname, param_dict) = parsemodopt(options.m3dpostprocess)
+		weight.process_inplace(processorname, param_dict)
+	
+		# Now this is a bit tricky to argue. Along the axis we have n-fold redundancy, so that will define our normalization
+		# so, we  a point 1/2 way up the Z axis to its value before filtration. 1/2 way up Z is to deal with things like icosahedral symmetry reasonably
+		if weight[nx/2,ny/2,nz/4]>1.0 : rescale=(tv-1.0)/(weight[nx/2,ny/2,nz/4]-1.0)
+		else : rescale=1.0
+#		print rescale
+		
+		# now we reprocess with the weighting factor, but don't reweight the 1.0 region...
+		weight.add(-1.0)
+		weight.mult(rescale)
+		weight.add(1.0)
+	
+#	display(weight)
+	weight.process_inplace("math.invert.carefully",{"zero_to":1.0})		# this gives us 1/duplication on the symmetry axes and 1 off of the axes
+
+
+#	display(weight)
+	sqr_map.mult(weight)
+	
+	# Finally write the result
 	sqr_map.write_image("bdb:%s#threed_%02d_variance"%(options.path,options.iteration),0)
 	
 	E2progress(logid,nprogress/nprogress)

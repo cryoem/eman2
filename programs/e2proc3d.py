@@ -97,7 +97,11 @@ def main():
 	
 	parser.add_option("--add", metavar="f", type="float", 
 								help="Adds a constant 'f' to the densities")
-	
+
+	parser.add_option("--calcfsc", type="string", metavar="with input",
+								help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
+
+
 	parser.add_option("--calcsf", type="string", metavar="outputfile",
 								help="Calculate a radial structure factor. Must specify apix.")
 
@@ -200,6 +204,17 @@ def main():
 					return
 					
 				data.set_xyz_origin(originx, originy, originz)
+
+			elif option1 == "calcfsc" :
+				datafsc=EMData(options.calcfsc)
+				fsc = data.calc_fourier_shell_correlation(datafsc)
+				third = len(fsc)/3
+				xaxis = fsc[0:third]
+				fsc = fsc[third:2*third]
+				saxis = [x/apix for x in xaxis]
+				Util.save_data(saxis[0],saxis[1]-saxis[0],fsc,args[1])
+				print "Exiting after FSC calculation"
+				sys.exit(0)
 
 			elif option1 == "calcsf":
 				dataf = data.do_fft()

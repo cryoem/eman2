@@ -47,6 +47,7 @@ try:
 	from bsddb3 import db
 except:
 	from bsddb import db
+	print "WARNING: Using the out of date 'bsddb' module instead of bsddb3. Consider installing newer berkeleydb and bsddb3."
 
 try:
 	a=frozenset()
