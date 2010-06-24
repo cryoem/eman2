@@ -299,7 +299,7 @@ def compute_envelope(img_sets,smax=.06):
 		if (len(img_sets)>3) :
 			incr=[0.2]*len(img_sets)
 			simp=Simplex(env_cmp,scales,incr,data=envelopes)
-			scales=simp.minimize(maxiters=1000)[0]
+			scales=simp.minimize(maxiters=5000)[0]
 		scales.insert(0,1.0)	# we keep this scale factor fixed
 		
 #		print envelopes
@@ -423,7 +423,10 @@ def pspec_and_ctf_fit(options,debug=False):
 def env_cmp(sca,envelopes):
 #	global envelopes
 	env=envelopes
-	total=[]
+	total=[(j[0],j[1]) for j in env[0]]		# the first set is unscaled to 'anchor' the results
+	
+	# env contains a list of lists of points. Each outermost list represents a data set
+	# sca is an array of scale factors. We set the first one to 1.0 to avoid arbitrary data scaling
 	for i,ii in enumerate(env[1:]):
 		for j in ii:
 			total.append((j[0],j[1]*sca[i]))
@@ -804,7 +807,7 @@ def sfact2(s):
 	global sfcurve2
 	if sfcurve2==None : init_sfcurve("auto")
 
-	return 10.0**sfcurve2.get_yatx(s)
+	return 10.0**sfcurve2.get_yatx(s,1)
 
 def sfact(s):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
@@ -813,7 +816,7 @@ def sfact(s):
 	global sfcurve
 	if sfcurve==None : init_sfcurve("auto")
 
-	return 10.0**sfcurve.get_yatx(s)
+	return 10.0**sfcurve.get_yatx(s,1)
 	
 	#if s<.004 : return 0
 ##	if s<.006 : return 0
@@ -1192,10 +1195,12 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 	ret=[]
 	
+	lo=1
 	for i in range(1,len(cc)-1):
-		if fabs(cc[i])>0.2 and im_1d[i]-bg_1d[i]>0 :
+		if (lo or fabs(cc[i])>0.5) and im_1d[i]-bg_1d[i]>0 :
 			ret.append((i*ds,(im_1d[i]-bg_1d[i])/cc[i]**2))
 #			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
+		if lo and fabs(cc[i])>0.5 : lo=0							# this gets the low frequencies before the first maximum
 		
 	return ret
 

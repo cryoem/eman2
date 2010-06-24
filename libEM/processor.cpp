@@ -6068,7 +6068,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
 		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
 
@@ -6092,7 +6092,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
 		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
 

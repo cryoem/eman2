@@ -944,7 +944,10 @@ class EMClassAveTask(EMTask):
 	
 		if np != 0:
 			average = averager.finish()
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			average.process_inplace("normalize.circlemean")
+			gmw=average["nx"]/16	# gaussian mask width, box/20 but at least 4
+			if gmw<5 : gmw=5
+			average.process_inplace("mask.gaussian",{"inner_radius":average.get_xsize()/2-gmw,"outer_radius":gmw/1.3})
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for ptcl_idx,ali in alis.items(): alis[ptcl_idx] = t*ali # warning inplace modification
@@ -998,9 +1001,13 @@ class EMClassAveTask(EMTask):
 			return None
 			
 		average = averager.finish()
-		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
-		average.mult(1.0/weightsum) # Do the correct division
-		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+		#average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
+		#average.mult(1.0/weightsum) # Do the correct division
+		average.process_inplace("normalize.circlemean")
+		gmw=average["nx"]/16	# gaussian mask width, box/16 but at least 5
+		if gmw<5 : gmw=5
+		average.process_inplace("mask.gaussian",{"inner_radius":average.get_xsize()/2-gmw,"outer_radius":gmw/1.3})
+#		average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 #		average.process_inplace("xform.centeracf")
 #		t = average.get_attr("xform.align2d")
 #		for ptcl_idx,ali in self.data["init_alis"].items(): self.data["init_alis"][ptcl_idx] = t*ali # warning inplace modification
@@ -1067,7 +1074,11 @@ class EMClassAveTask(EMTask):
 #			average.process_inplace("xform.centeracf")
 #			t = average.get_attr("xform.align2d")
 #			for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			average.process_inplace("normalize.circlemean")
+			gmw=average["nx"]/16	# gaussian mask width, box/20 but at least 4
+			if gmw<5 : gmw=5
+			average.process_inplace("mask.gaussian",{"inner_radius":average.get_xsize()/2-gmw,"outer_radius":gmw/1.3})
+#			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
 			average["apix_x"]=image["apix_x"]
 			if self.options["setsfref"] and ref!=None :
@@ -1133,7 +1144,11 @@ class EMClassAveTask(EMTask):
 #				average.process_inplace("xform.centeracf")
 #				t = average.get_attr("xform.align2d")
 #				for idx,ali in alis.items(): alis[idx] = t*ali # warning, inpace modification of the alis ! 
-			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			average.process_inplace("normalize.circlemean")
+			gmw=average["nx"]/16	# gaussian mask width, box/20 but at least 4
+			if gmw<5 : gmw=5
+			average.process_inplace("mask.gaussian",{"inner_radius":average.get_xsize()/2-gmw,"outer_radius":gmw/1.3})
+#			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 
 			average["apix_x"]=image["apix_x"]
 			if self.options["setsfref"] and ref!=None :

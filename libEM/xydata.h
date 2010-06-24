@@ -79,7 +79,8 @@ namespace EMAN
 
 		void update();
 
-		float get_yatx(float x);
+		float get_yatx(float x,bool outzero=true);		// if outzero is set, values outside the data domain will be 0, otherwise clamped at the edge
+		
 
 		float get_x(size_t i) const
 		{

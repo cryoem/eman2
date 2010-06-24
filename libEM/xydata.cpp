@@ -161,7 +161,7 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 }
 
 
-float XYData::get_yatx(float x)
+float XYData::get_yatx(float x,bool outzero)
 {
 // You MUST be kidding. Do you know how expensive update() is !?!?
 // the correct answer is to call update after you change the data, just like with EMData objects. --steve
@@ -184,7 +184,9 @@ float XYData::get_yatx(float x)
 	}
 
 	if (s >= nx || s < 0) {
-		return 0.0;
+		if (outzero) return 0.0;			// if outzero is set, any x point beyond the edges of the data will be 0
+		if (s>=nx) return data[nx-1].y;		// otherwise return the edge value
+		return data[0].y;
 	}
 
 	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
