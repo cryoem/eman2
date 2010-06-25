@@ -57,7 +57,7 @@ def main():
 	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filteration")
 	parser.add_option("--function", type="string", default="ref_ali2d",   help="name of the reference preparation function (default ref_ali2d)")
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
-	parser.add_option("--GPU",      type="int",    default=0,             help="number of GPUs available")
+	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
@@ -80,7 +80,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPU, options.MPI)
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

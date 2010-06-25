@@ -33,9 +33,9 @@ from global_def import *
 
 
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0, MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPU)
+		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
 		return
 
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
@@ -112,8 +112,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("User function               : %s\n"%(user_func_name))
 	print_msg("Using CUDA                  : %s\n"%(CUDA))
 	if CUDA:
-		GPU = 1
-		print_msg("Number of GPUs              : %d\n"%(GPU))
+		GPUID = get_input_from_string(GPUID)
+		GPUID = int(GPUID[0])
+		print_msg("GPU ID                      : %d\n"%(GPUID))
 
 	if maskfile:
 		import	types
@@ -192,7 +193,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
-			if CTF:  R.filter_stack(all_ctf_params, 0)
+			if CTF:  R.filter_stack(all_ctf_params, GPUID)
 
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
@@ -202,7 +203,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if CUDA:
 				ave1 = model_blank(nx, nx)
 				ave2 = model_blank(nx, nx)
-				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, 0)
+				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
 				# Comment by Zhengfan Yang on 02/01/10
 				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
 				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
@@ -308,7 +309,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_end_msg("ali2d_c")
 
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPU=0):
+			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID=""):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -414,7 +415,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 		print_msg("Using CUDA                  : %s\n"%(CUDA))
 		if CUDA:
-			print_msg("Number of GPUs              : %d\n"%(GPU))
+			GPUID = get_input_from_string(GPUID)
+			GPUID = map(int, GPUID)
+			print_msg("GPU IDs                     : %d\n"%(GPUID))
 
 
 	if maskfile:
@@ -451,7 +454,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 		
 	if CUDA:
-		GPUID = myid%GPU
+		nGPU = len(GPUID)
+		GPUID = GPUID[myid%nGPU]
 		all_ali_params = []
 		all_ctf_params = []
 

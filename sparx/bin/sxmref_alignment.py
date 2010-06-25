@@ -54,7 +54,7 @@ def main():
 	parser.add_option("--dst",	type="float", 		default=0.0,		help="")
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--CUDA",     action="store_true", default=False,          help=" whether to use CUDA ")
-	parser.add_option("--GPU",      type="int",          default=1,            help=" number of GPU")
+	parser.add_option("--GPUID",      type="string",          default="",            help=" ID of GPUs to use")
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 
 	(options, args) = parser.parse_args()
@@ -73,7 +73,7 @@ def main():
 		global_def.BATCH = True
 		from development import mref_alignment
 		mref_alignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, 
-				options.snr, options.CTF, options.Fourvar, options.Ng, options.dst, options.center, options.CUDA, options.GPU, options.MPI)
+				options.snr, options.CTF, options.Fourvar, options.Ng, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
