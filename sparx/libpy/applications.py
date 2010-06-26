@@ -3051,20 +3051,20 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
 	    fourvar = True, debug = False):
 
-	from alignment      import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
-	from utilities      import model_circle, get_image, drop_image, get_input_from_string
-	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
-	from utilities      import send_attr_dict
-	from utilities      import get_params_proj, file_type
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
+	from utilities           import model_circle, get_image, drop_image, get_input_from_string
+	from utilities           import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
+	from utilities           import send_attr_dict
+	from utilities           import get_params_proj, file_type
 	from fundamentals   import rot_avg_image
 	import os
 	import types
-	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
-	from filter         import filt_ctf
+	from utilities         import print_begin_msg, print_end_msg, print_msg
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
+	from filter             import filt_ctf
 	from projection     import prep_vol, prgs
-	from statistics     import hist_list, varf3d_MPI
+	from statistics       import hist_list, varf3d_MPI
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -9154,7 +9154,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 
 	if pca:
 		assert not(avg is None)
-		
+
 		pcaer.setavg( avg )
 
 		eigs = pcaer.analyze()
@@ -9295,7 +9295,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			if  CTF:  ref_eigprj = filt_ctf( ref_eigprj, ctf )
 
 			#d.append( diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j]/nrmd )   CHANGED HERE
-			d.append( diff.cmp( "ccc", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j] )
+			d.append( diff.cmp( "ccc", ref_eigprj, {"negative":0, "mask":m} ))#*eigvals[j] )
         		#print  i,j,d[-1]
 	if  MPI:
 		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
