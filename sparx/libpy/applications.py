@@ -3052,19 +3052,19 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    fourvar = True, debug = False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
-	from utilities           import model_circle, get_image, drop_image, get_input_from_string
-	from utilities           import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
-	from utilities           import send_attr_dict
-	from utilities           import get_params_proj, file_type
-	from fundamentals   import rot_avg_image
+	from utilities       import model_circle, get_image, drop_image, get_input_from_string
+	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
+	from utilities       import send_attr_dict
+	from utilities       import get_params_proj, file_type
+	from fundamentals    import rot_avg_image
 	import os
 	import types
-	from utilities         import print_begin_msg, print_end_msg, print_msg
-	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
-	from filter             import filt_ctf
-	from projection     import prep_vol, prgs
-	from statistics       import hist_list, varf3d_MPI
+	from utilities       import print_begin_msg, print_end_msg, print_msg
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
+	from filter          import filt_ctf
+	from projection      import prep_vol, prgs
+	from statistics      import hist_list, varf3d_MPI
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
