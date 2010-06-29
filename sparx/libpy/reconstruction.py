@@ -759,8 +759,8 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
-		from filter import filt_gaussl
-		B = filt_gaussl(B, 0.15)
+		#from filter import filt_gaussl
+		#B = filt_gaussl(B, 0.15)
 
 	  	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
 

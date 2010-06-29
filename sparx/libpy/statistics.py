@@ -46,7 +46,7 @@ def add_oe_series(data, ali_params="xform.align2d"):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 		if i%2 == 0: Util.add_img(ave1, temp)
-		else:          Util.add_img(ave2, temp)
+		else:         Util.add_img(ave2, temp)
 	return ave1, ave2
 
 def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d"):
@@ -8285,15 +8285,22 @@ def cluster_equalsize(d, m):
 
 
 class pcanalyzer:
-	def __init__(self, mask, sdir, nvec, MPI=False ):
+	def __init__(self, mask, sdir, nvec, MPI=False, scratch = None ):
+		import os
 		self.mask = mask.copy()
 		if MPI:
 			from mpi import mpi_comm_rank, MPI_COMM_WORLD
 			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
-			self.file = sdir + ("/maskedimg%04d.bin" % self.myid )
+			if( scratch == None):
+				self.file = os.path.join(sdir , "maskedimg%04d.bin" % self.myid )
+			else:
+				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
 			self.MPI  = True
 		else:
-			self.file = sdir + ("/maskedimg.bin" )
+			if( scratch == None):
+				self.file = os.path.join(sdir , "maskedimg.bin" )
+			else:
+				self.file = os.path.join(scratch , "maskedimg.bin" )
 			self.MPI  = False
 			self.myid = 0
 		self.sdir = sdir
