@@ -84,6 +84,9 @@ def main():
 			     options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, 
 			     options.MPI, options.CUDA, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
+                if options.MPI:
+		                        from mpi import mpi_finalize
+					mpi_finalize()
 
 if __name__ == "__main__":
 	        main()
