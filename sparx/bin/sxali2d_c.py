@@ -76,7 +76,7 @@ def main():
 		
 		if options.MPI:
 			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \

@@ -77,7 +77,7 @@ IS_LOGFILE_OPEN = False
 global SPARXVERSION
 SPARXVERSION = "SPARX v2.0"
 
-def ERROR(message, where, action = 1):
+def ERROR(message, where, action = 1, myid = 0):
 	"""
 		General error function for sparx system
 		where:   function name
@@ -85,10 +85,11 @@ def ERROR(message, where, action = 1):
 		action: 1 - fatal error, exit; 0 - non-fatal, print a warning
 	"""
 	#print  "\n\n",SPARXVERSION
-	if(action):  print  "\n  ***  ERROR    ***  in: ",where
-	else:        print  "\n  ***  WARNING  ***  in: ",where
-	print  "\n  ***  ",message
-	if (action and BATCH):
+	if myid == 0:
+		if action: print  "\n  *****  ERROR in: %s"%(where)
+		else: print  "\n  *****  WARNING in: %s"%(where)
+		print "\n  *****  %s"%message
+	if action and BATCH:
 		from sys import exit
 		exit()
 

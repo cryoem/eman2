@@ -333,9 +333,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	ftp = file_type(stack)
 	
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_c_MPI", 1, myid)
+
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
