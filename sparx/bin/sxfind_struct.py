@@ -91,6 +91,9 @@ def main():
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
 				    weights, options.debug, options.trials)
 			global_def.BATCH = False
+                if options.MPI:
+		        from mpi import mpi_finalize
+			mpi_finalize()
 
 
 
