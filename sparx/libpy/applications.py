@@ -9081,7 +9081,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 					pc   = Util.infomask(img, pcamask, True)
 					img -= pc[0]
 					img *= (refstat[1]/pc[1])
-					img += refstat[1]
+					img += refstat[1]  # shouldn't it be zero?
 			if(repair and writelp):  img.write_image(files[ifile], i)
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)

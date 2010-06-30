@@ -2522,12 +2522,12 @@ def read_fsc( filename ):
 		line = f.readline()
 
 	return fscc
-
+"""
+#  This would not work on windows
 def memory_usage():
 	import os
 	from string import split
 	return 0
-	"""
 	file = "/proc/%d/status" % os.getpid()
 	f = open(file, 'r')
 	line = f.readline()
@@ -2536,7 +2536,7 @@ def memory_usage():
 		if items[0]=='VmSize:':
 			return items[1]+items[2]
 		line = f.readline()
-	"""
+"""
 
 def circumference( img, inner = -1, outer = -1):
 	nx = img.get_xsize()
@@ -2557,7 +2557,6 @@ def circumference( img, inner = -1, outer = -1):
 def copy_attr( pin, name, pot ):
 	pot.set_attr( name, pin.get_attr(name) )
 	pass
-
 
 def write_headers(filename, data, lima):
 	"""
