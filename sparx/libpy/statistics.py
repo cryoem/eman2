@@ -8354,7 +8354,7 @@ class pcanalyzer:
 
 		shfflfile = replace( self.file, "masked", "shuffled" )
 
-		print self.myid, "shuffling"
+		#print self.myid, "shuffling"
 		sumdata = zeros( (self.ncov), float32 )
 		imgdata = zeros( (self.ncov), float32 )
 		self.fr = open( self.file, "rb" )
@@ -8381,7 +8381,7 @@ class pcanalyzer:
 
 		self.file = shfflfile
 		self.avgdat = sumdata[:]/float(sumnimg)
-		print "done shuffling,nimg:", float(sumnimg)
+		#print "done shuffling,nimg:", float(sumnimg)
 
 
 
@@ -8406,8 +8406,8 @@ class pcanalyzer:
 		self.ncov = tmpimg.get_xsize()
 	
 	def analyze( self ):
-		if self.myid==0:
-			print "analyze: ", self.ncov, " nvec: ", self.nvec
+		#if self.myid==0:
+		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
 		from time import time
 		from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
@@ -8419,7 +8419,7 @@ class pcanalyzer:
 
 		lanczos_start = time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
-		print 'time for lanczos: ', time() - lanczos_start
+		#print 'time for lanczos: ', time() - lanczos_start
 
 		if not self.MPI or self.myid==0:
                 	qmat = zeros( (kstep,kstep), float32 )
@@ -8482,7 +8482,7 @@ class pcanalyzer:
 			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
 			Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
 			Av = array(Av, float32)
-		print 'iter 0: ', time() - all_start
+		#print 'iter 0: ', time() - all_start
 
 
 		diag[0] = Util.sdot( ncov, V[0], 1, Av, 1 )
@@ -8536,7 +8536,7 @@ class pcanalyzer:
 
 			diag[iter] = hvec[iter]
 
-			print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
+			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
 		return kstep
 
 	
