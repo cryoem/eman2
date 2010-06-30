@@ -82,6 +82,9 @@ def main():
 		ali2d_c(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \
 			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 if __name__ == "__main__":
 	main()
