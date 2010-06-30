@@ -80,6 +80,9 @@ def main():
 		global_def.BATCH = True
 		ali2d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
+                if options.MPI:
+		        from mpi import mpi_finalize
+			mpi_finalize()
 
 
 if __name__ == "__main__":
