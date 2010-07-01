@@ -337,6 +337,9 @@ def main():
 	bootstrap( prjfile, wgts, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase,\
 	           options.snr, options.genbuf, options.ngroup, options.CTF, options.npad,\
 		   options.MPI, myid, ncpu, options.core, boot, keep, options.verbose )
+	if options.MPI:
+		from mpi import mpi_finalize
+		mpi_finalize()
 
 
 if __name__ == "__main__":
