@@ -85,8 +85,8 @@ def main():
 			     options.MPI, options.CUDA, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
                 if options.MPI:
-		                        from mpi import mpi_finalize
-					mpi_finalize()
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 if __name__ == "__main__":
 	        main()
