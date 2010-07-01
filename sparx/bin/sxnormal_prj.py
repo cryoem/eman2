@@ -46,7 +46,8 @@ def main():
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
 	normal_prj( args[0], args[1], refvol, options.apply_weights, options.r, options.niter, options.snr, options.sym, options.verbose, options.CTF, options.MPI )
-
+		from mpi import mpi_finalize
+		mpi_finalize()
 
 if __name__ == "__main__":
 	main()
