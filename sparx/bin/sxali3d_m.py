@@ -92,7 +92,8 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
-
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 		global_def.BATCH = True
 		ali3d_m(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar, options.stoprnct)
