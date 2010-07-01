@@ -98,5 +98,8 @@ def main():
 				k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.opt_method, options.CTF, options.match, options.maxit)
 		global_def.BATCH = False
 
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 if __name__ == "__main__":
 	        main()
