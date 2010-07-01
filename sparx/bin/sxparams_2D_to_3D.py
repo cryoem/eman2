@@ -51,11 +51,8 @@ def main():
 		from applications import params_2D_to_3D
 		global_def.BATCH = True
 		params_2D_to_3D(args[0])
-		global_def.BATCH = False
-
-                if options.MPI:
-		        from mpi import mpi_finalize
-			mpi_finalize()
+		global_def.BATCH = False     
+			
 
 if __name__=="__main__":
 	main()
