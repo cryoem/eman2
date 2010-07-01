@@ -759,10 +759,30 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
-		#from filter import filt_gaussl
-		#B = filt_gaussl(B, 0.15)
-
 	  	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
+
+	return CUBE, B
+
+def backproject_swbp(B, L, dm, symmetry="c1"): 
+	"""
+	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+		apply it, and backproject.
+		The projection number is L counting from zero.
+		Weigthed back-projection algorithm.
+		stack_name - disk stack with projections or in-core list of images
+		list_proj  - list of projections to be used in the reconstruction
+		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
+		symmtry - point group symmetry of the object
+	""" 
+
+	CUBE = EMData()
+	CUBE.set_size(nx, nx, nx)
+	CUBE.to_zero()
+
+	DM = dm[(L*9) :(L+1)*9]
+
+	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
 
 	return CUBE
 
