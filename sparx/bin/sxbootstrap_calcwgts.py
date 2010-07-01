@@ -259,6 +259,9 @@ def main():
 
 	bootstrap_calcwgts( prjfile, wgtfile, options.voronoi, options.delta,refvol, options.fl, options.fh, options.CTF, options.nexclude, options.exclude_bothside, options.MPI, options.verbose )
 
+	if options.MPI:
+	        from mpi import mpi_finalize
+		mpi_finalize()
 
 if __name__ == "__main__":
 	main()
