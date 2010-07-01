@@ -84,5 +84,9 @@ def main():
 		ali3d_e(args[0], args[1], mask, options.ou, options.delta, options.ts, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.fourvar, options.debug, options.MPI)
 		global_def.BATCH = False
 
+                if options.MPI:
+	                from mpi import mpi_finalize
+			mpi_finalize()
+
 if __name__ == "__main__":
 	main()
