@@ -40,6 +40,8 @@ def main():
 		if options.MPI:
 			from applications import defvar_mpi
 			defvar_mpi( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			from mpi import mpi_finalize
+			mpi_finalize()
 		else:
 			from applications import defvar
 			defvar( files, outdir, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
