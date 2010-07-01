@@ -42,6 +42,10 @@ def main():
 	global_def.BATCH = True
 	pca(input_stacks, output_stack, options.subavg, options.rad, options.sdir, options.nvec, options.shuffle, not(options.usebuf), options.mask, options.MPI)
 	global_def.BATCH = False
+        if options.MPI:
+		from mpi import mpi_finalize
+		mpi_finalize()
+
 
 if __name__ == "__main__":
 	main()
