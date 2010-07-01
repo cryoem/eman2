@@ -776,6 +776,7 @@ def backproject_swbp(B, L, dm, symmetry="c1"):
 		symmtry - point group symmetry of the object
 	""" 
 
+	nx = B.get_xsize()
 	CUBE = EMData()
 	CUBE.set_size(nx, nx, nx)
 	CUBE.to_zero()
