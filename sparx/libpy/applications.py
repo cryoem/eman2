@@ -5685,7 +5685,7 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			mic_name_list.append(micname)
 			nima += 1
 	if(myid == int(main_node)): # directory cleaning only performed by main node
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "autowin_MPI ", 1,myid)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
