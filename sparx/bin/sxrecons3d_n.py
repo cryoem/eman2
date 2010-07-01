@@ -91,6 +91,10 @@ def main():
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI)
 	global_def.BATCH = False
+        
+	if options.MPI:
+		from mpi import mpi_finalize
+		mpi_finalize()
 
 
 if __name__=="__main__":
