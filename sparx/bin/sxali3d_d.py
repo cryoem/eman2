@@ -98,5 +98,9 @@ def main():
 			options.function, options.Fourvar, options.debug, options.MPI)
 			global_def.BATCH = False
 
+                if options.MPI:
+		        from mpi import mpi_finalize
+			mpi_finalize()
+
 if __name__ == "__main__":
 	main()
