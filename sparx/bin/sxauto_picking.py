@@ -72,5 +72,9 @@ def main():
 		autowin(args[0], args[1], args[2], args[3], args[4], options.deci, options.pck, options.p_size, options.sigma, options.hf_p, options.n_ptl, options.cst, options.MPI)
 		global_def.BATCH = False
 
+                if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
+
 if __name__ == "__main__":
 	        main()
