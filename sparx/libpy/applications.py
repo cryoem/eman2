@@ -1450,7 +1450,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 
 	# create the output directory, if it does not exist
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_m ", 1)
 	os.mkdir(outdir)
 	output = sys.stdout
 
@@ -1669,7 +1669,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	main_node = 0
 	# create the output directory, if it does not exist
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_m_MPI ", 1,myid)
 		os.mkdir(outdir)
 
 	if myid == main_node:
@@ -3571,7 +3571,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	if(myid == main_node):
 		if os.path.exists(outdir):
 			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+			ERROR('Output directory exists, please change the name and restart the program', "ali3d_m_MPI ", 1,myid)
 		else:
 			os.mkdir(outdir)
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -5213,7 +5213,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_e_MPI ", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_e_MPI ", 1,myid)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -8065,10 +8065,11 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	lrnd    = cml_init_rnd(trials, rand_seed)
 	out_dir = out_dir.rstrip('/')
 
+	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_MPI ", 1,myid)
+
 	if myid == main_node:
 		t_start = start_time()
 		print_begin_msg('find_struct')
-		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(out_dir)
 	
 	# Open and transform projections
@@ -8987,7 +8988,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
         if myid==0:
 		if os.path.exists(outdir):
 			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', " var_mpi", 0)
+			ERROR('Output directory exists, please change the name and restart the program', " var_mpi", 1,myid)
 		else:
 			os.system( "mkdir " + outdir )
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -9395,20 +9396,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
-		flag = 0
-		if myid == main_node:
-			if os.path.exists(out_dir):
-				flag = 1
-				ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+		if os.path.exists(out_dir):
+			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1,myid)
 
-		flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
-		flag = int(flag[0])
-		if flag != 0: sys.exit()
-
-		mpi_barrier( MPI_COMM_WORLD )
 	else:
 		if os.path.exists(out_dir):
-			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0)
 	
 
 	if MPI and not CUDA:
