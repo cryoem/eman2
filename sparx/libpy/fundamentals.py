@@ -38,21 +38,58 @@ def absi(e):
 
 # Autocorrelation functions
 def acf(e, center=True):
+	"""
+		Name
+			acf - calculate the circulant autocorrelation function of an image
+		Input
+			e: input image, can be either real or Fourier
+			center: if set to True (default), the origin of the result is at the center; if set to False, the origin is at (0,0).
+		Output
+			circulant autocorrelation function of the input image. Real.
+	"""
 	return autocorrelation(e, fp_flag.CIRCULANT, center)
 
 def acfn(e, center=True):
+	"""
+		Name
+			acfn - calculate the normalized circulant autocorrelation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center; if set to False, the origin is at (0,0).
+		Output
+			normalized circulant autocorrelation function of an input image. Real.
+	"""
 	return autocorrelation(e, fp_flag.CIRCULANT_NORMALIZED, center)
 
 def acfp(e, center=True):
 	return autocorrelation(e, fp_flag.PADDED, center)
 
 def acfnp(e, center=True):
+	"""
+		Name
+			acfnp - calculate the normalized autocorrelation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center; if set to False, the origin is at (0,0).
+		Output
+			normalized autocorrelation function of the input image. Real. 
+	"""
+
 	return autocorrelation(e, fp_flag.PADDED_NORMALIZED, center)
 
 def acfpl(e, center=True):
 	return autocorrelation(e, fp_flag.PADDED_LAG, center)
 
 def acfnpl(e, center=True):
+	"""
+		Name
+			acfnpl - calculate the normalized autocorrelation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center; if set to False, the origin is at (0,0).
+		Output
+			autocorrelation function of the input image. Real. 
+	"""
 	return autocorrelation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
 
 def __buildweights(m, kb):
