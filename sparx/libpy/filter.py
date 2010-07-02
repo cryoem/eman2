@@ -91,16 +91,55 @@ def filt_gausso(e, sigma, value, pad = False):
 
 
 def filt_btwl(e, freql, freqh, pad = False):
+	"""
+		Name
+			filt_btwl - Butterworth low-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - pass-band frequency
+			freqh: high - stop-band frequency
+			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_btwh(e, freql, freqh, pad = False):
+	"""
+		Name
+			filt_btwh - Butterworth high-pass Fourier filter
+
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - stop-band frequency
+			freqh: high - pass-band frequency
+			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_btwo(e, freql, freqh, value, pad = False):
+	"""
+		Name
+			filt_btwo - Butterworth homomorphic Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - stop-band frequency
+			freqh: high - pass-band frequency
+			value: value of the filter at zero frequency
+			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
@@ -178,6 +217,18 @@ def filt_table(e, table):
 	return Processor.EMFourierFilter(e, params)
 
 def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
+	"""
+		Name
+			filt_ctf - apply Contrast Transfer Function (CTF) to an image in Fourier space
+		Input
+			image: input image, it can be real or complex
+			ctf: an CTF object, see CTF_info for description.
+			pad: apply padding with zeroes in real space to twice the size before CTF application (Default is True, if set to False, no padding, if input image is Fourier, the flag has no effect).
+			sign: sign of the CTF. If cryo data had inverted contrast, i.e., images were multiplied by -1 and particle projections appear bright on dark background, it has to be set to -1). (Default is 1).
+			binary: phase flipping if set to 1 (default is 0).
+		Output
+			image multiplied in Fourier space by the CTF, the output image has same format with the input image.
+	"""
 	assert img.get_ysize() > 1
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
@@ -265,12 +316,20 @@ def filt_params(dres, high = 0.95, low = 0.1):
 
 def filt_from_fsc(dres, low = 0.1):
 	"""
-		dres - list produced by the fsc funcion
-		dres[0] - absolute frequencies
-		dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
-		dres[2] - number of point use to calculate fsc coeff
-		low cutoff of the fsc curve
-		return filter curve rn = 2r/(1+r)
+		Name
+			filt_from_fsc - generate a filter using the FSC curve
+		Input
+			dres: - list produced by the fsc funcion
+			dres[0] - absolute frequencies
+			dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+			dres[2] - number of point use to calculate fsc coeff
+		low (low is option)
+			cutoff of the fsc curve
+			return filter curve rn = 2r/(1+r)
+		Output
+			filtc: a list of filter values
+			Note: it is assumed that the FSC curve was computed from the dataset split into halves, so the filter values are calculated using rf = 2r1+r
+
 	"""
 	n = len(dres[1])
 	filtc = [0.0]*n
@@ -325,13 +384,19 @@ def filt_from_fsc2(dres, low = 0.1):
 
 def filt_from_fsc_bwt(dres, low = 0.1):
 	"""
-		dres - list produced by the fsc funcion
-		dres[i][0] - absolute frequencies
-		dres[i][1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
-		dres[i][2] - number of point use to calculate fsc coeff
-		return filter curve rn = 2r/(1+r) when frc>0.9
+		Name
+			filt_from_fsc_bwt - Create filter using Fourier Ring correlation coefficients with Butterworth filter (bwf) cut off.
+		Input
+			dres - list produced by the fsc funcion
+			dres[i][0] - absolute frequencies
+			dres[i][1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+			dres[i][2] - number of point use to calculate fsc coeff
+			return filter curve rn = 2r/(1+r) when frc>0.9
 		                    rn =1./sqrt(1.+(dres[i][0]/rad)**order) when frc<=0.9
-		ssnr calculated from frc with Butterworth fitler-like cutoff
+			low: pass band
+			ssnr calculated from frc with Butterworth fitler-like cutoff
+		Output
+			filtc: filter created from FRC
 	"""
 	from math import log,sqrt
 	n = len(dres[0])
