@@ -32,6 +32,24 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
+	"""
+	Name
+		filt_median - Calculate the median filtered image.
+	Input
+		input image
+		nxk, nyk, nzk
+			Size of the kernel on each dimension.
+			- They have to be odd so that the center of kernal can be well defined.
+			- Note: For CIRCULAR kernel, we currently only allow circle or sphere kernel, i.e., nxk and nyk must be same for 2 dimensional image and nxk, nyk and nzk must be same for 3 dimensional image.
+		kernelshape
+			Shape of the kernel
+			- BLOCK is for block kernel (DEFAULT);
+			- CIRCULAR is for circular kernel;
+			- CROSS is for cross kernal;
+			- Note: For 1-dimensional image, these three kernels degenerate into the same shape.
+	Output
+		median filtered image
+	"""
 	if kernelshape=="BLOCK":
 		return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
 	elif kernelshape=="CIRCULAR":
@@ -42,21 +60,69 @@ def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 
 # Fourier filters
 def filt_tophatl(e, freq, pad = False):
+	"""
+		Name
+			filt_tophatl - top-hat low-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freq: stop-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : freq, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tophath(e, freq, pad = False):
+	"""
+		Name
+			filt_tophath - top-hat high-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
 		  "cutoff_abs" : freq, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tophatb(e, freql, freqh, pad = False):
+	"""
+		Name
+			filt_tophatb - top-hat band-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low-end frequency of the filter pass-band
+			freqh: high-end frequency of the filter pass-band
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tophato(e, freql, freqh, value, pad = False):
+	"""
+		Name
+			filt_tophato - top-hat homomorphic Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low-end frequency of the filter pass-band
+			freqh: high-end frequency of the filter pass-band
+			value: value of the filter in spatial frequencies lower than freql
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "value_at_zero_frequency" : value, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -64,26 +130,81 @@ def filt_tophato(e, freql, freqh, value, pad = False):
     
 
 def filt_gaussl(e, sigma, pad = False):
+	"""
+		Name
+			filt_gaussl - Gaussian low-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			Note: for sigma = 0.5 (the Nyquist frequency) the value of the filter at the maximum frequency is G(fN)=1e=0.61.
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_LOW_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_gaussinv(e, sigma, pad = False):
+	"""
+		Name
+			filt_gaussinv - inverse Gaussian (high-pass) Fourier filter (division by a Gaussian function in Fourier space)
+		Input
+			e: input image (can be either real or Fourier)
+			sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			Note: for sigma = 0.5 (the Nyquist frequency) the value of the filter at the maximum frequency is G(fN)=e=1.65.
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_INVERSE,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
  
 def filt_gaussh(e, sigma, pad = False):
+	"""
+		Name
+			filt_gaussh - Gaussian high-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			Note: for sigma = 0.5 (the Nyquist frequency) the value of the filter at the maximum frequency is 1-G(0)=1-1e=0.39
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_gaussb(e, sigma, center, pad = False):
+	"""
+		Name
+			filt_gaussb - Gaussian band-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+			center: frequency in absolute frequency units fa at which the filter reaches maximum (=1).
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_BAND_PASS,
 		  "cutoff_abs" : sigma, "center" : center, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_gausso(e, sigma, value, pad = False):
+	"""
+	Name
+		filt_gausso - Gaussian homomorphic Fourier filter
+	Input
+		e: input image (can be either real or Fourier)
+		sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+		value: center - value of the filter at zero freqeuncy
+		pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+	Output
+		filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
 		  "cutoff_abs" : sigma, "value_at_zero_frequency" : value, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -98,7 +219,7 @@ def filt_btwl(e, freql, freqh, pad = False):
 			e: input image (can be either real or Fourier)
 			freql: low - pass-band frequency
 			freqh: high - stop-band frequency
-			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
 			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
@@ -116,7 +237,7 @@ def filt_btwh(e, freql, freqh, pad = False):
 			e: input image (can be either real or Fourier)
 			freql: low - stop-band frequency
 			freqh: high - pass-band frequency
-			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
 			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
@@ -134,7 +255,7 @@ def filt_btwo(e, freql, freqh, value, pad = False):
 			freql: low - stop-band frequency
 			freqh: high - pass-band frequency
 			value: value of the filter at zero frequency
-			pad: logical flag specifying whether for before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
 			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
@@ -148,22 +269,75 @@ def filt_btwo(e, freql, freqh, value, pad = False):
 
 
 def filt_tanl(e, freq, fall_off, pad = False):
+	"""
+		Name
+			filt_tanl - hyperbolic tangent low-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freq: stop-band frequency
+			fall_off: fall off of the filter
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_LOW_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tanh(e, freq, fall_off, pad = False):
+	"""
+		Name
+			filt_tanh - hyperbolic tangent high-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			fall_off: fall off of the filter
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_HIGH_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
+	"""
+		Name
+			filt_tanb - hyperbolic tangent band-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low-end frequency of the filter pass-band
+			low_fall_off: fall off of the filter at the low-end frequency
+			freqh: high-end frequency of the filter pass-band
+			high_fall_off: fall off of the filter at the high-and frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
 	    	  "high_cutoff_frequency" : freqh, "high_fall_off": high_fall_off, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_tano(e, freq, fall_off, value, pad = False):
+	"""
+		Name
+			filt_tano - hyperbolic tangent homomorphic Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			fall_off: fall off of the filter
+			value: value of the filter at zero frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier.
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_HOMOMORPHIC,
 		  "cutoff_abs" : freq, "fall_off": fall_off,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
@@ -212,6 +386,18 @@ def filt_kaisersinhinvp(e, alpha):
 	return Processor.EMFourierFilter(e, params)
 
 def filt_table(e, table):
+	"""
+		Name
+			filt_table - filter image using a user-provided (as a list) of Fourier filter values
+		Input
+			e: input image (real or Fourier)
+			table: user-provided 1-D table of filter values.
+		Output
+			image Fourier-filtered using coefficients in table (real or Fourier, according the input image)
+		Options
+			fast: use the fast method; may combust certain computers.
+			huge: gobble memory; there is plenty of it, anyway.
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.RADIAL_TABLE,
 			"table" : table}
 	return Processor.EMFourierFilter(e, params)
@@ -222,12 +408,12 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 			filt_ctf - apply Contrast Transfer Function (CTF) to an image in Fourier space
 		Input
 			image: input image, it can be real or complex
-			ctf: an CTF object, see CTF_info for description.
+			ctf: an CTF object, please see CTF_info for description.
 			pad: apply padding with zeroes in real space to twice the size before CTF application (Default is True, if set to False, no padding, if input image is Fourier, the flag has no effect).
 			sign: sign of the CTF. If cryo data had inverted contrast, i.e., images were multiplied by -1 and particle projections appear bright on dark background, it has to be set to -1). (Default is 1).
 			binary: phase flipping if set to 1 (default is 0).
 		Output
-			image multiplied in Fourier space by the CTF, the output image has same format with the input image.
+			image multiplied in Fourier space by the CTF, the output image has the same format as the input image.
 	"""
 	assert img.get_ysize() > 1
 	dict = ctf.to_dict()
@@ -277,13 +463,19 @@ def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
 
 def filt_params(dres, high = 0.95, low = 0.1):
 	"""
-		dres - list produced by the fsc funcion
-		dres[0] - absolute frequencies
-		dres[1] - fsc, because it was calculated from half the dataset, convert it to full using rn = 2r/(1+r)
-		dres[2] - number of point use to calculate fsc coeff
-		low cutoff of the fsc curve
-		high cutoff of the fsc curve
-		return parameters of the Butterworth filter (low and high frequencies)
+		Name
+			filt_params - using the FSC curve establish two frequencies: stop-band, corresponding to the point where the curves drops below predefined high value, and pass-band, corresponding to the point where the curves drops below predefined low value
+		Input
+			dres - list produced by the fsc funcion
+			dres[0] - absolute frequencies
+			dres[1] - fsc, because it was calculated from half the dataset, convert it to full using rn = 2r/(1+r)
+			dres[2] - number of point use to calculate fsc coeff
+			low: cutoff of the fsc curve
+			high: cutoff of the fsc curve. Note: high and low values are optional.
+			return parameters of the Butterworth filter (low and high frequencies)
+		Output
+			freql: stop-band frequency
+			freqh: pass-band frequency
 	"""
 	n = len(dres[1])
 	if ( (2*dres[1][n-1]/(1.0+dres[1][n-1])) > low):
@@ -323,8 +515,7 @@ def filt_from_fsc(dres, low = 0.1):
 			dres[0] - absolute frequencies
 			dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
 			dres[2] - number of point use to calculate fsc coeff
-		low (low is option)
-			cutoff of the fsc curve
+			low (low is option): cutoff of the fsc curve
 			return filter curve rn = 2r/(1+r)
 		Output
 			filtc: a list of filter values
@@ -547,7 +738,7 @@ def filt_matched(ima, SNR, Pref):
 			print thm
 			hm=sqrt(thm)
 			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
-			xval=hm/deno
+			xval=hm/deno 
 		else: 
 			hm=0.0
 			xval=0.0
