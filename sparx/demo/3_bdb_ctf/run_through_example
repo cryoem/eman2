@@ -15,13 +15,13 @@ rm tmp.hdf
 sxboxer.py -A cmd -B 64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=75 --ctf_fstop=1 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
-sxali2d_c.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF || exit
+sxali2d.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF || exit
 
 # K-mean clustering of the 2D dataset
 sxk_means.py bdb:data kmeans --K=12 --opt_method=cla --maxit=100 --rand_seed=10 --T0=0.2 --F=0.97 --CTF || exit
 
 # Multireference alignment of the 2D dataset
-sxali2d_m.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF || exit
+sxmref_ali2d.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF || exit
 
 # Determination of the initial structure using class averages and common-lines
 sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.3 --maxit=20 --rand_seed=10 --trials=2 || exit
@@ -36,10 +36,10 @@ e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --filter=sxTANH_LOW_PASS:cutoff
 sxparams_2D_to_3D.py bdb:data || exit
 
 # 3D projection alignment - refinement of the initial structure
-sxali3d_d.py bdb:data ../fmodel_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF || exit
+sxali3d.py bdb:data ../fmodel_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF || exit
 
 # Refinement of the 3D structure using high accuracy alignment
-sxali3d_e.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --CTF --debug || exit
+sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --CTF --debug || exit
 
 # bootstrap calculation
 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi || exit
@@ -54,6 +54,6 @@ sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 || exit
 ../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
 
 # 3D multi reference alignment
-sxali3d_m.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --CTF
+sxmref_ali3d.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --CTF
 
 

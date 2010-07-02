@@ -6043,18 +6043,18 @@ def k_means_extract_class_ali(stack_name, ave_name, dir):
 	
 # compute pixel error for a class given	
 def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, snr=1.0, Fourvar=False):
-	from applications import header, ali2d_c
+	from applications import header, ali2d
 	from utilities    import estimate_stability
 	from statistics   import aves
 	import os
 	name = class_name.split('.')[0]
 	file = os.path.join(dir, class_name)
 	header(file, 'xform.align2d', randomize=True)
-	ali2d_c(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	ali2d(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
 	header(file, 'xform.align2d', backup=True, suffix='_round1')
 	header(file, 'xform.align2d', randomize=True)
-	ali2d_c(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	ali2d(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
 
 	data1 = EMData.read_images(file)

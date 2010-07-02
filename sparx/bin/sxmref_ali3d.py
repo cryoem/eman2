@@ -84,7 +84,7 @@ def main():
 		else:
 			maskfile = args[3]
 
-		from applications import ali3d_m
+		from applications import mref_ali3d
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -96,7 +96,7 @@ def main():
 			mpi_finalize()
 
 		global_def.BATCH = True
-		ali3d_m(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar, options.stoprnct)
+		mref_ali3d(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar, options.stoprnct)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

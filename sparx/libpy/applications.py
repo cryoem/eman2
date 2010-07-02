@@ -32,10 +32,10 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 
-def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
+def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):
 	if MPI:
-		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
+		ali2d_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
 		return
 
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
@@ -47,11 +47,11 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities    import model_blank, model_circle, file_type
 	import os
 			
-	print_begin_msg("ali2d_c")
+	print_begin_msg("ali2d")
 	
 	ftp = file_type(stack)
 
-	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d_c", 1)
+	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -134,7 +134,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf
 		from morphology import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -306,9 +306,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, list_of_particles)
-	print_end_msg("ali2d_c")
+	print_end_msg("ali2d")
 
-def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
+def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID=""):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
@@ -333,10 +333,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	ftp = file_type(stack)
 	
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_c_MPI", 1, myid)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
 
 	if myid == main_node:
-		print_begin_msg("ali2d_c_MPI")
+		print_begin_msg("ali2d_MPI")
 		os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -439,7 +439,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1)
 		from filter import filt_ctf
 		from morphology   import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -672,7 +672,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			from utilities import recv_attr_dict
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
-	if myid == main_node: print_end_msg("ali2d_c_MPI")
+	if myid == main_node: print_end_msg("ali2d_MPI")
 
 '''
 def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
@@ -1252,7 +1252,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	if myid == main_node: print_end_msg("ali2d_c_MPI")
 '''
 
-def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d"):
+def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d"):
 # 2D alignment using amoeba and gridding interpolation
 	from alignment    	import kbt
 	from utilities    	import model_circle, amoeba, compose_transform2, drop_image, get_arb_params, get_image, get_params2D, set_params2D
@@ -1269,7 +1269,7 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	max_iter  = int(maxit)
 	last_ring = int(ou)
 
-	print_begin_msg("ali2d_e")	
+	print_begin_msg("local_ali2d")	
 	
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -1395,13 +1395,13 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
-	print_end_msg("ali2d_e")
+	print_end_msg("local_ali2d")
 
 
-def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000, MPI=False):
+def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000, MPI=False):
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 	if MPI:
-		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, user_func_name, rand_seed)
+		mref_ali2d_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, user_func_name, rand_seed)
 		return
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
@@ -1424,7 +1424,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	else:
 		auto_stop = False
 
-	print_begin_msg("ali2d_m")
+	print_begin_msg("mref_ali2d")
 
 	print_msg("Input stack                 : %s\n"%(stack))
 	print_msg("Reference stack             : %s\n"%(refim))	
@@ -1450,7 +1450,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 
 	# create the output directory, if it does not exist
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_m ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d", 1)
 	os.mkdir(outdir)
 	output = sys.stdout
 
@@ -1562,7 +1562,7 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 				msg = "   group #%3d   number of particles = %7d\n"%(j, refi[j][2])
 				print_msg(msg)
 				if refi[j][2] < 4:
-					#ERROR("One of the references vanished","ali2d_m",1)
+					#ERROR("One of the references vanished","mref_ali2d",1)
 					#  if vanished, put a random image there
 					assign[j] = []
 					assign[j].append(randint(0, nima-1))
@@ -1639,10 +1639,10 @@ def ali2d_m(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng
 			for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
-	print_end_msg("ali2d_m")
+	print_end_msg("mref_ali2d")
 
 
-def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000):
+def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000):
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
@@ -1669,11 +1669,11 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	main_node = 0
 	# create the output directory, if it does not exist
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_m_MPI ", 1,myid)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1,myid)
 		os.mkdir(outdir)
 
 	if myid == main_node:
-		print_begin_msg("ali2d_m_MPI")
+		print_begin_msg("mref_ali2d_MPI")
 
 	nima = EMUtil.get_image_count(stack)
 	
@@ -1841,7 +1841,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			ave_fsc = []
 			for j in xrange(numref):
 				if refi[j][2] < 4:
-					#ERROR("One of the references vanished","ali2d_m_MPI",1)
+					#ERROR("One of the references vanished","mref_ali2d_MPI",1)
 					#  if vanished, put a random image (only from main node!) there
 					assign[j] = []
 					assign[j].append( randint(image_start, image_end-1) - image_start )
@@ -1936,7 +1936,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		newrefim = os.path.join(outdir, "multi_ref.hdf")
 		for j in xrange(numref):
 			refi[j][0].write_image(newrefim, j)
-		print_end_msg("ali2d_m_MPI")
+		print_end_msg("mref_ali2d_MPI")
 
 
 def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_mirror = False, CTF = False, rand_seed = 1000):
@@ -2890,12 +2890,12 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_end_msg("ali3d_a")
 
 
-def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
 	    user_func_name = "ref_ali3d", fourvar = True, debug = False, MPI = False):
 	if MPI:
-		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+		ali3d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
 	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name,
 			fourvar, debug)
 		return
@@ -2909,7 +2909,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	print_begin_msg("ali3d_d")
+	print_begin_msg("ali3d")
 
 	from alignment      import Numrinit, prepare_refrings
 	from projection     import prep_vol
@@ -3045,9 +3045,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			write_headers(stack, data, list_of_particles)
 			if CTF:
 				for dat in data:  dat.set_attr('ctf_applied', 1)
-	print_end_msg("ali3d_d")
+	print_end_msg("ali3d")
 
-def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
 	    fourvar = True, debug = False):
@@ -3072,7 +3072,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_d_MPI", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -3114,7 +3114,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		print_begin_msg("ali3d_d_MPI")
+		print_begin_msg("ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Output directory            : %s\n"%(outdir))
@@ -3314,15 +3314,15 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	        			from utilities import recv_attr_dict
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
-	if myid == main_node: print_end_msg("ali3d_d_MPI")
+	if myid == main_node: print_end_msg("ali3d_MPI")
 
 
-def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def mref_ali3d(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
 	     center = 1.0, nassign = 3, nrefine = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
 	     user_func_name="ref_ali3d", MPI=False, debug = False, fourvar=False, termprec = 0.0):
 	if MPI:
-		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, maxit, ir, ou, rs, xr, yr, ts,
+		mref_ali3d_MPI(stack, ref_vol, outdir, maskfile, maxit, ir, ou, rs, xr, yr, ts,
 		 delta, an, center, nassign, nrefine, CTF, snr, ref_a, sym, user_func_name, debug, fourvar, termprec)
 		return
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
@@ -3338,7 +3338,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 	import types
 	# 2D alignment using rotational ccf in polar coords and linear
 	# interpolation	
-	print_begin_msg("ali3d_m")
+	print_begin_msg("mref_ali3d")
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -3421,7 +3421,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 
 	if CTF :
 		#  ERROR if ctf applied
-		if(data[0].get_attr("ctf_applied") > 0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
+		if(data[0].get_attr("ctf_applied") > 0):  ERROR("mref_ali3d does not work for CTF-applied data","mref_ali3d",1)
 		from reconstruction import recons3d_4nn_ctf
 		from filter import filt_ctf
 	else   : from reconstruction import recons3d_4nn
@@ -3542,9 +3542,9 @@ def ali3d_m(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1,
 		#  here we  write header info
 		write_headers( stack, data, list_of_particles)
 	
-	print_end_msg("ali3d_m")
+	print_end_msg("mref_ali3d")
 
-def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", debug = False, fourvar=False, termprec = 0.0):
@@ -3571,7 +3571,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	if(myid == main_node):
 		if os.path.exists(outdir):
 			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', "ali3d_m_MPI ", 1,myid)
+			ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1,myid)
 		else:
 			os.mkdir(outdir)
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -3624,7 +3624,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
-		print_begin_msg("ali3d_m_MPI")
+		print_begin_msg("mref_ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volumes           : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
@@ -3712,7 +3712,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	mpi_barrier( MPI_COMM_WORLD )
 
 	if(CTF):
-		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
+		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d does not work for CTF-applied data","mref_ali3d",1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -3940,16 +3940,16 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 		if(terminate == 1):
 			if myid==main_node:
-				print_end_msg("ali3d_m_MPI terminated due to small number of objects changing assignments")
+				print_end_msg("mref_ali3d_MPI terminated due to small number of objects changing assignments")
 			from sys import exit
 			exit()
 		if(myid == 0):
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid==main_node:
-		print_end_msg("ali3d_m_MPI")
+		print_end_msg("mref_ali3d_MPI")
 
 # the next is to test writing header info
-def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def mref_ali3d_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", debug = False, fourvar=False, termprec = 0.0):
@@ -4029,7 +4029,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
-		print_begin_msg("ali3d_m_MPI")
+		print_begin_msg("mref_ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
@@ -4118,7 +4118,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 	mpi_barrier( MPI_COMM_WORLD )
 
 	if(CTF):
-		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
+		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d does not work for CTF-applied data","mref_ali3d",1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -4177,7 +4177,7 @@ def ali3d_m_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs
 		if(myid == 0):
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid==main_node:
-		print_end_msg("ali3d_m_MPI")
+		print_end_msg("mref_ali3d_MPI")
 
 
 def get_refiparams(nx):
@@ -4190,7 +4190,7 @@ def get_refiparams(nx):
 	v = K/2.0/N
 	return {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  Focus on intersubunit region	
@@ -4264,7 +4264,7 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 			vol = get_im(refvol, krf)
 			vol.write_image( os.path.join(outdir, "volf0000.hdf"), krf )
 			vol = None
-		print_begin_msg("ali3d_em_MPI")
+		print_begin_msg("local_ali3dm_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(refvol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
@@ -4332,7 +4332,7 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0):
-			ERROR( "ali3d_em does not work on ctf_applied data", "ali3d_em", 1)
+			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm", 1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -4567,8 +4567,8 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 			start_time = time()
 		if(terminate == 1  and runtype=="ASSIGNMENT"):
 			if myid==main_node:
-				#print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
-				print_msg("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments\n")
+				#print_end_msg("local_ali3dm_MPI terminated due to small number of objects changing assignments")
+				print_msg("local_ali3dm_MPI abandoned assignments due to small number of objects changing assignments\n")
 			from sys import exit
 			exit()
 			while(runtype == "ASSIGNMENT"):
@@ -4580,10 +4580,10 @@ def ali3d_em_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, max
 			Iter += -1
 
 	if myid==main_node:
-		print_end_msg("ali3d_em_MPI")
+		print_end_msg("local_ali3dm_MPI")
 
 
-def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
+def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,
                 snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 ):
 	"""
 	  The original, fully operational version	
@@ -4657,7 +4657,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			vol = get_im(refvol, krf)
 			vol.write_image( os.path.join(outdir, "volf0000.hdf"), krf )
 			vol = None
-		print_begin_msg("ali3d_em_MPI")
+		print_begin_msg("local_ali3dm_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(refvol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
@@ -4725,7 +4725,7 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0):
-			ERROR( "ali3d_em does not work on ctf_applied data", "ali3d_em", 1)
+			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm", 1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -4948,8 +4948,8 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			start_time = time()
 		if(terminate == 1  and runtype=="ASSIGNMENT"):
 			if myid==main_node:
-				#print_end_msg("ali3d_em_MPI terminated due to small number of objects changing assignments")
-				print_msg("ali3d_em_MPI abandoned assignments due to small number of objects changing assignments\n")
+				#print_end_msg("local_ali3dm_MPI terminated due to small number of objects changing assignments")
+				print_msg("local_ali3dm_MPI abandoned assignments due to small number of objects changing assignments\n")
 
 			while(runtype == "ASSIGNMENT"):
 				Iter += 1
@@ -4960,10 +4960,10 @@ def ali3d_em_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, maxi
 			Iter += -1
 
 	if myid==main_node:
-		print_end_msg("ali3d_em_MPI")
+		print_end_msg("local_ali3dm_MPI")
 
 
-def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
+def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
            CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",
 	     fourvar = True, debug = False, MPI = False):
 	"""
@@ -4971,7 +4971,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 	"""
 
 	if MPI:
-		ali3d_e_MPI(stack, outdir, maskfile, ou, delta, ts, center, maxit,
+		local_ali3d_MPI(stack, outdir, maskfile, ou, delta, ts, center, maxit,
 				CTF, snr, sym, chunk, user_func_name, 
 				fourvar, debug)
 		return
@@ -4987,7 +4987,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 	import os 
 	import sys
 
-	print_begin_msg('ali3d_e')
+	print_begin_msg('local_ali3d')
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -4997,7 +4997,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 		ima.read_image(stack, 0)
 		ctf_applied = ima.get_attr("ctf_applied")
 		del ima
-		if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
+		if ctf_applied == 1:  ERROR("local_ali3d does not work for CTF-applied data", "local_ali3d", 1)
 		from reconstruction import recons3d_4nn_ctf
 		from filter         import filt_ctf
 	else   : from reconstruction import recons3d_4nn
@@ -5119,7 +5119,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(iteration*n_of_chunks+ic+1)))
 			if(iteration == maxit):
 				#  in last iteration quit here
-				print_end_msg("ali3d_e")
+				print_end_msg("local_ali3d")
 				return
 
 			if not CTF:
@@ -5182,7 +5182,7 @@ def ali3d_e(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, center
 			#write_headers(stack, dataim, list_of_particles)
 
 
-def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
+def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10, 
                 CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",
 		    fourvar = True, debug = False):
 	"""
@@ -5213,7 +5213,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_e_MPI ", 1,myid)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3d_MPI ", 1,myid)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -5222,7 +5222,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 			ima.read_image(stack, 0)
 			ctf_applied = ima.get_attr("ctf_applied")
 			del ima
-			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
+			if ctf_applied == 1:  ERROR("local_ali3d does not work for CTF-applied data", "local_ali3d", 1)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:
@@ -5276,7 +5276,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		print_begin_msg("ali3d_e_MPI")
+		print_begin_msg("local_ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
@@ -5420,7 +5420,7 @@ def ali3d_e_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, center = 
 			
 			# in last iteration return here
 			if(iteration == maxit):
-				if myid == main_node: print_end_msg("ali3d_e_MPI")
+				if myid == main_node: print_end_msg("local_ali3d_MPI")
 				return
 			bcast_EMData_to_all(vol, myid, main_node)
 
@@ -5816,7 +5816,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -6010,7 +6010,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_d_MPI", 1)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
