@@ -384,9 +384,9 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
 	to seed the reconstruction with some non-zero values."""
 	
-	excluded=[]
-	included=[]
 	for it in xrange(niter) :
+		excluded=[]
+		included=[]
 		output=None		# deletes the results from the previous iteration if any
 		
 		if verbose>0: print "Initializing the reconstructor ..."
@@ -506,11 +506,11 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			qmean=sum(qlist)/len(qlist)
 			qsigma=sum([i*i for i in qlist])/len(qlist)-qmean**2
 			qcutoff=qmean-qsigma*keep
-			if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f"%(qmean,qsigma,qcutoff)
+			if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
 		else:
 			qlist.sort()
 			qcutoff=qlist[-int(keep*len(qlist))]
-			if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f"%(qlist[0],qlist[-1],qcutoff)
+			if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
 
 		
 
