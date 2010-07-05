@@ -6159,7 +6159,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		recvcount.append( ie - ib )
 
 	pixer = [0.0]*nima
-	#jeanmod
 	modphi = [0.0]*nima
 	#jeanmod
 	total_iter = 0
@@ -6248,6 +6247,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			terminate = 0
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
+				from utilities import write_text_file
+				write_text_file(recvbuf, os.path.join(outdir, "pixer%04d.txt"%total_iter) )
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -6365,7 +6366,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        		else:
 	        			from utilities import recv_attr_dict
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+	        	else:	        send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
 
 
