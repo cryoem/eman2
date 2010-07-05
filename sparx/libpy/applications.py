@@ -6248,7 +6248,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
 				from utilities import write_text_file
-				write_text_file(recvbuf, os.path.join(outdir, "pixer%04d.txt"%total_iter) )
+				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer%04d.txt"%total_iter) )
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
