@@ -8302,11 +8302,11 @@ class pcanalyzer:
 				self.file = os.path.join(scratch , "maskedimg.bin" )
 			self.MPI  = False
 			self.myid = 0
-		self.sdir = sdir
-		self.nimg = 0
-		self.nvec = nvec
-		self.fw = None
-		self.fr = None
+		self.sdir   = sdir
+		self.nimg   = 0
+		self.nvec   = nvec
+		self.fw     = None
+		self.fr     = None
 		self.avgdat = None
 
 	def writedat( self, data ):
@@ -8400,7 +8400,7 @@ class pcanalyzer:
 		from utilities import get_image_data
 		tmpimg = Util.compress_image_mask( img, self.mask )
 		tmpdat = get_image_data(tmpimg)
-		self.writedat( tmpdat )
+		self.writedat( tmpdat )                                   #   WRITEDAT
 		self.nimg +=1
 		self.ncov = tmpimg.get_xsize()
 	
@@ -8471,7 +8471,7 @@ class pcanalyzer:
 
 		self.fr = open( self.file, "rb" )
 		for i in xrange(self.nimg):
-			self.read_dat(imgdata)
+			self.read_dat(imgdata)                                     #  READ_DAT
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		self.fr.close()
@@ -8488,7 +8488,7 @@ class pcanalyzer:
 		alpha = -diag[0]
 		Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
 
-		TOL = 1e-7
+		TOL = 1.0e-7
 		for iter in xrange(1, kstep):
 			iter_start = time()
 			beta = Util.snrm2(ncov, Av, 1)
@@ -8504,7 +8504,7 @@ class pcanalyzer:
 
 			self.fr = open( self.file, "rb" )
 			for i in xrange(self.nimg):
-				self.read_dat( imgdata )
+				self.read_dat( imgdata )                                #READ_DAT
 				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
 				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
 			self.fr.close()
@@ -8538,7 +8538,265 @@ class pcanalyzer:
 			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
 		return kstep
 
+
+
+class pcanalyzebck:
+	def __init__(self, mask, sdir, nvec, MPI=False, scratch = None ):
+		import os
+		self.mask = mask.copy()
+		if MPI:
+			from mpi import mpi_comm_rank, MPI_COMM_WORLD
+			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
+			if( scratch == None):
+				self.file = os.path.join(sdir , "maskedimg%04d.bin" % self.myid )
+			else:
+				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
+			self.MPI  = True
+		else:
+			if( scratch == None):
+				self.file = os.path.join(sdir , "maskedimg.bin" )
+			else:
+				self.file = os.path.join(scratch , "maskedimg.bin" )
+			self.MPI  = False
+			self.myid = 0
+		self.sdir   = sdir
+		self.nimg   = 0
+		self.nvec   = nvec
+		self.fw     = None
+		self.fr     = None
+		self.avgdat = None
+
+	def writedat( self, data ):
+		import array
+
+		if self.fw is None:
+			self.fw = open( self.file, "wb" )
+
+		data.tofile( self.fw )
+
+	def read_dat( self, data ):
+		from numpy import fromfile, float32
+		if not(self.fw is None) and not( self.fw.closed ):
+			self.fw.close()
+
+		assert not(self.fr is None) and not self.fr.closed
+		Util.readarray( self.fr, data, self.ncov )
+		if not(self.avgdat is None):
+			data -= self.avgdat
+
+	def usebuf( self ):
+		nx = self.mask.get_xsize()
+		ny = self.mask.get_ysize()
+		nz = self.mask.get_zsize()
+
+		self.ncov = 0
+		for ix in xrange(nx):
+			for iy in xrange(ny):
+				for iz in xrange(nz):
+					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
+						self.ncov += 1
+		import os
+		size = os.stat( self.file )[6]
+		self.nimg = size/(self.ncov*4)
+		assert self.nimg * self.ncov*4 == size
+		self.bufused = True
+
+	def shuffle( self ):
+		assert self.bufused
+		from random import shuffle, seed
+		from numpy  import zeros, float32, array
+		from string import replace
+		seed( 10000 + 10*self.myid )
+
+		shfflfile = replace( self.file, "masked", "shuffled" )
+
+		#print self.myid, "shuffling"
+		sumdata = zeros( (self.ncov), float32 )
+		imgdata = zeros( (self.ncov), float32 )
+		self.fr = open( self.file, "rb" )
+		self.avgdata = None
+
+		fw = open( shfflfile, "wb" )
+		for i in xrange(self.nimg):
+			self.read_dat( imgdata )
+			shuffle( imgdata )
+			sumdata += imgdata
+			imgdata.tofile( fw )
+
+		self.fr.close()
+		fw.close()
+
+		if self.MPI:
+			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+			sumdata = mpi_reduce( sumdata, self.ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+			sumdata = mpi_bcast(  sumdata, self.ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+			sumdata = array(sumdata, float32)
+ 
+			sumnimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
+			sumnimg = mpi_bcast(  sumnimg,   1, MPI_INT, 0, MPI_COMM_WORLD )
+
+		self.file = shfflfile
+		self.avgdat = sumdata[:]/float(sumnimg)
+		#print "done shuffling,nimg:", float(sumnimg)
+
+
+
+	def setavg( self, avg ):
+		from numpy import zeros, float32
+		from utilities import get_image_data
+		tmpimg = Util.compress_image_mask( avg, self.mask )
+		avgdat = get_image_data(tmpimg)
+		self.avgdat = zeros( (len(avgdat)), float32 )
+		self.avgdat[:] = avgdat[:]
+
+	def insert( self, img ):
+		assert self.mask.get_xsize()==img.get_xsize()
+		assert self.mask.get_ysize()==img.get_ysize()
+		assert self.mask.get_zsize()==img.get_zsize()
+
+		from utilities import get_image_data
+		tmpimg = Util.compress_image_mask( img, self.mask )
+		tmpdat = get_image_data(tmpimg)
+		self.writedat( tmpdat )                                   #   WRITEDAT
+		self.nimg +=1
+		self.ncov = tmpimg.get_xsize()
 	
+	def analyze( self ):
+		#if self.myid==0:
+		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
+		from time import time
+		from numpy import zeros, float32, int32, int64
+		ncov = self.ncov
+		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
+
+		diag    = zeros( (kstep), float32 )
+		subdiag = zeros( (kstep), float32 )
+		vmat    = zeros( (kstep, ncov), float32 )
+
+		lanczos_start = time()
+		kstep = self.lanczos( kstep, diag, subdiag, vmat )
+		#print 'time for lanczos: ', time() - lanczos_start
+
+		if not self.MPI or self.myid==0:
+                	qmat = zeros( (kstep,kstep), float32 )
+			lfwrk = 100 + 4*kstep + kstep*kstep
+			liwrk =   3 + 5*kstep
+
+			fwork = zeros( (lfwrk), float32 )
+			iwork = zeros( (liwrk), int32 )
+			info = Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
+
+			eigval = zeros( (self.nvec), float32 )
+			for j in xrange(self.nvec):
+				eigval[j] = diag[kstep-j-1]
+
+			from utilities import model_blank, get_image_data
+			eigimgs = []
+                	for j in xrange(self.nvec):
+				tmpimg = model_blank(ncov, 1, 1)
+				eigvec = get_image_data( tmpimg )
+				trans = 'N'
+				Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
+
+				eigimg = Util.reconstitute_image_mask(tmpimg, self.mask)
+				eigimg.set_attr( "eigval", float(eigval[j]) )
+				eigimgs.append( eigimg )
+
+			return eigimgs
+
+
+	def lanczos( self, kstep, diag, subdiag, V ):
+		from numpy import zeros, float32, array
+		from time import time
+		
+		all_start = time()
+	
+		ncov = self.ncov
+		v0 = zeros( (ncov), float32)
+		Av = zeros( (ncov), float32)
+
+		hvec = zeros( (kstep), float32 )
+		htmp = zeros( (kstep), float32 )
+		imgdata = zeros( (ncov), float32 )
+	
+		for i in xrange(ncov):
+			v0[i] = 1.0
+
+		beta = Util.snrm2(ncov, v0, 1)
+		for i in xrange(ncov):
+			V[0][i] = v0[i]/beta
+
+		self.fr = open( self.file, "rb" )
+		for i in xrange(self.nimg):
+			self.read_dat(imgdata)                                     #  READ_DAT
+			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
+			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
+		self.fr.close()
+
+		if self.MPI:
+			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+			Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+			Av = array(Av, float32)
+		#print 'iter 0: ', time() - all_start
+
+
+		diag[0] = Util.sdot( ncov, V[0], 1, Av, 1 )
+		alpha = -diag[0]
+		Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
+
+		TOL = 1.0e-7
+		for iter in xrange(1, kstep):
+			iter_start = time()
+			beta = Util.snrm2(ncov, Av, 1)
+			if( beta < TOL ):
+				kstep = iter+1
+				break
+
+			subdiag[iter-1] = beta
+			for i in xrange(ncov):
+				V[iter][i] = Av[i]/beta
+
+			Av[:] = 0.0
+
+			self.fr = open( self.file, "rb" )
+			for i in xrange(self.nimg):
+				self.read_dat( imgdata )                                #READ_DAT
+				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
+				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
+			self.fr.close()
+
+
+			if self.MPI:
+				Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
+				Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
+				Av = array(Av, float32)
+
+			trans = 'T'
+			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0, hvec, 1 )
+
+			trans = 'N'
+			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
+			              1.0,     Av, 1 )
+
+			trans = 'T'
+			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0,   htmp, 1 )
+
+			Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
+
+			trans = 'N'
+			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
+			              1.0,     Av, 1 )
+
+			diag[iter] = hvec[iter]
+
+			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
+		return kstep
+
+
+
 # PART is a list of arrays
 # Assumes all partitions have the SAME number of classes
 # output:

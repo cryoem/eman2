@@ -3548,10 +3548,10 @@ c
 	// dimension		 circ1(lcirc),circ2(lcirc)
 
 	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
-	double *t, *q, t7[7];
+	double *t, *q;
 
-	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
-	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+	int   ip, jc, numr3i, numr2i, i, j, jtot = 0;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
 
 	qn  = 0.0f;
 	qm  = 0.0f;
@@ -5706,16 +5706,19 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 {
 	int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
-	float WW,OX,OY,Y;
+	float WW,OX,OY;
 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize();
-	//  Fix for padding 2x
         int ntotal = NSAM*NROW;
+	float q = 2.0f;
+	float qt = 8.0f/q;
+	//  Fix for padding 2x
 	int ipad = 1;
 	NSAM *= ipad;
 	NROW *= ipad;
 	NNNN = NSAM+2-(NSAM%2);
+	int NX2 = NSAM/2;
 	NR2  = NROW/2;
 
 	NANG = int(SS.size())/6;
@@ -5731,15 +5734,23 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) ); 
 		OX = SS(6,K)*tmp2 + SS(5,K)*tmp1;
 		OY = SS(5,K)*tmp2 - SS(6,K)*tmp1;
-	//cout << " OX   "<<OX << " OY   "<<OY <<endl;
+		if(OX < 0.0f) {
+			OX = -OX;
+			OY = -OY;
+		}
 
-		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f) {
+		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f ) {
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
 				if(JY > NR2) JY=JY-NROW;
-				for(int I=1;I<=NNNN/2;I++) {
-					Y =  fabs(OX * (I-1) + OY * JY);
-					if(Y < 2.0f) W(I,J) += exp(-4*Y*Y);
+				int xma = std::min(int(0.5f+(q-JY*OY)/OX),NX2);
+				int xmi = std::max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
+				if( xmi <= xma) {
+					for(int I=xmi;I<=xma;I++) {
+						float Y = fabs(OX*I + OY*JY);
+						W(I+1,J) += exp(-qt*Y*Y);
+	//cout << " L   "<<L << " I   "<<I << " JY   "<<JY << " ARG   "<<qt*Y*Y <<endl;
+					}
 				}
 			}
 		} else {
@@ -5778,7 +5789,85 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 
 	delete PROJ;
 }
+/*
+void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
+{
+	int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
+	float WW,OX,OY,Y;
 
+	NSAM = PROJ->get_xsize();
+	NROW = PROJ->get_ysize();
+	//  Fix for padding 2x
+        int ntotal = NSAM*NROW;
+	int ipad = 1;
+	NSAM *= ipad;
+	NROW *= ipad;
+	NNNN = NSAM+2-(NSAM%2);
+	NR2  = NROW/2;
+
+	NANG = int(SS.size())/6;
+
+	EMData* W = new EMData();
+	int Wnx = NNNN/2;
+	W->set_size(Wnx,NROW,1);
+	W->to_zero();
+	float *Wptr = W->get_data();
+	float *PROJptr = PROJ->get_data();
+	for (L=1; L<=NANG; L++) {
+		float  tmp1 = SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)) - SS(3,L)*SS(4,K);
+		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) ); 
+		OX = SS(6,K)*tmp2 + SS(5,K)*tmp1;
+		OY = SS(5,K)*tmp2 - SS(6,K)*tmp1;
+	//cout << " OX   "<<OX << " OY   "<<OY <<endl;
+
+		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f) {
+			for(int J=1;J<=NROW;J++) {
+				JY = (J-1);
+				if(JY > NR2) JY=JY-NROW;
+				for(int I=1;I<=NNNN/2;I++) {
+					Y =  fabs(OX * (I-1) + OY * JY);
+					if(Y < 2.0f) {
+					W(I,J) += exp(-4*Y*Y);
+	cout << " L   "<<L << " I   "<<I-1 << " JY   "<<JY << " ARG   "<<4*Y*Y<<endl;}
+				}
+			}
+		} else {
+			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
+		}
+	}
+        EMData* proj_in = PROJ;
+
+	PROJ = PROJ->norm_pad( false, ipad);
+	PROJ->do_fft_inplace();
+	PROJ->update();
+	//cout << " x   "<<PROJ->get_xsize() << " y   "<<PROJ->get_ysize() <<endl;
+	PROJptr = PROJ->get_data();
+
+	float WNRMinv,temp;
+	float osnr = 1.0f/SNR;
+	WNRMinv = 1.0f/W(1,1);
+	for(int J=1;J<=NROW;J++)
+		for(int I=1;I<=NNNN;I+=2) {
+			KX	     = (I+1)/2;
+			temp	     = W(KX,J)*WNRMinv;
+			WW           = temp/(temp*temp + osnr);
+			PROJ(I,J)   *= WW;
+			PROJ(I+1,J) *= WW;
+		}
+	delete W; W = 0;
+	PROJ->do_ift_inplace();
+	PROJ->depad();
+
+        float* data_src = PROJ->get_data();
+        float* data_dst = proj_in->get_data();
+
+        for( int i=0; i < ntotal; ++i )  data_dst[i] = data_src[i];
+
+        proj_in->update();
+
+	delete PROJ;
+}
+*/
 #undef PROJ
 #undef W
 #undef SS
@@ -5793,7 +5882,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 #define    VV(i)                        VV          [i-1]
 #define    AMAX1(i,j)                   i>j?i:j
 #define    AMIN1(i,j)                   i<j?i:j
-
 void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 {
 	float rad2deg =(180.0f/3.1415926f);
@@ -5902,7 +5990,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
         proj_in->update();
 	delete PROJ;
 }
-
 #undef   AMAX1
 #undef   AMIN1
 #undef   RI
@@ -20202,7 +20289,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 
 	// take the intx of next and cur
 	int* curintx2;
-	int nintx = Util::k_means_cont_table_(curintx,next+2, curintx2, size_curintx, size_next,0);
+	int nintx = Util::k_means_cont_table_(curintx, next+2, curintx2, size_curintx, size_next,0);
 	if (nintx <= T) return 0;
 
 	int old_depth=depth;
