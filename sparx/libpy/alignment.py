@@ -1370,7 +1370,7 @@ def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0
 	#print  " input params ",params
 	data=[vol, params, pixel_size, section_use, radius, rmin]
 	new_params = [dp, dphi]
-	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-3, 1.0e-3, 500, data)
+	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-2, 1.0e-2, 50, data)
 	#print  " new params ", new_params[0], new_params[1]
 	return  vol.helicise(pixel_size, new_params[0][0], new_params[0][1], section_use, radius), new_params[0][0], new_params[0][1]
 
