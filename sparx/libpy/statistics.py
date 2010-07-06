@@ -6111,7 +6111,6 @@ def isc_read_conf(conf_file):
 	cfgrali['ou']        = int(cfgrali['ou'])
 	cfgrali['nb_cpu']    = int(cfgrali['nb_cpu'])
 	cfgrali['cuda']	     = eval(cfgrali['cuda'])
-	cfgrali['n_gpu']     = int(cfgrali['n_gpu'])
 	cfgrali['adw'] 	     = eval(cfgrali['adw'])
 	cfgrali['ng']	     = int(cfgrali['ng'])
 	cfgrali['num_ali']   = int(cfgrali['num_ali'])

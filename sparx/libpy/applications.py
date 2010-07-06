@@ -387,6 +387,10 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	# default value for the last ring
 	if last_ring == -1: last_ring = nx/2-2
 
+	if CUDA:
+		GPUID = get_input_from_string(GPUID)
+		GPUID = map(int, GPUID)
+	
 	if myid == main_node:
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Number of active images     : %d\n"%(nima))
@@ -416,9 +420,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
 		print_msg("Using CUDA                  : %s\n"%(CUDA))
 		if CUDA:
-			GPUID = get_input_from_string(GPUID)
-			GPUID = map(int, GPUID)
-			print_msg("GPU IDs                     : %d\n"%(GPUID))
+			print_msg("GPU IDs                     : %s\n"%(GPUID))
 
 
 	if maskfile:

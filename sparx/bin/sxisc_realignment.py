@@ -54,7 +54,7 @@ def main():
 	parser.add_option('--ali',      type='string',       default='ali2d_c',      help='name of the function to aligned, ali2d_c or ali2d_a')
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 	parser.add_option('--CUDA',	action='store_true',   default=False,	       help='Use Cuda')
-	parser.add_option('--GPU',	type='int',	       default=0,	       help='Number of GPU')
+	parser.add_option('--GPUID',	type='string',	       default='0,1,2,3',	       help='GPU IDs')
 	parser.add_option('--adw', 	action='store_true',   default=False,		help='adw')
 	parser.add_option('--Ng',	type='int',		default=-1,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
@@ -74,7 +74,7 @@ def main():
 		global_def.BATCH = True
 		if options.MPI:
 			isc_realignment_MPI(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
-					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
+					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPUID, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
 		else:
 			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
 				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
