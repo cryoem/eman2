@@ -2057,7 +2057,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
 	float ts, tm;
-	float ang, sx, sy, mirror, co, so, sxs, sys;
+	float ang, sx = 0, sy = 0, mirror, co, so, sxs, sys;
 	float *sx2, *sy2;
 	vector<float> align_result;
 

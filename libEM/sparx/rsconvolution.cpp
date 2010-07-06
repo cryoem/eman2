@@ -574,7 +574,7 @@ namespace EMAN {
 
 		if ( myshape == CIRCULAR ) {
 			// For CIRCULAR kernal, size must be same on all dimensions
-			if ( nzf != 1 && ( nxk != nyk || nxk != nzk ) || nzf == 1 && nyf != 1 && nxk != nyk ) {
+			if ( (nzf != 1 && ( nxk != nyk || nxk != nzk )) || (nzf == 1 && nyf != 1 && nxk != nyk) ) {
 				throw ImageDimensionException("For CIRCULAR kernal, size must be same on all dimensions.");
 			}
 		}
