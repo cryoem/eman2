@@ -625,8 +625,8 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	float noisecutoff=(float)params.set_default("noisecutoff",0.0);
 	if (apix<=0 || apix>7.0f) throw ImageFormatException("0 < apix_x < 7.0");
 	float ds=1.0f/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled
-	int start=(int)floor(1.0/(15.0*ds));
-	int end=radial_mask.size()-2;
+	unsigned int start=(int)floor(1.0/(15.0*ds));
+	unsigned int end=radial_mask.size()-2;
 	if (noisecutoff>0) end=(int)floor(noisecutoff/ds);
 	if (end>radial_mask.size()-2) {
 		printf("WARNING: specified noisecutoff too close to Nyquist, reset !");

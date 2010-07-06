@@ -1252,7 +1252,7 @@ using namespace wustl_mm::SkeletonMaker;
 			}
 			while( numones > 0 )
 			{
-				int e ;
+				int e = 0;
 				for ( i = 0 ; i < 6 ; i ++ )
 				{
 					if ( edge[ i ] == 1 )
@@ -1881,7 +1881,7 @@ using namespace wustl_mm::SkeletonMaker;
 			}
 			while( numones > 0 )
 			{
-				int e ;
+				int e = 0;
 				for ( i = 0 ; i < 6 ; i ++ )
 				{
 					if ( edge[ i ] == 1 )

@@ -109,7 +109,7 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	size_t off;
 	if (subx0<0) off=data->add_complex_at(x0,y0,z0,dt*weight);
 	else off=data->add_complex_at(x0,y0,z0,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*weight);
-	if (off!=nxyz) norm[off/2]+=weight;
+	if (static_cast<int>(off)!=nxyz) norm[off/2]+=weight;
 	else return false;
 	
 	return true;
@@ -139,7 +139,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 		float h=1.0f/EMConsts::I2G;
 		//size_t idx;
 		float r, gg;
-		int pc=0;
+//		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
@@ -171,7 +171,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 					size_t off;
 					if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
 					else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
-					if (off!=nxyz) { norm[off/2]+=gg; pc+=1; }
+					if (static_cast<int>(off)!=nxyz) { norm[off/2]+=gg; pc+=1; }
 				}
 			}
 		}
@@ -209,7 +209,7 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
 		//size_t idx;
 		float r, gg;
-		int pc=0;
+//		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
@@ -260,7 +260,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
 		//size_t idx;
 		float r, gg;
-		int pc=0;
+//		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
@@ -303,7 +303,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 				size_t off;
 				if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
 				else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
-				if (off!=nxyz) norm[off/2]+=gg;
+				if (static_cast<int>(off)!=nxyz) norm[off/2]+=gg;
 
 			}
 		}
@@ -336,7 +336,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 				size_t off;
 				if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
 				else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
-				if (off!=nxyz) norm[off/2]+=gg;
+				if (static_cast<int>(off)!=nxyz) norm[off/2]+=gg;
 
 			}
 		}
@@ -365,7 +365,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 					size_t off;
 					if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
 					else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
-					if (off!=nxyz) norm[off/2]+=gg;
+					if (static_cast<int>(off)!=nxyz) norm[off/2]+=gg;
 
 				}
 			}
@@ -389,12 +389,12 @@ void FourierInserter3DMode8::init()
 }
 bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const std::complex<float> fq,const float& weight)
 {
-	int x0 = (int) floor(qx);
-	int y0 = (int) floor(qy);
-	int z0 = (int) floor(qz);
+//	int x0 = (int) floor(qx);
+//	int y0 = (int) floor(qy);
+//	int z0 = (int) floor(qz);
 
-	int sizeW = (int)(1+2*mFreqCutoff/mDFreq);
-	int sizeWmid = sizeW/2;
+//	int sizeW = (int)(1+2*mFreqCutoff/mDFreq);
+//	int sizeWmid = sizeW/2;
 
 // 	for (int z = z0-mFreqCutoff; z < z0+mFreqCutoff; ++z){
 // 		for (int y = y0-mFreqCutoff; y < y0+mFreqCutoff; ++y){

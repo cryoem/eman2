@@ -19798,7 +19798,7 @@ void Util::bb_enumerate_(int* argParts, int* dimClasses, int nParts, int K, int 
 	//**********************************************************************************************************************************************
 
 	// figure out the partition with the smallest number of classes. that will be the MAXIMUM number of matches we can find
-	int numLevels = Parts[0].size();// initialize to number of classes in the first partition
+	unsigned int numLevels = Parts[0].size();// initialize to number of classes in the first partition
 	for (int i=1; i < nParts; i++){
 		if (Parts[i].size() < numLevels) numLevels = Parts[i].size();
 	}
@@ -19844,7 +19844,7 @@ void Util::bb_enumerate_(int* argParts, int* dimClasses, int nParts, int K, int 
 	cout<<"total cost: "<<*output<<"\n";
 	cout<<"number of matches: "<<*(output+1)<<"\n";
 	// now go check if the matches are sensical! i.e, if the matches are feasible, if the sum of the match weights in output is equal to *output, and if each match in output has weight at least T
-	bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
+	//bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
 }
 
 bool Util::sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* output){
@@ -19855,8 +19855,8 @@ bool Util::sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts,
 	int cost=0;
 	int* intx;
 	int intx_size;
-	int* intx_next;
-	int intx_next_size;
+	int* intx_next(0);
+	int intx_next_size = 0;
 	int curclass;
 	int curclass_size;
 	//cout<<"cost by match: [";
@@ -20078,9 +20078,9 @@ void Util::search2(int* argParts, int* Indices, int* dimClasses, int nParts, int
 	// initialize the current max weight to 0
 	*curmax= 0;
 	// some temp variables
-	bool flag;
+	bool flag = 0;
 	int nintx;
-	int* dummy;
+	int* dummy(0);
 	int* ret;
 
 	for(int a=0; a<K; a++)
@@ -20133,7 +20133,7 @@ void Util::search2(int* argParts, int* Indices, int* dimClasses, int nParts, int
 
 int* Util::explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curintx, int size_curintx, int* next, int size_next, int depth){
 // depth is the level which is going to be explored in the current iteration
-	int* curintx2;
+	int* curintx2(0);
 
 	int nintx = size_curintx;
 
@@ -20197,7 +20197,7 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 	// remember when calling k_means_cont_table, the first element of each class is an index, and actual number of elements in the class
 	// (as stored in dimClasses) should be decremented by 1 accordingly, and second is dummy variable
 
-	int* dummy;
+	int* dummy(0);
 	int* cref;
 	int cref_size;
 	int* ccomp;
@@ -20220,7 +20220,7 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 			for (int a = 0; a < nParts; a++){
 				if (a == i) continue; //consider all classes not in partition i and set to inactive all those classes whose intx with cref is not gt T
 				bool hasActive=0;
-				for (int b=0; b < Parts[a].size(); b++){
+				for (unsigned int b=0; b < Parts[a].size(); b++){
 					// get the card of the intx between Parts[i][j] and Parts[a][b] using k_means_cont_table
 					// remember first element of each class is the index of the class
 					ccomp = Parts[a][b];
@@ -20288,7 +20288,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 	if (size_next <= T) return 0;
 
 	// take the intx of next and cur
-	int* curintx2;
+	int* curintx2(0);
 	int nintx = Util::k_means_cont_table_(curintx, next+2, curintx2, size_curintx, size_next,0);
 	if (nintx <= T) return 0;
 
@@ -20325,12 +20325,12 @@ int Util::generatesubmax(int* argParts, int* Indices, int* dimClasses, int nPart
 	for(int i=0; i<nParts; i++) perm[i]=i;
 
 	// some temporary variables
-	int* intx;
-	int* intx_next;
+	int* intx(0);
+	int* intx_next(0);
 	int nintx;
 	int nintxmax=0;
-	int class_max, class_max_next;
-	int intx_size, part, part_next;
+	int class_max = 0, class_max_next = 0;
+	int intx_size = 0, part, part_next;
 	int ipold,indsw;
 
 	for(int i=0; i< n_guesses; i++){
@@ -20493,7 +20493,7 @@ vector<int> Util::bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, i
 
 	// if we're not doing mpi then keep going and call branchMPI and return the output
 	//cout <<"begin partition matching\n";
-	int* dummy;
+	int* dummy(0);
 	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,Levels, K,0,n_guesses,-1, dummy);
 	//cout <<"done with partition matching \n";
 	//cout<<"total cost: "<<*output<<"\n";

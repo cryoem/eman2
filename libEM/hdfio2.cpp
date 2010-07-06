@@ -635,7 +635,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
 	hid_t spc=H5Dget_space(ds);
 
-	hsize_t nx, ny, nz;
+	hsize_t nx = 1, ny = 1, nz = 1;
 	hsize_t dims_out[3];
 	hsize_t rank = H5Sget_simple_extent_ndims(spc);
 
@@ -657,12 +657,12 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	}
 
 	if (area) {
-		hid_t memoryspace;
+		hid_t memoryspace = 0;
 
  		/*Get the file dataspace - the region we want to read in the file*/
-		int x0, y0, z0;		//the coordinates for up left corner, trim to be within image bound
-		int x1, y1, z1;		//the coordinates for down right corner, trim to be within image bound
-		int nx1, ny1, nz1;	//dimensions of the sub-region, actual region read form file
+		int x0 = 0, y0 = 0, z0 = 0;		//the coordinates for up left corner, trim to be within image bound
+		int x1 = 0, y1 = 0, z1 = 0;		//the coordinates for down right corner, trim to be within image bound
+		int nx1 = 1, ny1 = 1, nz1 = 1;	//dimensions of the sub-region, actual region read form file
  		if(rank == 3) {
 			hsize_t     doffset[3];             /* hyperslab offset in the file */
 			doffset[2] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
@@ -673,16 +673,16 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 			z0 = (int)doffset[2];
 
 			z1 = (int)(area->x_origin() + area->get_width());
-			z1 = (int)(z1 > nx ? nx : z1);
+			z1 = (int)(z1 > static_cast<int>(nx) ? nx : z1);
 
 			y1 = (int)(area->y_origin() + area->get_height());
-			y1 = (int)(y1 > ny ? ny : y1);
+			y1 = (int)(y1 > static_cast<int>(ny) ? ny : y1);
 			if(y1 <= 0) {
 				y1 = 1;
 			}
 
 			x1 = (int)(area->z_origin() + area->get_depth());
-			x1 = (int)(x1 > nz ? nz : x1);
+			x1 = (int)(x1 > static_cast<int>(nz) ? nz : x1);
 			if(x1 <= 0) {
 				x1 = 1;
 			}
@@ -716,10 +716,10 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 			z0 = 1;
 
 			y1 = (int)(area->x_origin() + area->get_width());
-			y1 = (int)(y1 > nx ? nx : y1);
+			y1 = (int)(y1 > static_cast<int>(nx) ? nx : y1);
 
 			x1 = (int)(area->y_origin() + area->get_height());
-			x1 = (int)(x1 > ny ? ny : x1);
+			x1 = (int)(x1 > static_cast<int>(ny) ? ny : x1);
 			if(x1 <= 0) {
 				x1 = 1;
 			}

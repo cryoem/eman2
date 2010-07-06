@@ -1120,8 +1120,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
  	for(int i  = 0; i < CountxyMax; ++i ) {  // creates a new fkVec
 		int Si  = SortfkInds[i];
 		int kIx = (int)  Si/End;  kIx = (int)  i/End; // i = kIx*End+kIy
-		int kIy = Si  - kIx*End;  kIy = i  - kIx*End;
-		int iC = (End-1-kIx)*End + (End-1-kIy);
+//		int kIy = Si  - kIx*End;  kIy = i  - kIx*End;
+//		int iC = (End-1-kIx)*End + (End-1-kIy);
 //		if (i<30) { cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " valAft=" << absD1fkVecSorted[i]<< " valBef="  <<     absD1fkVec[Si] << "  SortfkInds = " << Si <<endl; }// This worked
 //		cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " fkVecR[i] =" << fkVecR[i]<< " fkVecI[i]="  << fkVecI[i] <<"  angle[i]= "  << fkAng << endl;
  	}
@@ -1129,12 +1129,12 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 
 //	pause;
 
- 	for(int i  = 0; i < NK; ++i ) { // Prints out the new fkVec ,  CountxyMax
-		int Si= SortfkInds[i];
-		int kIx = (int)  Si/End; // i = kIx*End+kIy
-		int kIy = Si  - kIx*End;
- //		cout << " kIxM= " << kIx+1 << " kIyM=" << kIy+1 << " fkVecAbs=" << ::sqrt(fkVecR[Si]*fkVecR[Si] +  fkVecI[Si]* fkVecI[Si]) << " fkVecAbs=" << absD1fkVecSorted[i] << " kx= " << kVecX[Si] <<  " ky=" << kVecY[Si] <<  endl;
- 	}
+// 	for(int i  = 0; i < NK; ++i ) { // Prints out the new fkVec ,  CountxyMax
+//		int Si= SortfkInds[i];
+//		int kIx = (int)  Si/End; // i = kIx*End+kIy
+//		int kIy = Si  - kIx*End;
+//		cout << " kIxM= " << kIx+1 << " kIyM=" << kIy+1 << " fkVecAbs=" << ::sqrt(fkVecR[Si]*fkVecR[Si] +  fkVecI[Si]* fkVecI[Si]) << " fkVecAbs=" << absD1fkVecSorted[i] << " kx= " << kVecX[Si] <<  " ky=" << kVecY[Si] <<  endl;
+// 	}
 
 //       angEMAN+angMat+angDiff    =0  mod 2 pi
 
@@ -1287,13 +1287,13 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 
         int CountxyMax = End*End;
 
-	int   *SortfkInds       = new    int[CountxyMax];
+//	int   *SortfkInds       = new    int[CountxyMax];
 	int   *kVecX            = new    int[CountxyMax];
 	int   *kVecY            = new    int[CountxyMax];
 	float *fkVecR           = new  float[CountxyMax];
 	float *fkVecI           = new  float[CountxyMax];
 	float *absD1fkVec       = new  float[CountxyMax];
-	float *absD1fkVecSorted = new  float[CountxyMax];
+//	float *absD1fkVecSorted = new  float[CountxyMax];
 
 
 	float *jxjyatan2         = new  float[End*End];
@@ -1368,14 +1368,14 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 	}
 
 
-	for (int TotalInd = 0 ;  TotalInd < CountxyMax ; TotalInd++){
-	        int kx     = kVecX[TotalInd]; // This is the value of the index for a matlab image (-1)
-	        int kIx    = kx+Mid-1; // This is the value of the index for a matlab image (-1)
-	        int ky     = kVecY[TotalInd];
-	        int kIy    = ky+Mid-1; // This is the value of the index for a matlab image (-1)
-		float fkR  = fkVecR[kIy+kIx *End]  ;
-		float fkI  = fkVecI[kIy+kIx *End]  ;
-	}
+//	for (int TotalInd = 0 ;  TotalInd < CountxyMax ; TotalInd++){
+//	        int kx     = kVecX[TotalInd]; // This is the value of the index for a matlab image (-1)
+//	        int kIx    = kx+Mid-1; // This is the value of the index for a matlab image (-1)
+//	        int ky     = kVecY[TotalInd];
+//	        int kIy    = ky+Mid-1; // This is the value of the index for a matlab image (-1)
+		//float fkR  = fkVecR[kIy+kIx *End]  ;
+		//float fkI  = fkVecI[kIy+kIx *End]  ;
+//	}
 
 	float frR= 3.0/4.0;
 	frR= 1;
@@ -1398,10 +1398,6 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		for (int ith=0; ith < LthetaRange; ith++){
 				thetaRange[ith] =  ftR*ith; }
 
-
-
-
-
 		int TotalVol = LradRange*LradRange*LthetaRange;
 
 		float *RotTransInv   = new  float[TotalVol];
@@ -1411,7 +1407,6 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			RotTransInv[jW] = 0;
 			WeightInv[jW]   = 0;
 		}
-
 
 		for (int jW=0; jW<TotalVol; jW++) {
 			RotTransInv[jW] = 0;
@@ -1448,7 +1443,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
 
-				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
+//				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
@@ -1456,7 +1451,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 					printf(" Countqxy=%d, absD1fkVec(Countqxy)=%f,qx=%d, qy=%d \n", Countqxy, absD1fkVec[Countqxy],qx, qy);
 					printf(" CountCxy=%d, absD1fkVec[CountCxy]=%f,kCx=%d,kCy=%d \n",CountCxy, absD1fkVec[CountCxy], kCx, kCy );
 				}*/
-				float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1];
+//				float   phiC = jxjyatan2[ (kCy+Mid-1)*End + kCx+Mid-1];
 				float   phiQK = (4*M_PI+phiQ-phiK);
 				while (phiQK> (2*M_PI)) phiQK -= (2*M_PI);
 
@@ -1477,7 +1472,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				if (k2IndLo+1< LradRange) {
 					k2IndHi   = k2IndLo+1;
 				}
-				float k2Hi= radRange[k2IndHi];
+//				float k2Hi= radRange[k2IndHi];
 
 				float kCof =k2-k2Lo;
 
@@ -1628,7 +1623,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				kCx  = ((kCIx+End-1)%End)+1-Mid; // correct
 				kCy  = ((kCIy+End-1)%End)+1-Mid ; // correct
 
-				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
+//				float C2   = ::sqrt((float)(kCx*kCx+ kCy*kCy));
 				int CountCxy  = (kCx+Mid-1)*End+(kCy+Mid-1);
 				float fCR     = fkVecR[CountCxy];
 				float fCI     = fkVecI[CountCxy];
@@ -1643,7 +1638,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 				if (k2IndLo+1< LradRange) {
 					k2IndHi   = k2IndLo+1;
 				}
-				float k2Hi= radRange[k2IndHi];
+//				float k2Hi= radRange[k2IndHi];
 
 				float kCof =k2-k2Lo;
 
@@ -1700,6 +1695,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 
 		return  RotTransInvF ;
 	}
+	return 0;
 }
 
 

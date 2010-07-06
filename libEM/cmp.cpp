@@ -879,12 +879,12 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	double sum = 0;
 	double norm = FLT_MIN;
 	size_t i = 0;
-	int nx=image_fft->get_xsize();
+//	int nx=image_fft->get_xsize();
 	    ny=image_fft->get_ysize();
 	int nz=image_fft->get_zsize();
 	int nx2=image_fft->get_xsize()/2;
 	int ny2=image_fft->get_ysize()/2;
-	int nz2=image_fft->get_zsize()/2;
+//	int nz2=image_fft->get_zsize()/2;
 
 	// This can never happen any more...
 	if (np==0) {

@@ -1049,7 +1049,8 @@ string Util::recv_broadcast(int sock) {
 	BPKT pkt;
 	string ret;
 	vector<char> fill;
-	int obj=-1,i=0;
+	int obj=-1;
+	unsigned int i=0;
 //	printf ("Listening\n");
 
 	while (1) {

@@ -122,7 +122,7 @@ const float MAP_ERR_VAL = 100.0f;
 				skel_indices.pop_front();
 				// group connected voxels -- each member of segment neighbors at least one other member of segment
 				//For each voxel in segment, we test if each voxel in skel_indices is a neighbor
-				for (int seg_ix=0; seg_ix < segment.size(); seg_ix++) { 
+				for (unsigned int seg_ix=0; seg_ix < segment.size(); seg_ix++) { 
 					for (itr = skel_indices.begin(); itr != skel_indices.end(); itr++) {
 						
 						if (Are26Neighbors(segment[seg_ix], *itr)) {
@@ -134,8 +134,8 @@ const float MAP_ERR_VAL = 100.0f;
 				
 
 				//If the region of connected voxels is too small, remove them from the map
-				if (segment.size() < minNumVoxels) {
-					for (int ix=0; ix<segment.size(); ix++) {
+				if (segment.size() < static_cast<unsigned int>(minNumVoxels)) {
+					for (unsigned int ix=0; ix<segment.size(); ix++) {
 						skeleton->setDataAt(segment[ix][0], segment[ix][1], segment[ix][2],0.0f);
 					}
 				}
