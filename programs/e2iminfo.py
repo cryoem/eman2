@@ -107,7 +107,7 @@ This program will print out some information about the image.
 		if options.stat :
 			for i in imgn:
 				d=EMData(imagefile,i)
-				print "%d.\tmean=%1.4f\tsigma=%1.4f\tskewness=%1.4f \tkurtosis=%1.4f"%(i,d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
+				print "%d.\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(i,d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
 				try:
 					c=d["ctf"]
 					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)

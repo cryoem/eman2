@@ -435,7 +435,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			rd=elem["xform"].get_rotation("eman")
 			if verbose>0 : print " %d/%d\r"%(i,len(data)),
 			sys.stdout.flush()
-	#		print "%d.\t%6.2f  %6.2f  %6.2f"%(i,rd["az"],rd["alt"],rd["phi"])
+			print "%d.\t%6.2f  %6.2f  %6.2f    %6.2g\t%6.4g\t%6.4g"%(i,rd["az"],rd["alt"],rd["phi"],elem["weight"],img["mean"],img["sigma"])
 			ptcl+=elem["weight"]
 			
 			# Actual slice insertion into the volume
@@ -448,8 +448,8 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				
 				try:
 					if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0: 
-						print i," *"
-						continue
+						if verbose>0 : print i," *"
+#						continue
 				except: pass
 				
 				# get the image to insert
@@ -469,7 +469,13 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					elem["reconstruct_absqual"]=0
 					if verbose>0 : print ""
 					continue
-				recon.determine_slice_agreement(img,elem["xform"],elem["weight"],True)
+				
+				dosub=True
+				try:
+					if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0: dosub=False
+				except: pass
+
+				recon.determine_slice_agreement(img,elem["xform"],elem["weight"],dosub)
 
 				# These are the parameters returned by determine_slice_agreement. Since the images may be reloaded, we cache them in the data dictionary
 				for i in ("reconstruct_weight","reconstruct_norm","reconstruct_absqual"):

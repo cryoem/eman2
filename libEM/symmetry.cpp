@@ -318,6 +318,10 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
+	float paltmin = params.set_default("alt_min",0.0);
+	float paltmax = params.set_default("alt_max",180.0);
+	if (altmax>paltmax) altmax=paltmax;
+	
 	float alt_iterator = 0.0f;
 
 	// #If it's a h symmetry then the alt iterator starts at very close
@@ -337,7 +341,8 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		float azmax_adjusted = azmax;
 		bool d_odd_mirror_flag = false;
 		get_az_max(sym,altmax, inc_mirror,alt_iterator, h,d_odd_mirror_flag, azmax_adjusted);
-
+		if (alt_iterator<paltmin) { alt_iterator += delta; continue; }
+		
 		while ( az_iterator <= azmax_adjusted ) {
 			// FIXME: add an intelligent comment - this was copied from old code
 //			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
@@ -384,6 +389,10 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
+	float paltmin = params.set_default("alt_min",0.0);
+	float paltmax = params.set_default("alt_max",180.0);
+	if (altmax>paltmax) altmax=paltmax;
+
 	bool perturb = params.set_default("perturb",false);
 
 	float alt_iterator = 0.0f;
@@ -406,6 +415,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 
 		bool d_odd_mirror_flag = false;
 		get_az_max(sym,altmax, inc_mirror,alt_iterator, h,d_odd_mirror_flag, azmax_adjusted);
+		if (alt_iterator<paltmin) { alt_iterator += delta; continue; }
 
 
 		while ( az_iterator <= azmax_adjusted ) {
