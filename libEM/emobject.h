@@ -275,7 +275,10 @@ namespace EMAN
 		
 		static map< ObjectType, string> init();
 		static map< ObjectType, string> type_registry;
-
+		
+#ifdef MEMDEBUG
+		static set<EMObject*> allobjlist;
+#endif
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
