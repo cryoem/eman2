@@ -422,7 +422,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		if CUDA:
 			print_msg("GPU IDs                     : %s\n"%(GPUID))
 
-
 	if maskfile:
 		import  types
 		if type(maskfile) is types.StringType:  

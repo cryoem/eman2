@@ -77,7 +77,7 @@ def main():
 					    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPUID, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
 		else:
 			isc_realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, options.snr, 
-				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPU, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
+				  	    options.CTF, options.Fourvar, options.ali, options.CUDA, options.GPUID, options.adw, options.Ng, options.num_ali, options.min_stab_class, options.center)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
