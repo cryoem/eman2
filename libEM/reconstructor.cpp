@@ -704,7 +704,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	}
 
 	dot/=sqrt(power*power2);		// normalize the dot product
-	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
+//	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
+	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
 	input_slice->set_attr("reconstruct_absqual",(float)dot);
 	float rw=weight<=0?1.0f:1.0f/weight;
 	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
@@ -721,7 +722,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 	
 	float *rdata=image->get_data();
 	float *norm=tmp_data->get_data();
-	float normsum=0;
+	float normsum=0,normsum2=0;
 
 	dt[0]=dt[1]=dt[2]=0.0;
 
@@ -739,25 +740,28 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 		if (z0<-nz2) z0=-nz2;
 		if (z1>nz2) z1=nz2;
 		
-		size_t idx;
+		size_t idx=0;
 		float r, gg;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 					idx=image->get_complex_index_fast(i,j,k);
-					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
+					gg = Util::fast_exp(-r / EMConsts::I2G);
 					
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
-					dt[2]+=norm[idx/2];
-					normsum+=gg;				
+					dt[2]+=norm[idx/2]*gg;
+					normsum2+=gg;
+					normsum+=gg*norm[idx/2];				
 				}
 			}
 		}
+		if (normsum==0) return false;
 		dt[0]/=normsum;
 		dt[1]/=normsum;
-//		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2]);
+		dt[2]/=normsum2;
+//		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
 		return true;
 	} 
 	else {					// for subvolumes, not optimized yet

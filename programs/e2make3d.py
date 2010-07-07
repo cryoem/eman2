@@ -435,7 +435,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			rd=elem["xform"].get_rotation("eman")
 			if verbose>0 : print " %d/%d\r"%(i,len(data)),
 			sys.stdout.flush()
-			print "%d.\t%6.2f  %6.2f  %6.2f    %6.2g\t%6.4g\t%6.4g"%(i,rd["az"],rd["alt"],rd["phi"],elem["weight"],img["mean"],img["sigma"])
+	#		print "%d.\t%6.2f  %6.2f  %6.2f    %6.2g\t%6.4g\t%6.4g"%(i,rd["az"],rd["alt"],rd["phi"],elem["weight"],img["mean"],img["sigma"])
 			ptcl+=elem["weight"]
 			
 			# Actual slice insertion into the volume
