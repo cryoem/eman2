@@ -94,7 +94,7 @@ struct EMAN_Cmp_Wrapper: EMAN::Cmp
 };
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Log_end_overloads_1_3, end, 1, 3)
-
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_XYData_get_yatx_overloads_1_2, get_yatx, 1, 2)
 
 }// namespace
 
@@ -154,7 +154,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("write_file", &EMAN::XYData::write_file)
         .def("calc_correlation", &EMAN::XYData::calc_correlation)
         .def("update", &EMAN::XYData::update)
-        .def("get_yatx", &EMAN::XYData::get_yatx)
+        .def("get_yatx", &EMAN::XYData::get_yatx, EMAN_XYData_get_yatx_overloads_1_2())
         .def("get_x", &EMAN::XYData::get_x)
         .def("set_x", &EMAN::XYData::set_x)
         .def("get_y", &EMAN::XYData::get_y)
