@@ -6370,6 +6370,19 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        			from utilities import recv_attr_dict
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:	        send_attr_dict(main_node, data, par_str, image_start, image_end)
+			if myid == main_node:		
+				nimage = EMUtil.get_image_count(stack)
+				ext = file_type(stack)
+				if ext == "bdb": DB = db_open_dict(stack)
+				param_list = []				
+				for i in xrange(nimage):
+					img = EMData()
+					img.read_image(stack, i, True)
+					phi, theta, psi, s2x, s2y = get_params_proj(img)
+					param_list.append([i, phi, theta, psi, s2x, s2y])
+				from utilities import write_text_rows
+				write_text_rows(param_list, os.path.join(outdir, "param%04d.txt"%total_iter) )
+				del param_list
 	if myid == main_node: print_end_msg("ihrsr_MPI")
 
 

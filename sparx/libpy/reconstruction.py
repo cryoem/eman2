@@ -755,7 +755,7 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	count = 0
 	for j in xrange(1):
 	  	DM = dm[((j*nsym+L)*9) :(j*nsym+L+1)*9]
-	  	count += 1   # It has to be there as conting in WTF and WTM start from 1!
+	  	count += 1   # It has to be there as counting in WTF and WTM start from 1!
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
