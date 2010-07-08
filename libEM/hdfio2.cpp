@@ -98,6 +98,7 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats or integers
 
 	EMObject ret(0);
+	char c;
 	int i;
 //	unsigned int ui;
 	float f,*fa;
@@ -116,16 +117,29 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 	switch (cls) {
 	case H5T_INTEGER:
-		if(pts==1) {
-			H5Aread(attr,H5T_NATIVE_INT,&i);
-			ret=EMObject(i);
+		if(sz==1) {
+			H5Aread(attr,H5T_NATIVE_CHAR,&c);
+			bool b = false;
+			if(c=='T') {
+				b = true;
+			}
+			else if(c=='F') {
+				b = false;
+			}
+			ret = EMObject(b);
 		}
-		else {
-			ia=(int *)malloc((size_t)pts*sizeof(int));
-			H5Aread(attr,H5T_NATIVE_INT,ia);
-			for (i=0; i<pts; i++) iv[i]=ia[i];
-			free(ia);
-			ret=EMObject(iv);
+		else if(sz==4) {
+			if(pts==1) {
+				H5Aread(attr,H5T_NATIVE_INT,&i);
+				ret=EMObject(i);
+			}
+			else {
+				ia=(int *)malloc((size_t)pts*sizeof(int));
+				H5Aread(attr,H5T_NATIVE_INT,ia);
+				for (i=0; i<pts; i++) iv[i]=ia[i];
+				free(ia);
+				ret=EMObject(iv);
+			}
 		}
 		break;
 // 	case H5T_UNSIGNED_INTEGER:
@@ -223,21 +237,24 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	vector <int> iv;
 	switch(obj.get_type())
 	{
-	case EMObject::BOOL: std::cout << "implement this later" << std::endl; break;
+	case EMObject::BOOL:
+		type=H5Tcopy(H5T_NATIVE_CHAR);
+		spc=H5Scopy(simple_space);
+		break;
 	case EMObject::INT:
-		type=H5Tcopy(H5T_STD_I32LE);
+		type=H5Tcopy(H5T_NATIVE_INT);
 		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::UNSIGNEDINT:
-		type=H5Tcopy(H5T_STD_U32LE);
+		type=H5Tcopy(H5T_NATIVE_UINT);
 		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::FLOAT:
-		type=H5Tcopy(H5T_IEEE_F32LE);
+		type=H5Tcopy(H5T_NATIVE_FLOAT);
 		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::DOUBLE:
-		type=H5Tcopy(H5T_IEEE_F64LE);
+		type=H5Tcopy(H5T_NATIVE_DOUBLE);
 		spc=H5Scopy(simple_space);
 		break;
 	case EMObject::STRING:
@@ -247,40 +264,17 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		spc=H5Screate(H5S_SCALAR);
 		break;
 	case EMObject::FLOATARRAY:
-		type=H5Tcopy(H5T_IEEE_F32LE);
+		type=H5Tcopy(H5T_NATIVE_FLOAT);
 		fv=obj;
 		dims=fv.size();
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
 	case EMObject::INTARRAY:
-		type=H5Tcopy(H5T_STD_I32LE);
+		type=H5Tcopy(H5T_NATIVE_INT);
 		iv=obj;
 		dims=iv.size();
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
-// 	case EMObject::TRANSFORM3D:
-// 		type = H5Tcreate(H5T_COMPOUND, 16 * sizeof(float)); //Transform3D is a 4x4 matrix
-// 		H5Tinsert(type, "00", 0, H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "01", 1*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "02", 2*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "03", 3*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "10", 4*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "11", 5*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "12", 6*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "13", 7*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "20", 8*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "21", 9*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "22", 10*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "23", 11*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "30", 12*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "31", 13*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "32", 14*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tinsert(type, "33", 15*sizeof(float), H5T_NATIVE_FLOAT);
-// 		H5Tpack(type);
-//
-// 		dims = 1;	//one compound type
-// 		spc = H5Screate_simple(1, &dims, NULL);
-// 		break;
 	case EMObject::TRANSFORM:
 		type = H5Tcreate(H5T_COMPOUND, 12 * sizeof(float)); //Transform is a 3x4 matrix
 		H5Tinsert(type, "00", 0, H5T_NATIVE_FLOAT);
@@ -326,7 +320,9 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	}
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
 
-	unsigned int i;
+	bool b;
+	char c;
+	int i;
 	float f,*fa;
 	int * ia;
 	unsigned int ui;
@@ -334,38 +330,46 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	const char *s;
 	Transform * tp;
 	switch(obj.get_type()) {
+	case EMObject::BOOL:
+		b = (bool)obj;
+		if(b) {
+			c = 'T';
+		} else {
+			c = 'F';
+		}
+		H5Awrite(attr,type,&c);
+		break;
 	case EMObject::INT:
 		i=(int)obj;
-		H5Awrite(attr,H5T_NATIVE_INT,&i);
+		H5Awrite(attr,type,&i);
 		break;
 	case EMObject::UNSIGNEDINT:
 		ui=(unsigned int)obj;
-		H5Awrite(attr,H5T_NATIVE_UINT,&ui);
+		H5Awrite(attr,type,&ui);
 		break;
 	case EMObject::FLOAT:
 		f=(float)obj;
-		H5Awrite(attr,H5T_NATIVE_FLOAT,&f);
+		H5Awrite(attr,type,&f);
 		break;
 	case EMObject::DOUBLE:
 		d=(double)obj;
-		H5Awrite(attr,H5T_NATIVE_DOUBLE,&d);
+		H5Awrite(attr,type,&d);
 		break;
 	case EMObject::STRING:
 	case EMObject::CTF:
 		s=(const char *)obj;
-//		H5Awrite(attr,H5T_NATIVE_CHAR,s);
 		H5Awrite(attr,type,s);
 		break;
 	case EMObject::FLOATARRAY:
 		fa=(float *)malloc(fv.size()*sizeof(float));
-		for (i=0; i<fv.size(); i++) fa[i]=fv[i];
-		H5Awrite(attr,H5T_NATIVE_FLOAT,fa);
+		for (ui=0; ui<fv.size(); ui++) fa[ui]=fv[ui];
+		H5Awrite(attr,type,fa);
 		free(fa);
 		break;
 	case EMObject::INTARRAY:
 		ia=(int *)malloc(iv.size()*sizeof(int));
-		for (i=0; i<iv.size(); i++) ia[i]=iv[i];
-		H5Awrite(attr,H5T_NATIVE_INT,ia);
+		for (ui=0; ui<iv.size(); ui++) ia[ui]=iv[ui];
+		H5Awrite(attr,type,ia);
 		free(ia);
 		break;
 	case EMObject::TRANSFORM:
@@ -818,7 +822,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 #endif
 	ENTERFUNC;
 	init();
-	
+
 	if(image_index<0) {
 		image_index = get_nimg();
 	}
