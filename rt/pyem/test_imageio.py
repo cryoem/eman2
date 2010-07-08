@@ -422,8 +422,27 @@ class TestHdfIO(ImageI0Tester):
 		#self.assertEqual(attrdict["minimum"], 0.0)
 
 		testlib.safe_unlink(imgfile)  
+
+	def test_hdf_attr_transform(self):
+		"""test Transform object as image attibute .........."""
+		t = Transform()
+		t.to_identity()
+		e=EMData(2,2)
+		e.set_attr('tr', t)
+		testimage = 'testimage.hdf'
+		e.write_image(testimage)
+		g = EMData()
+		g.read_image(testimage)
+		tt = g.get_attr('tr')
+		for i in range(3):
+			for j in range(4):
+				if i==j:
+					self.assertAlmostEqual(tt.at(i,j), 1.0, 3)
+				else:
+					self.assertAlmostEqual(tt.at(i,j), 0.0, 3) 
+		os.unlink(testimage)
 		
-	def test_int_array_attr(self):
+	def test_hdf_attr_int_array(self):
 		"""test int array as attribute ......................"""
 		hdffile = 'testfile.hdf'
 		e = EMData(64, 64)
@@ -440,59 +459,69 @@ class TestHdfIO(ImageI0Tester):
 		self.assertEqual(d2, [5,6,7])
 		os.unlink(hdffile)	  
 
-	def no_test_hdf_attr(self):
-		"""test hdf file attribute .........................."""
-		infile = "test_hdf_attr_in.mrc"
-		TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT)
-
-#		ctf = SimpleCtf()
-#		d = {"defocus":1, "bfactor":2}
-#		ctf.from_dict(d)
-
-		e = EMData()
-		e.read_image(infile)
-		az = 1.5
-		alt = 2.5
-		phi = 0.5		
-		e.set_rotation(az, alt, phi)
-#		e.set_ctf(ctf)
-		
-		outfile = "test_hdf_attr_out_1.h5"
-		e.write_image(outfile, 0, IMAGE_HDF)
+	def test_hdf_attr_float_array(self):
+		"""test float array as attribute ...................."""
+		hdffile = 'testfile.hdf'
+		e = EMData(64, 64)
+		e.process_inplace('testimage.noise.uniform.rand')
+		e.set_attr('float_array1', (1.1, 2.2, 3.3))
+		e.write_image(hdffile)
 		
 		e2 = EMData()
-		e2.read_image(outfile)
-		attrdict2 = e2.get_attr_dict()
+		e2.read_image(hdffile)
+		d1 = e2.get_attr('float_array1')
+		import math
+		for i in (1.1,2.2,3.3):
+			self.assertAlmostEqual(i, d1[int(math.floor(i)-1)])
+		#self.assertAlmostEquals(d1, (1.1,2.2,3.3), 3)
+		#self.assertAlmostEquals(d2, (5.5,6.6,7.7), 3)
+		os.unlink(hdffile)	
 
-		self.assertEqual(attrdict2["orientation_convention"], "EMAN")
-		self.assertEqual(attrdict2["euler_az"], az)
-		self.assertEqual(attrdict2["euler_alt"], alt)
-		self.assertEqual(attrdict2["euler_phi"], phi)
-
-		theta = 10.0
-		phi = 20.0
-		omega = 30.0
-
-		e2.set_attr("orientation_convention", "MRC")
-		e2.set_attr("euler_theta", theta)
-		e2.set_attr("euler_phi", phi)
-		e2.set_attr("euler_omega", omega)
-
-		outfile2 = "test_hdf_attr_out_2.h5"
-		e2.write_image(outfile2, 0, IMAGE_HDF)
-
-		e3 = EMData()
-		e3.read_image(outfile2)
-		attrdict3 = e3.get_attr_dict()
+	def test_hdf_attr_boolean(self):
+		"""test hdf file boolean attribute .................."""
+		hdffile = 'testfile.hdf'
+		e = test_image()
+		e.set_attr('trueattr', True)
+		e.set_attr('falseattr', False)
+		e.write_image(hdffile)
 		
-		self.assertEqual(attrdict3["orientation_convention"], "MRC")
-		self.assertEqual(attrdict3["euler_theta"], theta)
-		self.assertEqual(attrdict3["euler_omega"], omega)
-		self.assertEqual(attrdict3["euler_phi"], phi)
+		e2 = EMData(hdffile)
+		self.assertTrue(e2.get_attr('trueattr'))
+		self.assertFalse(e2.get_attr('falseattr'))
+		os.unlink(hdffile)	
 		
-		os.unlink(infile)
-		os.unlink(outfile)
-		os.unlink(outfile2)
+	def test_hdf_attr_int(self):
+		"""test hdf file integer attribute .................."""
+		hdffile = 'testfile.hdf'
+		e = test_image()
+		e.set_attr('intattr', 12345)
+		e.write_image(hdffile)
+		
+		e2 = EMData(hdffile)
+		self.assertEqual(12345, e2.get_attr('intattr'))
+		os.unlink(hdffile)	
+		
+	def test_hdf_attr_float(self):
+		"""test hdf file float attribute ...................."""
+		hdffile = 'testfile.hdf'
+		e = test_image()
+		e.set_attr('floatattr', 12.345)
+		e.write_image(hdffile)
+		
+		e2 = EMData(hdffile)
+		self.assertAlmostEqual(12.345, e2.get_attr('floatattr'), 3)
+		os.unlink(hdffile)	
+
+	def test_hdf_attr_string(self):
+		"""test hdf file string attribute ..................."""
+		hdffile = 'testfile.hdf'
+		e = test_image()
+		e.set_attr('stringattr', 'Grant Tang')
+		e.write_image(hdffile)
+		
+		e2 = EMData(hdffile)
+		self.assertEqual('Grant Tang', e2.get_attr('stringattr'))
+		os.unlink(hdffile)	
 
 	def test_write_image(self):
 		"""test write hdf image file ........................"""
@@ -553,25 +582,6 @@ class TestHdfIO(ImageI0Tester):
 		
 		os.unlink(testimage)
 		
-	def test_hdf_aatribute_transform3d(self):
-		"""test Transform object as image attibute .........."""
-		t = Transform()
-		t.to_identity()
-		e=EMData(2,2)
-		e.set_attr('tr', t)
-		testimage = 'testimage.hdf'
-		e.write_image(testimage)
-		g = EMData()
-		g.read_image(testimage)
-		tt = g.get_attr('tr')
-		for i in range(3):
-			for j in range(4):
-				if i==j:
-					self.assertAlmostEqual(tt.at(i,j), 1.0, 3)
-				else:
-					self.assertAlmostEqual(tt.at(i,j), 0.0, 3) 
-		os.unlink(testimage)
-
 	def test_read_write_hdf(self):
 		"""test write-read hdf .............................."""
 		self.do_test_read_write("hdf")
