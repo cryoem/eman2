@@ -459,6 +459,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 					else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
 					img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
+					img.mult(elem["norm"])
 
 				rd=elem["xform"].get_rotation("eman")
 				if verbose>0 : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
