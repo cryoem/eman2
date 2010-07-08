@@ -6334,13 +6334,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
 					start_time = time()
 					varf = 1.0/varf
+					drop_image(varf, os.path.join(outdir, "varf%04d.hdf"%(total_iter)))
 			else:  varf = None
 
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
-				ref_data = [vol]
-				#  call user-supplied function to prepare reference image, i.e., filter it
-				vol = user_func(ref_data)
 				if(total_iter > nise):
 					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin) 
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
@@ -6351,6 +6349,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
+                                ref_data = [vol]
+                                if  fourvar:  ref_data.append(varf)
+                                #  call user-supplied function to prepare reference image, i.e., filter it
+                                vol = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 			#jeanmod
 			dp = bcast_number_to_all(dp, source_node = main_node)
