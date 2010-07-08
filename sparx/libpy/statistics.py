@@ -8540,31 +8540,42 @@ class pcanalyzer:
 
 
 class pcanalyzebck:
-	def __init__(self, mask, sdir, nvec, MPI=False, scratch = None ):
+	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
 		import os
 		self.mask = mask.copy()
 		if MPI:
 			from mpi import mpi_comm_rank, MPI_COMM_WORLD
 			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
+			"""
 			if( scratch == None):
 				self.file = os.path.join(sdir , "maskedimg%04d.bin" % self.myid )
 			else:
 				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
+			"""
 			self.MPI  = True
 		else:
+			"""
 			if( scratch == None):
 				self.file = os.path.join(sdir , "maskedimg.bin" )
 			else:
 				self.file = os.path.join(scratch , "maskedimg.bin" )
+			"""
 			self.MPI  = False
 			self.myid = 0
-		self.sdir   = sdir
+		#self.sdir   = sdir
+		self.dataw  = dataw
+		self.list_of_particles = list_of_particles
+		self.dm     = dm
+		self.variance = variance
 		self.nimg   = 0
 		self.nvec   = nvec
 		self.fw     = None
 		self.fr     = None
+		self.fl     = fl
+		self.aa     = aa
 		self.avgdat = None
 
+	"""
 	def writedat( self, data ):
 		import array
 
@@ -8582,8 +8593,25 @@ class pcanalyzebck:
 		Util.readarray( self.fr, data, self.ncov )
 		if not(self.avgdat is None):
 			data -= self.avgdat
+	"""
+	def get_dat( self, data, k ):
+		from reconstruction import backproject_swbp
+		from filter  import filt_tanl
+		vb = Util.divn_img(backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
+		if(self.fl > 0.0):
+			vb = filt_tanl(vb, self.fl, self.aa)
+		#pc = Util.infomask(vb, self.mask, True)
+		#vb -= pc[0]
+		#vb *= (refstat[1]/pc[1])
+		from numpy import zeros, float32
+		from utilities import get_image_data
+		
+		tmpimg = Util.compress_image_mask( vb, self.mask )
+		data = get_image_data(tmpimg)
+		if not(self.avgdat is None):
+			data -= self.avgdat
 
-	def usebuf( self ):
+	def getncov( self ):  # used to be called usebuf
 		nx = self.mask.get_xsize()
 		ny = self.mask.get_ysize()
 		nz = self.mask.get_zsize()
@@ -8594,12 +8622,13 @@ class pcanalyzebck:
 				for iz in xrange(nz):
 					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
 						self.ncov += 1
-		import os
-		size = os.stat( self.file )[6]
-		self.nimg = size/(self.ncov*4)
-		assert self.nimg * self.ncov*4 == size
-		self.bufused = True
+		#import os
+		#size = os.stat( self.file )[6]
+		#self.nimg = size/(self.ncov*4)
+		#assert self.nimg * self.ncov*4 == size
+		#self.bufused = True
 
+	"""
 	def shuffle( self ):
 		assert self.bufused
 		from random import shuffle, seed
@@ -8637,8 +8666,7 @@ class pcanalyzebck:
 		self.file = shfflfile
 		self.avgdat = sumdata[:]/float(sumnimg)
 		#print "done shuffling,nimg:", float(sumnimg)
-
-
+	"""
 
 	def setavg( self, avg ):
 		from numpy import zeros, float32
@@ -8648,6 +8676,7 @@ class pcanalyzebck:
 		self.avgdat = zeros( (len(avgdat)), float32 )
 		self.avgdat[:] = avgdat[:]
 
+	"""
 	def insert( self, img ):
 		assert self.mask.get_xsize()==img.get_xsize()
 		assert self.mask.get_ysize()==img.get_ysize()
@@ -8659,7 +8688,7 @@ class pcanalyzebck:
 		self.writedat( tmpdat )                                   #   WRITEDAT
 		self.nimg +=1
 		self.ncov = tmpimg.get_xsize()
-	
+	"""
 	def analyze( self ):
 		#if self.myid==0:
 		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
@@ -8725,12 +8754,13 @@ class pcanalyzebck:
 		for i in xrange(ncov):
 			V[0][i] = v0[i]/beta
 
-		self.fr = open( self.file, "rb" )
+		#self.fr = open( self.file, "rb" )
 		for i in xrange(self.nimg):
-			self.read_dat(imgdata)                                     #  READ_DAT
+			#self.read_dat(imgdata)                                     #  READ_DAT
+			self.get_dat(imgdata, i)
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
-		self.fr.close()
+		#self.fr.close()
 
 		if self.MPI:
 			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
@@ -8758,12 +8788,13 @@ class pcanalyzebck:
 
 			Av[:] = 0.0
 
-			self.fr = open( self.file, "rb" )
+			#self.fr = open( self.file, "rb" )
 			for i in xrange(self.nimg):
-				self.read_dat( imgdata )                                #READ_DAT
+				#self.read_dat( imgdata )                                #READ_DAT
+				self.get_dat(imgdata, i)
 				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
 				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
-			self.fr.close()
+			#self.fr.close()
 
 
 			if self.MPI:

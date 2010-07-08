@@ -347,6 +347,38 @@ def helical( ref_data ):
 	"""
 	return  volf
 
+def helical2( ref_data ):
+	from utilities      import print_msg
+	from filter	    import fit_tanh, filt_tanl
+	from morphology     import threshold
+	#  Prepare the reference in helical refinement, i.e., low-pass filter.
+	#  Input: list ref_data
+	#  2 - raw volume
+	#  Output: filtered, and masked reference image
+
+	global  ref_ali2d_counter
+	ref_ali2d_counter += 1
+	print_msg("helical2   #%6d\n"%(ref_ali2d_counter))
+	stat = Util.infomask(ref_data[2], None, True)
+	volf = ref_data[2] - stat[0]
+	volf = threshold(volf)
+	fl = 0.25#0.17
+	aa = 0.1
+	msg = "Tangent filter:  cut-off frequency = %10.3f	  fall-off = %10.3f\n"%(fl, aa)
+	print_msg(msg)
+	volf = filt_tanl(volf, fl, aa)
+	from utilities import read_text_file
+	dipr=read_text_file('symdoc.txt',-1)
+	#here pixel size, fract, rmax and rmin will have to be read from external text file
+	from alignment import helios
+	volf, dp, dphi = helios(volf, 2.175, dipr[0][-1], dipr[1][-1], 0.7, 30,3) 
+	print_msg("New delta z and delta phi	  : %s,    %s\n\n"%(dp,dphi))
+	fofo = open('symdoc.txt','a')
+	fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
+	fofo.close()
+	return  volf,[0.0,0.0,0.0]
+
+
 def reference3( ref_data ):
 	from utilities      import print_msg
 	from filter         import fit_tanh1, filt_tanl
