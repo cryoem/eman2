@@ -56,11 +56,12 @@ template <> Factory < Averager >::Factory()
 	force_add<ImageAverager>();
 	force_add<MinMaxAverager>();
 	force_add<IterationAverager>();
-	force_add<WeightingAverager>();
+//	force_add<WeightingAverager>();
 	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
 //	force_add(&CtfCAverager::NEW);
 //	force_add(&CtfCWAverager::NEW);
 	force_add<CtfCWautoAverager>();
+	force_add<CtfCAutoAverager>();
 //	force_add<XYZAverager>();
 }
 
