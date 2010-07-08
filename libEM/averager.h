@@ -423,6 +423,45 @@ namespace EMAN
 	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
      *  The Weiner filter is estimated directly from the data.
      */
+	class CtfCAutoAverager:public Averager
+	{
+	  public:
+	    CtfCAutoAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Averaging with automatic CTF correction and SNR weight. No B-factor correction (as this is best done in 3-D). Does not require a structure factor, but only works with EMAN2's CTF model";
+		}
+
+		static Averager *NEW()
+		{
+			return new CtfCAutoAverager();
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+//			outfile = params["outfile"];
+		}
+		
+		static const string NAME;
+		
+	  protected:
+		EMData *snrsum;   // contains the summed SNR for the average
+		int nimg;
+	};
+
+	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
+     *  The Weiner filter is estimated directly from the data.
+     */
 	class CtfCWautoAverager:public Averager
 	{
 	  public:

@@ -48,7 +48,8 @@ const string IterationAverager::NAME = "iteration";
 const string WeightingAverager::NAME = "snr_weight";
 const string CtfCAverager::NAME = "ctfc";
 const string CtfCWAverager::NAME = "ctfcw";
-const string CtfCWautoAverager::NAME = "ctf.auto";
+const string CtfCWautoAverager::NAME = "ctfw.auto";
+const string CtfCAutoAverager::NAME = "ctf.auto";
 
 template <> Factory < Averager >::Factory()
 {
@@ -561,7 +562,9 @@ EMData * CtfCWautoAverager::finish()
 	}
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
-
+	result->set_attr("ctf_snr_total",snrsum->calc_radial_dist(snrsum->get_ysize()/2,0,1,false));
+	result->set_attr("ctf_wiener_filtered",true);
+	
 	delete snrsum;
 	EMData *ret=result->do_ift();
 	delete result;
@@ -569,6 +572,110 @@ EMData * CtfCWautoAverager::finish()
 	return ret;
 }
 
+CtfCAutoAverager::CtfCAutoAverager()
+	: nimg(0)
+{
+
+}
+
+
+void CtfCAutoAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+
+
+	EMData *fft=image->do_fft();
+
+	if (nimg >= 1 && !EMUtil::is_same_size(fft, result)) {
+		LOGERR("%s Averager can only process images of the same size", get_name().c_str());
+		return;
+	}
+
+	nimg++;
+	if (nimg == 1) {
+		result = fft->copy_head();
+		result->to_zero();
+	}
+
+	Ctf *ctf = (Ctf *)image->get_attr("ctf");
+	float b=ctf->bfactor;
+	ctf->bfactor=0;			// NO B-FACTOR CORRECTION !
+
+	EMData *snr = result -> copy();
+	ctf->compute_2d_complex(snr,Ctf::CTF_SNR);
+	EMData *ctfi = result-> copy();
+	ctf->compute_2d_complex(ctfi,Ctf::CTF_AMP);
+
+	ctf->bfactor=b;	// return to its original value
+
+	float *outd = result->get_data();
+	float *ind = fft->get_data();
+	float *snrd = snr->get_data();
+	float *ctfd = ctfi->get_data();
+
+	size_t sz=snr->get_xsize()*snr->get_ysize();
+	for (size_t i = 0; i < sz; i+=2) {
+		if (snrd[i]<0) snrd[i]=0;
+		ctfd[i]=fabs(ctfd[i]);
+		
+		// This limits the maximum possible amplification in CTF correction to 10x
+		if (ctfd[i]<.05) {
+			if (snrd[i]<=0) ctfd[i]=.05f;
+			else ctfd[i]=snrd[i]*10.0f;
+		}
+		
+		// SNR weight and CTF correction
+		outd[i]+=ind[i]*snrd[i]/ctfd[i];
+		outd[i+1]+=ind[i+1]*snrd[i]/ctfd[i];
+	}
+
+	if (nimg==1) {
+		snrsum=snr->copy_head();
+		float *ssnrd=snrsum->get_data();
+		// we're only using the real component, for Wiener filter we put 1.0 in R, but for just SNR weight we use 0
+		for (size_t i = 0; i < sz; i+=2) { ssnrd[i]=0.0; ssnrd[i+1]=0.0; }
+	}
+	snrsum->add(*snr);
+
+	delete ctf;
+	delete fft;
+	delete snr;
+	delete ctfi;
+}
+
+EMData * CtfCAutoAverager::finish()
+{
+/*	EMData *tmp=result->do_ift();
+	tmp->write_image("ctfcw.hdf",0);
+	delete tmp;
+
+	tmp=snrsum->do_ift();
+	tmp->write_image("ctfcw.hdf",1);
+	delete tmp;*/
+
+//	snrsum->write_image("snrsum.hdf",-1);
+	size_t sz=result->get_xsize()*result->get_ysize();
+	float *snrsd=snrsum->get_data();
+	float *outd=result->get_data();
+
+	for (size_t i=0; i<sz; i+=2) {
+		outd[i]/=snrsd[i];		// snrsd contains total SNR
+		outd[i+1]/=snrsd[i];
+	}
+	result->update();
+	result->set_attr("ptcl_repr",nimg);
+	result->set_attr("ctf_snr_total",snrsum->calc_radial_dist(snrsum->get_ysize()/2,0,1,false));
+	result->set_attr("ctf_wiener_filtered",false);
+	
+	delete snrsum;
+	EMData *ret=result->do_ift();
+	delete result;
+	result=NULL;
+	return ret;
+}
 
 #if 0
 EMData *IterationAverager::average(const vector < EMData * >&image_list) const
