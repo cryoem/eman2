@@ -1670,7 +1670,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	main_node = 0
 	# create the output directory, if it does not exist
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1,myid)
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 		os.mkdir(outdir)
 
 	if myid == main_node:
