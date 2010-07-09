@@ -6322,7 +6322,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				vol = recons3d_4nn_MPI(myid, data, npad = npad)
 
 			if myid == main_node:
-				print_msg("\n 3D reconstruction time = %d\n"%(time()-start_time))
+				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
 				start_time = time()
 
 			if fourvar:
@@ -6354,6 +6354,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
                                 #  call user-supplied function to prepare reference image, i.e., filter it
                                 vol = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
+				print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
+				start_time = time()
+				
 			#jeanmod
 			dp = bcast_number_to_all(dp, source_node = main_node)
 			#end jeanmod
@@ -6372,17 +6375,19 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        	else:	        send_attr_dict(main_node, data, par_str, image_start, image_end)
 			if myid == main_node:		
 				nimage = EMUtil.get_image_count(stack)
-				ext = file_type(stack)
-				if ext == "bdb": DB = db_open_dict(stack)
+				#ext = file_type(stack)
+				#if ext == "bdb": DB = db_open_dict(stack)
 				param_list = []				
 				for i in xrange(nimage):
 					img = EMData()
 					img.read_image(stack, i, True)
 					phi, theta, psi, s2x, s2y = get_params_proj(img)
 					param_list.append([i, phi, theta, psi, s2x, s2y])
-				from utilities import write_text_rows
-				write_text_rows(param_list, os.path.join(outdir, "param%04d.txt"%total_iter) )
+				from utilities import write_text_row
+				write_text_row(param_list, os.path.join(outdir, "param%04d.txt"%total_iter) )
 				del param_list
+				print_msg("\nWriting of parameters time = %d\n"%(time()-start_time))
+				start_time = time()
 	if myid == main_node: print_end_msg("ihrsr_MPI")
 
 
