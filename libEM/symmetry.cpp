@@ -446,8 +446,8 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 			}
 
 			if ( perturb &&  alt_soln != 0 ) {
-				alt_soln += Util::get_gauss_rand(0.0f,.25f*delta);
-				az_soln += Util::get_gauss_rand(0.0f,h/4.0f);
+				alt_soln += Util::get_gauss_rand(0.0f,.125f*delta);
+				az_soln += Util::get_gauss_rand(0.0f,h*.125f);
 			}
 
 			add_orientation(ret,az_soln,alt_soln);

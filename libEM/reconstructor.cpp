@@ -922,7 +922,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 
 				// This deals with the SNR weight
 				float rn = hypot(rx,ry);
-				if (rn=.5) continue;		// no SNR in the corners, and we're going to mask them later anyway
+				if (rn>=.5) continue;		// no SNR in the corners, and we're going to mask them later anyway
 				rn*=snr.size()*2.0;
 				int rni=(int)floor(rn);
 				if (rni>=snr.size()-1) weight=snr[snr.size()-1]*sub;
@@ -930,7 +930,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 					rn-=rni;
 					weight=Util::linear_interpolate(snr[rni],snr[rni+1],rn)*sub;
 				}
-				if (weight>500.0) printf("%f %d %d %f %f %d %f\n",weight,x,y,rx,ry,rni);
+//				if (weight>500.0) printf("%f %d %d %f %f %d %f\n",weight,x,y,rx,ry,rni);
 				
 				Vec3f coord(rx,ry,0);
 				coord = coord*t3d; // transpose multiplication
@@ -943,6 +943,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 				yy=yy*ny;
 				zz=zz*nz;
 
+//				printf("%f\n",weight);
 				inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),weight);
 			}
 		}
@@ -968,6 +969,8 @@ int WienerFourierReconstructor::determine_slice_agreement(EMData*  input_slice, 
 	rotation->set_mirror(false);
 	rotation->set_trans(0,0,0);
 
+	tmp_data->write_image("dbug.hdf",0);
+	
 	// Remove the current slice first (not threadsafe, but otherwise performance would be awful)
 	if (sub) do_insert_slice_work(slice, *rotation, -weight);
 
