@@ -70,6 +70,11 @@ using std::stringstream;
 #include "transform.h"
 #include "ctf.h"
 
+#ifdef MEMDEBUG
+set<EMObject*> allemobjlist;
+#endif
+
+
 // Static init
 map< EMObject::ObjectType, string>  EMObject::type_registry = init();;
 
@@ -120,8 +125,8 @@ void EMObject::printInfo() const
 
 EMObject::~EMObject() {
 #ifdef MEMDEBUG
-	allobjlist.erase(this);
-	printf("  -(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.erase(this);
+	printf("  -(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -129,8 +134,8 @@ EMObject::EMObject() :
 	d(0), type(UNKNOWN)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -138,8 +143,8 @@ EMObject::EMObject(bool boolean) :
 	b(boolean), type(BOOL)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -147,8 +152,8 @@ EMObject::EMObject(int num) :
 	n(num), type(INT)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -156,8 +161,8 @@ EMObject::EMObject(unsigned int num) :
 	ui(num), type(UNSIGNEDINT)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -166,8 +171,8 @@ EMObject::EMObject(float ff) :
 {
 
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 	if(Util::goodf(&ff)) {
 		f = ff;
@@ -182,8 +187,8 @@ EMObject::EMObject(double dd) :
 {
 
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 	if(Util::goodf(&dd)) {
 		d = dd;
@@ -197,8 +202,8 @@ EMObject::EMObject(const char *s) :
 	str(s), type(STRING)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -206,8 +211,8 @@ EMObject::EMObject(const string & s) :
 	str(s), type(STRING)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -215,8 +220,8 @@ EMObject::EMObject(float *f) :
 	fp(f), type(FLOAT_POINTER)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -224,8 +229,8 @@ EMObject::EMObject(int *i) :
 	ip(i), type(INT_POINTER)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -233,8 +238,8 @@ EMObject::EMObject(void *v) :
 	vp(v), type(VOID_POINTER)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -242,8 +247,8 @@ EMObject::EMObject(EMData * em)	:
 	emdata(em), type(EMDATA)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -251,8 +256,8 @@ EMObject::EMObject(XYData * xy) :
 	xydata(xy), type(XYDATA)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -260,8 +265,8 @@ EMObject::EMObject(Transform* t) :
 	farray(t->get_matrix()), type(TRANSFORM)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -269,8 +274,8 @@ EMObject::EMObject(Ctf * ctf) :
 	str(ctf->to_string()), type(CTF)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -278,8 +283,8 @@ EMObject::EMObject(const vector< int >& v ) :
 	iarray(v), type(INTARRAY)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -287,8 +292,8 @@ EMObject::EMObject(const vector < float >&v) :
 	farray(v), type(FLOATARRAY)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -296,8 +301,8 @@ EMObject:: EMObject(const vector <string>& sarray) :
 	strarray(sarray), type(STRINGARRAY)
 {
 #ifdef MEMDEBUG
-	allobjlist.insert(this);
-	printf("  +(%6d) %p\n",allobjlist.count(),this);
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -861,6 +866,10 @@ EMObject::EMObject(const EMObject& that)
 {
 	// init isn't necessary because that must have already called it!
 	*this = that;
+#ifdef MEMDEBUG
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+#endif
 }
 
 

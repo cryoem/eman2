@@ -39,6 +39,9 @@
 #include <map>
 using std::map;
 
+#include <set>
+using std::set;
+
 #include <vector>
 using std::vector;
 
@@ -276,9 +279,6 @@ namespace EMAN
 		static map< ObjectType, string> init();
 		static map< ObjectType, string> type_registry;
 		
-#ifdef MEMDEBUG
-		static set<EMObject*> allobjlist;
-#endif
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
