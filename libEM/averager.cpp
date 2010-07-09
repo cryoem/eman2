@@ -665,9 +665,9 @@ EMData * CtfCAutoAverager::finish()
 	for (size_t i=0; i<sz; i+=2) {
 		if (snrsd[i]==0) outd[i]=outd[i+1]=0;
 		// we aren't wiener filtering, but if the total SNR is too low, we don't want TOO much exaggeration of noise
-		if (snrsd[i]<.02) {		
-			outd[i]*=50.0;		// 1/0.05
-			outd[i+1]*=50.0;
+		if (snrsd[i]<.05) {		
+			outd[i]*=20.0;		// 1/0.05
+			outd[i+1]*=20.0;
 		}
 		else {
 			outd[i]/=snrsd[i];		// snrsd contains total SNR
