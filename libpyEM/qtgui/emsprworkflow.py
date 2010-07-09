@@ -4913,7 +4913,7 @@ class E2Make3DTools:
 		ppostproc2 =  ParamDef("m3dpostprocess2",vartype="string",desc_short="Post processor 2",desc_long="A second post processor applied to the reconstructed model",property=None,defaultunits=db.get("m3dpostprocess2",dfl="None"),choices=self.get_postprocess_filt_options())
 		ppostprocargs2 =  ParamDef(name="m3dpostprocessargs2",vartype="string",desc_short="params 2",desc_long="Parameters for the post processor see \"e2help.py processors\"",property=None,defaultunits=db.get("m3dpostprocessargs2",dfl=""),choices=[])	
 
-		precon = ParamDef("recon",vartype="string",desc_short="Reconstructor",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","back_projection"])
+		precon = ParamDef("recon",vartype="string",desc_short="Reconstructor",desc_long="The method used to perform 3D reconstruction",property=None,defaultunits=db.get("recon",dfl="fourier"),choices=["fourier","wiener_fourier","back_projection"])
 		ppad = ParamDef("pad",vartype="string",desc_short="Pad to",desc_long="The amount to which you want to pad the 3D volume when Fourier inversion is being used. At least 25% is recommended", defaultunits=db.get("pad",dfl=""),choices=[])
 		params = []
 		
