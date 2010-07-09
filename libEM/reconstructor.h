@@ -251,7 +251,7 @@ namespace EMAN
 			 * to this Fourier volume. This means tmp_data is assumed to 
 			 * have have as many x pixels as image.
 			 */
-			virtual void normalize_threed(const bool sqrt_damp=false);
+			virtual void normalize_threed(const bool sqrt_damp=false,const bool wiener=false);
 
 			/** Sends the pixels in tmp_data and image to zero
 			 * Convenience only
@@ -477,43 +477,37 @@ namespace EMAN
 		static const string NAME;
 
 	  protected:
-		
 		/** Load default settings
 		*/
-		void load_default_settings()
-		{
-			inserter=0;
-			image=0;
-			tmp_data=0;
-		}
+		virtual void load_default_settings();
 
 		/** Frees the memory owned by this object (but not parent objects)
 		 * Deletes the FourierPixelInserter3D pointer
 		 */
-		void free_memory();
+		virtual void free_memory();
 
 		/** Load the pixel inserter based on the information in params
 		 */
-		void load_inserter();
+		virtual void load_inserter();
 
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
 		 * @param euler a transform3D storing the slice euler angle
 		 * @param weight weighting factor for this slice (usually number of particles in a class-average)
 		 */
-		void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
+		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
 
 		/** A function to perform the nuts and bolts of comparing an image slice
 		 * @param input_slice the slice to insert into the 3D volume
 		 * @param euler a transform3D storing the slice euler angle
 		 */
-		void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
+		virtual void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
 
 		/** This is a mode-2 pixel extractor
 		 * @param xx,yy,zz voxel coordinates (need not be integers)
 		 * @param dt float pointer with 3 floats allocated for returned complex value and weight sum
 		 */
-		bool pixel_at(const float& xx, const float& yy, const float& zz, float *dt);
+		virtual bool pixel_at(const float& xx, const float& yy, const float& zz, float *dt);
 
 		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
 		FourierPixelInserter3D* inserter;
@@ -529,185 +523,120 @@ namespace EMAN
 	};
 
 
-	/** A more mathematically rigorou Fourier reconstructor
-	 * That did not seem to outperform the FourierReconstructor
-	 * @author David Woolford (programming) and Phil Baldwin (mathematics)
-	 * @date early 2008  
-	 */
-// 	class BaldwinWoolfordReconstructor : public FourierReconstructor
-// 	{
-// 		public:
-// 		BaldwinWoolfordReconstructor() : W(0) {}
-// 
-// 		/** Deconstructor
-// 		*/
-// 		virtual ~BaldwinWoolfordReconstructor() {
-// 			if ( W != 0 )
-// 				delete [] W;
-// 		}
-// 
-// 		/** Get the unique name of the reconstructor
-// 		*/
-// 		virtual string get_name() const
-// 		{
-// 			return "baldwinwoolford";
-// 		}
-// 
-// 		/** Get the one line description of the reconstructor
-// 		*/
-// 		virtual string get_desc() const
-// 		{
-// 			return "Reconstruction via direct Fourier inversion using gridding and delta function based weights";
-// 		}
-// 
-// 		/** Factory themed method allocating a new FourierReconstructor
-// 		* @return a Reconstructor pointer to a newly allocated FourierReconstructor
-// 		*/
-// 		static Reconstructor *NEW()
-// 		{
-// 			return new BaldwinWoolfordReconstructor();
-// 		}
-// 
-// 		virtual TypeDict get_param_types() const
-// 		{
-// 			TypeDict d;
-// 			d.put("mode", EMObject::INT, "Optional. Fourier pixel insertion mode [1-8] - mode 2 is default.");
-// 			d.put("x_in", EMObject::INT, "Necessary. The x dimension of the input images.");
-// 			d.put("y_in", EMObject::INT, "Necessary. The y dimension of the input images.");
-// 			d.put("zsample", EMObject::INT, "Optional. The z dimension (Fourier sampling) of the reconstructed volume, very useful for tomographic reconstruction. Works for general volumes.");
-// 			d.put("ysample", EMObject::INT, "Optional. The y dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
-// 			d.put("xsample", EMObject::INT, "Optional. The x dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
-// 			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1");
-// 			d.put("maskwidth", EMObject::INT, "The width of the Fourier space kernel used to interpolate data to grid points" );
-// 			d.put("postmultiply", EMObject::BOOL, "A flag that controls whether or not the reconstructed volume is post multiplied in real space by the IFT of the weighting function. Default is on");
-// 			// Currently redundant
-// 			d.put("3damp", EMObject::BOOL, "this doesn't work, fixme dsaw");
-// 			d.put("hard", EMObject::FLOAT, "Optional. The quality metric threshold. Default is 0 (off).");
-// 			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
-// 			return d;
-// 		}
-// 		/** Finish reconstruction and return the complete model.
-// 		* @return The result 3D model.
-// 		*/
-// 		virtual EMData *finish(bool doift=true);
-// 
-// 		/** Insert an image slice to the reconstructor. To insert multiple
-// 		* image slices, call this function multiple times.
-// 		*
-// 		* @param slice Image slice.
-// 		* @param euler Euler angle of this image slice.
-// 		* @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
-// 		* @return 0 if OK. 1 if error.
-// 		*/
-// 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
-// 		
-// 		void insert_pixel(const float& x, const float& y, const float& z, const float dt[2]);
-// 
-// 		void insert_density_at(const float& x, const float& y, const float& z);
-// 
-// 		virtual void setup();
-// 
-// 		protected:
-// 		/** Load default settings
-// 		*/
-// 		void load_default_settings()
-// 		{
-// 			params["mode"] = 1;
-// 			params["x_in"] = 0;
-// 			params["y_in"] = 0;
-// 			params["zsample"] = 0;
-// 			params["ysample"] = 0;
-// 			params["xsample"] = 0;
-// 			params["sym"] = "c1";
-// 			params["maskwidth"] = 3;
-// 
-// 			// Currently redundant
-// 			params["3damp"] = false;
-// 			params["hard"] = 0.05;
-// 			params["quiet"] = false;
-// 		}
-// 
-// 		private:
-// 		/** Disallow copy construction
-// 		*/
-// 		BaldwinWoolfordReconstructor( const BaldwinWoolfordReconstructor& that );
-// 		/**Disallow assignment
-// 		*/
-// 		BaldwinWoolfordReconstructor& operator=( const BaldwinWoolfordReconstructor& );
-// 
-// 		float* W;
-// 		float dfreq;
-// 
-// 	};
 
-	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
-     */
-	class WienerFourierReconstructor:public Reconstructor, public ReconstructorVolumeData
+	/** Fourier space 3D reconstruction
+	 * This is a modified version of the normal FourierReconstructor which is aware of the SSNR information stored
+	 * in individual class-average headers as "ctf_snr_total" and "ctf_wiener_filtered". It will perform a reconstruction
+	 * with a nonisotropic Wiener filter applied to the final reconstruction, and will 'undo' the Wiener filter on the
+	 * individual class-averages if ctf_wiener_filtered is set. This represents something which was not possible to accomplish
+	 * in EMAN1, and should produce superior results, with proper anisotropic filtering. Still, the filtration makes the assumption
+	 * that the original SNR estimates were accurate, and that the data will average completely coherently, which is not
+	 * truly the case. This may produce models which are somewhat underfiltered in the Wiener sense, but since B-factor
+	 * corrections are not applied in the ctf.auto averager, this effect is likely already more than compensated for.
+	*/
+	class WienerFourierReconstructor : public FourierReconstructor
 	{
 	  public:
-		WienerFourierReconstructor() { load_default_settings(); };
-		virtual ~WienerFourierReconstructor() {};
+		/** Default constructor
+		* calls load_default_settings()
+		*/
+		WienerFourierReconstructor() {};
 
-		virtual void setup();
+		/** Deconstructor
+		* calls free_memory()
+		*/
+		virtual ~WienerFourierReconstructor() { }
 
-		/** Insert an image slice to the reconstructor. To insert multiple
-		 * image slices, call this function multiple times.
-		 *
-		 * @param slice Image slice.
-		 * @param euler Euler angle of this image slice.
-	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
-		 * @return 0 if OK. 1 if error.
-		 */
+
+		/** Insert a slice into a 3D volume, in a given orientation
+		* @return 0 if successful, 1 otherwise
+		* @param slice the image slice to be inserted into the 3D volume
+		* @param euler Euler angle of this image slice.
+		* @param weight This is ignored in this reconstructor, since the SSNR from the particle header is used instead
+		* @return 0 if OK. 1 if error.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
 
+
+		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
+		 * quality. Normalization and quality are returned via attributes set in the passed slice. You may freely mix calls
+		 * to determine_slice_agreement with calls to insert_slice, but note that determine_slice_agreement can only use information
+		 * from slices that have already been inserted. Attributes set in the slice are:
+		 * reconstruct_norm    the relative normalization factor which should be applied before inserting the slice
+	  	 * reconstruct_qual    a scaled quality factor (larger better) for this slice as compared to the existing reconstruction
+		 * reconstruct_absqual the absolute (not scaled based on weight) quality factor comparing this slice to the existing reconstruction
+		 * reconstruct_weight  the summed weights from all voxels intersecting with the inserted slice, larger -> more overlap with other slices
+	  	 * @param input_slice The EMData slice to be compared
+	  	 * @param euler The orientation of the slice as a Transform object
+	  	 * @param weight This is ignored except for it's sign, since the SSNR from the particle header is used instead
+		 * @param sub Flag indicating whether to subtract the slice from the volume before comparing. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true );
+
+		/** Get the reconstructed volume
+		* Normally will return the volume in real-space with the requested size. The calling application is responsible for 
+		* removing any padding.
+		* @param doift A flag indicating whether the returned object should be guaranteed to be in real-space (true) or should be left in whatever space the reconstructor generated
+		* @return The real space reconstructed volume
+		*/
 		virtual EMData *finish(bool doift=true);
 
+		/** Get the unique name of the reconstructor
+		*/
 		virtual string get_name() const
 		{
 			return NAME;
 		}
 
+		/** Get the one line description of the reconstructor
+		*/
 		virtual string get_desc() const
 		{
-			return "Experimental - Direct Fourier reconstruction taking into account the Wiener filtration of the individual images.";
+			return "Reconstruction via direct Fourier methods using one of a variety of different kernels, most of which are Gaussian based. This version also incorporates a nonisotropic Wiener filter based on SNR estimates stored in the class-average headers by the ctf.auto averager.";
 		}
 
+		/** Factory incorporation uses the pointer of this function
+		* @return a Reconstructor pointer to a newly allocated WienerFourierReconstructor
+		*/
 		static Reconstructor *NEW()
 		{
 			return new WienerFourierReconstructor();
 		}
-
-		virtual TypeDict get_param_types() const
-		{
-			TypeDict d;
-			// FIXME:: double check all of thes are need, expecially dlog and weight
-			d.put("size", EMObject::INT);
-			d.put("mode", EMObject::INT);
-			d.put("weight", EMObject::FLOAT);
-			d.put("use_weights", EMObject::BOOL);
-			d.put("dlog", EMObject::BOOL);
-			d.put("padratio", EMObject::FLOAT);
-			d.put("snr", EMObject::FLOATARRAY);
-			return d;
-		}
 		
 		static const string NAME;
-		
-	  private:
-		// Disallow copy construction
-		WienerFourierReconstructor( const WienerFourierReconstructor& that);
-		// Disallow assignment
-		WienerFourierReconstructor& operator=( const WienerFourierReconstructor& );
 
-		void load_default_settings()
-		{
-			params["size"] = 0;
-			params["mode"] = 2;
-			params["weight"] = 1.0;
-			params["use_weights"] = true;
-			params["dlog"] = false;
-			params["padratio"] = 1.0;
-		}
+	  protected:
+		
+		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
+
+		/** A function to perform the nuts and bolts of comparing an image slice
+		 * @param input_slice the slice to insert into the 3D volume
+		 * @param euler a transform3D storing the slice euler angle
+		 */
+		virtual void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
+
+		/** This is a mode-2 pixel extractor
+		 * @param xx,yy,zz voxel coordinates (need not be integers)
+		 * @param dt float pointer with 3 floats allocated for returned complex value and weight sum
+		 */
+		virtual bool pixel_at(const float& xx, const float& yy, const float& zz, float *dt);
+
+		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
+//		FourierPixelInserter3D* inserter;
+
+	  private:
+		 /** Disallow copy construction
+  		 */
+  		WienerFourierReconstructor( const WienerFourierReconstructor& that );
+  		/**Disallow assignment
+  		 */
+  		WienerFourierReconstructor& operator=( const WienerFourierReconstructor& );
+
 	};
 
 	/** Real space 3D reconstruction using back projection.
@@ -873,6 +802,7 @@ namespace EMAN
 			//params["use_weights"] = false;
 		}
 	};
+
 
 
      /* Fourier Reconstruction by nearest neighbor with 3D SSNR

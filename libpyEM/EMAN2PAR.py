@@ -1420,6 +1420,7 @@ class EMDCTaskClient(EMTaskClient):
 		count=0
 		lastjob=time.time()
 		lastserv=time.time()
+		retcode=2
 		while (1):
 			count +=1
 			# connect to the server
@@ -1447,13 +1448,16 @@ class EMDCTaskClient(EMTaskClient):
 				sendobj(sockf,("ACK ",socket.gethostname()))
 				sockf.flush()
 				signal.alarm(0)
-				if task=="EXIT" : break
+				if task=="EXIT" :
+					retcode=1
+					break
 				if self.verbose and task!=None: print "%s running task id %d"%(socket.gethostname(),task.taskid)
 				self.task=task
 			except :
 				print "No response from server, sleeping 30 sec"
 				if time.time()-lastserv>dieifnoserver :
 					print "No server for too long. Terminating"
+					retcode=3
 					break
 				time.sleep(30)
 				continue
@@ -1468,6 +1472,7 @@ class EMDCTaskClient(EMTaskClient):
 				sock.close()
 				if time.time()-lastjob>dieifidle : 
 					print "Idle too long. Terminating"
+					retcode=4
 					break
 				self.listencache()		# We will listen for precached data for 15 seconds (or sleep if another thread is listening)
 				continue
@@ -1524,6 +1529,7 @@ class EMDCTaskClient(EMTaskClient):
 				retrycount+=1
 				if retrycount>10 :
 					print "Failed in 10 attempts to send results, aborting (%d)"%task.taskid
+					retcode=10
 					break
 					
 				try:
@@ -1554,6 +1560,7 @@ class EMDCTaskClient(EMTaskClient):
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
 						time.sleep(3)
 						retry=True
+						retcode=11
 						break
 
 				try:
@@ -1577,12 +1584,15 @@ class EMDCTaskClient(EMTaskClient):
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
 			
-			if onejob : break
+			if onejob : 
+				retcode=0		# this means it's ok to spawn more jobs, the current job was a success
+				break
 			
 			lastjob=time.time()
 			time.sleep(3)
 		
-		print "Client on %s exiting. Bye !"%socket.gethostname()
+		if retcode : print "Client on %s exiting. Bye !"%socket.gethostname()
+		return retcode
 		
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""

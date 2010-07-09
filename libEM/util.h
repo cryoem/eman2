@@ -456,10 +456,10 @@ namespace EMAN
 		}
 
 		/** Calculate linear interpolation.
-		 * @param[in] p1 The first number. corresponding to (x0,y0).
-		 * @param[in] p2 The second number. corresponding to (x1,y0).
-		 * @param[in] t the distance the separates the interpolated point from p1
-		 * @return The linearly interpolated value.
+		 * @param[in] p1 The first number (at x1).
+		 * @param[in] p2 The second number (at x2).
+		 * @param[in] t (x-x1)/(x2-x1)
+		 * @return The linearly interpolated value at x.
 		 */
 		static inline float linear_interpolate(float p1, float p2, float t)
 		{

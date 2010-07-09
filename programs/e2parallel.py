@@ -42,6 +42,7 @@ import time
 import os
 import sys
 import socket
+import subprocess
 
 debug=False
 logid=None
@@ -49,7 +50,7 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","dckill","dckillclients","servmon","rerunall","killall","precache")
+	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
@@ -80,6 +81,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		rundcserver(options.port,options.verbose-1)
 		
 	elif args[0]=="dcclient" :
+		rundcclients(options.server,options.port,options.verbose-1)
+		
+	elif args[0]=="realdcclient" :
 		rundcclient(options.server,options.port,options.verbose-1)
 		
 	elif args[0]=="dckill" :
@@ -112,12 +116,20 @@ def killdcclients(server,port,verbose):
 	import EMAN2db
 	server=runEMDCServer(port,verbose,True)			# never returns
 
+def rundcclients(host,port,verbose):
+	while 1:
+		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+host,"--port="+port,"--verbose="+verbose])
+		if rc : 
+			if rc==1 : print "Client exited at server request"
+			else : print "Client exited with status code %s",str(rc)
+			break
 
 def rundcclient(host,port,verbose):
 	"""Starts a DC client running, runs forever"""
 #	while (1):
 	client=EMDCTaskClient(host,port,verbose)
-	client.run(onejob=False)
+	r=client.run(onejob=True)
+	sys.exit(r)
 #	print "New client (%d alloced)"%EMData.totalalloc
 
 def precache(files):
