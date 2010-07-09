@@ -118,7 +118,7 @@ def killdcclients(server,port,verbose):
 
 def rundcclients(host,port,verbose):
 	while 1:
-		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+host,"--port="+port,"--verbose="+verbose])
+		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+str(host),"--port="+str(port),"--verbose="+str(verbose)])
 		if rc : 
 			if rc==1 : print "Client exited at server request"
 			else : print "Client exited with status code %s",str(rc)
