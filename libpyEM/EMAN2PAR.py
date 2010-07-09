@@ -1125,7 +1125,7 @@ class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
  
-	def __init__(self,server,port,myid=None,verbose=0):
+	def __init__(self,server,port,verbose=0,myid=None):
 		EMTaskClient.__init__(self)
 		self.addr=(server,port)
 		self.verbose=verbose
