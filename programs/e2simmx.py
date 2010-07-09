@@ -166,7 +166,7 @@ class EMParallelSimMX:
 		Gets the blocks that will be processed in parallel, these are essentially ranges
 		'''
 		
-		steve_factor = 8 # increase number of jobs a bit for better distribution
+		steve_factor = 5 # increase number of jobs a bit for better distribution
 		total_jobs = steve_factor*self.num_cpus
 		
 		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)

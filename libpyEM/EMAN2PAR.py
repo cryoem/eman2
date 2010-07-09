@@ -1125,12 +1125,13 @@ class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
  
-	def __init__(self,server,port,verbose=0):
+	def __init__(self,server,port,myid=None,verbose=0):
 		EMTaskClient.__init__(self)
 		self.addr=(server,port)
 		self.verbose=verbose
 		self.lastupdate=0
 		self.task=None
+		if myid!=None : self.myid=myid
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 
 	def imalive(self,progress):

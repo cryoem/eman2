@@ -70,6 +70,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 
 	parser.add_option("--server",type="string",help="Specifies host of the server to connect to",default="localhost")
 	parser.add_option("--port",type="int",help="Specifies server port, default is automatic assignment",default=-1)
+	parser.add_option("--clientid",type="int",help="Internal use only",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
@@ -84,7 +85,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		rundcclients(options.server,options.port,options.verbose-1)
 		
 	elif args[0]=="realdcclient" :
-		rundcclient(options.server,options.port,options.verbose-1)
+		rundcclient(options.server,options.port,options.verbose-1,options.clientid)
 		
 	elif args[0]=="dckill" :
 		killdcserver(options.server,options.port,options.verbose-1)
@@ -117,17 +118,18 @@ def killdcclients(server,port,verbose):
 	server=runEMDCServer(port,verbose,True)			# never returns
 
 def rundcclients(host,port,verbose):
+	clientid=random.randint(1,2000000000)
 	while 1:
-		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+str(host),"--port="+str(port),"--verbose="+str(verbose)])
+		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+str(host),"--port="+str(port),"--verbose="+str(verbose),"--clientid="+str(clientid)])
 		if rc : 
 			if rc==1 : print "Client exited at server request"
 			else : print "Client exited with status code %s",str(rc)
 			break
 
-def rundcclient(host,port,verbose):
+def rundcclient(host,port,verbose,clientid):
 	"""Starts a DC client running, runs forever"""
 #	while (1):
-	client=EMDCTaskClient(host,port,verbose)
+	client=EMDCTaskClient(host,port,verbose,myid=clientid)
 	r=client.run(onejob=True)
 	sys.exit(r)
 #	print "New client (%d alloced)"%EMData.totalalloc
