@@ -905,7 +905,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 	float iny=(float)(input_slice->get_ysize());
 	
 	int undo_wiener=(int)input_slice->get_attr_default("ctf_wiener_filtered",0);	// indicates whether we need to undo a wiener filter before insertion
-	if (undo_wiener) throw UnexpectedBehaviorException("wiener_fourier does not yet accept already Wiener filtered class-averages. Suggest using ctf.auto averager for now.");
+//	if (undo_wiener) throw UnexpectedBehaviorException("wiener_fourier does not yet accept already Wiener filtered class-averages. Suggest using ctf.auto averager for now.");
 	
 	vector<float> snr=input_slice->get_attr("ctf_snr_total");
 	float sub=1.0;
@@ -928,7 +928,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 				if (rni>=snr.size()-1) weight=snr[snr.size()-1]*sub;
 				else {
 					rn-=rni;
-					weight=Util::linear_interpolate(snr[rni],snr[rni+1],rn)*sub;
+					weight=Util::linear_interpolate(snr[rni],snr[rni+1],rn);
 				}
 //				if (weight>500.0) printf("%f %d %d %f %f %d %f\n",weight,x,y,rx,ry,rni);
 				
@@ -944,7 +944,8 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 				zz=zz*nz;
 
 //				printf("%f\n",weight);
-				inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),weight);
+				if (undo_wiener) inserter->insert_pixel(xx,yy,zz,(input_slice->get_complex_at(x,y))*((weight+1.0f)/weight),weight*sub);
+				else inserter->insert_pixel(xx,yy,zz,input_slice->get_complex_at(x,y),weight*sub);
 			}
 		}
 	}
