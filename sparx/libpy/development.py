@@ -28,7 +28,5 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-from EMAN2_cppwrap import *
-from global_def import *
 
 # This file is intentionally left blank.
