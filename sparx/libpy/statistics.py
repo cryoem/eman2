@@ -8278,7 +8278,7 @@ def cluster_equalsize(d, m):
 	print  disp
 	for k in xrange(K):
 		groupping[k].sort()
-	
+
 	return  groupping,cent,disp
 
 
@@ -8567,13 +8567,14 @@ class pcanalyzebck:
 		self.list_of_particles = list_of_particles
 		self.dm     = dm
 		self.variance = variance
-		self.nimg   = 0
+		self.nimg   = len(dataw)
 		self.nvec   = nvec
 		self.fw     = None
 		self.fr     = None
 		self.fl     = fl
 		self.aa     = aa
 		self.avgdat = None
+		self.getncov()
 
 	"""
 	def writedat( self, data ):
@@ -8594,22 +8595,22 @@ class pcanalyzebck:
 		if not(self.avgdat is None):
 			data -= self.avgdat
 	"""
-	def get_dat( self, data, k ):
+	def get_dat( self, k ):
 		from reconstruction import backproject_swbp
 		from filter  import filt_tanl
 		vb = Util.divn_img(backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
 		if(self.fl > 0.0):
 			vb = filt_tanl(vb, self.fl, self.aa)
-		#pc = Util.infomask(vb, self.mask, True)
 		#vb -= pc[0]
 		#vb *= (refstat[1]/pc[1])
 		from numpy import zeros, float32
 		from utilities import get_image_data
-		
+
 		tmpimg = Util.compress_image_mask( vb, self.mask )
 		data = get_image_data(tmpimg)
 		if not(self.avgdat is None):
 			data -= self.avgdat
+		return data
 
 	def getncov( self ):  # used to be called usebuf
 		nx = self.mask.get_xsize()
@@ -8690,8 +8691,8 @@ class pcanalyzebck:
 		self.ncov = tmpimg.get_xsize()
 	"""
 	def analyze( self ):
-		#if self.myid==0:
-		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
+		if self.myid==0:
+			print "analyze: ", self.ncov, " nvec: ", self.nvec
 		from time import time
 		from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
@@ -8703,7 +8704,7 @@ class pcanalyzebck:
 
 		lanczos_start = time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
-		#print 'time for lanczos: ', time() - lanczos_start
+		print 'time for lanczos: ', time() - lanczos_start
 
 		if not self.MPI or self.myid==0:
                 	qmat = zeros( (kstep,kstep), float32 )
@@ -8736,7 +8737,6 @@ class pcanalyzebck:
 	def lanczos( self, kstep, diag, subdiag, V ):
 		from numpy import zeros, float32, array
 		from time import time
-		
 		all_start = time()
 	
 		ncov = self.ncov
@@ -8757,7 +8757,7 @@ class pcanalyzebck:
 		#self.fr = open( self.file, "rb" )
 		for i in xrange(self.nimg):
 			#self.read_dat(imgdata)                                     #  READ_DAT
-			self.get_dat(imgdata, i)
+			imgdata = self.get_dat(i)
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		#self.fr.close()
@@ -8791,7 +8791,7 @@ class pcanalyzebck:
 			#self.fr = open( self.file, "rb" )
 			for i in xrange(self.nimg):
 				#self.read_dat( imgdata )                                #READ_DAT
-				self.get_dat(imgdata, i)
+				imgdata = self.get_dat( i)
 				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
 				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
 			#self.fr.close()
@@ -8822,7 +8822,7 @@ class pcanalyzebck:
 
 			diag[iter] = hvec[iter]
 
-			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
+			print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
 		return kstep
 
 
