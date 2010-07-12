@@ -49,7 +49,7 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --center=1  --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
+	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",         default="-1",	       help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
