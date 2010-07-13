@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 # clstoclsmx.py - Steve Ludtke, 7/28/08
 # This program will convert a set of cls*lst files from EMAN1 into an EMAN2
