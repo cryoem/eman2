@@ -5742,7 +5742,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f ) {
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
-				if(JY > NR2) JY=JY-NROW;
+				if(JY > NR2) JY -= NROW;
 				int xma = std::min(int(0.5f+(q-JY*OY)/OX),NX2);
 				int xmi = std::max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
 				if( xmi <= xma) {
@@ -5768,14 +5768,24 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	float WNRMinv,temp;
 	float osnr = 1.0f/SNR;
 	WNRMinv = 1.0f/W(1,1);
-	for(int J=1;J<=NROW;J++)
+	for(int J=1;J<=NROW;J++)  {
+		JY = J-1;
+		if( JY > NR2)  JY -= NROW;
+		float sy = JY;
+		sy /= NROW;
+		sy *= sy;
 		for(int I=1;I<=NNNN;I+=2) {
 			KX	     = (I+1)/2;
 			temp	     = W(KX,J)*WNRMinv;
 			WW           = temp/(temp*temp + osnr);
+			// This is supposed to fix fall-off due to Gaussian function in the weighting function
+			float sx = KX-1;
+			sx /= NSAM;
+			WW *= exp(qt*(sy + sx*sx));
 			PROJ(I,J)   *= WW;
 			PROJ(I+1,J) *= WW;
 		}
+	}
 	delete W; W = 0;
 	PROJ->do_ift_inplace();
 	PROJ->depad();
