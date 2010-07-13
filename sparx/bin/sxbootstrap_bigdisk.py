@@ -247,7 +247,7 @@ def main():
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile outdir bufprefix --nvol --nbufvol --seedbase --snr --genbuf --ngroup --npad --CTF"
+	usage = progname + " prjstack wgtfile outdir bufprefix --zero_wgts --MPI --core--verbose --nvol --nbufvol --seedbase --snr --genbuf --ngroup --npad --CTF"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--nvol",     type="int",                         help="number of bootstrap volumes to be generated")
 	parser.add_option("--nbufvol",  type="int",                         help="number of fftvols in the memory")
