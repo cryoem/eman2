@@ -11,7 +11,7 @@ import sys
       
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " input_stack1 ... output_stack --subavg=average_image --rad=mask_radius --nvec=number_of_eigenvectors --mask=maskfile"
+	usage = progname + " input_stack1 ... output_stack --sdir --usebuf --MPI --shuffle --subavg=average_image --rad=mask_radius --nvec=number_of_eigenvectors --mask=maskfile"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--subavg",  type="string",       default="",    help="subtract average")
 	parser.add_option("--rad",     type="int",          default=-1,    help="radius of mask")
