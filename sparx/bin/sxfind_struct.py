@@ -38,7 +38,7 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights --MPI --trials"
+	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --debug --noweights --trials --given --first_zero --weights --MPIGA--pcross --pmut --maxgen --MPI --trials"
 	parser   = OptionParser(usage, version = SPARXVERSION)
 	parser.add_option("--ir",         type="float",        default=-1,       help="Inner radius of particle (set to 1)")
 	parser.add_option("--ou",         type="float",        default=-1,       help="Outer radius of particle < int(nx/2)-1")
