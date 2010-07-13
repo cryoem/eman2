@@ -223,7 +223,7 @@ def main():
 	    arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " prjstack wgtfile [refvol] --voronoi --MPI --CTF --delta --fl --fh --nexclude --exclude_bothside"
+	usage = progname + " prjstack wgtfile [refvol] --voronoi --verbose --MPI --CTF --delta --fl --fh --nexclude --exclude_bothside"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--voronoi",  action="store_true", default=False, help="use Voronoi diagram to create weights")
 	parser.add_option("--delta",    type="float",        default=1.0,   help="for weights calculation")
