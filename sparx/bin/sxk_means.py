@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=10 --trials=2 --opt_method='cla' --maxit=100 --rand_seed=10 --crit='all' --F=0.9 --T0=2.0 --init_method='rnd' --normalize --CTF --MPI --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=10 --trials=2 --debug --opt_method='cla' --maxit=100 --rand_seed=10 --crit='all' --F=0.9 --T0=2.0 --init_method='rnd' --normalize --CTF --MPI --CUDA"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help="Number of classes (default 2)")
 	parser.add_option("--trials",     type="int",          default=1,         help="Number of trials of K-means (default 1)")
