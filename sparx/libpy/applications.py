@@ -3171,7 +3171,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
@@ -3444,7 +3444,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -3522,7 +3522,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1
 
 	if CTF :
 		#  ERROR if ctf applied
-		if(data[0].get_attr("ctf_applied") > 0):  ERROR("mref_ali3d does not work for CTF-applied data","mref_ali3d",1)
+		if data[0].get_attr("ctf_applied") > 0:  ERROR("mref_ali3d does not work for CTF-applied data", "mref_ali3d", 1)
 		from reconstruction import recons3d_4nn_ctf
 		from filter import filt_ctf
 	else   : from reconstruction import recons3d_4nn
@@ -3668,21 +3668,15 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
-	nx = 0
+
 	if os.path.exists(outdir):
-		nx = 1
-		ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1,myid)
+		ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
 
-
-	if(myid == main_node):
-		os.mkdir(outdir)
-	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	nx = int(nx[0])
-	if(nx != 0):
-		import sys
-		exit()
+	if myid == main_node:	os.mkdir(outdir)
 
 	mpi_barrier(MPI_COMM_WORLD)
+
 	from time import time	
 
 	if debug:
@@ -3808,18 +3802,18 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		varf = None
 
 
-	if myid==main_node:
+	if myid == main_node:
 		for  iref in xrange(numref):
 			get_im(ref_vol, iref).write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier( MPI_COMM_WORLD )
 
-	if(CTF):
-		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d does not work for CTF-applied data","mref_ali3d",1)
+	if CTF:
+		if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
 
-	if(debug) :
+	if debug:
 		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 
