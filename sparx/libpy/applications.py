@@ -34,6 +34,30 @@ from global_def import *
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):
+	"""
+		Name
+			ali2d - Perform 2-D reference-free alignment of an image series
+		Input
+			stack: set of 2-D images in a stack file (format hdf or bdb), images have to be square (nx=ny)
+			maskfile: optional mask file to be used internally during alignment
+			inner_radius: inner radius for rotational correlation > 0 (set to 1)
+			outer_radius: outer radius for rotational correlation < nx/2-1 (set to nx/2-2, should be set to the radius of the particle)
+			ring_step: step between rings in rotational correlation > 0 (set to 1)
+			x_range: range for translation search in x direction, search is +/xr 
+			y_range: range for translation search in y direction, search is +/yr
+			translation_step: step of translation search in both directions, 
+			center_type
+			max_iteration: maximum number of iterations the program will perform 
+			CTF: if this flag is set, the program will use CTF information provided in file headers (for details see I_O). (default no CTF)
+			snr: signal-to-noise ratio of the data (default SNR=1.0)
+			Fourvar: use Fourier variance to weight the reference (recommended, default False)
+			function: name of the user-supplied-function that prepares reference image for each iteration (default ref_ali2d)
+			rand_alpha: if this flag is set, the program start with random alpha angle (default no rand_alpha)
+			MPI: if this flag is set, use MPI version
+		Output
+			output_directory: directory name into which the output files will be written.
+			header: the alignment parameters are stored in the headers of input files as 'xform.align2d'.
+	"""
 	if MPI:
 		ali2d_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
 		return
@@ -334,6 +358,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	ftp = file_type(stack)
 	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		print_begin_msg("ali2d_MPI")
@@ -920,9 +945,11 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	
 	ftp = file_type(stack)
 
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ORGali2d_c_MPI ", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -1254,6 +1281,24 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 '''
 
 def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d"):
+	"""
+		Name
+			local_ali2d - Perform local refinement of 2-D alignment of an image series
+		Input
+			stack: set of 2-D images in a stack file (format hdf), images have to be squares 
+			maskfile: optional mask file to use internally during alignment
+			outer_radius: outer radius for rotational correlation < int(nx/2)-1 
+			br: brackets for the search of orientation parameters
+			center_type: center the average
+			epsilon: stopping criterion
+			max_iter: maximum number of iterations the program will perform 
+			CTF: default no CTF
+			snr: Signal-to-Noise Ratio of the data
+			function: name of the user-supplied function
+		Output
+			output_directory: directory name into which the output files will be written.
+			header: the alignment parameters are stored in the headers of input files as 'alpha', 'sx', 'sy', 'mirror'
+	"""
 # 2D alignment using amoeba and gridding interpolation
 	from alignment    	import kbt
 	from utilities    	import model_circle, amoeba, compose_transform2, drop_image, get_arb_params, get_image, get_params2D, set_params2D
@@ -1400,6 +1445,29 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 
 
 def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000, MPI=False):
+	"""
+		Name
+			mref_ali2d - Perform 2-D multi-reference alignment of an image series
+		Input
+			stack: set of 2-D images in a stack file, images have to be squares
+			refim: set of initial reference 2-D images in a stack file 
+			maskfile: optional maskfile to be used in the alignment
+			inner_radius: inner radius for rotational correlation > 0
+			outer_radius: outer radius for rotational correlation < nx/2-1
+			ring_step: step between rings in rotational correlation >0
+			x_range: range for translation search in x direction, search is +/xr 
+			y_range: range for translation search in y direction, search is +/yr 
+			translation_step: step of translation search in both directions
+			center: center the average
+			max_iter: maximum number of iterations the program will perform
+			CTF: if this flag is set, the program will use CTF information provided in file headers
+			snr: signal-to-noise ratio of the data
+			rand_seed: the seed used for generating random numbers
+			MPI: whether to use MPI version
+		Output
+			output_directory: directory name into which the output files will be written.
+			header: the alignment parameters are stored in the headers of input files as 'xform.align2d'.
+	"""
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 	if MPI:
 		mref_ali2d_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, user_func_name, rand_seed)
@@ -1669,8 +1737,10 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	# create the output directory, if it does not exist
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+	
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 		os.mkdir(outdir)
 
 	if myid == main_node:
@@ -2895,6 +2965,34 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
 	    user_func_name = "ref_ali3d", fourvar = True, debug = False, MPI = False):
+	"""
+		Name
+			ali3d - Perform 3-D projection matching given initial reference volume and image series
+		Input
+			stack: set of 2-D images in a stack file, images have to be squares
+			ref_vol: initial reference volume
+			outdir: directory name into which the results will be written
+			maskfile: filename of the file containing 3D mask.
+			ir: inner radius for rotational correlation > 0 
+			ou: outer radius for rotational correlation <int(nx/2)-1 
+			rs: steps between rings in rotational correlation >0
+			xr: range for translation search in x direction in each iteration, search is +/xr
+			yr: range for translation search in y direction in each iteration, search is +/yr
+			ts: step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional.
+			delta: angular step for the reference projections in respective iterations
+			an: angular neighborhood for local searches
+			center: average center method
+			max_iter: maximum iterations at each angle step
+			CTF: if the flag is present, program will use the CTF information stored in file headers
+			snr: signal noise ratio used in the 3D reconstruction
+			ref_a: method for creating quasi-uniform distribution of the projection directions of reference projections: "S" - spiral
+			sym: symmetry of the refined structure
+			function: name of the user-supplied-function
+			MPI: if presetm use MPI version
+		Output
+			output_directory: directory name into which the output files will be written.
+			header: the alignment parameters are stored in the headers of input files as Transform Object xform.proj
+	"""
 	if MPI:
 		ali3d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
 	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name,
@@ -3072,8 +3170,11 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1)
+	mpi_barrier(MPI_COMM_WORLD)
+	
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -3569,12 +3670,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	nx = 0
+	if os.path.exists(outdir):
+		nx = 1
+		ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1,myid)
+
+
 	if(myid == main_node):
-		if os.path.exists(outdir):
-			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1,myid)
-		else:
-			os.mkdir(outdir)
+		os.mkdir(outdir)
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	nx = int(nx[0])
 	if(nx != 0):
@@ -3974,12 +4076,12 @@ def mref_ali3d_MPI_(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1,
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	nx = 0
+
+	if os.path.exists(outdir):
+		nx = 1
+		ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI_ ", 1,myid)
 	if(myid == main_node):
-		if os.path.exists(outdir):
-			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', " ", 1)
-		else:
-			os.mkdir(outdir)
+		os.mkdir(outdir)
 	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	nx = int(nx[0])
 	if(nx != 0):
@@ -4219,8 +4321,10 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3dm_MPI_ ", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
 	if(myid == main_node):
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -4612,8 +4716,11 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3dm_MPI ", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	if(myid == main_node):
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5213,8 +5320,10 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		from filter import filt_ctf
 
 	main_node = 0
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3d_MPI ", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3d_MPI ", 1,myid)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -5685,8 +5794,10 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		if(filename[0:len(prefix_of_micrograph)] == prefix_of_micrograph):
 			mic_name_list.append(micname)
 			nima += 1
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "autowin_MPI ", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+	
 	if(myid == int(main_node)): # directory cleaning only performed by main node
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "autowin_MPI ", 1,myid)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
@@ -6010,8 +6121,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	if myid == main_node:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6924,8 +7038,11 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 	main_node      = 0
 	if(myid == 0): main_node = randint(0,number_of_proc-1)
 	main_node      = mpi_bcast(main_node, 1, MPI_INT, 0, MPI_COMM_WORLD)	
+	
+	if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program","pw2sp_MPI ",1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	if (myid == int(main_node)):  # only main node do cleaning & creating jobs
-		if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program"," ",1)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	# get the total micrograph number 
@@ -7034,6 +7151,25 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	return opt_params
 
 def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
+	"""
+		Name
+			sxali_vol - align a 3D structure with respect of a 3D reference structure
+		Input
+			aligned_volume.hdf: 3D structure to be aligned.
+		reference_volume.hdf
+			3D reference structure.
+		ang_scale
+			correct angles are expected to be within +/-ang_scale of the values preset in the header of the structure to be aligned
+		shift_scale
+			correct shifts are expected to be within +/-shift_scale of the values preset in the header of the structure to be aligned
+		mag_scale
+			correct magnification is expected to be within +/-mag_scale of the value preset in the header of the structure to be aligned
+		r
+			radius of a spherical mask centered at nx/2, ny/2, nz/2
+		Note - there are no defaults for three scale parameters. At least one has to appear.
+	"""
+
+
 	#rotation and shift
 	from alignment    import ali_vol_func
 	from utilities    import get_image, model_circle, get_params3D, set_params3D
@@ -8088,6 +8224,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	out_dir = out_dir.rstrip('/')
 
 	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_MPI ", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		t_start = start_time()
@@ -8205,7 +8342,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	if ext == "bdb": DB = db_open_dict(stack)
 	for i in xrange(nimage):
 		img = EMData()
-		img.read_image(stack, i, True)
+		img.read_image(stack, i,True)
 
 		if fimport != None:
 			line = fimp.readline()
