@@ -3175,9 +3175,9 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
+		print_begin_msg("ali3d_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-
 
 	if debug:
 		from time import sleep
@@ -3216,7 +3216,6 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		print_begin_msg("ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Output directory            : %s\n"%(outdir))
