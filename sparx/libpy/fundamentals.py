@@ -113,6 +113,16 @@ def ccf(e, f, center=True):
 	return correlation(e,f,fp_flag.CIRCULANT, center)
 
 def ccfn(e, f, center=True):
+	"""
+		Name
+			ccfn - calculate the normalized circulant cross-correlation function between two images.
+		Input
+			e: input image (real)
+			ref: second input image (real) (in the alignment problems, it should be the reference image).
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			normalized circulant cross-correlation function between image and ref. Real.
+	"""
 	return correlation(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def ccfp(e, f, center=True):
