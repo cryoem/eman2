@@ -209,7 +209,7 @@ int calc_max_index() const;
  * @return A sorted list of pixels with their values, and
  *     locations. Their values are higher than threshold.
  */
-vector<Pixel> calc_highest_locations(float threshold);
+vector<Pixel> calc_highest_locations(float threshold)  const;
 
 /** Calculate and return a sorted list of N highest pixels in the map
  *

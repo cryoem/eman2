@@ -74,17 +74,30 @@ class EMTaskCustomer:
 	def __init__(self,target):
 		"""Specify the type and target host of the parallelism server to use. 
 	dc[:hostname[:port]] - default hostname localhost, default port 9990
+	thread:nthreads[:scratch_dir]
 	"""
 		target=target.lower()
 		self.servtype=target.split(":")[0]
-		if self.servtype!="dc" : raise Exception,"Only 'dc' servertype currently supported"
 		
-		self.addr=target.split(":")[1:]
-		if len(self.addr)==0 : self.addr=("",9990)
-		elif len(self.addr)==1 : self.addr.append(9990)
-		else : self.addr[1]=int(self.addr[1])
-		self.addr=tuple(self.addr)
-		signal.signal(signal.SIGALRM,DCcustomer_alarm)	# this is used for network timeouts
+		if self.servtype=="dc" :
+			self.addr=target.split(":")[1:]
+			if len(self.addr)==0 : self.addr=("",9990)
+			elif len(self.addr)==1 : self.addr.append(9990)
+			else : self.addr[1]=int(self.addr[1])
+			self.addr=tuple(self.addr)
+			signal.signal(signal.SIGALRM,DCcustomer_alarm)	# this is used for network timeouts
+		elif self.servtype=="thread":
+			self.groupn=0
+			self.maxthreads=int(target.split(":")[1])
+			try: self.scratchdir=target.split(":")[2]
+			except: self.scratchdir="/tmp"
+			self.handler=EMLocalTaskHandler(self.maxthreads,self.scratchdir)
+		else : raise Exception,"Only 'dc' and 'thread' servertypes currently supported"
+
+	def __del__(self):
+		if self.servtype=="thread" :
+			print "Cleaning up thread server. Please wait."
+			self.handler.stop()
 
 	def wait_for_server(self,delay=10):
 		print "%s: Server communication failure, sleeping %d secs"%(time.ctime(),delay)
@@ -113,6 +126,8 @@ class EMTaskCustomer:
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet. If wait is set, it will not return until ncpu > 1"""
+		if self.servtype=="thread" : return self.maxthreads
+		
 		if self.servtype=="dc" :
 			n=0
 			while (n==0) :
@@ -134,6 +149,10 @@ class EMTaskCustomer:
 	def new_group(self):
 		"""request a new group id from the server for use in grouping subtasks"""
 		
+		if self.servtype=="thread":
+			self.groupn+=1
+			return self.groupn
+		
 		if self.servtype=="dc" :
 			try: return EMDCsendonecom(self.addr,"NGRP",None)
 			except:
@@ -142,6 +161,9 @@ class EMTaskCustomer:
 
 	def rerun_task(self,tid):
 		"""Trigger an already submitted task to be re-executed"""
+		if self.servtype=="thread" :
+			self.handler.stop()
+			raise Exception,"Threaded parallelism doesn't support respawning tasks"
 		
 		if self.servtype=="dc":
 			while (1):
@@ -164,14 +186,16 @@ class EMTaskCustomer:
 			try: task.user=os.getlogin()
 			except: task.user="unknown"
 			
-			for k in task.data:
-				try :
-					if task.data[k][0]=="cache" :
-						task.data[k]=list(task.data[k])
-						task.data[k][1]=abs_path(task.data[k][1])
-				except: pass
 			
 		if self.servtype=="dc" :
+			for task in tasks:
+				for k in task.data:
+					try :
+						if task.data[k][0]=="cache" :
+							task.data[k]=list(task.data[k])
+							task.data[k][1]=abs_path(task.data[k][1])
+					except: pass
+
 			# Try to open a socket until we succeed
 			try: 
 				signal.alarm(240)		# sometime there is a lot of congestion here...
@@ -391,7 +415,70 @@ accessible to the server."""
 
 	def quit(self):
 		pass
+
+#######################
+# Here we define the classes for local threaded parallelism
+import shutil
+class EMLocalTaskHandler():
+	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
+	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
+	def __init__(self,nthreads=2,scratchdir="/tmp"):
+		self.maxthreads=nthreads
+		self.running=[]			# running subprocesses
+		self.completed=set()	# completed subprocesses
+		self.scratchdir="%s/e2tmp.%d"%random.randint(1,2000000000)
+		self.maxid=0
+		self.nextid=0
+		self.doexit=0
 	
+		os.makedirs(self.scratchdir)
+		self.thr=threading.Thread(target=self.run)
+		self.thr.start()
+	
+	def stop(self):
+		"""Called externally (by the Customer) to nicely shut down the task handler"""
+		self.doexit=1
+		self.thr.join()
+	
+	def newTask(self,task):
+		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"w"),-1)
+		self.maxid+=1
+	
+	def run(self):
+		
+		while(1):
+			time.sleep(1)		# only go active at most 1/second
+			if self.doexit==1:
+#				shutil.rmtree(self.scratchdir)
+				break
+			
+			for i,p in enumerate(self.proc):
+				# Check to see if the task is complete
+				if p[0].poll()!=None :
+					
+					# This means that the task failed to execute properly
+					if p[0].returncode!=0 :
+						print "Error running task : ",p[1]
+						self.thr.interrupt_main()
+						sys.exit(1)
+					
+					print "Task complete ",p[1]
+					# if we get here, the task completed
+					self.completed.add(p[1])
+			
+			self.proc=[i for i in self.proc if i[1] not in self.completed]	# remove completed tasks
+			
+			while nextid<maxid and len(self.running)<self.maxthreads:
+				print "Launch task ",self.nextid
+				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d"%(self.scratchdir,self.nextid)],stdout=PIPE)
+				self.running.append((proc,self.nextid))
+				self.nextid+=1
+				
+
+#######################
+#  Here we define the classes for MPI parallelism
+
 
 #######################
 #  Here we define the classes for publish and subscribe parallelism

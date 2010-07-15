@@ -669,9 +669,49 @@ The basic design of EMAN Processors: <br>\
 		protected:
 		int bgsize;
 	};
+	
+	/** Segment a volume into subvolumes based on a center separation value. For linear densities
+	 * such as skeletons this should fill linear regions with uniformly separated points
+	 *
+	 *@author Steve Ludtke
+	 *@date 2010/07/14
+	 */
+	class DistanceSegmentProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
 
-	/** 
-	 *@param ctf[in] A Ctf object to use
+		virtual EMData* process(const EMData * const image);
+		void process_inplace( EMData * image);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d ;
+			d.put("thr",EMObject::FLOAT,"Optional : Isosurface threshold value. Pixels below this will not be segment centers (default = 0.9)");
+			d.put("minsegsep",EMObject::FLOAT,"Required: Minimum segment separation in pixels. Segments too close will trigger a reseed");
+			d.put("maxsegsep",EMObject::FLOAT,"Required: Maximum segment separation in pixels. Segments too close will trigger a reseed");
+			d.put("verbose",EMObject::INT,"Be verbose while running");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new DistanceSegmentProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Segments a volume into pieces separated by distances in the specified range.";
+		}
+
+		static const string NAME;
+		
+	};
+
+	/** Segment a volume into ~n subvolumes using K-means classification
 	 *
 	 *@author Steve Ludtke
 	 *@date 2008/11/03

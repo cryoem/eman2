@@ -513,7 +513,7 @@ int EMData::calc_max_index() const
 }
 
 
-vector<Pixel> EMData::calc_highest_locations(float threshold)
+vector<Pixel> EMData::calc_highest_locations(float threshold) const 
 {
 	ENTERFUNC;
 

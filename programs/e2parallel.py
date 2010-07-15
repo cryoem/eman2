@@ -50,7 +50,7 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache")
+	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache","localclient")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
@@ -72,6 +72,8 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	parser.add_option("--port",type="int",help="Specifies server port, default is automatic assignment",default=-1)
 	parser.add_option("--clientid",type="int",help="Internal use only",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--taskin", type="string",help="Internal use only. Used when executing local threaded tasks.")
+	parser.add_option("--taskout", type="string",help="Internal use only. Used when executing local threaded tasks.")
 #	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
@@ -96,6 +98,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="precache" :
 		precache(args[1:])
 
+	elif args[0]=="localclient" :
+		runlocaltask(options.taskfile)
+
 	elif args[0]=="rerunall":
 		rerunall()
 
@@ -105,6 +110,17 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="servmon" :
 		runservmon()
 		
+def runlocaltask(taskout,taskin):
+	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to stdout. """
+	from Cpickle import load,dumps
+	print "Executing %s"%taskfile
+	task=load(file(taskin,"r"))
+	
+	try: dump(task.execute(None),file(taskout,"w"),-1)
+	except: sys.exit(1)		# Error !
+	
+	sys.exit(0)
+
 def rundcserver(port,verbose):
 	"""Launches a DCServer. If port is <1 or None, will autodetermine. Does not return."""
 	import EMAN2db

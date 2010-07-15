@@ -79,6 +79,7 @@ const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
+const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string InvertCarefullyProcessor::NAME = "math.invert.carefully";
 const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
@@ -272,6 +273,7 @@ template <> Factory < Processor >::Factory()
 	force_add<AbsoluateValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
+	force_add<DistanceSegmentProcessor>();
 	force_add<ValuePowProcessor>();
 	force_add<ValueSquaredProcessor>();
 	force_add<ValueSqrtProcessor>();
@@ -815,6 +817,110 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	image->update();
 
 }
+
+void DistanceSegmentProcessor::process_inplace(EMData *image)
+{
+	printf("Process inplace not implemented. Please use process.\n");
+	return;
+}
+
+
+EMData *DistanceSegmentProcessor::process(const EMData * const image)
+{
+	EMData * result = image->copy();
+
+	float thr = params.set_default("thr",0.9);
+	float minsegsep = params.set_default("minsegsep",5.0f);
+	float maxsegsep = params.set_default("maxsegsep",5.1f);
+	int verbose = params.set_default("verbose",0);
+
+	vector<Pixel> pixels=image->calc_highest_locations(thr);
+	
+	vector<float> centers(3);	// only 1 to start
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+//	int nxy=nx*ny;
+
+	// seed the process with the highest valued point
+	centers[0]=pixels[0].x;
+	centers[1]=pixels[0].y;
+	centers[2]=pixels[0].z;
+	pixels.erase(pixels.begin());
+	
+	// outer loop. We add one center per iteration
+	// This is NOT a very efficient algorithm, it assumes points are fairly sparse
+	while (pixels.size()>0) {
+		// iterate over pixels until we find a new center (then stop), delete any 'bad' pixels
+		// no iterators because we remove elements
+		int found=0;
+		for (unsigned int i=0; i<pixels.size() && found==0; i++) {
+			
+			Pixel p=pixels[i];
+			// iterate over existing centers to see if this pixel should be removed
+			for (unsigned int j=0; j<centers.size(); j+=3) {
+				float d=Util::hypot3(centers[j]-p.x,centers[j+1]-p.y,centers[j+2]-p.z);
+				if (d<minsegsep) {		// conflicts with existing center, erase
+					pixels.erase(pixels.begin()+i);
+					i--;
+					break;
+				}
+			}
+		}
+			
+		for (unsigned int i=0; i<pixels.size() && found==0; i++) {
+			Pixel p=pixels[i];
+
+			// iterate again to see if this may be a new valid center
+			for (unsigned int j=0; j<centers.size(); j+=3) {
+				float d=Util::hypot3(centers[j]-p.x,centers[j+1]-p.y,centers[j+2]-p.z);
+				if (d<maxsegsep) {		// we passed minsegsep question already, so we know we're in the 'good' range
+					centers.push_back(p.x);
+					centers.push_back(p.y);
+					centers.push_back(p.z);
+					pixels.erase(pixels.begin()+i);	// in the centers list now, don't need it any more
+					found=1;
+					break;
+				}
+			}
+		}
+		
+		// If we went through the whole list and didn't find one, we need to reseed again
+		if (!found && pixels.size()) {
+			if (verbose) printf("New chain");
+			centers.push_back(pixels[0].x);
+			centers.push_back(pixels[0].y);
+			centers.push_back(pixels[0].z);
+			pixels.erase(pixels.begin());
+		}
+		
+		if (verbose) printf("%d points found\n",(int)(centers.size()/3));
+	}
+
+	// after we have our list of centers classify pixels
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nz; x++) {
+				if (image->get_value_at(x,y,z)<thr) {
+					result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
+					continue;
+				}
+				int bcls=-1;			// best matching class
+				float bdist=(float)(nx+ny+nz);	// distance for best class
+				for (unsigned int c=0; c<centers.size()/3; c++) {
+					float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
+					if (d<bdist) { bdist=d; bcls=c; }
+				}
+				result->set_value_at(x,y,z,(float)bcls);		// set the pixel to the class number
+			}
+		}
+	}
+
+	result->set_attr("segment_centers",centers);
+
+	return result;
+}
+
 
 EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
