@@ -136,34 +136,112 @@ def ccfn(e, f, center=True):
 	return correlation(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def ccfp(e, f, center=True):
+	"""
+		Name
+			ccfp - calculate the cross-correlation function between two images
+		Input
+			e: input image (real)
+			ref: second input image (real)
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			cross-correlation function between image and ref. Real.
+	"""
 	return correlation(e,f,fp_flag.PADDED, center)
 
 def ccfnp(e, f, center=True):
+	"""
+		Name
+			ccfnp - calculate the normalized cross-correlation function between two images.
+		Input
+			e: input image (real)
+			ref: second input image (real).
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			normalized cross-correlation function between image and ref. Real.
+	"""
 	return correlation(e,f,fp_flag.PADDED_NORMALIZED, center)
 
 def ccfpl(e, f, center=True):
+	"""
+		Name
+			ccfpl - calculate the cross-correlation function between two images	
+		Input
+			e: input image (real)
+			ref: second input image (real) 
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			cross-correlation function between image and ref. Real. 
+	"""
 	return correlation(e,f,fp_flag.PADDED_LAG, center)
 
 def ccfnpl(e, f, center=True):
+	"""
+		Name
+			ccfnpl - calculate the normalized cross-correlation function between two images
+		Input
+			e: input image (real)
+			ref: second input image (real) 
+			center: if set to True (default), the origin of the result is at the center
+	"""
 	return correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
     
 # Convolution functions
 def cnv(e, f, center=True):
+	"""
+		Name
+			cnv - calculate the circulant convolution function between two images
+		Input
+			e: input image, can be either real or Fourier
+			ref: second input image, can be either real or Fourier.
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			circulant convolution function between image and ref. Real.
+	"""
 	return convolution(e,f,fp_flag.CIRCULANT, center)
 
 def cnvn(e, f, center=True):
+	"""
+		Name
+			cnvn - calculate the normalized circulant convolution function between two images
+		Input
+			e: input image (real)
+			ref: second input image (real).
+			center: if set to True (default), the origin of the result is at the center	
+		Output
+			normalized circulant convolution function between image and ref. Real. 
+	"""
 	return convolution(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def cnvp(e, f, center=True):
 	return convolution(e,f,fp_flag.PADDED, center)
 
 def cnvnp(e, f, center=True):
+	"""
+		Name
+			cnvnp - calculate the normalized convolution function between two images
+		Input
+			e: input image (real)
+			ref: second input image (real) 
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			normalized convolution function between image and ref. Real. 
+	"""
 	return convolution(e,f,fp_flag.PADDED_NORMALIZED, center)
 
 def cnvpl(e, f, center=True):
 	return convolution(e,f,fp_flag.PADDED_LAG, center)
 
 def cnvnpl(e, f, center=True):
+	"""
+		Name
+			cnvnpl - calculate the normalized convolution function between two images
+		Input
+			e: input image (real)
+			ref:second input image (real) 
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			convolution function between image and ref. Real.
+	"""
 	return convolution(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
     
     
