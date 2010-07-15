@@ -213,6 +213,16 @@ def cnvn(e, f, center=True):
 	return convolution(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def cnvp(e, f, center=True):
+	"""
+		Name
+			cnvp - calculate the convolution function between two images 
+		Input
+			e: input image (real)
+			ref: second input image (real).
+			center: if set to True (default), the origin of the result is at the center			
+		Output
+			convolution function between image and ref. Real.
+	"""
 	return convolution(e,f,fp_flag.PADDED, center)
 
 def cnvnp(e, f, center=True):
@@ -229,6 +239,16 @@ def cnvnp(e, f, center=True):
 	return convolution(e,f,fp_flag.PADDED_NORMALIZED, center)
 
 def cnvpl(e, f, center=True):
+	"""
+		Name
+			cnvpl - calculate the convolution function between two images
+		Input
+			e: input image (real)
+			ref: second input image (real) 
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			convolution function between image and ref. Real. 
+	"""
 	return convolution(e,f,fp_flag.PADDED_LAG, center)
 
 def cnvnpl(e, f, center=True):
@@ -265,7 +285,16 @@ def scfnpl(e, center=True):
 	return self_correlation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
  
 def cyclic_shift(img, dx=0, dy=0, dz=0):
-	"""Cyclically shift an image by an integer number of pixels.
+	"""
+		Name
+			cyclic_shift - cyclically shift an image by an integer number of pixels
+		Input
+			image: input image
+			ix: (optional) integer number of pixels by which the image has to be shifted in the x direction, can be negative
+			iy: (optional) integer number of pixels by which the image has to be shifted in the y direction, can be negative
+			iz: (optional) integer number of pixels by which the image has to be shifted in the z direction, can be negative
+		Output
+			output image
 	"""
 	e = img.copy()
 	Util.cyclicshift(e,{"dx":dx,"dy":dy,"dz":dz})
@@ -324,7 +353,16 @@ def fftip(e):
 
 def fpol(image, nnx, nny=0, nnz=0, RetReal = True):
 	"""
-		Interpolate image up by padding its Fourier transform with zeroes
+		Name
+			fpol -Interpolate image up by padding its Fourier transform with zeroes
+		Input
+			image: image to be interpolated.
+			nnx: new nx dimension
+			nny: new ny dimension (default = 0, meaning equal to the original ny)
+			nnz: new nz dimension (default = 0, meaning equal to the original nz)
+			RetReal: Logical flag, if True, the returned image is real, if False, it is Fourier
+		Output
+			the output interpolated up image
 	"""
 	return  image.FourInterpol(nnx, nny, nnz, RetReal)
 
