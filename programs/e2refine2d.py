@@ -401,10 +401,6 @@ def check_e2refin2d_args(options): # this function is required by the workflow, 
   	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
   			error_message.append("The parallel option %s does not make sense" %options.parallel)
-  		elif options.parallel[:2] != "dc":
-  			error_message.append("Only dc parallelism is currently supported")
- 		elif len(options.parallel.split(":")) != 3:
-  			error_messages.append("dc parallel options must be formatted like 'dc:localhost:9990'")
   		
   	return error_message
 

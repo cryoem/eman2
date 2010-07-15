@@ -1050,7 +1050,7 @@ class EmanOrientationGenerator : public OrientationGenerator
 		{
 			TypeDict d = OrientationGenerator::get_param_types();
 			d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
-			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations in a small local area, default is false.");
+			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations in a small local area, default is true.");
 			d.put("n", EMObject::INT, "The number of orientations to generate. This option is mutually exclusively of the delta argument.Will attempt to get as close to the number specified as possible.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 			d.put("alt_min", EMObject::FLOAT, "Minimum altitude value to include (alt=0 is Z axis). Default=0");

@@ -178,14 +178,17 @@ class EMTaskCustomer:
 					continue
 
 	def send_tasks(self,tasks):
-		"""Send a group of tasks to the server. Returns a taskid."""
+		"""Send a group of tasks to the server. Returns a list of taskids."""
 
 		ret=[]
 
 		for task in tasks:
 			try: task.user=os.getlogin()
 			except: task.user="unknown"
-			
+		
+		if self.servtype=="thread":
+			return [self.handler.add_task(t) for t in tasks]
+
 			
 		if self.servtype=="dc" :
 			for task in tasks:
@@ -218,14 +221,17 @@ class EMTaskCustomer:
 		try: task.user=os.getlogin()
 		except: task.user="unknown"
 		
-		for k in task.data:
-			try :
-				if task.data[k][0]=="cache" :
-					task.data[k]=list(task.data[k])
-					task.data[k][1]=abs_path(task.data[k][1])
-			except: pass
+		if self.servtype=="thread":
+			return self.handler.add_task(task)
 		
 		if self.servtype=="dc" :
+			for k in task.data:
+				try :
+					if task.data[k][0]=="cache" :
+						task.data[k]=list(task.data[k])
+						task.data[k][1]=abs_path(task.data[k][1])
+				except: pass
+				
 			try: 
 				signal.alarm(60)
 				ret=EMDCsendonecom(self.addr,"TASK",task)
@@ -244,6 +250,9 @@ class EMTaskCustomer:
 	def check_task(self,taskid_list):
 		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
 		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
+		if self.servtype=="thread" :
+			return self.handler.check_task(taskid_list)
+		
 		if self.servtype=="dc":
 			try:
 				signal.alarm(60)
@@ -260,6 +269,10 @@ class EMTaskCustomer:
 	
 	def get_results(self,taskid,retry=True):
 		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
+		
+		if self.servtype=="thread" :
+			return self.handler.get_results(taskid)
+		
 		if self.servtype=="dc":
 			try:
 				signal.alarm(60)
@@ -419,17 +432,21 @@ accessible to the server."""
 #######################
 # Here we define the classes for local threaded parallelism
 import shutil
+import subprocess
+import thread,threading
 class EMLocalTaskHandler():
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
+	lock=threading.Lock()
 	def __init__(self,nthreads=2,scratchdir="/tmp"):
 		self.maxthreads=nthreads
 		self.running=[]			# running subprocesses
 		self.completed=set()	# completed subprocesses
-		self.scratchdir="%s/e2tmp.%d"%random.randint(1,2000000000)
+		self.scratchdir="%s/e2tmp.%d"%(scratchdir,random.randint(1,2000000000))
 		self.maxid=0
 		self.nextid=0
 		self.doexit=0
+
 	
 		os.makedirs(self.scratchdir)
 		self.thr=threading.Thread(target=self.run)
@@ -439,12 +456,41 @@ class EMLocalTaskHandler():
 		"""Called externally (by the Customer) to nicely shut down the task handler"""
 		self.doexit=1
 		self.thr.join()
-	
-	def newTask(self,task):
+		shutil.rmtree(self.scratchdir,True)
+
+	def add_task(self,task):
+		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
 		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"w"),-1)
+		ret=self.maxid
 		self.maxid+=1
+		EMLocalTaskHandler.lock.release()
+		return ret
 	
+	def check_task(self,id_list):
+		"""Checks a list of tasks for completion. Note that progress is not currently
+		handled, so results are always -1, 0 or 100 """
+		ret=[]
+		for i in id_list:
+			if i>=self.nextid : ret.append(-1)
+			elif i in self.completed : ret.append(100)
+			else: ret.append(0)
+		return ret
+	
+	def get_results(self,taskid):
+		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
+#		print "Retrieve ",taskid
+		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
+		
+		task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
+		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+	
+		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
+		os.unlink("%s/%07d"%(self.scratchdir,taskid))
+		self.completed.remove(taskid)
+		
+		return (task,results)
+		
 	def run(self):
 		
 		while(1):
@@ -453,28 +499,30 @@ class EMLocalTaskHandler():
 #				shutil.rmtree(self.scratchdir)
 				break
 			
-			for i,p in enumerate(self.proc):
+			for i,p in enumerate(self.running):
 				# Check to see if the task is complete
 				if p[0].poll()!=None :
 					
 					# This means that the task failed to execute properly
 					if p[0].returncode!=0 :
 						print "Error running task : ",p[1]
-						self.thr.interrupt_main()
+						thread.interrupt_main()
 						sys.exit(1)
 					
-					print "Task complete ",p[1]
+#					print "Task complete ",p[1]
 					# if we get here, the task completed
 					self.completed.add(p[1])
 			
-			self.proc=[i for i in self.proc if i[1] not in self.completed]	# remove completed tasks
+			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
 			
-			while nextid<maxid and len(self.running)<self.maxthreads:
-				print "Launch task ",self.nextid
-				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d"%(self.scratchdir,self.nextid)],stdout=PIPE)
+			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
+#				print "Launch task ",self.nextid
+				EMLocalTaskHandler.lock.acquire()
+				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				self.running.append((proc,self.nextid))
 				self.nextid+=1
-				
+				EMLocalTaskHandler.lock.release()
+			
 
 #######################
 #  Here we define the classes for MPI parallelism

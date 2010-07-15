@@ -393,7 +393,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float paltmax = params.set_default("alt_max",180.0);
 	if (altmax>paltmax) altmax=paltmax;
 
-	bool perturb = params.set_default("perturb",false);
+	bool perturb = params.set_default("perturb",true);
 
 	float alt_iterator = 0.0f;
 

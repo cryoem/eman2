@@ -39,6 +39,7 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+import traceback
 
 a = EMUtil.ImageType.IMAGE_UNKNOWN
 
@@ -95,9 +96,9 @@ class EMParallelSimMX:
 		
 	
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
-		etc.precache([args[0],args[1]])
-		self.num_cpus = etc.cpu_est()
+		self.etc=EMTaskCustomer(options.parallel)
+		self.etc.precache([args[0],args[1]])
+		self.num_cpus = self.etc.cpu_est()
 		if self.num_cpus < 32: # lower limit
 			self.num_cpus = 32
 		
@@ -208,16 +209,13 @@ class EMParallelSimMX:
 		'''
 		The main function to be called
 		'''
-		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+		if len(self.options.parallel) > 1 :
 			self.__init_memory(self.options)
 			blocks = self.__get_blocks()
 #			print blocks
 	
 #			self.check_blocks(blocks) # testing function can be removed at some point
 			
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(self.options.parallel)
-
 			tasks=[]
 			for bn,block in enumerate(blocks):
 				
@@ -263,25 +261,26 @@ class EMParallelSimMX:
 			#print b
 
 			print "%d/%d         "%(bn,len(blocks))
-			self.tids=etc.send_tasks(tasks)
+			self.tids=self.etc.send_tasks(tasks)
 			print len(self.tids)," tasks submitted"
 #			
 			while 1:
 				if len(self.tids) == 0: break
 				print len(self.tids),"simmx tasks left in main loop   \r",
 				sys.stdout.flush()
-				st_vals = etc.check_task(self.tids)
+				st_vals = self.etc.check_task(self.tids)
 				for i in xrange(len(self.tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
 						tid = self.tids[i]
 						
 						try:
-							rslts = etc.get_results(tid)
+							rslts = self.etc.get_results(tid)
 							self.__store_output_data(rslts[1])
 						except:
+							traceback.print_exc()
 							print "ERROR storing results for task %d. Rerunning."%tid
-							etc.rerun_task(tid)
+							self.etc.rerun_task(tid)
 							continue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
@@ -363,6 +362,7 @@ class EMSimTaskDC(EMTask):
 		'''
 		This function assigns critical attributes
 		'''
+#		print "init ",options
 		from EMAN2PAR import image_range
 		shrink = None
 		if options.has_key("shrink") and options["shrink"] != None and options["shrink"] > 1:
@@ -831,12 +831,6 @@ def check(options,verbose):
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
   			print "The parallel option %s does not make sense" %options.parallel
-  			error = True
-  		elif options.parallel[:2] != "dc":
-  			print "Only dc parallelism is currently supported"
-  			error = True
-  		elif len(options.parallel.split(":")) != 3:
-  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
   			error = True
 	
 	return error

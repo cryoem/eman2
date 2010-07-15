@@ -311,7 +311,7 @@ class EMGenClassAverages:
 		The main function
 		'''
 		options = self.options
-		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+		if self.options.parallel :
 			
 			from EMAN2PAR import EMTaskCustomer
 			self.__init_memory(self.options)
@@ -1389,12 +1389,6 @@ def check(options,verbose=0):
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
   			print "The parallel option %s does not make sense" %options.parallel
-  			error = True
-  		elif options.parallel[:2] != "dc":
-  			print "Only dc parallelism is currently supported"
-  			error = True
-  		elif len(options.parallel.split(":")) != 3:
-  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
   			error = True
 
 	return error

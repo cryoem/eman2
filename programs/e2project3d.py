@@ -88,8 +88,9 @@ class EMParallelProject3D:
 		return self.__task_options
 	
 	def execute(self):
+		from EMAN2PAR import EMTaskCustomer
 		
-		if len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+		if len(self.options.parallel) > 1:
 			self.__init_memory(self.options)
 			
 			num_tasks = self.num_cpus
@@ -102,6 +103,7 @@ class EMParallelProject3D:
 			first = 0
 			task_customers = []
 			tids = []
+			self.etc=EMTaskCustomer(self.options.parallel)
 			for i in xrange(0,num_tasks):
 				last = first+eulers_per_task
 				if resid_eulers > 0:
@@ -118,13 +120,10 @@ class EMParallelProject3D:
 				
 				task = EMProject3DTaskDC(data=data,options=self.__get_task_options(self.options))
 				
-				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer(self.options.parallel)
 				#print "Est %d CPUs"%etc.cpu_est()
-				tid=etc.send_task(task)
+				tid=self.etc.send_task(task)
 					#print "Task submitted tid=",tid
 					
-				task_customers.append(etc)
 				tids.append(tid)
 				
 				first = last
@@ -133,29 +132,27 @@ class EMParallelProject3D:
 				
 			while 1:
 				
-				print len(task_customers),"projection tasks left in main loop"
-				st_vals = task_customers[0].check_task(tids)
-				for i in xrange(len(task_customers)-1,-1,-1):
+				print len(tids),"projection tasks left in main loop"
+				st_vals = self.etc.check_task(tids)
+				for i in xrange(len(tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
-						task_customer = task_customers[i]
 						tid = tids[i] 
 						
-						rslts = task_customer.get_results(tid)
+						rslts = self.etc.get_results(tid)
 						if not self.__write_output_data(rslts[1]):
 							print "There was a problem with the task of id",tid
 							
 						if self.logger != None:
-							E2progress(self.logger,1.0-len(task_customers)/float(num_tasks))
+							E2progress(self.logger,1.0-len(tids)/float(num_tasks))
 							if self.options.verbose>0: 
-								print "%d/%d\r"%(num_tasks-len(task_customers),num_tasks)
+								print "%d/%d\r"%(num_tasks-len(tids),num_tasks)
 								sys.stdout.flush()
 								
-						task_customers.pop(i)
 						print "Task",tids.pop(i),"completed"
 						print "These tasks are remaining:",tids
 						
-				if len(task_customers) == 0: break
+				if len(tids) == 0: break
 				time.sleep(5)
 		else:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
@@ -377,12 +374,6 @@ def check(options, verbose=0):
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
   			print "The parallel option %s does not make sense" %options.parallel
-  			error = True
-  		elif options.parallel[:2] != "dc":
-  			print "Only dc parallelism is currently supported"
-  			error = True
-  		elif len(options.parallel.split(":")) != 3:
-  			print "dc parallel options must be formatted like 'dc:localhost:9990'"
   			error = True
 	
 	return error

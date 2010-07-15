@@ -526,7 +526,7 @@ class EMTomoAlignments:
 		data["using_cuda"] = self.using_cuda
 		data["nsoln"] = self.nsoln
 			
-		if self.options.parallel and len(self.options.parallel) > 2 and self.options.parallel[:2] == "dc":
+		if self.options.parallel :
 			task_customers = []
 			tids = []
 

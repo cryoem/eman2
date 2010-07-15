@@ -42,6 +42,7 @@ import time
 import os
 import sys
 import socket
+import traceback
 import subprocess
 
 debug=False
@@ -99,7 +100,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		precache(args[1:])
 
 	elif args[0]=="localclient" :
-		runlocaltask(options.taskfile)
+		runlocaltask(options.taskin,options.taskout)
 
 	elif args[0]=="rerunall":
 		rerunall()
@@ -110,14 +111,25 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="servmon" :
 		runservmon()
 		
-def runlocaltask(taskout,taskin):
+def progcb(val):
+	return True
+	
+def runlocaltask(taskin,taskout):
 	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to stdout. """
-	from Cpickle import load,dumps
-	print "Executing %s"%taskfile
+	from cPickle import load,dump
+
+#	print "Executing %s (%s)"%(taskin,taskout)
+	from e2classaverage import EMClassAveTaskDC
+	from e2simmx import EMSimTaskDC
+	from e2project3d import EMProject3DTaskDC
+	from e2tomoaverage import EMTomoAlignTaskDC
+	
 	task=load(file(taskin,"r"))
 	
-	try: dump(task.execute(None),file(taskout,"w"),-1)
-	except: sys.exit(1)		# Error !
+	try: dump(task.execute(progcb),file(taskout,"w"),-1)
+	except:
+		traceback.print_exc()
+		sys.exit(1)		# Error !
 	
 	sys.exit(0)
 
