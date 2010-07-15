@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 178)
+        self.assertEqual(len(processor_names), 179)
         
         if(IS_TEST_EXCEPTION):
             try:
