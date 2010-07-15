@@ -853,11 +853,11 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	while (pixels.size()>0) {
 		// iterate over pixels until we find a new center (then stop), delete any 'bad' pixels
 		// no iterators because we remove elements
-		int found=0;
-		for (unsigned int i=0; i<pixels.size() && found==0; i++) {
+
+		for (unsigned int i=0; i<pixels.size(); i++) {
 			
 			Pixel p=pixels[i];
-			// iterate over existing centers to see if this pixel should be removed
+			// iterate over existing centers to see if this pixel should be removed ... technically we only should need to check the last center
 			for (unsigned int j=0; j<centers.size(); j+=3) {
 				float d=Util::hypot3(centers[j]-p.x,centers[j+1]-p.y,centers[j+2]-p.z);
 				if (d<minsegsep) {		// conflicts with existing center, erase
@@ -868,11 +868,12 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 			}
 		}
 			
+		int found=0;
 		for (unsigned int i=0; i<pixels.size() && found==0; i++) {
 			Pixel p=pixels[i];
 
-			// iterate again to see if this may be a new valid center
-			for (unsigned int j=0; j<centers.size(); j+=3) {
+			// iterate again to see if this may be a new valid center. Start at the end so we tend to build chains
+			for (unsigned int j=centers.size()-3; j>0; j-=3) {
 				float d=Util::hypot3(centers[j]-p.x,centers[j+1]-p.y,centers[j+2]-p.z);
 				if (d<maxsegsep) {		// we passed minsegsep question already, so we know we're in the 'good' range
 					centers.push_back(p.x);
@@ -887,7 +888,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 		
 		// If we went through the whole list and didn't find one, we need to reseed again
 		if (!found && pixels.size()) {
-			if (verbose) printf("New chain");
+			if (verbose) printf("New chain\n");
 			centers.push_back(pixels[0].x);
 			centers.push_back(pixels[0].y);
 			centers.push_back(pixels[0].z);
