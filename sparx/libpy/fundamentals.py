@@ -78,6 +78,16 @@ def acfnp(e, center=True):
 	return autocorrelation(e, fp_flag.PADDED_NORMALIZED, center)
 
 def acfpl(e, center=True):
+	"""
+		Name
+			acfpl - calculate the normalized autocorrelation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center; if set to False, the origin is at (0,0).
+		Output
+			normalized autocorrelation function of the input image. Real. 
+			
+	"""
 	return autocorrelation(e, fp_flag.PADDED_LAG, center)
 
 def acfnpl(e, center=True):
