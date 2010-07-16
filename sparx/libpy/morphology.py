@@ -94,7 +94,7 @@ def power(img, x = 3.0):
 			image: input real image
 		Output
 			the output image whose pixels are given by o=ir
-			r: power
+			x: power
 	"""
 	return img.process( "math.pow", {"pow": x})
 
