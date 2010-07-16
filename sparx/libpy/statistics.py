@@ -9125,3 +9125,12 @@ def match_lists(l1, l2):
 		except:
 			pass
 	return count
+
+def center_of_gravity(a):
+	return a.cog()
+
+
+def phase_center_of_gravity(a):
+	return a.phase_cog()
+
+
