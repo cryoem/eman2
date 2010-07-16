@@ -87,6 +87,15 @@ def expn(img, a = 1.0, b=0.0):
 	return img.process( "math.exp", {"low": 1.0/a, "high":b})
 
 def power(img, x = 3.0):
+	"""
+		Name
+			power - generate image whose pixels are generated of raising to a given power pixels of the input image
+		Input
+			image: input real image
+		Output
+			the output image whose pixels are given by o=ir
+			r: power
+	"""
 	return img.process( "math.pow", {"pow": x})
 
 def alog10(img):
