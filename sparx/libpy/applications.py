@@ -476,7 +476,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	del ima
 
 	for i in xrange(number_of_proc):
-		if myid == i: 
+		if myid == i:
 			data = EMData.read_images(stack, list_of_particles)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 		
