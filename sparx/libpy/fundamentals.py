@@ -267,21 +267,75 @@ def cnvnpl(e, f, center=True):
     
 # Selfcorrelation functions
 def scf(e, center=True):
+	"""
+		Name
+			scf - calculate the circulant self-correlation function of an image
+		Input
+			e: input image, can be either real or Fourier
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			circulant self-correlation function of the input image. Real.
+	"""
 	return self_correlation(e, fp_flag.CIRCULANT, center)
 
 def scfn(e, center=True):
+	"""
+		Name
+			scfn - calculate the normalized circulant self-correlation function
+		Input
+			e: input image, can be either real or Fourier
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			normalized circulant self-correlation function of an input image. Real.
+	"""
 	return self_correlation(e, fp_flag.CIRCULANT_NORMALIZED, center)
 
 def scfp(e, center=True):
+	"""
+		Name
+			scfp - calculate the self-correlation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			self-correlation function of the input image. Real. 
+	"""
 	return self_correlation(e, fp_flag.PADDED, center)
 
 def scfnp(e, center=True):
+	"""
+		Name
+			scfnp - calculate the normalized self-correlation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			normalized self-correlation function of the input image. Real.
+	"""
 	return self_correlation(e, fp_flag.PADDED_NORMALIZED, center)
 
 def scfpl(e, center=True):
+	"""
+		Name
+			scfpl - calculate the self-correlation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			self-correlation function of the input image. Real.
+	"""
 	return self_correlation(e, fp_flag.PADDED_LAG, center)
 
 def scfnpl(e, center=True):
+	"""
+		Name
+			scfnpl - calculate the normalized self-correlation function of an image
+		Input
+			e: input image (real)
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			self-correlation function of the input image. Real.
+	"""
 	return self_correlation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
  
 def cyclic_shift(img, dx=0, dy=0, dz=0):
@@ -373,6 +427,17 @@ def fdecimate(image, nnx, nny=0, nnz=0, RetReal = True):
 	return  image.FourTruncate(nnx, nny, nnz, RetReal)	
     
 def fshift(e, delx=0, dely=0, delz=0):
+	"""
+		Name
+			fshift - shift an image using phase multiplication in Fourier space
+		Input
+			image: input image
+			sx: shift in pixels in the x direction, can be negative
+			sy: shift in pixels in the y direction, can be negative
+			sz: shift in pixels in the z direction, can be negative
+		Output
+			output image
+	"""
 	params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
 	return Processor.EMFourierFilter(e, params)
 
@@ -551,6 +616,15 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 	return 	e
 '''
 def prepi(image):
+	"""
+		Name
+			prepi - prepare 2-D image for rotation/shift
+		Input
+			image: input image that is going to be rotated and shifted using rtshgkb
+		Output
+			imageft: image prepared for gridding rotation and shift
+			kb: interpolants (tabulated Kaiser-Bessel function)
+	"""
 	M = image.get_xsize()
 # pad two times
 	npad = 2
@@ -573,6 +647,15 @@ def prepi(image):
 	return fft(q), kb
 
 def prepg(image, kb):
+	"""
+		Name
+			prepg - prepare 2-D image for rotation/shift using gridding method.
+		Input
+			image: input image that is going to be rotated and shifted using rtshgkb
+			kb: interpolants (tabulated Kaiser-Bessel function)
+		Output
+			imageft: image prepared for gridding rotation and shift
+	"""
 	M = image.get_xsize()
 # padd two times
 	npad = 2
@@ -590,6 +673,14 @@ def prepg(image, kb):
 	return  fft(q) 
 	
 def ramp(inputimage):
+	"""
+		Name
+			ramp - remove linear trend from a 2D image
+		Input
+			image: 2D input image
+		Output
+			2D output image from which a 2D plane was subtracted
+	"""
 	e = inputimage.copy()
 	e.process_inplace("filter.ramp")
 	return e
@@ -785,6 +876,18 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
 
 def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0, mode="background"):
+	"""
+		Name
+			rot_shift3D - rotate, shift, and scale a 3D image
+		Input
+			image:3D image to be rotated
+			phi, theta, psi: Euler angles ( in SPIDER convention ) describing rotation
+			sx, sy, sz: x, y and z shifts, respectively
+			scale: rescaling factor. scale > 1 will magnify the input volume.
+			mode: backgroud
+		Output
+			The rotated, shifted, and scaled output 3D volume
+	"""
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
@@ -793,12 +896,34 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 	else: return image.rot_scale_trans_background(T)
 	
 def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
+	"""
+		Name
+			rtshg - rotate and shift a 2D image using the gridding method
+		Input
+			image: a 2D input image
+			alpha: rotation angle
+			sx: x shift (default = 0.0)
+			sy: y shift (default = 0.0)
+			scale: magnification change (default = 1.0)
+		Output
+			the output rotated and shifted image
+	"""
 	from math import pi
 	o,kb = prepi(image)
 	# gridding rotation
 	return o.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
 
 def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
+	"""
+		Name
+			rtshgkb - rotate and shift a 2D image using the gridding method.
+		Input
+			sx: x shift
+			sy: y shift
+			kb: interpolants
+		Output
+			the output rotated and shifted image
+	"""
 	from math import pi
 	# gridding rotation
 	return image.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
