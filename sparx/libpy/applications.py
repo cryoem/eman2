@@ -3171,11 +3171,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
-<<<<<<< applications.py
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1,myid)
-=======
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1, myid)
->>>>>>> 1.670
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
