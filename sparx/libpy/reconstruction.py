@@ -740,7 +740,7 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		stack_name - disk stack with projections or in-core list of images
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
-		symmtry - point group symmetry of the object
+		symmetry - point group symmetry of the object
 	""" 
 
 	nx = B.get_xsize()
@@ -771,7 +771,7 @@ def weight_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		stack_name - disk stack with projections or in-core list of images
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
-		symmtry - point group symmetry of the object
+		symmetry - point group symmetry of the object
 	""" 
 
 	nx = B.get_xsize()
@@ -798,10 +798,9 @@ def backproject_swbp(B, L, dm, symmetry="c1"):
 		The projection number is L counting from zero.
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
-		list_proj  - list of projections to be used in the reconstruction
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
-		symmtry - point group symmetry of the object
+		symmetry - point group symmetry of the object
 	""" 
 
 	nx = B.get_xsize()
@@ -814,6 +813,20 @@ def backproject_swbp(B, L, dm, symmetry="c1"):
 	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
 
 	return CUBE
+
+def one_swbp(CUBE, B, L, dm, symmetry="c1"): 
+	"""
+	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+		apply it, and backproject.
+		The projection number is L counting from zero.
+		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
+		symmetry - point group symmetry of the object
+	""" 
+
+	DM = dm[(L*9) :(L+1)*9]
+
+	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
 
 def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, finfo=None, npad = 4):
 	from random     import randint
