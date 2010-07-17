@@ -9130,7 +9130,7 @@ def center_of_gravity(a):
 	return a.cog()
 
 
-def center_of_gravity_pahse(a):
+def center_of_gravity_phase(a):
 	return a.phase_cog()
 
 
