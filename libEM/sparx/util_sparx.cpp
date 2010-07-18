@@ -5743,8 +5743,13 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 			for(int J=1;J<=NROW;J++) {
 				JY = (J-1);
 				if(JY > NR2) JY -= NROW;
+#ifdef _WIN32
+				int xma = _cpp_min(int(0.5f+(q-JY*OY)/OX),NX2);
+				int xmi = _cpp_max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
+#else
 				int xma = std::min(int(0.5f+(q-JY*OY)/OX),NX2);
 				int xmi = std::max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
+#endif	//_WIN32
 				if( xmi <= xma) {
 					for(int I=xmi;I<=xma;I++) {
 						float Y = fabs(OX*I + OY*JY);
