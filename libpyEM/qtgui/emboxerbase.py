@@ -645,7 +645,9 @@ class ManualBoxingPanel:
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
+			self.auto_center_checkbox = QtGui.QCheckBox("Auto-center")
 			self.clear=QtGui.QPushButton("Clear")
+			vbl.addWidget(self.auto_center_checkbox)
 			vbl.addWidget(self.clear)
 			
 			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
@@ -796,6 +798,9 @@ class ManualBoxingTool:
 		if box_num == -1:
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE)
+			if self.panel_object.auto_center_checkbox.isChecked():
+				self.try_to_center_ref(box_num)
+				
 			self.moving=[m,box_num]
 		else:
 			box = self.target().get_box(box_num)
@@ -871,6 +876,43 @@ class ManualBoxingTool:
 		No need to act here for the manual boxing tool - everything is fine
 		'''
 		pass
+	
+	
+	
+	#TODO: better code reuse, not copy and paste, here
+	#COPIED FROM e2boxer's SwarmBoxer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	def xform_center_propagate(self,box,image_name,template,box_size):
+		'''
+		Centers a box that was generated in a shrunken image by getting the 'real particle' out of the large
+		image on disk and doing a ccf with the template - then I just find the peak and use that to center
+		@param box a list like [x,y,type,float] - only x and y are used
+		@param image_name the name of the image we're operating on
+		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
+		@param box_size the size of the box used to center
+		Returns the dx and dy parameters, i.e. does not actually alter the box
+		'''
+	  	global BigImageCache
+	  	image = BigImageCache.get_image_directly(image_name)
+			 
+		xc = box[0]-box_size/2
+		yc = box[1]-box_size/2
+		r = Region(xc,yc,box_size,box_size)
+		particle = image.get_clip(r)
+		ccf  = particle.calc_ccf(template)
+		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
+		dx = trans[0]
+		dy = trans[1]
+		return dx,dy
+
+	def try_to_center_ref(self,box_num): #Modified from that in SwarmBoxer
+		box = self.target().get_box(box_num)
+		box_size = self.target().get_box_size()
+		img_filename = self.target().current_file()
+		ptcl = box.get_image(img_filename, box_size)
+		centered_ptcl = ptcl.process("xform.centeracf")
+		dx,dy = self.xform_center_propagate([box.x,box.y],img_filename,centered_ptcl,box_size)
+		self.target().move_box(box_num, dx, dy)
+	# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 	
 class BoxEventsHandler:
 	def __init__(self, target):
