@@ -266,8 +266,8 @@ def db_cleanup(force=False):
 	database is written to on another machine"""
 	
 	if(sys.platform == 'win32'):
-		print "Database cleanup is not supported on windows machines"
-		sys.exit(1)
+		force = True
+		print "Database cleanup is in force mode on windows machines"
 		
 	path="eman2db-%s"%os.getenv("USER","anyone")
 
@@ -302,7 +302,11 @@ def db_cleanup(force=False):
 	d=EMAN2DB()
 	d.close()		# Properly 'close' the environment before we delete it
 	
-	os.system("rm -rf /tmp/%s"%path)
+	if(sys.platform == 'win32'):
+		import shutil
+		shutil.rmtree('C:'+e2gethome()+'/.eman2/EMAN2DB')
+	else:
+		os.system("rm -rf /tmp/%s"%path)
 	print "Database cache removed. Now safe to access databases from another machine or delete existing databases"
 	
 	
