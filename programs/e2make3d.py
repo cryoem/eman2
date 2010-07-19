@@ -505,21 +505,18 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				qlist.append(squal[i][1]/squal[i][2])
 #			plot(qlist)
 
+			# set exclusion thresholds
+			if keepsig:
+				qmean=sum(qlist)/len(qlist)
+				qsigma=sum([i*i for i in qlist])/len(qlist)-qmean**2
+				qcutoff=qmean-qsigma*keep
+				if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
+			else:
+				qlist.sort()
+				qcutoff=qlist[-int(keep*len(qlist))]
+				if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
+
 		output = recon.finish(True)
-
-
-		# set exclusion thresholds
-		if keepsig:
-			qmean=sum(qlist)/len(qlist)
-			qsigma=sum([i*i for i in qlist])/len(qlist)-qmean**2
-			qcutoff=qmean-qsigma*keep
-			if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
-		else:
-			qlist.sort()
-			qcutoff=qlist[-int(keep*len(qlist))]
-			if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
-
-		
 
 	try:
 		output.set_attr("ptcl_repr",ptcl)

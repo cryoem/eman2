@@ -105,14 +105,23 @@ def main():
 			best=(0,-1)
 			for j in xrange(clen):
 				if j in centers : continue
-				simsum=0
-				for k in centers: 
-					simsum+=ref_simmx[j,k]
+				
+				#here we find the sum of the distances to this point
+				#simsum=0
+				#for k in centers: 
+					#simsum+=ref_simmx[j,k]
+					
+				# here we find the distance to the closest matching existing point
+				# so we find the point with the largest minimum distance to its nearest neighbor
+				simsum=1.0e30
+				for k in centers:
+					if ref_simmx[j,k]<simsum: simsum=ref_simmx[j,k]
+					
 				if best[1]<0 or simsum>best[0] : best=(simsum,j)
 			centers.append(best[1])
 			
 	#	print centers
-		# Resort references by similarity
+		# Re-sort references by similarity
 		print "Sort references"
 		for i in range(1,clen_stg1-1):
 			for j in range(i+1,clen_stg1):

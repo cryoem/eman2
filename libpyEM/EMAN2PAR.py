@@ -768,7 +768,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	lasthk=0
 	killclients=False
 	tasklock=threading.Lock()
-	dbugfile=file("debug.out","w")
+#	dbugfile=file("debug.out","w")
 	rotate=('/','-','\\','|')
 	
 	def __init__(self, request, client_address, server):
@@ -1000,8 +1000,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					task.exechost=r[1]
 					try: self.queue.active[task.taskid]=task
 					except: pass
-					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,client_addr,client_id,r,local_datetime()))
-					EMDCTaskHandler.dbugfile.flush()
+#					EMDCTaskHandler.dbugfile.write("Task %5d sent to %s (%08X)  (%s)  [%s]\n"%(task.taskid,client_addr,client_id,r,local_datetime()))
+#					EMDCTaskHandler.dbugfile.flush()
 				EMDCTaskHandler.tasklock.release()
 
 			
@@ -1040,8 +1040,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose>2 : print "Task %d: %d data elements"%(tid,cnt)
 
 				if cnt>=0 : self.queue.task_done(tid)		# don't mark the task as done until we've stored the results
-				EMDCTaskHandler.dbugfile.write("Task %5d complete from %08X with %d data elements  [%s]\n"%(tid,client_id,cnt,local_datetime()))
-				EMDCTaskHandler.dbugfile.flush()
+#				EMDCTaskHandler.dbugfile.write("Task %5d complete from %08X with %d data elements  [%s]\n"%(tid,client_id,cnt,local_datetime()))
+#				EMDCTaskHandler.dbugfile.flush()
 
 			# Request data from the server
 			# the request should be of the form ["queue",did,image#]
@@ -1119,7 +1119,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					self.sockf.flush()
 				
-				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
+#				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
 
 			################### These are issued by customers
 			# A set of new tasks to enqueue
@@ -1139,7 +1139,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,None)
 					self.sockf.flush()
 				
-				EMDCTaskHandler.dbugfile.write("Tasks %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
+#				EMDCTaskHandler.dbugfile.write("Tasks %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
 				
 			# This will requeue a task which has already been run (and may be completed)
 			# This will generally happen if there was some unexpected error in the returned results
@@ -1225,10 +1225,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.sockf.read(4)!="ACK " : raise Exception
 #					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
 					os.unlink("%s/results/%07d"%(self.queue.path,data))
-					EMDCTaskHandler.dbugfile.write("Results for task %5d retrieved [%s]\n"%(data,local_datetime()))
+#					EMDCTaskHandler.dbugfile.write("Results for task %5d retrieved [%s]\n"%(data,local_datetime()))
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
-					EMDCTaskHandler.dbugfile.write("Results for task %5d FAILED [%s]\n"%(data,local_datetime()))
+#					EMDCTaskHandler.dbugfile.write("Results for task %5d FAILED [%s]\n"%(data,local_datetime()))
 					
 				
 			else :
