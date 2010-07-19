@@ -166,6 +166,15 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 
 
 def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad = 4):
+	"""
+		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+		Input
+			stack: name of the stack file containing projection data, projections have to be squares
+			list_proj: list of projections to be included in the reconstruction
+			snr: Signal-to-Noise Ratio of the data 
+			sign: sign of the CTF 
+			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
+	"""
 	from utilities import reduce_EMData_to_root
 	if( len(prjlist) == 0 ):
 	    ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
