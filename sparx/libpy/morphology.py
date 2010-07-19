@@ -35,9 +35,28 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 def binarize(img, minval = 0.0):
+	"""
+		Name
+			binarize - create a binary image from an input image
+		Input
+			img: input image
+			minval: value below which image pixels will be set to zero.
+		Output
+			binarized image.
+	"""
 	return img.process( "threshold.binary", {"value": minval} )
 
 def collapse(img, minval = -1.0, maxval = 1.0):
+	"""
+		Name
+			collapse - binarize image by setting to zero values within predefined range, and to one outside of this range
+		Input
+			input: input image
+			minval: minimum bracket value (default is -1.0).
+			maxval: maximum bracket value (default is 1.0).
+		Output
+			collapsed image.
+	"""
 	# for values between minval and maxval set to one, to zero outside
 	return img.process( "threshold.binaryrange", {"low": minval, "high":maxval} )
 			
@@ -129,6 +148,12 @@ def threshold_maxval(img, maxval = 0.0):
 def ctf_1d(nx, ctf, sign = 1):
 	"""
 		Generate a list of 1D CTF values 
+		Input
+			nx: image size to which CTF will be applied.
+			ctf: CTF object created using generate_ctf
+			sign: sign of the CTF.
+		Output
+			a list of CTF values.
 	"""
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
@@ -150,6 +175,11 @@ def ctf_1d(nx, ctf, sign = 1):
 def ctf_2(nx, ctf):
 	"""
 		Generate a list of 1D CTF^2 values 
+		Input
+			nx: image size to which CTF will be applied.
+			ctf: ctf object created using generate_ctf
+		Output
+			a list of CTF2 values.
 	"""
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
