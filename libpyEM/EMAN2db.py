@@ -883,6 +883,8 @@ class DBDict:
 		"""Called to update old 4.2 databases with funny problem"""
 		self.bdb=db.DB(self.dbenv)
 		print "Old format DB detected (%s). Do not be alarmed, this must be done 1 time for each database file. Please wait."%lfile
+		try: os.unlink(self.path+"/"+lfile.replace(".bdb",".old"))
+		except: pass
 		os.rename(self.path+"/"+lfile,self.path+"/"+lfile.replace(".bdb",".old"))
 		try:
 			tmpdb=db.DB()
