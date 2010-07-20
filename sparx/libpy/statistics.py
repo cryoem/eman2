@@ -1615,6 +1615,17 @@ def get_1dpw_table_stack(stack):
 	return table
 
 def histogram(image, mask = None, nbins = 0, hmin = 0.0, hmax = 0.0):
+	"""
+		Name
+			histogram - calculate a histogram of the image pixel values
+		Input
+			input: input image
+			mask: optional binary mask
+			nbins:number of bins. Optional. 
+			hmin, hmax: Optional. 
+		Output
+			h:a list containining 2*nbins elements.
+	"""
 	return  Util.histogram(image, mask, nbins, hmin, hmax)
 
 def im_diff(im1, im2, mask = None):
