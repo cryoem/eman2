@@ -1598,6 +1598,10 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 def get_1dpw_table_stack(stack):
 	"""
 		calculate the 1D rotationally averaged power spectrum of one stack file
+		Input
+			stack
+		Output
+			1dpwtable:a list contains 1D rotationally averaged power spectrum
 	"""
 	table=[]
 	nima  = EMUtil.get_image_count(stack)
@@ -7832,6 +7836,16 @@ def table_stat(X):
 	return  av/N,(va - av*av/N)/float(N-1) , mi, ma
 
 def get_power_spec(stack_file, start_particle, end_particle):
+	"""
+		Name
+			get_power_spec - computes the rotationally averaged power spectra of a series of images
+		Input
+			stack_file: stack images in hdf format
+			start_particle: first particle to use
+			end_particle: last particle to use
+		Output
+			PSrot_avg: a rotationally averaged 76-bin power spectrum for a set of images
+	"""
 	# computes the rotationally averaged power spectra of a series of images, e.g. a defocus group
 	# and averages these spectra into one spectrum for the whole set of images
 	# returns a list
@@ -7850,6 +7864,20 @@ def get_power_spec(stack_file, start_particle, end_particle):
 	return PSrot_avg
 	
 def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
+	"""
+		Name
+			noise_corrected_PW - returns a noise corrected power spectrum and the factors a and b which were used to subtract the function f(x)=exp( a*x*x+b ) from the original power spectrum
+		Input
+			ps: a list containing the values of a power spectrum
+			lo_limit: lower frequency threshold for minima search
+			hi_limit: upper frequency threshold for minima search
+			abs_limit: upper limit of the power spectrum, no usable information is contained above this threshold
+		Output
+			freq: list of corresponding frequency values
+			pw_ns: noise corrected power spectrum
+			b_factor: exponential factor
+			norm: normalization factor
+	"""
 	from math import log, sqrt, exp
 	# pw 	    : a list containing the values of a power spectrum		
 	# lo_limit  : lower frequency threshold for minima search -> lt in freq. units
