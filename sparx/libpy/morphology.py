@@ -61,6 +61,20 @@ def collapse(img, minval = -1.0, maxval = 1.0):
 	return img.process( "threshold.binaryrange", {"low": minval, "high":maxval} )
 			
 def dilation(f, mask = None, morphtype="BINARY"):
+	"""
+		Name
+			dilation - Calculate the dilated image.
+		Input
+			The first input image
+			mask: The second input image used as the mask.
+			The size of the mask has to be odd so that the center of mask can be well defined.
+			The size of the mask should be smaller than the size of the first input image.
+			morph_type: Type of the dilation
+			BINARY is for binary dilation;
+			GRAYLEVEL is for graylevel dilation.
+		Output
+			dilated image
+	"""
 	if not mask:
 		from utilities import model_blank
 		nx = f.get_xsize()
@@ -77,6 +91,20 @@ def dilation(f, mask = None, morphtype="BINARY"):
 	else: print "Unknown dilation type."
 
 def erosion(f, mask = None, morphtype="BINARY"):
+	"""
+		Name
+			erosion - Calculate the eroded image.
+		Input
+			The first input image
+			mask: The second input image used as the mask.
+			The size of the mask has to be odd so that the center of mask can be well defined.
+			The size of the mask should be smaller than the size of the first input image.
+			morph_type: Type of the erosion
+			BINARY is for binary erosion (DEFAULT);
+			GRAYLEVEL is for graylevel erosion.
+		Output
+			eroded image
+	"""
 	if not mask:
 		from utilities import model_blank
 		nx = f.get_xsize()
@@ -103,6 +131,15 @@ def invert(im):
 #	return img.process( "threshold.compress", {"value": value, "range": frange } )
 
 def expn(img, a = 1.0, b=0.0):
+	"""
+		Name
+			expn - generate image whose pixels are generated of raising to a given power pixels of the input image
+		Input
+			image: input real image
+		Output
+			the output image whose pixels are given by o=ir
+			r: exponent
+	"""
 	return img.process( "math.exp", {"low": 1.0/a, "high":b})
 
 def power(img, x = 3.0):
@@ -121,26 +158,86 @@ def alog10(img):
 	return img.process( "math.log")
 
 def square_root(img):
+	"""
+		Name
+			square_root - create image whose pixels will be square roots of pixels of the input image
+		Input
+			input image
+		Output
+			output image.
+	"""
 	[a,b,c,d] = Util.infomask(img, None, False)
 	if(c<0.0):  ERROR("Cannot calculate square root of negative pixels","square_root",1)
 	return img.process( "math.sqrt" )
 
 def square(img):
+	"""
+		Name
+			square - create image whose pixels will be squared values of pixels of the input image
+		Input
+			input image
+		Output
+			output image.
+	"""
 	return img.process( "math.squared")
 
 def threshold(img, minval = 0.0):
+	"""
+		Name
+			threshold - replace values below given threshold by zero
+		Input
+			img: input image
+			minval: value below which image pixels will be set to zero. 
+		Output
+			thresholded image.
+	"""
 	return img.process( "threshold.belowtozero", {"minval": minval} )
 
 def threshold_to_zero(img, minval = 0.0):
+	"""
+		Name
+			threshold_to_zero - replace values below given threshold by zero and values above by (value-threshold)
+		Input
+			img: input image
+			minval: value below which image pixels will be set to zero
+		Output
+			thresholded image.
+	"""
 	return img.process( "threshold.belowtozero_cut", {"minval": minval } )	
 
 def threshold_to_minval(img, minval = 0.0):
+	"""
+		Name
+			threshold_to_minval - replace values below given threshold by the threshold value
+		Input
+			img: input image
+			minval: value below which image pixels will be set to this value
+		Output
+			thresholded image.
+	"""
 	return img.process( "threshold.belowtominval", {"minval": minval } )	
 
 def threshold_outside(img, minval, maxval):
+	"""
+		Name
+			threshold_outside - replace values outside given thresholds by respective threshold values
+		Input
+			img: input image
+			minval: value below which image pixels will be set to this value.
+			maxval: value above which image pixels will be set to this value.
+	"""
 	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )	
 
 def threshold_maxval(img, maxval = 0.0):
+	"""
+		Name
+			threshold_maxval - replace values above given threshold by the threshold value
+		Input
+			img: input image
+			maxval: value above which image pixels will be set to this value
+		Output
+			thresholded image.
+	"""
 	st = Util.infomask(img, None, True)	
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
@@ -200,9 +297,16 @@ def ctf_2(nx, ctf):
 
 def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
-	  Generate a 1-2-3-D complex image containing the CTF.
-	  Default is 2D output.
-	  
+		Generate a 1-2-3-D complex image containing the CTF.
+	 	Default is 2D output.
+	  	Input
+			nx: x image size.
+			ctf: ctf object, see CTF_info for description.
+			sign: sign of the CTF.
+			ny: y image size
+			nz: z image size 
+		Output
+			ctfimg: complex image containing CTF.
 	"""
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
@@ -917,6 +1021,15 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 	return res, freq
 
 def adaptive_mask(vol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+	"""
+		Name
+			adaptive_mask - create a mask from a given image.
+		Input
+			img: input image
+			nsigma: value for initial thresholding of the image.
+		Output
+			mask: The mask will have values one, zero, with Gaussian smooth transition between two regions.
+	"""
 	from utilities  import gauss_edge, model_circle
 	from morphology import binarize, dilation
 	nx = vol.get_xsize()
