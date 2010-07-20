@@ -84,7 +84,7 @@ namespace EMAN
 		 * @param min_render	float image density corresponding to min_gray
 		 * @param max_render	float image density corresponding to max_gray
 		 * @param gamma
-		 * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis,8-render 32 bit 0xffRRGGBB
+		 * @param flags	1-RGB (24 bit) rendering,2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis,8-render 32 bit 0xffRRGGBB,16-Color display of complex images
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */
 		static std::string render_amp8(EMData * emdata, int x, int y, int xsize, int ysize,

@@ -1107,7 +1107,8 @@ class EMImage2DModule(EMGUIModule):
 			if self.display_fft.is_complex() == False:
 				print "error, the fft is not complex, internal error"
 				return
-			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
+#			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
+			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,19))
 		elif self.curfft in (2,3) :
 			if not self.glflags.npt_textures_unsupported():
 				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
@@ -1165,6 +1166,7 @@ class EMImage2DModule(EMGUIModule):
 		if render:
 			(bpp,w,h,a)=self.render_bitmap()
 			if bpp==3 : gl_render_type = GL_RGB
+			elif bpp==4 : gl_render_type = GL_RGBA
 			else : gl_render_type = GL_LUMINANCE
 				
 			if not self.glflags.npt_textures_unsupported():
@@ -1182,7 +1184,7 @@ class EMImage2DModule(EMGUIModule):
 	
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,w,h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,w/bpp,h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)

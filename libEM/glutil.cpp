@@ -351,6 +351,12 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 					else k+=mid;
 					float t = image_data[k];
+					int ph;
+					// in color mode
+					if (flags&16 && asrgb>2) {
+						if (l >= (ny - inv_scale) * nx) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
+						else ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767;
+					}
 					if (t <= rm)  p = mingray;
 					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
@@ -365,7 +371,25 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						p = (unsigned char) (gs * (t - render_min));
 						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = p;
+					// color rendering
+					if (flags&16 && asrgb>2) {
+						if (ph<256) {
+							data[i * asrgb + j * bpl] = p*(255-ph)/256;
+							data[i * asrgb + j * bpl+1] = p*ph/256;
+							data[i * asrgb + j * bpl+2] = 0;
+						}
+						else if (ph<512) {
+							data[i * asrgb + j * bpl+1] = p*(511-ph)/256;
+							data[i * asrgb + j * bpl+2] = p*(ph-256)/256;
+							data[i * asrgb + j * bpl] = 0;
+						}
+						else {
+							data[i * asrgb + j * bpl+2] = p*(767-ph)/256;
+							data[i * asrgb + j * bpl] = p*(ph-512)/256;
+							data[i * asrgb + j * bpl+1] = 0;
+						}
+					}
+					else data[i * asrgb + j * bpl] = p;
 					if (hist) histd[p]++;
 					ll += dsx;
 				}
@@ -394,6 +418,12 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					else k+=mid;
 
 					float t = image_data[k];
+					// in color mode
+					int ph;
+					if (flags&16 && asrgb>2) {
+						if (l >= (ny * nx - nx)) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
+						else ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767;
+					}
 					if (t <= rm)
 						p = mingray;
 					else if (t >= render_max) {
@@ -411,7 +441,24 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						p = (unsigned char) (gs * (t - render_min));
 						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = p;
+					if (flags&16 && asrgb>2) {
+						if (ph<256) {
+							data[i * asrgb + j * bpl] = p*(255-ph)/256;
+							data[i * asrgb + j * bpl+1] = p*ph/256;
+							data[i * asrgb + j * bpl+2] = 0;
+						}
+						else if (ph<512) {
+							data[i * asrgb + j * bpl+1] = p*(511-ph)/256;
+							data[i * asrgb + j * bpl+2] = p*(ph-256)/256;
+							data[i * asrgb + j * bpl] = 0;
+						}
+						else {
+							data[i * asrgb + j * bpl+2] = p*(767-ph)/256;
+							data[i * asrgb + j * bpl] = p*(ph-512)/256;
+							data[i * asrgb + j * bpl+1] = 0;
+						}
+					}
+					else data[i * asrgb + j * bpl] = p;
 					if (hist) histd[p]++;
 					ll += addi;
 					remx += addr;
@@ -536,14 +583,14 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	}
 
 	// this replicates r -> g,b
-	if (asrgb==3) {
+	if (asrgb==3 && !(flags&16)) {
 		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
 				data[i+j+1]=data[i+j+2]=data[i+j];
 			}
 		}
 	}
-	if (asrgb==4) {
+	if (asrgb==4 && !(flags&16)) {
 		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*4; i+=4) {
 				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
