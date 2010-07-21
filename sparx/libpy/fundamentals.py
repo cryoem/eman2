@@ -496,7 +496,7 @@ def resample(img, sub_rate=0.5, frequency_low=0.0, frequency_high=0.0):
 		img = get_image(img)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
-	nz = img.get_ysize()
+	nz = img.get_zsize()
 	if(nz > 1 or ny == 1):  ERROR("Only 2D images allowed","resample",1)
 	apix = get_pixel_size(img)
 	if sub_rate == 1.0: return  img.copy()
