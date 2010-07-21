@@ -427,9 +427,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Evaluates the SNR of the particle using a masking method similar to that used in the CTF analysis process. The image is not changed. The resulting value is placed in the particle dictionary as eval_maskedsnr";
 		}
-		
+
 		static const string NAME;
-		
+
 		protected:
 		EMData *sum;
 		int dosqrt;
@@ -475,9 +475,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Multiplies each Fourier pixel by its amplitude";
 		}
-		
+
 		static const string NAME;
-		
+
 		protected:
 		EMData *sum;
 		int dosqrt;
@@ -516,7 +516,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("with", EMObject::EMDATA, "The image that will convolute the other image");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -553,7 +553,7 @@ The basic design of EMAN Processors: <br>\
 			TypeDict d;
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -585,7 +585,7 @@ The basic design of EMAN Processors: <br>\
 				TypeDict d;
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -616,7 +616,7 @@ The basic design of EMAN Processors: <br>\
 				TypeDict d;
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -663,13 +663,13 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Automatically detrmines the background for the image then uses this to perform Wiener filters on overlapping subregions of the image, which are then combined using linear interpolation";
 		}
-		
+
 		static const string NAME;
-		
+
 		protected:
 		int bgsize;
 	};
-	
+
 	/** Segment a volume into subvolumes based on a center separation value. For linear densities
 	 * such as skeletons this should fill linear regions with uniformly separated points
 	 *
@@ -708,7 +708,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	};
 
 	/** Segment a volume into ~n subvolumes using K-means classification
@@ -752,7 +752,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	};
 
 
@@ -799,7 +799,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 		protected:
 		Ctf *ctf;
 	};
@@ -843,9 +843,9 @@ The basic design of EMAN Processors: <br>\
 	class LinearRampFourierProcessor:public FourierProcessor
 	{
 		public:
-			virtual string get_name() const 
-			{ 
-				return NAME; 
+			virtual string get_name() const
+			{
+				return NAME;
 			}
 
 			virtual string get_desc() const
@@ -857,9 +857,9 @@ The basic design of EMAN Processors: <br>\
 			{
 				return new LinearRampFourierProcessor();
 			}
-			
+
 			static const string NAME;
-			
+
 		protected:
 			virtual void create_radial_func(vector < float >&radial_mask) const ;
 	};
@@ -920,7 +920,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -972,7 +972,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -996,9 +996,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "This processor sharpens a map based on the concept that the power spectrum should be roughly flat over the ~15 A-Nyquist resolution range, then combines this inverse B-factor with the specified low-pass Gaussian filter parameters to produce a single aggregate Gaussian filter.";
 		}
-		
+
 		static const string NAME;
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d = FourierAnlProcessor::get_param_types();
@@ -1033,7 +1033,7 @@ The basic design of EMAN Processors: <br>\
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
 			}
 		}
-		
+
 		void create_radial_func(vector < float >&radial_mask,EMData *image) const;
 	};
 
@@ -1057,7 +1057,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 		  virtual void preprocess(EMData * image);
@@ -1085,7 +1085,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -1108,7 +1108,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1134,7 +1134,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1161,7 +1161,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
@@ -1207,7 +1207,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask) const;
 
@@ -1268,9 +1268,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return new AbsoluateValueProcessor();
 		}
-		
+
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1302,7 +1302,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = 0 if x = 0; f(x) = 1 if x != 0;";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1349,7 +1349,7 @@ The basic design of EMAN Processors: <br>\
 			}
 
 			static const string NAME;
-			
+
 		protected:
 			void process_pixel(float *x) const
 			{
@@ -1392,7 +1392,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x ^ pow;";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1424,7 +1424,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x * x;";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1452,7 +1452,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = sqrt(x)";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1487,7 +1487,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "f(x) = x if x >= minval; f(x) = 0 if x < minval.";
 			}
-			
+
 			static const string NAME;
 
 		protected:
@@ -1525,7 +1525,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "The 2D image is rotated by 180 degree by carefully swapping image pixel values. No explicit matrix multiplication is performed. If image dimensions are even will change pixels along x=0 and y=0. Works for all combinations of even and oddness.";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -1570,9 +1570,9 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "The image is transformed using Transform parameter.";
 			}
-			
+
 			static const string NAME;
-			
+
 		private:
 			float* transform(const EMData* const image, const Transform& t) const;
 			// This function became redundant if favor of EMData::scale_pixel
@@ -1625,9 +1625,9 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "The image is translated an integer amount";
 			}
-			
+
 			static const string NAME;
-			
+
 		private:
 			/** Check that the particular aspect is valid
 		 	* @exception ImageDimensionException if the image is not 1,2 or 3D
@@ -1686,7 +1686,7 @@ The basic design of EMAN Processors: <br>\
 				{
 					return "The image is scaled with the clip variable in mind, being sure to preserve as much pixel information as possible.";
 				}
-				
+
 				static const string NAME;
 		};
 
@@ -1727,7 +1727,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float default_max, default_min;
 	};
@@ -1766,7 +1766,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "This function clamps the min and max vals in the image at minval and maxval at mean-n*sigma and mean+n*sigma, respectively. The parameter specified by the user is n, the default value of n is 2.";
 			}
-			
+
 			static const string NAME;
 
 		protected:
@@ -1802,7 +1802,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x if x >= minval; f(x) = minval|newval if x < minval.";
 		}
-		
+
 		static const string NAME;
 
 	protected:
@@ -1836,7 +1836,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = x-minval if x >= minval; f(x) = 0 if x < minval.";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -1876,7 +1876,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -1933,7 +1933,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "f(k) = 0 + 0i if ||f(k)|| < value; f(k) = 1 + 0i if ||f(k)|| >= value.";
 			}
-			
+
 			static const string NAME;
 		};
 
@@ -1972,7 +1972,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2026,7 +2026,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -2078,7 +2078,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = exp( x / low - high)";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2138,7 +2138,7 @@ The basic design of EMAN Processors: <br>\
 			}
 
 			static const string NAME;
-			
+
 		protected:
 			/**
 			*
@@ -2189,7 +2189,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -2243,7 +2243,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -2278,7 +2278,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -2456,7 +2456,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_dist_pixel(float *pixel, float dist) const
 		{
@@ -2507,7 +2507,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void calc_locals(EMData * image);
 
@@ -2542,7 +2542,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "fills masked region";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2590,7 +2590,7 @@ The basic design of EMAN Processors: <br>\
 			return "a gaussian falloff to zero, radius is the 1/e of the width. If inner_radius>0, then \
 outer radius specifies width of Gaussian starting at inner_radius rather than total radius.";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2666,7 +2666,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 			return "A Gaussian falloff to zero. Nonisotropic, specify inner radius for x,y,z and Gaussian falloff width. Falloff \
 width is also nonisotropic and relative to the radii, with 1 being equal to the radius on that axis.";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2708,7 +2708,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2773,9 +2773,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "overwrites input, f(x) = radius * radius";
 		}
-		
+
 		static const string NAME;
-		
+
 	  protected:
 		void process_dist_pixel(float *pixel, float dist) const
 		{
@@ -2803,7 +2803,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_dist_pixel(float *pixel, float dist) const
 		{
@@ -2847,7 +2847,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *x) const
 		{
@@ -2922,7 +2922,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Discrete approximation to Laplacian. Edge enchancement, but works poorly in the presence of noise. Laplacian processor (x -> d^2/dx^2 + d^2/dy^2 + d^2/dz^2).";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -2950,7 +2950,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *pixel, float, float, float, float *matrix) const
 		{
@@ -3071,9 +3071,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "pixel = standard deviation of values surrounding pixel.";
 		}
-		
+
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
@@ -3110,7 +3110,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
@@ -3145,7 +3145,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
@@ -3196,7 +3196,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
@@ -3248,7 +3248,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("fill_half_width", EMObject::FLOAT, "fill_half_width is dx/dy for fill/step");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3366,7 +3366,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 			static const string NAME;
-			
+
 		private:
 			struct GreaterThan
 			{
@@ -3423,7 +3423,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("search", EMObject::INT, "The search area (cubic volume width, usually the same as shrink)");
 				return d;
 			}
-			
+
 			static const string NAME;
 
 		private:
@@ -3483,9 +3483,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("n", EMObject::FLOAT, "The shrink factor");
 				return d;
 			}
-			
+
 			static const string NAME;
-			
+
 		private:
 			/** Accrue the local mean in the image 'from' to the image 'to' using the given shrinkfactor
 			 * An internal function that encapsulates a routine common to both process and
@@ -3555,9 +3555,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("n", EMObject::INT, "The shrink factor");
 			return d;
 		}
-		
+
 		static const string NAME;
-		
+
 	private:
 		/** Accrue the local median in the image 'from' to the image 'to' using the given shrinkfactor
 		* An internal function that encapsulates a routine common to both process and
@@ -3605,9 +3605,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("n", EMObject::FLOAT, "The sample rate. Less than one enlarges the image, greater than one shrinks it.");
 				return d;
 			}
-			
+
 			static const string NAME;
-			
+
 		private:
 			/** An internal function that encapsulates a routine common to both process and
 			* process inplace
@@ -3639,7 +3639,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Gradient remover, does a rough plane fit to find linear gradients.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3678,7 +3678,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("planeParam", EMObject::FLOATARRAY, "fitted plane parameters output");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3716,7 +3716,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("radius", EMObject::INT, "The radius of circle/sphere that defines the local neighborhood. Exclusive of the mask argument");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -3744,7 +3744,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				   "the picture.  A wedge-shaped overall density "
 				   "profile can thus be removed from the picture.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3769,7 +3769,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Tries to fix images scanned on the zeiss for poor ccd normalization.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3794,7 +3794,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "This will replace the image with a full-circle 2D fft amplitude rendering. Note that this renders amplitude, when intensity is more common.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3819,7 +3819,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3856,7 +3856,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("value3", EMObject::FLOAT, "y of center");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3881,7 +3881,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3939,7 +3939,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("width", EMObject::INT, "Width of the decay region around the edge of the image in pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -3977,7 +3977,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("y1", EMObject::INT, "The number of rows to zero from the top");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4019,7 +4019,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("z1", EMObject::INT, "The number of slices to zero from the top");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4058,7 +4058,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("half_width", EMObject::INT, "processing window size = (2 * half_widthh + 1) ^ 3.");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4100,7 +4100,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
@@ -4129,7 +4129,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
@@ -4157,7 +4157,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "do a standard normalization on an image.";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -4195,7 +4195,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
@@ -4225,7 +4225,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 			void process_inplace(EMData * image);
-			
+
 			static const string NAME;
 	};
 
@@ -4265,7 +4265,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 			void process_inplace(EMData * image);
-			
+
 			static const string NAME;
 	};
 
@@ -4291,7 +4291,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_mean(EMData * image) const;
 	};
@@ -4317,7 +4317,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_mean(EMData * image) const;
 	};
@@ -4343,7 +4343,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_mean(EMData * image) const;
 	};
@@ -4369,7 +4369,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float calc_sigma(EMData * image) const;
 		float calc_mean(EMData * image) const;
@@ -4396,7 +4396,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 		void process_inplace(EMData * image);
 	};
 
@@ -4459,7 +4459,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Makes image circularly/spherically symmetric.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4484,7 +4484,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "subtracts circularly/spherically symmetric part of an image.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4529,7 +4529,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Get the transpose of an image. Works for 2D only";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -4627,7 +4627,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "add noise to an image, image multiply by noise then add a random value";
 		}
-		
+
 		static const string NAME;
 
 	  protected:
@@ -4658,7 +4658,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		float get_sigma(EMData * image);
 	};
@@ -4735,7 +4735,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Undoes the xform.fourierorigin.tocenter processor";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -4775,7 +4775,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Translates the origin in Fourier space from the corner to the center in y and z - works in 2D and 3D";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -4856,7 +4856,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Undoes the effect of the xform.phaseorigin.tocorner processor";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -4886,7 +4886,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Translates a centered image to the corner in a forward fashion";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -4965,7 +4965,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Masks out a specific asymmetric unit of the given symmetry. If the au parameter is -1 will mask all asymmetric units, assigning the asymetric unit number to the masked area.";
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -5003,7 +5003,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		static void search_nearby(float *dat, float *dat2, int nx, int ny, int nz, float thr);
 		static void fill_nearby(float *dat2, int nx, int ny, int nz);
-		
+
 		static const string NAME;
 	};
 
@@ -5047,7 +5047,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("verbose", EMObject::INT, "How verbose to be (stdout)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5080,7 +5080,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("nshells", EMObject::INT, "number of shells to add");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5114,7 +5114,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -5149,7 +5149,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 //			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5181,7 +5181,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5216,7 +5216,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("snrfile", EMObject::STRING, "structure factor file name");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5249,7 +5249,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("filename", EMObject::STRING, "file name for a 2 column text file which specified a radial function data array.");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5292,7 +5292,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("symlabel_map", EMObject::EMDATA, "the optional return map when output_symlabel=1");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5329,7 +5329,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("apix", EMObject::FLOAT, "Angstrom per pixel ratio");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5364,7 +5364,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5397,7 +5397,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("filename", EMObject::STRING, "mask image file name");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5460,7 +5460,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
-		
+
 		protected:
 		virtual void process_inplace(EMData *image);
 
@@ -5552,9 +5552,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("minval", EMObject::FLOAT,"min value");
 			return d;
 		}
-		
+
 		static const string NAME;
-		
+
 	  private:
 		  vector<Vec3i > watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& cordinate, const int mask_value);
 		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
@@ -5612,7 +5612,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("with", EMObject::EMDATA,"The second image");
 				return d;
 			}
-			
+
 			static const string NAME;
 		private:
 			Type op;
@@ -5654,7 +5654,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				if (left < right) return left;
 				return right;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -5686,9 +5686,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
 			return d;
 		}
-		
+
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 	};
@@ -5724,9 +5724,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
-		
+
 		static const string NAME;
-		
+
 	  protected:
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 	};
@@ -5760,7 +5760,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("mask", EMObject::FLOAT, "mask value");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5795,7 +5795,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("val2", EMObject::FLOAT, "number of Gaussian pixels to expand, following the first expansion");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5853,7 +5853,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("z_center", EMObject::FLOAT, "center for this Gaussian blob on z direction" );
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5886,7 +5886,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("sigma", EMObject::FLOAT, "sigma value");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5920,7 +5920,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("profile", EMObject::FLOATARRAY, "The noise profile, squared amplitude. As in, what is the EMAN2CTF.background attribute");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -5957,7 +5957,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("boost", EMObject::FLOAT, "Multiplicative signal boost");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -5993,7 +5993,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("period", EMObject::FLOAT, "The period of the oscillating sine wave. Default 10.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -6027,9 +6027,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return new TestTomoImage();
 			}
-			
+
 			static const string NAME;
-			
+
 		private:
 			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d  = Transform() );
 			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d = Transform() );
@@ -6071,7 +6071,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("b", EMObject::FLOAT, "b in the equation m*axis+b. Default is 0.0");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -6113,7 +6113,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("fill", EMObject::FLOAT, "value to make non-zero pixels");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -6150,7 +6150,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6181,7 +6181,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6222,7 +6222,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("z", EMObject::FLOAT, "center of the spherical wave");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6267,7 +6267,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("phi", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, phi for euler angle, default is zero");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6306,7 +6306,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("phase", EMObject::FLOAT, "(optional)phase for sine wave, default is 0");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6345,7 +6345,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled, 1 for filled, 0 for blank");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6379,14 +6379,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("a", EMObject::FLOAT, "equatorial radii along x axes");
-			d.put("b", EMObject::FLOAT, "equatorial radii along y axes");
-			d.put("c", EMObject::FLOAT, "polar radius");
+			d.put("a", EMObject::FLOAT, "equatorial radius along x axes (major semiaxes)");
+			d.put("b", EMObject::FLOAT, "equatorial radius along y axes (minor semiaxes)");
+			d.put("c", EMObject::FLOAT, "polar radius for ellipsoid (x^2/a^2+y^2/b^2+z^2/c^2=1)");
 			d.put("transform", EMObject::TRANSFORM, "Optionally transform the ellipse");
 			d.put("fill", EMObject::FLOAT, "value you want to fill in ellipse, default to 1.0");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6435,7 +6435,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("fill", EMObject::FLOAT, "value you want to fill in hollow ellipse, default to 1.0");
 				return d;
 			}
-			
+
 			static const string NAME;
 		};
 
@@ -6474,7 +6474,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled, 1 for filled, 0 for blank.");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6508,7 +6508,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("seed", EMObject::INT, "seed for random number generator");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6551,7 +6551,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6587,7 +6587,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6622,7 +6622,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("width", EMObject::INT, "number of pixels on either side of the seam to sample");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6661,7 +6661,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Computes the DWT (discrete wavelet transform) of an image in one of 3 possible bases";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6711,7 +6711,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Masks the part of the image which is not present in the 0-tilt image. Masked areas can be 0 or set to the edgemean (of the nearest or both edges). Masked areas can also have a Gaussian fall-off to make the appearance smooth.";
 		}
-		
+
 		static const string NAME;
 
 	private:
@@ -6772,7 +6772,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Weights the image by 1/cos(angle)";
 			}
-			
+
 			static const string NAME;
 
 	};
@@ -6806,7 +6806,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Computes the DFFT (Discrete Fast Fourier Transform) of an image";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6840,7 +6840,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "Multiply a real-space image by a radial function. 1 value / pixel, extending to corner. Missing values -> 0.";
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -6879,9 +6879,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Bins pixel values, similar to calculating a histogram. The histogram is comprised of 'nbins' bins, and the value assigned to each pixel in the bin is the midpoint of the bin's upper and lower limits. Defaults to 256 bins";
 			}
-			
+
 			static const string NAME;
-			
+
 		protected:
 			int default_bins;
 	};
@@ -6923,10 +6923,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			//TODO: Check with Matt Baker about description strings
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	class ApplyPolynomialProfileToHelix : public ModelHelixProcessor
 	{
 	public:
@@ -6953,7 +6953,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("z0", EMObject::INT, "z coordinate in pixels for the midpoint of the cylinder's axis, defaults to center of map");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -7021,9 +7021,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Multiplies each pixel by a constant value";
 			}
-			
+
 			static const string NAME;
-			
+
 		protected:
 	};
 
@@ -7059,9 +7059,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				return "Performs Fourier based cross correlation on the GPU";
 			}
-			
+
 			static const string NAME;
-			
+
 		protected:
 	};
 
@@ -7161,7 +7161,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
