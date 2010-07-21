@@ -718,8 +718,9 @@ x=abs(x);
 y=abs(y);
 
 if (x>=dim || y>=dim) {
-	if (x>4095 || y>4095) return (float)hypot((float)x,(float)y);		// We won't cache anything bigger than 4096^2
-	dim=dim==0?128:dim*2;
+	if (x>2048 || y>2048) return (float)hypot((float)x,(float)y);		// We won't cache anything bigger than 4096^2
+	dim=x>=dim?x+1:dim;
+	dim=y>=dim?y+1:dim;
 	mem=(float*)realloc(mem,4*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {
@@ -744,7 +745,8 @@ y=abs(y);
 
 if (x>=dim || y>=dim) {
 	if (x>4095 || y>4095) return (short)hypot((float)x,(float)y);		// We won't cache anything bigger than 4096^2
-	dim=dim==0?128:dim*2;
+	dim=x>=dim?x+1:dim;
+	dim=y>=dim?y+1:dim;
 	mem=(short*)realloc(mem,2*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {

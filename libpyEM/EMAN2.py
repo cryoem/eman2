@@ -1535,6 +1535,10 @@ def data_dims_power_of(data,val):
 		
 	return True
 
+def ctfprint(self) : return 'EMAN2Ctf().from_dict({"defocus":%1.5f,"bfactor":%1.1f,"ampcont":%1.2f,"apix":%1.3f,"voltage":%1.2f,"cs":%1.2f}) ...'%(self.defocus,self.bfactor,self.ampcont,self.apix,self.voltage,self.cs)
+EMAN2Ctf.__repr__=ctfprint
+EMAN2Ctf.__str__=ctfprint
+
 def vec2fprint(self) : return "Vec2f(%1.2f,%1.2f)"%(self[0],self[1])
 Vec2f.__repr__=vec2fprint
 Vec2f.__str__=vec2fprint

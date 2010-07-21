@@ -1013,7 +1013,8 @@ class EMImage2DModule(EMGUIModule):
 						self.fft.set_value_at(0,0,0,0)
 						self.fft.set_value_at(1,0,0,0)
 					if val==1 :
-						self.display_fft = self.fft.process("xform.phaseorigin.tocorner")
+#						self.display_fft = self.fft.process("xform.phaseorigin.tocorner")
+						self.display_fft = self.fft.copy()
 						return True
 					elif val==2 :
 						self.display_fft = self.fft.process("xform.fourierorigin.tocenter")
@@ -1041,7 +1042,8 @@ class EMImage2DModule(EMGUIModule):
 						
 					fft = self.list_fft_data[self.list_idx]
 					if val==1 :
-						self.display_fft = fft.process("xform.phaseorigin.tocorner")
+#						self.display_fft = fft.process("xform.phaseorigin.tocorner")
+						self.display_fft = fft.copy()
 						return True
 					elif val==2 :
 						self.display_fft = fft.process("xform.fourierorigin.tocenter")
@@ -1109,10 +1111,14 @@ class EMImage2DModule(EMGUIModule):
 				return
 #			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
 			a=(3,(self.gl_widget.width()*3-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,19))
-		elif self.curfft in (2,3) :
+		elif self.curfft ==2  :
 			if not self.glflags.npt_textures_unsupported():
 				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
 			else : a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
+		elif self.curfft ==3  :
+			if not self.glflags.npt_textures_unsupported():
+				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+			else : a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 		else : 
 			if not self.glflags.npt_textures_unsupported():
 				a=(1,(self.gl_widget.width()-1)/4*4+4,self.gl_widget.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
