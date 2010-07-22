@@ -9099,7 +9099,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 
 
         if( myid == 0 ):
-		foutput = open( prefix+".txt", "w" )
+		foutput = open( prefix, "w" )
 
 	
 	if(neigvol < 0):

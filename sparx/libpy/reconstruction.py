@@ -267,7 +267,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	
 	r = Reconstructors.get("nn4", params)
 	r.setup()
-	
+
 	if type(stack_name) == types.StringType:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
