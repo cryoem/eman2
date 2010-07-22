@@ -58,6 +58,18 @@ def project(volume, params, radius):
 """
 Temporarily disabled as list cannot be passed to projector.
 def prl(vol, params, radius, stack = None):
+	"""
+		Name
+			prl - calculate a set of 2-D projection of a 3-D volume
+		Input
+			vol: input volume, all dimensions have to be the same (nx=ny=nz)
+			params: a list of input parameters given as a list [i][phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
+			radius: integer radius of a sphere - projection is calculated using voxels within this sphere.
+		Output
+			proj
+				either: an in-core stack of generated 2-D projection
+			stack
+	"""
 	from fundamentals import rot_shift2D
 	for i in xrange(len(params)):
         	myparams = {"angletype":"SPIDER", "anglelist":params[i][0:3], "radius":radius}
@@ -74,6 +86,17 @@ def prl(vol, params, radius, stack = None):
 	else:      return out
 """
 def prj(vol, params, stack = None):
+	"""
+		Name
+			prj - calculate a set of 2-D projection of a 3-D volume
+		Input
+			vol: input volume, all dimensions have to be the same (nx=ny=nz)
+			params: a list of input parameters given as a list [i][phi, theta, psi, sx, sy], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+		Output
+			proj
+				either: an in-core stack of generated 2-D projections
+			stack
+	"""
 	from utilities import set_params_proj
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
@@ -89,6 +112,15 @@ def prj(vol, params, stack = None):
 	else:       return out
 
 def prgs(volft, kb, params):
+	"""
+		Name
+			prg - calculate 2-D projection of a 3-D volume
+		Input
+			vol: input volume, all dimensions have to be the same (nx=ny=nz)
+			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+		Output
+			proj: generated 2-D projection
+	"""
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
 	from utilities import set_params_proj
@@ -226,6 +258,15 @@ def prg(volume, params):
 	return  prgs(volft,kb,params)
 
 def prep_vol(vol):
+	"""
+		Name
+			prep_vol - prepare the volume for calculation of gridding projections and generate the interpolants.
+		Input
+			vol: input volume for which projections will be calculated using prgs
+		Output
+			volft: volume prepared for gridding projections using prgs
+			kb: interpolants (tabulated Kaiser-Bessel function)
+	"""
 	# prepare the volume
 	M     = vol.get_xsize()
 	# padd two times
