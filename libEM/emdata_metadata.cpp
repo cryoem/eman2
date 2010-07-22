@@ -202,22 +202,6 @@ EMData* EMData::get_fft_phase()
 
 float* EMData::get_data() const
 {
-// This is inappropriate, should ONLY be in set_size. Was added by David for CUDA work
-// I'm taking it back out again  --steve 11/03/2009
-/*	if (num_bytes > 0 && rdata == 0) {
-		rdata = (float*)EMUtil::em_malloc(num_bytes);
-		if ( rdata == 0 )
-		{
-			stringstream ss;
-			string gigs;
-			ss << num_bytes/1000000000.0;
-			ss >> gigs;
-			string message = "Cannot allocate " + gigs + " GB - not enough memory.";
-			throw BadAllocException(message);
-		}
-		if (rdata == 0) throw BadAllocException("The allocation of the raw data failed");
-	}*/
-#ifdef EMAN2_USING_CUDA
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
@@ -227,7 +211,7 @@ float* EMData::get_data() const
 		copy_gpu_ro_to_cpu();
 	}
 	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
-#endif
+
 	return rdata;
 
 }

@@ -2676,8 +2676,6 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
 
-	float *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
-
 	float* data = this->get_data();
 
 	// trig
@@ -2695,7 +2693,6 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
 		}
 	}
-	if (t) free(t);
 	set_array_offsets(saved_offsets);
 	return ret;
 }
@@ -5500,8 +5497,8 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	EMUtil::dump_dict(d1);
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
-	delete temp_ft;
-	temp_ft = 0;
+	free(temp_ft->get_data());
+	free(temp_ft);
 	return ret;
 }
 
@@ -5608,8 +5605,8 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
 	if (!is_complex()) {
-		delete temp_ft;
-		temp_ft = 0;
+		free(temp_ft->get_data());
+		free(temp_ft);
 	}
 	return ret;
 }
@@ -5752,8 +5749,8 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 	}
 	ret->update();
 
-	delete temp_ft;
-	temp_ft = 0;
+	free(temp_ft->get_data());
+	free(temp_ft);
 	return ret;
 }
 
@@ -5831,8 +5828,8 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 	}
 	ret->update();
 
-	delete temp_ft;
-	temp_ft = 0;
+	free(temp_ft->get_data());
+	free(temp_ft);
 	return ret;
 }
 
