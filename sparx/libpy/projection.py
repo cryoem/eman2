@@ -32,6 +32,16 @@ from EMAN2_cppwrap import *
 from global_def import *
 
 def project(volume, params, radius):
+	"""
+		Name
+			project - calculate 2-D projection of a 3-D volume
+		Input
+			vol: input volume, all dimensions have to be the same
+			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
+		radius: radius of a sphere within which the projection of the volume will be calculated
+		Output
+		proj: generated 2-D projection
+	"""
         # angles phi, theta, psi
 	from fundamentals import rot_shift2D
 	from utilities import set_params_proj
