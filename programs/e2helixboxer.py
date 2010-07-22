@@ -77,6 +77,14 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     return helix
 
 def get_particle_centroids(helix_coords, px_overlap = None, px_length = None, px_width = None):
+    """
+    Gets the coordinates for the overlapping particles in a helix.
+    @helix_coords: (x1, y1, x2, y2, width) for the helix
+    @px_overlap: The overlap in pixels between a particle and the next particle, measured along the axis of the helix
+    @px_length: The length in pixels of a particle along the axis of the helix
+    @px_width: The width in pixels of the particle
+    @return: The coordinates on the micrograph of the centroids of the particles in pixels: [(x0,y0),(x1,y1),(x2,y2),...]
+    """
     (x1,y1,x2,y2,w) = helix_coords
     l_vect = (x2-x1,y2-y1)
     helix_length = sqrt(l_vect[0]**2+l_vect[1]**2)
@@ -140,7 +148,16 @@ def get_particles_from_helix( helix, px_overlap = None, px_length = None, px_wid
     
     return particles
 
-def get_unrotated_particles(helix_emdata, helix_coords, px_overlap = None, px_length = None, px_width = None):
+def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None):
+    """
+    For a helix, gets particles that have horizontal and vertical sides on the micrograph.
+    @micrograph: EMData object for the micrograph
+    @helix_coords: (x1,y1,x2,y2,width) tuple for a helix
+    @px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*max(px_length,px_width)
+    @px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
+    @px_width: width of the particles in pixels, defaults to px_length
+    @return: a list of EMData particles
+    """
     #Will be square
     if not px_length and not px_width:
         side = helix_coords[4]
