@@ -2624,8 +2624,6 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 
 EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 
-	int nxn, nyn, nzn;
-
 	if (scale_input == 0.0f) scale_input = 1.0f;
 	float  scale = 0.5f*scale_input;
 
@@ -2633,11 +2631,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz)
 		throw ImageDimensionException("Volume not currently supported");
-	nxn = nx/2; nyn = ny/2; nzn = nz/2;
-
-	int K = kb.get_window_size();
-	int kbmin = -K/2;
-	int kbmax = -kbmin;
+	int nxn = nx/2; int nyn = ny/2; int nzn = nz/2;
 
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -2671,7 +2665,6 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 
 	float* data = this->get_data();
 
-	// trig
 	float cang = cos(ang);
 	float sang = sin(ang);
 	for (int iy = 0; iy < nyn; iy++) {
