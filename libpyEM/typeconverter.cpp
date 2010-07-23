@@ -237,7 +237,7 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		result = python::incref(python::object(ip).ptr());
 	}
 	else if (t == EMObject::UNKNOWN) {
-		result = Py_None;
+		result = python::incref(Py_None);
 	}
 
 	return result;
