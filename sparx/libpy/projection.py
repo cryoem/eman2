@@ -55,7 +55,7 @@ def project(volume, params, radius):
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	return  proj
 
-"""
+'''
 Temporarily disabled as list cannot be passed to projector.
 def prl(vol, params, radius, stack = None):
 	"""
@@ -84,7 +84,7 @@ def prl(vol, params, radius, stack = None):
 			out.append(proj)
 	if(stack): return
 	else:      return out
-"""
+'''
 def prj(vol, params, stack = None):
 	"""
 		Name
