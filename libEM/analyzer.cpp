@@ -99,6 +99,8 @@ if (calcsigmamean) centers.resize(nclstot*2);
 else centers.resize(nclstot);
 if (mininclass<1) mininclass=1;
 
+for (int i=0; i<nptcl; i++) images[i]->set_attr("is_ok_center",(int)5);  // if an image becomes part of too small a set, it will (eventually) be marked as a bad center
+
 if (slowseed) {
 	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
 	ncls=2;
@@ -144,19 +146,30 @@ for (int i=0; i<ncls; i++) {
 	repr[i]=0;
 }
 
+// compute new position for each center
 for (int i=0; i<nptcl; i++) {
 	int cid=images[i]->get_attr("class_id");
-	centers[cid]->add(*images[i]);
-	if (sigmas) centers[cid+ncls]->addsquare(*images[i]);
-	repr[cid]++;
+	if ((int)images[i]->get_attr("is_ok_center")>0) {
+		centers[cid]->add(*images[i]);
+		if (sigmas) centers[cid+ncls]->addsquare(*images[i]);
+		repr[cid]++;
+	}
 }
 
 for (int i=0; i<ncls; i++) {
+	// If this class is too small
 	if (repr[i]<mininclass) {
+		// find all of the particles in the class, and decrement their "is_ok_center" counter.
+		// when it reaches zero the particle will no longer participate in determining the location of a center
+		for (int j=0; j<nptcl; j++) {
+			if ((int)images[j]->get_attr("class_id")==i) images[i]->set_attr("is_ok_center",(int)images[i]->get_attr("is_ok_center")-1);
+		}
+		// Mark the center for reseeding
 		delete centers[i];
 		centers[i]=0;
 		repr[i]=0;
 	}
+	// finishes off the statistics we started computing above
 	else {
 		centers[i]->mult((float)1.0/(float)(repr[i]));
 		centers[i]->set_attr("ptcl_repr",repr[i]);
@@ -180,56 +193,31 @@ delete [] repr;
 
 // This will look for any unassigned points and reseed each inside the class with the broadest distribution widely distributed
 void KMeansAnalyzer::reseed() {
-// if no classes need reseeding just return
 int nptcl=images.size();
 int i,j;
+
+// if no classes need reseeding just return
 for (i=0; i<ncls; i++) {
 	if (!centers[i]) break;
 }
 if (i==ncls) return;
 
-int * best = new int[ncls];	// particles in the average
-float *sigmas = new float[ncls]; // array of deviations
+// make a list of all particles which could be centers
+vector<int> goodcen;
+for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("is_ok_center")>0) goodcen.push_back(i);
 
-for (int i=0; i<ncls; i++) { sigmas[i]=0; best[i]=0; }
+if (goodcen.size()==0) throw UnexpectedBehaviorException("Kmeans ran out of valid center particles with the provided parameters");
 
-// compute the deviation of each class
-Cmp *c = Factory < Cmp >::get("sqeuclidean");
-for (int i=0; i<nptcl; i++) {
-	int cid=images[i]->get_attr("class_id");
-	if (!centers[cid]) continue;
-//	sigmas[cid]+=(float)imc->get_attr("square_sum");
-	float d=c->cmp(images[i],centers[cid]);
-	if (d>sigmas[cid]) {
-		sigmas[cid]=d;	// Instead of using sigma, use the largest distance in the class
-		best[cid]=i;
-	}
-}
-delete c;
-//for (i=0; i<ncls; i++) sigmas[i]/=repr[i];	//since we aren't doing a sigma now...
-
-//we could sort the list, but for this use we just search
+// pick a random particle for the new seed
 for (i=0; i<ncls; i++) {
-	if (centers[i]) continue;
-
-	float maxsig=0;
-	int maxi=0;
-	// find the class with the largest sigma
-	for (j=0; j<ncls; j++) {
-		if (sigmas[j]>maxsig) { maxsig=sigmas[j]; maxi=j; }
-	}
-
-	// find an image in that class
-	for (j=0; j<ncls; j++) if ((int)images[j]->get_attr("class_id")==maxi) break;
-	if (Util::get_irand(0,1)==0) centers[i]=images[best[maxi]]->copy();
-	else centers[i]=images[j]->copy();
+	if (centers[i]) continue;		// center doesn't need reseeding
+	j=Util::get_irand(0,goodcen.size()-1);
+	centers[i]=images[j]->copy();
 	centers[i]->set_attr("ptcl_repr",1);
-	sigmas[maxi]=0;		// if we get another one to reseed, pick the next largest set (zero out the current one)
-	printf("reseed %d -> %d (%d or %d)\n",i,maxi,best[maxi],j);
+	printf("reseed %d -> %d\n",i,j);
 }
 
-delete [] sigmas;
-delete [] best;
+
 }
 
 

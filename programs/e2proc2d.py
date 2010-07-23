@@ -101,7 +101,7 @@ def main():
 	parser.add_option("--calcsf", metavar="n outputfile", type="string", nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
 	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
-					help="Specify the output size in pixels (xsize,ysize), images can be made larger or smaller.")
+					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	parser.add_option("--exclude", metavar="exclude-list-file",
 					type="string", help="Excludes image numbers in EXCLUDE file")
 	parser.add_option("--fftavg", metavar="filename", type="string",
@@ -352,10 +352,14 @@ def main():
 				
 			elif option1 == "clip":
 				ci = index_d[option1]
-				clipx, clipy = options.clip[ci].split(",")
+				clipcx=nx/2
+				clipcy=ny/2
+				try: clipx,clipy,clipcx,clipcy = options.clip[ci].split(",")
+				except: clipx, clipy = options.clip[ci].split(",")
 				clipx, clipy = int(clipx),int(clipy)
+				clipcx, clipcy = int(clipcx),int(clipcy)
 				
-				e = d.get_clip(Region((nx-clipx)/2, (ny-clipy)/2, clipx, clipy))
+				e = d.get_clip(Region(clipcx-clipx/2, clipcy-clipy/2, clipx, clipy))
 				try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
 				except: pass
 				d = e

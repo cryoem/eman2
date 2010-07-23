@@ -56,6 +56,7 @@ def main():
 	
 	parser.add_option("--input", type="string", help="The name of the input particle stack", default=None)
 	parser.add_option("--output", type="string", help="The name of the output class stack", default=None)
+	parser.add_option("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
 	parser.add_option("--classmx", type="string", help="The name of the initial classification matrix", default=None)
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
 	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
@@ -147,6 +148,7 @@ class EMGenClassAverages:
 			d["averager"] = parsemodopt(options.averager)
 			d["automask"] = options.automask
 			d["resample"] = options.resample
+			d["storebad"] = options.storebad
 			
 			if hasattr(options,"ralign") and options.ralign != None: 
 				d["ralign"] = parsemodopt(options.ralign)
@@ -463,7 +465,8 @@ class EMGenClassAverages:
 				average.set_attr("projection_image",self.options.ref)
 #			average.write_image(self.options.output,rslts["class_idx"])
 			average.set_attr("class_ptcl_src",abs_path(self.options.input))
-			average.write_image(self.options.output,rslts["class_idx"])
+			if self.options.storebad : average.write_image(self.options.output,rslts["class_idx"])
+			else : average.write_image(self.options.output,-1)
 			ptcl_indices,dcol_idx_cache =  self.__get_class_data(rslts["class_idx"], self.options)
 			
 			final_alis = rslts["final_alis"]
@@ -483,8 +486,9 @@ class EMGenClassAverages:
 				sigma.set_attr("class_img",abs_path(options.output))
 				if average.has_attr("class_ptcl_idxs"):
 					sigma.set_attr("class_ptcl_idxs",average.get_attr("class_ptcl_idxs"))
-				sigma.write_image(new_name,rslts["class_idx"])
-					
+				if self.options.storebad : sigma.write_image(new_name,rslts["class_idx"])
+				else : sigma.write_image(new_name,-1)
+				
 class EMClassAveTask(EMTask):
 	'''
 	This is the class average task used to generate class average sequentially in a single program

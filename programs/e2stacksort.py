@@ -47,12 +47,20 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input_stack> <output_stack>
 	
-This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. """
+This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. 
+
+It can handle file sequences rather than a single stack file as well, in a limited form. If you have files named var3d_000.mrc, var3d_001.mrc, ...
+you can specify input (and output) files as (for example) var3d_%03d.mrc. The '3' indicates the number of digits in the value, the '0'
+means there should be leading zeroes in the name, and the 'd' means it is a decimal number.
+
+Note that there is no low-memory option for this command, and all images in the sequence are read in, so make sure you have enough
+RAM."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
+	parser.add_option("--simmask",type="string", help="A file containing a mask to apply prior to comparisons, to focus the sort on one particular region",default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_option("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
 	parser.add_option("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
@@ -78,18 +86,35 @@ This program will sort a stack of images based on some similarity criterion. Not
 	else: options.simalign=[None,None]
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
 	
-	a=EMData.read_images(args[0])
+	if options.simmask!=None : options.simmask=EMData(options.simmask,0)
+	
+	# read all images
+	if "%" not in args[0] :
+		a=EMData.read_images(args[0])
+	else :
+		a=[]
+		i=0
+		while 1:
+			try: im=EMData(args[0]%i,0)
+			except: break
+			a.append(im)
+			i+=1
+			
 	if options.nsort<2 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
-	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
-	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
-	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
-	for i,im in enumerate(b): im.write_image(args[1],i)
+	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
+	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
+	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
+	
+	if "%" not in args[1] :
+		for i,im in enumerate(b): im.write_image(args[1],i)
+	else :
+		for i,im in enumerate(b): im.write_image(args[1]%i,0)
 
 	E2end(E2n)
 
-def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
+def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
 	"""The goal here is to provide a "consensus orientation" for each particle, despite the impossibility
 	of this task for a distribution of projections on a sphere. Since in most cases a "perfect" answer is
 	impossible anyway, we avoid computing the full similarity matrix and use this iterative technique
@@ -105,6 +130,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 	for i,im in enumerate(stack): 
 		im.set_attr("align_target",(i+1)%len(stack))
 		ima=stackshrink[i].align(align,stackshrink[(i+1)%len(stack)],alignopts)
+		if mask!=None : ima.mult(mask)
 		c=stackshrink[i].cmp(cmptype,ima,cmpopts)
 		im.set_attr("align_qual",c)
 		im.set_attr("aligned",0)
@@ -119,6 +145,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 			if at!=i :
 				ima=stackshrink[i].align(align,stackshrink[at],alignopts)
 #				c=ima.cmp(cmptype,stackshrink[at],cmpopts)
+				if mask!=None : ima.mult(mask)
 				c=stackshrink[at].cmp(cmptype,ima,cmpopts)
 				if c<im.get_attr("align_qual") :
 					im.set_attr("align_qual",c)
@@ -130,6 +157,7 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 			while at==i or at==im.get_attr("align_target") : at=random.randint(0,len(stack)-1)
 			ima=stackshrink[i].align(align,stackshrink[at],alignopts)
 #			c=ima.cmp(cmptype,stackshrink[at],cmpopts)
+			if mask!=None : ima.mult(mask)
 			c=stackshrink[at].cmp(cmptype,ima,cmpopts)
 			if c<im.get_attr("align_qual"):
 				im.set_attr("align_qual",c)
@@ -186,7 +214,7 @@ def recursealign(stack,src,align,alignopts,ret):
 #	print "aligned", src
 	ret.append(stack[src])
 
-def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
+def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
 	"""Sorts a list of images in order of LEAST similarity"""
 	
 	stackshrink=[i.copy() for i in stack]
@@ -208,8 +236,9 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 			ci=None
 			for j,r in enumerate(rets):			# compare to all existing solutions, and use the MOST similar value
 				if align : ims=stackshrink[i].align(align,r,alignopts)
-				else : ims=stackshrink[i]
+				else : ims=stackshrink[i].copy()
 				if center : ims.process_inplace("xform.centerofmass")
+				if mask!=None : ims.mult(mask)
 				cc=r.cmp(cmptype,ims,cmpopts)
 				if cc<c : c,cj,ci=cc,j,ims
 #			print "\t%d. %1.3g (%d)"%(i,c,cj)
@@ -226,7 +255,7 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 
 	return ret
 
-def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
+def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
 	"""Sorts a list of images based on a standard 'cmp' metric. cmptype is the name
 	of a valid cmp type. cmpopts is a dictionary. Returns a new (sorted) stack.
 	The original stack is destroyed."""
@@ -242,7 +271,9 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
 		best=(1.0e38,-1)
 		for i,ims in enumerate(stackshrink):
 			if align : ims=ims.align(align,rets[-1],alignopts)
+			else: ims=ims.copy()
 			if center : ims.process_inplace("xform.centerofmass")
+			if mask!=None: ims.mult(mask)
 			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i,ims)
 		if useali : 

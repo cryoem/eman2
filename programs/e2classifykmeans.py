@@ -64,7 +64,7 @@ be classified. """
 	parser.add_option("--clsmx",type="string",default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
 	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
 	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
-	parser.add_option("--nosingle","-X",action="store_true",help="Try to eliminate classes with only 1 member",default=False)
+	parser.add_option("--mininclass",type="int",help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
 	parser.add_option("--original","-O",type="string",help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	parser.add_option("--minchange", type="int",default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = len(data)/(#cls*25)")
@@ -112,7 +112,7 @@ be classified. """
 	if options.fastseed : slowseed=0
 	else : slowseed=1
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":2})
+	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":options.mininclass})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()

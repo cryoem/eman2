@@ -970,7 +970,7 @@ int WienerFourierReconstructor::determine_slice_agreement(EMData*  input_slice, 
 	rotation->set_mirror(false);
 	rotation->set_trans(0,0,0);
 
-	tmp_data->write_image("dbug.hdf",0);
+//	tmp_data->write_image("dbug.hdf",0);
 	
 	// Remove the current slice first (not threadsafe, but otherwise performance would be awful)
 	if (sub) do_insert_slice_work(slice, *rotation, -weight);
