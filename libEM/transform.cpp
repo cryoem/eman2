@@ -1167,6 +1167,7 @@ void Transform::assert_valid_2d() const {
 	if (fabs(matrix[2][3]) > ERR_LIMIT) translation_error++;
 	if (fabs(matrix[0][2]) > ERR_LIMIT) rotation_error++;
 	if (fabs(matrix[1][2]) > ERR_LIMIT) rotation_error++;
+	if (fabs(matrix[2][2]-1.0) >ERR_LIMIT) rotation_error++; 
 	if ( translation_error && rotation_error ) {
 		throw UnexpectedBehaviorException("Error, the internal matrix contains 3D rotations and 3D translations. This object can not be considered 2D");
 	} else if ( translation_error ) {
