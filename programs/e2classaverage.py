@@ -1194,14 +1194,14 @@ class EMClassAveTaskDC(EMClassAveTask):
 		self.verbose - [0 - 9] (depends what the calling program supplied) 
 		'''
 		cache_name=self.data["input"][1]
-		image_cache=db_open_dict(cache_name)
+#		image_cache=db_open_dict(cache_name)
 		ptcl_indices = self.data["input"][2]
 		
 		images = {}
 		if self.data.has_key("usefilt") and self.data["usefilt"] != None:
 			usefilt_images = {}
 			usefilt_cache_name=self.data["usefilt"][1]
-			usefilt_image_cache=db_open_dict(usefilt_cache_name)
+#			usefilt_image_cache=db_open_dict(usefilt_cache_name)
 		else:
 			usefilt_images = None
 		
@@ -1210,14 +1210,14 @@ class EMClassAveTaskDC(EMClassAveTask):
 			norm = self.options["normproc"] # a list of length two
 			
 		for ptcl_idx in ptcl_indices:
-			image = image_cache[ptcl_idx]
+			image = EMData(cache_name,ptcl_idx)
 			if image == None: raise RuntimeError
 			if norm != None:
 				image.process_inplace(norm[0],norm[1])
 			images[ptcl_idx] = image
 			
 			if usefilt_images != None:
-				usefilt_image = usefilt_image_cache[ptcl_idx]
+				usefilt_image = EMData(usefilt_cache_name,ptcl_idx)
 				if norm != None:
 					usefilt_image.process_inplace(norm[0],norm[1])
 				usefilt_images[ptcl_idx] = usefilt_image
@@ -1233,8 +1233,8 @@ class EMClassAveTaskDC(EMClassAveTask):
 		ref = None
 		if self.data.has_key('ref') and self.data['ref'] != None:
 			cache_name=self.data["ref"][1]
-			ref_cache=db_open_dict(cache_name)
-			ref = ref_cache[self.data["ref"][2]]
+#			ref_cache=db_open_dict(cache_name)
+			ref = EMData(cache_name,self.data["ref"][2])
 		
 		verbose = 0
 		if self.options.has_key("verbose") and self.options["verbose"] != None:
