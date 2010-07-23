@@ -806,8 +806,8 @@ Output: 2D 3xk real image.
 	3 column - currently n /error of the FSC = 1/sqrt(n),
                      where n is the number of Fourier coefficients within given shell
 */
-	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky, ii;
-	float  dx2, dy2, dz2, argx, argy, argz;
+	int needfree=0, kz, ky, ii;
+	float  argx, argy, argz;
 
 	if (!with) {
 		throw NullPointerException("NULL input image");
@@ -817,9 +817,9 @@ Output: 2D 3xk real image.
 	EMData *f = this;
 	EMData *g = with;
 
-	nx  = f->get_xsize();
-	ny  = f->get_ysize();
-	nz  = f->get_zsize();
+	int nx  = f->get_xsize();
+	int ny  = f->get_ysize();
+	int nz  = f->get_zsize();
 
 	if (ny==0 && nz==0) {
 		throw ImageFormatException( "Cannot calculate FSC for 1D images");
@@ -830,48 +830,55 @@ Output: 2D 3xk real image.
 
 //  Process f if real
 	EMData* fpimage = NULL;
-	if(f->is_complex()) fpimage = f;
-	else {fpimage= f->norm_pad(false, 1); fpimage->do_fft_inplace(); needfree|=1;} // Extend and do the FFT if f is real
-
+	if (f->is_complex()) fpimage = f;
+	else {
+		fpimage= f->norm_pad(false, 1); 
+		fpimage->do_fft_inplace();
+		needfree|=1; // Extend and do the FFT if f is real
+	} 
 
 //  Process g if real
 	EMData* gpimage = NULL;
-	if(g->is_complex()) gpimage = g;
-	else {gpimage= g->norm_pad(false, 1); gpimage->do_fft_inplace(); needfree|=2;} // Extend and do the FFT if f is real
-
+	if (g->is_complex()) gpimage = g;
+	else {
+		gpimage= g->norm_pad(false, 1);
+		gpimage->do_fft_inplace();
+		needfree|=2;  // Extend and do the FFT if g is real
+	}
 
 	float *d1 = fpimage->get_data();
 	float *d2 = gpimage->get_data();
 
-	nx2=nx/2; ny2 = ny/2; nz2 = nz/2;
-	dx2 = 1.0f/float(nx2)/float(nx2);
-	dy2 = 1.0f/float(ny2)/float(ny2);
+	int nx2 = nx/2;
+	int ny2 = ny/2;
+	int nz2 = nz/2;
+
+	float dx2 = 1.0f/float(nx2)/float(nx2);
+	float dy2 = 1.0f/float(ny2)/float(ny2);
 
 #ifdef _WIN32
-	dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
-
+	float dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
 	int inc = Util::round(float( _cpp_max( _cpp_max(nx2,ny2),nz2) )/w );
 #else
-	dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
-
+	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
 #endif	//_WIN32
 
-	double *ret = new double[inc+1];
-	double *n1  = new double[inc+1];
-	double *n2  = new double[inc+1];
-	float  *lr  = new float[inc+1];
+	double ret[inc+1];
+	double n1[inc+1];
+	double n2[inc+1];
+	float  lr[inc+1];
 	for (int i = 0; i <= inc; i++) {
 		ret[i] = 0; n1[i] = 0; n2[i] = 0; lr[i]=0;
 	}
 
-	for ( iz = 0; iz <= nz-1; iz++) {
+	for (int iz = 0; iz <= nz-1; iz++) {
 		if(iz>nz2) kz=iz-nz; else kz=iz; argz = float(kz*kz)*dz2;
-		for ( iy = 0; iy <= ny-1; iy++) {
+		for (int iy = 0; iy <= ny-1; iy++) {
 			if(iy>ny2) ky=iy-ny; else ky=iy; argy = argz + float(ky*ky)*dy2;
-			for ( ix = 0; ix <= lsd2-1; ix+=2) {
+			for (int ix = 0; ix <= lsd2-1; ix+=2) {
 			// Skip Friedel related values
-				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+				if (ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
 					argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
 					int r = Util::round(inc*2*argx);
 					if(r <= inc) {
@@ -889,7 +896,7 @@ Output: 2D 3xk real image.
 	int  linc = 0;
 	for (int i = 0; i <= inc; i++) if(lr[i]>0) linc++;
 
-	vector < float >result(linc*3);
+	vector<float> result(linc*3);
 
 	ii = -1;
 	for (int i = 0; i <= inc; i++) {
@@ -905,28 +912,14 @@ Output: 2D 3xk real image.
 			result[i+2*(inc+1)] = 0.0f;}*/
 	}
 
-	if( ret ) {
-		delete[]ret;
-		ret = 0;
-	}
-
-	if( n1 ) {
-		delete[]n1;
-		n1 = 0;
-	}
-	if( n2 ) {
-		delete[]n2;
-		n2 = 0;
-	}
-
 	if (needfree&1) {
-		if( fpimage ) {
+		if (fpimage) {
 			delete fpimage;
 			fpimage = 0;
 		}
 	}
 	if (needfree&2) {
-		if( gpimage ) {
+		if (gpimage) {
 			delete gpimage;
 			gpimage = 0;
 		}
@@ -5497,8 +5490,8 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	EMUtil::dump_dict(d1);
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
-	free(temp_ft->get_data());
-	free(temp_ft);
+	delete temp_ft;
+	temp_ft = 0;
 	return ret;
 }
 
@@ -5605,8 +5598,8 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
 	if (!is_complex()) {
-		free(temp_ft->get_data());
-		free(temp_ft);
+		delete temp_ft;
+		temp_ft = 0;
 	}
 	return ret;
 }
@@ -5749,8 +5742,8 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 	}
 	ret->update();
 
-	free(temp_ft->get_data());
-	free(temp_ft);
+	delete temp_ft;
+	temp_ft = 0;
 	return ret;
 }
 
@@ -5828,8 +5821,8 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 	}
 	ret->update();
 
-	free(temp_ft->get_data());
-	free(temp_ft);
+	delete temp_ft;
+	temp_ft = 0;
 	return ret;
 }
 
