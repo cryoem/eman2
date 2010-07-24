@@ -93,6 +93,8 @@ def main():
 	if (options.check): options.verbose = 9 # turn verbose on if the user is only checking...
 	
 	error = check(options,True)
+
+	if options.resultmx!=None : options.storebad=True
 	
 	if (options.verbose>0):
 		if (error):

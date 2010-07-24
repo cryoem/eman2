@@ -333,7 +333,9 @@ def db_read_image(self,fsp,*parms):
 		
 		if keys:
 			key=keys[parms[0]]
-		else: key=parms[0]
+		else: 
+			try: key=parms[0]
+			except: key=0
 		
 		x=db.get(key,target=self,nodata=nodata,region=region)
 		if x==None : raise Exception("Could not access "+str(fsp)+" "+str(key))

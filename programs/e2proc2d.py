@@ -129,6 +129,7 @@ def main():
 					help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
 	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_option("--randomize", type="string", action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
+	parser.add_option("--rotate", type="float", action="append", help="Rotate clockwise (in degrees)")
 	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_option("--fp",  type="int", help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
 	parser.add_option("--scale", metavar="f", type="float", action="append",
@@ -139,6 +140,7 @@ def main():
 					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
 	parser.add_option("--split", metavar="n", type="int",
 					help="Splits the input file into a set of n output files")
+	parser.add_option("--translate", type="string", action="append", help="Translate by x,y pixels")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
@@ -149,7 +151,7 @@ def main():
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -349,7 +351,17 @@ def main():
 				if scale_f != 1.0:
 					d.scale(scale_f)
 				#index_d[option1] += 1
+
+			elif option1 == "rotate":
+				rotatef = options.rotate[index_d[option1]]
+				if rotatef!=0.0 : d.rotate(rotatef,0,0)
 				
+			elif option1 == "translate":
+				tdx,tdy=options.translate[index_d[option1]].split(",")
+				tdx,tdy=float(tdx),float(tdy)
+				if tdx !=0.0 or tdy != 0.0 :
+					d.translate(tdx,tdy,0.0)
+
 			elif option1 == "clip":
 				ci = index_d[option1]
 				clipcx=nx/2
