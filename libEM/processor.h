@@ -5318,7 +5318,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.";
+			return "This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a feature size over which to equalize.";
 		}
 
 		virtual TypeDict get_param_types() const

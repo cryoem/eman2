@@ -174,7 +174,7 @@ const string ACFCenterProcessor::NAME = "xform.centeracf";
 const string SNRProcessor::NAME = "eman1.filter.snr";
 const string FileFourierProcessor::NAME = "eman1.filter.byfile";
 const string SymSearchProcessor::NAME = "misc.symsearch";
-const string LocalNormProcessor::NAME = "misc.localnorm";
+const string LocalNormProcessor::NAME = "normalize.local";
 const string IndexMaskFileProcessor::NAME = "mask.fromfile";
 const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
 const string PaintProcessor::NAME = "mask.paint";
@@ -5889,15 +5889,15 @@ void LocalNormProcessor::process_inplace(EMData * image)
 	EMData *maskblur = image->copy();
 
 	maskblur->process_inplace("threshold.binary", Dict("value", threshold));
-	maskblur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
-	maskblur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
+	maskblur->process_inplace("filter.lowpass.gauss", Dict("cutoff_pixels", radius));
+//	maskblur->process_inplace("filter.highpass.tanh", Dict("highpass", -10.0f));
 	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
 	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
 
 
 	blur->process_inplace("threshold.belowtozero", Dict("minval", threshold));
-	blur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
-	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
+	blur->process_inplace("eman1.filter.lowpass.gaussian", Dict("cutoff_pixels", radius));
+//	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
 
 	maskblur->div(*blur);
 	image->mult(*maskblur);

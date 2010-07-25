@@ -619,6 +619,7 @@ void EMData::div(const EMData & em)
 					data[i] /= src_data[i];
 				}
 				else {
+					if (data[i]==0) continue;
 					throw InvalidValueException(src_data[i], "divide by zero");
 				}
 			}
