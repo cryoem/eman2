@@ -5892,7 +5892,7 @@ void LocalNormProcessor::process_inplace(EMData * image)
 	maskblur->process_inplace("filter.lowpass.gauss", Dict("cutoff_pixels", radius));
 //	maskblur->process_inplace("filter.highpass.tanh", Dict("highpass", -10.0f));
 	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
-	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
+//	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
 
 
 	blur->process_inplace("threshold.belowtozero", Dict("minval", threshold));
@@ -5901,7 +5901,7 @@ void LocalNormProcessor::process_inplace(EMData * image)
 
 	maskblur->div(*blur);
 	image->mult(*maskblur);
-	maskblur->write_image("norm.mrc", 0, EMUtil::IMAGE_MRC);
+//	maskblur->write_image("norm.mrc", 0, EMUtil::IMAGE_MRC);
 
 	if( maskblur )
 	{
