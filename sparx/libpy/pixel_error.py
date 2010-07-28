@@ -376,7 +376,8 @@ def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_c
 	"""
 	Generate the connection list from the multi_align_results, which generally comes from multi_align_diff_params()
 	The connection list will have the following format:
-		[[1, 2, 5], [4, 6], [0, 7]] 
+		[[1, 2, 5], [4, 6], [0, 7]]
+	You will also get the largest connection in the list.
 	"""
 	import sets
 	
@@ -409,9 +410,9 @@ def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_c
 
 def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	'''
-	This function determines the relative angle, shifts and mirrorness between
-	the two sets of alignment parameters. It also calculates the mirror consistent
-	rate and average pixel error between two sets of parameters.
+	This function first determines the relative angle, shifts and mirrorness between
+	the two sets of alignment parameters. It then determines whether each image is
+	stable or not and return this information as an int list. (1 is stable and 0 is unstable)
 	'''
 	from utilities import combine_params2
 	from math import sqrt, sin, pi
