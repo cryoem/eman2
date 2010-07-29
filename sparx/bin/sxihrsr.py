@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --maxit=max_iter --CTF --snr=1.0 --MPI --fourvar --dp --dphi --psi_max --rmin --rmax --fract --function --nise --npad --debug --sym=c1 --datasym=symdoc"
+	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -58,7 +58,13 @@ def main():
 	parser.add_option("--MPI",      action="store_true", default=False,         help="use MPI version")
 	parser.add_option("--fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--dp",       type="float",  default= 1.0,                help="delta z - translation in Angstroms")   
-	parser.add_option("--dphi",     type="float",  default= 1.0,                help="delta phi - rotation in degrees")   
+	parser.add_option("--dphi",     type="float",  default= 1.0,                help="delta phi - rotation in degrees")  
+	'''	
+	parser.add_option("--ndp_step",     type="int",  default= 10,                help="number of delta z steps in symmetrization") 
+	parser.add_option("--ndphi_step",     type="int",  default= 10,                help="number of dphi steps in symmetrization")  
+	parser.add_option("--dp_percent",     type="float",  default= 0.001,                help="delta z step percentage for symmetrization")  
+	parser.add_option("--dphi_percent",     type="float",  default= 0.001,                help="dphi step percentage for symmetrization")
+	'''   
 	parser.add_option("--psi_max",  type="float",  default= 20.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",     type="float",  default= 0.0,                help="minimal radius for hsearch")   
 	parser.add_option("--rmax",     type="float",  default= 80.0,               help="maximal radius for hsearch")
@@ -89,9 +95,9 @@ def main():
 		from applications import ihrsr
 		global_def.BATCH = True
 		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
-			options.yr, options.ts, options.delta, 
-			options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.psi_max,
-			options.rmin, options.rmax, options.fract, options.nise, options.npad,
+			options.yr, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
+		#	options.ndp_step, options.ndphi_step, options.dp_percent, options.dphi_percent, 
+			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
 			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
 		global_def.BATCH = False
 
