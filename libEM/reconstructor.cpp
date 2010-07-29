@@ -3287,248 +3287,222 @@ newfile_store::~newfile_store( )
 
 void newfile_store::add_image( EMData* emdata, const Transform& tf )
 {
-    if( m_bin_of == NULL )
-    {
-        m_bin_of = shared_ptr<ofstream>( new ofstream(m_bin_file.c_str(), std::ios::out|std::ios::binary) );
-        m_txt_of = shared_ptr<ofstream>( new ofstream(m_txt_file.c_str()) );
-    }
+	if( m_bin_of == NULL ) {
+	    m_bin_of = shared_ptr<ofstream>( new ofstream(m_bin_file.c_str(), std::ios::out|std::ios::binary) );
+	    m_txt_of = shared_ptr<ofstream>( new ofstream(m_txt_file.c_str()) );
+	}
 
 
-    EMData* padfft = padfft_slice( emdata, tf, m_npad );
+	EMData* padfft = padfft_slice( emdata, tf, m_npad );
 
-    int nx = padfft->get_xsize();
-    int ny = padfft->get_ysize();
-    int n2 = ny / 2;
-    int n = ny;
+	int nx = padfft->get_xsize();
+	int ny = padfft->get_ysize();
+	int n2 = ny / 2;
+	int n = ny;
 
-    float voltage=0.0f, pixel=0.0f, Cs=0.0f, ampcont=0.0f, bfactor=0.0f, defocus=0.0f;
+	float voltage=0.0f, pixel=0.0f, Cs=0.0f, ampcont=0.0f, bfactor=0.0f, defocus=0.0f;
 
-    if( m_ctf )
-    {
-        Ctf* ctf = emdata->get_attr( "ctf" );
-        Dict params = ctf->to_dict();
-        voltage = params["voltage"];
-        pixel   = params["apix"];
-        Cs      = params["cs"];
-        ampcont = params["ampcont"];
-        bfactor = params["bfactor"];
-        defocus = params["defocus"];
-        if(ctf) {delete ctf; ctf=0;}
-    }
+	if( m_ctf ) {
+		Ctf* ctf = emdata->get_attr( "ctf" );
+		Dict params = ctf->to_dict();
+		voltage = params["voltage"];
+		pixel	= params["apix"];
+		Cs	= params["cs"];
+		ampcont = params["ampcont"];
+		bfactor = params["bfactor"];
+		defocus = params["defocus"];
+		if(ctf) {delete ctf; ctf=0;}
+	}
 
-    vector<point_t> points;
-    for( int j=-ny/2+1; j <= ny/2; j++ )
-    {
-        int jp = (j>=0) ? j+1 : ny+j+1;
-        for( int i=0; i <= n2; ++i )
-        {
-            int r2 = i*i + j*j;
-            if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) )
-            {
-                float ctf;
-                if( m_ctf )
-                {
-		    float ak = std::sqrt( r2/float(ny*ny) )/pixel;
-                    ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
-                }
-                else
-                {
-                    ctf = 1.0;
-                }
+	vector<point_t> points;
+	for( int j=-ny/2+1; j <= ny/2; j++ ) {
+	    int jp = (j>=0) ? j+1 : ny+j+1;
+	    for( int i=0; i <= n2; ++i ) {
+		int r2 = i*i + j*j;
+		if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) {
+		    float ctf;
+		    if( m_ctf )
+		    {
+	    		float ak = std::sqrt( r2/float(ny*ny) )/pixel;
+			ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
+		    } else {
+			ctf = 1.0;
+		    }
 
-                float xnew = i*tf[0][0] + j*tf[1][0];
-                float ynew = i*tf[0][1] + j*tf[1][1];
-                float znew = i*tf[0][2] + j*tf[1][2];
-		std::complex<float> btq;
-		if (xnew < 0.)
-                {
-                    xnew = -xnew;
-                    ynew = -ynew;
-                    znew = -znew;
-                    btq = conj(padfft->cmplx(i,jp-1));
-                }
-                else
-                {
-                    btq = padfft->cmplx(i,jp-1);
-                }
+		    float xnew = i*tf[0][0] + j*tf[1][0];
+		    float ynew = i*tf[0][1] + j*tf[1][1];
+		    float znew = i*tf[0][2] + j*tf[1][2];
+	    	    std::complex<float> btq;
+	    	    if (xnew < 0.)
+		    {
+			xnew = -xnew;
+			ynew = -ynew;
+			znew = -znew;
+			btq = conj(padfft->cmplx(i,jp-1));
+		    } else {
+			btq = padfft->cmplx(i,jp-1);
+		    }
 
-                int ixn = int(xnew + 0.5 + n) - n;
-                int iyn = int(ynew + 0.5 + n) - n;
-                int izn = int(znew + 0.5 + n) - n;
-                if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2))
-                {
-                    int ixf, iyf, izf;
-                    if (ixn >= 0)
-                    {
-                        int iza, iya;
-                        if (izn >= 0)
-                            iza = izn + 1;
-                        else
-                            iza = n + izn + 1;
+		    int ixn = int(xnew + 0.5 + n) - n;
+		    int iyn = int(ynew + 0.5 + n) - n;
+		    int izn = int(znew + 0.5 + n) - n;
+		    if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
+			int ixf, iyf, izf;
+			if (ixn >= 0) {
+			    int iza, iya;
+			    if (izn >= 0)
+				iza = izn + 1;
+			    else
+				iza = n + izn + 1;
 
-                        if (iyn >= 0)
-                            iya = iyn + 1;
-                        else
-                            iya = n + iyn + 1;
+			    if (iyn >= 0)
+				iya = iyn + 1;
+			    else
+				iya = n + iyn + 1;
 
-                        ixf = ixn;
-                        iyf = iya;
-                        izf = iza;
-                    }
-                    else
-                    {
-                        int izt, iyt;
-                        if (izn > 0)
-                            izt = n - izn + 1;
-                        else
-                            izt = -izn + 1;
+			    ixf = ixn;
+			    iyf = iya;
+			    izf = iza;
+			} else {
+			    int izt, iyt;
+			    if (izn > 0)
+				izt = n - izn + 1;
+			    else
+				izt = -izn + 1;
 
-                        if (iyn > 0)
-                            iyt = n - iyn + 1;
-                        else
-                            iyt = -iyn + 1;
+			    if (iyn > 0)
+				iyt = n - iyn + 1;
+			    else
+				iyt = -iyn + 1;
 
-                        ixf = -ixn;
-                        iyf = iyt;
-                        izf = izt;
-                    }
+			    ixf = -ixn;
+			    iyf = iyt;
+			    izf = izt;
+			}
 
 
-                    int pos2 = ixf + (iyf-1)*nx/2 + (izf-1)*ny*nx/2;
-                    float ctfv1 = btq.real() * ctf;
-                    float ctfv2 = btq.imag() * ctf;
-                    float ctf2 = ctf*ctf;
+			int pos2 = ixf + (iyf-1)*nx/2 + (izf-1)*ny*nx/2;
+			float ctfv1 = btq.real() * ctf;
+			float ctfv2 = btq.imag() * ctf;
+			float ctf2 = ctf*ctf;
 
-                    point_t p;
-                    p.pos2 = pos2;
-                    p.real = ctfv1;
-                    p.imag = ctfv2;
-                    p.ctf2 = ctf2;
+			point_t p;
+			p.pos2 = pos2;
+			p.real = ctfv1;
+			p.imag = ctfv2;
+			p.ctf2 = ctf2;
 
-                    points.push_back( p );
-                }
+			points.push_back( p );
+		    }
+	    	}
 	    }
-        }
-    }
+	}
 
 
-    int npoint = points.size();
-    std::istream::off_type offset = (m_offsets.size()==0) ? 0 : m_offsets.back();
-    offset += npoint*sizeof(point_t);
-    m_offsets.push_back( offset );
+	int npoint = points.size();
+	std::istream::off_type offset = (m_offsets.size()==0) ? 0 : m_offsets.back();
+	offset += npoint*sizeof(point_t);
+	m_offsets.push_back( offset );
 
-    *m_txt_of << m_offsets.back() << std::endl;
-    m_bin_of->write( (char*)(&points[0]), sizeof(point_t)*npoint );
-    checked_delete( padfft );
+	*m_txt_of << m_offsets.back() << std::endl;
+	m_bin_of->write( (char*)(&points[0]), sizeof(point_t)*npoint );
+	checked_delete( padfft );
 }
 
 void newfile_store::get_image( int id, EMData* buf )
 {
-    if( m_offsets.size()==0 )
-    {
-        ifstream is( m_txt_file.c_str() );
-        std::istream::off_type off;
-        while( is >> off )
-        {
-            m_offsets.push_back( off );
-        }
+	if( m_offsets.size()==0 ) {
+		ifstream is( m_txt_file.c_str() );
+		std::istream::off_type off;
+		while( is >> off ) {
+		    m_offsets.push_back( off );
+		}
 
-        m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
-    }
+		m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+	}
 
-    Assert( m_bin_if != NULL );
+	Assert( m_bin_if != NULL );
 
-    std::istream::off_type offset = (id==0) ? 0 : m_offsets[id-1];
-    Assert( offset >= 0 );
-    m_bin_if->seekg( offset, std::ios::beg );
+	std::istream::off_type offset = (id==0) ? 0 : m_offsets[id-1];
+	Assert( offset >= 0 );
+	m_bin_if->seekg( offset, std::ios::beg );
 
 
-    if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() )
-    {
-        std::cout << "bad or fail or eof while fetching id, offset: " << id << " " << offset << std::endl;
-        throw std::logic_error( "bad happen" );
-    }
+	if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() ) {
+		std::cout << "bad or fail or eof while fetching id, offset: " << id << " " << offset << std::endl;
+		throw std::logic_error( "bad happen" );
+	}
 
-    int bufsize = (m_offsets[id] - offset)/sizeof(float);
-    if( buf->get_xsize() != bufsize )
-    {
-        buf->set_size( bufsize, 1, 1 );
-    }
+	int bufsize = (m_offsets[id] - offset)/sizeof(float);
+	if( buf->get_xsize() != bufsize ) {
+		buf->set_size( bufsize, 1, 1 );
+	}
 
-    char* data = (char*)(buf->get_data());
-    m_bin_if->read( data, sizeof(float)*bufsize );
-    buf->update();
+	char* data = (char*)(buf->get_data());
+	m_bin_if->read( data, sizeof(float)*bufsize );
+	buf->update();
 }
 
 void newfile_store::read( int nprj )
 {
-    if( m_offsets.size()==0 )
-    {
-        ifstream is( m_txt_file.c_str() );
-        std::istream::off_type off;
-        while( is >> off )
-        {
-            m_offsets.push_back( off );
-        }
-    }
+	if( m_offsets.size()==0 ) {
+	    ifstream is( m_txt_file.c_str() );
+	    std::istream::off_type off;
+	    while( is >> off ) {
+		m_offsets.push_back( off );
+	    }
+	}
 
-    if( m_bin_if==NULL )
-    {
-        m_bin_if = shared_ptr< ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
-    }
+	if( m_bin_if==NULL ) {
+	    m_bin_if = shared_ptr< ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+	}
 
 
-    int npoint = m_offsets[0]/sizeof(point_t);
-    std::ios::off_type prjsize = m_offsets[0];
+	int npoint = m_offsets[0]/sizeof(point_t);
+	std::ios::off_type prjsize = m_offsets[0];
 
-    try
-    {
-        m_points.resize(nprj * npoint);
-    }
-    catch( std::exception& e )
-    {
-        std::cout << "Error: " << e.what() << std::endl;
-    }
+	try {
+	    m_points.resize(nprj * npoint);
+	}
+	catch( std::exception& e ) {
+	    std::cout << "Error: " << e.what() << std::endl;
+	}
 
-    int ip = 0;
-    for( int i=0; i < nprj; ++i )
-    {
-        m_bin_if->read( (char*)(&m_points[ip]), prjsize );
-	    if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() )
-        {
-            std::cout << "Error: file hander bad or fail or eof" << std::endl;
-            return;
-        }
-        ip += npoint;
-    }
+	int ip = 0;
+	for( int i=0; i < nprj; ++i ) {
+		m_bin_if->read( (char*)(&m_points[ip]), prjsize );
+		if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() )  {
+			std::cout << "Error: file hander bad or fail or eof" << std::endl;
+			return;
+		}
+		ip += npoint;
+	}
 }
 
 void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend )
 {
-    float* vdata = fftvol->get_data();
-    float* wdata = wgtvol->get_data();
+	float* vdata = fftvol->get_data();
+	float* wdata = wgtvol->get_data();
 
-    int npoint = m_offsets[0]/sizeof(point_t);
+	int npoint = m_offsets[0]/sizeof(point_t);
 //    Assert( int(mults.size())==nprj );
-    Assert( int(m_points.size())== (pend - pbegin)*npoint );
+	Assert( int(m_points.size())== (pend - pbegin)*npoint );
 
-    for( int iprj=pbegin; iprj < pend; ++iprj )
-    {
-        int m = mults[iprj];
-        if( m==0 ) continue;
+	for( int iprj=pbegin; iprj < pend; ++iprj ) {
+		int m = mults[iprj];
+		if( m==0 ) continue;
 
-        int ipt = (iprj-pbegin)*npoint;
-        for( int i=0; i < npoint; ++i )
-        {
-            int pos2 = m_points[ipt].pos2;
-            int pos1 = pos2*2;
+		int ipt = (iprj-pbegin)*npoint;
+		for( int i=0; i < npoint; ++i )  {
+		    int pos2 = m_points[ipt].pos2;
+		    int pos1 = pos2*2;
 
-            wdata[pos2] += m_points[ipt].ctf2*m;
-            vdata[pos1] += m_points[ipt].real*m;
-            vdata[pos1+1]+= m_points[ipt].imag*m;
-            ++ipt;
-        }
-    }
+		    wdata[pos2]   += m_points[ipt].ctf2*m;
+		    vdata[pos1]   += m_points[ipt].real*m;
+		    vdata[pos1+1] += m_points[ipt].imag*m;
+		    ++ipt;
+		}
+	}
 }
 
 void newfile_store::restart()
