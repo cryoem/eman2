@@ -32,12 +32,12 @@
 #
 
 
-import os
-import global_def
-from global_def import *
-from optparse import OptionParser
-import sys
 def main():
+	import os
+	import sys
+	from optparse import OptionParser
+	from global_def import SPARXVERSION
+	import global_def
         arglist = []
         for arg in sys.argv:
         	arglist.append( arg )
