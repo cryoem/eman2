@@ -57,7 +57,8 @@ using namespace EMAN;
 static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
-:	file(-1), group(-1), filename(hdf_filename),
+:	nx(1), ny(1), nz(1), is_exist(false),
+	file(-1), group(-1), filename(hdf_filename),
 	rw_mode(rw), initialized(false)
 {
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
@@ -823,6 +824,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	ENTERFUNC;
 	init();
 
+	nx = (int)dict["nx"];
+	ny = (int)dict["ny"];
+	nz = (int)dict["nz"];
+
 	if(image_index<0) {
 		image_index = get_nimg();
 	}
@@ -845,29 +850,15 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	hid_t igrp=H5Gopen(file,ipath);
 
 	if (igrp<0) {	//group not existed
+		is_exist = false;
 		// Need to create a new image group
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
-
-		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		// Now create the actual image dataset
-		hid_t space;
-		hid_t ds;
-		if ((int)dict["nz"]==1)  {
-			hsize_t dims[2]= { (int)dict["ny"],(int)dict["nx"] };
-			space=H5Screate_simple(2,dims,NULL);
-		}
-		else {
-			hsize_t dims[3]= { (int)dict["nz"],(int)dict["ny"],(int)dict["nx"] };
-			space=H5Screate_simple(3,dims,NULL);
-		}
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
-		H5Dclose(ds);
-		H5Sclose(space);
 	}
-	//if group already existed, and the overwiting image is in different size,
+	//if group already existed, and the overwriting image is in different size,
 	//need unlink the existing dataset first
 	else {
+		is_exist = true;
 		int nattr=H5Aget_num_attrs(igrp);
 		char name[ATTR_NAME_LEN];
 		Dict dict2;
@@ -890,21 +881,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 				|| (int)dict["nz"]!=(int)dict2["nz"]) {
 			sprintf(ipath,"/MDF/images/%d/image",image_index);
 			H5Gunlink(igrp, ipath);
-
-			// Now create the actual image dataset
-			hid_t space;
-			hid_t ds;
-			if ((int)dict["nz"]==1) {
-				hsize_t dims[2]= { (int)dict["ny"],(int)dict["nx"] };
-				space=H5Screate_simple(2,dims,NULL);
-			}
-			else {
-				hsize_t dims[3]= { (int)dict["nz"],(int)dict["ny"],(int)dict["nx"] };
-				space=H5Screate_simple(3,dims,NULL);
-			}
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
-			H5Dclose(ds);
-			H5Sclose(space);
 		}
 	}
 
@@ -943,12 +919,34 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		H5Aclose(attr);
 	}
 
+	hid_t spc;	//dataspace
+	hid_t ds;	//dataset
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
-	hid_t ds=H5Dopen(file,ipath);
-	if (ds<0) throw ImageWriteException(filename,"Image dataset does not exist");
+	if(!is_exist) {	//create new image data
+		// Now create the actual image dataset
+		if (nz==1)  {
+			hsize_t dims[2]= { ny,nx };
+			spc=H5Screate_simple(2,dims,NULL);
+		}
+		else {
+			hsize_t dims[3]= { nz, ny, nx };
+			spc=H5Screate_simple(3,dims,NULL);
+		}
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+	}
+	else {	//overwrite existing image
+		if (nz==1) {
+			hsize_t dims[2]= { ny, nx };
+			spc=H5Screate_simple(2,dims,NULL);
+		}
+		else {
+			hsize_t dims[3]= { nz, ny, nx };
+			spc=H5Screate_simple(3,dims,NULL);
+		}
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+	}
 
-	hid_t spc=H5Dget_space(ds);
 	if(area) {
 		hsize_t doffset[3];		/*hyperslab offset in the file*/
 		doffset[0] = (hsize_t)(area->x_origin());

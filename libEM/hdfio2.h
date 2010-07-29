@@ -90,6 +90,8 @@ namespace EMAN
 		vector < int >get_image_indices();
 
 	  private:
+		int nx, ny, nz;
+		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
 		hid_t file;
 		hid_t group;
 		hid_t accprop;
