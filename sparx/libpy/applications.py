@@ -6913,7 +6913,7 @@ def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	scale = [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale]
 	data  = [vol, refv, mask]
 	new_params = [0.0]*6
-	new_params = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
+	new_params = amoeba(new_params, scale, ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	vol = rot_shift3D(vol, new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	return vol
 
@@ -6932,7 +6932,7 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	scale = [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale]
 	data=[vol, refv, mask]
 	new_params = [0.0]*6
-	opt_params,funval,niter = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
+	opt_params,funval,niter = amoeba(new_params, scale, ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	return opt_params
 
 def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
@@ -6971,19 +6971,22 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
 	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(ref)
 	params = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	print  " params of the reference volume",params
+	# print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_image(vol)
 	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  get_params3D(e)
 	params = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
 	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
-	print  " input params ",params
+	# print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-1, 1.e-1, 500, data)
+	
+	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-4, 1.e-4, 500, data)
+	print "amoeba: func_value =",new_params[1], "iter =",new_params[2]
+
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
-	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
+	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	if type(vol)==type(""):
 		from utilities import write_headers
@@ -7009,12 +7012,14 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	params = get_params3D(ref)
 	#print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
+
 	e = get_image(vol)
 	params = get_params3D(e)
+	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	#print  " input params ", params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
-	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-1, 1.e-1, 500, data)
+	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-4, 1.e-4, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
 	#print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
@@ -7045,10 +7050,11 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 
 	e = get_image(vol)
 	params = get_params3D(e)
+	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	#print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
-	new_params = amoeba(new_params, [shift_scale, shift_scale, shift_scale], ali_vol_func_shift, 1.e-1, 1.e-1, 500, data)
+	new_params = amoeba(new_params, [shift_scale, shift_scale, shift_scale], ali_vol_func_shift, 1.e-4, 1.e-4, 500, data)
 	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
 	#print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
@@ -7081,7 +7087,7 @@ def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, dis
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale, mag_scale], ali_vol_func_scale, 1.e-1, 1.e-1, 500, data)
+	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale, mag_scale], ali_vol_func_scale, 1.e-4, 1.e-4, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], new_params[0][6])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
@@ -7116,7 +7122,7 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [1.0]
-	new_params = amoeba(new_params, [mag_scale], ali_vol_func_only_scale, 1.e-1, 1.e-1, 500, data)
+	new_params = amoeba(new_params, [mag_scale], ali_vol_func_only_scale, 1.e-4, 1.e-4, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0,0.0,0.0,0.0, new_params[0][0])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
