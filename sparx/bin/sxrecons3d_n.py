@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
-# Author: Wei Zhang, 01/22/2007 (Wei.zhang@uth.tmc.edu)
+# Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+# Copyright (c) 2008-Forever The University of Virginia
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
