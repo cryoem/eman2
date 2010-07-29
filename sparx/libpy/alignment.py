@@ -30,7 +30,7 @@
 #
 from EMAN2_cppwrap import *
 from global_def import *
-	
+
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq
@@ -1250,7 +1250,6 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=N
 	
 	ID = data.get_attr("ID")
 	if finfo:
-		from utilities import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
@@ -1292,16 +1291,11 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=N
 			s2y   = syb - dp["ty"]
 
 		#print  " OUT",refrings[iref].get_attr("psi"), angb, phi, theta, psi, s2x, s2y
-		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
-		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t2.set_trans(Vec2f(-s2x, -s2y))
-		data.set_attr("xform.projection", t2)
-		from pixel_error import max_3D_pixel_error
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])		
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
-		return peak, phi, s2x, s2y, pixel_error
+		return peak, phi, s2x, s2y
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0
 
@@ -1652,14 +1646,14 @@ def ali_nvol(v, mask):
 	niter = 0
 	for l in xrange(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
-	        ave,var = ave_var(v, " ")
-	        p = Util.infomask(var, mask, True)
-	        crit = p[1]
-	        if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
-	        niter += 1
-	        ocrit = crit
-	        ref = alivol_mask_getref(ave, mask)
-	        for l in xrange(len(v)):
+		ave,var = ave_var(v, " ")
+		p = Util.infomask(var, mask, True)
+		crit = p[1]
+		if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
+		niter += 1
+		ocrit = crit
+		ref = alivol_mask_getref(ave, mask)
+		for l in xrange(len(v)):
 			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
 			vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
 			phi,tht,psi,s3x,s3y,s3z = alivol_mask(vor, ref, mask)
