@@ -6060,9 +6060,14 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			sy = 0.0
 
 
-			for im in xrange( nima ):
+#			Ryanmod: list for all old and new parameters before and after angle mapping
+			t1_all_images = []
+			t2_all_images = []
 
-				peak, phihi, sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+			for im in xrange( nima ):
+				t1_current = data[im].get_attr("xform.projection")
+				t1_all_images.append(t1_current)
+				peak, phihi, sxi, syi = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
 				#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
 				dpp=(float(dp)/pixel_size)
 				dyi=(float(syi)/dpp)-int(syi/dpp)
@@ -6090,6 +6095,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 					   phinew=phihi
 					#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
 				paramalij = get_params_proj(data[im])
+				# print paramalij[4], syi, synew
 				set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
 				sx += sxi
 				sy += synew
@@ -6114,7 +6120,25 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
 				modphi[im]=paramali[0]
 				# end jeanmod
+				#print sx, sy
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
+				t2_current = data[im].get_attr("xform.projection")
+				t2_all_images.append(t2_current)
+
+			from pixel_error import max_3D_pixel_error
+			for im in xrange( nima ):
+				pixer[im] = max_3D_pixel_error(t1_all_images[im], t2_all_images[im], numr[-3])
+
+			del t1_current,t2_current,t1_all_images,t2_all_images
+
+			if(myid == main_node):
+				param_list = []				
+				for i in xrange(nima):
+					phi, theta, psi, s2x, s2y = get_params_proj(data[i])
+					param_list.append([i, phi, theta, psi, s2x, s2y])
+				from utilities import write_text_row
+				write_text_row(param_list, os.path.join(outdir, "first_param%04d.txt"%total_iter) )
+				del param_list
 
 			#output pixel errors
 			from mpi import mpi_gatherv
