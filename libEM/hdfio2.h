@@ -89,6 +89,26 @@ namespace EMAN
 		int get_num_dataset();
 		vector < int >get_image_indices();
 
+		/* Write an attribute with specified name to a given open object.
+		 * The attribute is opened and closed. returns 0 on success
+		 *
+		 * @param loc Object (dataset, group, or named datatype) id for this attibute to be attached to
+		 * @param name name for this attibute
+		 * @param obj value for this attribute
+		 * @return 0 on success */
+		int write_attr(hid_t loc, const char *name, EMObject obj);
+
+		/* Read an already opened attribute and returns the results
+		 * as an EMObject. The attribute is not closed.
+		 *
+		 * @param attr Identifier of an attribute to read
+		 * @return attribute value as an EMObject */
+		EMObject read_attr(hid_t attr);
+
+		/** Return the file id
+		 * For single attribute read/write*/
+		hid_t get_fileid() const {return file;}
+
 	  private:
 		int nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
@@ -107,22 +127,6 @@ namespace EMAN
 		 * @param image_index 
 		 * @return 0 for success*/
 		int erase_header(int image_index);
-		
-		/* Write an attribute with specified name to a given open object.
-		 * The attribute is opened and closed. returns 0 on success 
-		 * 
-		 * @param loc Object (dataset, group, or named datatype) id for this attibute to be attached to
-		 * @param name name for this attibute
-		 * @param obj value for this attribute
-		 * @return 0 on success */
-		int write_attr(hid_t loc, const char *name, EMObject obj);
-		
-		/* Read an already opened attribute and returns the results 
-		 * as an EMObject. The attribute is not closed. 
-		 * 
-		 * @param attr Identifier of an attribute to read
-		 * @return attribute value as an EMObject */
-		EMObject read_attr(hid_t attr);
 	};
 }
 

@@ -183,6 +183,10 @@ struct EMAN_Util_FakeKaiserBessel_Wrapper: EMAN::Util::FakeKaiserBessel
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_read_hdf_attribute_2_3, EMAN::EMUtil::read_hdf_attribute, 2, 3)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_write_hdf_attribute_3_4, EMAN::EMUtil::write_hdf_attribute, 3, 4)
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_check_image_overloads_1_2, EMAN::TestUtil::check_image, 1, 2)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_make_image_file_overloads_2_6, EMAN::TestUtil::make_image_file, 2, 6)
@@ -824,6 +828,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_euler_names", &EMAN::EMUtil::get_euler_names, args("euler_type"), "")
         .def("get_all_attributes", &EMAN::EMUtil::get_all_attributes, args("file_name", "attr_name"), "Get an attribute from a stack of image, returned as a vector\n \nfile_name - the image file name\nattr_name - The header attribute name.\n \nreturn the vector of attribute value\n \nexception - NotExistingObjectException when access an non-existing attribute\nexception - InvalidCallException when call this function for a non-stack image")
 		.def("cuda_available", &EMAN::EMUtil::cuda_available)
+		.def("read_hdf_attribute", &EMAN::EMUtil::read_hdf_attribute, EMAN_EMUtil_read_hdf_attribute_2_3(args("filename", "key", "image_index"), "Retrive a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn the attribute value for the given key"))
+		.def("write_hdf_attribute", &EMAN::EMUtil::write_hdf_attribute, EMAN_EMUtil_write_hdf_attribute_3_4(args("filename", "key", "value", "image_index"), "Write a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nvalue - the attribute's value\nimage_index - the image index, default=0\n \nreturn 0 for success"))
 		.staticmethod("cuda_available")
         .staticmethod("vertical_acf")
         .staticmethod("get_datatype_string")
@@ -842,6 +848,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_image_ext_type")
         .staticmethod("process_ascii_region_io")
         .staticmethod("is_complex_type")
+        .staticmethod("read_hdf_attribute")
+        .staticmethod("write_hdf_attribute")
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
