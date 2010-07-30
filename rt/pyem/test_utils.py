@@ -626,8 +626,24 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_USHORT_COMPLEX), 'USHORT_COMPLEX')
         self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_FLOAT_COMPLEX), 'FLOAT_COMPLEX')
         self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_UNKNOWN), 'UNKNOWN')
-
-
+        
+    def test_read_write_HDF_attribute(self):
+        """test read/write single attribute from/to HDF5 file"""
+        file = 'test.hdf'
+        img = test_image()
+        img.write_image(file, -1)
+        img.write_image(file, -1)
+        
+        EMUtil.write_hdf_attribute(file, 'count', 100)
+        EMUtil.write_hdf_attribute(file, 'count', 1000, 1)
+        c100 = EMUtil.read_hdf_attribute(file, 'count')
+        c1000 = EMUtil.read_hdf_attribute(file, 'count', 1)
+        
+        self.assertEqual(EMUtil.read_hdf_attribute(file, 'count'), 100)
+        self.assertEqual(EMUtil.read_hdf_attribute(file, 'count', 1), 1000)
+        
+        testlib.safe_unlink(file)
+        
 def test_main():
     p = OptionParser()
     p.add_option('--t', action='store_true', help='test exception', default=False )
