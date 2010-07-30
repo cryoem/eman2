@@ -372,7 +372,7 @@ def multi_align_diff_params(ali_params, verbose=0):
 	return multi_align_results
 	
 
-def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.65):
+def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8):
 	"""
 	Generate the connection list from the multi_align_results, which generally comes from multi_align_diff_params()
 	The connection list will have the following format:
