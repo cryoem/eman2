@@ -5120,41 +5120,35 @@ float circumference( EMData* emdata, int npixel )
 	int nz = emdata->get_zsize();
 
         float* data = emdata->get_data();
-	if( ny==1 && nz==1 )
-        {
-            // 1d case
-            float sumf=0.0;
-            int   sumn=0;
-            for( int i=0; i < npixel; ++i )
-            {
-                sumf += data[i];
-                sumf += data[nx-1-i];
-                sumn += 2;
-            }
-            return sumf/sumn;
+	if( ny==1 && nz==1 ) {
+        	// 1d case
+        	float sumf=0.0;
+        	int   sumn=0;
+        	for( int i=0; i < npixel; ++i ) {
+        		sumf += data[i];
+        		sumf += data[nx-1-i];
+        		sumn += 2;
+        	}
+        	return sumf/sumn;
         }
 
-        if( nz==1 )
-        {
-            float sumf=0.0;
-            int   sumn=0;
-            int   id=0;
-            for( int iy=0; iy < ny; ++iy )
-            {
-                for( int ix=0; ix < nx; ++ix )
-                {
-                    if( iy<npixel || iy>ny-1-npixel || ix<npixel || ix>nx-1-npixel )
-                    {
-                        sumf += data[id];
-                        sumn += 1;
-                    }
-                    id++;
-                }
-            }
+        if( nz==1 ) {
+        	float sumf=0.0;
+        	int   sumn=0;
+        	int   id=0;
+        	for( int iy=0; iy < ny; ++iy ) {
+        		for( int ix=0; ix < nx; ++ix ) {
+        			if( iy<npixel || iy>ny-1-npixel || ix<npixel || ix>nx-1-npixel ) {
+        			    sumf += data[id];
+        			    sumn += 1;
+        			}
+        			id++;
+        		}
+        	}
 
-            Assert( id==nx*ny  );
-            Assert( sumn == nx*ny - (nx-2*npixel)*(ny-2*npixel) );
-            return sumf/sumn;
+        	Assert( id==nx*ny  );
+        	Assert( sumn == nx*ny - (nx-2*npixel)*(ny-2*npixel) );
+        	return sumf/sumn;
         }
 
         // 3d cases;
@@ -5162,20 +5156,16 @@ float circumference( EMData* emdata, int npixel )
         float sumf = 0.0;
         int   sumn = 0;
         int   id = 0;
-        for( int iz=0; iz < nz; ++iz)
-        {
-            for( int iy=0; iy < ny; ++iy)
-            {
-                for( int ix=0; ix < nx; ++ix )
-                {
-                    if( iz<npixel||iz>nz-1-npixel||iy<npixel||iy>ny-1-npixel||ix<npixel||ix>nx-1-npixel)
-                    {
-                        sumf += data[id];
-                        sumn += 1;
-                    }
-                    id++;
-                }
-            }
+        for( int iz=0; iz < nz; ++iz) {
+        	for( int iy=0; iy < ny; ++iy) {
+        		for( int ix=0; ix < nx; ++ix ) {
+        			if( iz<npixel||iz>nz-1-npixel||iy<npixel||iy>ny-1-npixel||ix<npixel||ix>nx-1-npixel) {
+        				sumf += data[id];
+        				sumn += 1;
+        			}
+        			id++;
+        		}
+        	}
         }
 
 
@@ -5226,12 +5216,12 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	int xstart = 0, ystart = 0, zstart = 0;
 	if( npad > 1) {
         	if( valtype==0 ) {
-        	    fpimage->to_zero();
+        		fpimage->to_zero();
         	} else {
-        	    float val = circumference(this, 1);
-        	    float* data = fpimage->get_data();
-        	    int nxyz = (nxpad+offset)*nypad*nzpad;
-        	    for( int i=0; i < nxyz; ++i )  data[i] = val;
+        		float val = circumference(this, 1);
+        		float* data = fpimage->get_data();
+        		int nxyz = (nxpad+offset)*nypad*nzpad;
+        		for( int i=0; i < nxyz; ++i )  data[i] = val;
         	}
 
 		xstart = (nxpad - nx)/2 + nx%2;

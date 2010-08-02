@@ -1866,16 +1866,16 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
 nn4Reconstructor::nn4Reconstructor()
 {
-    m_volume = NULL;
-    m_wptr   = NULL;
-    m_result = NULL;
+	m_volume = NULL;
+	m_wptr   = NULL;
+	m_result = NULL;
 }
 
 nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
 {
-    m_volume = NULL;
-    m_wptr   = NULL;
-    m_result = NULL;
+	m_volume = NULL;
+	m_wptr   = NULL;
+	m_result = NULL;
 	setup( symmetry, size, npad );
 	load_default_settings();
 	print_params();
@@ -1883,13 +1883,11 @@ nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
 
 nn4Reconstructor::~nn4Reconstructor()
 {
-    if( m_delete_volume )
-        checked_delete(m_volume);
+	if( m_delete_volume ) checked_delete(m_volume);
 
-    if( m_delete_weight )
-        checked_delete( m_wptr );
+	if( m_delete_weight ) checked_delete( m_wptr );
 
-    checked_delete( m_result );
+	checked_delete( m_result );
 }
 
 enum weighting_method { NONE, ESTIMATE, VORONOI };
@@ -1937,23 +1935,14 @@ void nn4Reconstructor::setup()
 
 
 	string symmetry;
-	if( params.has_key("symmetry") ) {
-		symmetry = params["symmetry"].to_str();
-	} else {
-		symmetry = "c1";
-	}
+	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
+	else                               symmetry = "c1";
 
-	if( params.has_key("ndim") ) {
-	    m_ndim = params["ndim"];
-	} else {
-		m_ndim = 3;
-	}
+	if( params.has_key("ndim") )  m_ndim = params["ndim"];
+	else                          m_ndim = 3;
 
-    if( params.has_key( "snr" ) ) {
-        m_osnr = 1.0f/float( params["snr"] );
-    } else {
-        m_osnr = 0.0;
-    }
+	if( params.has_key( "snr" ) )  m_osnr = 1.0f/float( params["snr"] );
+	else                           m_osnr = 0.0;
 
 	setup( symmetry, size, npad );
 }
@@ -1996,9 +1985,7 @@ void nn4Reconstructor::buildFFTVolume() {
 		m_delete_volume = true;
 	}
 
-	if( m_volume->get_xsize() != m_vnxp+offset &&
-	    m_volume->get_ysize() != m_vnyp &&
-	    m_volume->get_zsize() != m_vnzp ) {
+	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 		m_volume->to_zero();
 	}
@@ -2127,9 +2114,10 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, i
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 
-void circumference( EMData* win )
+void circumf( EMData* win , int npad)
 {
 	float *tw = win->get_data();
+	//  correct for the fall-off
 	//  mask and subtract circumference average
 	int ix = win->get_xsize();
 	int iy = win->get_ysize();
@@ -2140,6 +2128,29 @@ void circumference( EMData* win )
 	int IP = ix/2+1;
 	int JP = iy/2+1;
 	int KP = iz/2+1;
+
+	//  sinc functions tabulated for fall-off
+	float sincx[IP+1];
+	float sincy[JP+1];
+	float sincz[KP+1];
+
+	sincx[0] = 1.0f;
+	sincy[0] = 1.0f;
+	sincz[0] = 1.0f;
+
+	float cdf = M_PI/float(npad*2*ix);
+	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/float(npad*2*iy);
+	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/float(npad*2*iz);
+	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
+	for (int k = 1; k <= iz; ++k) {
+		int kkp = abs(k-KP);
+		for (int j = 1; j <= iy; ++j) {
+			cdf = sincy[abs(j- JP)]*sincz[kkp];
+			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+		}
+	}
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2162,7 +2173,9 @@ void circumference( EMData* win )
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
 				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k) = 0.0f;
+
 			}
 		}
 	}
@@ -2246,7 +2259,7 @@ EMData* nn4Reconstructor::finish(bool doift)
 						float wght = 1.0f / ( 1.0f - alpha * sum );
 						tmp = tmp * wght;
 					}
-					(*m_volume)(2*ix,iy,iz) *= tmp;
+					(*m_volume)(2*ix,iy,iz)   *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
@@ -2259,11 +2272,12 @@ EMData* nn4Reconstructor::finish(bool doift)
 	m_volume->do_ift_inplace();
 
 	// EMData* win = m_volume->window_center(m_vnx);
+	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumference( m_volume );
+	circumf( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
-    m_result = m_volume->copy();
+	m_result = m_volume->copy();
 	return m_result;
 }
 #undef  tw
@@ -2629,7 +2643,7 @@ void nn4_ctfReconstructor::setup()
 
 	float snr = params["snr"];
 
-    m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
+	m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
 	setup( symmetry, size, npad, snr, sign );
 
 }
@@ -2673,19 +2687,16 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 void nn4_ctfReconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
 	if( params.has_key("fftvol") ) {
-	    m_volume = params["fftvol"];
-	    m_delete_volume = false;
+		m_volume = params["fftvol"];
+		m_delete_volume = false;
 	} else {
-	    m_volume = new EMData();
-	    m_delete_volume = true;
+		m_volume = new EMData();
+		m_delete_volume = true;
 	}
 
-	if( m_volume->get_xsize() != m_vnxp+offset &&
-	    m_volume->get_ysize() != m_vnyp &&
-	    m_volume->get_zsize() != m_vnzp )
-	{
-	    m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-	    m_volume->to_zero();
+	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
+		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+		m_volume->to_zero();
 	}
 
 	m_volume->set_nxc(m_vnxp/2);
@@ -2698,21 +2709,17 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 
 void nn4_ctfReconstructor::buildNormVolume()
 {
-	if( params.has_key("weight") )
-	{
-	    m_wptr = params["weight"];
-	    m_delete_weight = false;
+	if( params.has_key("weight") ) {
+		m_wptr = params["weight"];
+		m_delete_weight = false;
 	} else {
-	    m_wptr = new EMData();
-	    m_delete_weight = true;
+		m_wptr = new EMData();
+		m_delete_weight = true;
 	}
 
-	if( m_wptr->get_xsize() != m_vnxc+1 &&
-	    m_wptr->get_ysize() != m_vnyp &&
-	    m_wptr->get_zsize() != m_vnzp )
-	{
-	    m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	    m_wptr->to_zero();
+	if( m_wptr->get_xsize() != m_vnxc+1 && m_wptr->get_ysize() != m_vnyp && m_wptr->get_zsize() != m_vnzp ) {
+               m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+               m_wptr->to_zero();
 	}
 
 	m_wptr->set_array_offsets(0,1,1);
@@ -2728,11 +2735,10 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 	}
 
 	int buffed = slice->get_attr_default( "buffed", 0 );
-        if( buffed > 0 )
-        {
-            int mult = slice->get_attr_default( "mult", 1 );
-            insert_buffed_slice( slice, mult );
-            return 0;
+        if( buffed > 0 ) {
+        	int mult = slice->get_attr_default( "mult", 1 );
+        	insert_buffed_slice( slice, mult );
+        	return 0;
         }
 
 	int padffted= slice->get_attr_default("padffted", 0);
@@ -2767,11 +2773,11 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
 	int npoint = buffed->get_xsize()/4;
 	for( int i=0; i < npoint; ++i ) {
 
-               int pos2 = int( bufdata[4*i] );
-               int pos1 = pos2 * 2;
-               cdata[pos1  ] += bufdata[4*i+1]*mult;
-               cdata[pos1+1] += bufdata[4*i+2]*mult;
-               wdata[pos2  ] += bufdata[4*i+3]*mult;
+        	int pos2 = int( bufdata[4*i] );
+        	int pos1 = pos2 * 2;
+        	cdata[pos1  ] += bufdata[4*i+1]*mult;
+        	cdata[pos1+1] += bufdata[4*i+2]*mult;
+        	wdata[pos2  ] += bufdata[4*i+3]*mult;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
@@ -2887,13 +2893,14 @@ EMData* nn4_ctfReconstructor::finish(bool doift)
 		}
 	}
 
-    // back fft
-    m_volume->do_ift_inplace();
-    m_volume->depad();
-    circumference( m_volume );
-    m_volume->set_array_offsets( 0, 0, 0 );
-    m_result = m_volume->copy();
-    return m_result;
+	// back fft
+	m_volume->do_ift_inplace();
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumf( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+	m_result = m_volume->copy();
+	return m_result;
 }
 #undef  tw
 
@@ -2906,83 +2913,77 @@ EMData* nn4_ctfReconstructor::finish(bool doift)
 
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor()
 {
-    m_volume  = NULL;
-    m_wptr    = NULL;
-    m_wptr2   = NULL;
-    m_wptr3   = NULL;
-    m_result  = NULL;
+	m_volume  = NULL;
+	m_wptr    = NULL;
+	m_wptr2   = NULL;
+	m_wptr3   = NULL;
+	m_result  = NULL;
 }
 
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign)
 {
-    m_volume  = NULL;
-    m_wptr    = NULL;
-    m_wptr2   = NULL;
-    m_wptr3   = NULL;
-    m_result  = NULL;
+	m_volume  = NULL;
+	m_wptr    = NULL;
+	m_wptr2   = NULL;
+	m_wptr3   = NULL;
+	m_result  = NULL;
 
-    setup( symmetry, size, npad, snr, sign );
+	setup( symmetry, size, npad, snr, sign );
 }
 
 nnSSNR_ctfReconstructor::~nnSSNR_ctfReconstructor()
 {
 
-   if( m_delete_volume )
-        checked_delete(m_volume);
-   if( m_delete_weight )
-        checked_delete( m_wptr );
-   if ( m_delete_weight2 )
-        checked_delete( m_wptr2 );
-   if ( m_delete_weight3 )
-        checked_delete( m_wptr3 );
-   checked_delete( m_result );
+	if( m_delete_volume )  checked_delete(m_volume);
+	if( m_delete_weight )  checked_delete( m_wptr );
+	if( m_delete_weight2 ) checked_delete( m_wptr2 );
+	if( m_delete_weight3 ) checked_delete( m_wptr3 );
+	checked_delete( m_result );
 }
 
 void nnSSNR_ctfReconstructor::setup()
 {
-    int  size = params["size"];
-    int  npad = params["npad"];
-    int  sign = params["sign"];
-    float snr = params["snr"];
-    string symmetry;
-    if( params.has_key("symmetry") ) {
-		symmetry = params["symmetry"].to_str();
-    } else {
-		symmetry = "c1";
-    }
-    setup( symmetry, size, npad, snr, sign );
+	int  size = params["size"];
+	int  npad = params["npad"];
+	int  sign = params["sign"];
+	float snr = params["snr"];
+	string symmetry;
+	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
+	else                              symmetry = "c1";
+
+	setup( symmetry, size, npad, snr, sign );
 }
 void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
 {
 
-    m_weighting = ESTIMATE;
-    m_wghta     = 0.2f;
-    m_wghtb     = 0.004f;
-    wiener      = 1;
+	m_weighting = ESTIMATE;
+	m_wghta     = 0.2f;
+	m_wghtb     = 0.004f;
+	wiener      = 1;
 
-    m_symmetry  = symmetry;
-    m_npad      = npad;
-    m_nsym      = Transform::get_nsym(m_symmetry);
+	m_symmetry  = symmetry;
+	m_npad      = npad;
+	m_nsym      = Transform::get_nsym(m_symmetry);
 
-    m_sign      = sign;
-    m_snr       = snr;
+	m_sign      = sign;
+	m_snr	    = snr;
 
-    m_vnx       = size;
-    m_vny       = size;
-    m_vnz       = size;
+	m_vnx	    = size;
+	m_vny	    = size;
+	m_vnz	    = size;
 
-    m_vnxp      = size*npad;
-    m_vnyp      = size*npad;
-    m_vnzp      = size*npad;
+	m_vnxp      = size*npad;
+	m_vnyp      = size*npad;
+	m_vnzp      = size*npad;
 
-    m_vnxc      = m_vnxp/2;
-    m_vnyc      = m_vnyp/2;
-    m_vnzc      = m_vnzp/2;
+	m_vnxc      = m_vnxp/2;
+	m_vnyc      = m_vnyp/2;
+	m_vnzc      = m_vnzp/2;
 
-    buildFFTVolume();
-    buildNormVolume();
-    buildNorm2Volume();
-    buildNorm3Volume();
+	buildFFTVolume();
+	buildNormVolume();
+	buildNorm2Volume();
+	buildNorm3Volume();
 }
 
 void nnSSNR_ctfReconstructor::buildFFTVolume() {
@@ -2991,7 +2992,7 @@ void nnSSNR_ctfReconstructor::buildFFTVolume() {
 	if( params.has_key("fftvol") ) {
 		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
 		m_delete_volume = false;
-    } else {
+	} else {
 		m_volume = new EMData();
 		m_delete_volume = true;
 	}
@@ -2999,11 +3000,7 @@ void nnSSNR_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 	m_volume->to_zero();
 
-	if ( m_vnxp % 2 == 0 ) {
-		m_volume->set_fftodd(0);
-	} else {
-		m_volume->set_fftodd(1);
-	}
+	m_volume->set_fftodd(m_vnxp % 2);
 
 	m_volume->set_nxc(m_vnxc);
 	m_volume->set_complex(true);
@@ -3068,15 +3065,12 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
-    EMData* padfft = NULL;
+	EMData* padfft = NULL;
 
-    if( padffted != 0 ) {
-        padfft = new EMData(*slice);
-    } else {
-        padfft = padfft_slice( slice, t, m_npad );
-    }
+	if( padffted != 0 ) padfft = new EMData(*slice);
+	else                 padfft = padfft_slice( slice, t, m_npad );
 
-    int mult= slice->get_attr_default("mult", 1);
+	int mult= slice->get_attr_default("mult", 1);
 
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
@@ -3277,8 +3271,8 @@ newfile_store::newfile_store( const string& filename, int npad, bool ctf )
     : m_bin_file( filename + ".bin" ),
       m_txt_file( filename + ".txt" )
 {
-    m_npad = npad;
-    m_ctf = ctf;
+	m_npad = npad;
+	m_ctf = ctf;
 }
 
 newfile_store::~newfile_store( )
@@ -3316,86 +3310,84 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
 
 	vector<point_t> points;
 	for( int j=-ny/2+1; j <= ny/2; j++ ) {
-	    int jp = (j>=0) ? j+1 : ny+j+1;
-	    for( int i=0; i <= n2; ++i ) {
-		int r2 = i*i + j*j;
-		if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) {
-		    float ctf;
-		    if( m_ctf )
-		    {
-	    		float ak = std::sqrt( r2/float(ny*ny) )/pixel;
-			ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
-		    } else {
-			ctf = 1.0;
-		    }
+		int jp = (j>=0) ? j+1 : ny+j+1;
+		for( int i=0; i <= n2; ++i ) {
+			int r2 = i*i + j*j;
+			if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) {
+				float ctf;
+				if( m_ctf ) {
+					float ak = std::sqrt( r2/float(ny*ny) )/pixel;
+					ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
+				} else {
+					ctf = 1.0;
+				}
 
-		    float xnew = i*tf[0][0] + j*tf[1][0];
-		    float ynew = i*tf[0][1] + j*tf[1][1];
-		    float znew = i*tf[0][2] + j*tf[1][2];
-	    	    std::complex<float> btq;
-	    	    if (xnew < 0.)
-		    {
-			xnew = -xnew;
-			ynew = -ynew;
-			znew = -znew;
-			btq = conj(padfft->cmplx(i,jp-1));
-		    } else {
-			btq = padfft->cmplx(i,jp-1);
-		    }
+				float xnew = i*tf[0][0] + j*tf[1][0];
+				float ynew = i*tf[0][1] + j*tf[1][1];
+				float znew = i*tf[0][2] + j*tf[1][2];
+				std::complex<float> btq;
+				if (xnew < 0.) {
+					xnew = -xnew;
+					ynew = -ynew;
+					znew = -znew;
+					btq = conj(padfft->cmplx(i,jp-1));
+				} else {
+					btq = padfft->cmplx(i,jp-1);
+				}
 
-		    int ixn = int(xnew + 0.5 + n) - n;
-		    int iyn = int(ynew + 0.5 + n) - n;
-		    int izn = int(znew + 0.5 + n) - n;
-		    if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
-			int ixf, iyf, izf;
-			if (ixn >= 0) {
-			    int iza, iya;
-			    if (izn >= 0)
-				iza = izn + 1;
-			    else
-				iza = n + izn + 1;
+				int ixn = int(xnew + 0.5 + n) - n;
+				int iyn = int(ynew + 0.5 + n) - n;
+				int izn = int(znew + 0.5 + n) - n;
+				if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
+					int ixf, iyf, izf;
+					if (ixn >= 0) {
+						int iza, iya;
+						if (izn >= 0)
+						    iza = izn + 1;
+						else
+						    iza = n + izn + 1;
 
-			    if (iyn >= 0)
-				iya = iyn + 1;
-			    else
-				iya = n + iyn + 1;
+						if (iyn >= 0)
+						    iya = iyn + 1;
+						else
+						    iya = n + iyn + 1;
 
-			    ixf = ixn;
-			    iyf = iya;
-			    izf = iza;
-			} else {
-			    int izt, iyt;
-			    if (izn > 0)
-				izt = n - izn + 1;
-			    else
-				izt = -izn + 1;
+						ixf = ixn;
+						iyf = iya;
+						izf = iza;
+					} else {
+						int izt, iyt;
+						if (izn > 0)
+						    izt = n - izn + 1;
+						else
+						    izt = -izn + 1;
 
-			    if (iyn > 0)
-				iyt = n - iyn + 1;
-			    else
-				iyt = -iyn + 1;
+						if (iyn > 0)
+						    iyt = n - iyn + 1;
+						else
+						    iyt = -iyn + 1;
 
-			    ixf = -ixn;
-			    iyf = iyt;
-			    izf = izt;
+						ixf = -ixn;
+						iyf = iyt;
+						izf = izt;
+					}
+
+
+					int pos2 = ixf + (iyf-1)*nx/2 + (izf-1)*ny*nx/2;
+					float ctfv1 = btq.real() * ctf;
+					float ctfv2 = btq.imag() * ctf;
+					float ctf2 = ctf*ctf;
+
+					point_t p;
+					p.pos2 = pos2;
+					p.real = ctfv1;
+					p.imag = ctfv2;
+					p.ctf2 = ctf2;
+
+					points.push_back( p );
+				}
 			}
-
-
-			int pos2 = ixf + (iyf-1)*nx/2 + (izf-1)*ny*nx/2;
-			float ctfv1 = btq.real() * ctf;
-			float ctfv2 = btq.imag() * ctf;
-			float ctf2 = ctf*ctf;
-
-			point_t p;
-			p.pos2 = pos2;
-			p.real = ctfv1;
-			p.imag = ctfv2;
-			p.ctf2 = ctf2;
-
-			points.push_back( p );
-		    }
-	    	}
-	    }
+		}
 	}
 
 
