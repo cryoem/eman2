@@ -348,13 +348,13 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 def multi_align_diff_params(ali_params, verbose=0):
 	"""
 	Calculate the mirror consistency and pixel error between different runs of alignment
-	The input is of format:
+	The input is in the following format (here n is the number of alignments done):
 		[[alpha1_r1, sx1_s1, sy1_r1, mirror1_r1, alpha2_r1, sx2_r1, sy2_r1, mirror2_r1, ...],
 		 [alpha1_r2, sx1_s2, sy1_r2, mirror1_r2, alpha2_r2, sx2_r2, sy2_r2, mirror2_r2, ...],
 		 [alpha1_r3, sx1_s3, sy1_r3, mirror1_r3, alpha2_r3, sx2_r3, sy2_r3, mirror2_r3, ...],
 		 ...
 		 [alpha1_rn, sx1_sn, sy1_rn, mirror1_rn, alpha2_rn, sx2_rn, sy2_rn, mirror2_rn, ...]]
-	The output are of format here k=n*(n+1)/2:
+	The output is in the following format (here k=n*(n+1)/2):
 		[[pixel_error_1, mirror_consistency_1, i_1, j_1, alpha_1, sx_1, sy_1, mirror_1],
 		 [pixel_error_2, mirror_consistency_2, i_2, j_2, alpha_2, sx_2, sy_2, mirror_2],
 		 [pixel_error_3, mirror_consistency_3, i_3, j_3, alpha_3, sx_3, sy_3, mirror_3],
@@ -377,7 +377,7 @@ def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_c
 	Generate the connection list from the multi_align_results, which generally comes from multi_align_diff_params()
 	The connection list will have the following format:
 		[[1, 2, 5], [4, 6], [0, 7]]
-	You will also get the largest connection in the list.
+	You will also get the size of the largest connection in the list.
 	"""
 	import sets
 	
