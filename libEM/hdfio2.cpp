@@ -57,7 +57,7 @@ using namespace EMAN;
 static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
-:	nx(1), ny(1), nz(1), is_exist(false),
+:	nx(1), ny(1), nz(1), is_exist(false), datatype(EMUtil::EM_UNKNOWN),
 	file(-1), group(-1), filename(hdf_filename),
 	rw_mode(rw), initialized(false)
 {
@@ -541,6 +541,24 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		H5Aclose(attr);
 	}
 
+	if(dict.has_key("datatype")) {
+		switch( (int)dict["datatype"] ) {
+		case 7:
+			datatype = EMUtil::EM_FLOAT;
+			break;
+		case 4:
+			datatype = EMUtil::EM_USHORT;
+			break;
+		case 2:
+			datatype = EMUtil::EM_UCHAR;
+			break;
+		default:
+			throw ImageReadException(filename, "EMAN does not support this data type.");
+		}
+	}
+
+	std::cout << "datatype = " << (int)dict["datatype"] << std::endl;
+
 	if(dict.has_key("ctf")) {
 		string ctfString = (string)dict["ctf"];
 		if(ctfString.substr(0, 1) == "O") {
@@ -640,7 +658,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
 	hid_t spc=H5Dget_space(ds);
 
-	hsize_t nx = 1, ny = 1, nz = 1;
 	hsize_t dims_out[3];
 	hsize_t rank = H5Sget_simple_extent_ndims(spc);
 
@@ -803,7 +820,32 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
  		}
  		H5Sclose(memoryspace);
 	} else {
-		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+		hsize_t size = nx*ny*nz;
+		size_t i=0;
+		size_t j=0;
+		unsigned short *usdata = (unsigned short *) data;
+		unsigned char *cdata = (unsigned char *) data;
+		switch(datatype) {
+		case EMUtil::EM_FLOAT:
+			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+			break;
+		case EMUtil::EM_USHORT:
+			H5Dread(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+			for (i = 0; i < size; ++i) {
+				j = size - 1 - i;
+				data[j] = static_cast < float >(usdata[j]);
+			}
+			break;
+		case EMUtil::EM_UCHAR:
+			H5Dread(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
+			for (i = 0; i < size; ++i) {
+				j = size - 1 - i;
+				data[j] = static_cast < float >(cdata[j]);
+			}
+			break;
+		default:
+			throw ImageReadException(filename, "EMAN does not support this data type.");
+		}
 	}
 
 	H5Sclose(spc);
@@ -816,7 +858,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
-						EMUtil::EMDataType, bool)
+						EMUtil::EMDataType dt, bool)
 {
 #ifdef DEBUGHDF
 	printf("write_head %d\n",image_index);
@@ -911,7 +953,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 #ifdef DEBUGHDF
 	printf("write_data %d\n",image_index);
 #endif
-	if (dt!=EMUtil::EM_FLOAT) throw ImageWriteException(filename,"HDF5 write only supports float format");
 
 	if (image_index<0) {
 		hid_t attr=H5Aopen_name(group,"imageid_max");
@@ -923,29 +964,37 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hid_t ds;	//dataset
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
-	if(!is_exist) {	//create new image data
-		// Now create the actual image dataset
-		if (nz==1)  {
-			hsize_t dims[2]= { ny,nx };
-			spc=H5Screate_simple(2,dims,NULL);
-		}
-		else {
-			hsize_t dims[3]= { nz, ny, nx };
-			spc=H5Screate_simple(3,dims,NULL);
-		}
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+	// Now create the actual image dataset
+	if (nz==1)  {
+		hsize_t dims[2]= { ny,nx };
+		spc=H5Screate_simple(2,dims,NULL);
 	}
-	else {	//overwrite existing image
-		if (nz==1) {
-			hsize_t dims[2]= { ny, nx };
-			spc=H5Screate_simple(2,dims,NULL);
-		}
-		else {
-			hsize_t dims[3]= { nz, ny, nx };
-			spc=H5Screate_simple(3,dims,NULL);
-		}
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+	else {
+		hsize_t dims[3]= { nz, ny, nx };
+		spc=H5Screate_simple(3,dims,NULL);
 	}
+
+	switch(dt) {
+	case EMUtil::EM_FLOAT:
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+		break;
+	case EMUtil::EM_USHORT:
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, H5P_DEFAULT );
+		break;
+	case EMUtil::EM_UCHAR:
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, H5P_DEFAULT );
+		break;
+	default:
+		throw ImageWriteException(filename,"HDF5 does not support this data format");
+	}
+
+	//convert data to unsigned short, unsigned char...
+	size_t size = nx*ny*nz;
+	unsigned char *cdata = 0;
+	unsigned short *usdata = 0;
+	float rendermin = 0.0f;
+	float rendermax = 0.0f;
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if(area) {
 		hsize_t doffset[3];		/*hyperslab offset in the file*/
@@ -967,11 +1016,55 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		dims[2] = (hsize_t)(area->get_depth()?area->get_depth():1);
 
 		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
-		H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, spc, H5P_DEFAULT, data);
+		switch(dt) {
+		case EMUtil::EM_FLOAT:
+			H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, spc, H5P_DEFAULT, data);
+			break;
+		default:
+			throw ImageWriteException(filename,"HDF5 does not support regional writing for this data format");
+		}
 		H5Sclose(memoryspace);
 	}
 	else {
-		H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+		switch(dt) {
+		case EMUtil::EM_FLOAT:
+			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+			break;
+		case EMUtil::EM_USHORT:
+			usdata = new unsigned short[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					usdata[i] = 0;
+				}
+				else if(data[i] >= rendermax) {
+					usdata[i] = USHRT_MAX;
+				}
+				else {
+					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
+				}
+			}
+			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+			if(usdata) {delete [] usdata; usdata=0;}
+			break;
+		case EMUtil::EM_UCHAR:
+			cdata = new unsigned char[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					cdata[i] = 0;
+				}
+				else if(data[i] >= rendermax){
+					cdata[i] = UCHAR_MAX;
+				}
+				else {
+					cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+				}
+			}
+			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
+			if(cdata) {delete [] cdata; cdata=0;}
+			break;
+		default:
+			throw ImageWriteException(filename,"HDF5 does not support this data format");
+		}
 	}
 
 	H5Sclose(spc);

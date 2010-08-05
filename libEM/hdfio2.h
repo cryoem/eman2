@@ -110,8 +110,10 @@ namespace EMAN
 		hid_t get_fileid() const {return file;}
 
 	  private:
-		int nx, ny, nz;
+		hsize_t nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
+		EMUtil::EMDataType datatype;
+
 		hid_t file;
 		hid_t group;
 		hid_t accprop;

@@ -184,6 +184,24 @@ void EMData::write_image(const string & filename, int img_index,
 //			img_index = imageio->get_nimg();
 //		}
 		LOGVAR("header write %d",img_index);
+
+		switch(filestoragetype) {
+		case EMUtil::EM_USHORT:
+			attr_dict["datatype"] = (int)EMUtil::EM_USHORT;
+			break;
+		case EMUtil::EM_SHORT:
+			attr_dict["datatype"] = (int)EMUtil::EM_SHORT;
+			break;
+		case EMUtil::EM_CHAR:
+			attr_dict["datatype"] = (int)EMUtil::EM_CHAR;
+			break;
+		case EMUtil::EM_UCHAR:
+			attr_dict["datatype"] = (int)EMUtil::EM_UCHAR;
+			break;
+		default:
+			;	//default float
+		}
+
 		int err = imageio->write_header(attr_dict, img_index, region, filestoragetype,
 										use_host_endian);
 		if (err) {
