@@ -199,7 +199,7 @@ void EMData::write_image(const string & filename, int img_index,
 			attr_dict["datatype"] = (int)EMUtil::EM_UCHAR;
 			break;
 		default:
-			;	//default float
+			attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;;	//default float
 		}
 
 		int err = imageio->write_header(attr_dict, img_index, region, filestoragetype,
