@@ -557,8 +557,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		}
 	}
 
-	std::cout << "datatype = " << (int)dict["datatype"] << std::endl;
-
 	if(dict.has_key("ctf")) {
 		string ctfString = (string)dict["ctf"];
 		if(ctfString.substr(0, 1) == "O") {
