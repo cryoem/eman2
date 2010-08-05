@@ -68,7 +68,8 @@ map to the center of the volume."""
 	#parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_option("--center",     type="string",       default="n", help="center: c - coordinates, a - center of gravity, default: n - no" )
 	parser.add_option("--O",          action="store_true", default=False, help="use O system of coordinates")
-	parser.add_option("--quiet",      action="store_true", default=False,help="Verbose is the default")
+	parser.add_option("--quiet",      action="store_true", default=False, help="Verbose is the default")
+	parser.add_option("--tr0",        type="string",       default="none", help="Filename of initial 3x4 transformation matrix")
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -89,6 +90,18 @@ map to the center of the volume."""
 	atoms=[]		# we store a list of atoms to process to avoid multiple passes
 	nelec=0
 	mass=0
+
+	# read in initial-transformation file:
+	if(options.tr0 != "none"):
+		cols = read_text_file(options.tr0,-1)
+		txlist=[]
+		for i in range(3):
+			txlist.append(cols[0][i])
+			txlist.append(cols[1][i])
+			txlist.append(cols[2][i])
+			txlist.append(cols[3][i]*options.apix)
+		tr0 = Transform(txlist)
+
 
 	# parse the pdb file and pull out relevant atoms
 	for line in infile:
@@ -116,6 +129,14 @@ map to the center of the volume."""
 				mass  += atomdefs[a.upper()][1]
 			except:
 				print("Unknown atom %s ignored at %d"%(a,aseq))
+
+			# apply initial transformation:
+			if(options.tr0 != "none"):
+				atom_coords = Vec3f(x,y,z)
+				new_atom_coords = tr0*atom_coords
+				x = new_atom_coords[0]
+				y = new_atom_coords[1]
+				z = new_atom_coords[2]
 
 			atoms.append([a,x,y,z])
 
