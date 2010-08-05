@@ -465,7 +465,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1)
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1,myid)
 		from filter import filt_ctf
 		from morphology   import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -720,7 +720,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		
 	print_begin_msg("ali2d_c")
 
-	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', " ORGali2d_c", 1)
 	os.mkdir(outdir)
 
 	import user_functions
@@ -791,7 +791,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c", 1)
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
@@ -1041,7 +1041,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_c_MPI", 1)
+		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c_MPI", 1,myid)
 		from filter import filt_ctf
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
@@ -1353,7 +1353,7 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	
 	# create the output directory, if it does not existm
 	if os.path.exists(outdir):  
-	    ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	    ERROR('Output directory exists, please change the name and restart the program', "local_ali2d", 1)
 	os.mkdir(outdir)
 	low = 0.5
 
@@ -2668,7 +2668,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	else:           print_msg("Stop iteration with         : maxit\n")
 
 	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+		ERROR('Output directory exists, please change the name and restart the program', "ali2d_cross_res", 1)
 	os.mkdir(outdir)
 
 	if maskfile:
@@ -2858,7 +2858,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if CTF : from reconstruction import recons3d_4nn_ctf
 	else   : from reconstruction import recons3d_4nn
 
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ali3d_a", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -2916,7 +2916,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		data[im].set_attr('ID', im)
 		if(CTF):
 			if(data[im].get_attr_default('ctf_applied', 2) > 0):
-				ERROR("data cannot be ctf-applied","ali2d_ar",1)
+				ERROR("data cannot be ctf-applied","ali2d_a",1)
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
 
@@ -3016,7 +3016,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d", 1)
 	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
@@ -3139,9 +3139,12 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			#  here we write header info
 			from utilities import write_headers
+			#from utilities import write_select_headers
 			if CTF:
 				for dat in data:  dat.del_attr('ctf_applied')
 			write_headers(stack, data, list_of_particles)
+			#list_params= ['ID','xform.projection']
+			#write_select_headers(stack, data, list_params)
 			if CTF:
 				for dat in data:  dat.set_attr('ctf_applied', 1)
 	print_end_msg("ali3d")
@@ -4198,7 +4201,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0):
-			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm", 1)
+			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm_MPI_", 1,myid)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -4594,7 +4597,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 
 	if(CTF):
 		if(data[0].get_attr("ctf_applied") > 0):
-			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm", 1)
+			ERROR( "local_ali3dm does not work on ctf_applied data", "local_ali3dm_MPI", 1,myid)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -4871,7 +4874,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 		from filter         import filt_ctf
 	else   : from reconstruction import recons3d_4nn
 
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "local_ali3d", 1)
 	os.mkdir(outdir)
 
 	last_ring   = int(ou)
@@ -5093,7 +5096,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 			ima.read_image(stack, 0)
 			ctf_applied = ima.get_attr("ctf_applied")
 			del ima
-			if ctf_applied == 1:  ERROR("local_ali3d does not work for CTF-applied data", "local_ali3d", 1)
+			if ctf_applied == 1:  ERROR("local_ali3d does not work for CTF-applied data", "local_ali3d_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:
@@ -5422,9 +5425,9 @@ def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_s
 	from string 		import split
 	from morphology 	import flcc
 	import os
-	if os.path.exists(indir)  is False: ERROR("micrograph directory does not exsit", "autowin.py",1)
+	if os.path.exists(indir)  is False: ERROR("micrograph directory does not exsit", "autowin",1)
 	else                              : flist=os.listdir(indir)
-	if os.path.exists(outdir)         : ERROR('Output directory exists, please change the name and restart the program', " ", 1) 
+	if os.path.exists(outdir)         : ERROR('Output directory exists, please change the name and restart the program', "autowin", 1) 
 	os.mkdir(outdir)
 	t       = EMData()
 	e_n     = EMData()
@@ -5503,7 +5506,7 @@ def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_s
 		else:			N_wi=int(N_ptl )
 		out = open(f_coord, "w")
 		out.write("#Coordinates: %s\n")
-		if N_wi == 0 :	ERROR("Number of particles is zero", "autowin.py", 0)
+		if N_wi == 0 :	ERROR("Number of particles is zero", "autowin", 0)
 		if(CC_method == 1):  img1 = fft(img1)
 		for k in xrange(N_wi):
 			x       = peak[k*3+1] -p_size/2
@@ -5545,7 +5548,7 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 	main_node      = 0
 	if(myid == 0): main_node = randint(0,number_of_proc-1)
 	main_node      = mpi_bcast(main_node, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	if os.path.exists(indir)  is False: ERROR("micrograph directory does not exsit", "autowin.py",1)	
+	if os.path.exists(indir)  is False: ERROR("micrograph directory does not exsit", "autowin_MPI",1,myid)	
 	flist = os.listdir(indir)
 	nima          = 0
 	mic_name_list = []
@@ -5648,7 +5651,7 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		else:			N_wi=int(N_ptl )			
 		out = open(f_coord, "w")
 		out.write("#Coordinates: %s\n")
-		if N_wi == 0 :	ERROR("Number of particles is zero","autowin.py",0)
+		if N_wi == 0 :	ERROR("Number of particles is zero","autowin.py",0,myid)
 		if(CC_method == 1):img1 = fft(img1)			
 		for k in xrange(N_wi):
 			x       = peak[k*3+1] -p_size/2
@@ -6312,7 +6315,7 @@ def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", outp
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif",1)
 	else                             : flist          = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
-		if os.path.exists(outdir) :   ERROR("Output directory exists, please change the name and restart the program"," ",1)
+		if os.path.exists(outdir) :   ERROR("Output directory exists, please change the name and restart the program","copyfromtif",1)
 		os.mkdir(outdir)	
 	else: 	
 		outdir = ("micrographs")# default output directory
@@ -6377,11 +6380,11 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 	from mpi 	    import mpi_barrier, mpi_bcast
 	from mpi 	    import MPI_INT
 
-	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif",1)
+	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif_MPI",1,myid)
 	else                             : flist = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
 		if os.path.exists(outdir):   
-			ERROR("Output directory exists, please change the name and restart the program"," ",1)
+			ERROR("Output directory exists, please change the name and restart the program","copyfromtif_MPI",1,myid)
 		os.mkdir(outdir)	
 	else: 	
 		os.system(" rm -rf micrograph ")
@@ -6404,7 +6407,7 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 		if(filextension == "."+input_extension):
 		       mic_name_list.append(micname)
 		       nima += 1
-	if nima < 1:    ERROR("No micrograph is found, check either directory or prefix of micrographs is correctly given","pw2sp",1)
+	if nima < 1:    ERROR("No micrograph is found, check either directory or prefix of micrographs is correctly given","copyfromtif_MPI",1,myid)
        
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid	      = mpi_comm_rank(MPI_COMM_WORLD)
@@ -6776,7 +6779,7 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp",1)
 	else				 : flist    = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
-		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program"," ",1)
+		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program","pw2sp",1)
 		os.mkdir(outdir)	
 	else: 	os.system("mkdir power")
 	mask     = model_circle(int(r), int(w), int(w), nz=1)
@@ -6831,7 +6834,7 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	# get the total micrograph number 
-	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp_MPI",1)
+	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp_MPI",1,myid)
 	else:	                           flist = os.listdir(indir)
 	nima          = 0
 	mic_name_list = []
@@ -6841,7 +6844,7 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 		if(filename[0:len(prefix_of_micrograph)] == prefix_of_micrograph):
 			mic_name_list.append(micname)
 			nima += 1
-	if nima < 1: 	ERROR("No micrograph is found, check spelling of either directory or micrographs","pw2sp_MPI",1)	
+	if nima < 1: 	ERROR("No micrograph is found, check spelling of either directory or micrographs","pw2sp_MPI",1,myid)	
 
 	#if nima < number_of_proc: nimage_per_node = 1
 	#else                    : nimage_per_node = nima/number_of_proc
@@ -7853,7 +7856,7 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 
 	if myid==0:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "bootstrap_run", 1)
+			ERROR('Output directory exists, please change the name and restart the program', "bootstrap_run", 1,myid)
 		os.system( "mkdir " + outdir )
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )	
@@ -7929,7 +7932,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	print_msg('\n')
 
 	out_dir = out_dir.rstrip('/')
-	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_main", 1)
 	os.mkdir(out_dir)
 
 	if rand_seed > 0: seed(rand_seed)
@@ -8340,7 +8343,7 @@ def imgstat_ccc( stacks, rad ):
 	from projection import prep_vol,prgs
 	from utilities	import get_params_proj
 
-	if len(stacks)>3: ERROR("Error: ccc should be run on two stacks","imgstat",1)
+	if len(stacks)>3: ERROR("Error: ccc should be run on two stacks","imgstat_ccc",1)
 
 	nimg1 = EMUtil.get_image_count( stacks[0] )
 	nimg2 = EMUtil.get_image_count( stacks[1] )
@@ -8364,7 +8367,7 @@ def imgstat_ccc( stacks, rad ):
 		if len(stacks) == 3:  mask = get_im(stacks[2])
 		else:                 mask = None
 	else:
-		if len(stacks) == 3:    ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat",1)
+		if len(stacks) == 3:    ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat_ccc",1)
 		else:
 			nx = imgtmp.get_xsize()
 			ny = imgtmp.get_ysize()
@@ -8391,7 +8394,7 @@ def imgstat_fsc( stacks, fscfile, rad ):
 	from utilities import get_im, model_circle
 	from statistics import fsc_mask
 
-	if len(stacks)>3: ERROR("Error: fsc should be run on two images","imgstat",1)
+	if len(stacks)>3: ERROR("Error: fsc should be run on two images","imgstat_fsc",1)
 
 	img1 = get_im( stacks[0] )
 	img2 = get_im( stacks[1] )
@@ -8400,15 +8403,15 @@ def imgstat_fsc( stacks, fscfile, rad ):
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()
 
-	if  EMUtil.get_image_count(stacks[0])>1: ERROR("Error: %s is an stack, fsc should be run on images","imgstat",1)
+	if  EMUtil.get_image_count(stacks[0])>1: ERROR("Error: %s is an stack, fsc should be run on images","imgstat_fsc",1)
 
-	if img2.get_xsize() != nx or img2.get_ysize() != ny or img2.get_zsize() != nz: ERROR("Error: input images has different sizes","imgstat",1)
+	if img2.get_xsize() != nx or img2.get_ysize() != ny or img2.get_zsize() != nz: ERROR("Error: input images has different sizes","imgstat_fsc",1)
 
 	if rad==-1:
 		if len(stacks) == 3: mask = get_im(stacks[2])
 		else:                mask = None
 	else:
-		if len(stacks) == 3:  ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat",1)
+		if len(stacks) == 3:  ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat_fsc",1)
 		else:    mask = model_circle( rad, nx, ny, nz )
 
 	fsc_mask( img1, img2, mask, filename=fscfile )
@@ -8416,7 +8419,7 @@ def imgstat_fsc( stacks, fscfile, rad ):
 def imgstat_inf( stacks, rad ):
 	from EMAN2 import EMUtil
 	from utilities import get_im, model_circle
-	if len(stacks)>2: ERROR("Error: inf should be run on one file","imgstat",1)
+	if len(stacks)>2: ERROR("Error: inf should be run on one file","imgstat_inf",1)
 
 	nimg = EMUtil.get_image_count( stacks[0] )
 	img1 = get_im( stacks[0] )
@@ -8429,7 +8432,7 @@ def imgstat_inf( stacks, rad ):
 		if len(stacks) == 2:  mask = get_im(stacks[1])
 		else:                 mask = None
 	else:
-		if len(stacks) == 2:    ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat",1)
+		if len(stacks) == 2:    ERROR("Error: Mask radius and mask file canot be given simultaneously","imgstat_inf",1)
 		else:			mask = model_circle( rad, nx, ny, nz )
 
 
@@ -8498,7 +8501,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 	import os
 
 	if(MPI and not (weights is None)):
-		ERROR('Application of weights does not have MPI version', "normal_prj", 1)
+		ERROR('Application of weights does not have MPI version', "normal_prj", 1,myid)
 
 	if MPI:
 		from mpi import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_init, mpi_reduce, mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM
@@ -8513,7 +8516,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 			from utilities import read_text_file
 			s = read_text_file(weights)
 			img_number     = EMUtil.get_image_count( prj_stack )
-			if(len(s) != img_number):  ERROR('Number of images does not agree with number of weights', "normal_prj", 1)
+			if(len(s) != img_number):  ERROR('Number of images does not agree with number of weights', "normal_prj", 1,myid)
 			for i in xrange(img_number):
 				img = get_im(prj_stack, i)
 				Util.mul_scalar(img, s[i])
@@ -8522,7 +8525,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 
 	if myid==0:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "normal_prj", 1)
+			ERROR('Output directory exists, please change the name and restart the program', "normal_prj", 1,myid)
     		os.system( "mkdir " + outdir )
 
 	if MPI:
@@ -8797,7 +8800,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 	import os
 	print " START "
 	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', " sxvar", 1)
+		ERROR('Output directory exists, please change the name and restart the program', " defvar", 1)
 	os.system( "mkdir " + outdir )
 
 	finf = open( outdir + "/var_progress.txt", "w" )
@@ -9002,7 +9005,7 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 
         nfiles = len( files )
 	if(nfiles < ncpu):
-		ERROR('Number of files less than number of processors specified, reduce number of processors', " var_mpi", 1)
+		ERROR('Number of files less than number of processors specified, reduce number of processors', " var_mpi", 1,myid)
 		
 	file_start, file_end = MPI_start_end(nfiles, ncpu, myid)
 
@@ -9336,7 +9339,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:            TXT = False
 
 	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
-		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k-means', 1)
+		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k_means_main', 1)
 		sys.exit()
 
 	if MPI:
@@ -9351,7 +9354,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	else:
 		if os.path.exists(out_dir):
-			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0)
+			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0,myid)
 	
 
 	if MPI and not CUDA:
@@ -9375,7 +9378,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
 					N_start, N_stop, N, ncpu)
 		else:
-			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
+			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
 			sys.exit()
 
 		if myid == main_node:
@@ -9418,7 +9421,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, 
 					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)
 		else:
-			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
+			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
 			sys.exit()
 			
 		crit = k_means_criterion(Cls, critname)
@@ -9434,7 +9437,7 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 
 	import os
 	if os.path.exists(out_file):
-		ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+		ERROR('Output directory exists, please change the name and restart the program', "k_means_groups", 0)
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
