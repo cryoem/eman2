@@ -586,6 +586,23 @@ class TestHdfIO(ImageI0Tester):
 		"""test write-read hdf .............................."""
 		self.do_test_read_write("hdf")
 
+	def test_hdf_16bit_IO(self):
+		"""test read/write 16 bit HDF5......................."""
+		file = '16bit.hdf'
+		e = test_image()
+		e.write_image(file, -1, EMUtil.ImageType.IMAGE_HDF, False, None, EMUtil.EMDataType.EM_USHORT)
+		e2 = EMData(file)
+		self.assertEqual(e2.get_attr('datatype'), EMUtil.EMDataType.EM_USHORT)
+		testlib.safe_unlink(file)
+	
+	def test_hdf_8bit_IO(self):
+		"""test read/write 8 bit HDF5........................"""
+		file = '8bit.hdf'
+		e = test_image()
+		e.write_image(file, -1, EMUtil.ImageType.IMAGE_HDF, False, None, EMUtil.EMDataType.EM_UCHAR)
+		e2 = EMData(file)
+		self.assertEqual(e2.get_attr('datatype'), EMUtil.EMDataType.EM_UCHAR)
+		testlib.safe_unlink(file)
 
 class TestMrcIO(ImageI0Tester):
 	"""mrc file IO test"""
