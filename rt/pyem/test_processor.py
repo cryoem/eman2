@@ -1830,13 +1830,13 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('misc.symsearch', {'sym':['CSYM'], 'thresh':0.5, 'output_symlabel':1, 'symlabel_map':e2})
         
     def test_misc_localnorm(self):
-        """test misc.localnorm processor ...................."""
+        """test normalize.local processor ..................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         
-        e.process_inplace('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
-        f = e.process('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        e.process_inplace('normalize.local', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        f = e.process('normalize.local', {'threshold':0.4, 'radius':16, 'apix':0.8})
         
         testlib.safe_unlink('norm.mrc')
         
