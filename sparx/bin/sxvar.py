@@ -41,13 +41,11 @@ from global_def import *
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc --overwrite --filtered --repair=repairfile --pca --pcamask --pcanvec --MPI"
+	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc  -repair=repairfile --pca --pcamask --pcanvec --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--fl",             type="float",        default=0.0,       help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",             type="float",        default=0.0,       help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--radccc",         type="int",          default=-1,        help="radius for ccc calculation")
-	parser.add_option("--overwrite",      action="store_true", default=False,     help="write repaired bootstrap volumes to original files (default is False)" )
-	parser.add_option("--filtered",       action="store_true", default=False,     help="write the stack containing all low-pass filtered volumes to disk (default is False)" )
 	parser.add_option("--MPI",            action="store_true", default=False,     help="use MPI version" )
 	parser.add_option("--repair",         type="string",       default="default", help="repair original bootstrap volumes: None, default, or repair file name")
 	parser.add_option("--pca",            action="store_true", default=False,     help="run pca" )
@@ -80,10 +78,10 @@ def main():
 			
 			if(options.n):
 				from development import var_mpi_new
-				var_mpi_new( files[0], outdir, options.scratch, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+				var_mpi_new( files[0], outdir, options.scratch, options.fl, options.aa, options.radccc, False, False, options.repair, options.pca, options.pcamask, options.pcanvec)
 			else:
 				from applications import var_mpi
-				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			
 			global_def.BATCH = False
 			from mpi import mpi_finalize
@@ -91,7 +89,7 @@ def main():
 		else:
 			from applications import defvar
 			global_def.BATCH = True
-			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.overwrite, options.filtered, options.repair, options.pca, options.pcamask, options.pcanvec)
+			defvar(  files, outdir, options.fl, options.aa, options.radccc, False, False, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False
 
 

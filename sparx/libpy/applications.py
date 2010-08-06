@@ -8920,7 +8920,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 		for i in xrange( len(eigs) ):
 			eigs[i].write_image( eigfile, i )
 
-def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default", pca=False, pcamask=None, pcanvec=None):
+def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask=None, pcanvec=None):
 	from string     import atoi, replace, split, atof
 	from utilities  import get_im, circumference, model_circle, model_blank
 	from utilities  import bcast_EMData_to_all, reduce_EMData_to_root
@@ -8935,18 +8935,10 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
-	nx = 0
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
         if myid==0:
-		if os.path.exists(outdir):
-			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', " var_mpi", 1,myid)
-		else:
-			os.system( "mkdir " + outdir )
-	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	nx = int(nx[0])
-	if(nx != 0):
-		from sys import exit
-		exit()
+		os.system( "mkdir " + outdir )
 
 	mpi_barrier( MPI_COMM_WORLD )
 
@@ -8994,16 +8986,13 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	avgfileE = os.path.join(outdir, "avgE.hdf")
 	varfileO = os.path.join(outdir, "varO.hdf")
 	avgfileO = os.path.join(outdir, "avgO.hdf")
-	#varstack = outdir + "/varstack.hdf" 
-	#oddstack = outdir + "/oddvarstack.hdf"
-	#evestack = outdir + "/evevarstack.hdf"
 
 	if(radccc < 1):  radcir = min(nx,ny,nz)//2-2
 	else:            radcir = radccc
 
         nfiles = len( files )
 	if(nfiles < ncpu):
-		ERROR('Number of files less than number of processors specified, reduce number of processors', " var_mpi", 1,myid)
+		ERROR('Number of files less than number of processors specified, reduce number of processors', " var_mpi", 1, myid)
 		
 	file_start, file_end = MPI_start_end(nfiles, ncpu, myid)
 
@@ -9020,21 +9009,18 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 	total_img = 0
 	for ifile in xrange(file_start, file_end):
 		nimg = EMUtil.get_image_count( files[ifile] )
-		print myid," A  ",files[ifile],"   ",nimg
+		#print myid," A  ",files[ifile],"   ",nimg
 		for i in xrange(nimg):
 			img = get_im( files[ifile], i )
 			#img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
-				if writestack: img.write_image( os.path.join(outdir, "filtered%04d.hdf"%(ifile) ), i )
 			if(repair):
 				Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
 				if pca:
 					pc   = Util.infomask(img, pcamask, True)
 					img -= pc[0]
 					img *= (refstat[1]/pc[1])
-					#img += refstat[1]  # shouldn't it be zero?
-			if(repair and writelp):  img.write_image(files[ifile], i)
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
@@ -9058,35 +9044,23 @@ def var_mpi(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default
 
 	var1 = model_blank(nx,ny,nz)
 	var2 = model_blank(nx,ny,nz)
-	if(fl > 0.0 and writestack):
-		for ifile in xrange(file_start, file_end):
-			f = os.path.join(outdir, "filtered%04d.hdf"%(ifile) )
-			nimg = EMUtil.get_image_count( f )
-			print myid," V  ",f,"   ",nimg
-			for i in xrange(nimg):
-				img = get_im(f , i )
-				if pca: pcaer.insert(img)
-				Util.sub_img(img, avg)
-				if(i%2 == 0):  Util.add_img2(var1 , img)
-				else:	       Util.add_img2(var2 , img)
-	else:
-		for ifile in xrange(file_start, file_end):
-			nimg = EMUtil.get_image_count( files[ifile] )
-			print myid," V  ",files[ifile],"   ",nimg
-			for i in xrange(nimg):
-				img = get_im( files[ifile], i )
-				#img = circumference( img, radcir )
-				if(fl > 0.0): img = filt_tanl( img, fl, aa)
-				if(repair and not writelp):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
-				if pca:
-					pc = Util.infomask(img, pcamask, True)
-					img -= pc[0]
-					img *= (refstat[1]/pc[1])
-					#img += refstat[1]
-				if pca : pcaer.insert(img)
-				Util.sub_img(img, avg)
-				if(total_img%2 == 0): Util.add_img2(var1, img)
-				else:                 Util.add_img2(var2 , img)
+	for ifile in xrange(file_start, file_end):
+		nimg = EMUtil.get_image_count( files[ifile] )
+		#print myid," V  ",files[ifile],"   ",nimg
+		for i in xrange(nimg):
+			img = get_im( files[ifile], i )
+			#img = circumference( img, radcir )
+			if(fl > 0.0): img = filt_tanl( img, fl, aa)
+			if(repair):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+			if pca:
+				pc = Util.infomask(img, pcamask, True)
+				img -= pc[0]
+				img *= (refstat[1]/pc[1])
+				#img += refstat[1]
+			if pca : pcaer.insert(img)
+			Util.sub_img(img, avg)
+			if(total_img%2 == 0): Util.add_img2(var1, img)
+			else:                 Util.add_img2(var2 , img)
 
 	reduce_EMData_to_root(var1, myid)
 	reduce_EMData_to_root(var2, myid)
