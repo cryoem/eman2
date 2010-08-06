@@ -1312,6 +1312,11 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	output = sys.stdout
 	
 	from utilities import print_begin_msg, print_end_msg, print_msg
+	
+	# create the output directory, if it does not existm
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali2d", 1)
+	os.mkdir(outdir)
+	
 	max_iter  = int(maxit)
 	last_ring = int(ou)
 
@@ -1350,11 +1355,6 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n\n"%(snr))
 	
-	
-	# create the output directory, if it does not existm
-	if os.path.exists(outdir):  
-	    ERROR('Output directory exists, please change the name and restart the program', "local_ali2d", 1)
-	os.mkdir(outdir)
 	low = 0.5
 
 	# read images
@@ -1486,6 +1486,10 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 
 	from utilities      import   print_begin_msg, print_end_msg, print_msg
 	
+	# create the output directory, if it does not exist
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d", 1)
+	os.mkdir(outdir)
+	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit)
 	if max_iter == 0:
 		max_iter  = 10
@@ -1518,9 +1522,6 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
 
-	# create the output directory, if it does not exist
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d", 1)
-	os.mkdir(outdir)
 	output = sys.stdout
 
 	import user_functions
@@ -1736,6 +1737,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	
 	# create the output directory, if it does not exist
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -2623,6 +2625,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 
 	from utilities import print_begin_msg, print_end_msg, print_msg
 	import	types
+	
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_cross_res", 1)
+	os.mkdir(outdir)
 		
 	print_begin_msg("ali2d_cross_res")
 
@@ -2665,9 +2670,6 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	if auto_stop:  print_msg("Stop iteration with         : criterion\n")
 	else:           print_msg("Stop iteration with         : maxit\n")
 
-	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', "ali2d_cross_res", 1)
-	os.mkdir(outdir)
 
 	if maskfile:
 		if(type(maskfile) is types.StringType):
@@ -3670,12 +3672,12 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
-	if myid == main_node:	os.mkdir(outdir)
-
+	if myid == main_node:	
+		print_begin_msg("mref_ali3d_MPI")
+		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	from time import time	
@@ -4086,8 +4088,11 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3dm_MPI_ ", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
-	if(myid == main_node):
+	
+	if myid == main_node:
+		print_begin_msg("local_ali3dm_MPI")
 		os.mkdir(outdir)
+	
 	mpi_barrier(MPI_COMM_WORLD)
 
 
@@ -4483,7 +4488,9 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if(myid == main_node):
+		print_begin_msg("local_ali3dm_MPI")
 		os.mkdir(outdir)
+	
 	mpi_barrier(MPI_COMM_WORLD)
 
 
@@ -4857,6 +4864,9 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	import os 
 	import sys
 
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "local_ali3d", 1)
+	os.mkdir(outdir)
+	
 	print_begin_msg('local_ali3d')
 
 	import user_functions
@@ -4871,9 +4881,6 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 		from reconstruction import recons3d_4nn_ctf
 		from filter         import filt_ctf
 	else   : from reconstruction import recons3d_4nn
-
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "local_ali3d", 1)
-	os.mkdir(outdir)
 
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
@@ -5082,10 +5089,12 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		from filter import filt_ctf
 
 	main_node = 0
+	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali3d_MPI ", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
+		print_begin_msg("local_ali3d_MPI")
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -5556,10 +5565,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		if(filename[0:len(prefix_of_micrograph)] == prefix_of_micrograph):
 			mic_name_list.append(micname)
 			nima += 1
+	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "autowin_MPI ", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	if(myid == int(main_node)): # directory cleaning only performed by main node
+	if myid == int(main_node): # directory cleaning only performed by main node
+		print_begin_msg("autowin_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
@@ -5888,6 +5899,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
+		print_begin_msg("ihrsr_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6381,8 +6393,7 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif_MPI",1,myid)
 	else                             : flist = os.listdir(indir)
 	if(type(outdir)          is types.StringType):
-		if os.path.exists(outdir):   
-			ERROR("Output directory exists, please change the name and restart the program","copyfromtif_MPI",1,myid)
+		if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program","copyfromtif_MPI",1,myid)
 		os.mkdir(outdir)	
 	else: 	
 		os.system(" rm -rf micrograph ")
@@ -6828,9 +6839,11 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 	if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program","pw2sp_MPI ",1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
-	if (myid == int(main_node)):  # only main node do cleaning & creating jobs
+	if myid == int(main_node):  # only main node do cleaning & creating jobs
+		print_begin_msg("pw2sp_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
+	
 	# get the total micrograph number 
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp_MPI",1,myid)
 	else:	                           flist = os.listdir(indir)
@@ -7853,8 +7866,7 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 		myid = 0
 
 	if myid==0:
-		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "bootstrap_run", 1,myid)
+		if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "bootstrap_run", 1,myid)
 		os.system( "mkdir " + outdir )
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )	
@@ -8001,6 +8013,15 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	main_node = 0
 	mpi_barrier(MPI_COMM_WORLD)
 
+	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_MPI ", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		t_start = start_time()
+		print_begin_msg('find_struct')
+		os.mkdir(out_dir)
+
+
 	flag = 0
 	if myid == main_node:
 		if ncpu > trials:
@@ -8015,13 +8036,6 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	lrnd    = cml_init_rnd(trials, rand_seed)
 	out_dir = out_dir.rstrip('/')
 
-	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_MPI ", 1,myid)
-	mpi_barrier(MPI_COMM_WORLD)
-
-	if myid == main_node:
-		t_start = start_time()
-		print_begin_msg('find_struct')
-		os.mkdir(out_dir)
 	
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
@@ -8520,11 +8534,10 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 				Util.mul_scalar(img, s[i])
 				img.write_image(outdir, i)
 			return
-
-	if myid==0:
-		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "normal_prj", 1,myid)
-    		os.system( "mkdir " + outdir )
+	
+	if myid== 0:
+		if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "normal_prj", 1,myid)
+    		os.mkdir(outdir)
 
 	if MPI:
 		mpi_barrier( MPI_COMM_WORLD )
@@ -8796,10 +8809,11 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 	from statistics import ccc
 	from math       import sqrt
 	import os
+	
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " defvar", 1)
+	os.mkdir(outdir)
+
 	print " START "
-	if os.path.exists(outdir):
-		ERROR('Output directory exists, please change the name and restart the program', " defvar", 1)
-	os.system( "mkdir " + outdir )
 
 	finf = open( outdir + "/var_progress.txt", "w" )
 
@@ -8935,14 +8949,17 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	main_node=0
+	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
-        if myid==0:
-		os.system( "mkdir " + outdir )
+        if myid== main_node:
+		print_begin_msg("var_mpi")
+		os.mkdir(outdir)
 
 	mpi_barrier( MPI_COMM_WORLD )
 
-	if( myid == 0 ):
+	if( myid == main_node ):
 		print "  START "
 		img = get_im(files[0])
 		nx = img.get_xsize()
@@ -9321,12 +9338,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
-		if os.path.exists(out_dir):
-			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1,myid)
+		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1,myid)
+		mpi_barrier(MPI_COMM_WORLD)
 
 	else:
-		if os.path.exists(out_dir):
-			ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0,myid)
+		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0,myid)
 	
 
 	if MPI and not CUDA:
