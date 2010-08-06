@@ -6073,14 +6073,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			sy = 0.0
 
 
-#			Ryanmod: list for all old and new parameters before and after angle mapping
-			t1_all_images = []
-			t2_all_images = []
-
 			for im in xrange( nima ):
-				t1_current = data[im].get_attr("xform.projection")
-				t1_all_images.append(t1_current)
-				peak, phihi, sxi, syi = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+
+				peak, phihi, sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
 				#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
 				dpp=(float(dp)/pixel_size)
 				dyi=(float(syi)/dpp)-int(syi/dpp)
@@ -6108,7 +6103,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 					   phinew=phihi
 					#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
 				paramalij = get_params_proj(data[im])
-				# print paramalij[4], syi, synew
 				set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
 				sx += sxi
 				sy += synew
@@ -6133,25 +6127,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
 				modphi[im]=paramali[0]
 				# end jeanmod
-				#print sx, sy
 				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
-				t2_current = data[im].get_attr("xform.projection")
-				t2_all_images.append(t2_current)
-
-			from pixel_error import max_3D_pixel_error
-			for im in xrange( nima ):
-				pixer[im] = max_3D_pixel_error(t1_all_images[im], t2_all_images[im], numr[-3])
-
-			del t1_current,t2_current,t1_all_images,t2_all_images
-
-			if(myid == main_node):
-				param_list = []				
-				for i in xrange(nima):
-					phi, theta, psi, s2x, s2y = get_params_proj(data[i])
-					param_list.append([i, phi, theta, psi, s2x, s2y])
-				from utilities import write_text_row
-				write_text_row(param_list, os.path.join(outdir, "first_param%04d.txt"%total_iter) )
-				del param_list
 
 			#output pixel errors
 			from mpi import mpi_gatherv
@@ -6984,22 +6960,23 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 
 	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
 	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(ref)
-	params = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	# print  " params of the reference volume",params
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
+	paramsr = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
+	# print  " params of the reference volume", paramsr
+	ref = rot_shift3D(ref, paramsr[0], paramsr[1], paramsr[2], paramsr[3], paramsr[4], paramsr[5], paramsr[7])
 
 	e = get_image(vol)
 	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  get_params3D(e)
-	params = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
-	# print  " input params ",params
-	data=[e, ref, mask, params, discrepancy]
+	paramsv = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
+	e = rot_shift3D(e, phi, theta, psi, s3x, s3y, s3z, scale)
+	# print  " input params ", paramsv
+	params = [phi, theta, psi, s3x, s3y, s3z]
+	data = [e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	print "amoeba: func_value =",new_params[1], "iter =",new_params[2]
 
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	if type(vol)==type(""):
@@ -7007,6 +6984,68 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 		write_headers( vol, [e], [0])
 	else:
 		return e
+
+def ali_vol_nopsi(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
+	"""
+		Name
+			sxali_vol_nopsi - align a 3D structure with respect of a 3D reference structure,
+				like sxali_vol, but keeping psi fixed at 0.
+		Input
+			aligned_volume.hdf: 3D structure to be aligned.
+		reference_volume.hdf
+			3D reference structure.
+		ang_scale
+			correct angles are expected to be within +/-ang_scale of the values preset in the header of the structure to be aligned
+		shift_scale
+			correct shifts are expected to be within +/-shift_scale of the values preset in the header of the structure to be aligned
+		mag_scale
+			correct magnification is expected to be within +/-mag_scale of the value preset in the header of the structure to be aligned
+		r
+			radius of a spherical mask centered at nx/2, ny/2, nz/2
+		Note - there are no defaults for three scale parameters. At least one has to appear.
+	"""
+
+
+	#rotation and shift
+	from alignment    import ali_vol_func_nopsi
+	from utilities    import get_image, model_circle, get_params3D, set_params3D
+	from utilities    import amoeba, compose_transform3
+	from fundamentals import rot_shift3D
+	
+	ref = get_image(refv)
+	nx = ref.get_xsize()
+	ny = ref.get_ysize()
+	nz = ref.get_zsize()
+	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
+	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
+
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(ref)
+	paramsr = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
+	# print  " params of the reference volume",params
+	ref = rot_shift3D(ref, paramsr[0], paramsr[1], paramsr[2], paramsr[3], paramsr[4], paramsr[5], paramsr[7])
+
+	e = get_image(vol)
+	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  get_params3D(e)
+	paramsv = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
+	e = rot_shift3D(e, phi, theta, psi, s3x, s3y, s3z, scale)
+	# print  " input params ", paramsv
+	params = [phi, theta, s3x, s3y, s3z]
+	data=[e, ref, mask, params, discrepancy]
+	new_params = [0.0, 0.0, 0.0, 0.0, 0.0]
+	
+	new_params = amoeba(new_params, [ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_nopsi, 1.e-4, 1.e-4, 500, data)
+	print "amoeba: func_value =",new_params[1], "iter =",new_params[2]
+
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], 0.0, new_params[0][2], new_params[0][3], new_params[0][4], 1.0)
+	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
+	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
+
 
 def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	#rotation 
@@ -7029,7 +7068,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 
 	e = get_image(vol)
 	params = get_params3D(e)
-	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
+	#e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	#print  " input params ", params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
@@ -7064,7 +7103,7 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 
 	e = get_image(vol)
 	params = get_params3D(e)
-	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
+	#e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	#print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
@@ -9121,7 +9160,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 
 
         if( myid == 0 ):
-		foutput = open( prefix, "w" )
+		foutput = open( prefix+".txt", "w" )
 
 	
 	if(neigvol < 0):
