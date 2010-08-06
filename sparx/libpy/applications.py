@@ -1741,10 +1741,8 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		os.mkdir(outdir)
-
-	if myid == main_node:
 		print_begin_msg("mref_ali2d_MPI")
+		os.mkdir(outdir)
 
 	nima = EMUtil.get_image_count(stack)
 	
