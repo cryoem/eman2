@@ -433,7 +433,8 @@ class EMStandAloneApplication(EMApplication):
 		self.children.append(child)
 		
 	def ensure_gl_context(self,child):
-		child.get_qt_widget().initGL()
+		try: child.get_qt_widget().initGL()
+		except: child.get_qt_widget().glInit()
 		
 	def processEvents(self):
 		self.app.processEvents()

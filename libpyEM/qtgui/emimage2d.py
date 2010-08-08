@@ -373,23 +373,27 @@ class EMImage2DModule(EMGUIModule):
 #	def emit(self,*args,**kargs):
 #		qt_widget = self.application.get_qt_emitter(self)
 #		qt_widget.emit(*args,**kargs)
-	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
 			self.under_qt_control = True
 			self.gl_context_parent = EMImage2DWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			QtCore.QObject.connect(self.qt_context_parent,QtCore.SIGNAL("destroyed(QObject*)"),self.qt_parent_destroyed)
+			if self.noparent :
+				self.qt_context_parent = self.gl_context_parent
+			else:
+				self.qt_context_parent = EMParentWin(self.gl_context_parent)
+				QtCore.QObject.connect(self.qt_context_parent,QtCore.SIGNAL("destroyed(QObject*)"),self.qt_parent_destroyed)
+
+				
+				f = self.file_name.split('/')
+				f = f[len(f)-1]
+				self.qt_context_parent.setWindowTitle(f)
+				self.qt_context_parent.setAcceptDrops(True)
+				self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png"))
 
 			self.gl_widget = self.gl_context_parent
-			f = self.file_name.split('/')
-			f = f[len(f)-1]
-			self.qt_context_parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.load_default_scale_origin()
 				
-			self.qt_context_parent.setAcceptDrops(True)
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png"))
 		
 		return self.qt_context_parent
 	
@@ -442,7 +446,8 @@ class EMImage2DModule(EMGUIModule):
 	
 	allim=WeakKeyDictionary()
 	
-	def __init__(self, image=None,application=get_application(),winid=None):
+	def __init__(self, image=None,application=get_application(),winid=None,noparent=False):
+		self.noparent=noparent
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it

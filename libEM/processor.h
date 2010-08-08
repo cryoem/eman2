@@ -5504,7 +5504,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("direction", EMObject::STRING,"The direction of the sum, either x,y or z");
+			d.put("axis", EMObject::STRING,"The direction of the sum, either x,y or z. Returned axes are xy, xz or zy.");
+			d.put("first", EMObject::INT,"The first position along the speficied axis to use in the sum. Neg val -> nx/y/z+first (default=0)");
+			d.put("last", EMObject::INT,"The last position along the speficied axis to use in the sum. Neg val -> nx/y/z+last (default=-1)");
 			return d;
 		}
 

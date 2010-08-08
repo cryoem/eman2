@@ -835,7 +835,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	int verbose = params.set_default("verbose",0);
 
 	vector<Pixel> pixels=image->calc_highest_locations(thr);
-	
+
 	vector<float> centers(3);	// only 1 to start
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
@@ -847,7 +847,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	centers[1]=pixels[0].y;
 	centers[2]=pixels[0].z;
 	pixels.erase(pixels.begin());
-	
+
 	// outer loop. We add one center per iteration
 	// This is NOT a very efficient algorithm, it assumes points are fairly sparse
 	while (pixels.size()>0) {
@@ -855,7 +855,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 		// no iterators because we remove elements
 
 		for (unsigned int i=0; i<pixels.size(); i++) {
-			
+
 			Pixel p=pixels[i];
 			// iterate over existing centers to see if this pixel should be removed ... technically we only should need to check the last center
 			for (unsigned int j=0; j<centers.size(); j+=3) {
@@ -867,7 +867,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 				}
 			}
 		}
-			
+
 		int found=0;
 		for (unsigned int i=0; i<pixels.size() && found==0; i++) {
 			Pixel p=pixels[i];
@@ -885,7 +885,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 				}
 			}
 		}
-		
+
 		// If we went through the whole list and didn't find one, we need to reseed again
 		if (!found && pixels.size()) {
 			if (verbose) printf("New chain\n");
@@ -894,7 +894,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 			centers.push_back(pixels[0].z);
 			pixels.erase(pixels.begin());
 		}
-		
+
 		if (verbose) printf("%d points found\n",(int)(centers.size()/3));
 	}
 
@@ -3810,7 +3810,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	EMData *to = params["to"];
 
 	bool ignore_zero = params.set_default("ignore_zero",true);
-	
+
 	float low_threshold = FLT_MIN;
 	string low_thr_name = "low_threshold";
 	if (params.has_key(low_thr_name)) {
@@ -3838,7 +3838,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	float sum_x_mean = 0;
 	float sum_tt = 0;
 	float b = 0;
-	
+
 	// This is really inefficient, who coded it ?   --steve
 	if (ignore_zero) {
 		for (size_t i = 0; i < size; i++) {
@@ -3882,7 +3882,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 				sum_tt += t * t;
 				b += t * rawp[i];
 			}
-		}	
+		}
 	}
 
 	b /= sum_tt;
@@ -6666,7 +6666,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 }
 
 EMData* DirectionalSumProcessor::process(const EMData* const image ) {
-	string dir = params.set_default("direction", "");
+	string dir = params.set_default("axis", "");
 	if ( dir == "" || ( dir != "x" && dir != "y" && dir != "z" ) )
 		throw InvalidParameterException("The direction parameter must be either x, y, or z");
 
@@ -6674,33 +6674,69 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	// compress one of the dimensions
-	if ( dir == "x" ) nx = 1;
-	else if ( dir == "y" ) ny = 1;
-	else if ( dir == "z" ) nz = 1;
+	int a0 = params.set_default("first", 0);
+	int a1 = params.set_default("last", -1);
 
 	EMData* ret = new EMData;
-	ret->set_size(nx,ny,nz);
-	ret->to_zero();
+	// compress one of the dimensions
+	if ( dir == "x" ) {
+		ret->set_size(nz,ny);
 
-	float* d = image->get_data();
-	for(int k = 0; k < image->get_zsize(); ++k ) {
-		for(int j = 0; j < image->get_ysize(); ++j ) {
-			for(int i = 0; i < image->get_xsize(); ++i, ++d ) {
-				if ( dir == "x" ) {
-					float v = ret->get_value_at(0,j,k);
-					ret->set_value_at(0,j,k,*d+v);
-				}else if ( dir == "y" ) {
-					float v = ret->get_value_at(i,0,k);
-					ret->set_value_at(i,0,k,*d+v);
-				}
-				else if ( dir == "z" ) {
-					float v = ret->get_value_at(i,j,0);
-					ret->set_value_at(i,j,0,*d+v);
-				}
+		// bounds checks
+		if (a0<0) a0+=nx;
+		if (a1<0) a1+=nx;
+		if (a0<0) a0=0;
+		if (a1<0) a1=0;
+		if (a0>=nx) a0=nx-1;
+		if (a1>=nx) a1=nx-1;
+
+		for (int y=0; y<ny; y++) {
+			for (int z=0; z<nz; z++) {
+				double sum=0.0;
+				for (int x=a0; x<=a1; x++) sum+=image->get_value_at(x,y,z);
+				ret->set_value_at(z,y,(float)sum);
 			}
 		}
 	}
+	else if ( dir == "y" ) {
+		ret->set_size(nx,nz);
+
+		// bounds checks
+		if (a0<0) a0+=ny;
+		if (a1<0) a1+=ny;
+		if (a0<0) a0=0;
+		if (a1<0) a1=0;
+		if (a0>=ny) a0=ny-1;
+		if (a1>=ny) a1=ny-1;
+
+		for (int x=0; x<nx; x++) {
+			for (int z=0; z<nz; z++) {
+				double sum=0.0;
+				for (int y=a0; y<=a1; y++) sum+=image->get_value_at(x,y,z);
+				ret->set_value_at(x,z,(float)sum);
+			}
+		}
+	}
+	else if ( dir == "z" ) {
+		ret->set_size(nx,ny);
+
+		// bounds checks
+		if (a0<0) a0+=nz;
+		if (a1<0) a1+=nz;
+		if (a0<0) a0=0;
+		if (a1<0) a1=0;
+		if (a0>=nz) a0=nz-1;
+		if (a1>=nz) a1=nz-1;
+
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				double sum=0.0;
+				for (int z=a0; z<=a1; z++) sum+=image->get_value_at(x,y,z);
+				ret->set_value_at(x,y,(float)sum);
+			}
+		}
+	}
+
 	ret->update();
 	return ret;
 }

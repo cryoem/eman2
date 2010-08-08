@@ -390,8 +390,12 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			from emimageutil import EMParentWin
 			self.under_qt_control = True
 			self.gl_context_parent = EMImage3DWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			self.gl_widget = self.gl_context_parent
+			if self.noparent :
+				self.qt_context_parent = self.gl_context_parent
+			else :
+				self.qt_context_parent = EMParentWin(self.gl_context_parent)
+				self.gl_widget = self.gl_context_parent
+				self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
 			
 			for i in self.viewables:
 				i.set_qt_context_parent(self.qt_context_parent)
@@ -402,7 +406,6 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
 			
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
 		
 		return self.qt_context_parent
 	
@@ -417,7 +420,8 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		return "image"
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None,application=None,winid=None):
+	def __init__(self, image=None,application=None,winid=None,noparent=False):
+		self.noparent=noparent
 		self.viewables = []
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True,winid=winid)
 		EMLightsDrawer.__init__(self)

@@ -212,7 +212,7 @@ def main():
 	Projects in real space over the asymmetric unit using the angular separation as specified by prop and the symmetry as specified by sym.
 	
 	Typical usage:
-	e2project3d.py map.mrc --outfile=projections.hdf --orientgen=eman:delta=20 --sym=c3 --projector=standard --verbose=2"""
+	e2project3d.py map.mrc --outfile=projections.hdf --orientgen=eman:delta=5 --sym=c3 --projector=standard --verbose=2"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")

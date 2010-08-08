@@ -49,7 +49,7 @@ def get_usage():
 	usage = progname + """ [options]
 	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
 	
-	WARNING - the icosahedral symmetry axes are aligned dirrently in eman1 and eman2 - that means
+	WARNING - the icosahedral symmetry axes are aligned differently in eman1 and eman2 - that means
 	using this script to reconstruct icosahedral class averages from eman1 will give very bad results.
 	Contact the developers for the simple solution. This problem will probably disappear - eman2
 	will probably adopt the same symmetric axes as eman1, there needs to be some discussion before that
@@ -57,17 +57,17 @@ def get_usage():
 	
 	A simple example of usage is:
 	
-	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128
+	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128
 	
 	Because there are several default settings, this is more or less equivalent to:
 	
-	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
+	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
 	
 	Because the padding is always done using zeroes it is best if your data (or preferably
 	the edge pixels of your data) have mean zero. If you are unsure whether your data are 
 	appropriately normalized you can add the --preprocess flag
 	
-	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128 --preprocess=normalize.edgemean
+	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128 --preprocess=normalize.edgemean
 	
 	You can add as many --preprocess arguments as you like, which are applied in
 	the order in which they are specified, before padding occurs.
