@@ -30,18 +30,6 @@ proj_out = "bdb:/home/ryan/HOSPITALIS320"
 for ii in xrange(1) :
 
 	proj_in = prj_home + "ssspdbox320dcs2.dat"
-	#proj_in = replace( proj_in, ' ', '0' )
-
-	#fn_angl = doc_home + "FINAL/defgrp%3d/angles298.ext" % ii
-	#fn_angl = replace( fn_angl, ' ', '0' )
-
-	#fn_tran = doc_home + "FINAL/defgrp%3d/trans298-SPI13.ext" % ii
-	#fn_tran = replace( fn_tran, ' ', '0' )
-
-	#fn_high = doc_home + "FINAL/defgrp%3d/select_298_pop01.ext" % ii
-	#fn_high = replace( fn_high, ' ', '0' )
-
-	#selected_particles = readSpiderDoc(fn_high)
 
 	nimage  = EMUtil.get_image_count( proj_in )
 	#trans = read_txt_col(fn_tran)

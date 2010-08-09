@@ -29,17 +29,13 @@ proj_out = "bdb:DONA"
 
 for ii in xrange(1,696+1) :
 
-	proj_in = prj_home + "data%3d.ext" % ii
-	proj_in = replace( proj_in, ' ', '0' )
+	proj_in = prj_home + "data%03d.ext" % ii
 
-	fn_angl = doc_home + "FINAL/defgrp%3d/angles298.ext" % ii
-	fn_angl = replace( fn_angl, ' ', '0' )
+	fn_angl = doc_home + "FINAL/defgrp%03d/angles298.ext" % ii
 
-	fn_tran = doc_home + "FINAL/defgrp%3d/trans298-SPI13.ext" % ii
-	fn_tran = replace( fn_tran, ' ', '0' )
+	fn_tran = doc_home + "FINAL/defgrp%03d/trans298-SPI13.ext" % ii
 
-	fn_high = doc_home + "FINAL/defgrp%3d/select_298_pop01.ext" % ii
-	fn_high = replace( fn_high, ' ', '0' )
+	fn_high = doc_home + "FINAL/defgrp%03d/select_298_pop01.ext" % ii
 
 	selected_particles = readSpiderDoc(fn_high)
 
