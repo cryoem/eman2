@@ -452,7 +452,7 @@ def ce_fit(inp_image, ref_image, mask_image):
 	
 def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gauss_radius_inner = 2, Gauss_radius_outter = 7, self_defined_reference = None):
 	"""
-		Put a input image into image center (nx/2, ny/2) using method :
+		Put an input image into image center (nx/2, ny/2) using method :
 		1. phase_cog
 		2. cross-correlate with Gaussian function
 		3. cross-correlate with donut shape image
@@ -524,7 +524,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		if searching_range > 1: ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
 		peak  = peak_search(ccmap)
 		return fshift(image_to_be_centered, -peak[0][4], -peak[0][5]), peak[0][4], peak[0][5]
-		
+
 def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	"""Find the position of the commone line in 3D
            Formula is   (RB^T zhat)   cross  (RA^T zhat)
