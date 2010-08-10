@@ -75,6 +75,10 @@ def main():
 		mref_alignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, 
 				options.snr, options.CTF, options.Fourvar, options.Ng, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
+		
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 if __name__ == "__main__":
 	main()

@@ -76,6 +76,10 @@ def main():
 
 		copyfromtif(args[0], outdir, options.inx, options.foc, options.ext, options.cst, options.pixel_size, options.sca_a, options.sca_b, options.step, options.mag, options.MPI)
 		global_def.BATCH = False
+		
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 
 if __name__ == "__main__":

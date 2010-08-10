@@ -100,6 +100,10 @@ def main():
 			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
 			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
 		global_def.BATCH = False
+		
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 if __name__ == "__main__":
 	main()
