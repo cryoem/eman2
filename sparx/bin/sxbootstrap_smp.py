@@ -389,6 +389,10 @@ def main():
 		bufprefix = args[3]
 		bootstrap( prjfile, wgts, volprefix, bufprefix, options.grpsize, options.nbufvol, options.niter, options.seedbase, options.nprj, options.snr, options.genbuf )
 
+	
+	from mpi import mpi_finalize
+	mpi_finalize()
+
 if __name__ == "__main__":
 	main()
 
