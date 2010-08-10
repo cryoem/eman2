@@ -992,7 +992,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	unsigned short *usdata = 0;
 	float rendermin = 0.0f;
 	float rendermax = 0.0f;
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
 	if(area) {
 		hsize_t doffset[3];		/*hyperslab offset in the file*/
