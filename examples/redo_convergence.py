@@ -39,7 +39,8 @@ import sys
 from math import *
 from os import *
 
-dirs=[i for i in os.listdir(".") if "refine_"==i[:7] and len(i)==9]
+if len(sys.argv)>1 : dirs=sys.argv[1:]
+else : dirs=[i for i in os.listdir(".") if "refine_"==i[:7] and len(i)==9]
 
 # iterates over all refine directories
 for d in dirs:

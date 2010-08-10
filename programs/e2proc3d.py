@@ -90,7 +90,10 @@ def main():
 								help="Set the coordinates for the pixel (0,0,0).")
 
 	parser.add_option("--mult", metavar="f", type="float", 
-								help="Scales the densities by 'f' in the output")
+								help="Scales the densities by a fixed number in the output")
+	
+	parser.add_option("--multfile", type="string", action="append",
+								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
 	parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
 	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
@@ -131,7 +134,7 @@ def main():
 	
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile"]
 	
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -267,6 +270,11 @@ def main():
 
 			elif option1 == "mult":
 				data.mult(options.mult)
+				
+			elif option1 == "multfile":
+				mf=EMData(options.multfile[index_d[option1]],0)
+				data.mult(mf)
+				mf=None
 				
 #            elif option1 == "tomoshrink":
 #                from e2tomoboxer import ShrunkenTomogram

@@ -115,7 +115,8 @@ Various utilities related to BDB databases."""
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			
-			vspath=os.path.realpath(vstack.path)
+			vspath=os.path.realpath(vstack.path)+"/"
+			if options.verbose>2 : print "vspath: ",vspath
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,with_keys=True)
 				if dct==vstack : continue
@@ -130,15 +131,13 @@ Various utilities related to BDB databases."""
 					# This block converts an absolute path to the actual data to a relatataiveve path
 					try: 
 						dpath=os.path.realpath(dct.get_data_path(n))
-						pfx=len(os.path.commonprefix((vspath,dpath)))
-						if pfx==len(dpath) : ndd=0
-						else: ndd=dpath[pfx:].count("/")
-#						print vspath,dpath,dpath[pfx:],ndd
-						dpath="../"*ndd+dpath[pfx:]
+						if options.verbose>2 : print "dpath: ",dpath
+						rpath=makerelpath(vspath,dpath)
+						if options.verbose>2 : print "rpath: ",rpath
 					except :
 						print "error with data_path ",db,n
 						continue
-					d["data_path"]=dpath
+					d["data_path"]=rpath
 					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
@@ -259,6 +258,23 @@ Various utilities related to BDB databases."""
 			
 
 	if logid : E2end(logid)
+
+def makerelpath(p1,p2):
+	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
+	
+	p1s=[i for i in p1.split("/") if len(i)>0]
+	p2s=[i for i in p2.split("/") if len(i)>0]
+
+	for dv in range(min(len(p1s),len(p2s))):
+		print "xxx ",p1s[dv],p2s[dv]
+		if p1s[dv]!=p2s[dv] : break
+	else: dv+=1
+
+	print dv, p1s[dv:],p2s[dv:]
+	p1s=p1s[dv:]
+	p2s=p2s[dv:]
+	
+	return "../"*len(p1s)+"/".join(p2s)
 
 def db_cleanup(force=False):
 	"""This is an important utility function to clean up the database environment so databases can safely be moved or used remotely

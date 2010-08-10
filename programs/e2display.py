@@ -66,7 +66,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 
-	logid=E2init(sys.argv)
+#	logid=E2init(sys.argv)
 
 	app = EMStandAloneApplication()
 	gapp = app
@@ -115,7 +115,7 @@ def main():
 	
 	app.exec_()
 
-	E2end(logid)
+#	E2end(logid)
 	
 def set_full_range():
 	'''
