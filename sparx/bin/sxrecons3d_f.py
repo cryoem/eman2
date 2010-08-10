@@ -70,9 +70,7 @@ def main():
 	if options.MPI:
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
-		from mpi import mpi_finalize
-		mpi_finalize()
-
+		
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
@@ -86,6 +84,10 @@ def main():
 	global_def.BATCH = True
 	recons3d_f(prj_stack, vol_stack, fsc_curve, mask, options.CTF, options.snr, options.sym, options.list, options.group, options.verbose, options.MPI)
 	global_def.BATCH = False
+	
+	if options.MPI:
+		from mpi import mpi_finalize
+		mpi_finalize()
 
 
 if __name__ == "__main__":
