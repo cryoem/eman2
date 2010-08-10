@@ -80,6 +80,10 @@ def main():
 		global_def.BATCH = True
 		k_means_groups(args[0], args[1], mask, options.opt_method, options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug)
 		global_def.BATCH = False
+		
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 			
 if __name__ == "__main__":
 		main()

@@ -78,3 +78,7 @@ global_def.BATCH = True
 bootstrap_run(prj_stack, buf_prefix, outdir, nvol, options.CTF, options.snr, options.sym, options.verbose, options.MPI)
 global_def.BATCH = False
 
+if options.MPI:
+	from mpi import mpi_finalize
+	mpi_finalize()
+
