@@ -266,11 +266,9 @@ def makerelpath(p1,p2):
 	p2s=[i for i in p2.split("/") if len(i)>0]
 
 	for dv in range(min(len(p1s),len(p2s))):
-		print "xxx ",p1s[dv],p2s[dv]
 		if p1s[dv]!=p2s[dv] : break
 	else: dv+=1
 
-	print dv, p1s[dv:],p2s[dv:]
 	p1s=p1s[dv:]
 	p2s=p2s[dv:]
 	
