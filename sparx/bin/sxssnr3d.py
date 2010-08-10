@@ -87,8 +87,6 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -98,6 +96,10 @@ def main():
 		global_def.BATCH = True
 		ssnr3d(stack, out_vol, ssnr_file, mask, reference, options.ou, options.rw, options.npad, options.CTF, options.sign, options.sym, options.MPI, options.random_angles)
 		global_def.BATCH = False
+		
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
 
 if __name__ == "__main__":
 	main()
