@@ -8992,9 +8992,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
-        if myid== main_node:
-		print_begin_msg("var_mpi")
-		os.mkdir(outdir)
+        if myid== main_node:   os.mkdir(outdir)
 
 	mpi_barrier( MPI_COMM_WORLD )
 
