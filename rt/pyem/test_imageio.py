@@ -44,7 +44,7 @@ from EMAN2 import remove_file
 IS_TEST_EXCEPTION = False
 
 
-class ImageI0Tester(unittest.TestCase):
+class ImageIOTester(unittest.TestCase):
 	from EMAN2 import get_supported_3d_formats,get_supported_2d_stack_formats,get_supported_3d_stack_formats
 	threed_formats = get_supported_3d_formats()
 	twod_stack_formats = get_supported_2d_stack_formats()
@@ -59,7 +59,7 @@ class ImageI0Tester(unittest.TestCase):
 		# stage 1 - 2D and 3D (if applicable) testing
 		images = []
 		images.append(EMData(32,32,1))
-		if ext_type in ImageI0Tester.threed_formats:
+		if ext_type in ImageIOTester.threed_formats:
 			images.append(EMData(8,8,8))
 		for e in images: # vtk works for 2D and 3D
 			e.process_inplace("testimage.noise.uniform.rand")
@@ -77,9 +77,9 @@ class ImageI0Tester(unittest.TestCase):
 		images = []
 		
 		# stage 2 - 2D and 3D stack testing (if applicable)
-		if ext_type in ImageI0Tester.twod_stack_formats:
+		if ext_type in ImageIOTester.twod_stack_formats:
 			images.append(EMData(32,32,1))
-		if ext_type in ImageI0Tester.threed_stack_formats:
+		if ext_type in ImageIOTester.threed_stack_formats:
 			images.append(EMData(8,8,8))
 			
 		for e in images: # vtk works for 2D and 3D
@@ -93,7 +93,7 @@ class ImageI0Tester(unittest.TestCase):
 			finally:
 				remove_file(filename)	
 				
-class TestEMIO(ImageI0Tester):
+class TestEMIO(ImageIOTester):
 	"""EM file IO test"""
 	
 	def test_negative_image_index_em(self):
@@ -129,20 +129,20 @@ class TestEMIO(ImageI0Tester):
 		os.unlink(outfile)
 		testlib.unlink_data_header_files(outfile)
 
-class TestPifIO(ImageI0Tester):
+class TestPifIO(ImageIOTester):
 	"""PIF file IO test"""
 	def no_test_read_write_pif(self):
 		"""test write-read pif .............................."""
 		self.do_test_read_write("pif")
 
-class TestFitsIO(ImageI0Tester):
+class TestFitsIO(ImageIOTester):
 	"""fits file IO test"""
 	''' Cant write to FITs '''
 	def no_test_read_write_fits(self):
 		"""test write-read fits .............................."""
 		self.do_test_read_write("fits")
 
-class TestIcosIO(ImageI0Tester):
+class TestIcosIO(ImageIOTester):
 	"""ICOS file IO test"""
 	
 	def test_write_icos(self):
@@ -163,7 +163,7 @@ class TestIcosIO(ImageI0Tester):
 		"""test write-read icos.............................."""
 		self.do_test_read_write("icos")
 
-class TestPNGIO(ImageI0Tester):
+class TestPNGIO(ImageIOTester):
 	"""PNG file IO test"""
 	
 	def test_write_png(self):
@@ -184,7 +184,7 @@ class TestPNGIO(ImageI0Tester):
 		"""test write-read png .............................."""
 		self.do_test_read_write("png")  
 		
-class TestVTKIO(ImageI0Tester):
+class TestVTKIO(ImageIOTester):
 	"""VTK file IO test"""
 
 	def test_write_vtk(self):
@@ -205,7 +205,7 @@ class TestVTKIO(ImageI0Tester):
 		"""test write-read vtk .............................."""
 		self.do_test_read_write("vtk")
 
-class TestXPLORIO(ImageI0Tester):
+class TestXPLORIO(ImageIOTester):
 	"""XPLOR file IO test"""
 	
 	def test_write_xplor(self):
@@ -259,7 +259,7 @@ class TestPGMIO(unittest.TestCase):
 		finally:
 			testlib.safe_unlink('test_circle.pgm')
 
-class TestSpiderIO(ImageI0Tester):
+class TestSpiderIO(ImageIOTester):
 	"""spider file IO test"""
 
 	def test_make_spider(self):
@@ -388,8 +388,44 @@ class TestSpiderIO(ImageI0Tester):
 		"""test write-read spi .............................."""
 		self.do_test_read_write("spi")
 
+class TestDF3IO(ImageIOTester):
+	"""test read_write DF3 file ............................."""
+	imgfile = 'test.df3'
+	
+	def test_32bit_image(self):
+		"""test unsigned int df3 image I/O .................."""
+		e = test_image()
+		e.write_image(self.imgfile, -1, EMUtil.ImageType.IMAGE_DF3, False, None, EMUtil.EMDataType.EM_UINT)
+		f = EMData()
+		f.read_image(self.imgfile)
+		self.assertEqual(f.get_attr('nx'), 128)
+		self.assertEqual(f.get_attr('ny'), 128)
+		self.assertEqual(f.get_attr('nz'), 1)
+		testlib.safe_unlink(self.imgfile)
+		
+	def test_16bit_image(self):
+		"""test unsigned short df3 image I/O ................"""
+		e = test_image()
+		e.write_image(self.imgfile, -1, EMUtil.ImageType.IMAGE_DF3, False, None, EMUtil.EMDataType.EM_USHORT)
+		f = EMData()
+		f.read_image(self.imgfile)
+		self.assertEqual(f.get_attr('nx'), 128)
+		self.assertEqual(f.get_attr('ny'), 128)
+		self.assertEqual(f.get_attr('nz'), 1)
+		testlib.safe_unlink(self.imgfile)
+		
+	def test_8bit_image(self):
+		"""test unsigned char df3 image I/O ................."""
+		e = test_image()
+		e.write_image(self.imgfile, -1, EMUtil.ImageType.IMAGE_DF3, False, None, EMUtil.EMDataType.EM_UCHAR)
+		f = EMData()
+		f.read_image(self.imgfile)
+		self.assertEqual(f.get_attr('nx'), 128)
+		self.assertEqual(f.get_attr('ny'), 128)
+		self.assertEqual(f.get_attr('nz'), 1)
+		testlib.safe_unlink(self.imgfile)
 
-class TestHdfIO(ImageI0Tester):
+class TestHdfIO(ImageIOTester):
 	"""hdf file IO test ....................................."""
 	
 	def test_make_image(self):
@@ -604,7 +640,7 @@ class TestHdfIO(ImageI0Tester):
 		self.assertEqual(e2.get_attr('datatype'), EMUtil.EMDataType.EM_UCHAR)
 		testlib.safe_unlink(file)
 
-class TestMrcIO(ImageI0Tester):
+class TestMrcIO(ImageIOTester):
 	"""mrc file IO test"""
 	def test_negative_image_index(self):
 		"""test ignore negative image index ................."""
@@ -786,7 +822,7 @@ class TestMrcIO(ImageI0Tester):
 		self.do_test_read_write("mrc")
 
 
-class TestImagicIO(ImageI0Tester):
+class TestImagicIO(ImageIOTester):
 	"""imagic file IO test"""
 	
 	def test_no_ext_filename(self):  
@@ -1365,7 +1401,8 @@ def test_main():
 	suite10 = unittest.TestLoader().loadTestsFromTestCase(TestMrcIO)
 	suite11 = unittest.TestLoader().loadTestsFromTestCase(TestImagicIO)
 	suite12 = unittest.TestLoader().loadTestsFromTestCase(TestPifIO)
-#	suite13 = unittest.TestLoader().loadTestsFromTestCase(TestFitsIO)
+	#suite13 = unittest.TestLoader().loadTestsFromTestCase(TestFitsIO)
+	suite14 = unittest.TestLoader().loadTestsFromTestCase(TestDF3IO)
 	unittest.TextTestRunner(verbosity=2).run(suite1)
 	unittest.TextTestRunner(verbosity=2).run(suite2)
 	unittest.TextTestRunner(verbosity=2).run(suite3)
@@ -1378,7 +1415,8 @@ def test_main():
 	unittest.TextTestRunner(verbosity=2).run(suite10)
 	unittest.TextTestRunner(verbosity=2).run(suite11)
 	unittest.TextTestRunner(verbosity=2).run(suite12)
-#	unittest.TextTestRunner(verbosity=2).run(suite13) 
+	#inittest.TextTestRunner(verbosity=2).run(suite13)
+	unittest.TextTestRunner(verbosity=2).run(suite14) 
 	
 if __name__ == '__main__':
 	test_main()

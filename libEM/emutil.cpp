@@ -171,6 +171,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["jpeg"] = IMAGE_JPEG;
 		imagetypes["JPEG"] = IMAGE_JPEG;
 
+		imagetypes["df3"] = IMAGE_DF3;
+		imagetypes["DF3"] = IMAGE_DF3;
+
 		initialized = true;
 	}
 
@@ -317,6 +320,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_EM;
 		}
 		break;
+	case IMAGE_DF3:
+		if (EmIO::is_valid(first_block, file_size)) {
+			return IMAGE_DF3;
+		}
+		break;
 	default:
 		return IMAGE_UNKNOWN;
 	}
@@ -431,6 +439,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else if (ImagicIO::is_valid(first_block)) {
 		image_type = IMAGE_IMAGIC;
+	}
+	else if (Df3IO::is_valid(first_block)) {
+		image_type = IMAGE_DF3;
 	}
 	else {
 		//LOGERR("I don't know this image's type: '%s'", filename.c_str());
@@ -576,6 +587,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_FITS:
 		imageio = new FitsIO(filename, rw_mode);
 		break;
+	case IMAGE_DF3:
+		imageio = new Df3IO(filename, rw_mode);
+		break;
 	default:
 		break;
 	}
@@ -593,50 +607,76 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 	switch (t) {
 	case IMAGE_V4L:
 		return "V4L2";
+		break;
 	case IMAGE_MRC:
 		return "MRC";
+		break;
 	case IMAGE_SPIDER:
 		return "SPIDER";
+		break;
 	case IMAGE_SINGLE_SPIDER:
 		return "Single-SPIDER";
+		break;
 	case IMAGE_IMAGIC:
 		return "IMAGIC";
+		break;
 	case IMAGE_PGM:
 		return "PGM";
+		break;
 	case IMAGE_LST:
 		return "LST";
+		break;
 	case IMAGE_LSTFAST:
 		return "Fast LST";
+		break;
 	case IMAGE_PIF:
 		return "PIF";
+		break;
 	case IMAGE_PNG:
 		return "PNG";
+		break;
 	case IMAGE_HDF:
 		return "HDF5";
+		break;
 	case IMAGE_DM3:
 		return "GatanDM3";
+		break;
 	case IMAGE_TIFF:
 		return "TIFF";
+		break;
 	case IMAGE_VTK:
 		return "VTK";
+		break;
 	case IMAGE_SAL:
 		return "HDR";
+		break;
 	case IMAGE_ICOS:
 		return "ICOS_MAP";
+		break;
 	case IMAGE_EMIM:
 		return "EMIM";
+		break;
 	case IMAGE_GATAN2:
 		return "GatanDM2";
+		break;
 	case IMAGE_JPEG:
 		return "JPEG";
+		break;
 	case IMAGE_AMIRA:
 		return "AmiraMesh";
+		break;
 	case IMAGE_XPLOR:
 		return "XPLOR";
+		break;
 	case IMAGE_EM:
 		return "EM";
+		break;
 	case IMAGE_FITS:
 		return "FITS";
+		break;
+	case IMAGE_DF3:
+		return "DF3";
+		break;
 	case IMAGE_UNKNOWN:
 		return "unknown";
 	}

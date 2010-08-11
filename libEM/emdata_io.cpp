@@ -186,6 +186,9 @@ void EMData::write_image(const string & filename, int img_index,
 		LOGVAR("header write %d",img_index);
 
 		switch(filestoragetype) {
+		case EMUtil::EM_UINT:
+			attr_dict["datatype"] = (int)EMUtil::EM_UINT;
+			break;
 		case EMUtil::EM_USHORT:
 			attr_dict["datatype"] = (int)EMUtil::EM_USHORT;
 			break;

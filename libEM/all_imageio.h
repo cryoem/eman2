@@ -75,6 +75,7 @@
 #include "emio.h"
 #include "imagicio.h"
 #include "fitsio.h"
+#include "df3io.h"
 
 #ifdef ENABLE_V4L2
 	#include "v4l2io.h"

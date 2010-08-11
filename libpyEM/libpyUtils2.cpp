@@ -892,6 +892,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .value("IMAGE_JPEG", EMAN::EMUtil::IMAGE_JPEG)
         .value("IMAGE_V4L", EMAN::EMUtil::IMAGE_V4L)
         .value("IMAGE_PIF", EMAN::EMUtil::IMAGE_PIF)
+        .value("IMAGE_DF3", EMAN::EMUtil::IMAGE_DF3)
     ;
 
     delete EMAN_EMUtil_scope;
