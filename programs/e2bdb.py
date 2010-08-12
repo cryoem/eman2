@@ -102,7 +102,7 @@ Various utilities related to BDB databases."""
 			if len(args)>1 : print "\n",path[:-1],":"
 			dbs=db_list_dicts(path)
 			
-		
+
 		dbs.sort()
 		if options.filt:
 			dbs=[db for db in dbs if options.filt in db]
@@ -128,13 +128,13 @@ Various utilities related to BDB databases."""
 						traceback.print_exc()
 						print "---\nerror reading ",db,n 
 						continue
-					# This block converts an absolute path to the actual data to a relatataiveve path
-					try: 
+					# This block converts an absolute path to the actual data to a relative path
+					try:
 						dpath=os.path.realpath(dct.get_data_path(n))
 						if options.verbose>2 : print "dpath: ",dpath
 						rpath=makerelpath(vspath,dpath)
 						if options.verbose>2 : print "rpath: ",rpath
-					except :
+					except:
 						print "error with data_path ",db,n
 						continue
 					d["data_path"]=rpath
@@ -194,7 +194,7 @@ Various utilities related to BDB databases."""
 						try:
 							print "\tdf=%1.3f\tB=%1.1f"%(im["ctf"].defocus,im["ctf"].bfactor)
 						except: print " "
-				
+
 				first=EMData()
 				try: 
 					first.read_image(path+db,0,True)
