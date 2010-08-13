@@ -4299,15 +4299,15 @@ def k_means_groups_gnuplot(file, src, C, DB, H):
 	out.close()
 
 # to figure out the number of clusters
-def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG = False, flagnorm = False):
+def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG = False, flagnorm = False):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
 	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
 	from statistics  import k_means_cla, k_means_SSE, k_means_groups_gnuplot
 	from statistics  import k_means_init_open_im
 	import os, sys, time
 
-	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
-	os.mkdir(out_file)
+	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
+	os.mkdir(outdir)
 
 	t_start = time.time()
 	print_begin_msg('k-means groups')	
@@ -4317,7 +4317,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	else:            TXT = False
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
 	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
-	k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit,\
+	k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit,\
 				CTF, T0, F, rand_seed, 1, m)
 	
 	# init
@@ -4326,7 +4326,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	sp       = 15                   # cst space to format file
 	
 	# init the file result
-	file_crit = open(out_file + '/' + out_file, 'w')
+	file_crit = open(outdir + '/' + outdir, 'w')
 	file_crit.write('# Criterion of k-means group\n')
 	file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
 	file_crit.close()
@@ -4348,7 +4348,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 		crit = k_means_criterion(Cls, 'CHD')
 
 		# res file
-		file_crit = open(out_file + '/' + out_file, 'a')
+		file_crit = open(outdir + '/' + outdir, 'a')
 		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, crit['C'], crit['D'], crit['H'], time.ctime())) 
 		file_crit.close()
 		
@@ -4358,19 +4358,19 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 		DB.append(crit['D'])
 		
 	# gnuplot script
-	k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
+	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
 	running_time(t_start)
 	print_end_msg('k-means groups')
 
 # to figure out the number of clusters CUDA version
-def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0):
+def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
 	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
 	from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	import time, os, sys
 
-	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
-	os.mkdir(out_file)
+	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
+	os.mkdir(outdir)
 	t_start = time.time()
 	
 	ext = file_type(stack)
@@ -4381,7 +4381,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	# write logfile
 	print_begin_msg('k-means groups')
-	k_means_cuda_headlog(stack, out_file, 'cuda', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
+	k_means_cuda_headlog(stack, outdir, 'cuda', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
 
 	# init
 	KK       = range(K1, K2 + 1)	# Range of works
@@ -4389,7 +4389,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	sp       = 15                   # cst space to format file result
 		
 	# init the file result
-	file_crit = open(out_file + '/' + out_file, 'w')
+	file_crit = open(outdir + '/' + outdir, 'w')
 	file_crit.write('# Criterion of k-means group\n')
 	file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
 	file_crit.close()
@@ -4400,13 +4400,13 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 		print_msg('| K=%d |====================================================================\n' % K)
 
 		#try:
-		crit = k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_file, TXT, 1)
+		crit = k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, 1)
 		#except SystemExit:
 		#	ERROR('Empty cluster or device error', 'k_means_groups_CUDA', 1)
 
 		Je, Ci, Hi, DBi = crit
 		# result file
-		file_crit = open(out_file + '/' + out_file, 'a')
+		file_crit = open(outdir + '/' + outdir, 'a')
 		file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, Ci, DBi, Hi, time.ctime())) 
 		file_crit.close()
 
@@ -4415,14 +4415,14 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 		DB.append(DBi)
 		H.append(Hi)
 
-	k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
+	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
 		
 	# runtime
 	running_time(t_start)
 	print_end_msg('k-means groups')
 
 # to figure out the number of clusters MPI version
-def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm):
+def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm):
 	from utilities    import print_begin_msg, print_end_msg, print_msg, running_time, file_type
 	from statistics   import k_means_open_im, k_means_criterion, k_means_headlog
 	from statistics   import k_means_cla_MPI, k_means_SSE_MPI
@@ -4435,13 +4435,13 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
-	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
+	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print_begin_msg('k-means groups')
+		print_begin_msg('k-means groups_MPI')
 		t_start = time.time()
-		os.mkdir(out_file)
+		os.mkdir(outdir)
 
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
@@ -4449,7 +4449,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	n                     = len(lut)
 	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
 
-	if myid == main_node: k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
+	if myid == main_node: k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
 	KK = range(K1, K2 + 1)	# Range of works
 	if myid == main_node:
@@ -4458,12 +4458,12 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		sp       = 15                   # cst space to format file
 
 		# init the file result
-		file_crit = open(out_file + '/' + out_file, 'w')
+		file_crit = open(outdir + '/' + outdir, 'w')
 		file_crit.write('# Criterion of k-means group\n')
 		file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
 		file_crit.close()
 
-		k_means_headlog(stack, out_file, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
+		k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
 	# get some criterion
 	for K in KK:
@@ -4489,7 +4489,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 			crit = k_means_criterion(Cls, 'CHD')
 
 			# res file
-			file_crit = open(out_file + '/' + out_file, 'a')
+			file_crit = open(outdir + '/' + outdir, 'a')
 			file_crit.write('%3d  C: %11.4e  DB: %11.4e  H: %11.4e | %s\n' % (K, crit['C'], crit['D'], crit['H'], time.ctime())) 
 			file_crit.close()
 
@@ -4502,7 +4502,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		
 	# gnuplot script
 	if myid == main_node:
-		k_means_groups_gnuplot(out_file + '/' + out_file + '.p', out_file, C, DB, H)
+		k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
 		running_time(t_start)
 		print_end_msg('k-means groups')
 

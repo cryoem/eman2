@@ -9458,7 +9458,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 # -- K-means groups ---------------------------------------------------------------------------
 			
 # K-means groups driver
-def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
+def k_means_groups(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
 
 	#import os
 	#if os.path.exists(out_file):
@@ -9466,13 +9466,13 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
-		k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
+		k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
 	elif CUDA:
 		from statistics import k_means_groups_CUDA
-		k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0)
+		k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0)
 	else:
 		from statistics import k_means_groups_serial
-		k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG, flagnorm)
+		k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG, flagnorm)
 
 
 
