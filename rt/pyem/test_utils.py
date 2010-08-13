@@ -642,6 +642,10 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.read_hdf_attribute(file, 'count'), 100)
         self.assertEqual(EMUtil.read_hdf_attribute(file, 'count', 1), 1000)
         
+        EMUtil.delete_hdf_attribute(file, 'count')
+        d = img.get_attr_dict()
+        self.assertEqual(d.has_key('count'), False)
+        
         testlib.safe_unlink(file)
         
 def test_main():
