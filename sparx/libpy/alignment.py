@@ -1328,7 +1328,7 @@ def ali_vol_func_nopsi(params, data):
 	x = rot_shift3D(data[0], params[0], params[1], 0.0, params[2], params[3], params[4], 1.0)
 	#res = -x.cmp("ccc", data[1], {"mask":data[2]})
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
+	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], -res)
 	return res
 
 def ali_vol_func_rotate(params, data):

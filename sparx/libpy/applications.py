@@ -7010,7 +7010,8 @@ def ali_vol_nopsi(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = 
 	from alignment    import ali_vol_func_nopsi
 	from utilities    import get_image, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
-	from fundamentals import rot_shift3D
+	from utilities    import get_arb_params, set_arb_params
+ 	from fundamentals import rot_shift3D
 	
 	ref = get_image(refv)
 	nx = ref.get_xsize()
@@ -7019,27 +7020,19 @@ def ali_vol_nopsi(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = 
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(ref)
-	paramsr = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	# print  " params of the reference volume",params
-	ref = rot_shift3D(ref, paramsr[0], paramsr[1], paramsr[2], paramsr[3], paramsr[4], paramsr[5], paramsr[7])
+	names_params = ["phi", "theta", "s3x", "s3y", "s3z"]
 
 	e = get_image(vol)
-	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  get_params3D(e)
-	paramsv = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	e = rot_shift3D(e, phi, theta, psi, s3x, s3y, s3z, scale)
-	# print  " input params ", paramsv
-	params = [phi, theta, s3x, s3y, s3z]
-	data=[e, ref, mask, params, discrepancy]
-	new_params = [0.0, 0.0, 0.0, 0.0, 0.0]
+	params =  get_arb_params(e,names_params)
+	data=[e, ref, mask, None, discrepancy]
 	
-	new_params = amoeba(new_params, [ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_nopsi, 1.e-4, 1.e-4, 500, data)
-	print "amoeba: func_value =",new_params[1], "iter =",new_params[2]
+	new_params = amoeba(params, [ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_nopsi, 1.e-5, 1.e-4, 500, data)
+	#print "amoeba: func_value =",new_params[0],new_params[1], "iter =",new_params[2]
 
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], 0.0, new_params[0][2], new_params[0][3], new_params[0][4], 1.0)
+	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], 0.0, new_params[0][2], new_params[0][3], new_params[0][4], 1.0)
 	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
+	#set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
+	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4]], names_params)
 	if type(vol)==type(""):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
