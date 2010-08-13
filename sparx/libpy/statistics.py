@@ -4306,7 +4306,7 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 	from statistics  import k_means_init_open_im
 	import os, sys, time
 
-	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
 	os.mkdir(outdir)
 
 	t_start = time.time()
@@ -4369,7 +4369,7 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 	from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	import time, os, sys
 
-	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
 	os.mkdir(outdir)
 	t_start = time.time()
 	
@@ -4435,7 +4435,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
-	if os.path_exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
+	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
