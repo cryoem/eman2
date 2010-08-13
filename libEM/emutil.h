@@ -318,6 +318,15 @@ namespace EMAN
 		 * @return 0 if success
 		 * */
 		static int write_hdf_attribute(const string & filename, const string & key, EMObject value, int image_index=0);
+
+		/** Delete a single attribute from a HDF5 image file.
+		 *
+		 * @param filename HDF5 image's file name
+		 * @param key the attribute's key name
+		 * @image_index the image index, default to 0
+		 * @return 0 for success
+		 * */
+		static int delete_hdf_attribute(const string & filename, const string & key, int image_index=0);
 #endif	//EM_HDF5
 
 		static bool cuda_available() {

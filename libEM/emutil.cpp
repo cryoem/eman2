@@ -1537,7 +1537,7 @@ EMObject EMUtil::read_hdf_attribute(const string & filename, const string & key,
 		throw ImageFormatException("This function only applies to HDF5 file.");
 	}
 
-	HdfIO2* imageio = new HdfIO2(filename, ImageIO::WRITE_ONLY);
+	HdfIO2* imageio = new HdfIO2(filename, ImageIO::READ_ONLY);
 	imageio->init();
 
 	// Each image is in a group for later expansion. Open the group
@@ -1553,7 +1553,13 @@ EMObject EMUtil::read_hdf_attribute(const string & filename, const string & key,
 	string s("EMAN.");
 	s += key;
 	hid_t attr = H5Aopen_name(igrp, s.c_str());
-	return imageio->read_attr(attr);
+	EMObject emobj = imageio->read_attr(attr);
+
+	H5Aclose(attr);
+	H5Gclose(igrp);
+	delete imageio;
+
+	return emobj;
 }
 
 int EMUtil::write_hdf_attribute(const string & filename, const string & key, EMObject value, int image_index)
@@ -1584,5 +1590,36 @@ int EMUtil::write_hdf_attribute(const string & filename, const string & key, EMO
 	delete imageio;
 
 	return ret;
+}
+
+int EMUtil::delete_hdf_attribute(const string & filename, const string & key, int image_index)
+{
+	ImageType image_type = get_image_type(filename);
+	if(image_type != IMAGE_HDF) {
+		throw ImageFormatException("This function only applies to HDF5 file.");
+	}
+
+	HdfIO2* imageio = new HdfIO2(filename, ImageIO::READ_WRITE);
+	imageio->init();
+
+	// Each image is in a group for later expansion. Open the group
+	hid_t file = imageio->get_fileid();
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d",image_index);
+	hid_t igrp=H5Gopen(file,ipath);
+
+	if (igrp<0) {	//group not existed
+		throw _NotExistingObjectException(string(ipath));
+	}
+
+	string s("EMAN.");
+	s += key;
+	herr_t ret = H5Adelete(igrp, s.c_str());
+
+	H5Gclose(igrp);
+	delete imageio;
+
+	if(ret >= 0) return 0;
+	else return -1;
 }
 #endif	//EM_HDF5

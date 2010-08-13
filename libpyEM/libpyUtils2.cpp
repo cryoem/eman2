@@ -187,6 +187,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_read_hdf_attribute_2_3, EMAN::EMUtil
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_write_hdf_attribute_3_4, EMAN::EMUtil::write_hdf_attribute, 3, 4)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_delete_hdf_attribute_2_3, EMAN::EMUtil::delete_hdf_attribute, 2, 3)
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_check_image_overloads_1_2, EMAN::TestUtil::check_image, 1, 2)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_make_image_file_overloads_2_6, EMAN::TestUtil::make_image_file, 2, 6)
@@ -830,6 +832,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("cuda_available", &EMAN::EMUtil::cuda_available)
 		.def("read_hdf_attribute", &EMAN::EMUtil::read_hdf_attribute, EMAN_EMUtil_read_hdf_attribute_2_3(args("filename", "key", "image_index"), "Retrive a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn the attribute value for the given key"))
 		.def("write_hdf_attribute", &EMAN::EMUtil::write_hdf_attribute, EMAN_EMUtil_write_hdf_attribute_3_4(args("filename", "key", "value", "image_index"), "Write a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nvalue - the attribute's value\nimage_index - the image index, default=0\n \nreturn 0 for success"))
+		.def("delete_hdf_attribute", &EMAN::EMUtil::delete_hdf_attribute, EMAN_EMUtil_delete_hdf_attribute_2_3(args("filename", "key", "image_index"), "Delete a single attribute from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn 0 for success, -1 for failure."))
 		.staticmethod("cuda_available")
         .staticmethod("vertical_acf")
         .staticmethod("get_datatype_string")
@@ -850,6 +853,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("is_complex_type")
         .staticmethod("read_hdf_attribute")
         .staticmethod("write_hdf_attribute")
+        .staticmethod("delete_hdf_attribute")
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
