@@ -40,7 +40,7 @@ import sys
 def main():
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stackfile output_file  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA --debug"
+	usage = progname + " stackfile outdir  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA --debug"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K1",          type="int",          default=2,          help="Mimimum number of clusters")
 	parser.add_option("--K2",          type="int",          default=3,          help="Maximum number of clusters")
