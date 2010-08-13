@@ -4444,7 +4444,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	if myid == main_node:
 		if os.path.exists(out_file):
 			flag = 1
-			ERROR('Output directory exists, please change the name and restart the program', " ", 0)
+			ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
 
 	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	flag = int(flag[0])
