@@ -9460,10 +9460,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 # K-means groups driver
 def k_means_groups(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
 
-	#import os
-	#if os.path.exists(out_file):
-		#ERROR('Output directory exists, please change the name and restart the program', "k_means_groups", 0)
-	
 	if MPI:
 		from statistics import k_means_groups_MPI
 		k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
