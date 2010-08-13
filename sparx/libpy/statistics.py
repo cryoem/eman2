@@ -4306,7 +4306,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	from statistics  import k_means_init_open_im
 	import os, sys, time
 
-	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
+	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
 	os.mkdir(out_file)
 
 	t_start = time.time()
@@ -4369,7 +4369,7 @@ def k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, 
 	from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	import time, os, sys
 
-	if os.path.exists(out_file):  os.system('rm -rf ' + out_file)
+	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
 	os.mkdir(out_file)
 	t_start = time.time()
 	
@@ -4434,23 +4434,9 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	
+	if os.path_exists(out_file): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
-
-	ext = file_type(stack)
-	if ext == 'txt':   TXT = True
-	else:              TXT = False
-
-	flag = 0
-	if myid == main_node:
-		if os.path.exists(out_file):
-			flag = 1
-			ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1,myid)
-
-	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	flag = int(flag[0])
-	if flag != 0: sys.exit()
-
-	mpi_barrier( MPI_COMM_WORLD )
 	
 	if myid == main_node:
 		print_begin_msg('k-means groups')
