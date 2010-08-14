@@ -8946,36 +8946,69 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 		firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
 		output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
 	else:
-		K = len(PART[0])
+		
 		np=len(PART)
-
-		# serialize all the arguments in preparation for passing into c++ function
-		if len(levels)<1:	
-			for i in xrange(K):
-				levels.append(1)
-
-		ar_levels = array(levels, 'int32')
 
 		#ar_argParts = array([],'int32')
 		onedParts = []
 		class_dim=[]
+		
+		# figure out the garbage value to pad empty classes with
+		
+		garbage_value = 923456
+		garbage_incr = 10
+		for i in xrange(np):
+			K = len(PART[i])
+			for j in xrange(K):
+				pSize = PART[i][j].size
+				if pSize >= 1:
+					for p in xrange(pSize):
+						if PART[i][j][p] >= garbage_value:
+							garbage_value = PART[i][j][p] + garbage_incr
+		
+		# deal with the case where not all the partitions have the same number of classes
+		max_K = len(PART[0])
+		for i in xrange(np):
+			if len(PART[i]) > max_K:
+				max_K = len(PART[i])
+		for i in xrange(np):
+			if not(len(PART[i]) == max_K):
+				# pad with empty arrays
+				df = max_K - len(PART[i])
+				for j in xrange(df):
+					a=array([garbage_value, garbage_value+1],'int32')
+					garbage_value = garbage_value + 2	
+					PART[i].append(a.copy())
+		
+		K = len(PART[0])		
+		# serialize all the arguments in preparation for passing into c++ function
+		if len(levels)<1:	
+			for i in xrange(K):
+				levels.append(1)
+		ar_levels = array(levels, 'int32')
+		
 		for i in xrange(np):
 			for j in xrange(K):
-				class_dim.append(PART[i][j].size+2)
+				pSize = PART[i][j].size
+					
 				onedParts.append(j)
 				onedParts.append(0)
-				pSize = PART[i][j].size
-				if pSize > 1:
+				zero_pad = 0
+				if pSize > 0:
 					for p in xrange(pSize):
-						onedParts.append(PART[i][j][p])
-				if pSize == 1:
-					onedParts.append(PART[i][j])
-				if pSize == 0:
-					print "EMPTY CLASS encountered in matching algorithm. This should not happen!"	
+						onedParts.append(PART[i][j][p])	
+				else:
+					# pad with garbage value
+					zero_pad=2
+					onedParts.append(garbage_value)
+					onedParts.append(garbage_value+1)
+					garbage_value = garbage_value + zero_pad
+						
+				class_dim.append(pSize + zero_pad + 2)
+				
 				#ar_argParts = append(ar_argParts,[j,0])
 				#ar_argParts=append(ar_argParts,PART[i][j])
 		ar_argParts = array(onedParts,'int32')
-		
 		ar_class_dim = array(class_dim,'int32')
 		#################################################################################################
 		# if DoMPI_init = True, then compute new parts and Njobs top matches and return that
