@@ -235,10 +235,6 @@ def main():
 	imagelist = read_listfile(options.list, options.exclude, nimg)
 	sfcurve1 = None
 
-	index_d = {}
-	for append_option in append_options:
-		index_d[append_option] = 0
-	
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
@@ -292,7 +288,9 @@ def main():
 		if not "outtype" in optionlist:
 			optionlist.append("outtype")
 		
-		multi_processors_index = 0
+		index_d = {}
+		for append_option in append_options:
+			index_d[append_option] = 0
 		for option1 in optionlist:
 			
 			nx = d.get_xsize()
@@ -310,10 +308,11 @@ def main():
 				except: pass
 			
 			if option1 == "process":
-				(processorname, param_dict) = parsemodopt(options.process[multi_processors_index])
+				fi = index_d[option1]
+				(processorname, param_dict) = parsemodopt(options.process[fi])
 				if not param_dict : param_dict={}
 				d.process_inplace(processorname, param_dict)
-				multi_processors_index += 1
+				index_d[option1] += 1
 
 			elif option1 == "mult" :
 				d.mult(options.mult)
@@ -350,7 +349,7 @@ def main():
 				scale_f = options.scale[index_d[option1]]
 				if scale_f != 1.0:
 					d.scale(scale_f)
-				#index_d[option1] += 1
+				index_d[option1] += 1
 
 			elif option1 == "rotate":
 				rotatef = options.rotate[index_d[option1]]
@@ -375,7 +374,7 @@ def main():
 				try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
 				except: pass
 				d = e
-				#index_d[option1] += 1
+				index_d[option1] += 1
 			
 			elif option1 == "randomize" :
 				ci = index_d[option1]
@@ -391,13 +390,13 @@ def main():
 				shrink_f = options.medianshrink[index_d[option1]]
 				if shrink_f > 1:
 					d.process_inplace("math.medianshrink",{"n":shrink_f})
-				#index_d[option1] += 1
+				index_d[option1] += 1
 
 			elif option1 == "meanshrink":
 				mshrink = options.meanshrink[index_d[option1]]
 				if mshrink > 1:
 					d.process_inplace("math.meanshrink",{"n":mshrink})
-				#index_d[option1] += 1
+				index_d[option1] += 1
 		
 			elif option1 == "selfcl":
 				scl = options.selfcl[0] / 2
