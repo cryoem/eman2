@@ -9358,7 +9358,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:            TXT = False
 
 	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
-		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k_means_main', 1)
+		ERROR('Ambiguous parameters F=%f T0=%f' % (F, T0), 'K_means_main', 1)
 		sys.exit()
 
 	if MPI:
@@ -9373,11 +9373,28 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	else:
 		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 0,myid)
-	
+
 
 	if MPI and not CUDA:
-		if myid == main_node: print_begin_msg('k-means')
-		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+		if myid == main_node:
+			print_begin_msg('K-means')
+			LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+		else:
+			N=0
+			m = 0
+			Ntot = 0
+		from utilities import bcast_number_to_all, bcast_list_to_all, bcast_EMData_to_all
+		from utilities import model_blank
+		N = bcast_number_to_all(N, source_node = main_node)
+		m = bcast_number_to_all(m, source_node = main_node)
+		Ntot = bcast_number_to_all(Ntot, source_node = main_node)
+		if(myid != main_node):
+			LUT = [0] *N
+			mask = model_blank(m+1)
+		mpi_barrier(MPI_COMM_WORLD)
+		LUT = bcast_list_to_all(LUT, source_node = main_node)
+		bcast_EMData_to_all(mask, myid, main_node)
+		mpi_barrier(MPI_COMM_WORLD)
 		N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 		lut                   = LUT[N_start:N_stop]
 		n                     = len(lut)
@@ -9386,14 +9403,14 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, 
 						      critname, maskname, trials, maxit, CTF, T0, 
 						      F, rand_seed, ncpu, m)
-		
+
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, 
-							[CTF, ctf, ctf2], F, T0, myid, main_node, 
+							[CTF, ctf, ctf2], F, T0, myid, main_node,
 							N_start, N_stop, N)
 		elif opt_method == 'SSE':
 			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,
-				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
+				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node,
 					N_start, N_stop, N, ncpu)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
@@ -9408,11 +9425,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 	elif CUDA and not MPI: # added 2009-02-20 16:27:26 # modify 2009-09-23 13:52:29
-		print_begin_msg('k-means')
+		print_begin_msg('K-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
 		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm)
-		print_end_msg('k-means')
+		print_end_msg('K-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
@@ -9426,12 +9443,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 	else:
-		print_begin_msg('k-means')
+		print_begin_msg('K-means')
 		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
 		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
-		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, 
+		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit,
 					CTF, T0, F, rand_seed, 1, m, init_method)
-		
+
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, 
 					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)

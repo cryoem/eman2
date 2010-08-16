@@ -1783,7 +1783,8 @@ def k_means_init_open_im(stack, maskname):
 			del im
 
 	# get some params
-	if TXT: Ntot = len(open(stack, 'r').readlines())
+	if TXT:
+		Ntot = len(open(stack, 'r').readlines())
 	else:   Ntot = EMUtil.get_image_count(stack)
 	
 	# check if the flag active is used, in the case where k-means will run for the stability
@@ -1836,12 +1837,12 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 
 	# to manage coord fact in text file format
 	if TXT:
-		IM   = [None] * N  
+		IM   = [None] * N
 		c    = 0
 		data = open(stack, 'r').readlines()
 		nx   = len(data[0].split())
-		for id in lim:
-			line = data[id]
+		for idi in lim:
+			line = data[idi]
 			im   = model_blank(nx)
 			line = line.split()
 			for i in xrange(nx):
@@ -1852,65 +1853,64 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 
 			IM[c] = im.copy()
 			c += 1
-			
-		return IM, None, None
 
-	im = EMData()
-	im.read_image(stack, 0)
-	nx = im.get_xsize()
-	ny = im.get_ysize()
-	nz = im.get_zsize()
-	if CTF:
-		ctf	    = [[] for i in xrange(N)]
-		ctf2        = [[] for i in xrange(N)]
-		ctf_params  = im.get_attr( "ctf" )
-		if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+	else:
+	        im = EMData()
+	        im.read_image(stack, 0)
+	        nx = im.get_xsize()
+	        ny = im.get_ysize()
+	        nz = im.get_zsize()
+	        if CTF:
+	        	ctf	    = [[] for i in xrange(N)]
+	        	ctf2	    = [[] for i in xrange(N)]
+	        	ctf_params  = im.get_attr( "ctf" )
+	        	if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
-	IM = im.read_images(stack, lim)
-	for i in xrange(N):
-		# 3D object
-		if nz > 1:
-			try:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
-				IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
-				if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
-			except:
-				ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
-				sys.exit()
-		# 2D object
-		elif ny > 1:
-			try:
-				alpha, sx, sy, mirror, scale = get_params2D(IM[i])
-				IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
-			except: 
-				ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
-				sys.exit()
+	        IM = im.read_images(stack, lim)
+	        for i in xrange(N):
+	        	# 3D object
+	        	if nz > 1:
+	        		try:
+	        			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
+	        			IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
+	        			if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
+	        		except:
+	        			ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
+	        			sys.exit()
+	        	# 2D object
+	        	elif ny > 1:
+	        		try:
+	        			alpha, sx, sy, mirror, scale = get_params2D(IM[i])
+	        			IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+	        		except: 
+	        			ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
+	        			sys.exit()
 
-		# obtain ctf
-		if CTF:
-			ctf_params = IM[i].get_attr( "ctf" )
-			ctf[i]     = ctf_1d(nx, ctf_params)
-			ctf2[i]    = ctf_2(nx, ctf_params)
+	        	# obtain ctf
+	        	if CTF:
+	        		ctf_params = IM[i].get_attr( "ctf" )
+	        		ctf[i]     = ctf_1d(nx, ctf_params)
+	        		ctf2[i]    = ctf_2(nx, ctf_params)
 
-		if flagnorm:
-			# normalize
-			ave, std, mi, mx = Util.infomask(IM[i], mask, True)
-			IM[i] -= ave
-			IM[i] /= std
+	        	if flagnorm:
+	        		# normalize
+	        		ave, std, mi, mx = Util.infomask(IM[i], mask, True)
+	        		IM[i] -= ave
+	        		IM[i] /= std
 
-		# apply mask
-		if mask != None:
-			if CTF: Util.mul_img(IM[i], mask)
-			else:   IM[i] = Util.compress_image_mask(IM[i], mask)
+	        	# apply mask
+	        	if mask != None:
+	        		if CTF: Util.mul_img(IM[i], mask)
+	        		else:	IM[i] = Util.compress_image_mask(IM[i], mask)
 
-		# fft
-		if CTF: fftip(IM[i])
- 
-		# mem the original size
-		if i == 0:
-			IM[i].set_attr('or_nx', nx)
-			IM[i].set_attr('or_ny', ny)
-			IM[i].set_attr('or_nz', nz)
+	        	# fft
+	        	if CTF: fftip(IM[i])
+
+	        	# mem the original size
+	        	if i == 0:
+	        		IM[i].set_attr('or_nx', nx)
+	        		IM[i].set_attr('or_ny', ny)
+	        		IM[i].set_attr('or_nz', nz)
 
 	if CTF: return IM, ctf, ctf2
 	else:   return IM, None, None
@@ -1953,7 +1953,7 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 		print_msg('Simulate annealing          : OFF\n')
 	print_msg('Random seed                 : %i\n'     % rnd)
 	print_msg('Initialization method       : %s\n'     % init_method)
-	print_msg('Number of cpus              : %i\n'     % ncpu)
+	print_msg('Number of CPUs              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
@@ -3071,7 +3071,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-				
+
 				for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / Cls_ctf2[k][i]
 				Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
 
@@ -3079,7 +3079,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for im in xrange(N_start, N_stop):
 				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-								
+			
 		else:
 			# [id] Calculates averages, first calculate local sum
 			for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -3124,7 +3124,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			Je         = 0
 			if SA:
 			   ct_pert = 0
-						
+
 			# [id] assign each images with err_min between all clusters averages
 			for im in xrange(N_start, N_stop):
 
@@ -4589,7 +4589,7 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	else:
 		print_msg('Simulate annealing          : OFF\n')
 	print_msg('Random seed                 : %s\n'     % txtrnd)
-	print_msg('Number of cpus              : %i\n'     % ncpu)
+	print_msg('Number of Cs              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n'     % outname)
 	print_msg('Memory on device            : %s\n'     % device)
 	print_msg('Memory on host              : %s\n\n'   % host)

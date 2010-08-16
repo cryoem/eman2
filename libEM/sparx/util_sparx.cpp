@@ -5004,20 +5004,20 @@ Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 	double valmin = 1.0e20;
 	int valpos = -1;
 
-	for (int kk=0; kk<nima; kk++){
-	result = 0;
-
-	float *y_data = data[kk]->get_data();
 	float *x_data = image->get_data();
-	long totsize = image->get_xsize()*image->get_ysize();
-	for (long i = 0; i < totsize; i++) {
-	    double temp = x_data[i]- y_data[i];
-	    result += temp*temp;
-	}
-	result /= totsize;
-	res[kk] = (float)result;
+	long  totsize = image->get_xsize()*image->get_ysize();
+	for (int kk=0; kk<nima; kk++)  {
+		result = 0;
 
-	if(result<valmin) {valmin = result; valpos = kk;}
+		float *y_data = data[kk]->get_data();
+		for (long i = 0; i < totsize; i++) {
+			double temp = x_data[i]- y_data[i];
+			result += temp*temp;
+		}
+		result /= totsize;
+		res[kk] = (float)result;
+
+		if(result<valmin) {valmin = result; valpos = kk;}
 
 	}
 
