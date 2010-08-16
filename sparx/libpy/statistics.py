@@ -8935,20 +8935,20 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 	
 	
 	if DoMPI==True and DoMPI_init==False:
-	
-		if len(levels)<1:	
-			for i in xrange(K):
-				levels.append(1)
+		print "Not supporting MPI currently"
+		#if len(levels)<1:	
+		#	for i in xrange(K):
+		#		levels.append(1)
 
-		ar_levels = array(levels, 'int32')
-		ar_class_dim	= array(c_dim,'int32')	
-		ar_newParts = array(PART, 'int32')
-		firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
-		output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
+		#ar_levels = array(levels, 'int32')
+		#ar_class_dim	= array(c_dim,'int32')	
+		#ar_newParts = array(PART, 'int32')
+		#firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
+		#output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
 	else:
-		
+		LARGEST_CLASS = 0
 		np=len(PART)
-
+		
 		#ar_argParts = array([],'int32')
 		onedParts = []
 		class_dim=[]
@@ -8961,6 +8961,8 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 			K = len(PART[i])
 			for j in xrange(K):
 				pSize = PART[i][j].size
+				if pSize > LARGEST_CLASS:
+					LARGEST_CLASS = pSize
 				if pSize >= 1:
 					for p in xrange(pSize):
 						if PART[i][j][p] >= garbage_value:
@@ -9010,22 +9012,10 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 				#ar_argParts=append(ar_argParts,PART[i][j])
 		ar_argParts = array(onedParts,'int32')
 		ar_class_dim = array(class_dim,'int32')
-		#################################################################################################
-		# if DoMPI_init = True, then compute new parts and Njobs top matches and return that
-		if DoMPI_init:
-			newParts=Util.bb_enumerateMPI(ar_argParts,ar_class_dim,np,K,T,0,nguesses,True,ar_levels)
-			# newParts a list 
-			ar_newParts = array(newParts,'int32')
-			# find top weighted matches in pruned partitions
-			topMatches=Util.bb_enumerateMPI(ar_newParts,ar_class_dim,np,K,T,Njobs,nguesses,True,ar_levels)
-			# topMatches is ordered in ascending order according to cost
-			# first element of topMatches is the number of matches it contains
-			
-			return newParts,topMatches[1:],class_dim,topMatches[0]
-		#################################################################################################
+		
 
 		# Single processor version
-		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T,levels[0], nguesses,False, ar_levels)
+		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T,levels[0], nguesses,False, ar_levels, LARGEST_CLASS)
 		
 	# first element of output is the total  cost of the solution, second element is the number of matches
 	# in the output solution, and then follows the list of matches.
@@ -9040,6 +9030,7 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 	
 	
 	if DoMPI:
+		print "Not supporting MPI currently"
 		return MATCH, output[0]
 	else:
 		return MATCH

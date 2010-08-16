@@ -615,17 +615,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	// branch and bound matching algorithm
 
-	/** K is the number of classes in each partition (should be the same for all partitions)
-	 * the first element of each class is its original index in the partition, and second is dummy var
-	 *
-	 * Turn the one dimensional Parts into vectors for easier manipulation
-	 * While we're at it, construct Indices, an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
-	 * So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
-	 *
-	 * will delete this soon.... use bb_enumerateMPI instead
-	 * */
-	static void bb_enumerate_(int* Parts, int* classDims, int nParts, int nClasses, int T, int n_guesses, int* levels);
-
+	
 	/** initial_prune removes all classes C from Parts where there does not exist ANY feasible matching containing class C which has weight gt T.
 	 * The first element of each class is its original index, and second is dummy variable
 	*/
@@ -637,8 +627,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static bool explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts, int K, int T, int partref, int* curintx, int
 			size_curintx, int* next, int size_next, int depth);
 
-	static int* branch(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel, int n_guesses);
-
+	
 	/** find max_num_matches feasible matches (if possible) which has weight gt T, and weight gteq weight of all other feasible matches.
 	 * return the results in the pre-allocated arrays matchlist and costlist.
 	 * Each match is a sequence (stored in a 1D array) of nParts numbers, where the i-th element in the sequence is the original index of the class from the i-th
@@ -647,13 +636,13 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * returns the number of matches found. it's less than the number request if there aren't that many that's over the threshold
 	*/
 	static int findTopLargest(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int max_num_matches, int*
-			costlist, int n_guesses);
+			costlist, int n_guesses, int LARGEST_CLASS);
 
 	/** make an intelligent "guess" at the largest weight of all possible feasible matches.
 	 * we make "n_guesses" guesses and return the largest one.
 	 * the largest weight of all feasible matches is guaranteed to be larger than or equal to the returned guess.
 	*/
-	static int generatesubmax(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int n_guesses);
+	static int generatesubmax(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int n_guesses, int LARGEST_CLASS);
 
 	/** return the weight of the largest weighted feasible match, along with the match in the (preallocated) argument curmax.
 	 * The returned weight has to be gt newT. If there is no such feasible matching, return 0 as *curmax
@@ -678,21 +667,15 @@ class FakeKaiserBessel : public KaiserBessel {
 	 *
 	 * essentially the same as bb_enumerate but with the option to do mpi version.
 	*/
-	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels);
+	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels, int LARGEST_CLASS);
 
-	/** an interface function between python code and branchMPI.
-	 * Doesn't do much except compute Indices, call branchMPI,
-	 * and check if the output make sense (i.e., feasible etc),
-	 * and process the output to return to python as a vector.
-	 * nFirst is the number of matches in firstmatches */
-	static vector<int> branchMPIpy_(int* argParts, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int n_guesses, int nFirst, int* firstmatches);
-
+	
 	/** same as branch except the nFirst (=Levels[0]) possibilites for the first match are already chosen
 	 * firstmatches stores the matches and corresponding cost, where each match is preceded by its cost....
 	 * output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
 	 * and the rest is the list of matches. output is in one dimensional form.
 	*/
-	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches);
+	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches, int LARGEST_CLASS);
 
 	// new code common-lines
 
