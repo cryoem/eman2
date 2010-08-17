@@ -48,12 +48,12 @@ sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi
 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf 
 
 # Compute real-space variance
-sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24
+#sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24
 
 # generate reference volume using average volume and variance
-../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
+#../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
 
 # 3D multi reference alignment
-sxmref_ali3d.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P 
+#sxmref_ali3d.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P 
 
 
