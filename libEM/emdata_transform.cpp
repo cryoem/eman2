@@ -161,11 +161,32 @@ EMData *EMData::do_fft() const
 	}
 #endif
 
-	if ( is_complex() ) {
-		LOGERR("real image expected. Input image is complex image.");
+	if (is_complex() ) { // ming add 08/17/2010
+#ifdef NATIVE_FFT;
+		LOGERR(" NATIVE_FFT not supported yet.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
-	}
+		exit;
+#endif // NATIVE_FFT
 
+			EMData *temp_in=copy();
+			EMData *dat= copy_head();
+			int offset;
+			if(is_fftpadded()) {
+				offset = is_fftodd() ? 1 : 2;
+			}
+			else offset=0;
+			//printf("offset=%d\n",offset);
+			EMfft::complex_to_complex_nd(temp_in->get_data(),dat->get_data(),nx-offset,ny,nz);
+
+			if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
+
+			dat->update();
+			delete temp_in;
+			EXITFUNC;
+			return dat;
+		}
+
+	else{
 	int nxreal = nx;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
@@ -187,6 +208,7 @@ EMData *EMData::do_fft() const
 
 	EXITFUNC;
 	return dat;
+	}
 }
 
 EMData *EMData::do_fft_inplace()

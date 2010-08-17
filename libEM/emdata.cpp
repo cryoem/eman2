@@ -3798,52 +3798,31 @@ EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
 	return ret;
 }
 
-#ifdef FFTW2
+
 EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR value here later!!
-
-    fftw_real * in = new fftw_real[size]; //ming
-	fftw_real * out = new fftw_real[size]; // ming
-	rfftw_plan p; //ming
-	p = rfftw_create_plan(size, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
-
 	float *pcs=get_data();
 	EMData *imagepcsfft = new EMData;
 	imagepcsfft->set_size((size+2), (int)MAXR+1, 1);
 	float *d=imagepcsfft->get_data();
-	for(int row=0; row<=(int)MAXR; row++){
+
+	EMData *data_in=new EMData;
+	data_in->set_size(size,1,1);
+	float *in=data_in->get_data();
+
+	for(int row=0; row<=(int)MAXR; ++row){
 		if(row<=(int)rmax) {
-			for(int i=0; i<size;i++){
-				in[i] = pcs[i+row*size]; // ming
-			}
-			rfftw_one(p,in,out);	// 1D real FFTW, details see FFTW menu p.6-7 //ming
-			d[0+row*(size+2)] = out[0];//ming
-			d[1+row*(size+2)] = 0.0;
-			for (int k=1; k<(size+1)/2;k++){
-				 d[2*k+row*(size+2)]   = out[k];
-				 d[2*k+1+row*(size+2)] = out[size-k];
-			}
-			if(size%2 == 0){                                     // size is even
-				d[size  +row*(size+2)] = out[size/2];
-				d[size+1+row*(size+2)] = 0.0;
-			}
+			for(int i=0; i<size;++i)	in[i] = pcs[i+row*size]; // ming
+			data_in->set_complex(false);
+			data_in->do_fft_inplace();
+			for(int j=0;j<size+2;j++)  d[j+row*(size+2)]=in[j];
 		}
-		else{
-			for(int j=0;j<size+2;j++)
-				d[j+row*(size+2)] = 0.0;
-		}
+		else for(int j=0;j<size+2;j++) d[j+row*(size+2)]=0.0;
 	}
-
-	delete in;
-	in = 0;
-	delete out;
-	out = 0;
-
-	rfftw_destroy_plan(p);
 	imagepcsfft->update();
-	//delete this;
+	delete data_in;
 	return imagepcsfft;
 }
-#endif	//FFTW2
+
 
 
 #ifdef EMAN2_USING_CUDA

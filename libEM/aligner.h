@@ -776,42 +776,44 @@ namespace EMAN
 			static const string NAME;
 	};
 	
-#ifdef	FFTW2 
+
 	class FRM2DAligner:public Aligner
-		{
-			public:
-				virtual EMData * align(EMData * this_img, EMData * to_img,
-						const string& cmp_name, const Dict& cmp_params=Dict()) const; //ming add ="frc"
+			{
+				public:
+					virtual EMData * align(EMData * this_img, EMData * to_img,
+							const string& cmp_name, const Dict& cmp_params=Dict()) const; //ming add ="frc"
 
-				virtual EMData * align(EMData * this_img, EMData * to_img) const
-				{
-					return align(this_img, to_img, "", Dict());
-				}
+					virtual EMData * align(EMData * this_img, EMData * to_img) const
+					{
+						return align(this_img, to_img, "frc", Dict());
+					}
 
-				string get_name() const
-				{
-					return NAME;
-				}
+					string get_name() const
+					{
+						return NAME;
+					}
 
-				string get_desc() const
-				{
-					return "FRM2D uses two rotational parameters and one translational parameter";
-				}
+					string get_desc() const
+					{
+						return "FRM2D uses two rotational parameters and one translational parameter";
+					}
 
-				static Aligner *NEW()
-				{
-					return new FRM2DAligner();
-				}
-				virtual	TypeDict get_param_types() const
-				{
-						TypeDict d;
-						d.put("p_max", EMObject::FLOAT,"p_max is");
-						return d;
-				}
-	
-				static const string NAME;
-	};
-#endif	//FFTW2
+					static Aligner *NEW()
+					{
+						return new FRM2DAligner();
+					}
+					virtual	TypeDict get_param_types() const
+					{
+							TypeDict d;
+							d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+
+							//d.put("p_max", EMObject::FLOAT,"p_max is");
+							return d;
+					}
+
+					static const string NAME;
+		};
+
 	
 	class CUDA_Aligner
 	{

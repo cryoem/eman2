@@ -48,11 +48,13 @@ namespace EMAN
 	  public:
 		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
 		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
-
+		static int complex_to_complex_1d(float *complex_data_in, float *complex_data_out, int n);//ming add
 		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
 									  int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
+		static int complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx, int ny,
+													  int nz); // ming add
 		private:
 #ifdef  FFTW_PLAN_CACHING
 #define EMFFTW2_ND_CACHE_SIZE 20
@@ -165,11 +167,12 @@ namespace EMAN
 	  public:
 		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
 		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
-
+		static int complex_to_complex_1d(float *in, float *out, int n); // ming add
 		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
 									  int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
+		static int complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx,int ny,int nz);// ming add
 	  private:
 #ifdef FFTW_PLAN_CACHING
 #define EMFFTW3_CACHE_SIZE 20

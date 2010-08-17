@@ -621,6 +621,55 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	
 }
 
+
+// ming add c->c fft with fftw2 library//
+int EMfft::complex_to_complex_1d(float *complex_data_in, float *complex_data_out, int n)
+{
+	fftw_complex *in=(fftw_complex *) complex_data_in;
+	fftw_complex *out=(fftw_complex *) complex_data_out;
+	fftw_plan p = fftw_create_plan(n/2, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftw_one(p,in,out);
+	fftw_destroy_plan(p);
+	return 0;
+}
+
+
+int EMfft::complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx,int ny,int nz)
+{
+	const int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+
+	switch(rank) {
+		case 1:
+			complex_to_complex_1d(complex_data_in, complex_data_out, nx);
+			break;
+
+		case 2:
+		case 3:
+		{
+			fftw_complex *in=(fftw_complex *) complex_data_in;
+			fftw_complex *out=(fftw_complex *) complex_data_out;
+			fftwnd_plan plan_nd;
+			if(complex_data_out == complex_data_in) {
+				plan_nd = fftwnd_create_plan(rank, dims+(3-rank),FFTW_FORWARD, FFTW_ESTIMATE | FFTW_IN_PLACE);
+			}
+			else {
+				plan_nd = fftw3d_create_plan(nx/2,ny,nz,FFTW_FORWARD, FFTW_ESTIMATE);
+			}
+			fftwnd_one(plan_nd, in, out);
+			fftwnd_destroy_plan(plan_nd);
+		}
+	}
+	return 0;
+}
+
+
+
+
+
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
 //	const int complex_nx = nx + 2 - nx%2;
@@ -771,6 +820,54 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	
 	return 0;
 }
+
+
+// ming add c->c fft with fftw3 library//
+int EMfft::complex_to_complex_1d(float *complex_data_in, float *complex_data_out, int n)
+{
+	fftwf_plan p;
+	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+	p=fftwf_plan_dft_1d(n/2,in,out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftwf_execute(p);
+	fftwf_destroy_plan(p);
+	return 0;
+}
+
+
+int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
+{
+	const int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+
+	switch(rank) {
+		case 1:
+			complex_to_complex_1d(in, out, nx);
+			break;
+
+		case 2:
+		case 3:
+		{
+			fftwf_plan p;
+
+			if(out == in) {
+				p=fftwf_plan_dft_3d(nx/2,ny,nz,(fftwf_complex *) in,(fftwf_complex *) out, FFTW_FORWARD, FFTW_ESTIMATE);
+			}
+			else {
+
+				p=fftwf_plan_dft_3d(nx/2,ny,nz,(fftwf_complex *) in,(fftwf_complex *) out, FFTW_FORWARD, FFTW_ESTIMATE);
+			}
+			fftwf_execute(p);
+			fftwf_destroy_plan(p);
+		}
+	}
+	return 0;
+}
+// end ming
+
 
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
