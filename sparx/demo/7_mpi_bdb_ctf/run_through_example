@@ -47,10 +47,10 @@ mpirun -np 4 sxali3d.py bdb:data ../model_structure.hdf ali3d_d --ou=30 --xr='2.
 mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function=reference3 --center=0 --MPI --CTF --debug 
 
 # Renormalize the data
-mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --CTF --MPI 
+#mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --CTF --MPI 
 
 #  The data is overwritten
-sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt 
+#sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt 
 
 # bootstrap calculations
 #  Calculate weights of projections to account for their uneven distribution
