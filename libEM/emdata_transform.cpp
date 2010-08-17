@@ -162,7 +162,7 @@ EMData *EMData::do_fft() const
 #endif
 
 	if (is_complex() ) { // ming add 08/17/2010
-#ifdef NATIVE_FFT;
+#ifdef NATIVE_FFT
 		LOGERR(" NATIVE_FFT not supported yet.");
 		throw ImageFormatException("real image expected. Input image is complex image.");
 		exit;
