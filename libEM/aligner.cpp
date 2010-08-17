@@ -1788,11 +1788,12 @@ float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfp
 	this_img->rotate(-ang_keep,0,0); // ming change this to this_img??
 	this_img->translate(dx,dy,0.0); // ming change this to this_img
 
-	float fsc_best=this_img->cmp(cmp_name,to,cmp_params);
+
 	Transform  tsoln(Dict("type","2d","alpha",ang_keep));
 	tsoln.set_trans(dx,dy);
 	this_img->set_attr("xform.align2d",&tsoln);
 #ifdef DEBUG
+	float fsc_best=this_img->cmp(cmp_name,to,cmp_params);
 	printf("rho_best=%d fsc=%f fsc_best=%f dx=%f dy=%f ang_keep=%f com_withx=%f com_selfx=%f com_selfy=%f\n",rho_best,fsc,fsc_best,dx,dy,ang_keep,com_with_x,com_this_x,com_this_y);
 #endif
 	return fsc;     // return the fsc coefficients
