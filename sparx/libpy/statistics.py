@@ -2426,9 +2426,10 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	
 	# if all trials resulted in empty cluster, exit!
 	
-	if ALL_EMPTY:
-		print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
-		sys.exit()
+	if trials > 1:
+		if ALL_EMPTY:
+			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			sys.exit()
 						
 	# if severals trials choose the best
 	if trials > 1:
