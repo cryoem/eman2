@@ -18874,12 +18874,12 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 
 	//c     We specify the tolerances in the stopping criteria.
 	factr=1.0e1;
-	pgtol=1.0e-5;
+	pgtol=1.0e-9;
 
 	//     We specify the dimension n of the sample problem and the number
 	//        m of limited memory corrections stored.  (n and m should not
 	//        exceed the limits nmax and mmax respectively.)
-	n=10;
+	n=nmax;
 	m=10;
 
 	//     We now provide nbd which defines the bounds on the variables:
@@ -18891,7 +18891,6 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 		nbd[i] = 0;
 	}
 	
-	cout << "here" << endl;
 	//     We start the iteration by initializing task.
 	// (**MUST clear remaining chars in task with spaces (else crash)!**)
 	strcpy(task,"START");
