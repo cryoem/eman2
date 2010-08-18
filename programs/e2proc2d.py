@@ -354,12 +354,14 @@ def main():
 			elif option1 == "rotate":
 				rotatef = options.rotate[index_d[option1]]
 				if rotatef!=0.0 : d.rotate(rotatef,0,0)
+				index_d[option1] += 1
 				
 			elif option1 == "translate":
 				tdx,tdy=options.translate[index_d[option1]].split(",")
 				tdx,tdy=float(tdx),float(tdy)
 				if tdx !=0.0 or tdy != 0.0 :
 					d.translate(tdx,tdy,0.0)
+				index_d[option1] += 1
 
 			elif option1 == "clip":
 				ci = index_d[option1]
