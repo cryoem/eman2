@@ -305,12 +305,15 @@ class EMImage2DMeasureMode(EMImage2DMouseEvents):
 						fft=inspector.target().list_fft_data[inspector.target().list_idx]
 					xs=fft.get_xsize()
 					ys=fft.get_ysize()
-					x,y=int(lc[0])+1,int(lc[1])
-					if x<xs/2 : x=xs/2-x
-					else : x-=xs/2
-					if y<ys/2 : y+=ys/2
-					else: y-=ys/2
-					val=fft[x,y]
+					x,y=int(lc[0]+1.5)-xs/2,int(lc[1]+1.5)-ys/2
+					#if x<xs/2 : 
+						#x=xs/2-x
+						#y=ys-y
+					#else : x-=xs/2
+					#if y<ys/2 : y+=ys/2
+					#else: y-=ys/2
+					#val=fft[x,y]
+					val=fft.get_complex_at(x,y)
 					inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
 					inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
 				else : 
