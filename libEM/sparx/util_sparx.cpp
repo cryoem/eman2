@@ -18857,6 +18857,221 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	return res;
 }
 
+vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_params) {
+	
+	const int nmax=args.size(), mmax=nmax;
+	char task[60], csave[60];
+	long int lsave[4];
+	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
+	double f, factr, pgtol, x[nmax], l[nmax], u[nmax], g[nmax], dsave[29], wa[2*mmax*nmax+4*nmax+12*mmax*mmax+12*mmax];
+	long int SIXTY=60;
+
+	int num_ali = nmax/3+1;
+	int nima = all_ali_params.size()/(num_ali*4);
+	
+	//     We wish to have no output.
+	iprint = -1;
+
+	//c     We specify the tolerances in the stopping criteria.
+	factr=1.0e1;
+	pgtol=1.0e-5;
+
+	//     We specify the dimension n of the sample problem and the number
+	//        m of limited memory corrections stored.  (n and m should not
+	//        exceed the limits nmax and mmax respectively.)
+	n=10;
+	m=10;
+
+	//     We now provide nbd which defines the bounds on the variables:
+	//                    l   specifies the lower bounds,
+	//                    u   specifies the upper bounds.
+ 	//		      x   specifies the initial guess
+	for (int i=0; i<nmax; i++) {
+		x[i] = args[i]; 
+		nbd[i] = 0;
+	}
+	
+	cout << "here" << endl;
+	//     We start the iteration by initializing task.
+	// (**MUST clear remaining chars in task with spaces (else crash)!**)
+	strcpy(task,"START");
+	for (int i=5;i<60;i++)	task[i]=' ';
+
+	//     This is the call to the L-BFGS-B code.
+	// (* call the L-BFGS-B routine with task='START' once before loop *)
+	setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+	int step = 1;
+
+ 	// (* while routine returns "FG" or "NEW_X" in task, keep calling it *)
+	while (strncmp(task,"FG",2)==0 || strncmp(task,"NEW_X",5)==0) {
+
+		if (strncmp(task,"FG",2)==0) {
+	      	//   the minimization routine has returned to request the
+		//   function f and gradient g values at the current x
+
+		//        Compute function value f for the sample problem.
+		f = multi_align_error_func(x, all_ali_params, nima, num_ali);
+
+	      	//        Compute gradient g for the sample problem.
+		multi_align_error_dfunc(x, all_ali_params, nima, num_ali, g);
+   		}
+
+		//c          go back to the minimization routine.
+		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+		step++;
+  	}
+
+	//printf("Total step is %d\n", step);
+	vector<float> res;
+	for (int i=0; i<nmax; i++) res.push_back(static_cast<float>(x[i]));
+	res.push_back(f);
+	return res;
+
+}
+
+float Util::multi_align_error_func(double* x, vector<float> all_ali_params, int nima, int num_ali) {
+
+	float x1 = 1.0;
+	float y1 = 0.0;
+	float x2 = 0.0;
+	float y2 = 1.0;
+
+	float all_var = 0;
+	float x1_new[num_ali];
+	float y1_new[num_ali];
+	float x2_new[num_ali];
+	float y2_new[num_ali];
+
+	for (int i=0; i<nima; i++) {
+		float alpha2 = all_ali_params[(num_ali-1)*(nima*4)+i*4];
+		float sx2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+1];
+		float sy2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+2];
+		
+		rot_shift(x1, y1, alpha2, sx2, sy2, x1_new+num_ali-1, y1_new+num_ali-1);
+		rot_shift(x2, y2, alpha2, sx2, sy2, x2_new+num_ali-1, y2_new+num_ali-1);
+		for (int j=0; j<num_ali-1; j++) {
+			float alpha1 = all_ali_params[j*(nima*4)+i*4];
+			float sx1 = all_ali_params[j*(nima*4)+i*4+1];
+			float sy1 = all_ali_params[j*(nima*4)+i*4+2];
+			int mirror1 = static_cast<int>(all_ali_params[j*(nima*4)+i*4+3]);
+
+			float alphai = x[j*3];
+			float sxi = x[j*3+1];
+			float syi = x[j*3+2];
+
+			float alpha12, sx12, sy12;
+			int mirror12;
+			if (mirror1 == 0) {
+				alpha12 = fmod(alpha1+alphai, 360.0f);
+				rot_shift(sx1, sy1, alphai, sxi, syi, &sx12, &sy12);
+				mirror12 = 0;
+			} else {
+				alpha12 = fmod(alpha1-alphai, 360.0f);
+				rot_shift(sx1, sy1, -alphai, -sxi, syi, &sx12, &sy12);
+				mirror12 = 1;
+			}
+
+			rot_shift(x1, y1, alpha12, sx12, sy12, x1_new+j, y1_new+j);
+			rot_shift(x2, y2, alpha12, sx12, sy12, x2_new+j, y2_new+j);
+		}
+		
+		float p = var(x1_new, num_ali)+var(y1_new, num_ali)+var(x2_new, num_ali)+var(y2_new, num_ali);
+		all_var += p;
+	}
+	return all_var/static_cast<float>(nima);
+}
+
+void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int nima, int num_ali, double* g) {
+
+	
+	for (int i=0; i<num_ali*3-3; i++) g[i] = 0.0;
+	
+	float x1 = 1.0;
+	float y1 = 0.0;
+	float x2 = 0.0;
+	float y2 = 1.0;
+
+	for (int i=0; i<nima; i++) {
+		float x1_new[num_ali];
+		float y1_new[num_ali];
+		float x2_new[num_ali];
+		float y2_new[num_ali];
+		
+		float alpha2 = all_ali_params[(num_ali-1)*(nima*4)+i*4];
+		float sx2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+1];
+		float sy2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+2];
+		
+		rot_shift(x1, y1, alpha2, sx2, sy2, x1_new+num_ali-1, y1_new+num_ali-1);
+		rot_shift(x2, y2, alpha2, sx2, sy2, x2_new+num_ali-1, y2_new+num_ali-1);
+		
+		float alpha12_0[num_ali-1];
+		float dalpha12[num_ali-1];
+		float dsx12[num_ali-1];
+		float dsy12[num_ali-1];
+		float mirror1_0[num_ali-1];
+		
+		for (int j=0; j<num_ali-1; j++) {
+			float alpha1 = all_ali_params[j*(nima*4)+i*4];
+			float sx1 = all_ali_params[j*(nima*4)+i*4+1];
+			float sy1 = all_ali_params[j*(nima*4)+i*4+2];
+			int mirror1 = static_cast<int>(all_ali_params[j*(nima*4)+i*4+3]);
+
+			float alphai = x[j*3];
+			float sxi = x[j*3+1];
+			float syi = x[j*3+2];
+
+			float cosi = cos(alphai/180.0f*M_PI);
+			float sini = sin(alphai/180.0f*M_PI);
+			
+			float alpha12, sx12, sy12;
+			int mirror12;
+			if (mirror1 == 0) {
+				alpha12 = fmod(alpha1+alphai, 360.0f);
+				rot_shift(sx1, sy1, alphai, sxi, syi, &sx12, &sy12);
+				mirror12 = 0;
+			} else {
+				alpha12 = fmod(alpha1-alphai, 360.0f);
+				rot_shift(sx1, sy1, -alphai, -sxi, syi, &sx12, &sy12);
+				mirror12 = 1;
+			}
+
+			rot_shift(x1, y1, alpha12, sx12, sy12, x1_new+j, y1_new+j);
+			rot_shift(x2, y2, alpha12, sx12, sy12, x2_new+j, y2_new+j);
+		
+			alpha12_0[j] = alpha12;
+			mirror1_0[j] = mirror1;
+			if (mirror1 == 0) {
+				dalpha12[j] = M_PI/180.0f;
+				dsx12[j] = (-sini*sx1+cosi*sy1)/180.0f*M_PI;
+				dsy12[j] = (-cosi*sx1-sini*sy1)/180.0f*M_PI;
+			} else {
+				dalpha12[j] = -M_PI/180.0f;
+				dsx12[j] = (sini*(-sx1)-cosi*sy1)/180.0f*M_PI;
+				dsy12[j] = (-cosi*(-sx1)-sini*sy1)/180.0f*M_PI;
+			}
+		}
+
+		for (int j=0; j<num_ali-1; j++) {
+			float cosa = cos(alpha12_0[j]/180.0f*M_PI);
+			float sina = sin(alpha12_0[j]/180.0f*M_PI);
+			float diffx1 = x1_new[j]-mean(x1_new, num_ali);
+			float diffx2 = x2_new[j]-mean(x2_new, num_ali);
+			float diffy1 = y1_new[j]-mean(y1_new, num_ali);
+			float diffy2 = y2_new[j]-mean(y2_new, num_ali);
+
+			float p = diffx1*((-x1*sina+y1*cosa)*dalpha12[j]+dsx12[j])+diffx2*((-x2*sina+y2*cosa)*dalpha12[j]+dsx12[j])+diffy1*((-x1*cosa-y1*sina)*dalpha12[j]+dsy12[j])+diffy2*((-x2*cosa-y2*sina)*dalpha12[j]+dsy12[j]);
+			g[j*3] += p;
+		
+			p = diffx1+diffx2;
+			if (mirror1_0[j] == 0) g[j*3+1] += p;
+			else g[j*3+1] -= p;
+
+			p = diffy1+diffy2;
+			g[j*3+2] += p;
+		}
+	}
+	
+}
 
 float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, float sx, float sy) {
 

@@ -946,7 +946,31 @@ public:
 	    int res = int(arg + 180.5) - 180;
 	    return res;
         }
+	
+	static inline float mean(float *x, int n) {
+		float s = 0.0f;
+		for (int i=0; i<n; i++) s+=x[i];
+		return s/static_cast<float>(n);
+	}
 
+	static inline float var(float *x, int n) {
+		float s = 0.0f;
+		float m = mean(x, n);
+		for (int i=0; i<n; i++) s += (x[i]-m)*(x[i]-m);
+		return s/static_cast<float>(n);
+	}
+	
+	static inline void rot_shift(float x, float y, float alpha, float x0, float y0, float* x1, float *y1) {
+		float cosi = cos(alpha/180.0f*M_PI);
+		float sini = sin(alpha/180.0f*M_PI);
+		*x1 = x*cosi+y*sini+x0;
+		*y1 = -x*sini+y*cosi+y0;
+	}
+	
+	static vector<float> multi_align_error(vector<float> args, vector<float> all_ali_params);
+	static float multi_align_error_func(double* x, vector<float> all_ali_params, int nima, int num_ali);
+	static void multi_align_error_dfunc(double* x, vector<float> all_ali_params, int nima, int num_ali, double* g);
+	
 	static vector<float> cluster_pairwise(EMData* d, int K, float T, float F);
 	//static vector<float> cluster_equalsize(EMData* d, int m);
 	static vector<float> cluster_equalsize(EMData* d);
