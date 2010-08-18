@@ -113,6 +113,8 @@ EMData::EMData(const string& filename, int image_index) :
 	attr_dict["is_complex_x"] = int(0);
 	attr_dict["is_complex_ri"] = int(1);
 
+	attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;
+
 	this->read_image(filename, image_index);
 
 	update();
