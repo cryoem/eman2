@@ -6115,7 +6115,6 @@ def isc_read_conf(conf_file):
 	cfgclu['nb_cpu']     = int(cfgclu['nb_cpu'])
 	cfgclu['cuda']       = eval(cfgclu['cuda'])
 	#   realignment
-	cfgrali['th_err']    = float(cfgrali['th_err'])
 	cfgrali['fourvar']   = eval(cfgrali['fourvar'])
 	cfgrali['maxit']     = int(cfgrali['maxit'])
 	cfgrali['ctf']       = eval(cfgrali['ctf'])
@@ -6125,7 +6124,8 @@ def isc_read_conf(conf_file):
 	cfgrali['cuda']	     = eval(cfgrali['cuda'])
 	cfgrali['ng']	     = int(cfgrali['ng'])
 	cfgrali['num_ali']   = int(cfgrali['num_ali'])
-	cfgrali['min_stab_class'] = int(cfgrali['min_stab_class'])
+	cfgrali['th_mir']    = float(cfgrali['th_mir'])
+	cfgrali['th_err']    = float(cfgrali['th_err'])
 	cfgrali['center']    = int(cfgrali['center'])
 	cfgrali['dst']       = float(cfgrali['dst'])
 	#   main

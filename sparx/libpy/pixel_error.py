@@ -435,32 +435,36 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	return ali_list
 
 
-def multi_align_stability(ali_params, error_threshold = 1.0, mirror_consistency_threshold = 0.75):
-	
+def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0):
+
 	def rot_shift(x, y, alpha, sx, sy):
-	        from math import pi, sin, cos
-	        cosi = cos(alpha/180.0*pi)
-	        sini = sin(alpha/180.0*pi)
-	        return x*cosi+y*sini+sx, -x*sini+y*cosi+sy
+		from math import pi, sin, cos
+		cosi = cos(alpha/180.0*pi)
+		sini = sin(alpha/180.0*pi)
+		return x*cosi+y*sini+sx, -x*sini+y*cosi+sy
 
 	def ave(a):
-	        n = len(a)
-	        ave = 0.0
-	        for i in xrange(n): ave+=a[i]
-	        ave /= n
-	        return ave
+		n = len(a)
+		ave = 0.0
+		for i in xrange(n): ave+=a[i]
+		ave /= n
+		return ave
 
 	def var(a):
-	        n = len(a)
-	        avg = ave(a)
-	        var = 0.0
-	        for i in xrange(n): var+=(a[i]-avg)**2
-	        return var/n
-
-
+		n = len(a)
+		avg = ave(a)
+		var = 0.0
+		for i in xrange(n): var+=(a[i]-avg)**2
+		return var/n
+	
 	def stable(args, data):
 
-	        all_ali_params = data
+	        x1 = 1.0
+	        y1 = 0.0
+        	x2 = 0.0
+	        y2 = 1.0
+
+        	all_ali_params = data
 	        num_ali = len(all_ali_params)
 	        nima = len(all_ali_params[0])/4
 		err = []
@@ -486,88 +490,9 @@ def multi_align_stability(ali_params, error_threshold = 1.0, mirror_consistency_
 
 	        return err
 
-	def func(args, data):
-
-		nima = len(data[0])/4
-		return sum(stable(args, data))/nima
-
-	def dfunc(args, data):
-
-	        from math import pi, sin, cos
-	        from numpy import zeros, array, float64
-
-	        g = zeros(args.shape, float64)
-
-	        all_ali_params = data
-	        num_ali = len(all_ali_params)
-	        nima = len(all_ali_params[0])/4
-
-	        for i in xrange(nima):
-	        	pix_error = 0
-	        	x1_new = [0.0]*num_ali
-	        	y1_new = [0.0]*num_ali
-	        	x2_new = [0.0]*num_ali
-	        	y2_new = [0.0]*num_ali
-	        	alpha2, sx2, sy2, mirror2 = all_ali_params[num_ali-1][i*4:i*4+4]
-	        	x1_new[num_ali-1], y1_new[num_ali-1] = rot_shift(x1, y1, alpha2, sx2, sy2)
-	        	x2_new[num_ali-1], y2_new[num_ali-1] = rot_shift(x2, y2, alpha2, sx2, sy2)
-
-	        	alpha12_0 = [0.0]*(num_ali-1)
-	        	dalpha12 = [0.0]*(num_ali-1)
-	        	dsx12 = [0.0]*(num_ali-1)
-	        	dsy12 = [0.0]*(num_ali-1)
-	        	mirror1_0 = [0]*(num_ali-1)
-
-	        	for j in xrange(num_ali-1):
-	        		alpha1, sx1, sy1, mirror1 = all_ali_params[j][i*4:i*4+4]
-	        		alphai, sxi, syi = args[j*3:j*3+3]
-	        		alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
-	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, sx12, sy12)
-	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, sx12, sy12)
-
-	        		sini = sin(alphai/180.0*pi)
-	        		cosi = cos(alphai/180.0*pi)
-	        		alpha12_0[j] = alpha12
-	        		mirror1_0[j] = mirror1
-	        		if mirror1 == 0:
-	        			dalpha12[j] = pi/180.0
-	        			dsx12[j] = (-sini*sx1+cosi*sy1)/180.0*pi
-	        			dsy12[j] = (-cosi*sx1-sini*sy1)/180.0*pi
-	        		else:
-	        			dalpha12[j] = -pi/180.0
-	        			dsx12[j] = (sini*(-sx1)-cosi*sy1)/180.0*pi
-	        			dsy12[j] = (-cosi*(-sx1)-sini*sy1)/180.0*pi
-
-	        	for j in xrange(num_ali-1):
-	        		cosa = cos(alpha12_0[j]/180.0*pi)
-	        		sina = sin(alpha12_0[j]/180.0*pi)
-	        		diffx1 = x1_new[j]-ave(x1_new)
-	        		diffx2 = x2_new[j]-ave(x2_new)
-	        		diffy1 = y1_new[j]-ave(y1_new)
-	        		diffy2 = y2_new[j]-ave(y2_new)
-
-	        		p = diffx1*((-x1*sina+y1*cosa)*dalpha12[j]+dsx12[j])+diffx2*((-x2*sina+y2*cosa)*dalpha12[j]+dsx12[j])+diffy1*((-x1*cosa-y1*sina)*dalpha12[j]+dsy12[j])+diffy2*((-x2*cosa-y2*sina)*dalpha12[j]+dsy12[j])
-	        		g[j*3] += p
-
-	        		p = diffx1+diffx2
-	        		if mirror1_0[j] == 0: g[j*3+1] += p
-	        		else: g[j*3+1] -= p
-
-	        		p = diffy1+diffy2
-	        		g[j*3+2] += p
-
-	        g *= 2.0/num_ali/nima
-	        return g
-
 	from statistics import k_means_stab_bbenum
 	from utilities import combine_params2
-	from numpy import array, int32
-	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
-
-        x1 = 1.0
-        y1 = 0.0
-        x2 = 0.0
-        y2 = 1.0
+	from numpy import array
 
 	# Find out the subset which is mirror consistent over all runs
 	all_part = []
@@ -582,7 +507,7 @@ def multi_align_stability(ali_params, error_threshold = 1.0, mirror_consistency_
 		mirror0 = array(mirror0, 'int32')
 		mirror1 = array(mirror1, 'int32')
 		all_part.append([mirror0, mirror1])
-	match, stab_part, CT_s, CT_t, ST, st = k_means_stab_bbenum(all_part, 1)
+	match, stab_part, CT_s, CT_t, ST, st = k_means_stab_bbenum(all_part, T=0, nguesses=1)
 	mir_cons_part = stab_part[0] + stab_part[1]
 	mirror_consistent_rate = len(mir_cons_part)/float(nima)
 	if mirror_consistent_rate <  mirror_consistency_threshold: return [], mirror_consistent_rate, -1.0
@@ -591,20 +516,23 @@ def multi_align_stability(ali_params, error_threshold = 1.0, mirror_consistency_
 
 	# Shrink the list the alignment paramters to whatever is mirror consistent
 	ali_params_mir_cons = []
+	ali_params_mir_cons_list = []
 	for i in xrange(num_ali):
 		ali_params_temp = []
 		for j in mir_cons_part: ali_params_temp.extend(ali_params[i][j*4:j*4+4])
 		ali_params_mir_cons.append(ali_params_temp)
+		ali_params_mir_cons_list.extend(ali_params_temp)
 
 	# Find out the alignment parameters for each iteration against the last one
 	args = []
 	for i in xrange(num_ali-1):
 		alpha, sx, sy, mirror, stab_mirror, pixel_error = ave_ali_err_params(ali_params_mir_cons[i], ali_params_mir_cons[num_ali-1])
 		args.extend([alpha, sx, sy])
-	args = array(args)
 
-	ps, val, d = fmin_l_bfgs_b(func, args, args=[ali_params_mir_cons], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, epsilon=1e-2, iprint=-1, maxfun=100)
-	
+	ps = Util.multi_align_error(args, ali_params_mir_cons_list)
+	val = ps[-1]
+	del ps[-1]
+
 	if val > error_threshold: return [], mirror_consistent_rate, val
 	err = stable(ps, ali_params_mir_cons)
 	stable_set = []

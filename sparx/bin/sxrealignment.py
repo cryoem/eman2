@@ -50,10 +50,10 @@ def main():
 	parser.add_option("--snr",      type="float",        default=1.0,            help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,          help="compute Fourier variance")
 	parser.add_option("--function", type="string",       default="ref_ali2d",    help="name of the reference preparation function")
-	parser.add_option('--th_err',   type='float',        default=5.0,            help='cutoff threshold to pixel error')
 	parser.add_option('--Ng',	type='int',		default=-1,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
-	parser.add_option('--min_stab_class',	type='int',	default=2,		help='number of alignments which are considered stable')
+	parser.add_option('--th_mir',   type='float',        default=0.75,            help='cutoff threshold of mirror consistency')
+	parser.add_option('--th_err',   type='float',        default=1.0,             help='cutoff threshold of pixel error')
 	parser.add_option('--dst',	type='float',		default=0.0,		help='')
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--CUDA",     action="store_true", default=False,          help="whether to use CUDA ")
@@ -75,8 +75,7 @@ def main():
 
 		global_def.BATCH = True
 		from development import realignment
-		realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.th_err, 
-				options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.min_stab_class, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+		realignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.th_mir, options.th_err, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
