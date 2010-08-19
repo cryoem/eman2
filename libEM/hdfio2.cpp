@@ -895,8 +895,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 	}
-	//if group already existed, and the overwriting image is in different size,
-	//need unlink the existing dataset first
+	//if group already existed, erase the header and unlink the existing dataset first
 	else {
 		is_exist = true;
 		int nattr=H5Aget_num_attrs(igrp);
@@ -916,12 +915,8 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 		erase_header(image_index);
 
-		if((int)dict["nx"]!=(int)dict2["nx"]
-				|| (int)dict["ny"]!=(int)dict2["ny"]
-				|| (int)dict["nz"]!=(int)dict2["nz"]) {
-			sprintf(ipath,"/MDF/images/%d/image",image_index);
-			H5Gunlink(igrp, ipath);
-		}
+		sprintf(ipath,"/MDF/images/%d/image",image_index);
+		H5Gunlink(igrp, ipath);
 	}
 
 	if(area) {
