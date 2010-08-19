@@ -4290,6 +4290,160 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	return crit
 
 
+def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, ipart, logging = -1, flagnorm = False, comm = -1, gpuid = 0):
+	from applications import MPI_start_end
+	from statistics   import k_means_cuda_error, k_means_cuda_open_im
+	from statistics   import k_means_locasg2glbasg, k_means_cuda_export
+	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
+	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
+	from utilities    import print_msg, running_time
+	from time         import time, sleep
+	import sys
+
+	if comm == -1:  comm = MPI_COMM_WORLD	
+
+	# Init memory
+	Kmeans                = MPICUDA_kmeans()
+	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	lut                   = LUT[N_start:N_stop]
+	n                     = len(lut)
+
+	#  this is needed for gathering of ASG
+	disps     = []
+	recvcount = []
+	for im in xrange(ncpu):
+		if im == main_node:  disps.append(0)
+		else:                disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(N, ncpu, im)
+		recvcount.append(ie - ib)
+
+	status = Kmeans.setup(m, N, n, K, N_start) 
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+	k_means_cuda_open_im(Kmeans, stack, LUT, mask, flagnorm)
+	Kmeans.compute_im2()
+	status = Kmeans.init_mem(gpuid)
+	if status:
+		k_means_cuda_error(status)
+		sys.exit()
+
+	if myid == main_node:
+		if isinstance(rand_seed, list): rnd = rand_seed
+		else:                           rnd = [rand_seed]
+
+	if logging != -1 and myid == main_node: logging.info('...... Start partition: %d' % (ipart + 1))
+
+	# Init averages
+	if myid == main_node:
+		Kmeans.random_ASG(rnd[ipart])
+		ASG = Kmeans.get_ASG()
+	else:   ASG = None
+	mpi_barrier(comm)
+	ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
+	ASG = map(int, ASG)
+	Kmeans.set_ASG(ASG)
+	Kmeans.compute_NC()
+	Kmeans.compute_AVE()
+
+	#if myid == main_node: print 'Init: ', time() - t1, 's'
+	# K-means iterations
+	if myid == main_node: tstart = time()
+	if F  != 0:
+		switch_SA = True
+		Kmeans.set_T(T0)
+	else:   switch_SA = False
+
+	ite    = 0
+	fsync  = 0
+	ferror = 0
+	ctconv = 0
+	while ite < maxit:
+		stop = 0
+		
+		#if myid == main_node: ts1 = time()
+		if switch_SA:
+			status = Kmeans.one_iter_SA()
+			T      = Kmeans.get_T()
+			ct     = Kmeans.get_ct_im_mv()
+			if ct == 0: ctconv += 1
+			else:       ctconv  = 0
+			if myid == main_node:
+				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
+			T *= F
+			Kmeans.set_T(T)
+			
+			if T < 0.00001: switch_SA = False
+			if ctconv >= 10: stop = 1
+		else:
+			status = Kmeans.one_iter()
+			ct     = Kmeans.get_ct_im_mv()
+			if myid == main_node:
+				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+			if status != 0: stop = 1
+		stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, comm)
+		stop = mpi_bcast(stop, 1, MPI_INT, main_node, comm)
+		stop = int(stop[0])
+		if stop: break
+
+		#if myid == main_node: print 'ite cuda', time() - ts1, 's'
+		ite += 1
+		#if myid == main_node: ts2 = time()		
+		# update
+		asg = Kmeans.get_asg()
+		ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, comm)
+		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
+		ASG = map(int, ASG)
+		Kmeans.set_ASG(ASG)
+		#if myid == main_node: print 'com asg', time() - ts2, 's'
+		
+		#if myid == main_node: ts3 = time()
+		Kmeans.compute_NC()
+		Kmeans.compute_AVE()
+		#if myid == main_node: print 'new ave', time() - ts3, 's'
+		
+	#if myid == main_node:
+	#	print 'Iteration time:', time() - tstart, 's'
+
+	if status != 255 and status != 0: error = 1
+	else:             error = 0
+
+	not_empty_class_error=0
+	if status != 5:
+		not_empty_class_error=1
+	
+	not_empty_class_error = mpi_reduce(not_empty_class_error, 1, MPI_INT, MPI_LOR, main_node, comm)
+	if myid == main_node:
+		not_empty_class_error = int(not_empty_class_error[0])
+		if logging != -1 and not_empty_class_error == 0:
+			logging.info("EMPTY_CLASS_ERROR_K=%d"%K)	
+
+	error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, comm)
+	error = mpi_bcast(error, 1, MPI_INT, main_node, comm)
+	error = int(error[0])
+	if error:
+		k_means_cuda_error(status)
+		exit()
+
+	if myid == main_node:
+		running_time(tstart)
+		print_msg('Number of iterations        : %i\n' % ite)
+	ji   = Kmeans.compute_ji()
+	Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, comm)
+	Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, comm)
+	Ji   = map(float, Ji)
+	crit = Kmeans.compute_criterion(Ji)
+	AVE  = Kmeans.get_AVE()
+	ASG  = Kmeans.get_ASG()
+	if myid == main_node:
+		GASG = k_means_locasg2glbasg(ASG, LUT, Ntot)
+		k_means_cuda_export(GASG, AVE, outdir, mask, crit, ipart, TXT)
+
+	Kmeans.shutdown()
+	del Kmeans
+	
+	return crit
+
 ## K-MEANS GROUPS ######################################################################
 
 # make script file to gnuplot
