@@ -68,6 +68,9 @@ Various utilities related to BDB databases."""
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--list",type="string",help="Inpust an ASCII filr with selected image to creates a new virtual BDB stack from an existed virtual stack",default=None)
+	parser.add_option("--reference",type="string",help="Indicate the reference stack for virtual stack creation", default=None)
+
 
 	(options, args) = parser.parse_args()
 
@@ -112,6 +115,33 @@ Various utilities related to BDB databases."""
 
 		if options.match!=None:
 			dbs=[db for db in dbs if re.match(options.match,db)]
+		
+		
+		if options.list :
+			if options.makevstack==None and options.appendvstack==None :
+				print "ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart"
+				sys.exit(1)
+			elif options.reference == None :
+				print "ERROR, please use --reference to set up a bdb stack for virtual stack reference"
+				sys.exit(1)
+			sel=db_open_dict('bdb:select')
+			vdata=open(options.list,'r').readlines()
+			n=len(vdata[0].split())
+			slist=[]
+			for line in vdata:
+				line=line.split()
+				for i in xrange(n):
+					val=int(line[i])
+					slist.append(val)
+			print slist      		
+			sel['subset']=slist
+			del n,val, slist, vdata
+			if options.makevstack !=None:
+				cmd="e2bdb.py --makevstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
+			elif options.appendvstack !=None:  	
+				cmd="e2bdb.py --appendvstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
+			os.system(cmd)
+			continue
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			
