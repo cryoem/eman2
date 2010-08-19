@@ -2571,6 +2571,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	ntrials    = 0
 	wd_trials  = 0
 	SA_run     = SA
+	
+	ALL_EMPTY = True	
 	while ntrials < trials:
 		ntrials += 1
 
@@ -2830,7 +2832,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
 				print_msg('# Criterion: %11.6e \n' % Je)
-
+				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
 		else:
@@ -2841,8 +2843,9 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
 					if ntrials == trials:
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-						sys.exit()
+						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						#sys.exit()
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
 					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
@@ -2850,6 +2853,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				wd_trials = 0
 			else:
 				ntrials -= 1
+	
+	if trials > 1:
+		if ALL_EMPTY:
+			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			sys.exit()
 			
 	# if severals trials choose the best
 	if trials > 1:
