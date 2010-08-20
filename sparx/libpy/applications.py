@@ -3156,7 +3156,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string
-	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all 
+	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities       import send_attr_dict
 	from utilities       import get_params_proj, file_type
 	from fundamentals    import rot_avg_image
