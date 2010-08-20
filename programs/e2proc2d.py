@@ -124,6 +124,9 @@ def main():
 	parser.add_option("--mraprep",  action="store_true", help="this is an experimental option")
 	parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
 	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+	parser.add_option("--multfile", type="string", action="append",
+								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
+	
 	parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
 	parser.add_option("--outtype", metavar="image-type", type="string",
 					help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
@@ -151,7 +154,7 @@ def main():
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate","multfile"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -316,6 +319,13 @@ def main():
 
 			elif option1 == "mult" :
 				d.mult(options.mult)
+
+			elif option1 == "multfile":
+				mf=EMData(options.multfile[index_d[option1]],0)
+				d.mult(mf)
+				mf=None
+				index_d[option1] += 1
+				
 			elif option1 == "norefs" and d.get_average_nimg() <= 0:
 				continue
 				

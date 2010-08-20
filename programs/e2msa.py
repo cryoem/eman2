@@ -200,19 +200,20 @@ pca,pca_large or svd_gsl"""
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 
 		mean=EMData(images,0)
-		for i in range(1,n):
+		mean.to_zero()
+		for i in range(n):
 			im=EMData(images,i)
 			im*=mask
-			im.process_inplace("normalize.unitlen")
+#			im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean.mult(1.0/float(n))
 		mean.mult(mask)
 		
 		for i in range(n):
 			im=EMData(images,i)
+			im-=mean
 			im*=mask
 			im.process_inplace("normalize.unitlen")
-			im-=mean
 			pca.insert_image(im)
 	else:
 		n = len(images)
@@ -220,14 +221,15 @@ pca,pca_large or svd_gsl"""
 		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 		
 		mean=images[0]
-		for im in images[1:]:
+		mean.to_zero()
+		for im in images:
 			im*=mask
-			im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean/=float(n)		
 		
 		for im in images:
 			im-=mean
+			im.process_inplace("normalize.unitlen")
 			pca.insert_image(im)
 			
 	results=pca.analyze()
@@ -246,6 +248,7 @@ pca,pca_large or svd_gsl"""
 		if im["mean"]<0 : im.mult(-1.0)
 
 	mean["eigval"]=0
+	mean.process_inplace("normalize.unitlen")
 	results.insert(0,mean)
 	return results 
 

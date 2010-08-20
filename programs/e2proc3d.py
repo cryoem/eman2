@@ -275,6 +275,7 @@ def main():
 				mf=EMData(options.multfile[index_d[option1]],0)
 				data.mult(mf)
 				mf=None
+				index_d[option1] += 1
 				
 #            elif option1 == "tomoshrink":
 #                from e2tomoboxer import ShrunkenTomogram
