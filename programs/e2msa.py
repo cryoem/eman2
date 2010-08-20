@@ -70,6 +70,7 @@ handled this way."""
 	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
 #	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
 	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
+	parser.add_option("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -103,8 +104,8 @@ handled this way."""
 			mask=EMData(args[0],0)
 			mask.to_one()
 	
-	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode)
-	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode)
+	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize)
+	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize)
 	
 	if options.verbose>0 : print "MSA complete"
 	for j,i in enumerate(out):
@@ -113,7 +114,7 @@ handled this way."""
 		
 	E2end(logid)
 
-def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode):
+def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is a filename containing a stack of images to analyze which is coordinated
 with simmx. 'simmx' contains the result of an all-vs-all alignment which will be used to transform the orientation
@@ -136,7 +137,7 @@ pca,pca_large or svd_gsl"""
 		xf=get_xform(i,simmx)
 		im.transform(xf)
 		im*=mask
-		im.process_inplace("normalize.unitlen")
+		if normalize: im.process_inplace("normalize.unitlen")
 #		im.write_image("ali.hdf",i-1)
 		mean+=im
 	mean.mult(1.0/float(n))
@@ -147,8 +148,9 @@ pca,pca_large or svd_gsl"""
 		xf=get_xform(i,simmx)
 		im.transform(xf)		
 		im*=mask
-		im.process_inplace("normalize.unitlen")
+		if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 		im-=mean
+		im.process_inplace("normalize.unitlen")
 		pca.insert_image(im)
 			
 	results=pca.analyze()
@@ -167,6 +169,7 @@ pca,pca_large or svd_gsl"""
 		if im["mean"]<0 : im.mult(-1.0)
 
 	mean["eigval"]=0
+	mean.process_inplace("normalize.unitlen")
 	results.insert(0,mean)
 	return results 
 
@@ -184,7 +187,7 @@ def get_xform(n,simmx):
 	
 	return ret.inverse()
 
-def msa(images,mask,nbasis,varimax,mode):
+def msa(images,mask,nbasis,varimax,mode,normalize=True):
 	"""Perform principal component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMImages or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
@@ -204,13 +207,14 @@ pca,pca_large or svd_gsl"""
 		for i in range(n):
 			im=EMData(images,i)
 			im*=mask
-#			im.process_inplace("normalize.unitlen")
+			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean.mult(1.0/float(n))
 		mean.mult(mask)
 		
 		for i in range(n):
 			im=EMData(images,i)
+			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
 			im*=mask
 			im.process_inplace("normalize.unitlen")
@@ -224,12 +228,15 @@ pca,pca_large or svd_gsl"""
 		mean.to_zero()
 		for im in images:
 			im*=mask
+			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean/=float(n)		
 		
 		for im in images:
+			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
 			im.process_inplace("normalize.unitlen")
+			im*=mask
 			pca.insert_image(im)
 			
 	results=pca.analyze()

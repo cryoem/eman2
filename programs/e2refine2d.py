@@ -167,7 +167,7 @@ def main():
 		# MSA on the footprints
 		fpbasis=options.path+"#input_fp_basis"
 		fpbasis=fpbasis.split("/")[-1]
-		run("e2msa.py %s %s --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
+		run("e2msa.py %s %s --normalize --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 #			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
@@ -223,7 +223,7 @@ def main():
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
-		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --nbasis=%d "%(options.path,it,options.path,it,options.nbasisfp))
+		run("e2msa.py %s#allrefs_%02d %s#basis_%02d --normalize --nbasis=%d "%(options.path,it,options.path,it,options.nbasisfp))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 #		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
