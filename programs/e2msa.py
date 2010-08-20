@@ -136,23 +136,24 @@ pca,pca_large or svd_gsl"""
 		im=EMData(images,i)
 		xf=get_xform(i,simmx)
 		im.transform(xf)
-		im*=mask
+#		im*=mask
 		if normalize: im.process_inplace("normalize.unitlen")
 #		im.write_image("ali.hdf",i-1)
 		mean+=im
 	mean.mult(1.0/float(n))
-	mean.mult(mask)
+#	mean.mult(mask)
 	
 	for i in range(n):
 		im=EMData(images,i)
 		xf=get_xform(i,simmx)
 		im.transform(xf)		
-		im*=mask
 		if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 		im-=mean
+		im*=mask
 		im.process_inplace("normalize.unitlen")
 		pca.insert_image(im)
 			
+	mean*=mask
 	results=pca.analyze()
 	for im in results: im.mult(mask)
 	
@@ -206,11 +207,11 @@ pca,pca_large or svd_gsl"""
 		mean.to_zero()
 		for i in range(n):
 			im=EMData(images,i)
-			im*=mask
+#			im*=mask
 			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean.mult(1.0/float(n))
-		mean.mult(mask)
+#		mean.mult(mask)
 		
 		for i in range(n):
 			im=EMData(images,i)
@@ -227,7 +228,7 @@ pca,pca_large or svd_gsl"""
 		mean=images[0]
 		mean.to_zero()
 		for im in images:
-			im*=mask
+#			im*=mask
 			if normalize : im.process_inplace("normalize.unitlen")
 			mean+=im
 		mean/=float(n)		
@@ -235,8 +236,8 @@ pca,pca_large or svd_gsl"""
 		for im in images:
 			if normalize: im.process_inplace("normalize.toimage",{"to":mean})
 			im-=mean
-			im.process_inplace("normalize.unitlen")
 			im*=mask
+			im.process_inplace("normalize.unitlen")
 			pca.insert_image(im)
 			
 	results=pca.analyze()
@@ -255,6 +256,7 @@ pca,pca_large or svd_gsl"""
 		if im["mean"]<0 : im.mult(-1.0)
 
 	mean["eigval"]=0
+	mean*=mask
 	mean.process_inplace("normalize.unitlen")
 	results.insert(0,mean)
 	return results 
