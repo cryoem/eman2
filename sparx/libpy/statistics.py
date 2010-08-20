@@ -4418,12 +4418,12 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 		if logging != -1 and not_empty_class_error == 0:
 			logging.info("EMPTY_CLASS_ERROR_K=%d"%K)	
 
-	error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, comm)
-	error = mpi_bcast(error, 1, MPI_INT, main_node, comm)
+	error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+	error = mpi_bcast(error, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	error = int(error[0])
 	if error:
 		k_means_cuda_error(status)
-		exit()
+		exit(5)
 
 	if myid == main_node:
 		running_time(tstart)
