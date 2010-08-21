@@ -168,8 +168,9 @@ Various utilities related to BDB databases."""
 						print "error with data_path ",db,n
 						continue
 					d["data_path"]=rpath
-					d["data_source"]=path+db
-					d["data_n"]=n
+					if not d.has_key("data_source") : 
+						d["data_source"]=path+db
+						d["data_n"]=n
 					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
