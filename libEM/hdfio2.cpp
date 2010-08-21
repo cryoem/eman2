@@ -57,7 +57,8 @@ using namespace EMAN;
 static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
-:	nx(1), ny(1), nz(1), is_exist(false), datatype(EMUtil::EM_UNKNOWN),
+:	nx(1), ny(1), nz(1), is_exist(false),
+ 	datatype(EMUtil::EM_UNKNOWN),
 	file(-1), group(-1), filename(hdf_filename),
 	rw_mode(rw), initialized(false)
 {
@@ -911,12 +912,22 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 			EMObject val=read_attr(attr);
 			dict2[name+5]=val;
 			H5Aclose(attr);
+
+			if(!dict2.has_key("datatype")) {//by default, HDF5 is written as float
+				dict2["datatype"] = (int)EMUtil::EM_FLOAT;
+			}
 		}
 
 		erase_header(image_index);
 
-		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		H5Gunlink(igrp, ipath);
+		//change the size or data type of a image,
+		//the existing data set is invalid, unlink it
+		if( (int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
+			(int)dict2["nx"]*(int)dict2["ny"]*(int)dict2["nz"] ||
+			dict["datatype"] != dict2["datatype"] ) {
+			sprintf(ipath,"/MDF/images/%d/image",image_index);
+			H5Gunlink(igrp, ipath);
+		}
 	}
 
 	if(area) {
@@ -957,6 +968,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hid_t ds;	//dataset
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
+
 	// Now create the actual image dataset
 	if (nz==1)  {
 		hsize_t dims[2]= { ny,nx };
@@ -967,18 +979,21 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc=H5Screate_simple(3,dims,NULL);
 	}
 
-	switch(dt) {
-	case EMUtil::EM_FLOAT:
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
-		break;
-	case EMUtil::EM_USHORT:
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, H5P_DEFAULT );
-		break;
-	case EMUtil::EM_UCHAR:
-		ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, H5P_DEFAULT );
-		break;
-	default:
-		throw ImageWriteException(filename,"HDF5 does not support this data format");
+	ds=H5Dopen(file,ipath);
+	if(ds<0) {//new dataset
+		switch(dt) {
+		case EMUtil::EM_FLOAT:
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
+			break;
+		case EMUtil::EM_USHORT:
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, H5P_DEFAULT );
+			break;
+		case EMUtil::EM_UCHAR:
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, H5P_DEFAULT );
+			break;
+		default:
+			throw ImageWriteException(filename,"HDF5 does not support this data format");
+		}
 	}
 
 	//convert data to unsigned short, unsigned char...
