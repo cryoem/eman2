@@ -100,7 +100,7 @@ RAM."""
 			a.append(im)
 			i+=1
 			
-#	if options.nsort<2 : options.nsort=len(a)
+	if options.nsort<1 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
