@@ -231,10 +231,11 @@ def main():
 		# extract the most different references for alignment
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 
-		# extract the averages with the most particles
-#		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
-        # extract the least similar averages
-		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=sqeuclidean --center"%(options.path,it,options.path,it,options.naliref))
+		# sort by particles
+		run("e2stacksort.py %s#allrefs.%02d %s#allrefs.%02d --byptcl"%(options.path,it,options.path,it))
+
+       		# now extract most different refs
+		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=ccc --center"%(options.path,it,options.path,it,options.naliref))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations

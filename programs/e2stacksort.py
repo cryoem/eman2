@@ -100,7 +100,7 @@ RAM."""
 			a.append(im)
 			i+=1
 			
-	if options.nsort<2 : options.nsort=len(a)
+#	if options.nsort<2 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
@@ -227,6 +227,7 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cente
 	else : check_rep=0
 	del stack[0]
 	del stackshrink[0]
+	print "nsort=",nsort
 	while (len(stack)>0 and len(ret)<nsort) :
 		best=(0,-1)
 		for i in range(len(stackshrink)):
