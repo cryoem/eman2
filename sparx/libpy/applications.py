@@ -8262,11 +8262,11 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 				else:
 					scale = 1.0
 				#set_params2D(img, [alpha, sx, sy, mirror, scale], params[0])
+				t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 				if ext == "bdb":
-					t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 					DB.set_attr(i, "xform.align2d", t)
-				elif ext == "hdf":
-					EMUtil.write_hdf_attribute(stack, "xform.align2d", [alpha, sx, sy, mirror, scale], i)
+				elif ext == "hdf":					
+					EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 			
 			elif params[0][:16] == "xform.projection":
 				if len(parmvalues) < 5:
@@ -8278,12 +8278,12 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 				s2x = extract_value(parmvalues[3])
 				s2y = extract_value(parmvalues[4])
 				#set_params_proj(img, [phi, theta, psi, s2x, s2y], params[0])
+				t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+				t.set_trans(Vec2f(-s2x, -s2y))
 				if ext == "bdb":
-					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-					t.set_trans(Vec2f(-s2x, -s2y))
 					DB.set_attr(i, "xform.projection", t)
 				elif ext == "hdf":
-					EMUtil.write_hdf_attribute(stack, "xform.projection", [phi, theta, psi, s2x, s2y], i)				
+					EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)				
 			elif params[0][:13] == "xform.align3d":
 				if len(parmvalues) < 8:
 					print "Not enough parameters!"
@@ -8297,11 +8297,11 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 				mirror = int(extract_value(parmvalues[6]))
 				scale = extract_value(parmvalues[7])
 				#set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], params[0])
+				t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 				if ext == "bdb":
-					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 					DB.set_attr(i, "xform.align3d", t)
 				elif ext == "hdf":
-					EMUtil.write_hdf_attribute(stack, "xform.align3d", [phi, theta, psi, s3x, s3y, s3z, mirror, scale], i)	
+					EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)	
 			elif params[0] == "ctf":
 				if len(parmvalues) < 6:
 					print "Not enough parameters!"
@@ -8313,11 +8313,10 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 				bfactor = extract_value(parmvalues[4])
 				ampcont = extract_value(parmvalues[5])
 				#set_ctf(img, [defocus, cs, voltage, apix, bfactor, ampcont])
+				ctf = generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont]) 
 				if ext == "bdb":
-					ctf = generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont]) 
 					DB.set_attr(i, "ctf", ctf)
 				elif ext == "hdf":
-					ctf = generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont]) 
 					EMUtil.write_hdf_attribute(stack, "ctf", ctf, i)	
 			else:
 				if len(params)!=len(parmvalues):
@@ -8337,32 +8336,32 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 			if zero:
 				if p[:13] == "xform.align2d":
 					#set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0], p)
+					t = Transform({"type":"2D","alpha":0.0,"tx":0.0,"ty":0.0,"mirror":0,"scale":1.0})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"2D","alpha":0.0,"tx":0.0,"ty":0.0,"mirror":0,"scale":1.0})
 							DB.set_attr(i, "xform.align2d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align2d", [0.0, 0.0, 0.0, 0, 1.0], i)	
+							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)	
 				elif p[:16] == "xform.projection":
 					#set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
+					t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
+					t.set_trans(Vec2f(0.0, 0.0))
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
-							t.set_trans(Vec2f(0.0, 0.0))
 							DB.set_attr(i, "xform.projection", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.projection", [0.0, 0.0, 0.0, 0.0, 0.0], i)	
+							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)	
 				elif p[:13] == "xform.align3d":
 					#set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
+					t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 							DB.set_attr(i, "xform.align3d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align3d", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], i)
+							EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 				elif p == "ctf":
 					print "Invalid operation!"
 					return
@@ -8394,13 +8393,13 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					mirror = randint(0, 1)
 					scale = 1.0
 					#set_params2D(img, [alpha, sx, sy, mirror, scale], p)
+					t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 							DB.set_attr(i, "xform.align2d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align2d", [alpha, sx, sy, mirror, scale], i)
+							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 				elif p[:16] == "xform.projection":
 					phi = random()*360.0
 					theta = random()*180.0
@@ -8408,14 +8407,14 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					s2x = random()*4.0-2.0
 					s2y = random()*4.0-2.0
 					#set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
+					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+					t.set_trans(Vec2f(-s2x, -s2y))
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-							t.set_trans(Vec2f(-s2x, -s2y))
 							DB.set_attr(i, "xform.projection", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.projection", [phi, theta, psi, s2x, s2y], i)
+							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
 				elif p[:13] == "xform.align3d":
 					phi = random()*360.0
 					theta = random()*180.0
@@ -8426,13 +8425,13 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					mirror = randint(0, 1)
 					scale = 1.0
 					#set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)	
+					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 							DB.set_attr(i, "xform.align3d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align3d", [phi, theta, psi, s3x, s3y, s3z, mirror, scale], i)					
+							EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)					
 				else:
 					print "Invalid operation!"
 					return						
@@ -8444,13 +8443,13 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					mirror = randint(0, 1)
 					scale = 1.0
 					#set_params2D(img, [alpha, sx, sy, mirror, scale], p)
+					t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 							DB.set_attr(i, "xform.align2d",t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align2d", [alpha, sx, sy, mirror, scale], i)	
+							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)	
 				elif p[:16] == "xform.projection":
 					phi = random()*360.0
 					theta = random()*180.0
@@ -8458,14 +8457,15 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					s2x = 0.0
 					s2y = 0.0
 					#set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
+					
+					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+					t.set_trans(Vec2f(-s2x, -s2y))
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-							t.set_trans(Vec2f(-s2x, -s2y))
 							DB.set_attr(i, "xform.projection",t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.projection", [phi, theta, psi, s2x, s2y], i)
+							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
 				elif p[:13] == "xform.align3d":
 					phi = random()*360.0
 					theta = random()*180.0
@@ -8476,13 +8476,13 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					mirror = randint(0, 1)
 					scale = 1.0
 					#set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)	
+					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi,"tx":s3x,"ty":s3y,"tz":s3z,"mirror":mirror,"scale":scale})
 							DB.set_attr(i, "xform.align3d",t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							EMUtil.write_hdf_attribute(stack, "xform.align3d", [phi, theta, psi, s3x, s3y, s3z, mirror, scale], i)					
+							EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)					
 				else:
 					print "Invalid operation!"
 					return	
@@ -8499,7 +8499,8 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						for i in xrange(nimage):
 							t = EMUtil.read_hdf_attribute(stack, "xform.align2d",i)
-							fexp.write("%15.5f %15.5f %15.5f %10d %10.3f \n"%(t[0],t[1],t[2],t[3],t[4]))
+							d = t.get_params("2D")
+							fexp.write("%15.5f %15.5f %15.5f %10d %10.3f \n"%(d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]))
 		
 				elif p[:16] == "xform.projection":
 					#phi, theta, psi, s2x, s2y = get_params_proj(img, p)
@@ -8512,7 +8513,8 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						for i in xrange(nimage):
 							t = EMUtil.read_hdf_attribute(stack, "xform.projection",i)
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f \n"%(t[0],t[1],t[2],-t[3],-t[4]))
+							d = t.get_params("spider")
+							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f \n"%(d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]))
 							
 				elif p[:13] == "xform.align3d":
 					#phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
@@ -8524,8 +8526,9 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 							
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t =EMUtil.read_hdf_attribute(stack, "xform.align3d",i)	
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(t[0],t[1],t[2],t[3],t[4],t[5],t[6],t[7]))
+							t =EMUtil.read_hdf_attribute(stack, "xform.align3d",i)
+							d = t.get_params("spider")	
+							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]))
 							
 				elif p == "ctf":
 					
@@ -8561,7 +8564,8 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						for i in xrange(nimage):
 							t = EMUtil.read_hdf_attribute(stack, "xform.align2d",i)
-							print "%15.5f %15.5f %15.5f %10d %10.3f \n"%(t[0],t[1],t[2],t[3],t[4]),
+							d = t.get_params("2D")
+							print "%15.5f %15.5f %15.5f %10d %10.3f \n"%(d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]),
 				elif p[:16] == "xform.projection":
 					#phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 					if ext == "bdb":
@@ -8572,7 +8576,8 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						for i in xrange(nimage):
 							t = EMUtil.read_hdf_attribute(stack, "xform.projection", i)
-							print "%15.5f %15.5f %15.5f %15.5f %15.5f \n"%(t[0],t[1],t[2],-t[3],-t[4]),
+							d = t.get_params("spider")
+							print "%15.5f %15.5f %15.5f %15.5f %15.5f \n"%(d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]),
 				elif p[:13] == "xform.align3d":
 					#phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
 					if ext == "bdb":
@@ -8583,7 +8588,8 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						for i in xrange(nimage):
 							t = EMUtil.read_hdf_attribute(stack, "xform.align3d",i)
-							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(t[0],t[1],t[2],t[3],t[4],t[5],t[6],t[7]),
+							d = t.get_params("spider")
+							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]),
 				elif p == "ctf":
 					#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 					if ext == "bdb":
