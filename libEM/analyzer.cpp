@@ -102,8 +102,9 @@ if (mininclass<1) mininclass=1;
 for (int i=0; i<nptcl; i++) images[i]->set_attr("is_ok_center",(int)5);  // if an image becomes part of too small a set, it will (eventually) be marked as a bad center
 
 if (slowseed) {
-	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
-	ncls=2;
+	if (ncls>25) slowseed=ncls/25+1;	// this becomes the number to seed in each step
+//	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
+//	ncls=2;
 }
 
 for (int i=0; i<ncls; i++) {
@@ -125,8 +126,10 @@ for (int i=0; i<maxiter; i++) {
 	update_centers();
 
 	if (slowseed && i%3==2 && ncls<nclstot) {
-		centers[ncls]=0;
-		ncls++;
+		for (int j=0; j<slowseed && ncls<nclstot; j++) {
+			centers[ncls]=0;
+			ncls++;
+		}
 		reseed();
 	}
 }
