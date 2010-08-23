@@ -3011,6 +3011,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	ntrials    = 0
 	wd_trials  = 0
 	SA_run     = SA
+	ALL_EMPTY = True
 	while ntrials < trials:
 		ntrials  += 1
 
@@ -3307,7 +3308,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
 				if myid == main_node: print_msg('# Criterion: %11.6e \n' % Je)
-
+				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
 		else:
@@ -3317,8 +3318,9 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
 					if ntrials == trials:
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-						sys.exit()
+						#if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						#sys.exit()
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
 					else:
 						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
@@ -3328,6 +3330,11 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				wd_trials = 0
 			else:
 				ntrials -= 1
+	
+	if trials > 1:
+		if ALL_EMPTY:
+			if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+			sys.exit()
 			
 	# if severals trials choose the best
 	if trials > 1:
@@ -3513,6 +3520,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	ntrials    = 0
 	wd_trials  = 0
 	SA_run     = SA
+	ALL_EMPTY = True
 	while ntrials < trials:
 		ntrials += 1
 
@@ -3922,6 +3930,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
 				if myid == main_node: print_msg('Criterion: %11.6e \n' % Je)
+				ALL_EMPTY = False
 
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3932,8 +3941,9 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
 					if ntrials == trials:
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-						sys.exit()
+						#if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						#sys.exit()
+						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
 					else:
 						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
@@ -3942,6 +3952,11 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				wd_trials = 0
 			else:
 				ntrials -= 1
+	
+	if trials > 1:
+		if ALL_EMPTY:
+			if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')	
+			sys.exit()
 				
 	# if severals trials choose the best
 	if trials > 1:
