@@ -70,6 +70,7 @@ Various utilities related to BDB databases."""
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--list",type="string",help="Inpust an ASCII filr with selected image to creates a new virtual BDB stack from an existed virtual stack",default=None)
 	parser.add_option("--reference",type="string",help="Indicate the reference stack for virtual stack creation", default=None)
+	parser.add_option("--restore",type="string",help="Write changes in the derived virtual stack back to the original stack",default=None)
 
 
 	(options, args) = parser.parse_args()
@@ -135,11 +136,12 @@ Various utilities related to BDB databases."""
 					slist.append(val)
 			print slist      		
 			sel['subset']=slist
-			del n,val, slist, vdata
+			del n,val,vdata
 			if options.makevstack !=None:
 				cmd="e2bdb.py --makevstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
 			elif options.appendvstack !=None:  	
 				cmd="e2bdb.py --appendvstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
+			print cmd
 			os.system(cmd)
 			continue
 		
@@ -188,6 +190,18 @@ Various utilities related to BDB databases."""
 			print "Error reading ",path
 			continue
 
+		if options.restore :
+			from utilities import get_im
+			nima = EMUtil.get_image_count(options.restore)
+			for i in xrange(nima):
+				img = get_im(options.restore, i)
+				data_source = img.get_attr("data_source")
+				ID = img.get_attr("data_n")
+				DB = db_open_dict(data_source)
+				DB.set_header(ID, img)
+				DB.close()
+			continue	
+			
 		if options.dump :
 			for db in dbs:
 				print "##### ",db
