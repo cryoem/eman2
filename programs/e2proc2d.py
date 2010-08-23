@@ -331,7 +331,7 @@ def main():
 				
 			elif option1 == "setsfpairs":
 				dataf = d.do_fft()
-				d.gimme_fft()
+#				d.gimme_fft()
 				x0 = 0
 				step = 0.5
 				
@@ -347,7 +347,7 @@ def main():
 
 						dataf.apply_radial_func(x0, step, sfcurve2);
 						d = dataf.do_ift();
-						dataf.gimme_fft();
+#						dataf.gimme_fft();
 					
 			elif option1 == "rfp":
 				d = d.make_rotational_footprint()
@@ -452,7 +452,7 @@ def main():
 				df = d.do_fft()
 				df.mult(df.get_ysize())
 				fftavg.add_incoherent(df)
-				d.gimme_fft
+#				d.gimme_fft
 				continue
 
 			elif option1 == "calcsf":
@@ -461,7 +461,7 @@ def main():
 				sf_amwid = 2 * math.pi / sfout_n
 					
 				dataf = d.do_fft()
-				d.gimme_fft()
+#				d.gimme_fft()
 				curve = dataf.calc_radial_dist(ny, 0, 0.5)
 				outfile2 = sfout
 				
