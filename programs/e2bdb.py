@@ -138,9 +138,9 @@ Various utilities related to BDB databases."""
 			sel['subset']=slist
 			del n,val,vdata
 			if options.makevstack !=None:
-				cmd="e2bdb.py --makevstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
+				cmd="e2bdb.py --makevstack=%s"%(options.makevstack)+" "+"%s?select.subset"%(options.reference)+" --reference=%s"%(options.reference)
 			elif options.appendvstack !=None:  	
-				cmd="e2bdb.py --appendvstack=%s"%(options.makevstack)+" "+"bdb:.#%s?select.subset"%(options.reference)
+				cmd="e2bdb.py --appendvstack=%s"%(options.makevstack)+" "+"%s?select.subset"%(options.reference)+" --reference=%s"%(options.reference)
 			print cmd
 			os.system(cmd)
 			continue
@@ -170,9 +170,12 @@ Various utilities related to BDB databases."""
 						print "error with data_path ",db,n
 						continue
 					d["data_path"]=rpath
-					if not d.has_key("data_source") : 
-						d["data_source"]=path+db
-						d["data_n"]=n
+					d["data_n"]=n
+					#if not d.has_key("data_source") : 
+					if options.reference !=None:
+						d["data_source"]= options.reference
+					else:
+						d["data_source"]= path+db
 					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
@@ -198,7 +201,9 @@ Various utilities related to BDB databases."""
 				data_source = img.get_attr("data_source")
 				ID = img.get_attr("data_n")
 				DB = db_open_dict(data_source)
+				data_source=DB.get_attr(ID,'data_source')
 				DB.set_header(ID, img)
+				DB.set_attr(ID,'data_source',data_source)
 				DB.close()
 			continue	
 			
