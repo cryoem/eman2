@@ -8327,7 +8327,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 						DB.set_attr(i, params[j], extract_value(parmvalues[j]))
 				elif ext == "hdf":
 					for j in xrange(len(params)):
-						EMUtil.write_hdf_attribute(stack, params[j], extract_value(parmvalues[j], i))
+						EMUtil.write_hdf_attribute(stack, params[j], extract_value(parmvalues[j]), i)
 			#write_header(stack, img, i)
 			
 	else:
@@ -8531,7 +8531,6 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]))
 							
 				elif p == "ctf":
-					
 					#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 					if ext == "bdb":
 						for i in xrange(nimage):
@@ -8546,11 +8545,11 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 				else:
 					if ext == "bdb":
 						for i in xrange(nimage):
-							fexp.write("%15s   \n"%str(DB.get_attr(i,p)))
+							fexp.write("%15s   \n"%str(DB.get_attr(i, p)))
 
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							fexp.write("%15s   \n"%str(EMUtil.read_hdf_attribute(stack,p,i)))
+							fexp.write("%15s   \n"%str(EMUtil.read_hdf_attribute(stack, p, i)))
 
 			elif fprint:
 				if p[:13] == "xform.align2d":
@@ -8587,26 +8586,26 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]),
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t = EMUtil.read_hdf_attribute(stack, "xform.align3d",i)
+							t = EMUtil.read_hdf_attribute(stack, "xform.align3d", i)
 							d = t.get_params("spider")
 							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f \n"%(d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]),
 				elif p == "ctf":
 					#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t = DB.get_attr(i,"ctf")
+							t = DB.get_attr(i, "ctf")
 							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f \n"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont),
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t = EMUtil.read_hdf_attribute(stack,"ctf",i)
+							t = EMUtil.read_hdf_attribute(stack,"ctf", i)
 							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f \n"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont),
 				else:
 					if ext == "bdb":
 						for i in xrange(nimage):
-							print "%15s   \n"%str(DB.get_attr(i,p)),
+							print "%15s   \n"%str(DB.get_attr(i, p)),
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							print "%15s   \n"%str(EMUtil.read_hdf_attribute(stack,p,i)),
+							print "%15s   \n"%str(EMUtil.read_hdf_attribute(stack, p, i)),
 			elif backup:
 				#t = img.get_attr(p)
 				#img.set_attr(p+suffix, t)
@@ -8620,7 +8619,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 						EMUtil.write_hdf_attribute(stack,p+suffix, t, i)
 				
 			elif restore:
-				if( p == "xform.align2d" or p == "xform.align3d" or p == "xform.projection"):
+				if p == "xform.align2d" or p == "xform.align3d" or p == "xform.projection":
 					print  "ERROR, no suffix in xform!"
 					return
 				#t = img.get_attr(p)
@@ -8634,48 +8633,48 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					#img.set_attr(p[:13], t)
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t= DB.get_attr(i,p)
-							DB.set_attr(i, "xform.align2d",t)
+							t = DB.get_attr(i, p)
+							DB.set_attr(i, "xform.align2d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t= EMUtil.read_hdf_attribute(stack,p,i)
+							t = EMUtil.read_hdf_attribute(stack, p, i)
 							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 				elif p[:16] == "xform.projection":
 					#img.set_attr(p[:10], t)
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t= DB.get_attr(i,p)
-							DB.set_attr(i, "xform.projection",t)
+							t = DB.get_attr(i, p)
+							DB.set_attr(i, "xform.projection", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t= EMUtil.read_hdf_attribute(stack,p,i)
+							t = EMUtil.read_hdf_attribute(stack, p, i)
 							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
 				elif p[:13] == "xform.align3d":
 					#img.set_attr(p[:13], t)
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t= DB.get_attr(i,p)
-							DB.set_attr(i, "xform.align3d",t)
+							t = DB.get_attr(i, p)
+							DB.set_attr(i, "xform.align3d", t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t= EMUtil.read_hdf_attribute(stack,p,i)
+							t = EMUtil.read_hdf_attribute(stack, p, i)
 							EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 				else:
 					#img.set_attr(p[:-len(suffix)], t)
 					if ext == "bdb":
 						for i in xrange(nimage):
-							t= DB.get_attr(i,p)
+							t = DB.get_attr(i, p)
 							DB.set_attr(i, p[:-len(suffix)],t)
 					elif ext == "hdf":
 						for i in xrange(nimage):
-							t= EMUtil.read_hdf_attribute(stack,p,i)
+							t = EMUtil.read_hdf_attribute(stack, p, i)
 							EMUtil.write_hdf_attribute(stack, p[:-len(suffix)], t, i)
 			elif delete:
 				for i in xrange(nimage):
 					img = EMData()
-					img.read_image(stack, i,True)
+					img.read_image(stack, i, True)
 					img.del_attr(p)
-					write_header(stack,img,i)					
+					write_header(stack, img, i)
 		#if zero or one or randomize or rand_alpha or backup or restore or delete:
 			#write_header(stack, img, i)
 		#if fexport != None:
