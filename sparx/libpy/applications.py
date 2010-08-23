@@ -8219,6 +8219,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
 
+
 	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
 	if op == 0:
 		print "Error: no operation selected!"
@@ -8226,6 +8227,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	elif op > 1:
 		print "Error: more than one operation at the same time!"
 		return
+
 
 	params = split(params)
 
