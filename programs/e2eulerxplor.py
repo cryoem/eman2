@@ -554,6 +554,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.average.process_inplace("normalize.toimage",{"to":self.projection})
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
+				print self.class_idx
 			except:
 				self.class_idx = -1
 		else: return
