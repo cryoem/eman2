@@ -1174,6 +1174,60 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	else:
 		return -1.0e23, 0.0
 
+def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
+	from utilities    import compose_transform2
+
+	ID = data.get_attr("ID")
+	if finfo:
+		from utilities    import get_params_proj
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+
+	mode = "F"
+	#  center is in SPIDER convention
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"], start, delta)
+	iref = int(iref)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	if mirror:
+		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+		theta = 180.0-refrings[iref].get_attr("theta")
+		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+	else:
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+	t2.set_trans(Vec2f(-s2x, -s2y))
+	data.set_attr("xform.projection", t2)
+	from pixel_error import max_3D_pixel_error
+	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+
+	if finfo:
+		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+		finfo.flush()
+
+	return peak, pixel_error
+
 def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=180.0, finfo=None):
 	"""
 	  dpsi - how far psi can be from the original value.

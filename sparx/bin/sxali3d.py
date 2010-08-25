@@ -41,7 +41,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --center=center_type --maxit=max_iter --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
+	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --center=center_type --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--startpsi", type="string", default= "-1",               help="Start psi for coarse search")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	parser.add_option("--maxit",    type="float",  default= 5,                  help="maximum number of iterations performed for each angular step (set to 5) ")
+	parser.add_option("--stoprnct", type="float",  default=0.0,                 help="Minimum percentage of particles that change orientation to stop the program")   
 	parser.add_option("--CTF",      action="store_true", default=False,         help="Consider CTF correction during the alignment ")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
@@ -62,6 +63,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d)")
 	parser.add_option("--MPI",      action="store_true", default=False,         help="whether to use MPI version")
 	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
+	parser.add_option("--npad",     type="int",    default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
 	parser.add_option("--n",        action="store_true", default=False,         help="new")
 	(options, args) = parser.parse_args(arglist[1:])
@@ -82,20 +84,20 @@ def main():
 			disable_bdb_cache()
 
 		if(options.n):
-			from development import ali3d_n
-			global_def.BATCH = True
-			ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-				options.function, options.Fourvar, options.debug, options.MPI)
-			global_def.BATCH = False
+			#from development import ali3d_n
+			#global_def.BATCH = True
+			#ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			#	options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
+			#	options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+			#	options.function, options.Fourvar, options.debug, options.MPI)
+			#global_def.BATCH = False
 		else:
 			from applications import ali3d
 			global_def.BATCH = True
 			ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-			options.yr, options.ts, options.delta, options.an,
+			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
 			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-			options.function, options.Fourvar, options.debug, options.MPI)
+			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
 
                 if options.MPI:

@@ -2962,9 +2962,9 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 
 def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
-	    user_func_name = "ref_ali3d", fourvar = True, debug = False, MPI = False):
+	    user_func_name = "ref_ali3d", fourvar = True, npad = 4, debug = False, MPI = False, termprec = 0.0):
 	"""
 		Name
 			ali3d - Perform 3-D projection matching given initial reference volume and image series
@@ -2995,8 +2995,8 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	"""
 	if MPI:
 		ali3d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name,
-			fourvar, debug)
+	        	delta, an, deltapsi, startpsi, center, maxit, CTF, snr, ref_a, sym, user_func_name,
+			fourvar, npad, debug, termprec)
 		return
 
 	from alignment      import proj_ali_incore, proj_ali_incore_local
@@ -3150,9 +3150,9 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_end_msg("ali3d")
 
 def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1",
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
-	    fourvar = True, debug = False):
+	    fourvar = True, npad = 4, debug = False, termprec = 0.0):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string
@@ -3204,6 +3204,16 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else:
 		an = get_input_from_string(an)
 
+	if deltapsi == "-1":
+		deltapsi = [-1] * lstp
+	else:
+		deltapsi = get_input_from_string(deltapsi)
+
+	if startpsi == "-1":
+		startpsi = [-1] * lstp
+	else:
+		startpsi = get_input_from_string(startpsi)
+
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
@@ -3231,7 +3241,10 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Angular step                : %s\n"%(delta))
 		print_msg("Angular search range        : %s\n"%(an))
+		print_msg("Delta psi                   : %s\n"%(delta_psi))
+		print_msg("Start psi                   : %s\n"%(start_psi))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		print_msg("Percentage of change for termination: %f\n"%(termprec))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -3332,7 +3345,10 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			for im in xrange( nima ):
 
-				if an[N_step] == -1:
+				if deltapsi[N_step] > 0.0:
+					from alignment import proj_ali_incore_delta
+					peak, pixer[im] = proj_ali_incore_delta(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],startpsi[N_step],deltapsi[N_step],finfo)						
+				elif an[N_step] == -1:
 					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:
 					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
@@ -3362,7 +3378,10 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				for lhx in xrange(lhist):
 					if(region[lhx] > 1.0): break
 					im += histo[lhx]
-				if(im/float(total_nima) > 0.95):  terminate = 1
+				precn = 100*float(im)/float(total_nima)
+				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(im, precn)
+				print_msg(msg)
+				if(precn <= termprec):  terminate = 1
 				del region, histo
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -3378,8 +3397,8 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node)
+			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
+			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 
 			if myid == main_node:
 				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -3417,6 +3436,8 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	        		else:
 	        			from utilities import recv_attr_dict
 	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				print_msg("Time to write header information= %d\n"%(time()-start_time))
+				start_time = time()
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali3d_MPI")
 
