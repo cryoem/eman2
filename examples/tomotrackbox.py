@@ -232,11 +232,11 @@ class TrackerControl(QtGui.QWidget):
 		self.imvol.updateGL()
 
 		sz=self.map3d["nx"]
-		xsum=self.filt3d.process("misc.directional_sum",{"direction":"x"})
+		xsum=self.filt3d.process("misc.directional_sum",{"axis":"x"})
 		xsum.set_size(sz,sz,1)
-		ysum=self.filt3d.process("misc.directional_sum",{"direction":"y"})
+		ysum=self.filt3d.process("misc.directional_sum",{"axis":"y"})
 		ysum.set_size(sz,sz,1)
-		zsum=self.filt3d.process("misc.directional_sum",{"direction":"z"})
+		zsum=self.filt3d.process("misc.directional_sum",{"axis":"z"})
 		zsum.set_size(sz,sz,1)
 		
 		self.improj.set_data([zsum,ysum,xsum])
