@@ -70,6 +70,7 @@ def main():
 	parser.add_option("--sym",      type="string",       default="c1",             help="symmetry of the structure ")
 	parser.add_option("--function", type="string",       default="ref_ali3dm",     help="name of the reference preparation function")
 	parser.add_option("--MPI",      action="store_true", default=False,            help="Use MPI version ")
+	parser.add_option("--npad",     type="int",          default= 4,               help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,            help="debug ")
 	parser.add_option("--fourvar",  action="store_true", default=False,            help="compute and use fourier variance")
 	
@@ -94,7 +95,10 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		mref_ali3d(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug, options.fourvar, options.stoprnct)
+		mref_ali3d(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr,
+		options.yr, options.ts, options.delta, options.an, options.center,
+		options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym,
+		options.function, options.MPI, options.npad, options.debug, options.fourvar, options.stoprnct)
 		global_def.BATCH = False
 		
 		if options.MPI:
