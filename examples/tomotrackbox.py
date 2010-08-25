@@ -621,7 +621,7 @@ class TrackerControl(QtGui.QWidget):
 
 		stack=self.get_boxed_stack()
 		for i,p in enumerate(stack) : 
-			ort=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":taxis,"phi":-taxis})		# is this right ?
+			ort=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-taxis,"phi":taxis})		# is this right ?
 			curshape=self.tiltshapes[i].getShape()
 			
 			# Read the reference at the user specified size, then pad it a bit
