@@ -724,50 +724,22 @@ Dict Transform::get_rotation(const string& euler_type) const
 	float psiS =0;  // like phi  (but in SPIDER ZYZ)
 
 	// get alt, az, phi in EMAN convention
-
-	az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-	if (sin(az* (float)EMConsts::deg2rad )* matrix[2][0]< 0) az=az+180.0f;
-	alt =     (float)EMConsts::rad2deg* asin( matrix[2][0]/sin(az*(float)EMConsts::deg2rad   ));
-	phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
-	if (sin(phi* (float)EMConsts::deg2rad )* matrix[0][2]< 0) phi=phi+180.0f;
-	
-/*	if (cosalt > max) {  // that is, alt close to 0
-		if (cosalt>=1) {
-			alt = 0;
-			az=0;
-			phi = (float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
-		}
-		else {
-			float vv= 1.0000000000000000-cosalt;
-			az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-			alt = (float)EMConsts::rad2deg* (sqrt( 2.0f*vv)*(1.0f+vv/12.0f));
-			alt = (float)EMConsts::rad2deg* sqrt( 2.0*(1.0-cos(alt)));
-			alt = (float)EMConsts::rad2deg* sqrt( 2.000000000000*vv);
-			alt =   (float)EMConsts::rad2deg* asin( matrix[2][0]/sin(az*(float)EMConsts::deg2rad   ));
-			printf("cosalt=%f, alt=%2.2e,vv= %2.2e \n",cosalt, alt, vv);
-			phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
-		}
+	if (cosalt > max) {  // that is, alt close to 0
+		alt = 0;
+		az=0;
+		phi = (float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
 	}
 	else if (cosalt < -max) { // alt close to pi
-		if (cosalt<=-1) {
-			alt = 180;
-			az=0;
-			phi=360.0f-(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
-		}
-		else {
-			float vv=(1.00000000000+cosalt);
-			alt = 180.0000f- (float)EMConsts::rad2deg* (sqrt( 2.0f*vv));
-			az  = 360.0000f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-			phi = 360.0000f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
-		}
+		alt = 180;
+		az=0;
+		phi=360.0f-(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
 	}
 	else {
 		alt = (float)EMConsts::rad2deg*(float) acos(cosalt);
 		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
 		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	}
-*/
-// 	az =fmod( az+180.0f,360.0f)-180.0f;
+// 	az=fmod(az+180.0f,360.0f)-180.0f;
 // 	phi=fmod(phi+180.0f,360.0f)-180.0f;
 
 	if (phi > 0) phi = fmod(phi,360.f);
@@ -779,9 +751,9 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (az == 360.f) az = 0.f;
 
 //   get phiS, psiS ; SPIDER
-	if (fabs(cosalt) > 1) {  // that is, alt close to 0
-		phiS=0;              // used to be if cosalt > max...
-		psiS = az+phi;
+	if (fabs(cosalt) > max) {  // that is, alt close to 0
+		phiS=0;
+		psiS = phi;
 	}
 	else {
 		phiS = az   - 90.0f;
@@ -1985,7 +1957,7 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
 		phiS=0;
-		psiS = az+phi;
+		psiS = phi;
 	}
 	else {
 		phiS = az   - 90.0f;
@@ -2399,3 +2371,5 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 
 
 /* vim: set ts=4 noet: */
+
+
