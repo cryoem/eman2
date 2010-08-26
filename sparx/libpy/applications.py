@@ -3141,7 +3141,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			from utilities import write_headers
 			#from utilities import write_select_headers
 			if CTF:
-				for dat in data:  dat.del_attr('ctf_applied')
+				for dat in data:  dat.set_attr('ctf_applied',0)
 			write_headers(stack, data, list_of_particles)
 			#list_params= ['ID','xform.projection']
 			#write_select_headers(stack, data, list_params)
