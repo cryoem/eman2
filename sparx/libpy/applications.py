@@ -7445,9 +7445,9 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
 			finfo.flush()
 
-def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", listfile = "", group = -1, verbose=1, MPI=False):
+def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", listfile = "", group = -1, npad = 4, verbose=1, MPI=False):
 	if MPI:
-		recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF, snr, sym, listfile, group, verbose)
+		recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF, snr, sym, listfile, group, npad, verbose)
 		return
 
 	nima = EMUtil.get_image_count( prj_stack )
@@ -7468,23 +7468,23 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 	else:
 		pid_list = range(nima)
 	if CTF:
-		volodd = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], snr, 1, sym, verbose)
-		voleve = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], snr, 1, sym, verbose)
+		volodd = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], snr, 1, sym, verbose, npad)
+		voleve = recons3d_4nn_ctf(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], snr, 1, sym, verbose, npad)
 		t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
 		del volodd, voleve
-		volall = recons3d_4nn_ctf(prj_stack, pid_list,                                          snr, 1, sym, verbose)
+		volall = recons3d_4nn_ctf(prj_stack, pid_list,                                          snr, 1, sym, verbose, npad)
 	else:
-		volodd = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], sym)
-		voleve = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], sym)
+		volodd = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], sym, npad)
+		voleve = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], sym, npad)
 		t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
 		del volodd, voleve
-		volall = recons3d_4nn(prj_stack, pid_list,                                          sym)
+		volall = recons3d_4nn(prj_stack, pid_list,                                          sym, npad)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(volall, vol_stack, "s")
 	else:
 		drop_image(volall, vol_stack)
 
-def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", listfile="", group=-1, verbose=1):
+def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", listfile="", group=-1, npad = 4, verbose=1):
 
 	from mpi       import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_bcast, MPI_INT
 	from utilities import drop_image, bcast_number_to_all
@@ -7533,10 +7533,10 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	if CTF:
 		from reconstruction import rec3D_MPI
 
-		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo)
+		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo, npad = npad)
 	else :
 		from reconstruction import rec3D_MPI_noCTF
-		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo)
+		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo, npad = npad)
 	if myid == 0:
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
