@@ -151,7 +151,7 @@ def rundcclients(host,port,verbose):
 		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+str(host),"--port="+str(port),"--verbose="+str(verbose),"--clientid="+str(clientid)])
 		if rc : 
 			if rc==1 : print "Client exited at server request"
-			else : print "Client exited with status code %s",str(rc)
+			else : print "Client exited with status code %s"%str(rc)
 			break
 
 def rundcclient(host,port,verbose,clientid):
