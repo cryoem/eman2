@@ -69,7 +69,6 @@ Various utilities related to BDB databases."""
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--list",type="string",help="Inpust an ASCII filr with selected image to creates a new virtual BDB stack from an existed virtual stack",default=None)
-	parser.add_option("--reference",type="string",help="Indicate the reference stack for virtual stack creation", default=None)
 	parser.add_option("--restore",type="string",help="Write changes in the derived virtual stack back to the original stack",default=None)
 
 
@@ -122,10 +121,6 @@ Various utilities related to BDB databases."""
 			if options.makevstack==None and options.appendvstack==None :
 				print "ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart"
 				sys.exit(1)
-			elif options.reference == None :
-				print "ERROR, please use --reference to set up a bdb stack for virtual stack reference"
-				sys.exit(1)
-			sel=db_open_dict('bdb:select')
 			vdata=open(options.list,'r').readlines()
 			n=len(vdata[0].split())
 			slist=[]
@@ -133,17 +128,9 @@ Various utilities related to BDB databases."""
 				line=line.split()
 				for i in xrange(n):
 					val=int(line[i])
-					slist.append(val)
-			print slist      		
-			sel['subset']=slist
+					slist.append(val)     		
 			del n,val,vdata
-			if options.makevstack !=None:
-				cmd="e2bdb.py --makevstack=%s"%(options.makevstack)+" "+"%s?select.subset"%(options.reference)+" --reference=%s"%(options.reference)
-			elif options.appendvstack !=None:  	
-				cmd="e2bdb.py --appendvstack=%s"%(options.makevstack)+" "+"%s?select.subset"%(options.reference)+" --reference=%s"%(options.reference)
-			print cmd
-			os.system(cmd)
-			continue
+		
 		
 		if options.makevstack!=None or options.appendvstack!=None :
 			
@@ -154,6 +141,7 @@ Various utilities related to BDB databases."""
 				if dct==vstack : continue
 				vals = keys
 				if keys == None: vals = range(len(dct))
+				if options.list !=None: vals=slist
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
 					except:
@@ -171,11 +159,7 @@ Various utilities related to BDB databases."""
 						continue
 					d["data_path"]=rpath
 					d["data_n"]=n
-					#if not d.has_key("data_source") : 
-					if options.reference !=None:
-						d["data_source"]= options.reference
-					else:
-						d["data_source"]= path+db
+					d["data_source"]= path+db
 					if d["data_path"]==None :
 						print "error with data_path ",db,n
 						continue
