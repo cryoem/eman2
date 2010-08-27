@@ -3870,7 +3870,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
  		trans = [tr_dummy]*nima
 		if runtype=="REFINEMENT":  pixer = [0.0]*nima
 
-		cs = [0.0]*3	
+		cs = [0.0]*3
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			volft, kb = prep_vol(vol)
@@ -4010,18 +4010,16 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			#if(myid == main_node):
-			#	print myid, " begin reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if(myid == 0):
 				print_msg( "Time to compute 3D: %d\n" % (time()-start_time) );start_time = time()
 
 			if(myid == main_node):
-				#print myid, " after reconstruction at ", strftime("%d_%b_%Y_%H_%M_%S", localtime())
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT":
 					sumvol += volref
+			del volref
 
 		if runtype=="REFINEMENT":
 			if fourvar:

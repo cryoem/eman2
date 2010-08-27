@@ -953,15 +953,15 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 
 	return None,None
 
-def recons_from_fftvol(size, fftvol, weight, symmetry):
-	params = {"size":size, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
+	params = {"size":size, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get("nn4", params)
 	r.setup()
 	return r.finish(True)
 
 
-def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1):
-	params = {"size":size, "npad":4, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
+def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 4):
+	params = {"size":size, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
 	r = Reconstructors.get("nn4_ctf", params)
 	r.setup()
 	return r.finish(True)
@@ -1057,12 +1057,12 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 	if nproc == 1:
 		fftvol = get_image(fftvol_odd_file)
 		weight = get_image(weight_odd_file)
-		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
 		fftvol = get_image(fftvol_eve_file)
 		weight = get_image(weight_eve_file)
-		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
-                
+		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+
 		fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve
 
@@ -1076,7 +1076,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		weight += weight_tmp
 		weight_tmp = None
 
-		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file )
  
@@ -1086,7 +1086,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		if myid == main_node_odd:
 			fftvol = get_image( fftvol_odd_file )
 			weight = get_image( weight_odd_file )
-			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 			voleve = recv_EMData(main_node_eve, tag_voleve)
 			fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve
@@ -1094,7 +1094,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 			assert myid == main_node_eve
 			fftvol = get_image( fftvol_eve_file )
 			weight = get_image( weight_eve_file )
-			voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+			voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 			send_EMData(voleve, main_node_odd, tag_voleve)
 
 		if myid == main_node_odd:
@@ -1108,7 +1108,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 			weight += weight_tmp
 			weight_tmp = None
         	
-			volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+			volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 			os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
  
 			return volall,fscdat
@@ -1137,7 +1137,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 			finfo.write("weight odd sent\n")
 			finfo.flush()
 
-		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		del fftvol, weight
 		voleve = recv_EMData(main_node_eve, tag_voleve)
 		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
@@ -1156,7 +1156,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		weight = get_image( weight_eve_file )
 		send_EMData(weight, main_node_all, tag_weight_eve )
 
-		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		send_EMData(voleve, main_node_odd, tag_voleve)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
@@ -1174,7 +1174,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		Util.add_img( weight, weight_tmp )
 		weight_tmp = None
 
-		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry)
+		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		send_EMData(volall, main_node_odd, tag_volall)
 
 		return model_blank(nx,nx,nx),None
@@ -1230,11 +1230,11 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 	if nproc == 1:
 		fftvol = get_image( fftvol_odd_file )
 		weight = get_image( weight_odd_file )
-		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 
 		fftvol = get_image( fftvol_eve_file )
 		weight = get_image( weight_eve_file )
-		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 
 		fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve
@@ -1245,7 +1245,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		weight = get_image( weight_odd_file )
 		Util.add_img( weight, get_image(weight_eve_file) )
 
-		volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 		return volall,fscdat
@@ -1254,7 +1254,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		if myid == main_node_odd:
 			fftvol = get_image( fftvol_odd_file )
 			weight = get_image( weight_odd_file )
-			volodd = recons_from_fftvol(nx, fftvol, weight, symmetry)
+			volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 			voleve = recv_EMData(main_node_eve, tag_voleve)
 			fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve
@@ -1262,7 +1262,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 			assert myid == main_node_eve
 			fftvol = get_image( fftvol_eve_file )
 			weight = get_image( weight_eve_file )
-			voleve = recons_from_fftvol(nx, fftvol, weight, symmetry)
+			voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 			send_EMData(voleve, main_node_odd, tag_voleve)
 
 		if myid == main_node_odd:
@@ -1275,7 +1275,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 			weight_tmp = recv_EMData( main_node_eve, tag_weight_eve )
 			Util.add_img( weight, weight_tmp )
 			weight_tmp = None
-			volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
+			volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 			os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 			return volall,fscdat
 		else:
@@ -1304,7 +1304,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 			finfo.write("weight odd sent\n")
 			finfo.flush()
 
-		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		del fftvol, weight
 		voleve = recv_EMData(main_node_eve, tag_voleve)
 		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
@@ -1323,7 +1323,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		weight = get_image( weight_eve_file )
 		send_EMData(weight, main_node_all, tag_weight_eve )
 
-		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		send_EMData(voleve, main_node_odd, tag_voleve)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
@@ -1341,7 +1341,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		Util.add_img( weight, weight_tmp )
 		weight_tmp = None
 
-		volall = recons_from_fftvol(nx, fftvol, weight, symmetry)
+		volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		send_EMData(volall, main_node_odd, tag_volall)
 
 		return model_blank(nx,nx,nx),None
