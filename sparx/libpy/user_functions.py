@@ -716,7 +716,7 @@ def spruce_up_var_m( refdata ):
 	else:
 		flmin,aamin,idmin=minfilt( fscc )
 		aamin = aamin
-	
+
 	msg = "Minimum tangent filter:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(fflmin, aamin)
 	print_msg(msg)
 

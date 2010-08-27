@@ -6964,7 +6964,7 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 		else:               mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
 	scale = [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale]
-	data=[vol, refv, mask]
+	data=[vol, refv, mask, discrepancy]
 	new_params = [0.0]*6
 	opt_params,funval,niter = amoeba(new_params, scale, ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	return opt_params
