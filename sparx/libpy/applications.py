@@ -3935,7 +3935,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 						finfo.write( "\n" )
 						finfo.flush()
 			if(myid == 0):
-				print_msg( "Time to process particles: %d\n" % (time()-start_time) );start_time = time()
+				print_msg( "Time to process particles for reference %3d: %d\n" % (iref, time()-start_time) );start_time = time()
 
 
 		del peaks
