@@ -149,6 +149,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 		ByteOrder::swap_bytes(&ny);
 		ByteOrder::swap_bytes(&nz);
 		ByteOrder::swap_bytes(&mrcmode);
+		ByteOrder::swap_bytes(&nsymbt);
 	}
 
 	if (mrcmode == MRC_SHORT_COMPLEX || mrcmode == MRC_FLOAT_COMPLEX) {
