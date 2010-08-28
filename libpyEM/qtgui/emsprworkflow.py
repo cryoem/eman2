@@ -1858,7 +1858,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		for ff in params["coordfiles"]:
 			f=ff.rsplit("/",1)[-1]
 			fsp=best_match(f,img_list)
-			lns=file(f,"r").readlines()
+			lns=file(ff,"r").readlines()
 			lns=[l.split() for l in lns]
 			bxs=[[int(l[0])+int(l[2])/2,int(l[1])+int(l[3])/2,"manual"] for l in lns]
 			bdb[fsp]=bxs
@@ -1871,7 +1871,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		
 from os.path import commonprefix
 def best_match(name,lst):
-	ml=[(len(commonprefix((name,i))),n) for n,i in enumerate(lst)]
+	ml=[(len(commonprefix((name,i.split('/')[-1]))),n) for n,i in enumerate(lst)]
 #	print name,lst,ml
 	if max(ml)[0]==0 : return None
 	return lst[max(ml)[1]]
