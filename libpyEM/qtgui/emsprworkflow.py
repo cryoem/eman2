@@ -1493,12 +1493,13 @@ class CTFColumns:
 		'''
 		Quality is only applicable in the instance of the database
 		'''
-		print name
+#		print name
 		if db_check_dict("bdb:e2ctf.parms"):
-			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			try:
-				quality = ctf_db[get_file_tag(name)][3]
-				return "%i" %quality
+#				print name,get_file_tag(name),ctf_db[get_file_tag(name)]
+				quality = ctf_db[get_file_tag(name).split("_ctf")[0]][3]
+				return "%d" %quality
 			except:
 				pass
 		return "-"
@@ -1532,7 +1533,7 @@ class CTFDBColumns(CTFColumns):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
 			try:
 				quality = ctf_db[get_file_tag(name)][3]
-				return "%i" %quality
+				return "%d" %quality
 			except:
 				pass
 		return "-"
