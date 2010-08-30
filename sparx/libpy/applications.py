@@ -3880,7 +3880,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 					start_time = time()
 					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if(myid == 0):
-						print_msg( "Calculation of projections: %d\n" % (time()-start_time) );start_time = time()
+						print_msg( "Calculation of projections: %d\n" % (time()-start_time) )
 					del volft, kb
 
 			else:
@@ -3888,7 +3888,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 					start_time = time()
 					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if(myid == 0):
-						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) );start_time = time()
+						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) )
 					del volft, kb
 
 
@@ -3902,7 +3902,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 							rstart_time = time()
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0):
-								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) );rstart_time = time()
+								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) )
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -4006,7 +4006,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
 
-		sart_time = time()
+		if(myid == 0):
+			print_msg( "Time to compute statistics %3d: %d\n" % (iref, time()-start_time) );start_time = time()
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -4039,6 +4040,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			refdata[5] = mask3D
 			refdata[6] = (runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
 			user_func( refdata )
+			print_msg( "Time for user function: %d\n" % (time()-start_time) );start_time = time()
 
 		#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
