@@ -559,7 +559,7 @@ EMData * CtfCWautoAverager::finish()
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	int rm=ny*ny/4;
+	int rm=ny*ny/4-2;	// the -2 is due to potentially annoying edge effects
 	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
 			size_t ii=i+j*nx;
@@ -672,7 +672,7 @@ EMData * CtfCAutoAverager::finish()
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	int rm=ny*ny/4;
+	int rm=ny*ny/4-2;
 	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
 			size_t ii=i+j*nx;
