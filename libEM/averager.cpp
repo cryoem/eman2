@@ -559,11 +559,11 @@ EMData * CtfCWautoAverager::finish()
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	int rm=ny*ny;
-	for (int j=-ny/2; j<ny/2; j++) {
+	int rm=ny*ny/4;
+	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
-			size_t ii=i+(j+ny/2)*nx;
-			if (i*i+j*j>rm || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
+			size_t ii=i+j*nx;
+			if ((j<ny/2 && i*i/4+j*j>rm) ||(j>=ny/2 && i*i/4+(ny-j)*(ny-j)>rm) || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
 			outd[ii]/=snrsd[ii];		// snrsd contains total SNR
 			outd[ii+1]/=snrsd[ii];
 		}
@@ -673,10 +673,10 @@ EMData * CtfCAutoAverager::finish()
 	float *outd=result->get_data();
 
 	int rm=ny*ny;
-	for (int j=-ny/2; j<ny/2; j++) {
+	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
-			size_t ii=i+(j+ny/2)*nx;
-			if (i*i+j*j>rm || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
+			size_t ii=i+j*nx;
+			if ((j<ny/2 && i*i/4+j*j>rm) ||(j>=ny/2 && i*i/4+(ny-j)*(ny-j)>rm) || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
 			// we aren't wiener filtering, but if the total SNR is too low, we don't want TOO much exaggeration of noise
 			if (snrsd[ii]<.05) {		
 				outd[ii]*=20.0;		// 1/0.05
