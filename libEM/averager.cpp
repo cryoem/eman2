@@ -554,13 +554,21 @@ EMData * CtfCWautoAverager::finish()
 
 //	snrsum->write_image("snrsum.hdf",-1);
 	size_t sz=result->get_xsize()*result->get_ysize();
+	int nx=result->get_xsize();
+	int ny=result->get_ysize();	
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	for (size_t i=0; i<sz; i+=2) {
-		outd[i]/=snrsd[i];		// snrsd contains total SNR+1
-		outd[i+1]/=snrsd[i];
+	int rm=ny*ny;
+	for (int j=-ny/2; j<ny/2; j++) {
+		for (int i=0; i<nx; i+=2) {
+			size_t ii=nx+(j+ny/2)*ny;
+			if (i*i+j*j>rm || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
+			outd[ii]/=snrsd[ii];		// snrsd contains total SNR
+			outd[ii+1]/=snrsd[ii];
+		}
 	}
+
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
 	result->set_attr("ctf_snr_total",snrsum->calc_radial_dist(snrsum->get_ysize()/2,0,1,false));
@@ -659,19 +667,25 @@ EMData * CtfCAutoAverager::finish()
 
 //	snrsum->write_image("snrsum.hdf",-1);
 	size_t sz=result->get_xsize()*result->get_ysize();
+	int nx=result->get_xsize();
+	int ny=result->get_ysize();	
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	for (size_t i=0; i<sz; i+=2) {
-		if (snrsd[i]==0) outd[i]=outd[i+1]=0;
-		// we aren't wiener filtering, but if the total SNR is too low, we don't want TOO much exaggeration of noise
-		if (snrsd[i]<.05) {		
-			outd[i]*=20.0;		// 1/0.05
-			outd[i+1]*=20.0;
-		}
-		else {
-			outd[i]/=snrsd[i];		// snrsd contains total SNR
-			outd[i+1]/=snrsd[i];
+	int rm=ny*ny;
+	for (int j=-ny/2; j<ny/2; j++) {
+		for (int i=0; i<nx; i+=2) {
+			size_t ii=nx+(j+ny/2)*ny;
+			if (i*i+j*j>rm || snrsd[ii]==0) { outd[i]=outd[ii+1]=0; continue; }
+			// we aren't wiener filtering, but if the total SNR is too low, we don't want TOO much exaggeration of noise
+			if (snrsd[ii]<.05) {		
+				outd[ii]*=20.0;		// 1/0.05
+				outd[ii+1]*=20.0;
+			}
+			else {
+				outd[ii]/=snrsd[ii];		// snrsd contains total SNR
+				outd[ii+1]/=snrsd[ii];
+			}
 		}
 	}
 	result->update();
