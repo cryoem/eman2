@@ -99,7 +99,7 @@ map to the center of the volume."""
 			txlist.append(cols[0][i])
 			txlist.append(cols[1][i])
 			txlist.append(cols[2][i])
-			txlist.append(cols[3][i]*options.apix)
+			txlist.append(cols[3][i])
 		tr0 = Transform(txlist)
 
 
