@@ -3378,7 +3378,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				for lhx in xrange(lhist):
 					if(region[lhx] > 1.0): break
 					im += histo[lhx]
-				precn = 100*float(im)/float(total_nima)
+				precn = 100*float(total_nima-im)/float(total_nima)
 				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(im, precn)
 				print_msg(msg)
 				if(precn <= termprec):  terminate = 1
