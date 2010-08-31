@@ -91,6 +91,7 @@ def main():
 			#	options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 			#	options.function, options.Fourvar, options.debug, options.MPI)
 			#global_def.BATCH = False
+			pass
 		else:
 			from applications import ali3d
 			global_def.BATCH = True
