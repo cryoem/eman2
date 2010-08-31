@@ -843,7 +843,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 			}
 			break;
 		default:
-			throw ImageReadException(filename, "EMAN does not support this data type.");
+			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 		}
 	}
 
