@@ -586,6 +586,33 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	H5Gclose(igrp);
+
+	//Get the data type from data set, HDF5 file header attribute 'datatype' may be wrong
+	sprintf(ipath,"/MDF/images/%d/image",image_index);
+	hid_t ds=H5Dopen(file,ipath);
+
+	if(ds>0) {	//ds>0 means successfully open the dataset
+		hid_t dt = H5Dget_type(ds);
+
+		switch(H5Tget_size(dt)) {
+		case 4:
+			dict["datatype"] = (int)EMUtil::EM_FLOAT;
+			break;
+		case 2:
+			dict["datatype"] = (int)EMUtil::EM_USHORT;
+			break;
+		case 1:
+			dict["datatype"] = (int)EMUtil::EM_UCHAR;
+			break;
+		default:
+			throw ImageReadException(filename, "EMAN does not support this data type.");
+		}
+
+		H5Tclose(dt);
+	}
+
+	H5Dclose(ds);
+
 	EXITFUNC;
 	return 0;
 }
