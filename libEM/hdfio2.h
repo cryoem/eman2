@@ -112,7 +112,6 @@ namespace EMAN
 	  private:
 		hsize_t nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
-		EMUtil::EMDataType datatype;
 
 		hid_t file;
 		hid_t group;

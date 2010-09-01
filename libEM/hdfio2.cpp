@@ -58,7 +58,6 @@ static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	nx(1), ny(1), nz(1), is_exist(false),
- 	datatype(EMUtil::EM_UNKNOWN),
 	file(-1), group(-1), filename(hdf_filename),
 	rw_mode(rw), initialized(false)
 {
@@ -542,22 +541,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		H5Aclose(attr);
 	}
 
-	if(dict.has_key("datatype")) {
-		switch( (int)dict["datatype"] ) {
-		case 7:
-			datatype = EMUtil::EM_FLOAT;
-			break;
-		case 4:
-			datatype = EMUtil::EM_USHORT;
-			break;
-		case 2:
-			datatype = EMUtil::EM_UCHAR;
-			break;
-		default:
-			throw ImageReadException(filename, "EMAN does not support this data type.");
-		}
-	}
-
 	if(dict.has_key("ctf")) {
 		string ctfString = (string)dict["ctf"];
 		if(ctfString.substr(0, 1) == "O") {
@@ -656,6 +639,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	hid_t ds=H5Dopen(file,ipath);
 	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
 	hid_t spc=H5Dget_space(ds);
+	hid_t dt = H5Dget_type(ds);
 
 	hsize_t dims_out[3];
 	hsize_t rank = H5Sget_simple_extent_ndims(spc);
@@ -824,18 +808,18 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		size_t j=0;
 		unsigned short *usdata = (unsigned short *) data;
 		unsigned char *cdata = (unsigned char *) data;
-		switch(datatype) {
-		case EMUtil::EM_FLOAT:
+		switch(H5Tget_size(dt)) {
+		case 4:
 			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			break;
-		case EMUtil::EM_USHORT:
+		case 2:
 			H5Dread(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 			for (i = 0; i < size; ++i) {
 				j = size - 1 - i;
 				data[j] = static_cast < float >(usdata[j]);
 			}
 			break;
-		case EMUtil::EM_UCHAR:
+		case 1:
 			H5Dread(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
 			for (i = 0; i < size; ++i) {
 				j = size - 1 - i;
@@ -843,10 +827,11 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 			}
 			break;
 		default:
-			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+			throw ImageReadException(filename, "EMAN does not support this data type.");
 		}
 	}
 
+	H5Tclose(dt);
 	H5Sclose(spc);
 	H5Dclose(ds);
 	EXITFUNC;
