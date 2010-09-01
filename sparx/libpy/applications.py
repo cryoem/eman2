@@ -3379,7 +3379,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					if(region[lhx] > 1.0): break
 					im += histo[lhx]
 				precn = 100*float(total_nima-im)/float(total_nima)
-				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(im, precn)
+				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(total_nima-im, precn)
 				print_msg(msg)
 				if(precn <= termprec):  terminate = 1
 				del region, histo
@@ -3429,8 +3429,8 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'ID']
-	        	if myid == main_node:
-	        		if(file_type(stack) == "bdb"):
+			if myid == main_node:
+	   			if(file_type(stack) == "bdb"):
 	        			from utilities import recv_attr_dict_bdb
 	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        		else:
