@@ -501,11 +501,18 @@ void CtfCWautoAverager::add_image(EMData * image)
 	}
 
 	Ctf *ctf = (Ctf *)image->get_attr("ctf");
+//string cc=ctf->to_string();
+//FILE *out=fopen("ctf.txt","a");
+//fprintf(out,"%s\n",cc.c_str());
+//fclose(out);
 	float b=ctf->bfactor;
 	ctf->bfactor=100.0;			// FIXME - this is a temporary fixed B-factor which does a (very) little sharpening
 
+//	if (nimg==1) unlink("snr.hdf");
+
 	EMData *snr = result -> copy();
 	ctf->compute_2d_complex(snr,Ctf::CTF_SNR);
+//	snr->write_image("snr.hdf",-1);
 	EMData *ctfi = result-> copy();
 	ctf->compute_2d_complex(ctfi,Ctf::CTF_AMP);
 
@@ -520,10 +527,11 @@ void CtfCWautoAverager::add_image(EMData * image)
 	for (size_t i = 0; i < sz; i+=2) {
 		if (snrd[i]<0) snrd[i]=0;
 		ctfd[i]=fabs(ctfd[i]);
-		if (ctfd[i]<.05) {
-			if (snrd[i]<=0) ctfd[i]=.05f;
-			else ctfd[i]=snrd[i]*10.0f;
-		}
+		if (ctfd[i]<.05) ctfd[i]=0.05f;
+//		{
+//			if (snrd[i]<=0) ctfd[i]=.05f;
+//			else ctfd[i]=snrd[i]*10.0f;
+//		}
 		outd[i]+=ind[i]*snrd[i]/ctfd[i];
 		outd[i+1]+=ind[i+1]*snrd[i]/ctfd[i];
 	}
@@ -534,6 +542,8 @@ void CtfCWautoAverager::add_image(EMData * image)
 		// we're only using the real component, and we need to start with 1.0
 		for (size_t i = 0; i < sz; i+=2) { ssnrd[i]=1.0; ssnrd[i+1]=0.0; }
 	}
+//	snr->write_image("snr.hdf",-1);
+	snr->process_inplace("math.absvalue");
 	snrsum->add(*snr);
 
 	delete ctf;
@@ -552,14 +562,14 @@ EMData * CtfCWautoAverager::finish()
 	tmp->write_image("ctfcw.hdf",1);
 	delete tmp;*/
 
-//	snrsum->write_image("snrsum.hdf",-1);
+//snrsum->write_image("snrsum.hdf",-1);
 	size_t sz=result->get_xsize()*result->get_ysize();
 	int nx=result->get_xsize();
 	int ny=result->get_ysize();	
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	int rm=(ny-6)*(ny-6)/4;
+	int rm=(ny-2)*(ny-2)/4;
 	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
 			size_t ii=i+j*nx;
@@ -631,10 +641,11 @@ void CtfCAutoAverager::add_image(EMData * image)
 		ctfd[i]=fabs(ctfd[i]);
 		
 		// This limits the maximum possible amplification in CTF correction to 10x
-		if (ctfd[i]<.05) {
-			if (snrd[i]<=0) ctfd[i]=.05f;
-			else ctfd[i]=snrd[i]*10.0f;
-		}
+		if (ctfd[i]<.05)  ctfd[i]=0.05f;
+//		{
+//			if (snrd[i]<=0) ctfd[i]=.05f;
+//			else ctfd[i]=snrd[i]*10.0f;
+//		}
 		
 		// SNR weight and CTF correction
 		outd[i]+=ind[i]*snrd[i]/ctfd[i];
@@ -647,6 +658,7 @@ void CtfCAutoAverager::add_image(EMData * image)
 		// we're only using the real component, for Wiener filter we put 1.0 in R, but for just SNR weight we use 0
 		for (size_t i = 0; i < sz; i+=2) { ssnrd[i]=0.0; ssnrd[i+1]=0.0; }
 	}
+	snr->process_inplace("math.absvalue");
 	snrsum->add(*snr);
 
 	delete ctf;
@@ -672,7 +684,7 @@ EMData * CtfCAutoAverager::finish()
 	float *snrsd=snrsum->get_data();
 	float *outd=result->get_data();
 
-	int rm=(ny-6)*(ny-6)/4;
+	int rm=(ny-2)*(ny-2)/4;
 	for (int j=0; j<ny; j++) {
 		for (int i=0; i<nx; i+=2) {
 			size_t ii=i+j*nx;
