@@ -75,6 +75,7 @@ const string FourierReconstructorSimple2D::NAME = "fouriersimple2D";
 const string WienerFourierReconstructor::NAME = "wiener_fourier";
 const string BackProjectionReconstructor::NAME = "back_projection";
 const string nn4Reconstructor::NAME = "nn4";
+const string nn4_rectReconstructor::NAME = "nn4_rect";
 const string nnSSNR_Reconstructor::NAME = "nnSSNR";
 const string nn4_ctfReconstructor::NAME = "nn4_ctf";
 const string nnSSNR_ctfReconstructor::NAME = "nnSSNR_ctf";
@@ -87,6 +88,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add<WienerFourierReconstructor>();
 	force_add<BackProjectionReconstructor>();
 	force_add<nn4Reconstructor>();
+	force_add<nn4_rectReconstructor>();
 	force_add<nnSSNR_Reconstructor>();
 	force_add<nn4_ctfReconstructor>();
 	force_add<nnSSNR_ctfReconstructor>();
@@ -2281,6 +2283,314 @@ EMData* nn4Reconstructor::finish(bool doift)
 	return m_result;
 }
 #undef  tw
+
+
+nn4_rectReconstructor::nn4_rectReconstructor()
+{
+	m_volume = NULL;
+	m_wptr   = NULL;
+	m_result = NULL;
+}
+
+nn4_rectReconstructor::nn4_rectReconstructor( const string& symmetry, int size, int npad )
+{
+	m_volume = NULL;
+	m_wptr   = NULL;
+	m_result = NULL;
+	setup( symmetry, size, npad );
+	load_default_settings();
+	print_params();
+}
+
+nn4_rectReconstructor::~nn4_rectReconstructor()
+{
+	if( m_delete_volume ) checked_delete(m_volume);
+
+	if( m_delete_weight ) checked_delete( m_wptr );
+
+	checked_delete( m_result );
+}
+
+
+
+
+
+void nn4_rectReconstructor::setup()
+{
+	int sizeprojection = params["sizeprojection"];
+	int npad = params["npad"];
+
+
+	string symmetry;
+	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
+	else                               symmetry = "c1";
+
+	if( params.has_key("ndim") )  m_ndim = params["ndim"];
+	else                          m_ndim = 3;
+
+	if( params.has_key( "snr" ) )  m_osnr = 1.0f/float( params["snr"] );
+	else                           m_osnr = 0.0;
+
+	setup( symmetry, sizeprojection, npad );
+}
+
+void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, int npad )
+{
+	m_weighting = ESTIMATE;
+	m_wghta = 0.2f;
+
+	m_symmetry = symmetry;
+	m_npad = npad;
+	m_nsym = Transform::get_nsym(m_symmetry);
+	if( params.has_key("sizex") )  m_vnx = params["sizex"];
+	else                           m_vnx=sizeprojection;
+	if( params.has_key("sizey") )  m_vny = params["sizey"];
+	else                           m_vny=sizeprojection;
+	if( params.has_key("sizez") ) 
+		m_vnz = params["sizez"];
+	else                          
+		m_vnz = (m_ndim==3) ? sizeprojection : 1;
+	
+	std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
+	m_vnxp = m_vnx*npad;
+	m_vnyp = m_vny*npad;
+	m_vnzp = (m_ndim==3) ? m_vnz*npad : 1;
+
+	m_vnxc = m_vnxp/2;
+	m_vnyc = m_vnyp/2;
+	m_vnzc = (m_ndim==3) ? m_vnzp/2 : 1;
+
+	buildFFTVolume();
+	buildNormVolume();
+
+}
+
+
+void nn4_rectReconstructor::buildFFTVolume() {
+	int offset = 2 - m_vnxp%2;
+
+	if( params.has_key("fftvol") ) {
+		m_volume = params["fftvol"];
+		m_delete_volume = false;
+	} else {
+		m_volume = new EMData();
+		m_delete_volume = true;
+	}
+
+	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
+		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+		m_volume->to_zero();
+	}
+	// ----------------------------------------------------------------
+	// Added by Zhengfan Yang on 03/15/07
+	// Original author: please check whether my revision is correct and
+	// other Reconstructor need similiar revision.
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
+	// ----------------------------------------------------------------
+
+	m_volume->set_nxc(m_vnxp/2);
+	m_volume->set_complex(true);
+	m_volume->set_ri(true);
+	m_volume->set_fftpad(true);
+	m_volume->set_attr("npad", m_npad);
+	m_volume->set_array_offsets(0,1,1);
+}
+
+void nn4_rectReconstructor::buildNormVolume() {
+
+	if( params.has_key("weight") ) {
+		m_wptr = params["weight"];
+		m_delete_weight = false;
+	} else {
+		m_wptr = new EMData();
+		m_delete_weight = true;
+	}
+
+	if( m_wptr->get_xsize() != m_vnxc+1 &&
+		m_wptr->get_ysize() != m_vnyp &&
+		m_wptr->get_zsize() != m_vnzp ) {
+		m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+		m_wptr->to_zero();
+	}
+
+	m_wptr->set_array_offsets(0,1,1);
+}
+
+
+
+int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
+	// sanity checks
+	if (!slice) {
+		LOGERR("try to insert NULL slice");
+		return 1;
+	}
+
+        int padffted= slice->get_attr_default( "padffted", 0 );
+        if( m_ndim==3 ) {
+		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
+        } else {
+		Assert( m_ndim==2 );
+		if( slice->get_ysize() !=1 ) {
+			LOGERR( "for 2D reconstruction, a line is excepted" );
+        		return 1;
+		}
+	}
+
+	EMData* padfft = NULL;
+
+	if( padffted != 0 ) padfft = new EMData(*slice);
+	else                padfft = padfft_slice( slice, t,  m_npad );
+
+	int mult= slice->get_attr_default( "mult", 1 );
+	Assert( mult > 0 );
+
+        if( m_ndim==3 ) {
+		insert_padfft_slice( padfft, t, mult );
+	} else {
+		float alpha = padfft->get_attr( "alpha" );
+		alpha = alpha/180.0f*M_PI;
+		for(int i=0; i < m_vnxc+1; ++i ) {
+			float xnew = i*cos(alpha);
+			float ynew = -i*sin(alpha);
+			float btqr = padfft->get_value_at( 2*i, 0, 0 );
+			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
+			if( xnew < 0.0 ) {
+				xnew *= -1;
+				ynew *= -1;
+				btqi *= -1;
+			}
+
+			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
+			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
+
+			if(iyn < 0 ) iyn += m_vnyp;
+
+			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
+			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
+			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
+		}
+
+	}
+	checked_delete( padfft );
+	return 0;
+}
+
+int nn4_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+{
+	Assert( padfft != NULL );
+	// insert slice for all symmetry related positions
+	for (int isym=0; isym < m_nsym; isym++) {
+		Transform tsym = t.get_sym(m_symmetry, isym);
+		m_volume->nn( m_wptr, padfft, tsym, mult);
+        }
+	return 0;
+}
+
+
+
+EMData* nn4_rectReconstructor::finish(bool doift)
+{
+        if( m_ndim==3 ) {
+		m_volume->symplane0(m_wptr);
+	} else {
+		for( int i=1; i <= m_vnyp; ++i ) {
+
+			if( (*m_wptr)(0, i, 1)==0.0 ) {
+				int j = m_vnyp + 1 - i;
+				(*m_wptr)(0, i, 1) = (*m_wptr)(0, j, 1);
+				(*m_volume)(0, i, 1) = (*m_volume)(0, j, 1);
+				(*m_volume)(1, i, 1) = (*m_volume)(1, j, 1);
+			}
+		}
+	}
+
+
+	int box = 7;
+	int kc = (box-1)/2;
+	vector< float > pow_a( m_ndim*kc+1, 1.0 );
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+	pow_a.back()=0.0;
+
+	float alpha = 0.0;
+	if( m_ndim==3) {
+		int vol = box*box*box;
+		float max = max3d( kc, pow_a );
+		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	} else {
+		int ara = box*box;
+		float max = max2d( kc, pow_a );
+		alpha = ( 1.0f - 1.0f/(float)ara ) / max;
+	}
+
+	int ix,iy,iz;
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			for (ix = 0; ix <= m_vnxc; ix++) {
+				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
+					float tmp;
+					tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+m_osnr);
+
+					if( m_weighting == ESTIMATE ) {
+						int cx = ix;
+						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+						float sum = 0.0;
+						for( int ii = -kc; ii <= kc; ++ii ) {
+							int nbrcx = cx + ii;
+							if( nbrcx >= m_vnxc ) continue;
+							for( int jj= -kc; jj <= kc; ++jj ) {
+								int nbrcy = cy + jj;
+								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+
+								int kcz = (m_ndim==3) ? kc : 0;
+								for( int kk = -kcz; kk <= kcz; ++kk ) {
+									int nbrcz = cz + kk;
+									if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+									if( nbrcx < 0 ) {
+										nbrcx = -nbrcx;
+							    			nbrcy = -nbrcy;
+							    			nbrcz = -nbrcz;
+									}
+									int nbrix = nbrcx;
+									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+										int c = m_ndim*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										sum = sum + pow_a[c];
+									}
+								}
+							}
+						}
+						float wght = 1.0f / ( 1.0f - alpha * sum );
+						tmp = tmp * wght;
+					}
+					(*m_volume)(2*ix,iy,iz)   *= tmp;
+					(*m_volume)(2*ix+1,iy,iz) *= tmp;
+				}
+			}
+		}
+	}
+
+	//if(m_ndim==2) printImage( m_volume );
+
+	// back fft
+	m_volume->do_ift_inplace();
+
+	// EMData* win = m_volume->window_center(m_vnx);
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumf( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+
+	m_result = m_volume->copy();
+	return m_result;
+}
+
 
 // Added By Zhengfan Yang on 03/16/07
 // Beginning of the addition

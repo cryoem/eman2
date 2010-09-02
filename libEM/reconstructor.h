@@ -804,6 +804,99 @@ namespace EMAN
 	};
 
 
+	/** Direct Fourier inversion Reconstructor for extremly rectangular object
+     *
+     */
+	
+
+	class nn4_rectReconstructor:public Reconstructor
+	{
+	  public:
+		nn4_rectReconstructor();
+
+		nn4_rectReconstructor( const string& symmetry, int size, int npad );
+
+		virtual ~nn4_rectReconstructor();
+
+		virtual void setup();
+
+		/** Insert an image slice to the reconstructor. To insert multiple
+		 * image slices, call this function multiple times.
+		 *
+		 * @param slice Image slice.
+		 * @param euler Euler angle of this image slice.
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		 */
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+
+		virtual EMData *finish(bool doift=true);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Direct Fourier inversion routine";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new nn4_rectReconstructor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sizeprojection",		EMObject::INT);
+			d.put("sizex",		EMObject::INT);
+			d.put("sizey",		EMObject::INT);
+			d.put("sizez",		EMObject::INT);
+			d.put("npad",		EMObject::INT);
+			d.put("sign",		EMObject::INT);
+			d.put("ndim",		EMObject::INT);
+			d.put("snr",		EMObject::FLOAT);
+			d.put("symmetry",	EMObject::STRING);
+			d.put("snr",		EMObject::FLOAT);
+			d.put("fftvol",		EMObject::EMDATA);
+			d.put("weight",		EMObject::EMDATA);
+			d.put("weighting",      EMObject::INT);
+			return d;
+		}
+
+		void setup( const string& symmetry, int size, int npad );
+
+		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
+
+		static const string NAME;
+
+	  private:
+		EMData* m_volume;
+		EMData* m_wptr;
+		EMData* m_result;
+		bool m_delete_volume;
+		bool m_delete_weight;
+		string  m_symmetry;
+		int m_weighting;
+		int m_vnx, m_vny, m_vnz;
+		int m_npad;
+		int m_nsym;
+		int m_ndim;
+		int m_vnzp, m_vnyp, m_vnxp;
+		int m_vnzc, m_vnyc, m_vnxc;
+		void buildFFTVolume();
+		void buildNormVolume();
+		float m_wghta;
+		float m_wghtb;
+		float m_osnr;
+		void load_default_settings()
+		{
+			//params["use_weights"] = false;
+		}
+	};
+
 
      /* Fourier Reconstruction by nearest neighbor with 3D SSNR
         Added by Zhengfan Yang on 03/16/07
