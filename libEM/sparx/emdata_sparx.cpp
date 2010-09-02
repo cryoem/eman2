@@ -3651,7 +3651,7 @@ ostream& operator<< (ostream& os, const Pixel& peak) {
     return os;
 }
 
-vector<float> EMData::max_search() {
+/*vector<float> EMData::max_search() {
 
 	EMData& buf = *this;
 
@@ -3713,7 +3713,7 @@ vector<float> EMData::max_search() {
 		result.push_back(max);
 	}
 	return result;
-}
+}*/
 
 vector<float> EMData::peak_search(int ml, float invert) {
 

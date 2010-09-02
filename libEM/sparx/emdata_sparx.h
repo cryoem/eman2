@@ -556,7 +556,6 @@ EMData* mult_radial(EMData* radial);
 		* @param[in] ml
 		* @param[in] invert
 		* */
-		vector<float> max_search();
 		vector<float> peak_search(int ml, float invert);
 
 		/** Calculate the Phase approximation to center of gravity
