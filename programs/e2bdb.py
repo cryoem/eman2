@@ -184,12 +184,24 @@ Various utilities related to BDB databases."""
 				img = get_im(options.restore, i)
 				data_source = img.get_attr("data_source")
 				ID = img.get_attr("data_n")
-				DB = db_open_dict(data_source)
-				data_source=DB.get_attr(ID,'data_source')
-				DB.set_header(ID, img)
-				DB.set_attr(ID,'data_source',data_source)
+				org_img=get_im(data_source,ID)
+				attr_list_org=org_img.get_attr_dict()
+				if attr_list_org.has_key("data_source"):
+					org_source=org_img.get_attr('data_source')
+					org_id=org_img.get_attr('data_n')
+					img.set_attr('data_source',org_source)
+					img.set_attr('data_n',org_id)
+				else:
+					attr_list=img.get_attr_dict()
+					if attr_list.has_key("data_source"):
+						img.del_attr('data_source')
+						img.del_attr('data_n')
+						img.del_attr('data_path')
+				DB=db_open_dict(data_source)
+				DB.set_header(ID,img)
 				DB.close()
 			continue	
+
 			
 		if options.dump :
 			for db in dbs:
