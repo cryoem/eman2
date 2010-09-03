@@ -130,6 +130,6 @@ if __name__ == "__main__":
 	sh=IPShellQt4a()
 	EMAN2.app = sh.get_app()
 #	app = get_app()
-	sh.mainloop(banner="Welcome to EMAN2\nPrompt provided by IPython\nEnter '?' for ipython help\n")
+	sh.mainloop(banner="Welcome to the EMAN2 python interface\nPrompt provided by IPython\nEnter '?' for ipython help\n")
 	
 	sys.exit(0)

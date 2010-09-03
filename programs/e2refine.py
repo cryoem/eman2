@@ -41,7 +41,13 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
-	EMAN2 iterative single particle reconstruction"""
+	
+	Single particle reconstruction refinement program. This is the main program used to perform
+	iterative single-model single particle reconstruction in EMAN2. It has MANY options, many
+	of which are passed on to other programs called as part of this process. For more information
+	on the parameters and using this program, suggest reading the tutorial or using the
+	e2workflow.py interface.
+"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 		
 	#options associated with e2refine.py

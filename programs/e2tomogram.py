@@ -129,7 +129,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input_stack.hed output.hed
 	
-Processes a tomographic tilt series"""
+	Fiducial-less alignment of tomograms. This program has many limitations, and is still being developed.
+	Not yet recommended for routine use.
+	"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

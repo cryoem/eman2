@@ -71,9 +71,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog 
 	
-Asymmetric unit viewer for EMAN2. Allows the user to inspect the results of refinement in terms of the asymmetric unit.
+	Presents a graphical representation of the orientation distribution of the particles in a single particle
+	reconstruction. This is displayed as a single asymmetric unit on a sphere, with cylinders of varying height
+	representing the number of particles found in each orientation. Middle-click will produce a control-panel
+	as usual, and clicking on a single peak will permit viewing the class-average and related projection 
+	(and particles). 
 
-Works if launched in a workflow directory.
+	Normally launched without arguments from a e2workflow project directory.
 
 """
 

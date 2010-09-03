@@ -262,7 +262,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] target apix res threshold
 	
-	Identifies alpha helices and beta sheets in an MRC file at subnanometer resolutions"""
+	WARNING: This program is still under development
+
+	Identifies alpha helices and beta sheets in maps at subnanometer resolutions"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 #	parser.add_option("--atoms", "-A", type="string", help="pseudoatoms file", default="none")

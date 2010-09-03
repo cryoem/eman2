@@ -31,9 +31,6 @@
 #
 #
 
-# e2pdb2mrc.py  07/23/3004  Steven Ludtke
-# This program will generate an electron density map from an MRC file.
-
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -54,6 +51,8 @@ class myhandler(ContentHandler):
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input.cmm output.mrc
+
+	This program will read a 'marker file' produced by UCSF Chimera and turn it into an density map.
 	"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)

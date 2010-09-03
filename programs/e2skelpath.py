@@ -46,6 +46,8 @@ pl=()
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <skeleton map> <dejavu file> <output>
+
+	Experimental program for tracing paths in skeletonized density maps. Contact mbaker@bcm.edu for more details.
 	
 """
 

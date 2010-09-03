@@ -528,7 +528,7 @@ void Transform::set_rotation(const Dict& rotation)
 		phi = (float)rotation["psi"]    - 90.0f;
 	} else if ( type == "xyz" ) {
 // 		validate_and_set_type(THREED);
-		cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
+		cxtilt = cos( (M_PI/180.0)*(double)rotation["xtilt"]);
 		sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
 		cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
 		sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);

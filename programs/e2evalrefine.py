@@ -41,7 +41,9 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
-	Various tools for evaluating the results of e2refine.py runs"""
+	This program is still in its early stages. Eventually will provide a variety of tools for 
+	evaluating a single particle reconstruction refinement run. Currently only provides a 
+	single option to compare the parameters used for different refinement runs in a single project."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 		
 	parser.add_option("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")

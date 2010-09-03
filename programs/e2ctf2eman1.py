@@ -55,8 +55,10 @@ empsf = []			 # Empirical structure factor (if specified)
 
 def main() :
 	"""
-	Converts the EMAN2 CTF model to EMAN1 parameters and writes output to
-	ctfparm.txt.
+	This will take EMAN2 CTF parameters and determine approximate EMAN1 CTF parameters, producing a
+	standard EMAN1 ctfparm.txt file. Note the the CTF model in EMAN2 is more flexible than EMAN1, and
+	it is thus impossible to make a completely accurate translation. However, it should produce a
+	good starting point for further work in EMAN1.
 	"""
 	global debug, name, e1ctf
 	progname = os.path.basename(sys.argv[0])

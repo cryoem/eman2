@@ -44,8 +44,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <tile file>
 	
-Operates on files containing sets of tiled JPEG images representing larger images. Used for 
-interactive web browsing."""
+	Operates on files containing sets of tiled JPEG images representing larger images. Used for 
+	interactive web browsing. Not generally useful to end-users."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

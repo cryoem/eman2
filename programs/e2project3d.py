@@ -209,7 +209,8 @@ class EMProject3DTaskDC(EMTask):
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog image [options] 
-	Projects in real space over the asymmetric unit using the angular separation as specified by prop and the symmetry as specified by sym.
+	Generates 2-D projections of a 3-D object. Various options for specifiying distribution of orientations
+	and other options.
 	
 	Typical usage:
 	e2project3d.py map.mrc --outfile=projections.hdf --orientgen=eman:delta=5 --sym=c3 --projector=standard --verbose=2"""

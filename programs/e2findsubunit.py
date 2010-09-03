@@ -45,8 +45,9 @@ def main() :
 	
         usage = """%prog [options] <input> <output>
 
-This program attempts to extract one subunit from a volume by starting at
-a high point then iteratively expanding until a subunit has been located.
+
+	This program attempts to extract one subunit from a volume by starting at
+	a high point then iteratively expanding until a subunit has been located.
 """
 
 	
@@ -56,6 +57,8 @@ a high point then iteratively expanding until a subunit has been located.
 	parser.add_option("--thr", "-T", type="float", help="Isosurface threshold", default=1.0)
 	parser.add_option("--random","-R",action="store_true", help="Randomize the starting location", default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
+	print """WARNING: Experimental program. Contact sludtke@bcm.edu before relying on its results."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

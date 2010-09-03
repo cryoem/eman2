@@ -44,7 +44,11 @@ def main(args):
 	sys.argv = args
 	progname = os.path.basename(sys.argv[0])
 	
-	usage = progname + " options inputfile outputfile"
+	usage = progname + """ [options] <inputfile> <outputfile>
+
+	WARNING: Experimental progam. Email sludtke@bcm.edu for more info.
+
+	"""
 	parser = OptionParser(usage,version=EMANVERSION)
 	
 	parser.add_option("--nkeep", metavar="N", type="int", help="Number of particles to keep")

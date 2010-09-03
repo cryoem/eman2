@@ -58,10 +58,10 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input.pdb output.mrc
 	
-Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
-map to the center of the volume. Use e2procpdb.py to adjust coordinates,
-apply symmetry, etc. Resolution is equivalent to standard cryoEM definition, 
-using 1/2 width of Gaussian in Fourier space."""
+	Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
+	map to the center of the volume. Use e2procpdb.py to adjust coordinates,
+	apply symmetry, etc. Resolution is equivalent to standard cryoEM definition, 
+	using 1/2 width of Gaussian in Fourier space."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

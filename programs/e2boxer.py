@@ -68,7 +68,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image> <image2>....
 
-a refactoring of e2boxer
+The 'new' version of e2boxer. While it is quite usable, it is still in need of some work.
 
 For example:
 

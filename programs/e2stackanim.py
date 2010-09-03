@@ -59,7 +59,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input_stack.hed output.(gif:pnm)
 	
-Converts a 2D image stack into a GIF/PNM animation using ImageMagick"""
+	Converts a 2D image stack into a GIF/PNM animation using ImageMagick (which must be installed for this to work)"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

@@ -45,7 +45,7 @@ from EMAN2 import get_file_tag
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
-	A tool for displaying EMAN2 history
+	A tool for displaying EMAN2 command history
 	"""
 	
 	parser=OptionParser(usage)

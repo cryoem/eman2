@@ -56,12 +56,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input.mrc
 
-Helps to visually assess large images using localized power spectra. Generally
-this is used with scanned images to look for position dependent MTF due to
-film flatness problems or problems with the scanner optics. Boxes a grid pattern
-of areas (default 256x256), calculates a power spectrum for each area, then reinserts
-in the image, with a gap between them so the micrograph is still visible in the
-background."""
+	Helps to visually assess large images using localized power spectra. Generally
+	this is used with scanned images to look for position dependent MTF due to
+	film flatness problems or problems with the scanner optics.  However it may also be
+	suitable for looking for images with charging or other drift/astigmatism issues. Boxes a grid pattern
+	of areas (default 256x256), calculates a power spectrum for each area, then reinserts
+	in the image, with a gap between them so the micrograph is still visible in the
+	background."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

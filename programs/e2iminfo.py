@@ -55,7 +55,9 @@ def get_data_type_string(datatype):
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] imagefile ...
-This program will print out some information about the image.
+
+	This program can be used to extract various metadata/header information from images of any file format,
+	including BDB databases (though e2bdb.py has additional database-specific functionality).
 	"""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)

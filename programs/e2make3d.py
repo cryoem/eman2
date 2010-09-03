@@ -51,9 +51,7 @@ def get_usage():
 	
 	WARNING - the icosahedral symmetry axes are aligned differently in eman1 and eman2 - that means
 	using this script to reconstruct icosahedral class averages from eman1 will give very bad results.
-	Contact the developers for the simple solution. This problem will probably disappear - eman2
-	will probably adopt the same symmetric axes as eman1, there needs to be some discussion before that
-	occurs. For the time being assume there is a problem.
+	Contact the developers for the simple solution. 
 	
 	A simple example of usage is:
 	

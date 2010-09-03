@@ -48,7 +48,11 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog  <simmx file> <projection file>  <particles file>
 	
-Simmx xplor for comparator evaluation
+	This program allows you to look at per-particle classification based on a pre-computed similarity
+	matrix. If a particle seems to be mis-classified, you can use this program to help figure out
+	why. It will display a single asymmetric triangle on the unit sphere, with cylinders representing
+	the similarity value for the selected particle vs. each possible reference projection. Use the
+	normal middle-click on the asymmetric unit viewer for more options.
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)

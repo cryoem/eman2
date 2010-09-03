@@ -45,8 +45,8 @@ def main():
 	usage = """%prog <input volume> [options] 
 	This program provides access to various algorithms for segmenting a 3-D volume into multiple pieces automatically.
 	Note that you MUST have sufficient RAM to hold at least two copies of the volume in memory. Some segmentation algorithms
-	may require more. The actual segmentation is performed using one of the segment.* processors. 'e2help.py processors -v'
-	for more information."""
+	may require more. The actual segmentation is performed using one of the segment.* processors. 'e2help.py processors |grep segment'
+	for more information (-v 1 will give even more)."""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

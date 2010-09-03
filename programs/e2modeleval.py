@@ -14,9 +14,10 @@ resDefs={'ALA':2.0, 'ARG':7.0, 'ASN':4.0, 'ASP':4.0, 'CYS':3.0, 'GLU':5.0, 'GLN'
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input.pdb input.mrc apix threshold
+	usage = """%prog [options] <volume input> <PDB input> <apix> <threshold>
 	
-Evaluates density at C-alpha positions from a model"""
+Evaluates density at C-alpha positions from a PDB model
+	"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	

@@ -50,9 +50,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack>
 	
-Performs k-means classification on a stack of aligned input images. If images are unaligned
-one option is to use the --fp option in e2proc2d.py to generate invariants which can then
-be classified. """
+Performs k-means classification on a stack of aligned input images or invariants generated
+from the input images. eg - if images are unaligned one option is to use the --fp option in 
+e2proc2d.py to generate invariants which can then be classified. 
+
+This program should not be confused with the k-means processor which provides a mechanism
+for grouping pixels in a single map into regions. This program classifies similar images
+together."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)

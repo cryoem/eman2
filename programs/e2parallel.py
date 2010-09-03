@@ -55,7 +55,9 @@ def main():
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
-different options in this program. The simplest, and easiest to use is probably the client/server Distriuted Computing system.
+different options in this program. Note that the simple threaded parallelism used on a single computer with multiple
+CPUs does not require use of this program. See the Wiki for more information.  This tool primarily serves the needs
+of the distributed computing (dc) parallelism mechanism.
 
 <command> is one of: dcserver, dcclient, dckillclients, dckill, rerunall, precache, killall, servmon
 

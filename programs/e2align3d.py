@@ -79,6 +79,8 @@ def main():
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] fixed.mrc input.mrc output.mrc
+
+	This program is not currently considered stable.
 	
 Locates the best 'docking' locations for a small probe in a large target map."""
 
@@ -90,6 +92,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	if len(args)<3 : parser.error("Input and output files required")
 	try: chains=options.chains
 	except: chains=None
+
+	print "WARNING: This program is not currently considered stable"
 		
 	# read the target and probe
 	target=EMData()

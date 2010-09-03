@@ -47,14 +47,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input_stack> <output_stack>
 	
-This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. 
+	This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. 
 
-It can handle file sequences rather than a single stack file as well, in a limited form. If you have files named var3d_000.mrc, var3d_001.mrc, ...
-you can specify input (and output) files as (for example) var3d_%03d.mrc. The '3' indicates the number of digits in the value, the '0'
-means there should be leading zeroes in the name, and the 'd' means it is a decimal number.
+	It can handle file sequences rather than a single stack file as well, in a limited form. If you have files named var3d_000.mrc, var3d_001.mrc, ...
+	you can specify input (and output) files as (for example) var3d_%03d.mrc. The '3' indicates the number of digits in the value, the '0'
+	means there should be leading zeroes in the name, and the 'd' means it is a decimal number.
 
-Note that there is no low-memory option for this command, and all images in the sequence are read in, so make sure you have enough
-RAM."""
+	Note that there is no low-memory option for this command, and all images in the sequence are read in, so make sure you have enough RAM."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

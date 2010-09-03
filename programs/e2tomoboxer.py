@@ -51,8 +51,10 @@ tomo_db_name = "bdb:e2tomoboxercache#"
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <Volume file>
+
+	WARNING: This program still under development.
 	
-Tomography 3-D particle picker and annotation tool. Still under development."""
+	Tomography 3-D particle picker and annotation tool. Still under development."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

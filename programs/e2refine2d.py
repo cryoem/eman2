@@ -41,9 +41,21 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
-	THIS PROGRAM IS NOT YET COMPLETE
-
-	EMAN2 iterative single particle reconstruction"""
+	
+	This program is used to produce reference-free class averages from a population of mixed,
+	unaligned particle images. These averages can be used to generate initial models or assess
+	the structural variability of the data. They are not normally themselves used as part of
+	the single particle reconstruction refinement process, which uses the raw particles in a
+	reference-based classification approach. However, with a good structure, projections of
+	the final 3-D model should be consistent with the results of this reference-free analysis.
+	
+	This program uses a fully automated iterative alignment/MSA approach. You should normally
+	target a minimum of 10-20 particles per class-average, though more is fine.
+	
+	Default parameters should give a good start, but are likely not optimal for any given system.
+	
+	Note that it does have the --parallel option, but a few steps of the iterative process
+	are not parallelized, so don't be surprised if multiple cores are not always active."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	# we grab all relevant options from e2refine.py for consistency
@@ -51,14 +63,14 @@ def main():
 	
 	#options associated with e2refine2d.py
 	parser.add_option("--path",type="string",default=None,help="Path for the refinement, default=auto")
-	parser.add_option("--iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
+	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
 	parser.add_option("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
 	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
 	parser.add_option("--maxshift", default=-1, type="int", help="Maximum particle translation in x and y")
-	parser.add_option("--naliref", default=8, type="int", help="Number of alignment references to when determining particle orientations")
+	parser.add_option("--naliref", default=5, type="int", help="Number of alignment references to when determining particle orientations")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	parser.add_option("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
 	
@@ -66,7 +78,7 @@ def main():
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
 	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifying particles")
 	parser.add_option("--minchange", type="int",default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = -1 (auto)")
-	parser.add_option("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
+	parser.add_option("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results.")
 
 	# options associated with e2simmx.py
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate_flip)", default="rotate_translate_flip")

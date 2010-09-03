@@ -140,8 +140,10 @@ import os,sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image1> <image2> <image3> <image4> ....
+
+	WARNING: Experimental program. Contact jgmontoy@bcm.edu for more info.
 	
-Boot straps an initial probe doing all versus all alignment of the input images
+	Boot straps an initial probe doing all versus all alignment of the input images
 
 """
 

@@ -78,8 +78,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input.pdb output.hdf
 	
-Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
-map to the center of the volume."""
+	Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
+	map to the center of the volume. Each atom is represented by a Gaussian with a width 
+	defined by the specified resolution, and an amplitude equal to the atomic number.
+
+	While this is only an approximation, for typical cryo-EM work it is more than adequate.
+	Atomic form factors will have little impact until close to atomic resolution at
+	which point molecular orbitals really should also be considered."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

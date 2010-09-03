@@ -390,7 +390,14 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
         i+=1
 
 def main():
-    usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
+    usage = """
+This program is used to box helices from a micrograph and extract square pseudoparticles from the helices.
+A helical region of a macromolecule can appear as a rectangle on a 2D micrograph; thus a "helix" in this program is a rectangle. 
+Different helices from the same micrograph will generally have different lengths but the same width.
+A particle is a square or rectangle from inside a helix. Particles are chosen so that they overlap each other
+within a helix. Usually, all particles from a micrograph will have the same dimensions.
+
+    e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
     e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
     e2helixboxer.py <options (not --gui)> <micrograph>    
     """

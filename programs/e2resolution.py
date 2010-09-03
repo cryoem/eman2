@@ -43,6 +43,9 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <volume> <mask> <output>
+	Note that this method has not yet (2010) been published, and is not yet a reliable
+	scheme for resolution determination, but we have high-hopes for the future.
+
 	This will compute an FSC resolution curve from a single structure by
 	comparing the power spectrum of the noise region to the power spectrum
 	of the reconstructed particle. The 'mask' input should mask out the particle,

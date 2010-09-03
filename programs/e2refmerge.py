@@ -43,6 +43,9 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <ref imgs> <ref self-simmx> <merged>
+
+	This program is used by e2simmx2stage.py
+
 	Given a stack of reference projections and a self similarity matrix, this program will find similar subsets of the references, align them
 	to each other and average them together, producing a new, smaller, set of averaged projections suitable for preliminary classification of
 	images. Classification of images is made based on image similarity, not projection geometry, so this should be a fairly reliable scheme for

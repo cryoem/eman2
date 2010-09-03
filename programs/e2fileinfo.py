@@ -45,7 +45,8 @@ ee_expressions = ["expenv","ee"]
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input file> """
+	usage = """%prog [options] <input file> 
+	Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -65,6 +66,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
+	print """WARNING: Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries"""
 
 	logid=E2init(sys.argv)
 

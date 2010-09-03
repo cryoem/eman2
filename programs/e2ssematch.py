@@ -48,9 +48,11 @@ pl=()
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <ssehunter_file> <sec_struct_file>
-	
-ssehunter file is in ??? format
-sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
+
+	WARNING: This program is experimental and still under development. Contact mbaker@bcm.edu for more information.	
+		
+	ssehunter file is in ??? format
+	sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

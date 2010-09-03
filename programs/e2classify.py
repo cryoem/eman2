@@ -43,11 +43,18 @@ def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <simMatrixIn> <classMatrixOut> [options]
+
+	This program analyzes a similarity matrix as produced by e2simmx.py and produces a classification matrix mapping class
+	membership for each particle, which can in-turn be used with e2classaverage.py.
+
 	Takes a similarity matrix that has been created between reprojections-input (col) and particles-input (row) stacks of 2-D images.
 	Typically these have been created via e2simmx such as
-	 e2simmx.py proj.hed part.hed simMatrix.hed --saveali --align=rotate_translate:maxshift=5
+
+	e2simmx.py proj.hed part.hed simMatrix.hed --saveali --align=rotate_translate:maxshift=5
+
 	The similarity matrix is a stack of 1 or 5 images: similarity, dx,dy,dalpha,mirror.
 	The output is 6 images: class, weight, dx, dy, dalpha, mirror).
+	See the wiki for more complete documentation of the files.
 	"""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)

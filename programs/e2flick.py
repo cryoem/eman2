@@ -56,6 +56,9 @@ def main():
 	
 """
 
+	print "WARNING: This program is currently broken. We intend to ressurect it in future."
+	sys.exit(1)
+
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")

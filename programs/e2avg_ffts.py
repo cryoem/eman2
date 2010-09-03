@@ -36,6 +36,8 @@ from EMAN2 import *
 import sys
 import math
 
+print "WARNING: This program does not currently conform to EMAN2 usage standards"
+
 args=sys.argv
 
 def avg_this_pixel (filename, imagedict, thr, i,j,k):

@@ -302,7 +302,11 @@ class EMTomoHunter:
 		
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <images to be aligned> [options]"""
+	usage = """%prog <images to be aligned> [options]
+
+	WARNING: Experimental program. Contact jgmontoy@bcm.edu for more info.
+
+	"""
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

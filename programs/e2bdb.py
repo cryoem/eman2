@@ -48,7 +48,14 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <path or db> ...
 	
-Various utilities related to BDB databases."""
+Various utilities related to BDB databases.
+
+examples :
+e2bdb.py -c   Is perhaps the most critical function, as it cleans up the database cache. See the Wiki for more.
+e2bdb.py <path> -s    will list the contents of the database in a directory in bdb: notation
+e2bdb.py <path> -l    Will give useful summary info about stacks in a directory
+e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a database, even if the database contains no images
+"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

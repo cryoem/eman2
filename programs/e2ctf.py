@@ -56,13 +56,15 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
 	
-Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to 5 microns
-underfocus at most. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
+Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to defocuses
+less than ~5 microns. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
 particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
 Particles should be reasonably well centered. Can also optionally phase flip and Wiener filter particles. Wiener filtration comes
 after phase-flipping, so if phase flipping is performed Wiener filtered particles will also be phase-flipped. Note that both
-operations are performed on oversampled images if specified (though final real-space images are clipped back to their original
-size. Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
+operations are performed on oversampled images if specified, but this will produce phase-flipped images which are irreversable,
+so, while oversampling can be useful for fitting, it is not recommended for phase-flipping.
+
+Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
 images far from focus."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)

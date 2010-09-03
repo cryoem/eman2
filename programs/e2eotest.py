@@ -45,7 +45,8 @@ from e2refine import check_make3d_args,get_classaverage_cmd,check_classaverage_a
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
-	EMAN2 even odd test
+	EMAN2 even odd test to assess resolution of a single particle reconstruction. Arguments are a subset of the
+	arguments passed to e2refine.py, and should generally be identical to those used during refinement.
 	
 	Typically usage is e2eotest.py [similar options that were passed to e2refine] --path=refine_02
 	

@@ -55,7 +55,24 @@ def print_iminfo(data, label):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " options inputfile outputfile"
+	usage = progname + """ [options] <inputfile> <outputfile>
+	Generic 3-D image processing and file format conversion program. 
+        All EMAN2 recognized file formats accepted (see Wiki for list).
+
+        Examples:
+
+        convert MRC format to HDF format:
+        e2proc3d.py test.mrc test.hdf                   
+
+        apply a 10 A low-pass filter to a volume and write output to a new file. 
+        e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
+
+	extract a reconstruction from a refinement directory as an HDF file usable with Chimera
+	e2proc3d.py bdb:refine_02#threed_filt_04 map_02_04.hdf
+
+        'e2help.py processors -v 2' for a detailed list of available procesors
+
+"""
 	parser = OptionParser(usage)
 	
 	parser.add_option("--medianshrink", metavar="n", type="int", action="append", 

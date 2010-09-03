@@ -48,10 +48,14 @@ def main():
 	global debug
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <base path> <path or db> ... <target>
+
+	WARNING: While this program can be made to work, as long as you have exactly the same binary EMAN2 on both computers,
+	and run 'e2bdb.py -c' on the source machine, using regular scp or rsync should work fine.
 	
-This program is used to copy directories or files including BDB databases between machines. Requires a
-properly configured SSH client on the local machine, and SSH server running on target machine. EMAN2
-must be installed on both machines. Syntax is not quite the same as scp.
+	
+	This program is used to copy directories or files including BDB databases between machines. Requires a
+	properly configured SSH client on the local machine, and SSH server running on target machine. EMAN2
+	must be installed on both machines. Syntax is not quite the same as scp.
 
 - The first argument is a 'base path' for the source. Other source paths are relative to this path
 - Sources may be of the form: path, bdb:path
