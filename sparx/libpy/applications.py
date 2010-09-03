@@ -75,8 +75,14 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	
 	ftp = file_type(stack)
 
-	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
-	os.mkdir(outdir)
+	# Comment by Zhengfan Yang on 09/03/10
+	# I have decided that outdir should be able to take None as parameter, if the user does not need an output directory.
+	# This is particularly useful in the ISAC program, nobody will care what is in the alignment and realignment directory.
+	# It takes a lot of disk space and time to write them, too. It may not be much for one iteration, but will be enormous for several hundred iterations.
+	# This change will not affect the normal use.
+	if outdir:
+		if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
+		os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -100,10 +106,12 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 		if active[im]:  list_of_particles.append(im)
 	del active
 	nima = len(list_of_particles)
+	
 	if Ng == -1:
 		Ng = nima
-	if Ng == -2:
+	elif Ng == -2:
 		Ng = int(0.98*nima)
+
 	ima  = EMData()
 	ima.read_image(stack, list_of_particles[0], True)
 	nx = ima.get_xsize()
@@ -157,7 +165,6 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
  	mode = "F"
 	data = []
 	if CTF:
-		ctf_params = ima.get_attr("ctf")
 		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf
 		from morphology import ctf_img
@@ -165,7 +172,8 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
-	if  Fourvar:
+
+	if Fourvar:
 		if CTF:
 			from statistics   import varf2d
 		else:
@@ -241,16 +249,22 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 				tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
 				tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 			else: tavg = (ave1+ave2)/nima
-			tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
-			if CTF:
-				tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
-			frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+			
+			if outdir:
+				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+				if CTF:
+					tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
+				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+			else:
+				frsc = fsc_mask(ave1, ave2, mask, 1.0)
+			
 			if Fourvar:
 				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
 				else: vav, rvar = varf(data, tavg, mask, "a")
 				tavg = fft(Util.divn_img(fft(tavg), vav))
 				vav_r	= Util.pack_complex_to_real(vav)
-				vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
+				if outdir:
+					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
 			ref_data[2] = tavg
 			ref_data[3] = frsc
@@ -268,9 +282,10 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 				tavg, cs = user_func(ref_data)
 
 			# write the current filtered average
-			tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
+			if outdir:
+				tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
-			# a0 should increase; stop algorithm when it decreases.  However, it will depend on filtration, so it is not wquite right.
+			# a0 should increase; stop algorithm when it decreases.  However, it will depend on filtration, so it is not quite right.
 			a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 			msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
 			print_msg(msg)
@@ -325,12 +340,14 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	if CUDA:
 		for im in xrange(nima):
 			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
-			
-	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+
+	if outdir:
+		drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, list_of_particles)
 	print_end_msg("ali2d")
+
 
 def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID=""):
@@ -357,12 +374,13 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	
 	ftp = file_type(stack)
 	
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
-	mpi_barrier(MPI_COMM_WORLD)
+	if outdir:
+		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+		mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		print_begin_msg("ali2d_MPI")
-		os.mkdir(outdir)
+		if outdir:	os.mkdir(outdir)
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -391,24 +409,33 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
-	if Ng == -1:
-		Ng = nima
-	if Ng == -2:
-		Ng = int(0.98*nima)	
-		
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
+	
+	if Ng == -1:
+		Ng = nima
+	elif Ng == -2:
+		Ng = int(0.98*nima)	
 
-	ima = EMData()
-	for i in xrange(number_of_proc):
-		if myid == i:
-			ima.read_image(stack, list_of_particles[0], True)
-		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
-	nx = ima.get_xsize()
+	# read nx and ctf_app (if CTF) and broadcast to all nodes
+	if myid == main_node:
+		ima = EMData()
+		ima.read_image(stack, list_of_particles[0], True)
+		nx = ima.get_xsize()
+		if CTF:	ctf_app = ima.get_attr_default('ctf_applied', 2)
+		del ima
+	else:
+		nx = 0
+		if CTF:	ctf_app = 0
+	nx = bcast_number_to_all(nx, source_node = main_node)
+	if CTF:
+		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
+		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
+
 	# default value for the last ring
 	if last_ring == -1: last_ring = nx/2-2
 
@@ -464,8 +491,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
  	mode = "F"
 	data = []
 	if CTF:
-		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1,myid)
 		from filter import filt_ctf
 		from morphology   import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -473,12 +498,14 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	else:
 		ctf_2_sum = None
 
-	del ima
-
-	for i in xrange(number_of_proc):
-		if myid == i:
-			data = EMData.read_images(stack, list_of_particles)
-		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+	from global_def import CACHE_DISABLE
+	if CACHE_DISABLE:
+		data = EMData.read_images(stack, list_of_particles)
+	else:
+		for i in xrange(number_of_proc):
+			if myid == i:
+				data = EMData.read_images(stack, list_of_particles)
+			if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 		
 	if CUDA:
 		nGPU = len(GPUID)
@@ -568,23 +595,27 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
 					tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:	 tavg = (ave1+ave2)/nima
-				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
-				if CTF:
-					tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
-				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+				if outdir:
+					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+					if CTF:
+						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
+					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+				else:
+					frsc = fsc_mask(ave1, ave2, mask, 1.0)
 			else:
 				tavg =  model_blank(nx, nx)
 			del ave1, ave2
-			bcast_EMData_to_all(tavg, myid, main_node)
 				
 			if Fourvar:  
+				bcast_EMData_to_all(tavg, myid, main_node)
 				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
 
 			if myid == main_node:
 				if Fourvar:
 					tavg    = fft(Util.divn_img(fft(tavg), vav))
 					vav_r	= Util.pack_complex_to_real(vav)
-					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
+					if outdir:
+						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
 				ref_data[2] = tavg
 				ref_data[3] = frsc
@@ -603,7 +634,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					tavg, cs = user_func(ref_data)
 
 				# write the current filtered average
-				tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
+				if outdir:
+					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
 				# a0 should increase; stop algorithm when it decreases.    However, the result will depend on filtration, so it is not quite right.
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
@@ -685,7 +717,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		for im in xrange(len(data)):
 			set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
 
-	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	if myid == main_node and outdir:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]

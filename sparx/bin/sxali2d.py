@@ -64,10 +64,12 @@ def main():
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		
+		if args[1] == 'None': outdir = None
+		else:		      outdir = args[1]
+
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
-
+		
 		from applications import ali2d
 
 		if global_def.CACHE_DISABLE:
@@ -79,7 +81,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		ali2d(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \
+		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, \
 			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 
