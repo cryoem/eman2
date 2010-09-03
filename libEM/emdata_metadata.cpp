@@ -569,6 +569,25 @@ vector<Pixel> EMData::calc_n_highest_locations(int n)
 	return result;
 }
 
+vector<Pixel> EMData::find_pixels_with_value(float val) 
+{
+	ENTERFUNC;
+	
+	if ( is_complex() ) throw ImageFormatException("Error - find_pixels_with_value real only");
+
+	vector<Pixel> result;
+
+	for (int k = 0; k < nz; k++) {
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i++) {
+				if (get_value_at(i,j,k)==val) result.push_back(Pixel(i,j,k,val));
+			}
+		}
+	}
+
+	EXITFUNC;
+	return result;
+}
 
 float EMData::get_edge_mean() const
 {

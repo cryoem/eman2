@@ -1535,6 +1535,10 @@ def data_dims_power_of(data,val):
 		
 	return True
 
+def pixelprint(self) : return 'Pixel(%d,%d,%d,%g)'%(self.x,self.y,self.z,self.value)
+Pixel.__repr__=pixelprint
+Pixel.__str__=pixelprint
+
 def ctfprint(self) : return 'EMAN2Ctf().from_dict({"defocus":%1.5f,"bfactor":%1.1f,"ampcont":%1.2f,"apix":%1.3f,"voltage":%1.2f,"cs":%1.2f}) ...'%(self.defocus,self.bfactor,self.ampcont,self.apix,self.voltage,self.cs)
 EMAN2Ctf.__repr__=ctfprint
 EMAN2Ctf.__str__=ctfprint

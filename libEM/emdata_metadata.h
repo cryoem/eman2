@@ -218,6 +218,11 @@ vector<Pixel> calc_highest_locations(float threshold)  const;
  */
 vector<Pixel> calc_n_highest_locations(int n);
 
+/** Find pixels in the image with exactly the specified values
+ * @param val The value to look for
+ * @return An array of pixels with the specified values
+ */
+vector<Pixel> find_pixels_with_value(float val);
 
 /** Calculates the mean pixel values around the (1 pixel) edge
  * of the image.
