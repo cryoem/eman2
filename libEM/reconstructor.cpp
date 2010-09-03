@@ -2317,28 +2317,27 @@ nn4_rectReconstructor::~nn4_rectReconstructor()
 
 void nn4_rectReconstructor::setup()
 {
-	int sizeprojection = params["sizeprojection"];
+	m_sizeofprojection = params["sizeprojection"];
 	int npad = params["npad"];
-
+	m_count=0;
 
 	string symmetry;
 	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
 	else                               symmetry = "c1";
 
-	if( params.has_key("ndim") )  m_ndim = params["ndim"];
-	else                          m_ndim = 3;
-
+	if( params.has_key("ndim") )  m_ndim = params["ndim"];             
+	else 				m_ndim = 3;
+    
 	if( params.has_key( "snr" ) )  m_osnr = 1.0f/float( params["snr"] );
 	else                           m_osnr = 0.0;
 
-	setup( symmetry, sizeprojection, npad );
+	setup( symmetry, m_sizeofprojection, npad );
 }
 
 void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, int npad )
 {
 	m_weighting = ESTIMATE;
 	m_wghta = 0.2f;
-
 	m_symmetry = symmetry;
 	m_npad = npad;
 	m_nsym = Transform::get_nsym(m_symmetry);
@@ -2351,7 +2350,30 @@ void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, i
 	else                          
 		m_vnz = (m_ndim==3) ? sizeprojection : 1;
 	
+	m_xratio=float(m_vnx)/float(sizeprojection);	
+	m_yratio=float(m_vny)/float(sizeprojection);
+
+// 	m_xratio=float(m_vnx)/float(sizeprojection);
+// 	if(m_ndim==2)
+// 		m_yratio=1;
+// 	else
+// 		float(m_vny)/float(sizeprojection);
+// 	if(m_ndim==3)
+// 		m_zratio=1;
+// 	else
+// 		m_zratio=float(m_vnz)/float(sizeprojection);;
+// 	
+// 	if(m_ndim==2)
+// 		m_yratio=1;
+// 	else
+// 		float(m_vny)/float(sizeprojection);
+// 	if(m_ndim==3)
+// 		m_zratio=1;
+// 	else
+// 		m_zratio=float(m_vnz)/float(sizeprojection);;
+	std::cout<<"dim at 2==="<<m_ndim<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
 	std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
+	std::cout<<"dim==="<<m_ndim<<std::endl;
 	m_vnxp = m_vnx*npad;
 	m_vnyp = m_vny*npad;
 	m_vnzp = (m_ndim==3) ? m_vnz*npad : 1;
@@ -2421,6 +2443,7 @@ void nn4_rectReconstructor::buildNormVolume() {
 
 int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
+	m_count=m_count+1;
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
@@ -2429,6 +2452,7 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
         int padffted= slice->get_attr_default( "padffted", 0 );
         if( m_ndim==3 ) {
 		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+			
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
@@ -2452,13 +2476,89 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
         if( m_ndim==3 ) {
 		insert_padfft_slice( padfft, t, mult );
 	} else {
+		float ellipse_length,ellipse_step,cos_alpha,sin_alpha;
+		int ellipse_length_int;
 		float alpha = padfft->get_attr( "alpha" );
 		alpha = alpha/180.0f*M_PI;
-		for(int i=0; i < m_vnxc+1; ++i ) {
-			float xnew = i*cos(alpha);
-			float ynew = -i*sin(alpha);
-			float btqr = padfft->get_value_at( 2*i, 0, 0 );
-			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
+		int loop_range;
+// 		if(m_xratio<1)
+// 			{
+// 				float temp1,temp2;
+//                                 temp1=m_xratio*cos(alpha)*float(m_sizeofprojection)/2;
+// 				temp2=m_yratio*sin(alpha)*float(m_sizeofprojection)/2;
+// 				ellipse_length=sqrt(temp1*temp1+temp2*temp2);
+// 				ellipse_length_int=int(ellipse_length);
+// 				ellipse_step=0.5*m_sizeofprojection/float(ellipse_length_int);
+// 				loop_range=ellipse_length_int+1;
+// 				cos_alpha=temp1/ellipse_length;
+// 				sin_alpha=temp2/ellipse_length;
+// 			}
+// 		else
+// 			{
+// 				cos_alpha=cos(alpha);
+// 				sin_alpha=sin(alpha);
+// 				loop_range=m_vnxc+1;
+// 					
+// 			}
+		float temp1,temp2;
+                temp1=m_xratio*cos(alpha)*float(m_sizeofprojection*m_npad)/2;
+		temp2=m_yratio*sin(alpha)*float(m_sizeofprojection*m_npad)/2;
+		ellipse_length=sqrt(temp1*temp1+temp2*temp2);
+		ellipse_length_int=int(ellipse_length);
+		ellipse_step=0.5*(m_sizeofprojection*m_npad)/float(ellipse_length_int);
+		loop_range=ellipse_length_int;
+		cos_alpha=temp1/ellipse_length;
+		sin_alpha=temp2/ellipse_length;
+		if(m_count%100==0)
+                {
+			std::cout<<"#############################################################"<<std::endl;
+			std::cout<<"line insert start=="<<m_count<<std::endl;
+			std::cout<<"ellipse lenth=="<<ellipse_length_int<<"ellips step=="<<ellipse_step<<std::endl;
+			std::cout<<"loop_range"<<loop_range<<std::endl;
+                        std::cout<<"x and y ratio=="<<m_xratio<<"  "<<m_yratio<<std::endl;
+			std::cout<<"cos sin of alpha=="<<cos(alpha)<<"   "<<sin(alpha)<<std::endl;
+			std::cout<<"cos sin of alpha_new==="<<cos_alpha<<sin_alpha<<std::endl;
+			std::cout<<"alpah dig==="<<cos_alpha<<sin_alpha<<std::endl;
+			std::cout<<"prjection maximum==="<<loop_range*ellipse_step<<"ideal maximum"<<m_sizeofprojection*m_npad/2<<std::endl;
+			std::cout<<"x_size=="<<m_volume->get_xsize()<<"y_size=="<<m_volume->get_ysize()<<std::endl;
+			std::cout<<"#############################################################"<<std::endl;
+
+                        
+
+		}
+		for(int i=0; i <=loop_range; ++i ) {
+			float xnew = i*cos_alpha;
+			float ynew = -i*sin_alpha;
+			if(m_count%100==0&&i==loop_range)
+				std::cout<<"x_new=="<<xnew<<"Y_new=="<<ynew<<std::endl;
+			float btqr=0,btqi=0;
+	   		float xprj=i*ellipse_step;
+			float t=xprj-int(xprj);
+			btqr = (1-t)*padfft->get_value_at( 2*int(xprj), 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj)), 0, 0 );
+			btqi = (1-t)*padfft->get_value_at( 2*int(xprj)+1, 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj))+1, 0, 0 );
+// 			if(xprj<(m_vnxc+1))
+// 				{
+// 
+// 				btqr = (1-t)*padfft->get_value_at( 2*int(xprj), 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj)), 0, 0 );
+// 				btqi = (1-t)*padfft->get_value_at( 2*int(xprj)+1, 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj))+1, 0, 0 );
+// 				}
+// 			else
+// 				{
+// 				btqr = padfft->get_value_at( 2*int(m_vnxc+1), 0, 0 );
+// 				btqi = padfft->get_value_at( 2*int(m_vnxc+1)+1, 0, 0 );
+// 				}
+// 			if(m_xratio==1)
+// 				{
+// 				btqr = padfft->get_value_at( 2*i, 0, 0 );
+// 				btqi = padfft->get_value_at( 2*i+1, 0, 0 );}
+// 			else
+//                           {
+// 				float xprj=i*ellipse_step;
+// 				float t=xprj-int(xprj);
+// 				btqr = (1-t)*padfft->get_value_at( 2*int(xprj), 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj)), 0, 0 );
+// 				btqi = (1-t)*padfft->get_value_at( 2*int(xprj)+1, 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj))+1, 0, 0 );
+// 			  
+// 			 }
 			if( xnew < 0.0 ) {
 				xnew *= -1;
 				ynew *= -1;
@@ -2469,11 +2569,32 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
 
 			if(iyn < 0 ) iyn += m_vnyp;
-
+			if(m_count%100==0&&i==loop_range)
+				std::cout<<"xnn=="<<ixn<<"ynn=="<<iyn<<std::endl;
 			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
 			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
 			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
 		}
+// 		for(int i=0; i < m_vnxc+1; ++i ) {
+// 			float xnew = i*cos(alpha);
+// 			float ynew = -i*sin(alpha);
+// 			float btqr = padfft->get_value_at( 2*i, 0, 0 );
+// 			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
+// 			if( xnew < 0.0 ) {
+// 				xnew *= -1;
+// 				ynew *= -1;
+// 				btqi *= -1;
+// 			}
+// 
+// 			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
+// 			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
+// 
+// 			if(iyn < 0 ) iyn += m_vnyp;
+// 
+// 			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
+// 			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
+// 			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
+// 		}
 
 	}
 	checked_delete( padfft );
@@ -2490,9 +2611,78 @@ int nn4_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform&
         }
 	return 0;
 }
+#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
+void circumf_rect( EMData* win , int npad)
+{
+	float *tw = win->get_data();
+	//  correct for the fall-off
+	//  mask and subtract circumference average
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
 
+	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+	std::cout<<"x=="<<ix<<"y=="<<iy<<"z=="<<iz<<std::endl;
+	//  sinc functions tabulated for fall-off
+	float sincx[IP+1];
+	float sincy[JP+1];
+	float sincz[KP+1];
 
+	sincx[0] = 1.0f;
+	sincy[0] = 1.0f;
+	sincz[0] = 1.0f;
 
+	float cdf = M_PI/float(npad*2*ix);
+	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/float(npad*2*iy);
+	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/float(npad*2*iz);
+	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
+	for (int k = 1; k <= iz; ++k) {
+		int kkp = abs(k-KP);
+		for (int j = 1; j <= iy; ++j) {
+			cdf = sincy[abs(j- JP)]*sincz[kkp];
+			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+		}
+	}
+
+	float  TNR = 0.0f;
+	size_t m = 0;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) {
+					if(LR >= (size_t)L2P && LR <= (size_t)L2) {
+						TNR += tw(i,j,k);
+						++m;
+					}
+				}
+			}
+		}
+	}
+
+	TNR /=float(m);
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+			//	size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+                        // if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+			// else                tw(i,j,k) = 0.0f;
+			float LR = float((k-KP)*(k-KP))/(0.25*iz*iz)+float((j-JP)*(j-JP))/(0.25*iy*iy)+float((i-IP)*(i-IP))/(0.25*ix*ix);
+			if (LR<=1) tw(i,j,k) -= TNR;
+			 else                tw(i,j,k) = 0.0f;	
+
+			}
+		}
+	}
+
+}
+#undef tw 
 EMData* nn4_rectReconstructor::finish(bool doift)
 {
         if( m_ndim==3 ) {
@@ -2581,11 +2771,11 @@ EMData* nn4_rectReconstructor::finish(bool doift)
 	// back fft
 	m_volume->do_ift_inplace();
 
-	// EMData* win = m_volume->window_center(m_vnx);
-	int npad = m_volume->get_attr("npad");
-	m_volume->depad();
-	circumf( m_volume, npad );
-	m_volume->set_array_offsets( 0, 0, 0 );
+	
+ 	int npad = m_volume->get_attr("npad");
+ 	m_volume->depad();
+ 	circumf_rect( m_volume, npad );
+ 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	m_result = m_volume->copy();
 	return m_result;

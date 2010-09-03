@@ -850,7 +850,7 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("sizeprojection",		EMObject::INT);
+			d.put("sizeprojection", EMObject::INT);
 			d.put("sizex",		EMObject::INT);
 			d.put("sizey",		EMObject::INT);
 			d.put("sizez",		EMObject::INT);
@@ -886,6 +886,9 @@ namespace EMAN
 		int m_ndim;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnzc, m_vnyc, m_vnxc;
+		int m_count;
+		float m_xratio,m_yratio,m_zratio;
+		int m_sizeofprojection;
 		void buildFFTVolume();
 		void buildNormVolume();
 		float m_wghta;
