@@ -185,29 +185,29 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			continue
 
 		if options.restore :
-			from utilities import get_im
 			nima = EMUtil.get_image_count(options.restore)
+			IB = db_open_dict(options.restore)
+			data_old = None
 			for i in xrange(nima):
-				img = get_im(options.restore, i)
-				data_source = img.get_attr("data_source")
-				ID = img.get_attr("data_n")
-				org_img=get_im(data_source,ID)
-				attr_list_org=org_img.get_attr_dict()
-				if attr_list_org.has_key("data_source"):
-					org_source=org_img.get_attr('data_source')
-					org_id=org_img.get_attr('data_n')
-					img.set_attr('data_source',org_source)
-					img.set_attr('data_n',org_id)
-				else:
-					attr_list=img.get_attr_dict()
-					if attr_list.has_key("data_source"):
-						img.del_attr('data_source')
-						img.del_attr('data_n')
-						img.del_attr('data_path')
-				DB=db_open_dict(data_source)
-				DB.set_header(ID,img)
-				DB.close()
-			continue	
+				source = IB.get_header(i)
+				data_source = source["data_source"]
+				ID = source["data_n"]
+				if( data_old != data_source):
+					if( data_old != None):  DB.close()
+					DB = db_open_dict(data_source)
+					data_old = data_source
+				target = DB.get_header( ID )
+				try:
+					source["data_source"] = target["data_source"]
+					source["data_n"]      = target["data_n"]
+				except:
+					del source['data_source']
+					del source['data_n']
+					del source['data_path']
+				
+				DB.set_header(ID, source)
+			DB.close()
+			continue
 
 			
 		if options.dump :
