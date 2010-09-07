@@ -61,6 +61,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			throw ImageReadException(filename, "imageio read header failed");
 		}
 		else {
+			attr_dict["source_path"] = filename;
+			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
 				set_fftpad(true);
