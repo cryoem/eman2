@@ -44,7 +44,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --ts --nassign --nrefine --MPI --function --fourvar --maxit=max_iter ----termprec=percentage_to_stop --debug --CTF --snr=SNR --sym=symmetry"
+	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --ts --nassign --nrefine --MPI --function --fourvar --maxit=max_iter ----termprec=percentage_to_stop --npad --debug --CTF --snr=SNR --sym=symmetry"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",       type="float",        default=-1,            help="radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",    type="float",        default=2,             help="angular bracket (set to 2)")
@@ -60,7 +60,8 @@ def main():
 	parser.add_option("--function", type="string",	     default="ref_ali3dm",  help="user function")
 	parser.add_option("--fourvar",  action="store_true", default=False,         help="use fourier variance.")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug mode ")
-	
+	parser.add_option("--npad",     type="int",          default=4,             help="npad")
+
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 3 or len(args) > 4):
@@ -81,10 +82,10 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from applications import local_ali3dm_MPI_
+		from applications import local_ali3dm_MPI
 		global_def.BATCH = True
 		if options.MPI:
-			local_ali3dm_MPI_(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.debug, options.termprec)
+			local_ali3dm_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.npad, options.debug, options.termprec)
 		else:
 			print 'ali3d_em serial version not implemented'
 
