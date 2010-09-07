@@ -8159,11 +8159,52 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	running_time(t_start)
 	print_end_msg('find_struct')
 
+# this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)
+def cml2_ori_collinearity(Ori):
+	from math  import sin, cos, pi
+	from numpy import array, linalg, matrix, zeros, power
+
+	# ori 3d sphere map to 2d plan
+	rad2deg = 180 / pi
+	deg2rad = 1 / rad2deg
+	nori    = len(Ori) // 4
+	lx, ly  = [], []
+	for n in xrange(nori):
+		ind     = n * 4
+		ph, th  = Ori[ind:ind+2]
+		ph     *= deg2rad
+		th     *= deg2rad
+		lx.append(sin(th) * sin(ph))
+		ly.append(sin(th) * cos(ph))
+
+	# direct least square fitting of ellipse (IEEE ICIP Pilu96)
+	D = zeros((nori, 6))
+	for c in xrange(nori):
+		D[c, :] = [lx[c]*lx[c], lx[c]*ly[c], ly[c]*ly[c], lx[c], ly[c], 1.0]
+	D = matrix(D)
+	S = D.transpose() * D
+	C = zeros((6, 6))
+	C[5, 5] = 0
+	C[0, 2] = -2
+	C[1, 2] = 1
+	C[2, 0] = -2
+	C = matrix(C)
+	val, vec = linalg.eig(S.getI() * C)
+	ell = vec[:, val.argmin()]
+	verr = D * ell
+	verr = power(verr, 2)
+	serr = sum(verr)
+
+	# sum squared error
+	return serr.getA()[0][0]
+
+
 # application find structure
 def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
 	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_rnd
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	from applications import cml2_ori_collinearity
 	from random     import seed, random
 	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_bcast
 	from mpi        import mpi_barrier, MPI_COMM_WORLD, mpi_reduce, MPI_FLOAT, MPI_INT, MPI_SUM
@@ -8241,7 +8282,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		# Export structure
 		cml_export_struc(stack, out_dir, itrial, Ori)
 
-	from development import cml2_ori_collinearity
+	#from development import cml2_ori_collinearity
 	coll[itrial] = cml2_ori_collinearity(Ori)
 
 	mpi_barrier(MPI_COMM_WORLD)
