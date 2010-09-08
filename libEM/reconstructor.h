@@ -854,6 +854,8 @@ namespace EMAN
 			d.put("sizex",		EMObject::INT);
 			d.put("sizey",		EMObject::INT);
 			d.put("sizez",		EMObject::INT);
+			d.put("xratio",		EMObject::FLOAT);
+			d.put("yratio", 	EMObject::FLOAT);
 			d.put("npad",		EMObject::INT);
 			d.put("sign",		EMObject::INT);
 			d.put("ndim",		EMObject::INT);
@@ -887,10 +889,14 @@ namespace EMAN
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnzc, m_vnyc, m_vnxc;
 		int m_count;
-		float m_xratio,m_yratio,m_zratio;
+		float m_xratio,m_yratio,m_zratio;//ratio of x,y,z direction in the 3d volume comparing to the cubic case
+		float m_xscale,m_yscale;//ratior of x,y direction of 2D FFT after scaling and roatating operations
 		int m_sizeofprojection;
 		void buildFFTVolume();
 		void buildNormVolume();
+		int insert_rect_slice(EMData* padded,const Transform& trans,int mult=1);
+		void get_rect_index(int i,int j,Vec2f& coordinate_2d_sqaure,Vec3f& coordinate_3dnew, const Transform& trans);
+		std::complex<float> get_rect_value(EMData* padded,Vec2f& coordinate_2d_square);
 		float m_wghta;
 		float m_wghtb;
 		float m_osnr;
