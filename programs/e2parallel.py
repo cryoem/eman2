@@ -121,7 +121,7 @@ def runlocaltask(taskin,taskout):
 	from cPickle import load,dump
 
 #	print "Executing %s (%s)"%(taskin,taskout)
-	from e2classaverage import EMClassAveTaskDC
+	from e2classaverage import ClassAvTask
 	from e2simmx import EMSimTaskDC
 	from e2project3d import EMProject3DTaskDC
 	from e2tomoaverage import EMTomoAlignTaskDC

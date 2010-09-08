@@ -1287,9 +1287,11 @@ class EMImageMXModule(EMGUIModule):
 						if not excluded:
 							#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
 							if not self.glflags.npt_textures_unsupported():
+								if self.data[i]==None : print "bad image (tex) ",i
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
+								if self.data[i]==None : print "bad image ",i								
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
@@ -3197,7 +3199,17 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Work horse function for reading an image and applying any of the supplied functions 
 		'''
 		data = self.data[idx]
-		a = EMData(data[0],data[1])
+		try: 
+			a = EMData(data[0],data[1])
+			if a==None : raise Exception
+		except :
+			for i in range(10): 
+				try:
+					a=EMData(data[0],i)
+					if a==None: raise Exception
+				except: continue
+				break
+			a.to_zero()
 		for func in data[2]: func(a) 
 		self.cache[adj_idx] = a
 		return a
