@@ -5923,7 +5923,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	ts, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
-	
+
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
@@ -6021,7 +6021,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		print_msg("symmetry doc file                         : %s\n"%(datasym))
 		print_msg("number of times initial symmetry is imposed: %i\n"%(nise))
 		print_msg("npad                                      : %i\n"%(npad))
-		print_msg("User function                             : %s\n\n"%(user_func_name))
+		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -6223,9 +6223,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
+			if myid == main_node:
+				print_msg("Time to compute pixer = %d\n"%(time()-start_time))
+				start_time = time()
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
 			else:
+				'''
 				datap = [None]*(len(data)//2+len(data)%2)
 				for i in xrange(0,len(data),2):
 					datap[i//2] = data[i]
@@ -6258,6 +6262,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 					from utilities import write_text_file
 					write_text_file(frc, os.path.join(outdir, "frc%04d.txt"%total_iter))
 				del vol1, vol2
+				'''
 				vol = recons3d_4nn_MPI(myid, data, npad = npad)
 
 			if myid == main_node:
@@ -6316,7 +6321,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				nimage = EMUtil.get_image_count(stack)
 				#ext = file_type(stack)
 				#if ext == "bdb": DB = db_open_dict(stack)
-				param_list = []				
+				param_list = []
 				for i in xrange(nimage):
 					img = EMData()
 					img.read_image(stack, i, True)
