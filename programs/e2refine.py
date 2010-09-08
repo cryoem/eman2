@@ -134,7 +134,7 @@ def main():
 	else : options.classrefsf=" "
 	
 	if options.classautomask : options.classautomask=" --automask"
-	else options.classautomask=" "
+	else: options.classautomask=" "
 	
 	if error:
 		print "Error encountered while checking command line, bailing"
