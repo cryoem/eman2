@@ -6036,6 +6036,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		from filter         import filt_ctf
 	else:	 from reconstruction import recons3d_4nn_MPI
 
+	if myid==main_node:
+		nima=EMUtil.get_image_count(stack)
+		nima_dis=[0]*number_of_proc
+		for n in xrange(number_of_proc):
+			ls, le=MPI_start_end(nima, number_of_proc, n)
+			nima_dis[n]=le-ls
+		
+	else:
+		nima=0
 	if myid == main_node:
        		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
@@ -6302,8 +6311,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				start_time = time()
 				
 			#jeanmod
-			dp    = bcast_number_to_all(dp,    source_node = main_node)
-			dpphi = bcast_number_to_all(dpphi, source_node = main_node)
+			dp   = bcast_number_to_all(dp,   source_node = main_node)
+			dphi = bcast_number_to_all(dphi, source_node = main_node)
 			#end jeanmod
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
@@ -6311,11 +6320,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection']
 			m=5
+			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
 			if myid == main_node:
-				fexp=open("Iter_record_%04d_%04d.txt"%(N_step,Iter),"w")
+				fexp=open(os.path.join(outdir, "Iter_record_%04d_%04d.txt"%(N_step,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
-						t=mpi_recv(nima_dis[n]*m,MPI_FLOAT, n, MPI_TAG_UB,MPI_COMM_WORLD)
+						t=mpi_recv(nima_dis[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
 						for i in xrange(nima_dis[n]):
 							for j in xrange(m):
 								fexp.write("%15.5f"%t[j+i*m])
