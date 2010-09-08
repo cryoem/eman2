@@ -1303,12 +1303,6 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=N
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
-	if finfo:
-		from utilities import get_params_proj
-		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
-		finfo.flush()
 
 	mode = "F"
 	nx   = data.get_xsize()
