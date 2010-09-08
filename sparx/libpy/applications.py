@@ -6128,30 +6128,30 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 				peak, phihi, sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
 				#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
-				dpp=(float(dp)/pixel_size)
-				dyi=(float(syi)/dpp)-int(syi/dpp)
-				jdelta=0.75/dpp # jdelta could be adjustable input parameter
+				dpp = (float(dp)/pixel_size)
+				dyi = (float(syi)/dpp)-int(syi/dpp)
+				jdelta = 0.75/dpp # jdelta could be adjustable input parameter
 				if dyi < -0.5-jdelta:
-					eyi=dyi+1.0
-					sytemp=eyi*dpp
-					synew=0.0
-					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+					eyi    = dyi+1.0
+					sytemp = eyi*dpp
+					synew  = 0.0
+					phinew = phihi+abs(dphi)*float(syi-sytemp)/dpp
 					#print  im," A ",syi,dyi,eyi,synew, phihi[im],phinew[im]
 				elif dyi > 0.5+jdelta:
-					eyi=dyi-1.0
-					sytemp=eyi*dpp
-					synew=0.0
+					eyi    = dyi-1.0
+					sytemp = eyi*dpp
+					synew  = 0.0
 					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
 					#print  im," B ",syi,dyi,eyi,synew, phihi[im],phinew[im]
 				else:
 					if abs(int(syi/dpp)) > 0:
-					   eyi=dyi
-					   sytemp=eyi*dpp
-					   synew=0.0
+					   eyi    = dyi
+					   sytemp = eyi*dpp
+					   synew  = 0.0
 					   phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
 					else:
-					   synew=syi
-					   phinew=phihi
+					   synew  = syi
+					   phinew = phihi
 					#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
 				paramalij = get_params_proj(data[im])
 				set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
@@ -6302,36 +6302,50 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				start_time = time()
 				
 			#jeanmod
-			dp = bcast_number_to_all(dp, source_node = main_node)
+			dp    = bcast_number_to_all(dp,    source_node = main_node)
+			dpphi = bcast_number_to_all(dpphi, source_node = main_node)
 			#end jeanmod
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection', 'ID']
-	        	if myid == main_node:
-	        		if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:	        send_attr_dict(main_node, data, par_str, image_start, image_end)
-			if myid == main_node:		
-				nimage = EMUtil.get_image_count(stack)
-				#ext = file_type(stack)
-				#if ext == "bdb": DB = db_open_dict(stack)
-				param_list = []
-				for i in xrange(nimage):
-					img = EMData()
-					img.read_image(stack, i, True)
-					phi, theta, psi, s2x, s2y = get_params_proj(img)
-					param_list.append([i, phi, theta, psi, s2x, s2y])
-				from utilities import write_text_row
-				write_text_row(param_list, os.path.join(outdir, "param%04d.txt"%total_iter) )
-				del param_list
-				print_msg("\nWriting of parameters time = %d\n"%(time()-start_time))
-				start_time = time()
+			par_str = ['xform.projection']
+			m=5
+			if myid == main_node:
+				fexp=open("Iter_record_%04d_%04d.txt"%(N_step,Iter),"w")
+				for n in xrange(number_of_proc):
+					if n!=main_node:
+						t=mpi_recv(nima_dis[n]*m,MPI_FLOAT, n, MPI_TAG_UB,MPI_COMM_WORLD)
+						for i in xrange(nima_dis[n]):
+							for j in xrange(m):
+								fexp.write("%15.5f"%t[j+i*m])
+							fexp.write("\n")
+					else:
+						for i in xrange(nima_dis[0]):
+							phi, theta, psi, s2x, s2y=get_params_proj(data[i])
+							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f "%(phi, theta, psi, s2x, s2y))
+							fexp.write("\n")
+				fexp.close()								
+	        	else:	       
+				nvalue=[0]*5
+				for i in xrange(image_end-image_start):
+					phi, theta, psi, s2x, s2y=get_params_proj(data[i])
+					nvalue[0]=phi
+					nvalue[1]=theta
+					nvalue[2]=psi
+					nvalue[3]=s2x
+					nvalue[4]=s2y
+				mpi_send(nvalue, len(nvalue), MPI_FLOAT,main_node,MPI_TAG_UB, MPI_COMM_WORLD)
+	if myid == main_node:
+	   	if(file_type(stack) == "bdb"):
+	        	from utilities import recv_attr_dict_bdb
+	        	recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        else:
+	        	from utilities import recv_attr_dict
+	        	recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		print_msg("Time to write header information= %d\n"%(time()-start_time))
+		start_time = time()
+	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
 
 
