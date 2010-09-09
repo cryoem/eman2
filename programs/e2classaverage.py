@@ -377,13 +377,13 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	else : raise Exception,"Bad images list (%s)"%str(images)
 	
 	# If one image and no reference, just return it
-	if nimg==1 and ref==None : return (0,get_image(images,0,normproc),((0,Transform(),1)))
+	if nimg==1 and ref==None : return (get_image(images,0,normproc),[(0,Transform(),1)])
 	
 	# If one particle and reference, align and return
 	if nimg==1 :
 		ali=get_image(images,0,normproc).align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
 		sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
-		return (ali,(sim,ali["xform.align2d"],1))
+		return (ali,[(sim,ali["xform.align2d"],1)])
 	
 	# If we don't have a reference image, we need to make one 
 	if ref==None :
