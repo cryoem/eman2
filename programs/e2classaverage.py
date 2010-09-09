@@ -172,6 +172,8 @@ def main():
 				if j==100 :
 					rslt=etc.get_results(taskids[i])
 					if rslt[1]["average"]!=None:
+						rslt[1]["average"]["class_ptcl_src"]=options.input
+						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
 						else: rslt[1]["average"].write_image(options.output,-1)
 						
@@ -210,9 +212,6 @@ def main():
 			if options.verbose and 100 in curstat : print "%d/%d tasks remain"%(len(taskids),len(alltaskids))
 			time.sleep(3)
 		
-		if options.resultmx!=None:
-			if options.verbose : print "Writing results matrix"
-			for i in range(6) : classmx[i].write_image(options.resultmx,i)
 		
 		if options.verbose : print "Completed all tasks"
 
@@ -221,6 +220,8 @@ def main():
 		for t in tasks:
 			rslt=t.execute()
 			if rslt["average"]!=None :
+				rslt["average"]["class_ptcl_src"]=options.input
+				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
 				else: rslt["average"].write_image(options.output,-1)
 				
@@ -251,6 +252,10 @@ def main():
 				blk=EMData(blk["nx"],blk["ny"],1)
 				blk.to_zero()
 				blk.write_image(options.output,t.options["n"])
+				
+	if options.resultmx!=None:
+		if options.verbose : print "Writing results matrix"
+		for i in range(6) : classmx[i].write_image(options.resultmx,i)
 
 	E2end(logger)
 
@@ -305,7 +310,6 @@ class ClassAvTask(EMTask):
 			
 		if ref_orient!=None: 
 			avg["xform.projection"]=ref_orient
-			avg["projection_image"]=self.data["ref"][1]
 			avg["projection_image_idx"]=self.data["ref"][2]
 		
 		return {"average":avg,"info":ptcl_info,"n":options["n"]}
