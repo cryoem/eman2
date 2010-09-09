@@ -2881,8 +2881,9 @@ EMData* nn4_rectReconstructor::finish(bool doift)
 {
 	std::cout<<"the number of slice==="<<m_count<<std::endl;
         if( m_ndim==3 ) {
-		m_volume->symplane0(m_wptr);
-		//symplane0_rect();
+		//m_volume->symplane000(m_wptr);
+		std::cout<<"rect symplane is called"<<std::endl;
+		symplane0_rect();
 	} else {
 		for( int i=1; i <= m_vnyp; ++i ) {
 
