@@ -63,7 +63,7 @@ const string RefineAligner::NAME = "refine";
 const string Refine3DAligner::NAME = "refine.3d";
 const string RT3DGridAligner::NAME = "rt.3d.grid";
 const string RT3DSphereAligner::NAME = "rt.3d.sphere";
-const string FRM2DAligner::NAME = "FRM2D";
+const string FRM2DAligner::NAME = "frm2d";
 
 
 template <> Factory < Aligner >::Factory()
