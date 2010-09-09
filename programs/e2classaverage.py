@@ -392,17 +392,22 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	returns (average,((cmp,xform,used),(cmp,xform,used),...))
 	"""
 
+	if verbose>2 : print "class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,")"
+
 	# nimg is the number of particles we have to align/average
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception,"Bad images list (%s)"%str(images)
 	
+	if verbose>2 : print "Average %d images"%nimg
+
 	# If one image and no reference, just return it
 	if nimg==1 and ref==None : return (get_image(images,0,normproc),[(0,Transform(),1)])
 	
 	# If one particle and reference, align and return
-	if nimg==1 :
-		ali=get_image(images,0,normproc).align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
+	if nimg==1:
+		if averager[0]!="mean" : raise Exception,"Cannot perform correct average of single particle"
+		ali=align_one(get_image(images,0,normproc),ref,prefilt,align,aligncmp,ralign,raligncmp)
 		sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
 		return (ali,[(sim,ali["xform.align2d"],1)])
 	
