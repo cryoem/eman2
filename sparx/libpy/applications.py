@@ -5924,7 +5924,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
-
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
@@ -5965,7 +5964,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		finfo = open(info_file, 'w')
 	else:
 		finfo = None
-
 
 	sym = "c1"
 	symref = "s"
@@ -6036,15 +6034,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		from filter         import filt_ctf
 	else:	 from reconstruction import recons3d_4nn_MPI
 
-	if myid==main_node:
-		nima=EMUtil.get_image_count(stack)
-		nima_dis=[0]*number_of_proc
-		for n in xrange(number_of_proc):
-			ls, le=MPI_start_end(nima, number_of_proc, n)
-			nima_dis[n]=le-ls
-		
-	else:
-		nima=0
 	if myid == main_node:
        		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
@@ -6182,6 +6171,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				sy = 0.0
 			sx = bcast_number_to_all(sx, source_node = main_node)
 			sy = bcast_number_to_all(sy, source_node = main_node)
+			sx = 0.0           #  TRY THIS
+			sy = 0.0
 			for im in xrange( nima ):
 				paramali = get_params_proj(data[im])
 				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
@@ -6293,7 +6284,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
 				if(total_iter > nise):
-					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin) 
+					from random import random
+					from fundamentals import rot_shift3D
+					#vol = rot_shift3D(vol, dphi*random(), 0., 0., 0., 0., (dp/pixel_size)*(random()-0.5))
+					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 				else:
 					#  in the first nise steps the symmetry is imposed
@@ -6318,34 +6312,40 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection']
-			m=5
+			m = 5
 			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
 			if myid == main_node:
-				fexp=open(os.path.join(outdir, "Iter_record_%04d_%04d.txt"%(N_step,Iter)),"w")
+				
+				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
-						t=mpi_recv(nima_dis[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-						for i in xrange(nima_dis[n]):
+						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						for i in xrange(recvcount[n]):
 							for j in xrange(m):
-								fexp.write("%15.5f"%t[j+i*m])
+								fexp.write(" %15.5f  "%t[j+i*m])
 							fexp.write("\n")
 					else:
-						for i in xrange(nima_dis[0]):
-							phi, theta, psi, s2x, s2y=get_params_proj(data[i])
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f "%(phi, theta, psi, s2x, s2y))
+						t = [0.0]*m
+						for i in xrange(recvcount[myid]):
+							t = get_params_proj(data[i])
+							for j in xrange(m):
+								fexp.write(" %15.5f  "%t[j])
 							fexp.write("\n")
-				fexp.close()								
-	        	else:	       
-				nvalue=[0]*5
-				for i in xrange(image_end-image_start):
-					phi, theta, psi, s2x, s2y=get_params_proj(data[i])
-					nvalue[0]=phi
-					nvalue[1]=theta
-					nvalue[2]=psi
-					nvalue[3]=s2x
-					nvalue[4]=s2y
-				mpi_send(nvalue, len(nvalue), MPI_FLOAT,main_node,MPI_TAG_UB, MPI_COMM_WORLD)
+				fexp.close()
+				del t
+	        	else:
+				nvalue = [0.0]*m*recvcount[myid]
+				t = [0.0]*m
+				for i in xrange(recvcount[myid]):
+					t = get_params_proj(data[i])
+					for j in xrange(m):
+						nvalue[j + i*m] = t[j]
+				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				del nvalue
+			if myid == main_node:
+				print_msg("Time to write parameters = %d\n"%(time()-start_time))
+				start_time = time()
+	par_str = ["xform.projection"]
 	if myid == main_node:
 	   	if(file_type(stack) == "bdb"):
 	        	from utilities import recv_attr_dict_bdb
