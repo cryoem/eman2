@@ -2844,38 +2844,38 @@ void circumf_rect( EMData* win , int npad)
 }
 #undef tw 
 
-// void nn4_rectReconstructor::symplane0_rect( ){
-// 	
-// 	int nxc = m_vnxc;
-// 	int n = nxc*2;
-// 	std::cout<<"rect symplane is called"<<std::endl;
-// 	// let's treat the local data as a matrix
-// 	for (int iza = 2; iza <= nxc; iza++) {
-// 		for (int iya = 2; iya <= nxc; iya++) {
-// 			m_volume->cmplx(0,iya,iza) += conj(m_volume->cmplx(0,n-iya+2,n-iza+2));
-// 			(*m_wptr)(0,iya,iza) += (*m_wptr)(0,n-iya+2,n-iza+2);
-// 			m_volume->cmplx(0,n-iya+2,n-iza+2) = conj(m_volume->cmplx(0,iya,iza));
-// 			(*m_wptr)(0,n-iya+2,n-iza+2) = (*m_wptr)(0,iya,iza);
-// 			m_volume->cmplx(0,n-iya+2,iza) += conj(m_volume->cmplx(0,iya,n-iza+2));
-// 			(*m_wptr)(0,n-iya+2,iza) += (*m_wptr)(0,iya,n-iza+2);
-// 			m_volume->cmplx(0,iya,n-iza+2) = conj(m_volume->cmplx(0,n-iya+2,iza));
-// 			(*m_wptr)(0,iya,n-iza+2) = (*m_wptr)(0,n-iya+2,iza);
-// 		}
-// 	}
-// 	for (int iya = 2; iya <= nxc; iya++) {
-// 		m_volume->cmplx(0,iya,1) += conj(m_volume->cmplx(0,n-iya+2,1));
-// 		(*m_wptr)(0,iya,1) += (*m_wptr)(0,n-iya+2,1);
-// 		m_volume->cmplx(0,n-iya+2,1) = conj(m_volume->cmplx(0,iya,1));
-// 		(*m_wptr)(0,n-iya+2,1) = (*m_wptr)(0,iya,1);
-// 	}
-// 	for (int iza = 2; iza <= nxc; iza++) {
-// 		m_volume->cmplx(0,1,iza) += conj(m_volume->cmplx(0,1,n-iza+2));
-// 		(*m_wptr)(0,1,iza) += (*m_wptr)(0,1,n-iza+2);
-// 		m_volume->cmplx(0,1,n-iza+2) = conj(m_volume->cmplx(0,1,iza));
-// 		(*m_wptr)(0,1,n-iza+2) = (*m_wptr)(0,1,iza);
-// 	}
-// 	
-// }
+void nn4_rectReconstructor::symplane0_rect( ){
+	
+	int nxc = m_vnxc;
+	int n = nxc*2;
+	std::cout<<"rect symplane is called"<<std::endl;
+	// let's treat the local data as a matrix
+	for (int iza = 2; iza <= nxc; iza++) {
+		for (int iya = 2; iya <= nxc; iya++) {
+			m_volume->cmplx(0,iya,iza) += conj(m_volume->cmplx(0,n-iya+2,n-iza+2));
+			(*m_wptr)(0,iya,iza) += (*m_wptr)(0,n-iya+2,n-iza+2);
+			m_volume->cmplx(0,n-iya+2,n-iza+2) = conj(m_volume->cmplx(0,iya,iza));
+			(*m_wptr)(0,n-iya+2,n-iza+2) = (*m_wptr)(0,iya,iza);
+			m_volume->cmplx(0,n-iya+2,iza) += conj(m_volume->cmplx(0,iya,n-iza+2));
+			(*m_wptr)(0,n-iya+2,iza) += (*m_wptr)(0,iya,n-iza+2);
+			m_volume->cmplx(0,iya,n-iza+2) = conj(m_volume->cmplx(0,n-iya+2,iza));
+			(*m_wptr)(0,iya,n-iza+2) = (*m_wptr)(0,n-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nxc; iya++) {
+		m_volume->cmplx(0,iya,1) += conj(m_volume->cmplx(0,n-iya+2,1));
+		(*m_wptr)(0,iya,1) += (*m_wptr)(0,n-iya+2,1);
+		m_volume->cmplx(0,n-iya+2,1) = conj(m_volume->cmplx(0,iya,1));
+		(*m_wptr)(0,n-iya+2,1) = (*m_wptr)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nxc; iza++) {
+		m_volume->cmplx(0,1,iza) += conj(m_volume->cmplx(0,1,n-iza+2));
+		(*m_wptr)(0,1,iza) += (*m_wptr)(0,1,n-iza+2);
+		m_volume->cmplx(0,1,n-iza+2) = conj(m_volume->cmplx(0,1,iza));
+		(*m_wptr)(0,1,n-iza+2) = (*m_wptr)(0,1,iza);
+	}
+	
+}
 
 EMData* nn4_rectReconstructor::finish(bool doift)
 {
