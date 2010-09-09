@@ -330,7 +330,8 @@ def initialize_data(inputfile,tltfile,pad,no_weights,lowmem,preprocess):
 
 			# these rely only on the header
 			try: elem={"xform":tmp["xform.projection"]}
-			except : raise Exception,"Image %d doesn't have orientation information in its header"%i
+			except : continue
+				#raise Exception,"Image %d doesn't have orientation information in its header"%i
 			
 			if no_weights: elem["weight"]=1.0
 			else : 
