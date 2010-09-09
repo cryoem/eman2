@@ -1166,6 +1166,8 @@ of these occasional errors"""
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
+			ret["source_path"]=pkey[:-1]
+			ret["source_n"]=key
 			return ret
 		return r
 
@@ -1248,6 +1250,8 @@ of these occasional errors"""
 			ret.set_attr("nx",nx)
 			ret.set_attr("ny",ny)
 			ret.set_attr("nz",nz)
+			ret["source_path"]=pkey[:-1]
+			ret["source_n"]=key
 				
 			# binary data
 			if not nodata:

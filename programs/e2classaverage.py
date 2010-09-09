@@ -303,7 +303,10 @@ class ClassAvTask(EMTask):
 			# Nothing to align to, so we just regenerate unmasked average with existing alignments
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 			
-		if ref_orient!=None: avg["xform.projection"]=ref_orient
+		if ref_orient!=None: 
+			avg["xform.projection"]=ref_orient
+			avg["projection_image"]=self.data["ref"][1]
+			avg["projection_image_idx"]=,self.data["ref"][2]
 		
 		return {"average":avg,"info":ptcl_info,"n":options["n"]}
 
@@ -341,6 +344,8 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception,"Bad images list"
 	
+	incl=[]
+	excl=[]
 	avgr=Averagers.get(averager[0], averager[1])
 	for i in range(nimg):
 		img=get_image(images,i,normproc)
@@ -348,10 +353,19 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 		img.process_inplace("xform",{"transform":ptcl_info[i][1]})
 		try: use=ptcl_info[i][2]
 		except: use=1
-		if use : avgr.add_image(img)				# only include the particle if we've tagged it as good
+		if use : 
+			avgr.add_image(img)				# only include the particle if we've tagged it as good
+			if img.has_attr("source_n") : incl.append(img["source_n"])
+		elif img.has_attr("source_n") : excl.append(img["source_n"])
 
 	avg=avgr.finish()
 
+	# set some useful attributes
+	if len(incl)>0 or len(excl)>0 :
+		avg["class_ptcl_idxs"]=incl
+		avg["exc_class_ptcl_idxs"]=excl
+		avg["class_ptcl_src"]=img["source_path"]
+		
 	return avg
 
 def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
