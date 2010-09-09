@@ -285,6 +285,8 @@ class ClassAvTask(EMTask):
 		except:
 			return {"average":None,"info":None,"n":self.options["n"]}
 
+		try: ref_orient=avg["xform.projection"]
+		except: ref_orient=None
 
 		# Final alignment to the reference (if there is one)
 		if ref!=None :
@@ -301,6 +303,7 @@ class ClassAvTask(EMTask):
 			# Nothing to align to, so we just regenerate unmasked average with existing alignments
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 			
+		if ref_orient!=None: avg["xform.projection"]=ref_orient
 		
 		return {"average":avg,"info":ptcl_info,"n":options["n"]}
 
@@ -405,6 +408,9 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		gmw=max(5,ref["nx"]/16)		# gaussian mask width
 		ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
 		ref.process_inplace("xform.centeracf")						# TODO: should probably check how well this works
+		ref_orient=None
+	else:
+		ref_orient=ref["xform.projection"]
 	if verbose>1 : print ""
 
 	init_ref=ref.copy()
@@ -487,6 +493,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		else :
 			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
 		
+	if ref_orient!=None : ref["xform.projection"]=ref_orient
 	return [ref,ptcl_info]
 	
 def classmx_ptcls(classmx,n):
