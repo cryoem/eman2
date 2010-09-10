@@ -5999,7 +5999,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		print_begin_msg("ihrsr_MPI")
 		print_msg("Input stack                               : %s\n"%(stack))
 		print_msg("Reference volume                          : %s\n"%(ref_vol))	
 		print_msg("Output directory                          : %s\n"%(outdir))
@@ -6101,8 +6100,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
-	pixer  = [0.0]*nima
-	modphi = [0.0]*nima
 	#jeanmod
 	total_iter = 0
 	# do the projection matching
@@ -6110,6 +6107,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		terminate = 0
 		Iter = -1
  		while(Iter < max_iter-1 and terminate == 0):
+			pixer  = [0.0]*nima
+			modphi = [0.0]*nima
 			Iter += 1
 			total_iter += 1
 			if myid == main_node:
@@ -6129,7 +6128,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 			for im in xrange( nima ):
 
-				peak, phihi, theta, psi, sxi, syi = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
 				if(peak > -1.0e22):
 					#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
 					dpp = (float(dp)/pixel_size)
@@ -6156,8 +6155,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        				else:
 	        					synew  = syi
 	        				phinew = phihi
-	        			#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
-					set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
+					t2 = Transform({"type":"spider","phinew":phi,"theta":theta,"psi":psi})
+					t2.set_trans(Vec2f(-sxi, -synew))
+					data[im].set_attr("xform.projection", t2)
+					pixer[im] = max_3D_pixel_error(t1, t2, numr[-3])
 					sx += sxi
 					sy += synew
 					#end of Jeanmod
@@ -6178,7 +6179,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				sy = 0.0
 			sx = bcast_number_to_all(sx, source_node = main_node)
 			sy = bcast_number_to_all(sy, source_node = main_node)
-			sy = 0.0
 			for im in xrange( nima ):
 				paramali = get_params_proj(data[im])
 				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
@@ -6194,7 +6194,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
 				from utilities import write_text_file
-				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer%04d.txt"%total_iter) )
+				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer_%04d_%04d.txt"%(N_step,Iter)) )
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -6229,8 +6229,44 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
+			del pixer, modphi
 			if myid == main_node:
 				print_msg("Time to compute pixer = %d\n"%(time()-start_time))
+				start_time = time()
+			# write out headers, under MPI writing has to be done sequentially
+			mpi_barrier(MPI_COMM_WORLD)
+			m = 5
+			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			if myid == main_node:
+				
+				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step,Iter)),"w")
+				for n in xrange(number_of_proc):
+					if n!=main_node:
+						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						for i in xrange(recvcount[n]):
+							for j in xrange(m):
+								fexp.write(" %15.5f  "%t[j+i*m])
+							fexp.write("\n")
+					else:
+						t = [0.0]*m
+						for i in xrange(recvcount[myid]):
+							t = get_params_proj(data[i])
+							for j in xrange(m):
+								fexp.write(" %15.5f  "%t[j])
+							fexp.write("\n")
+				fexp.close()
+				del t
+	        	else:
+				nvalue = [0.0]*m*recvcount[myid]
+				t = [0.0]*m
+				for i in xrange(recvcount[myid]):
+					t = get_params_proj(data[i])
+					for j in xrange(m):
+						nvalue[j + i*m] = t[j]
+				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				del nvalue
+			if myid == main_node:
+				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
@@ -6318,41 +6354,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			#end jeanmod
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
-			# write out headers, under MPI writing has to be done sequentially
-			mpi_barrier(MPI_COMM_WORLD)
-			m = 5
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
-			if myid == main_node:
-				
-				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step,Iter)),"w")
-				for n in xrange(number_of_proc):
-					if n!=main_node:
-						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-						for i in xrange(recvcount[n]):
-							for j in xrange(m):
-								fexp.write(" %15.5f  "%t[j+i*m])
-							fexp.write("\n")
-					else:
-						t = [0.0]*m
-						for i in xrange(recvcount[myid]):
-							t = get_params_proj(data[i])
-							for j in xrange(m):
-								fexp.write(" %15.5f  "%t[j])
-							fexp.write("\n")
-				fexp.close()
-				del t
-	        	else:
-				nvalue = [0.0]*m*recvcount[myid]
-				t = [0.0]*m
-				for i in xrange(recvcount[myid]):
-					t = get_params_proj(data[i])
-					for j in xrange(m):
-						nvalue[j + i*m] = t[j]
-				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-				del nvalue
-			if myid == main_node:
-				print_msg("Time to write parameters = %d\n"%(time()-start_time))
-				start_time = time()
 	par_str = ["xform.projection"]
 	if myid == main_node:
 	   	if(file_type(stack) == "bdb"):

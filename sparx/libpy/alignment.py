@@ -1338,17 +1338,12 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, step, dpsi=180.0, finfo=N
 			s2x   = sxb - dp["tx"]
 			s2y   = syb - dp["ty"]
 
-		#t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		#t2.set_trans(Vec2f(-s2x, -s2y))
-		#data.set_attr("xform.projection", t2)
-		#from pixel_error import max_3D_pixel_error
-		#pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
-		return peak, phi, theta, psi, s2x, s2y
+		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
-		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def ali_vol_func(params, data):
 	from utilities    import compose_transform3
