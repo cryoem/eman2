@@ -283,12 +283,12 @@ class ClassAvTask(EMTask):
 #		print [self.data["images"][1]]+self.data["images"][2]
 
 		# make the class-average
-#		try:
-		avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
+		try:
+			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
 				options["automask"],options["verbose"],callback)
-#		except:
-#			return {"average":None,"info":None,"n":self.options["n"]}
+		except:
+			return {"average":None,"info":None,"n":self.options["n"]}
 
 		try: ref_orient=avg["xform.projection"]
 		except: ref_orient=None
