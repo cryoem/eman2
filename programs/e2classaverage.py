@@ -60,6 +60,7 @@ def main():
 	
 	parser.add_option("--input", type="string", help="The name of the input particle stack", default=None)
 	parser.add_option("--output", type="string", help="The name of the output class-average stack", default=None)
+	parser.add_option("--oneclass", type="int", help="Create only a single class-average. Specify the number.",default=None)
 	parser.add_option("--classmx", type="string", help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default=None)
 	parser.add_option("--ref", type="string", help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. Also used to assign euler angles to the generated classes. This is typically the projections that were used for classification.", default=None)
 	parser.add_option("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
@@ -143,7 +144,10 @@ def main():
 	# prepare tasks
 	tasks=[]
 	if ncls>1:
-		for cl in range(ncls):
+		if options.oneclass==None : clslst=range(ncls)
+		else : clslst=[options.oneclass]
+		
+		for cl in clslst:
 			ptcls=classmx_ptcls(classmx[0],cl)			
 			if options.resample : ptcls=[random.choice(ptcls) for i in ptcls]	# this implements bootstrap resampling of the class-average
 			if options.odd : ptcls=[i for i in ptcls if i%2==1]
