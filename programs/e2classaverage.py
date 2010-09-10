@@ -219,6 +219,8 @@ def main():
 	else:
 		for t in tasks:
 			rslt=t.execute()
+			if rslt==None : sys.exit(1)
+			
 			if rslt["average"]!=None :
 				rslt["average"]["class_ptcl_src"]=options.input
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
@@ -287,6 +289,8 @@ class ClassAvTask(EMTask):
 			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
 				options["automask"],options["verbose"],callback)
+		except KeyboardInterrupt: return None
+		except SystemExit: return None
 		except:
 			return {"average":None,"info":None,"n":self.options["n"]}
 
