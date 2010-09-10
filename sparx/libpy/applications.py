@@ -1773,7 +1773,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	# create the output directory, if it does not exist
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 	if myid == main_node:
 		print_begin_msg("mref_ali2d_MPI")
 		os.mkdir(outdir)
@@ -5930,6 +5930,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
 	from fundamentals   import rot_avg_image
+	from pixel_error    import max_3D_pixel_error
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -5945,11 +5946,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1,myid)
+	if myid == 0:
+		if os.path.exists(outdir):  nx = 1
+		else:  nx = 0
+	ny = bcast_number_to_all(nx, source_node = main_node)
+	
+	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
-		print_begin_msg("ihrsr_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6096,7 +6101,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
-	pixer = [0.0]*nima
+	pixer  = [0.0]*nima
 	modphi = [0.0]*nima
 	#jeanmod
 	total_iter = 0
@@ -6124,38 +6129,40 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 			for im in xrange( nima ):
 
-				peak, phihi, sxi, syi, pixer[im] = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
-				#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
-				dpp = (float(dp)/pixel_size)
-				dyi = (float(syi)/dpp)-int(syi/dpp)
-				jdelta = 0.75/dpp # jdelta could be adjustable input parameter
-				if dyi < -0.5-jdelta:
-					eyi    = dyi+1.0
-					sytemp = eyi*dpp
-					synew  = 0.0
-					phinew = phihi+abs(dphi)*float(syi-sytemp)/dpp
-					#print  im," A ",syi,dyi,eyi,synew, phihi[im],phinew[im]
-				elif dyi > 0.5+jdelta:
-					eyi    = dyi-1.0
-					sytemp = eyi*dpp
-					synew  = 0.0
-					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
-					#print  im," B ",syi,dyi,eyi,synew, phihi[im],phinew[im]
-				else:
-					if abs(int(syi/dpp)) > 0:
-					   eyi    = dyi
-					   sytemp = eyi*dpp
-					   synew  = 0.0
-					   phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+				peak, phihi, theta, psi, sxi, syi = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				if(peak > -1.0e22):
+					#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
+					dpp = (float(dp)/pixel_size)
+					dyi = (float(syi)/dpp)-int(syi/dpp)
+					jdelta = 0.75/dpp # jdelta could be adjustable input parameter
+					if dyi < -0.5-jdelta:
+						eyi    = dyi+1.0
+						sytemp = eyi*dpp
+						synew  = 0.0
+						phinew = phihi+abs(dphi)*float(syi-sytemp)/dpp
+						#print  im," A ",syi,dyi,eyi,synew, phihi[im],phinew[im]
+					elif dyi > 0.5+jdelta:
+						eyi    = dyi-1.0
+						sytemp = eyi*dpp
+						synew  = 0.0
+						phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+						#print  im," B ",syi,dyi,eyi,synew, phihi[im],phinew[im]
 					else:
-					   synew  = syi
-					   phinew = phihi
-					#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
-				paramalij = get_params_proj(data[im])
-				set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
-				sx += sxi
-				sy += synew
-				#end of Jeanmod
+						if abs(int(syi/dpp)) > 0:
+							eyi         = dyi
+	        					sytemp = eyi*dpp
+	        					synew  = 0.0
+	        					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
+	        				else:
+	        					synew  = syi
+	        				phinew = phihi
+	        			#print  im," C ",syi,dyi,"na",synew, phihi,phinew[im]
+					set_params_proj(data[im], [phinew, paramalij[1], paramalij[2], paramalij[3], synew])
+					sx += sxi
+					sy += synew
+					#end of Jeanmod
+				else:
+					pixer[im] = 0.0
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
@@ -6171,7 +6178,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				sy = 0.0
 			sx = bcast_number_to_all(sx, source_node = main_node)
 			sy = bcast_number_to_all(sy, source_node = main_node)
-			sx = 0.0           #  TRY THIS
 			sy = 0.0
 			for im in xrange( nima ):
 				paramali = get_params_proj(data[im])
@@ -6284,8 +6290,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
 				if(total_iter > nise):
-					from random import random
-					from fundamentals import rot_shift3D
+					#from random import random
+					#from fundamentals import rot_shift3D
+					from filter import filt_gaussl
+					vol = filt_gaussl(vol, 0.25)
 					#vol = rot_shift3D(vol, dphi*random(), 0., 0., 0., 0., (dp/pixel_size)*(random()-0.5))
 					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
