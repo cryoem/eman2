@@ -205,7 +205,8 @@ class EulerData:
 			try:
 				self.eulers.append(d["xform.projection"])
 			except:
-				raise RuntimeError("The data must all have the xform.projection header attribute")
+				pass
+#				raise RuntimeError("The data must all have the xform.projection header attribute")
 		
 		# get the first header and get any items that can be cast to a float
 		header = self.data[0].get_attr_dict()

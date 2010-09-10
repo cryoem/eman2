@@ -60,8 +60,9 @@ def get_eulers_from(filename):
 		h = get_header(filename,i)
 		try: p = h["xform.projection"]
 		except:
-			print "image",i,"doesn't have the xform.projection attribute"
-			return None
+			continue
+			#print "image",i,"doesn't have the xform.projection attribute"
+			#return None
 		
 		eulers.append(p)
 		
@@ -397,13 +398,15 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 				except: dirs.pop(i)
 		
 		self.dirs = dirs
+		print dirs
 		
 		self.au_data = {}
 		for dir in self.dirs:
 			d = self.check_refine_db_dir(dir)
 			if len(d) != 0 and len(d[dir]) != 0: self.au_data.update(d)
 
-	def check_refine_db_dir(self,dir,s1="classes",s2="class_indices",s3="cls_result",s4="threed",s5="projections"):
+	def check_refine_db_dir(self,dir,s1="classes",s2=None,s3="cls_result",s4="threed",s5="projections"):
+		# s2 used to be class_indices
 		names = [s1,s2,s3,s4,s5]
 		data = {}
 		data[dir] = []
@@ -416,22 +419,26 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		cmd = db["cmd_dict"]
 		if cmd == None or not cmd.has_key("input"): return {}
 		
-		for i in range(0,9):
-			for j in range(0,9):
-				last_bit = str(i)+str(j)
-				fail = False
-				r = []
-				# cmd dictionary needs to be stored
-				
-				for name in names:
-					db_name = "bdb:"+dir+"#"+name+"_"+last_bit
-					if not db_check_dict(db_name):
-						fail= True
-						break
-					else: r.append(db_name)
-	
-				if not fail:
-					data[dir].append(r)
+		for i in range(0,99):
+			last_bit = "%02d"%i
+			fail = False
+			r = []
+			# cmd dictionary needs to be stored
+			
+			for name in names:
+				if name==None :
+					r.append(None)
+					continue
+				db_name = "bdb:"+dir+"#"+name+"_"+last_bit
+				if not db_check_dict(db_name):
+					fail= True
+					#print "Failed on ",name," in ",db_name
+					break
+				else: r.append(db_name)
+
+			if not fail:
+				data[dir].append(r)
+			else : break
 		return data
 	
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
