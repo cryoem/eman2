@@ -205,7 +205,7 @@ class EulerData:
 			try:
 				self.eulers.append(d["xform.projection"])
 			except:
-				pass
+				self.eulers.append(Transform())
 #				raise RuntimeError("The data must all have the xform.projection header attribute")
 		
 		# get the first header and get any items that can be cast to a float
@@ -237,7 +237,8 @@ class EulerData:
 				try: l.append(log(float(d[key])))
 				except: l.append(0)
 			else:
-				l.append(float(d[key]))
+				try: l.append(float(d[key]))
+				except: l.append(0)
 		if normalize: return self.normalize_float_list(l)
 		else: return l
 	

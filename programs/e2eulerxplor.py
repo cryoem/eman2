@@ -574,16 +574,17 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		first = False
 		if self.proj_class_viewer == None:
 			first = True
-			self.proj_class_viewer = EMImageMXModule(data=None,application=get_application())
+#			self.proj_class_viewer = EMImageMXModule(data=None,application=get_application())
+			self.proj_class_viewer = EMImage2DModule(image=None,application=get_application())
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
-			self.proj_class_viewer.set_mouse_mode("App" )
+#			self.proj_class_viewer.set_mouse_mode("App" )
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
 			
-			self.proj_class_single = EMImage2DModule(image=None,application=get_application())
-			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
-			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
-			get_application().show_specific(self.proj_class_single)
+#			self.proj_class_single = EMImage2DModule(image=None,application=get_application())
+#			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
+#			QtCore.QObject.connect(self.proj_class_single.emitter(),QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
+#			get_application().show_specific(self.proj_class_single)
 			
 		disp = []
 		if self.projection != None: disp.append(self.projection)
@@ -611,10 +612,10 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			disp.append(self.average)
 
 		self.proj_class_viewer.set_data(disp)
-		self.proj_class_single.set_data(disp)
+#		self.proj_class_single.set_data(disp)
 		
 		self.proj_class_viewer.updateGL()
-		self.proj_class_single.updateGL()
+#		self.proj_class_single.updateGL()
 		if self.particle_viewer != None:
 			self.mx_image_selected(None,None)
 		if first: self.proj_class_viewer.optimally_resize()
@@ -628,7 +629,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		
 	def on_mx_view_closed(self):
 		self.proj_class_viewer = None
-		self.proj_class_single = None
+#		self.proj_class_single = None
 		
 	def on_particle_mx_view_closed(self):
 		self.particle_viewer = None
@@ -787,7 +788,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def closeEvent(self,event):
 		if self.inspector !=None: self.inspector.close()
 		if self.proj_class_viewer !=None: self.proj_class_viewer.closeEvent(None)
-		if self.proj_class_single !=None: self.proj_class_single.closeEvent(None)
+#		if self.proj_class_single !=None: self.proj_class_single.closeEvent(None)
 		if self.particle_viewer != None: self.particle_viewer.closeEvent(None)
 		get_application().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is
