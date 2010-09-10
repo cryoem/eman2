@@ -306,9 +306,9 @@ class ClassAvTask(EMTask):
 			ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
 			fxf=ali["xform.align2d"]
 			avg1=avg
+			if options["verbose"]>0 : print "Final realign:",fxf
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,options["averager"],options["normproc"],options["verbose"])
 
-			if options["verbose"]>0 : print "Final realign:",fxf
 			#self.data["ref"].write_image("tst.hdf",-1)
 			#avg1.write_image("tst.hdf",-1)
 			#avg.write_image("tst.hdf",-1)
@@ -375,8 +375,8 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 
 	# set some useful attributes
 	if len(incl)>0 or len(excl)>0 :
-		avg["class_ptcl_idxs"]=incl
-		avg["exc_class_ptcl_idxs"]=excl
+		if len(incl)>0 : avg["class_ptcl_idxs"]=incl
+		if len(excl)>0 : avg["exc_class_ptcl_idxs"]=excl
 		avg["class_ptcl_src"]=img["source_path"]
 		
 	return avg
