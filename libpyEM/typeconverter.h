@@ -486,60 +486,65 @@ namespace EMAN {
 			EMObject& result = *((EMObject*) storage);
 
 			PyObject * first_obj = PyObject_GetItem(obj_ptr, PyInt_FromLong(0));
-			EMObject::ObjectType object_type;
-			if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
-				object_type = EMObject::INTARRAY;
-			}
-			else if( PyObject_TypeCheck(first_obj, &PyFloat_Type) ) {
-				object_type = EMObject::FLOATARRAY;
-			}
-			else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
-				object_type = EMObject::STRINGARRAY;
+			if(!first_obj) {	//to handle the empty list in python
+				result = EMObject();
 			}
 			else {
-				object_type = EMObject::UNKNOWN;
-			}
-
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			vector<int> iarray;
-			vector<float> farray;
-			vector<string> strarray;
-
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
+				EMObject::ObjectType object_type;
+				if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
+					object_type = EMObject::INTARRAY;
+				}
+				else if( PyObject_TypeCheck(first_obj, &PyFloat_Type) ) {
+					object_type = EMObject::FLOATARRAY;
+				}
+				else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
+					object_type = EMObject::STRINGARRAY;
+				}
+				else {
+					object_type = EMObject::UNKNOWN;
 				}
 
-				if (!py_elem_hdl.get()) {
-					break;
-				}
+				python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+				vector<int> iarray;
+				vector<float> farray;
+				vector<string> strarray;
 
-				python::object py_elem_obj(py_elem_hdl);
+				while(1) {
+					python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+					if (PyErr_Occurred()) {
+						python::throw_error_already_set();
+					}
+
+					if (!py_elem_hdl.get()) {
+						break;
+					}
+
+					python::object py_elem_obj(py_elem_hdl);
+					if (object_type == EMObject::INTARRAY) {
+						python::extract<int> elem_proxy1(py_elem_obj);
+						iarray.push_back(elem_proxy1());
+					}
+					else if (object_type == EMObject::FLOATARRAY) {
+						python::extract<float> elem_proxy1(py_elem_obj);
+						farray.push_back(elem_proxy1());
+					}
+					else if (object_type == EMObject::STRINGARRAY) {
+						python::extract<string> elem_proxy2(py_elem_obj);
+						strarray.push_back(elem_proxy2());
+					}
+					else if (object_type == EMObject::UNKNOWN) {
+						LOGERR("Unknown array type ");
+					}
+				}
 				if (object_type == EMObject::INTARRAY) {
-					python::extract<int> elem_proxy1(py_elem_obj);
-					iarray.push_back(elem_proxy1());
+					result = EMObject(iarray);
 				}
 				else if (object_type == EMObject::FLOATARRAY) {
-					python::extract<float> elem_proxy1(py_elem_obj);
-					farray.push_back(elem_proxy1());
+					result = EMObject(farray);
 				}
 				else if (object_type == EMObject::STRINGARRAY) {
-					python::extract<string> elem_proxy2(py_elem_obj);
-					strarray.push_back(elem_proxy2());
+					result = EMObject(strarray);
 				}
-				else if (object_type == EMObject::UNKNOWN) {
-					LOGERR("Unknown array type ");
-				}
-			}
-			if (object_type == EMObject::INTARRAY) {
-				result = EMObject(iarray);
-			}
-			else if (object_type == EMObject::FLOATARRAY) {
-				result = EMObject(farray);
-			}
-			else if (object_type == EMObject::STRINGARRAY) {
-				result = EMObject(strarray);
 			}
 		}
     };
