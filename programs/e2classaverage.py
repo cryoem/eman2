@@ -449,7 +449,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	# This is really niter+1 1/2 iterations. It gets terminated 1/2 way through the final loop
 	for it in range(niter+2):
 		if verbose : print "Starting iteration %d"%it
-		if callback!=None : callback(it*100/niter+1)
+		if callback!=None : callback(it*100/niter+2)
 		
 		# Evaluate quality from last iteration, and set a threshold for keeping particles
 		if it>0:
