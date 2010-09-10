@@ -5949,6 +5949,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	if myid == 0:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
+	else:  nx = 0
 	ny = bcast_number_to_all(nx, source_node = main_node)
 	
 	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1,myid)
@@ -6155,7 +6156,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        				else:
 	        					synew  = syi
 	        				phinew = phihi
-					t2 = Transform({"type":"spider","phinew":phi,"theta":theta,"psi":psi})
+					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
 					t2.set_trans(Vec2f(-sxi, -synew))
 					data[im].set_attr("xform.projection", t2)
 					pixer[im] = max_3D_pixel_error(t1, t2, numr[-3])
@@ -6328,8 +6329,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				if(total_iter > nise):
 					#from random import random
 					#from fundamentals import rot_shift3D
-					from filter import filt_gaussl
-					vol = filt_gaussl(vol, 0.25)
+					#from filter import filt_gaussl
+					#vol = filt_gaussl(vol, 0.25)
 					#vol = rot_shift3D(vol, dphi*random(), 0., 0., 0., 0., (dp/pixel_size)*(random()-0.5))
 					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
