@@ -335,11 +335,10 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	if (options.classkeepsig):
 		e2cacmd += " --keepsig"
 	
-	if (options.classiter >= 1 ):
-		e2cacmd += " --cmp=%s --align=%s --aligncmp=%s" %(options.classcmp,options.classalign,options.classaligncmp)
+	e2cacmd += " --cmp=%s --align=%s --aligncmp=%s" %(options.classcmp,options.classalign,options.classaligncmp)
 
-		if (options.classralign != None):
-			e2cacmd += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
+	if (options.classralign != None):
+		e2cacmd += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
 	
 	if options.usefilt != None:
 		e2cacmd += " --usefilt=%s" %options.usefilt

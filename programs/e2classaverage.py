@@ -283,12 +283,12 @@ class ClassAvTask(EMTask):
 #		print [self.data["images"][1]]+self.data["images"][2]
 
 		# make the class-average
-		try:
-			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
+#		try:
+		avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
 				options["automask"],options["verbose"],callback)
-		except:
-			return {"average":None,"info":None,"n":self.options["n"]}
+#		except:
+#			return {"average":None,"info":None,"n":self.options["n"]}
 
 		try: ref_orient=avg["xform.projection"]
 		except: ref_orient=None
@@ -330,7 +330,8 @@ def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 	if prefilt : ref.process_inplace("filter.matchto",{"to":ptcl})
 	
 	# initial alignment
-	ali=ptcl.align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
+	if align!=None :
+		ali=ptcl.align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
 
 	# refine alignment if requested
 	if ralign!=None:
@@ -440,7 +441,9 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 
 	# Iterative alignment
 	ptcl_info=[None]*nimg		# empty list of particle info
-	for it in range(niter+1):
+	
+	# This is really niter+1 1/2 iterations. It gets terminated 1/2 way through the final loop
+	for it in range(niter+2):
 		if verbose : print "Starting iteration %d"%it
 		if callback!=None : callback(it*100/niter+1)
 		
@@ -484,7 +487,9 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				best=ptcl_info.index(min(ptcl_info))
 				ptcl_info[best]=(ptcl_info[best][0],ptcl_info[best][1],1)
 				if verbose : print "Best particle reinstated"
-			
+				
+		if it==niter+1 : break		# This is where the loop actually terminates. This makes sure that inclusion/exclusion is updated at the end
+		
 		# Now align and average
 		avgr=Averagers.get(averager[0], averager[1])
 		for i in range(nimg):
