@@ -95,12 +95,7 @@ def DB_cleanup(signum=None,stack=None):
 		print "Shutdown complete, exiting" 
 		sys.exit(1)
 
-# if the program exits nicely, close all of the databases
-atexit.register(DB_cleanup)
 
-# if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
-signal.signal(2,DB_cleanup)
-signal.signal(15,DB_cleanup)
 
 def e2filemodtime(path):
 	"""This will determine the last modification time for a file or bdb: database in seconds"""
@@ -749,6 +744,16 @@ class EMAN2DB:
 			if (not BDB_CACHE_DISABLE):
 				if(not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK)):
 					os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
+
+
+
+		# Moved these here to play nice with EMEN2
+		# if the program exits nicely, close all of the databases
+		atexit.register(DB_cleanup)
+		# if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
+		signal.signal(2,DB_cleanup)
+		signal.signal(15,DB_cleanup)
+
 
 		if BDB_CACHE_DISABLE:
 			self.dbenv=None
