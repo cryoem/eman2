@@ -40,7 +40,6 @@ from numpy import *
 import time
 #from pylab import scatter, subplot, show, figure, colorbar
 from emapplication import EMStandAloneApplication
-from emplot3d import EMPlot3DModule
 
 
 class E2FoldHunterStat:
@@ -283,7 +282,8 @@ class E2FoldHunterStat:
 			###### score 3  	
 			pA = b.makePointArray(b)	
 			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
-			probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1}) 
+			#probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1})
+			probe_MRC.process_inplace("normalize.toimage",{"to":target,"ignore_zero":True}) #TODO: check whether this fixes things correctly (changed by Ross)
 
 			probe_MRC.process_inplace("threshold.binary",{"value":.0001})
 
