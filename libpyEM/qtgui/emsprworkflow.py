@@ -1643,20 +1643,22 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		warning = []
 		name_map = {}
 		for name in params["filenames"]:
-			if len(name) > 3 and name[:4] == "bdb:":
-				warning.append(name)
-				name_map[name] = name
-			else:
-				new_name = "bdb:particles#"+get_file_tag(name)
-				if file_exists(new_name):
-					i = 0
-					while 1:
-						c_name = new_name + "_" + str(i)
-						if not file_exists(c_name):
-							new_name = c_name
-							break
+			# Changed by Steve on 9/14/10. Used to just make a reference. Changed to actually copy data.
+			#if len(name) > 3 and name[:4] == "bdb:":
+				#warning.append(name)
+				#name_map[name] = name
+			#else:
+			
+			new_name = "bdb:particles#"+get_file_tag(name)
+			if file_exists(new_name):
+				i = 0
+				while 1:
+					c_name = new_name + "_" + str(i)
+					if not file_exists(c_name):
+						new_name = c_name
+						break
 						
-				name_map[name] = new_name
+			name_map[name] = new_name
 		params["name_map"] = name_map
 		
 		if len(warning) > 0:
@@ -1666,7 +1668,8 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				if w != warning[-1]: s+= ", "
 			s += " are already in database format: they will merely be associated with the project"
 			error(s,"Warning")
-					
+		
+		print params["name_map"]
 	def on_form_ok(self,params):
 		
 		if  params.has_key("filenames") and len(params["filenames"]) == 0:
@@ -1698,15 +1701,15 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		get_application().processEvents()
 
 		
-		for input,output in params["name_map"].items():
-			if len(input) > 3 and input[:4] == "bdb:": 
-				i += 1
-				progress.setValue(i)
- 				get_application().processEvents()
-				continue
+		for infile,output in params["name_map"].items():
+			#if len(input) > 3 and infile[:4] == "bdb:": 
+				#i += 1
+				#progress.setValue(i)
+ 				#get_application().processEvents()
+				#continue
 			
 			cmd = "e2proc2d.py"
- 			cmd += " "+input
+ 			cmd += " "+infile
  			cmd += " "+output
  			success = (os.system(cmd) in (0,12))
  			if not success or progress.wasCanceled():
@@ -4967,13 +4970,14 @@ of resolution. Note however that the class averaging stage, which can involve it
 
 For comparators here are some possible choices:
 
-ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted)
-
-sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted). Works poorly for very noisy data unless usefilt particles are used for alignment.
 
 frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
 
 phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
+
+sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+
 """
 	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:
 Averaging iterations - Use 6 or 7 when doing intial refinements to eliminate model bias. Use 2 (maybe 1) when pushing resolution
@@ -4987,7 +4991,7 @@ set sf proj - this will filter the class-averages to match the radial power spec
 pad to - should be some number a bit larger than your box size. This should be a 'good' box size as well (see wiki)
 keep - similar to keep in class-averaging, but determines how many class averages are excluded from the reconstruction
 set SF - This will force the reconstruction to be filtered to match the structure factor determined during CTF correction. If used it should be combined with a gaussian lowpass filter at the targeted resolution
-post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'freq_cutoff=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
+post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'cutoff_freq=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
  be somewhat filtered even without this."""
 
 	def __init__(self,ptcls_list,usefilt_ptcls_list):
