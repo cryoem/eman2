@@ -88,6 +88,9 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_option("--autoboxer",type="string",help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
 	parser.add_option("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--autoboxer2", type="string", default=None)
+
+
 	
 	(options, args) = parser.parse_args()
 	
@@ -109,9 +112,14 @@ e2boxer.py ????.mrc --boxsize=256
 	
 #	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	
+	if options.autoboxer2:
+		autobox2(args, options, logid)
+		return
+	
 	if options.autoboxer:
 		autobox(args,options,logid)
 		return
+		
 	if options.write_dbbox or options.write_ptcls:
 		write_output(args,options,logid)
 	else:
@@ -131,15 +139,21 @@ e2boxer.py ????.mrc --boxsize=256
 		
 	E2end(logid)
 	
+	
+	
 def autobox(args,options,logid):
 	
 	boxer = SwarmBoxer()
 	boxer.handle_file_change(options.autoboxer)
 	for i,arg in enumerate(args):
-		boxer_vitals= EMBoxerModuleVitals(arg)
+		boxer_vitals = EMBoxerModuleVitals(file_names=[arg])
 		boxer.target = weakref.ref(boxer_vitals)
 		boxer.auto_box(arg, False, True, True)
 		E2progress(logid,float(i+1)/len(args))
+
+
+
+
 		
 def write_output(args,options,logid):
 	params = {}
@@ -195,7 +209,7 @@ def write_output(args,options,logid):
 			E2progress(logid,progress/total_progress)
 			
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
-	
+
 	ptcls = []
 	mediator = SwarmShrunkenImageMediator(box_size/(2*shrink),shrink)
 	
@@ -1245,7 +1259,8 @@ class SwarmBoxer:
 		else:
 			box_num = self.target().add_box(x,y,type=SwarmBoxer.WEAK_REF_NAME)
 				
-		self.get_2d_window().updateGL()
+		if self.gui_mode:
+			self.get_2d_window().updateGL()
 		
 		return box_num
 		
@@ -1285,7 +1300,7 @@ class SwarmBoxer:
 		'''
 		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)	
 	
-	def auto_box(self,image_name,parameter_update=True,force_remove_auto_boxes=False,cache=True):
+	def auto_box(self, image_name, parameter_update=True, force_remove_auto_boxes=False, cache=True, correlation=None):
 		'''
 		The main autoboxing function, this has a lot in it but it's not that complicated
 		@param image_name the image that we're boxing
@@ -1293,6 +1308,8 @@ class SwarmBoxer:
 		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
 		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
 		'''
+
+
 		self.proximal_boxes = [] # this is always res
 		if self.gui_mode:
 			from PyQt4 import QtCore 
@@ -1300,11 +1317,14 @@ class SwarmBoxer:
 		
 		if self.signal_template_update or force_remove_auto_boxes:
 			self.target().clear_boxes([SwarmBoxer.AUTO_NAME])
-			if self.gui_mode: self.get_2d_window().updateGL()
+			if self.gui_mode:
+				self.get_2d_window().updateGL()
 			
 		
-		if self.signal_template_update:
-			if self.gui_mode: self.target().set_status_message("Updating Swarm Template",0)
+		if self.signal_template_update or not self.templates:
+			if self.gui_mode:
+				self.target().set_status_message("Updating Swarm Template",0)
+
 			self.templates = gen_rot_ave_template(image_name,self.ref_boxes,self.get_subsample_rate(),self.particle_diameter)
 			if self.gui_mode:
 				self.panel_object.enable_update_template(True)
@@ -1317,12 +1337,11 @@ class SwarmBoxer:
 				
 		shrink = self.get_subsample_rate()
 
-		
 		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
 		
-		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2),shrink,self.templates[-1])
+		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2), shrink, self.templates[-1])
 		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
-		correlation_image = FLCFImageCache.get_image(image_name,mediator)
+		correlation_image = correlation or FLCFImageCache.get_image(image_name,mediator)
 		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
 		
 		exclusion_shrink = exclusion_image.get_attr("shrink")
@@ -1363,9 +1382,28 @@ class SwarmBoxer:
 		elif self.pick_mode == SwarmBoxer.MORESELECTIVE: mode = 2
 		
 		searchradius = self.templates[-1].get_xsize()/2
-		correlation = FLCFImageCache.get_image(image_name,mediator)
+		correlation = correlation or FLCFImageCache.get_image(image_name,mediator)
+		# print "Correlation img is %s"%correlation
+
 		if self.gui_mode: self.target().set_status_message("Autoboxing ....",0)
-		soln = BoxingTools.auto_correlation_pick(correlation,self.peak_score,searchradius,self.profile,exclusion_image,self.profile_trough_point,mode)
+		
+		# print "Using %s references"%(len(self.ref_boxes))
+		
+		# print "===========\n\nBoxingTools.auto_correlation_pick"
+		# print "correlation: ", correlation
+		# print "peak_score: ", self.peak_score
+		# print "searchradius: ", searchradius
+		# print "profile: ", self.profile
+		# print "exclusion_image: ", exclusion_image
+		# print "profile_trough_point: ", self.profile_trough_point
+		# print "mode: ", mode		
+		# print "------"
+		
+		soln = BoxingTools.auto_correlation_pick(correlation, self.peak_score, searchradius, self.profile, exclusion_image, self.profile_trough_point, mode)
+				
+		# print "soln:", soln
+		# print "==========="
+		
 		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
 		
 		scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
@@ -1396,7 +1434,8 @@ class SwarmBoxer:
 		for box in self.ref_boxes:
 			if not box.ever_moved and box.image_name == self.target().current_file():
 				box_num = self.target().detect_box_collision([box.x,box.y])
-				if box_num == -1: raise RuntimeError("could not find reference")
+				if box_num == -1:
+					raise RuntimeError("could not find reference")
 				else:
 					box = self.target().get_box(box_num)
 					if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
@@ -1405,8 +1444,9 @@ class SwarmBoxer:
 					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
 					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
 		
+		
 	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
-		self.target().add_boxes(boxes,self.proximity_threshold == None)
+		self.target().add_boxes(boxes, self.proximity_threshold == None)
 		
 		if self.proximity_threshold != None:
 			self.__remove_proximal_particles()
@@ -1414,15 +1454,19 @@ class SwarmBoxer:
 		if cache:
 			self.cache_current_state()
 			self.cache_to_database()
-			
-		if self.gui_mode: self.panel_object.enable_auto_box(False)
-		
+					
 		if self.gui_mode:
 			from PyQt4 import QtCore 
+			self.panel_object.enable_auto_box(False)
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-			
-		if self.gui_mode: self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
-		else: print "Autoboxed %d Particles" %len(boxes)
+			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
+		else:
+			print "Autoboxed %d Particles" %len(boxes)
+
+
+		return boxes
+
+
 	def update_opt_picking_data(self):
 		'''
 		This is the function that decides on the picking parameters of the SwarmBoxer, based on the reference
@@ -1460,7 +1504,8 @@ class SwarmBoxer:
 				tmp = self.profile[i]
 				self.profile_trough_point = i
 				
-		self.panel_object.set_picking_data(self.peak_score, self.profile, self.profile_trough_point)
+		if self.panel_object:
+			self.panel_object.set_picking_data(self.peak_score, self.profile, self.profile_trough_point)
 		
 		return True
 	
@@ -1471,16 +1516,25 @@ class SwarmBoxer:
 		empty = (self.templates == None or len(self.templates) == 0)
 		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME],cache=True)
 		self.reset()
-		self.panel_object.enable_view_template(False)
-		self.panel_object.enable_auto_box(False)
-		if self.template_viewer != None: self.template_viewer.set_data(None)
+		
+		if self.panel_object:
+			self.panel_object.enable_view_template(False)
+			self.panel_object.enable_auto_box(False)
+
+		if self.template_viewer != None:
+			self.template_viewer.set_data(None)
+
 		if not empty:
 			self.cache_current_state()
 			self.cache_to_database()
-#		else:
-#			print "avoided a redundant clear"
+		# else:
+		# 	print "avoided a redundant clear"
+
 		self.update_template = True
-		self.panel_object.set_update_template(True,False)
+
+		if self.panel_object:
+			self.panel_object.set_update_template(True,False)
+		
 		
 	def center_propagate(self,box,image_name,template,box_size):
 		'''

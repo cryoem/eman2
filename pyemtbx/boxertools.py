@@ -607,6 +607,7 @@ class Cache:
 		
 	
 	def get_image(self,image_name, *args, **kargs):
+		# print "get_image: %s"%image_name
 		encapsulated_image = None
 		# first see if the object is already stored
 		for object in self.get_cache():
@@ -1056,10 +1057,9 @@ BinaryCircleImageCache = Cache(BinaryCircleImage)
 
 
 class BigImage:
-	def __init__(self,image_name):
-		self.image_name = image_name
+	def __init__(self, image_name):
+		self.image_name = image_name		
 		self.image = None
-		
 		self.alternate = None
 	
 	def get_construction_argument(self):
@@ -1072,10 +1072,9 @@ class BigImage:
 		if use_alternate and self.alternate != None:
 			return self.alternate
 		
-		if self.image == None:
-			
+		if self.image == None:		
 			self.image = EMData()
-			self.image.read_image(self.image_name,0) # doing it this way makes it work with db terminology
+			self.image.read_image(self.image_name, 0) # doing it this way makes it work with db terminology
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			
 		return self.image
