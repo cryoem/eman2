@@ -7123,6 +7123,54 @@ def ali_vol_n(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	else:
 		return e
 
+def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc"):
+	"""
+		Name
+			sxali_vol_m - align a 3D structure with respect of a 3D reference structure.
+				Like sxali_vol_n, but taking a specified mask instead of a radius.
+		Input
+			aligned_volume.hdf: 3D structure to be aligned.
+		reference_volume.hdf
+			3D reference structure.
+		ang_scale
+			correct angles are expected to be within +/-ang_scale of the values preset in the header of the structure to be aligned
+		shift_scale
+			correct shifts are expected to be within +/-shift_scale of the values preset in the header of the structure to be aligned
+		mag_scale
+			correct magnification is expected to be within +/-mag_scale of the value preset in the header of the structure to be aligned
+		radius
+			radius of a spherical mask centered at nx/2, ny/2, nz/2
+		Note - there are no defaults for three scale parameters. At least one has to appear.
+	"""
+
+
+	#rotation and shift
+	from alignment    import ali_vol_func
+	from utilities    import get_image, model_circle
+	from utilities    import amoeba, get_params3D, set_params3D
+	from utilities    import get_arb_params, set_arb_params
+	
+	ref = get_image(refv)
+	nx = ref.get_xsize()
+	ny = ref.get_ysize()
+	nz = ref.get_zsize()
+	if(mask == None):      mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
+
+	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
+
+	e = get_image(vol)
+	params =  get_arb_params(e, names_params)
+	data = [e, ref, mask, None, discrepancy]
+	
+	new_params = amoeba(params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-5, 1.e-4, 500, data)
+
+	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5]], names_params)
+	if type(vol)==type(""):
+		from utilities import write_headers
+		write_headers( vol, [e], [0])
+	else:
+		return e
+
 
 def ali_vol_nopsi(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	"""
