@@ -743,10 +743,10 @@ Dict Transform::get_rotation(const string& euler_type) const
 	//	phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 */
 
-		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-		if (sin(az* (float)EMConsts::deg2rad )* matrix[2][0]< 0) az=az+180.0f;
+		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(scale*matrix[2][0], -scale*matrix[2][1]);
+//		if (sin(az* (float)EMConsts::deg2rad )* matrix[2][0]< 0) az=az+180.0f;
 		alt =     (float)EMConsts::rad2deg* atan(sqrt(matrix[2][0]*matrix[2][0]+matrix[2][1]*matrix[2][1])/fabs(matrix[2][2]) );
-		if (matrix[2][2]< 0 ){
+		if (matrix[2][2] *scale < 0 ) {
 			alt=180.0f-alt;  }
 		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	} // ends separate cases: alt close to 0, pi, or neither
