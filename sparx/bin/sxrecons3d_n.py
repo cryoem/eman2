@@ -92,7 +92,6 @@ def main():
 		sys.exit()
 	if (options.new):
 		from development import recons3d_n_new
-		print "call the --new option for non-square fft"
 		global_def.BATCH = True
 		recons3d_n_new(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI,options.rx,options.ry)
 		global_def.BATCH = False

@@ -898,6 +898,7 @@ namespace EMAN
 		void get_rect_index(int i,int j,Vec2f& coordinate_2d_sqaure,Vec3f& coordinate_3dnew, const Transform& trans);
 		void put_rect_value_nn(std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult);
 		std::complex<float> get_rect_value_bilinear(EMData* padded,Vec2f& coordinate_2d_square);
+		std::complex<float> get_rect_value_bilinear_yminusone(EMData* padded,Vec2f& coordinate_2d_square);
 		void symplane0_rect();
 		float m_wghta;
 		float m_wghtb;
