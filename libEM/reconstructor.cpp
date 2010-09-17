@@ -2364,9 +2364,10 @@ void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, i
 	
 	m_xratio=float(m_vnx)/float(sizeprojection);	
 	m_yratio=float(m_vny)/float(sizeprojection);
-/*
-	std::cout<<"dim==="<<m_ndim<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
-	std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;*/
+
+	//std::cout<<"dim==="<<m_ndim<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
+	//std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
+	
 
 	m_vnxp = m_vnx*npad;
 	m_vnyp = m_vny*npad;
@@ -2587,6 +2588,7 @@ int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& tra
 		 
  
  		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
+		
  		     {
       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
 		        c1=get_rect_value_bilinear(padded,coordinate_2d_sqaure);
@@ -2598,6 +2600,7 @@ int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& tra
 		 
  
  		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
+		
  		     {
       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
 		        c1=get_rect_value_bilinear_yminusone(padded,coordinate_2d_sqaure); 
@@ -2609,6 +2612,7 @@ int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& tra
 		 
  
  		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
+		
  		     {
       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
 		        c1=get_rect_value_bilinear(padded,coordinate_2d_sqaure); 
