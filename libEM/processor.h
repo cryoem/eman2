@@ -670,7 +670,7 @@ The basic design of EMAN Processors: <br>\
 		int bgsize;
 	};
 
-	/** Segment a volume into subvolumes based on a center separation value. For linear densities
+	/** Segment a volume about:homeinto subvolumes based on a center separation value. For linear densities
 	 * such as skeletons this should fill linear regions with uniformly separated points
 	 *
 	 *@author Steve Ludtke
@@ -765,7 +765,7 @@ The basic design of EMAN Processors: <br>\
 	class Wiener2DFourierProcessor:public Processor
 	{
 	  public:
-		string get_name() const
+		string get_name() const			
 		{
 			return NAME;
 		}
@@ -804,42 +804,6 @@ The basic design of EMAN Processors: <br>\
 		Ctf *ctf;
 	};
 
-	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.
-	 *@param lowpass Processor radius in terms of Nyquist (0-.5)
-	 */
-	class LowpassFourierProcessor:public FourierProcessor
-	{
-	  public:
-		LowpassFourierProcessor():lowpass(0)
-		{
-		}
-
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("lowpass") ) {
-				lowpass = params["lowpass"];
-			}
-//			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d = FourierProcessor::get_param_types();
-			d.put("lowpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
-			return d;
-		}
-
-		static string get_group_desc()
-		{
-			return "Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.";
-		}
-
-	  protected:
-		  virtual void preprocess(EMData * image);
-		  float lowpass;
-	};
-
 	class LinearRampFourierProcessor:public FourierProcessor
 	{
 		public:
@@ -862,119 +826,6 @@ The basic design of EMAN Processors: <br>\
 
 		protected:
 			virtual void create_radial_func(vector < float >&radial_mask) const ;
-	};
-
-	/**High-pass processor is rotationally symmetric 2D function. It attenuates amplitudes at low spatial frequencies, and increases amplitudes for high spatial frequencies. It has the result of enhancing the edges in the image while suppressing all slow-moving variations.	<br> HighpassFourierProcessor class is the base class for all high pass fourier processors.
-	 *@param highpass Processor radius in terms of Nyquist (0-.5)
-	 */
-	class HighpassFourierProcessor:public FourierProcessor
-	{
-	  public:
-		HighpassFourierProcessor():highpass(0)
-		{
-		}
-
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if( params.has_key("highpass") ) {
-				highpass = params["highpass"];
-			}
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d = FourierProcessor::get_param_types();
-			d.put("highpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
-			return d;
-		}
-
-		static string get_group_desc()
-		{
-			return "High-pass processor is rotationally symmetric 2D function. It attenuates amplitudes at low spatial frequencies, and increases amplitudes for high spatial frequencies. It has the result of enhancing the edges in the image while suppressing all slow-moving variations.	<br> HighpassFourierProcessor class is the base class for all high pass fourier processors.";
-		}
-
-	  protected:
-		  virtual void preprocess(EMData * image);
-		  float highpass;
-	};
-
-	/**processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;
-	 */
-	class LowpassSharpCutoffProcessor:public LowpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		static Processor *NEW()
-		{
-			return new LowpassSharpCutoffProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
-	};
-
-	/**processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;
-	 */
-	class HighpassSharpCutoffProcessor:public HighpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		static Processor *NEW()
-		{
-			return new HighpassSharpCutoffProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
-	};
-
-	/**processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass))
-	 */
-	class LowpassGaussProcessor:public LowpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		static Processor *NEW()
-		{
-			return new LowpassGaussProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass));";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
 	/**processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass))
@@ -1062,108 +913,6 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
 		  virtual void preprocess(EMData * image);
 		  float highpass;
-	};
-
-
-	/**processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass))
-	 */
-	class HighpassGaussProcessor:public HighpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-		static Processor *NEW()
-		{
-			return new HighpassGaussProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass);";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
-	};
-
-	/**processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;
-	 */
-	class LowpassTanhProcessor:public LowpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-		static Processor *NEW()
-		{
-			return new LowpassTanhProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
-	};
-
-
-	/**processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;
-	 */
-	class HighpassTanhProcessor:public HighpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-		static Processor *NEW()
-		{
-			return new HighpassTanhProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
-	};
-
-	/**processor radial function: f(x) = 1/(1+t*t)
-	 */
-	class HighpassButterworthProcessor:public HighpassFourierProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-		static Processor *NEW()
-		{
-			return new HighpassButterworthProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "processor radial function: f(x) = 1/(1+t*t);";
-		}
-
-		static const string NAME;
-
-	  protected:
-		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
 	/**processor radial function: f(x) = slope * x + intercept

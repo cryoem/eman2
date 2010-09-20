@@ -67,14 +67,7 @@ const string ZGradientProcessor::NAME = "math.edge.zgradient";
 const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
 const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
 const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
-const string LowpassSharpCutoffProcessor::NAME = "eman1.filter.lowpass.sharp";
-const string HighpassSharpCutoffProcessor::NAME = "eman1.filter.highpass.sharp";
-const string LowpassGaussProcessor::NAME = "eman1.filter.lowpass.gaussian";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
-const string HighpassGaussProcessor::NAME = "eman1.filter.highpass.gaussian";
-const string LowpassTanhProcessor::NAME = "eman1.filter.lowpass.tanh";
-const string HighpassTanhProcessor::NAME = "eman1.filter.highpass.tanh";
-const string HighpassButterworthProcessor::NAME = "eman1.filter.highpass.butterworth";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
 const string BooleanProcessor::NAME = "threshold.notzero";
@@ -254,16 +247,9 @@ const string CudaCorrelationProcessor::NAME = "cuda.correlate";
 
 template <> Factory < Processor >::Factory()
 {
-	force_add< LowpassSharpCutoffProcessor >();
-	force_add<HighpassSharpCutoffProcessor>();
-	force_add<LowpassGaussProcessor>();
-	force_add<HighpassGaussProcessor>();
 	force_add<HighpassAutoPeakProcessor>();
 	force_add<LinearRampFourierProcessor>();
 
-	force_add<LowpassTanhProcessor>();
-	force_add<HighpassTanhProcessor>();
-	force_add<HighpassButterworthProcessor>();
 	force_add<AmpweightFourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
 	force_add<LowpassAutoBProcessor>();
@@ -676,50 +662,6 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	free(y);
 	free(dy);
  }
-
-
-
-void LowpassFourierProcessor::preprocess(EMData * image)
-{
-	if(params.has_key("apix")) {
-		image->set_attr("apix_x", (float)params["apix"]);
-		image->set_attr("apix_y", (float)params["apix"]);
-		image->set_attr("apix_z", (float)params["apix"]);
-	}
-
-	const Dict dict = image->get_attr_dict();
-
-	if( params.has_key("cutoff_abs") ) {
-		lowpass = params["cutoff_abs"];
-	}
-	else if( params.has_key("cutoff_freq") ) {
-		lowpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
-	}
-	else if( params.has_key("cutoff_pixels") ) {
-		lowpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
-	}
-}
-
-void HighpassFourierProcessor::preprocess(EMData * image)
-{
-	if(params.has_key("apix")) {
-		image->set_attr("apix_x", (float)params["apix"]);
-		image->set_attr("apix_y", (float)params["apix"]);
-		image->set_attr("apix_z", (float)params["apix"]);
-	}
-
-	const Dict dict = image->get_attr_dict();
-
-	if( params.has_key("cutoff_abs") ) {
-		highpass = params["cutoff_abs"];
-	}
-	else if( params.has_key("cutoff_freq") ) {
-		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
-	}
-	else if( params.has_key("cutoff_pixels") ) {
-		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
-	}
-}
 
 void SNREvalProcessor::process_inplace(EMData * image)
 {
@@ -1168,68 +1110,6 @@ void LinearRampFourierProcessor::create_radial_func(vector < float >&radial_mask
 	}
 }
 
-void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-#ifdef DEBUG
-	printf("%d %f %f\n",(int)radial_mask.size(),lowpass,step);
-#endif
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		if (x <= lowpass) {
-			radial_mask[i] = 1.0f;
-		}
-		else {
-			radial_mask[i] = 0;
-		}
-		x += step;
-	}
-}
-
-
-void HighpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		if (x >= highpass) {
-			radial_mask[i] = 1.0f;
-		}
-		else {
-			radial_mask[i] = 0;
-		}
-		x += step;
-	}
-}
-
-
-void LowpassGaussProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-//	printf("rms = %d  lp = %f\n",radial_mask.size(),lowpass);
-//	Assert(radial_mask.size() > 0);		// not true, negative numbers do inverse filter processing
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	float sig = 1;
-	if (lowpass > 0) {
-		sig = -1;
-	}
-
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = exp(sig * x * x / (lowpass * lowpass));
-		x += step;
-	}
-
-}
-
-void HighpassGaussProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = 1.0f - exp(-x * x / (highpass * highpass));
-		x += step;
-	}
-}
-
 void HighpassAutoPeakProcessor::preprocess(EMData * image)
 {
 	if(params.has_key("apix")) {
@@ -1267,40 +1147,6 @@ void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask,
 //	for (unsigned int i=0; i<radial_mask.size(); i++) printf("%d\t%f\n",i,radial_mask[i]);
 
 }
-
-
-void LowpassTanhProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = tanh((lowpass - x)*60.0f) / 2.0f + 0.5f;
-		x += step;
-	}
-}
-
-void HighpassTanhProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = tanh(x - highpass) / 2.0f + 0.5f;
-		x += step;
-	}
-}
-
-
-void HighpassButterworthProcessor::create_radial_func(vector < float >&radial_mask) const
-{
-	Assert(radial_mask.size() > 0);
-	float x = 0.0f , step = 0.5f/radial_mask.size();
-	for (size_t i = 0; i < radial_mask.size(); i++) {
-		float t = highpass / 1.5f / (x + 0.001f);
-		radial_mask[i] = 1.0f / (1.0f + t * t);
-		x += step;
-	}
-}
-
 
 void LinearRampProcessor::create_radial_func(vector < float >&radial_mask) const
 {
@@ -5896,7 +5742,7 @@ void LocalNormProcessor::process_inplace(EMData * image)
 
 
 	blur->process_inplace("threshold.belowtozero", Dict("minval", threshold));
-	blur->process_inplace("eman1.filter.lowpass.gaussian", Dict("cutoff_pixels", radius));
+	blur->process_inplace("filter.lowpass.gauss", Dict("cutoff_pixels", radius));
 //	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
 
 	maskblur->div(*blur);

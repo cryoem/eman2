@@ -110,21 +110,83 @@ namespace EMAN
 
 			const Dict dict = image->get_attr_dict();
 			if( params.has_key("sigma")) {
-				params["cutoff_abs"] = params["sigma"];
+				params["cutoff_abs"] = (float)params["sigma"];
 			}
 			else if( params.has_key("cutoff_abs") ) {
-				params["sigma"] = params["cutoff_abs"];
+				params["sigma"] = (float)params["cutoff_abs"];
 			}
 			else if( params.has_key("cutoff_freq") ) {
-				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
+				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"]; 
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
+				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
+		}
+		virtual void preprocessandconvertpars(EMData * image)
+		{
+			if(params.has_key("apix")) {
+				image->set_attr("apix_x", (float)params["apix"]);
+				image->set_attr("apix_y", (float)params["apix"]);
+				image->set_attr("apix_z", (float)params["apix"]);
+			}
+
+			const Dict dict = image->get_attr_dict();
+			if( params.has_key("sigma")) {
+				params["cutoff_abs"] = (float)params["sigma"];
+			}
+			else if( params.has_key("cutoff_abs") ) {
+			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
+				float val = (float)params["cutoff_abs"] / sqrt(2);
+				params["cutoff_abs"] = val;
+				params["sigma"] = val;
+				
+			}
+			else if( params.has_key("cutoff_freq") ) {
+			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
+				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"] / sqrt(2); 
+				params["cutoff_abs"] = val;
+				params["sigma"] = val;
+			}
+			else if( params.has_key("cutoff_pixels") ) {
+			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
+				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]) / sqrt(2);
+				params["cutoff_abs"] = val;
+				params["sigma"] = val;
+			}
+		}
+		virtual void setbutterworthdefaults(EMData * image)
+		{
+		        float highlowratio = 0.15f;
+			const Dict dict = image->get_attr_dict();
+			
+			if(params.has_key("cutoff_abs") && !params.has_key("low_cutoff_frequency"))
+			{
+			        params["low_cutoff_frequency"] = (float)params["cutoff_abs"];
+				
+			        float val = (float)params["low_cutoff_frequency"];
+			        params["high_cutoff_frequency"] = highlowratio*log10(1.0f/val) + val;
+			}
+			
+                        else if(params.has_key("cutoff_freq") && !params.has_key("low_cutoff_frequency"))
+			{
+			        params["low_cutoff_frequency"] = (float)params["cutoff_freq"] * (float)dict["apix_x"];
+				
+			        float val = (float)params["low_cutoff_frequency"];
+			        params["high_cutoff_frequency"] = highlowratio*log10(1.0f/val) + val;  
+			}
+			
+			else if(params.has_key("cutoff_pixels") && !params.has_key("low_cutoff_frequency"))
+			{
+			        params["low_cutoff_frequency"] = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+				
+			        float val = (float)params["low_cutoff_frequency"];
+			        params["high_cutoff_frequency"] = highlowratio*log10(1.0f/val) + val;  
+			}
+			
 		}
 	};
 
@@ -151,7 +213,7 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	/** Highpass top-hat filter applied in Fourier space.
+	/** Highpass top-hat filter applied in Fourier NewLowpassGaussProcessorspace.
 	 * @param sigma Absolute [0,0.5] cut-off frequency.
 	 */
 	class NewHighpassTopHatProcessor:public NewFourierProcessor
@@ -252,7 +314,8 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_LOW_PASS;
-			preprocess(image);
+			preprocessandconvertpars(image);
+			
 			EMFourierFilterInPlace(image, params);
 		}
 		
@@ -275,7 +338,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HIGH_PASS;
-			preprocess(image);
+			preprocessandconvertpars(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		
@@ -460,7 +523,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Filter with tabulated data in Fourier space. 1 value per Fourier pixel, extending to corners. Missing value assumed to be 0.";
+			return "Filter with tabulated data in EMFourierFilterFuncFourier space. 1 value per Fourier pixel, extending to corners. Missing value assumed to be 0.";
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = RADIAL_TABLE;
@@ -493,6 +556,7 @@ namespace EMAN
 			return "Lowpass Butterworth filter processor applied in Fourier space.";
 		}
 		void process_inplace(EMData* image) {
+		        setbutterworthdefaults(image);
 			params["filter_type"] = BUTTERWORTH_LOW_PASS;
 			EMFourierFilterInPlace(image, params);
 		}
@@ -524,6 +588,7 @@ namespace EMAN
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_HIGH_PASS;
+			setbutterworthdefaults(image);
 			EMFourierFilterInPlace(image, params);
 		}
 		TypeDict get_param_types() const

@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 179)
+        self.assertEqual(len(processor_names), 172)
         
         if(IS_TEST_EXCEPTION):
             try:
@@ -335,76 +335,6 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('filter.bandpass.tanh', \
             {'low_cutoff_frequency':0.1, 'Low_fall_off':0.15, 'high_cutoff_frequency':0.45, \
              'high_fall_off':0.15, 'fall_off':1.25})
-             
-    def test_eman1_filter_lowpass_sharp(self):
-        """test eman1.filter.lowpass.sharp processor ........"""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.lowpass.sharp', {'lowpass':0.1})
-        
-    def test_eman1_filter_highpass_sharp(self):
-        """test eman1.filter.highpass.sharp processor ......."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.highpass.sharp', {'highpass':0.45})
-        
-    def test_eman1_filter_lowpass_gaussian(self):
-        """test eman1.filter.lowpass.gaussian processor ....."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.lowpass.gaussian', {'lowpass':0.1})
-        
-    def test_eman1_filter_highpass_gaussian(self):
-        """test eman1.filter.highpass.gaussian processor ...."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.highpass.gaussian', {'highpass':0.45})
-        
-    def test_eman1_filter_lowpass_tanh(self):
-        """test eman1.filter.lowpass.tanh processor ........."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.lowpass.tanh', {'lowpass':0.1})
-        
-    def test_eman1_filter_highpass_tanh(self):
-        """test eman1.filter.highpass.tanh processor ........"""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.highpass.tanh', {'highpass':0.45})
-        
-    def test_eman1_filter_highpass_butterworth(self):
-        """test eman1.filter.highpass.butterworth processor ."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('eman1.filter.highpass.butterworth', {'highpass':0.45})
         
     def test_eman1_filter_ramp(self):
         """test eman1.filter.ramp processor ................."""

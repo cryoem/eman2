@@ -57,7 +57,7 @@ def filt(infile,outfile,sigma):
 	a=EMData.read_images(infile)
 	
 	for i in a: 
-		i.process("filter.highpass.gauss",{"cutoff_abs":sigma})
+		i.process("filter.highpass.gauss",{"sigma":sigma})
 		i.append_image(outfile)
 
 if __name__ == "__main__":
