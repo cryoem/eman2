@@ -76,7 +76,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
     return helix
 
-def get_particle_centroids(helix_coords, px_overlap = None, px_length = None, px_width = None):
+def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
     """
     Gets the coordinates for the overlapping particles in a helix.
     @helix_coords: (x1, y1, x2, y2, width) for the helix
@@ -91,14 +91,7 @@ def get_particle_centroids(helix_coords, px_overlap = None, px_length = None, px
     l_uvect = (l_vect[0]/helix_length, l_vect[1]/helix_length)
     w_uvect = (-l_uvect[1],l_uvect[0])
     
-    if not px_width:
-        px_width = w
-    if not px_length:
-        px_length = px_width
-    if not px_overlap:
-        px_overlap = 0.9*px_length
     assert px_length > px_overlap, "The overlap must be smaller than the particle length"
-    
     px_step = px_length - px_overlap
     l = px_length/2.0 #distance from (x1, y1) on the helix axis
     ptcl_coords = []
@@ -109,42 +102,50 @@ def get_particle_centroids(helix_coords, px_overlap = None, px_length = None, px
     
     return ptcl_coords
 
-def get_particles_from_helix( helix, px_overlap = None, px_length = None, px_width = None ):
+def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None ):
     """
-    Gets the square/rectangular "particles" inside a rectangular helix.
-    @helix: EMData object that contains the rectangular region boxed by the user
-    @px_overlap: pixels of overlap of the rectangular particles taken from the helix
-    @px_length: length of the particles in pixels, defaults to the width of the helix
+    Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
+    parallel to the helical axis. They are then rotated so the "lengths" are vertical.
+    @micrograph: EMData object for the micrograph
+    @helix_coords: (x1,y1,x2,y2,width) tuple for a helix
+    @px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
+    @px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
     @px_width: width of the particles in pixels, defaults to px_length
     @return: a list of EMData particles
     """
+    (x1,y1,x2,y2,w) = helix_coords
+    l_vect = (x2-x1, y2-y1)
+    length = sqrt(l_vect[0]**2+l_vect[1]**2)
+    assert length != 0
+    l_uvect = (l_vect[0]/length, l_vect[1]/length)
+        
+    #Rotate so that the length is parallel to the y-axis
+    #Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
+    rot_angle = 180/pi*acos( l_uvect[1] )
+    #Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+    if l_uvect[0] < 0:
+        rot_angle *= -1 #rotate the box clockwise
+    
     if not px_width:
-        px_width = helix.get_xsize()
+        px_width = w
     if not px_length:
         px_length = px_width
     if not px_overlap:
         px_overlap = 0.9*px_length
     assert px_length > px_overlap, "The overlap must be smaller than the particle length"
     
-    px_step = px_length - px_overlap
-    
-    (xsize, ysize) = (px_width, px_length)
-    (x0,y0) = (0,0)
+    centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
     particles = []
-    while y0 + ysize <= helix.get_ysize():
-        ptcl = helix.get_clip(Region(x0, y0, xsize, ysize))
-        if helix.has_attr("ptcl_helix_coords"):
-            hcoords = helix.get_attr("ptcl_helix_coords")
-            l_vect = (hcoords[2]-hcoords[0], hcoords[3] - hcoords[1])
-            length = sqrt(l_vect[0]**2+l_vect[1]**2)
-            l_uvect = (l_vect[0]/length, l_vect[1]/length)
-            x1 = hcoords[0] + y0*l_uvect[0]
-            y1 = hcoords[1] + y0*l_uvect[1]
-            x2 = x1 + px_length*l_uvect[0]
-            y2 = y1 + px_length*l_uvect[1]
-            ptcl["ptcl_source_coord"] = ( (x1+x2)/2.0, (y1+y2)/2.0) 
-        particles.append( ptcl )
-        y0 += px_step
+    for centroid in centroids:
+        tr = Transform()
+        tr.set_trans(centroid)
+        tr.set_rotation({"type":"2d", "alpha":rot_angle})
+
+        ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
+        ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+        ptcl["ptcl_helix_coords"] = tuple(helix_coords)
+        ptcl["ptcl_source_coord"] = tuple(centroid)
+        particles.append(ptcl)
     
     return particles
 
@@ -172,7 +173,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
     centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
     particles = []
     for centroid in centroids:
-        ptcl= helix_emdata.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
+        ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
         ptcl["ptcl_source_coord"] = tuple(centroid)
         particles.append(ptcl)
     return particles
@@ -379,12 +380,12 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
     (base, ext) = os.path.splitext(ptcl_filepath)
     helices_dict = db_get_helices_dict(micrograph_filepath)
     i = 0
+    micrograph = EMData(micrograph_filepath)
     for coords in helices_dict:
         helix = helices_dict[coords]
         if rotated:
-            particles = get_particles_from_helix(helix, px_overlap, px_length, px_width)
+            particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width)
         else:
-            micrograph = EMData(micrograph_filepath)
             particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width)
         save_particles(particles, i, ptcl_filepath, do_edge_norm)
         i+=1
@@ -701,7 +702,7 @@ if ENABLE_GUI:
                         if self.ptcls_unrotated_checkbox.isChecked():
                             particles = get_unrotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
                         else:
-                            particles = get_particles_from_helix(helices_dict[coords_key], px_overlap, px_length, px_width)
+                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
                         save_particles(particles, i, ptcl_filepath, do_edge_norm)
                         i += 1
                 if self.ptcls_coords_groupbox.isChecked():
