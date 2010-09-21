@@ -1600,7 +1600,7 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 		filt->set_size(nx+2-(nx%2), ny, nz);
 		filt->to_one();
 
-		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
 	}
 
 	EMData *ccf = this->calc_mutual_correlation(this, true,filt);
@@ -1724,7 +1724,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		   filt->get_zsize() != big_clip.get_zsize()) {
 		filt->set_size(big_clip.get_xsize() + 2-(big_clip.get_xsize()%2), big_clip.get_ysize(), big_clip.get_zsize());
 	filt->to_one();
-	filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+	filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
 	}
 	EMData *mc = big_clip.calc_mutual_correlation(&big_clip, true,filt);
  	mc->sub(mc->get_edge_mean());
