@@ -48,6 +48,9 @@ def main():
     parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles with the specified overlap in pixels")
     parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles with the specified overlap in pixels. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
     
+    parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format)")
+    parser.add_option("--db-set-hcoords", type="string", help="Set the helix coordinates in the database from the specified file (in EMAN1 *.box format)")
+    
     parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels", default=-1)
     parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
     parser.add_option("--ptcl-length", type="int", dest="ptcl_length", help="Particle length in pixels", default=-1)
@@ -92,6 +95,10 @@ def main():
         if len(args) == 1:
             logid=E2init(sys.argv)
             micrograph_filepath = args[0]
+            if options.db_add_hcoords:
+                db_load_helix_coords(micrograph_filepath, options.db_add_hcoords, True, helix_width)
+            if options.db_set_hcoords:
+                db_load_helix_coords(micrograph_filepath, options.db_set_hcoords, False, helix_width)
             if options.helix_coords:
                 db_save_helix_coords(micrograph_filepath, options.helix_coords, helix_width)
             if options.helix_images:
@@ -253,9 +260,14 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
         particles.append(ptcl)
     return particles
 
-def load_coords(coords_filepath):
+def load_helix_coords(coords_filepath, specified_width=None):
     """
-    load coordinates from a *.box or *.hbox file
+    load coordinates from a tab-delimited text file specifying helix coordinates as in EMAN1 *.box format    
+    Uses the EMAN1 *.box file format (r is half the width (w) of the boxes)
+        x1-r    y1-r    w    w    -1
+        x2-r    y2-r    w    w    -2
+    @coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
+    @specified_width: force all helix coordinates to have the specified width
     @return a list of tuples [(x0, x1, y1, y2, width), ...] 
     """
     data = []
@@ -269,7 +281,10 @@ def load_coords(coords_filepath):
             r = w / 2.0
             datum[0] = line[0] + r
             datum[1] = line[1] + r
-            datum[4] = w
+            if specified_width:
+                datum[4] = specified_width
+            else:
+                datum[4] = w
         elif line[4] == -2:
             assert line[2] == w
             r = w / 2.0
@@ -379,6 +394,14 @@ def db_get_item(micrograph_filepath, key):
     val = db[micrograph_filepath]
     db_close_dict(db_name)
     return val
+def db_set_item(micrograph_filepath, key, value):
+    """
+    sets the value stored in the e2helixboxer database for the specified micrograph and key 
+    """
+    db_name = E2HELIXBOXER_DB + key
+    db = db_open_dict(db_name)
+    db[micrograph_filepath] = value
+    db_close_dict(db_name)
 def db_get_helices_dict(micrograph_filepath, helix_width = None):
     """
     gets a dictionary of helices
@@ -399,6 +422,24 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
         helix["ptcl_source_image"] = micrograph_filepath
         helices_dict[tuple(coords)] = helix
     return helices_dict
+def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxes = True, specified_width=None):
+    """
+    @micrograph_filepath: the path to the image file for the micrograph
+    @coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
+    @keep_current_boxes: whether to add to or replace the helix coordinates currently in the database
+    @specified_width: force all helix coordinates to have the specified width
+    """
+    coords_list = load_helix_coords(coords_filepath, specified_width)
+    if keep_current_boxes:
+        db_coords = db_get_item(micrograph_filepath, "helixboxes")
+        if specified_width:
+            db_coords = [tuple( list(coords[:4]).append(specified_width) ) for coords in db_coords]
+        for coords in coords_list:
+            if not coords in db_coords:
+                db_coords.append(coords)
+        db_set_item(micrograph_filepath, "helixboxes", db_coords)
+    else:
+        db_set_item(micrograph_filepath, "helixboxes", coords_list)
 
 def db_save_helix_coords(micrograph_filepath, output_filepath=None, helix_width = None):
     """
@@ -875,7 +916,7 @@ if ENABLE_GUI:
             """
             path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
             path = str(path)
-            coords_list = load_coords(path)
+            coords_list = load_helix_coords(path)
             
             keep_boxes_msgbox = QtGui.QMessageBox()
             keep_boxes_msgbox.setText(self.tr("Keep current boxes?"))
