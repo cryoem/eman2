@@ -433,7 +433,7 @@ def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxe
     if keep_current_boxes:
         db_coords = db_get_item(micrograph_filepath, "helixboxes")
         if specified_width:
-            db_coords = [tuple( list(coords[:4]).append(specified_width) ) for coords in db_coords]
+            db_coords = [tuple( list(coords[:4])+ [specified_width] ) for coords in db_coords]
         for coords in coords_list:
             if not coords in db_coords:
                 db_coords.append(coords)
