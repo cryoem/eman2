@@ -17,6 +17,7 @@ try:
     from emshape import EMShape, EMShapeDict
     
     ENABLE_GUI = True
+    
 except ImportError, e:
     print "Importing GUI libraries failed!"
     print e
@@ -31,8 +32,82 @@ A particle is a square or rectangle from inside a helix. Particles are chosen so
 within a helix. Usually, all particles from a micrograph will have the same dimensions.
 """
 
-
 E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
+
+
+def main():
+    usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
+    e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
+    e2helixboxer.py <options (not --gui)> <micrograph>    
+    """
+    parser = OptionParser(usage=usage,version=EMANVERSION)
+    parser.add_option("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
+    
+    parser.add_option("--helix-coords", "-X", type="string", help="Save coordinates for helices in EMAN1 *.box format: x1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
+    parser.add_option("--helix-images", "-x", type="string", help="Save images of the helices. The file name specified will have helix numbers added to it.")
+    parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles with the specified overlap in pixels")
+    parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles with the specified overlap in pixels. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
+    
+    parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels", default=-1)
+    parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
+    parser.add_option("--ptcl-length", type="int", dest="ptcl_length", help="Particle length in pixels", default=-1)
+    parser.add_option("--ptcl-width", type="int", dest="ptcl_width", help="Particle width in pixels", default=-1)
+    parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on micrograph. They are square with length max(ptcl_length, ptcl_width).")
+    parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
+    (options, args) = parser.parse_args()
+    
+    if options.helix_width < 1:
+        helix_width = None
+    else:
+        helix_width = options.helix_width
+
+    if options.ptcl_width < 1:
+        px_width = None
+    else:
+        px_width = options.ptcl_width
+        
+    if options.ptcl_length < 1:
+        px_length = None
+    else:
+        px_length = options.ptcl_length
+        
+    if options.ptcl_overlap < 1:
+        px_overlap = None
+    else:
+        px_overlap = options.ptcl_overlap
+    
+    logid=E2init(sys.argv)
+    
+    if options.gui:
+        if ENABLE_GUI:
+            logid=E2init(sys.argv)
+            app = EMStandAloneApplication()
+            helixboxer = EMHelixBoxerWidget(args, app, options.helix_width)
+            helixboxer.show()
+            app.execute()
+            E2end(logid)
+        else:
+            return
+    else:
+        if len(args) == 1:
+            logid=E2init(sys.argv)
+            micrograph_filepath = args[0]
+            if options.helix_coords:
+                db_save_helix_coords(micrograph_filepath, options.helix_coords, helix_width)
+            if options.helix_images:
+                db_save_helices(micrograph_filepath, options.helix_images, helix_width)
+            if options.ptcl_coords:
+                db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
+            if options.ptcl_images:
+                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean)
+            E2end(logid)
+        elif len(args) == 0:
+            print 'You must specify a micrograph file or use the "--gui" option.'
+            return
+        elif len(args) > 1:
+            print 'Multiple micrographs can only be specified with the "--gui" option'
+            return
+
 def counterGen():
     """
     Calling this function will create a counter object.
@@ -78,12 +153,12 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 
 def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
     """
-    Gets the coordinates for the overlapping particles in a helix.
-    @helix_coords: (x1, y1, x2, y2, width) for the helix
-    @px_overlap: The overlap in pixels between a particle and the next particle, measured along the axis of the helix
-    @px_length: The length in pixels of a particle along the axis of the helix
-    @px_width: The width in pixels of the particle
-    @return: The coordinates on the micrograph of the centroids of the particles in pixels: [(x0,y0),(x1,y1),(x2,y2),...]
+    Finds the centroids for each particle in a helix.
+    @helix_coords: (x1, y1, x2, y2, width) -- the helix endpoints on the micrograph and width of the helix in pixels
+    @px_overlap: the overlap of consecutive particles in pixels, defaults to 90% of particle length
+    @px_length: the length in pixels of a particle along the axis of the helix
+    @px_width: the width in pixels of the particle
+    @return: a list of coordinates on the micrograph for each particle's centroid: [(x0,y0),(x1,y1),(x2,y2),...]
     """
     (x1,y1,x2,y2,w) = helix_coords
     l_vect = (x2-x1,y2-y1)
@@ -151,13 +226,13 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 
 def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None):
     """
-    For a helix, gets particles that have horizontal and vertical sides on the micrograph.
-    @micrograph: EMData object for the micrograph
-    @helix_coords: (x1,y1,x2,y2,width) tuple for a helix
-    @px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*max(px_length,px_width)
-    @px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
-    @px_width: width of the particles in pixels, defaults to px_length
-    @return: a list of EMData particles
+    Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
+    @micrograph: EMData object that holds the image data for the helix
+    @helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
+    @px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
+    @px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
+    @px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
+    @return: a list of EMData objects for each unrotated particle in the helix 
     """
     #Will be square
     if not px_length and not px_width:
@@ -169,7 +244,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
     else:
         side = max(px_length, px_width)
     if not px_overlap:
-        px_overlalp = 0.9*side
+        px_overlap = 0.9*side
     centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
     particles = []
     for centroid in centroids:
@@ -390,89 +465,9 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
         save_particles(particles, i, ptcl_filepath, do_edge_norm)
         i+=1
 
-def main():
-    usage = """
-This program is used to box helices from a micrograph and extract square pseudoparticles from the helices.
-A helical region of a macromolecule can appear as a rectangle on a 2D micrograph; thus a "helix" in this program is a rectangle. 
-Different helices from the same micrograph will generally have different lengths but the same width.
-A particle is a square or rectangle from inside a helix. Particles are chosen so that they overlap each other
-within a helix. Usually, all particles from a micrograph will have the same dimensions.
-
-    e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
-    e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
-    e2helixboxer.py <options (not --gui)> <micrograph>    
-    """
-    parser = OptionParser(usage=usage,version=EMANVERSION)
-    parser.add_option("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
-    
-    parser.add_option("--helix-coords", "-X", type="string", help="Save coordinates for helices in EMAN1 *.box format: x1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
-    parser.add_option("--helix-images", "-x", type="string", help="Save images of the helices. The file name specified will have helix numbers added to it.")
-    parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles with the specified overlap in pixels")
-    parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles with the specified overlap in pixels. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
-    
-    parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels", default=-1)
-    parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
-    parser.add_option("--ptcl-length", type="int", dest="ptcl_length", help="Particle length in pixels", default=-1)
-    parser.add_option("--ptcl-width", type="int", dest="ptcl_width", help="Particle width in pixels", default=-1)
-    parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on micrograph. They are square with length max(ptcl_length, ptcl_width).")
-    parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
-    (options, args) = parser.parse_args()
-    
-    if options.helix_width < 1:
-        helix_width = None
-    else:
-        helix_width = options.helix_width
-
-    if options.ptcl_width < 1:
-        px_width = None
-    else:
-        px_width = options.ptcl_width
-        
-    if options.ptcl_length < 1:
-        px_length = None
-    else:
-        px_length = options.ptcl_length
-        
-    if options.ptcl_overlap < 1:
-        px_overlap = None
-    else:
-        px_overlap = options.ptcl_overlap
-    
-    logid=E2init(sys.argv)
-    
-    if options.gui:
-        if ENABLE_GUI:
-            logid=E2init(sys.argv)
-            app = EMStandAloneApplication()
-            helixboxer = EMHelixBoxerWidget(args, app, options.helix_width)
-            helixboxer.show()
-            app.execute()
-            E2end(logid)
-        else:
-            return
-    else:
-        if len(args) == 1:
-            logid=E2init(sys.argv)
-            micrograph_filepath = args[0]
-            if options.helix_coords:
-                db_save_helix_coords(micrograph_filepath, options.helix_coords, helix_width)
-            if options.helix_images:
-                db_save_helices(micrograph_filepath, options.helix_images, helix_width)
-            if options.ptcl_coords:
-                db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
-            if options.ptcl_images:
-                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean)
-            E2end(logid)
-        elif len(args) == 0:
-            print 'You must specify a micrograph file or use the "--gui" option.'
-            return
-        elif len(args) > 1:
-            print 'Multiple micrographs can only be specified with the "--gui" option'
-            return
-
 
 if ENABLE_GUI:
-    class EMWriteHelixFiles(QtGui.QDialog):
+    class EMWriteHelixFilesDialog(QtGui.QDialog):
         """
         options for writing helices and particles to files
         """
