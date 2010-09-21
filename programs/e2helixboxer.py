@@ -1059,9 +1059,9 @@ if ENABLE_GUI:
     #            save_helix_coords(self.helices_dict.keys(), file_path)
         def write_images(self):
             """
-            Load EMWriteHelixFiles dialog to save helices, and particles to image files. 
+            Load EMWriteHelixFilesDialog to save helices, and particles to image files. 
             """
-            self.write_helix_files_dlg = EMWriteHelixFiles(self)
+            self.write_helix_files_dlg = EMWriteHelixFilesDialog(self)
             self.write_helix_files_dlg.setModal(True)
             self.write_helix_files_dlg.show()
             
