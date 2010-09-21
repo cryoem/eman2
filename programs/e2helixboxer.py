@@ -48,8 +48,8 @@ def main():
     parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles with the specified overlap in pixels")
     parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles with the specified overlap in pixels. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
     
-    parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format)")
-    parser.add_option("--db-set-hcoords", type="string", help="Set the helix coordinates in the database from the specified file (in EMAN1 *.box format)")
+    parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+    parser.add_option("--db-set-hcoords", type="string", help="Set the helix coordinates in the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
     
     parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels", default=-1)
     parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
@@ -433,7 +433,7 @@ def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxe
     if keep_current_boxes:
         db_coords = db_get_item(micrograph_filepath, "helixboxes")
         if specified_width:
-            db_coords = [tuple( list(coords[:4])+ [specified_width] ) for coords in db_coords]
+            db_coords = [tuple( list(coords[:4]) + [specified_width] ) for coords in db_coords]
         for coords in coords_list:
             if not coords in db_coords:
                 db_coords.append(coords)
