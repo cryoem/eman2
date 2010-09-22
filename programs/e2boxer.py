@@ -88,7 +88,6 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_option("--autoboxer",type="string",help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
 	parser.add_option("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--autoboxer2", type="string", default=None)
 
 
 	
@@ -110,11 +109,11 @@ e2boxer.py ????.mrc --boxsize=256
 	
 	if cache_box_size: db["box_size"] = options.boxsize
 	
-#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
+	# QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	
-	if options.autoboxer2:
-		autobox2(args, options, logid)
-		return
+	# if options.autoboxer2:
+	# 	autobox2(args, options, logid)
+	# 	return
 	
 	if options.autoboxer:
 		autobox(args,options,logid)
@@ -1300,7 +1299,7 @@ class SwarmBoxer:
 		'''
 		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)	
 	
-	def auto_box(self, image_name, parameter_update=True, force_remove_auto_boxes=False, cache=True, correlation=None):
+	def auto_box(self, image_name, parameter_update=True, force_remove_auto_boxes=False, cache=True):
 		'''
 		The main autoboxing function, this has a lot in it but it's not that complicated
 		@param image_name the image that we're boxing
@@ -1341,7 +1340,7 @@ class SwarmBoxer:
 		
 		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2), shrink, self.templates[-1])
 		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
-		correlation_image = correlation or FLCFImageCache.get_image(image_name,mediator)
+		correlation_image = FLCFImageCache.get_image(image_name,mediator)
 		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
 		
 		exclusion_shrink = exclusion_image.get_attr("shrink")
@@ -1382,7 +1381,7 @@ class SwarmBoxer:
 		elif self.pick_mode == SwarmBoxer.MORESELECTIVE: mode = 2
 		
 		searchradius = self.templates[-1].get_xsize()/2
-		correlation = correlation or FLCFImageCache.get_image(image_name,mediator)
+		correlation = FLCFImageCache.get_image(image_name,mediator)
 		# print "Correlation img is %s"%correlation
 
 		if self.gui_mode: self.target().set_status_message("Autoboxing ....",0)
