@@ -126,7 +126,6 @@ def check(options,args):
 	return error_message
 
 def get_database_entry(image_name,key,database="bdb:e2boxercache",dfl=None):
-	return dfl
 	if not db_check_dict(database+"#"+key) and dfl==None:  return None
 	
 	db = db_open_dict(database+"#"+key)
@@ -1698,13 +1697,6 @@ class EMBoxerModuleVitals(object):
 		self.full_box_update()
 
 
-
-
-class IanBoxer(EMBoxerModuleVitals):
-	pass
-	
-	
-	
 	
 	
 	
