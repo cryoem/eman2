@@ -406,18 +406,18 @@ int main(int argc, char *argv[])
 			}
 
 			if (Xlp || Xhp) {
-				d->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
-				d->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
+				d->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", Xhp == 0 ? -10.0 : Xhp));
+				d->process_inplace("filter.highpass.tanh", Dict("cutoff_abs", Xlp == 0 ? 100000.0 : Xlp));
 			}
 
 			if (Xtlp) {
-				d->process_inplace("eman1.filter.lowpass.tanh", Dict("lowpass", -10.0));
-				d->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", Xtlp));
+				d->process_inplace("filter.lowpass.tanh", Dict("cutoff_abs", -10.0));
+				d->process_inplace("filter.highpass.tanh", Dict("cutoff_abs", Xtlp));
 			}
 
 			if (Xsharphp) {
-				d->process_inplace("eman1.filter.lowpass.sharp", Dict("lowpass", Xsharphp));
-				d->process_inplace("eman1.filter.highpass.sharp", Dict("highpass", 100000.0));
+				d->process_inplace("filter.lowpass.tophat", Dict("cutoff_abs", Xsharphp));
+				d->process_inplace("filter.highpass.tophat", Dict("cutoff_abs", 100000.0));
 			}
 
 			if (mask) {

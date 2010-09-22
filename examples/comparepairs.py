@@ -46,7 +46,7 @@ n=EMUtil.get_image_count(sys.argv[1])
 for i in range(0,n,2):
 	l=EMData.read_images(sys.argv[1],(i,i+1))
 	l[1].process_inplace("normalize.edgemean")
-	l[1].process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
+	l[1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 
 	cmps.append((
 		l[0].cmp("phase",l[1],{}),

@@ -5743,7 +5743,7 @@ void LocalNormProcessor::process_inplace(EMData * image)
 
 	blur->process_inplace("threshold.belowtozero", Dict("minval", threshold));
 	blur->process_inplace("filter.lowpass.gauss", Dict("cutoff_pixels", radius));
-//	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
+//	blur->process_inplace("filter.highpass.tanh", Dict("cutoff_abs", -10.0f));
 
 	maskblur->div(*blur);
 	image->mult(*maskblur);

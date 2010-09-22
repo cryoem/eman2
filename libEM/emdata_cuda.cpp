@@ -269,7 +269,7 @@ EMData *EMData::make_rotational_footprint_cuda( bool unwrap)
 //		   filt->get_zsize() != clipped->get_zsize()) {
 //		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 //		filt->to_one();
-//		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+//		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
 //	}
 //
 	EMData *mc = big_clip.calc_ccf_cuda(&big_clip,false,true);

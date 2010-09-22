@@ -209,6 +209,7 @@ def main():
 						blk=EMData(options.ref,0)
 						blk=EMData(blk["nx"],blk["ny"],1)
 						blk.to_zero()
+						blk.set_attr("ptcl_repr", 0)
 						blk.write_image(options.output,rslt[1]["n"])
 					
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
@@ -257,6 +258,7 @@ def main():
 				blk=EMData(options.ref,0)
 				blk=EMData(blk["nx"],blk["ny"],1)
 				blk.to_zero()
+				blk.set_attr("ptcl_repr", 0)
 				blk.write_image(options.output,t.options["n"])
 				
 	if options.resultmx!=None:

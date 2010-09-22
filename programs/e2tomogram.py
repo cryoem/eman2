@@ -195,15 +195,15 @@ def main():
 			im1+=img
 		iml=None
 		im1.process_inplace("normalize.edgemean")
-		if options.highpass>0 :im1.process_inplace("eman1.filter.highpass.gaussian",{"highpass":options.highpass})
-		if (options.lowpass>0) : im1.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":options.lowpass})
+		if options.highpass>0 :im1.process_inplace("filter.highpass.gauss",{"cutoff_abs":options.highpass})
+		if (options.lowpass>0) : im1.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.lowpass})
 		if options.localavg>1: im1.write_image("aliref.hed",i[0])
 		
 		im2=EMData()
 		im2.read_image(args[inn],i[1])
 		im2.process_inplace("normalize.edgemean")
-		if options.highpass>0 : im2.process_inplace("eman1.filter.highpass.gaussian",{"highpass":options.highpass})
-		if (options.lowpass>0) : im2.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":options.lowpass})
+		if options.highpass>0 : im2.process_inplace("filter.highpass.gauss",{"cutoff_abs":options.highpass})
+		if (options.lowpass>0) : im2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.lowpass})
 		
 		
 		if options.mode=="modeshift" :

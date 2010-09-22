@@ -192,6 +192,8 @@ EMData * ImageAverager::finish()
 		}
 
 		result->update();
+		result->set_attr("ptcl_repr",nimg);
+
 	}
 
 	if( nimg_n0 )
@@ -353,6 +355,8 @@ void MinMaxAverager::add_image(EMData * image)
 EMData *MinMaxAverager::finish()
 {
 	result->update();
+	result->set_attr("ptcl_repr",nimg);
+	
 	if (result && nimg > 1) return result;
 
 	return NULL;
@@ -1106,6 +1110,7 @@ EMData * CtfAverager::finish()
 
 	tmp_ift->update();
 	result->update();
+	result->set_attr("ptcl_repr",nimg);
 
 	if( image0_copy )
 	{
@@ -1206,7 +1211,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		if (sf) {
 			ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_ABS_SNR, sf);
 		}
-		else {
+		else {		result->set_attr("ptcl_repr",nimg);
 			ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_RELATIVE_SNR);
 		}
 
