@@ -3725,11 +3725,16 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
+	if myid == 0:
+		if os.path.exists(outdir):  nx = 1
+		else:  nx = 0
+	else:  nx = 0
+	ny = bcast_number_to_all(nx, source_node = main_node)
+	
+	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:	
-		print_begin_msg("mref_ali3d_MPI")
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
