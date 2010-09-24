@@ -7159,13 +7159,24 @@ def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc")
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
-	if(mask == None):      mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
 	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
 
 	e = get_image(vol)
-	params =  get_arb_params(e, names_params)
-	data = [e, ref, mask, None, discrepancy]
+
+	if(mask == None):
+		mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
+		minval = None
+	elif(mask == "tight"):
+		minval = 0.1*Util.infomask(e,None,True)[0]   # threshold for binarizing
+	elif(isinstance(mask, (int))):
+		minval = -mask    # negative denotes mask is a moving sphere
+		mask = model_circle(-minval, nx, ny, nz)
+	else:
+		minval = None
+
+	params = get_arb_params(e, names_params)
+	data = [e, ref, mask, minval, discrepancy]
 	
 	new_params = amoeba(params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-5, 1.e-4, 500, data)
 
