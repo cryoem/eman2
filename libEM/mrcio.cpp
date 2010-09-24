@@ -160,18 +160,19 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 	if ((mrcmode >= MRC_UCHAR && mrcmode < MRC_UNKNOWN) &&
 		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim) && (nz > 0 && nz < max_dim)) {
-#ifndef SPIDERMRC // Spider MRC files don't satisfy the following test
+//#ifndef SPIDERMRC // Spider MRC files don't satisfy the following test
 		if (file_size > 0) {
 			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) + (off_t)sizeof(MrcHeader) + nsymbt;
 			if (file_size == file_size1) {
 				return true;
 			}
-			return false;
+//			return false;
+			LOGWARN("image size check fails, still try to read it...");	//when size doesn't match, print error message instead of make it fail
 		}
 		else {
 			return true;
 		}
-#endif // SPIDERMRC
+//#endif // SPIDERMRC
 		return true;
 	}
 	EXITFUNC;
