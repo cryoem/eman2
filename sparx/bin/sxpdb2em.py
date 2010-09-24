@@ -80,8 +80,6 @@ map to the center of the volume."""
 		disable_bdb_cache()
 	chains=None
 	
-	print "************ Version of 9/13 ************"
-	
 	try : infile=open(args[0],"r")
 	except : parser.error("Cannot open input file")
 	
