@@ -3698,7 +3698,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1
 
 		#  here we  write header info
 		write_headers( stack, data, list_of_particles)
-	
+
 	print_end_msg("mref_ali3d")
 
 def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
