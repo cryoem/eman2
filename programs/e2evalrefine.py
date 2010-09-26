@@ -47,6 +47,7 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 		
 	parser.add_option("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
+	parser.add_option("--parmpair",default=None,type="string",help="Specify iter,iter to compare the parameters used between 2 itertions.")
 	#options associated with e2refine.py
 	#parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	#parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
@@ -54,6 +55,31 @@ def main():
 	#parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
 
 	(options, args) = parser.parse_args()
+
+	if options.parmpair :
+		try: 
+			na,nb=options.parmpair.split(",")
+			na=int(na)
+			nb=int(nb)
+		except:
+			print "Please specify <iter1>,<iter2>"
+			sys.exit(1)
+		db=db_open_dict("bdb:refine_%02d#register"%na,ro=True)
+		pa=db["cmd_dict"]
+		db=db_open_dict("bdb:refine_%02d#register"%nb,ro=True)
+		pb=db["cmd_dict"]
+
+		ks=set(pa.keys())
+		ks|=set(pb.keys())
+		ks=list(ks)
+		ks.sort()
+
+		for k in ks:
+			try :
+				if pa[k]!=pb[k] : print "%s: %s -> %s"%(k,pa[k],pb[k])
+			except:
+				try: print "%s: %s -> None"%(k,pa[k])
+				except: print "%s: None -> %s"%(k,pb[k])
 
 	if options.parmcmp:
 		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
