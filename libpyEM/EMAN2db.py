@@ -660,7 +660,7 @@ class EMTask:
 	such data requests are remapped into data identifiers (did), then translated back into valid filenames
 	in the remote cache.  When subclassing this class, avoid defining new member variables, as EMTask objects
 	get transmitted over the network. Make use of command, data and options instead. """
-	def __init__(self,command=None,data=None,options=None,user=None,):
+	def __init__(self,command=None,data=None,options=None,user=None):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
@@ -684,7 +684,7 @@ class EMTask:
 		self.failcount=0		# Number of times this task failed to reach completion after starting
 		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
 
-	def execute(self): return
+	def execute(self,callback): return
 
 ##########
 ### This is the 'database' object, representing a BerkeleyDB environment
