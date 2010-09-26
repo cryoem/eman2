@@ -109,7 +109,7 @@ class EMImageMXWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatri
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		if ( self.target == None ): return
+		if ( self.target() == None ): return
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		#context = OpenGL.contextdata.getContext(None)

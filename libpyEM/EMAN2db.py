@@ -95,7 +95,12 @@ def DB_cleanup(signum=None,stack=None):
 		print "Shutdown complete, exiting" 
 		sys.exit(1)
 
+# if the program exits nicely, close all of the databases
+atexit.register(DB_cleanup)
 
+# if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
+signal.signal(2,DB_cleanup)
+signal.signal(15,DB_cleanup)
 
 def e2filemodtime(path):
 	"""This will determine the last modification time for a file or bdb: database in seconds"""
@@ -660,7 +665,7 @@ class EMTask:
 	such data requests are remapped into data identifiers (did), then translated back into valid filenames
 	in the remote cache.  When subclassing this class, avoid defining new member variables, as EMTask objects
 	get transmitted over the network. Make use of command, data and options instead. """
-	def __init__(self,command=None,data=None,options=None,user=None):
+	def __init__(self,command=None,data=None,options=None,user=None,):
 		self.taskid=None		# unique task identifier (in this directory)
 		self.queuetime=None		# Time (as returned by time.time()) when task queued
 		self.starttime=None		# Time when execution began
@@ -684,7 +689,7 @@ class EMTask:
 		self.failcount=0		# Number of times this task failed to reach completion after starting
 		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
 
-	def execute(self,callback): return
+	def execute(self): return
 
 ##########
 ### This is the 'database' object, representing a BerkeleyDB environment
@@ -744,16 +749,6 @@ class EMAN2DB:
 			if (not BDB_CACHE_DISABLE):
 				if(not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK)):
 					os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
-
-
-
-		# Moved these here to play nice with EMEN2
-		# if the program exits nicely, close all of the databases
-		atexit.register(DB_cleanup)
-		# if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
-		signal.signal(2,DB_cleanup)
-		signal.signal(15,DB_cleanup)
-
 
 		if BDB_CACHE_DISABLE:
 			self.dbenv=None
@@ -1388,5 +1383,7 @@ metadata associated with a particular EMAN2 refinement. Data stored in this
 database may be extracted into standard flat-files, but use of a database
 with standard naming conventions, etc. helps provide the capability to log
 the entire refinement process."""
+
+
 
 
