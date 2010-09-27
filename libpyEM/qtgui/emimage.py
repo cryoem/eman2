@@ -33,22 +33,13 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-#from emimage2d import *
-#from emimagemx import *
-#from emplot2d import *
-#from emplot3d import EMPlot3DModule
-#from emimage3d import *
+
 from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
 from sys import argv
 from copy import deepcopy
 from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D,EMData
 
-#from valslider import ValSlider
-#from math import *
-#from EMAN2 import *
-#import sys
-#import numpy
 
 
 def image_update():
