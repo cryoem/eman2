@@ -3791,6 +3791,7 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 #undef DGR_TO_RAD
 
 void EMData::divkbsinh(const Util::KaiserBessel& kb) {
+	
 	if (is_complex())
 		throw ImageFormatException("divkbsinh requires a real image.");
 	vector<int> saved_offsets = get_array_offsets();
@@ -3812,6 +3813,36 @@ void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	}
 	set_array_offsets(saved_offsets);
 }
+
+void EMData::divkbsinh_rect(const Util::KaiserBessel& kbx,const Util::KaiserBessel& kby,const Util::KaiserBessel& kbz) {
+	
+	cout << "divkbsinh_rect is called" << endl;
+
+	//throw ImageFormatException("why cout is not excuted.");
+	
+	if (is_complex())
+		throw ImageFormatException("divkbsinh requires a real image.");
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	// Note that the following loops will work for 1-, 2-, and 3-D
+	// images, since the "extra" weights will be 1.0.  (For example,
+	// for a 2-d image iz=0, nz=1, so iz-nz/2 = 0 - 1/2 = 0, since
+	// the division is an integer division.)
+	for (int iz=0; iz < nz; iz++) {
+		float wz = kbz.sinhwin(static_cast<float>(iz-nz/2));
+		for (int iy=0; iy < ny; iy++) {
+			float wy = kby.sinhwin(static_cast<float>(iy-ny/2));
+			for (int ix=0; ix < nx; ix++) {
+				float wx = kbx.sinhwin(static_cast<float>(ix-nx/2));
+				float w = wx*wy*wz;
+				(*this)(ix,iy,iz) /= w;
+			}
+		}
+	}
+	
+	set_array_offsets(saved_offsets);
+}
+
 /* OBSOLETED  PAP
 Dict EMData::masked_stats(const EMData* mask) {
 	if (is_complex())
@@ -3875,12 +3906,15 @@ EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
 	float wsum = 0.f;
 	Transform tftrans = tf; // need transpose of tf here for consistency
 	tftrans.invert();      // with spider
-	for (int jy = -nhalf; jy < nhalf; jy++) {
-		for (int jx = 0; jx <= nhalf; jx++) {
+	for (int jy = -nhalf; jy < nhalf; jy++) 
+	{
+		for (int jx = 0; jx <= nhalf; jx++) 
+		{
 			Vec3f nucur((float)jx, (float)jy, 0.f);
 			Vec3f nunew = tftrans*nucur;
 			float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
-			if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
+			if (xnew*xnew+ynew*ynew+znew*znew <= rim) 
+			{
 				count++;
 				std::complex<float> btq(0.f,0.f);
 				bool flip = false;
@@ -4012,6 +4046,240 @@ EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
 								}
 								if (iyt == nhalf) iyt = -nhalf;
 								if (izt == nhalf) izt = -nhalf;
+								if (mirror)   btq += conj(cmplx(ixt,iyt,izt))*wg;
+								else          btq += cmplx(ixt,iyt,izt)*wg;
+								wsum += wg;
+							}
+						}
+					}
+				}
+				if (flip)  res->cmplx(jx,jy) = conj(btq);
+				else       res->cmplx(jx,jy) = btq;
+			}
+		}
+	}
+	for (int jy = -nhalf; jy < nhalf; jy++)
+		for (int jx = 0; jx <= nhalf; jx++)
+			res->cmplx(jx,jy) *= count/wsum;
+	delete[] wx0; delete[] wy0; delete[] wz0;
+	set_array_offsets(saved_offsets);
+	res->set_array_offsets(0,0,0);
+	res->set_shuffled(true);
+	return res;
+}
+
+
+////working at below code only
+
+
+
+EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz) {
+	
+// 	std::cout<<"extract_plane_rect is called"<<std::endl;
+// 	std::cout<<"nx,ny,nz=="<<nx<<" "<<ny<<" "<<nz<<" "<<std::endl;
+	if (!is_complex())
+		throw ImageFormatException("extractplane requires a complex image");
+	if (nx%2 != 0)
+		throw ImageDimensionException("extractplane requires nx to be even");
+//	int nxreal = nx - 2;
+	int nxfromz=nz+2;
+	int nxcircal = nxfromz - 2;
+// 	if (nxreal != ny || nxreal != nz)
+// 		throw ImageDimensionException("extractplane requires ny == nx == nz");
+	// build complex result image
+	EMData* res = new EMData();
+	res->set_size(nxfromz,nz,1);
+	res->to_zero();
+	res->set_complex(true);
+	res->set_fftodd(false);
+	res->set_fftpad(true);
+	res->set_ri(true);
+	// Array offsets: (0..nhalf,-nhalf..nhalf-1,-nhalf..nhalf-1)
+	int n = nxcircal;
+	int nhalf = n/2;
+	int nxhalf=(nx-2)/2;
+	int nyhalf=ny/2;
+	int nzhalf=nz/2;
+	//std::cout<<"nhalf,nxhalf,nyhalf,nzhalf=="<<nhalf<<" "<<nxhalf<<" "<<nyhalf<<" "<<nzhalf<<std::endl;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,-nyhalf,-nzhalf);
+	res->set_array_offsets(0,-nhalf,0);
+	// set up some temporary weighting arrays
+	int kbxsize =  kbx.get_window_size();
+	int kbxmin  = -kbxsize/2;
+	int kbxmax  = -kbxmin;
+
+	int kbysize =  kby.get_window_size();
+	int kbymin  = -kbysize/2;
+	int kbymax  = -kbymin;
+
+	int kbzsize =  kbz.get_window_size();
+	int kbzmin  = -kbzsize/2;
+	int kbzmax  = -kbzmin;
+
+	//std::cout<<"kb size x,y,z=="<<kbxsize<<" "<<kbysize<<" "<<kbzsize<<std::endl;
+	float* wy0 = new float[kbymax - kbymin + 1];
+	float* wy  = wy0 - kbymin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbxmax - kbxmin + 1];
+	float* wx  = wx0 - kbxmin;
+	float* wz0 = new float[kbzmax - kbzmin + 1];
+	float* wz  = wz0 - kbzmin;
+	float rim = nhalf*float(nhalf);
+	int count = 0;
+	float wsum = 0.f;
+	Transform tftrans = tf; // need transpose of tf here for consistency
+	tftrans.invert();      // with spider
+	float xratio=float(nx-2)/float(nz);
+	float yratio=float(ny)/float(nz);
+	//std::cout<<"xratio,yratio=="<<xratio<<" "<<yratio<<std::endl;
+	for (int jy = -nhalf; jy < nhalf; jy++) 
+	{
+		for (int jx = 0; jx <= nhalf; jx++) 
+		{
+			Vec3f nucur((float)jx, (float)jy, 0.f);
+			Vec3f nunew = tftrans*nucur;
+			float xnew = nunew[0]*xratio, ynew = nunew[1]*yratio, znew = nunew[2];
+			
+			if (nunew[0]*nunew[0]+nunew[1]*nunew[1]+nunew[2]*nunew[2] <= rim)
+			{
+				count++;
+				std::complex<float> btq(0.f,0.f);
+				bool flip = false;
+				if (xnew < 0.f) {
+					flip = true;
+					xnew = -xnew;
+					ynew = -ynew;
+					znew = -znew;
+				}
+				int ixn = int(Util::round(xnew));
+				int iyn = int(Util::round(ynew));
+				int izn = int(Util::round(znew));
+				// populate weight arrays
+				for (int i=kbzmin; i <= kbzmax; i++) {
+					int izp = izn + i;
+					wz[i] = kbz.i0win_tab(znew - izp);
+					}
+				for (int i=kbymin; i <= kbymax; i++) {
+					int iyp = iyn + i;
+					wy[i] = kby.i0win_tab(ynew - iyp);
+					}
+				for (int i=kbxmin; i <= kbxmax; i++) {
+					int ixp = ixn + i;
+					wx[i] = kbx.i0win_tab(xnew - ixp);
+					}
+		
+
+				
+				// restrict weight arrays to non-zero elements
+				int lnbz = 0;
+				for (int iz = kbzmin; iz <= -1; iz++) {
+					if (wz[iz] != 0.f) {
+						lnbz = iz;
+						break;
+					}
+				}
+				int lnez = 0;
+				for (int iz = kbzmax; iz >= 1; iz--) {
+					if (wz[iz] != 0.f) {
+						lnez = iz;
+						break;
+					}
+				}
+				int lnby = 0;
+				for (int iy = kbymin; iy <= -1; iy++) {
+					if (wy[iy] != 0.f) {
+						lnby = iy;
+						break;
+					}
+				}
+				int lney = 0;
+				for (int iy = kbymax; iy >= 1; iy--) {
+					if (wy[iy] != 0.f) {
+						lney = iy;
+						break;
+					}
+				}
+				int lnbx = 0;
+				for (int ix = kbxmin; ix <= -1; ix++) {
+					if (wx[ix] != 0.f) {
+						lnbx = ix;
+						break;
+					}
+				}
+				int lnex = 0;
+				for (int ix = kbxmax; ix >= 1; ix--) {
+					if (wx[ix] != 0.f) {
+						lnex = ix;
+						break;
+					}
+				}
+				if    (ixn >= -kbxmin      && ixn <= nxhalf-1-kbxmax
+				   && iyn >= -nyhalf-kbymin && iyn <= nyhalf-1-kbymax
+				   && izn >= -nzhalf-kbzmin && izn <= nzhalf-1-kbzmax) {
+					// interior points
+					for (int lz = lnbz; lz <= lnez; lz++) {
+						int izp = izn + lz;
+						for (int ly=lnby; ly<=lney; ly++) {
+							int iyp = iyn + ly;
+							float ty = wz[lz]*wy[ly];
+							for (int lx=lnbx; lx<=lnex; lx++) {
+								int ixp = ixn + lx;
+								float wg = wx[lx]*ty;
+								btq += cmplx(ixp,iyp,izp)*wg;
+								wsum += wg;
+							}
+						}
+					}
+				} 
+				else {
+					// points "sticking out"
+					for (int lz = lnbz; lz <= lnez; lz++) {
+						int izp = izn + lz;
+						for (int ly=lnby; ly<=lney; ly++) {
+							int iyp = iyn + ly;
+							float ty = wz[lz]*wy[ly];
+							for (int lx=lnbx; lx<=lnex; lx++) {
+								int ixp = ixn + lx;
+								float wg = wx[lx]*ty;
+								bool mirror = false;
+								int ixt(ixp), iyt(iyp), izt(izp);
+								if (ixt > nxhalf || ixt < -nxhalf) {
+									ixt = Util::sgn(ixt)
+										  *(nx-2-abs(ixt));
+									iyt = -iyt;
+									izt = -izt;
+									mirror = !mirror;
+								}
+								if (iyt >= nyhalf || iyt < -nyhalf) {
+									if (ixt != 0) {
+										ixt = -ixt;
+										iyt = Util::sgn(iyt)
+											  *(ny - abs(iyt));
+										izt = -izt;
+										mirror = !mirror;
+									} else {
+										iyt -= ny*Util::sgn(iyt);
+									}
+								}
+								if (izt >= nzhalf || izt < -nzhalf) {
+									if (ixt != 0) {
+										ixt = -ixt;
+										iyt = -iyt;
+										izt = Util::sgn(izt)
+											  *(nz - abs(izt));
+										mirror = !mirror;
+									} else {
+										izt -= Util::sgn(izt)*nz;
+									}
+								}
+								if (ixt < 0) {
+									ixt = -ixt;
+									iyt = -iyt;
+									izt = -izt;
+									mirror = !mirror;
+								}
+								if (iyt == nyhalf) iyt = -nyhalf;
+								if (izt == nzhalf) izt = -nzhalf;
 								if (mirror)   btq += conj(cmplx(ixt,iyt,izt))*wg;
 								else          btq += cmplx(ixt,iyt,izt)*wg;
 								wsum += wg;

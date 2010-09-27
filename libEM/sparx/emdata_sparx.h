@@ -516,6 +516,7 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 		EMData* extract_plane(const Transform& tf, Util::KaiserBessel& kb);
+		EMData* extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz);
 
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 
@@ -532,6 +533,7 @@ EMData* mult_radial(EMData* radial);
 		 *        EMData::project() interface rather awkward here.
 		 */
 		void divkbsinh(const Util::KaiserBessel& kb);
+		void divkbsinh_rect(const Util::KaiserBessel& kbx,const Util::KaiserBessel& kby,const Util::KaiserBessel& kbz);
 
 
 		/** masked_stats -- Compute image statistics under a mask
