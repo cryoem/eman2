@@ -38,6 +38,7 @@ import math
 from copy import deepcopy
 import os
 import sys
+import random
 from random import choice
 
 READ_HEADER_ONLY = True
