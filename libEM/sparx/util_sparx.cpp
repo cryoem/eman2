@@ -18862,8 +18862,16 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	const int nmax=args.size(), mmax=nmax;
 	char task[60], csave[60];
 	long int lsave[4];
-	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
-	double f, factr, pgtol, x[nmax], l[nmax], u[nmax], g[nmax], dsave[29], wa[2*mmax*nmax+4*nmax+12*mmax*mmax+12*mmax];
+	long int n, m, iprint, isave[44];
+	long int* nbd = new long int[nmax];
+	long int* iwa = new long int[3*nmax];
+	double f, factr, pgtol;
+	double* x = new double[nmax];
+	double* l = new double[nmax];
+	double* u = new double[nmax];
+	double* g = new double[nmax];
+	double dsave[29];
+	double* wa = new double[2*mmax*nmax+4*nmax+12*mmax*mmax+12*mmax];
 	long int SIXTY=60;
 
 	int num_ali = nmax/3+1;
@@ -18924,6 +18932,15 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	vector<float> res;
 	for (int i=0; i<nmax; i++) res.push_back(static_cast<float>(x[i]));
 	res.push_back(f);
+	
+	delete[] nbd;
+	delete[] iwa;
+	delete[] x;
+	delete[] l;
+	delete[] u;
+	delete[] g;
+	delete[] wa;
+	
 	return res;
 
 }
