@@ -18953,10 +18953,10 @@ float Util::multi_align_error_func(double* x, vector<float> all_ali_params, int 
 	float y2 = 1.0;
 
 	float all_var = 0;
-	float x1_new[num_ali];
-	float y1_new[num_ali];
-	float x2_new[num_ali];
-	float y2_new[num_ali];
+	float* x1_new = new float[num_ali];
+	float* y1_new = new float[num_ali];
+	float* x2_new = new float[num_ali];
+	float* y2_new = new float[num_ali];
 
 	for (int i=0; i<nima; i++) {
 		float alpha2 = all_ali_params[(num_ali-1)*(nima*4)+i*4];
@@ -18994,6 +18994,10 @@ float Util::multi_align_error_func(double* x, vector<float> all_ali_params, int 
 		float p = var(x1_new, num_ali)+var(y1_new, num_ali)+var(x2_new, num_ali)+var(y2_new, num_ali);
 		all_var += p;
 	}
+	delete[] x1_new;
+	delete[] y1_new;
+	delete[] x2_new;
+	delete[] y2_new;
 	return all_var/static_cast<float>(nima);
 }
 
@@ -19007,11 +19011,18 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 	float x2 = 0.0;
 	float y2 = 1.0;
 
+	float* x1_new = new float[num_ali];
+	float* y1_new = new float[num_ali];
+	float* x2_new = new float[num_ali];
+	float* y2_new = new float[num_ali];
+
+	float* alpha12_0 = new float[num_ali-1];
+	float* dalpha12 = new float[num_ali-1];
+	float* dsx12 = new float[num_ali-1];
+	float* dsy12 = new float[num_ali-1];
+	float* mirror1_0 = new float[num_ali-1];
+
 	for (int i=0; i<nima; i++) {
-		float x1_new[num_ali];
-		float y1_new[num_ali];
-		float x2_new[num_ali];
-		float y2_new[num_ali];
 		
 		float alpha2 = all_ali_params[(num_ali-1)*(nima*4)+i*4];
 		float sx2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+1];
@@ -19019,12 +19030,6 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 		
 		rot_shift(x1, y1, alpha2, sx2, sy2, x1_new+num_ali-1, y1_new+num_ali-1);
 		rot_shift(x2, y2, alpha2, sx2, sy2, x2_new+num_ali-1, y2_new+num_ali-1);
-		
-		float alpha12_0[num_ali-1];
-		float dalpha12[num_ali-1];
-		float dsx12[num_ali-1];
-		float dsy12[num_ali-1];
-		float mirror1_0[num_ali-1];
 		
 		for (int j=0; j<num_ali-1; j++) {
 			float alpha1 = all_ali_params[j*(nima*4)+i*4];
@@ -19086,6 +19091,9 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 			g[j*3+2] += p;
 		}
 	}
+
+	delete[] x1_new, y1_new, x2_new, y2_new;
+	delete[] alpha12_0, dalpha12, dsx12, dsy12, mirror1_0;
 	
 }
 

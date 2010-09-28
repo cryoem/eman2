@@ -864,10 +864,10 @@ Output: 2D 3xk real image.
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
 #endif	//_WIN32
 
-	double ret[inc+1];
-	double n1[inc+1];
-	double n2[inc+1];
-	float  lr[inc+1];
+	double* ret = new double[inc+1];
+	double* n1 = new double[inc+1];
+	double* n2 = new double[inc+1];
+	float*  lr = new float[inc+1];
 	for (int i = 0; i <= inc; i++) {
 		ret[i] = 0; n1[i] = 0; n2[i] = 0; lr[i]=0;
 	}
@@ -924,6 +924,7 @@ Output: 2D 3xk real image.
 			gpimage = 0;
 		}
 	}
+	delete[] ret, n1, n2, lr;
 
 	EXITFUNC;
 	return result;

@@ -2136,9 +2136,9 @@ void circumf( EMData* win , int npad)
 	int KP = iz/2+1;
 
 	//  sinc functions tabulated for fall-off
-	float sincx[IP+1];
-	float sincy[JP+1];
-	float sincz[KP+1];
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
 
 	sincx[0] = 1.0f;
 	sincy[0] = 1.0f;
@@ -2157,6 +2157,8 @@ void circumf( EMData* win , int npad)
 			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
 		}
 	}
+
+	delete[] sincx, sincy, sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2761,9 +2763,9 @@ void circumf_rect_new( EMData* win , int npad,float m_xratio, float m_yratio)
 	int KP = iz/2+1;
 	
 	//  sinc functions tabulated for fall-off
-	float sincx[IP+1];
-	float sincy[JP+1];
-	float sincz[KP+1];
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
 
 	sincx[0] = 1.0f;
 	sincy[0] = 1.0f;
@@ -2783,6 +2785,7 @@ void circumf_rect_new( EMData* win , int npad,float m_xratio, float m_yratio)
 		}
 	}
 
+	delete[] sincx, sincy, sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2835,9 +2838,9 @@ void circumf_rect( EMData* win , int npad)
 	int KP = iz/2+1;
 	
 	//  sinc functions tabulated for fall-off
-	float sincx[IP+1];
-	float sincy[JP+1];
-	float sincz[KP+1];
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
 
 	sincx[0] = 1.0f;
 	sincy[0] = 1.0f;
@@ -2856,6 +2859,8 @@ void circumf_rect( EMData* win , int npad)
 			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
 		}
 	}
+
+	delete[] sincx, sincy, sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
