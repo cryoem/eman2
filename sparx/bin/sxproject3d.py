@@ -40,7 +40,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1 --angles=angles.txt --CTF=ctf.txt --noise=s"
+	usage = progname + " volume stack  <maskfile> --delta=angular_step --method=S --phiEqpsi=Minus --symmetry=c1 --angles=angles.txt --CTF=ctf.txt --noise=s --new --fast"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",    type="float",   default=2,       help="angular step ")
 	parser.add_option("--phiEqpsi", type="string",  default="Minus", help="if Minus, psi is set to minus phi (default), if Zero, set to zero ")
@@ -49,6 +49,8 @@ def main():
 	parser.add_option("--angles",   type="string",  default=None,    help="List of angles (phi, theta, psi) or with shifts (phi, theta, psi, tx, ty)")
 	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with standard deviation s and zero mean")
 	parser.add_option("--CTF",      type="string",  default=None,    help="list of CTF parameters")
+	parser.add_option("--new",     action="store_true", default=False, help="projection from rectangular fft ")
+	parser.add_option("--fast",     action="store_true", default=False, help="projection from rectangular fft, if fast insert rectanular fft and then pad zeros ")
 
 	(options, args) = parser.parse_args()
 	if(len(args) < 2 or len(args) > 3):
@@ -63,10 +65,21 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		from   applications import project3d
-		global_def.BATCH = True
-		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
-		global_def.BATCH = False
+		if (options.new):
+			print "new projection method is called"
+			from   development import project3d_new
+			from   development import project3d_new_fast
+			global_def.BATCH = True
+			if(options.fast):
+				project3d_new_fast(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
+			else:
+				project3d_new(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
+			global_def.BATCH = False
+		else:
+			from   applications import project3d
+			global_def.BATCH = True
+			project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
+			global_def.BATCH = False
 
 if __name__ == "__main__":
 	main()
