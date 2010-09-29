@@ -192,9 +192,9 @@ EMData * ImageAverager::finish()
 		}
 
 		result->update();
-		result->set_attr("ptcl_repr",nimg);
 
 	}
+	result->set_attr("ptcl_repr",nimg);
 
 	if( nimg_n0 )
 	{
