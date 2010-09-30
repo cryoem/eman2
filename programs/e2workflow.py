@@ -803,9 +803,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.add_module([str(module),"EMLights",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
-	def launch_desktop(self):
-		os.system("e2desktop.py")
-	
 	def launch_3d_volume_viewer(self):
 		from emimage3dvol import EMVolumeModule
 		self.launch_3d_viewer(EMVolumeModule(application=em_app),"3D Volumer Viewer")

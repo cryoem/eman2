@@ -13,11 +13,6 @@ IF(WIN32)
 		RENAME	e2display.pyw
 		)
 		
-	INSTALL(FILES e2desktop.py
-		DESTINATION bin
-		RENAME	e2desktop.pyw
-		)
-		
 	INSTALL(FILES e2workflow.py
 		DESTINATION bin
 		RENAME	e2workflow.pyw
