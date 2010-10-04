@@ -142,7 +142,7 @@ def filt_gaussl(e, sigma, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_LOW_PASS,
-		  "sigma" : sigma, "dopad" : pad}
+		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_gaussinv(e, sigma, pad = False):
@@ -174,7 +174,7 @@ def filt_gaussh(e, sigma, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
-		  "sigma" : sigma, "dopad" : pad}
+		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
     
 def filt_gaussb(e, sigma, center, pad = False):
