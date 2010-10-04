@@ -940,15 +940,18 @@ EMData* EMData::symvol(string symString) {
 	svol->set_size(nx, ny, nz);
 	svol->to_zero();
 	// set up new copy
-	EMData* symcopy = new EMData;
-	symcopy->set_size(nx, ny, nz);
+	//EMData* symcopy = new EMData;
+	//symcopy->set_size(nx, ny, nz);
 	// set up coord grid
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
-	        Transform rm = sym.get_sym(symString, isym);
-		symcopy = this -> rot_scale_trans(rm);
-		*svol += (*symcopy);
+	         Transform rm = sym.get_sym(symString, isym);
+		 EMData* symcopy = this -> rot_scale_trans(rm);
+		 *svol += (*symcopy);
+		 delete symcopy;
+		
 	}
+	
 	*svol /=  ((float) nsym);
 	svol->update();
 	EXITFUNC;
