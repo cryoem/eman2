@@ -9528,10 +9528,10 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 	else:    avg = model_blank(nx,ny,nz)
 	bcast_EMData_to_all( avg, myid )
 	if( myid == 0 ):
-		Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
-		avg1.write_image(avgfileE)
-		Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
-		avg2.write_image(avgfileO)
+		#Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
+		#avg1.write_image(avgfileE)
+		#Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
+		#avg2.write_image(avgfileO)
 		avg.write_image( avgfile)
 
 	del avg1, avg2
@@ -9564,10 +9564,10 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 	else:    var = model_blank(nx,ny,nz)
 	bcast_EMData_to_all( var, myid )
 	if(  (myid == 0)):
-		Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
-		circumference(var1, radcir-1).write_image(varfileE)
-		Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
-		circumference(var2, radcir-1).write_image(varfileO)
+		#Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
+		#circumference(var1, radcir-1).write_image(varfileE)
+		#Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
+		#circumference(var2, radcir-1).write_image(varfileO)
 
 		circumference(var, radcir-1).write_image( varfile )
 		del var1, var2
