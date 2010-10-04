@@ -802,6 +802,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().show_specific(module)
 		self.add_module([str(module),"EMLights",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def launch_desktop(self):
+		print "The EMAN2 desktop has been deprecated and is no longer supported."
+
 	
 	def launch_3d_volume_viewer(self):
 		from emimage3dvol import EMVolumeModule
