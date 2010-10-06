@@ -25,7 +25,7 @@ import socket
 import tempfile
 
 
-VERSION = 20100908
+VERSION = 20100928
 USER_AGENT = "emen2client/%s"%VERSION
 
 
@@ -305,8 +305,11 @@ class FileTransport(object):
 
 
 	def report(self, msg=None, progress=None, pos=None, i=0):
-		self._report(msg=msg, progress=progress, f=self.filename or self.bdo.get("name"), pos=pos, i=i+1)
-
+		try:
+			self._report(msg=msg, progress=progress, f=self.filename or self.bdo.get("name"), pos=pos, i=i+1)
+		except:
+			pass
+			
 
 	def sidecar_read(self, filename=None):
 		filename = filename or self.filename
@@ -375,6 +378,10 @@ class FileTransport(object):
 			# Or report that we can't download it
 			self.report("Skipping file: %s"%e, i=1)
 			return
+		
+		
+		return self.filename
+		
 			
 			
 
@@ -1773,6 +1780,9 @@ class SyncController(EMEN2ClientController):
 		self.parser.add_option("--confirm", action="store_true", help="Request confirmation of mappings before proceeding")		
 		self.parser.add_option("--clip_filename", type="string", help="Remove a substr from source filenames to aid matching, e.g. _filt_ptcls")		
 		self.parser.add_option("--match", type="string", help="Restrict particle sets to this substring, e.g. for quick testing")
+		#self.parser.add_option("--check_boxsize", type="int", help="Check if a micrograph has been shrunk; if box_size < check_boxsize, zoom by box_size / check_boxsize")
+		self.parser.add_option("--shrink_factor", type="float", help="Specify a shrink factor (e.g. 0.25 if the boxed micrograph was reduced by a factor of 4)", default=1.0)
+
 
 		usage = """%prog sync [options] <project record ID>
 		
@@ -1941,10 +1951,12 @@ If run with "--check", it will only test to see if it can make the correct file 
 	
 		coords = []
 		for b in r:
-			xc = int(b[0])
-			yc = int(b[1])
 			box_size = int(b[2])
-			coords.append([xc,yc])
+			xc = (int(b[0]) + (box_size/2)) / self.options.shrink_factor
+			yc = (int(b[1]) + (box_size/2)) / self.options.shrink_factor
+			coords.append([int(xc),int(yc)])
+
+		box_size = int(box_size / self.options.shrink_factor)
 
 		return box_size, coords
 			
@@ -1985,8 +1997,11 @@ If run with "--check", it will only test to see if it can make the correct file 
 			# Get info from first particle in stack	
 			ptcl = d[0]
 			
-			ctf = ptcl.get_attr_default("ctf", None)
-			box_size = ptcl.get_attr_default("nx", None)
+			try: ctf = ptcl.get_attr("ctf")
+			except: ctf = None
+			
+			try: box_size = int(ptcl.get_attr("nx") / self.options.shrink_factor)
+			except: box_size = None
 
 			# Mangle source name if necessary
 			try:
@@ -1999,15 +2014,24 @@ If run with "--check", it will only test to see if it can make the correct file 
 
 			# Try to read boxes from particle headers
 			if self.options.boxes:
-				coords.append(ptcl.get_attr_default('ptcl_source_coord', None))
-				for i in range(1,maxrec+1):
-					ptcl = d[i]
-					coords.append(ptcl.get_attr_default('ptcl_source_coord', None))
+				for i in range(maxrec+1):
+					dptcl = d[i]
+					try:
+						x, y = dptcl.get_attr('ptcl_source_coord')
+						x /= self.options.shrink_factor
+						y /= self.options.shrink_factor
+						coords.append([int(x), int(y)])
+					except:
+						coords.append(None)
+
 
 				if None in coords:
 					print "\tSome particles for %s did not specify coordinates"%k
 					coords = []
 					# self.options.boxes = False
+				
+				print "Got box_size %s and coords %s"%(box_size, coords)
+					
 					
 
 			# Get alternative CTF and quality from e2ctfit settings
@@ -2018,6 +2042,7 @@ If run with "--check", it will only test to see if it can make the correct file 
 			
 			if ctf:		
 				self.source_ctf[source] = ctf
+				print "Got CTF: defocus %s, B-factor %s"%(ctf.defocus, ctf.bfactor)
 			else:
 				print "\tNo CTF for %s"%k				
 			
@@ -2068,6 +2093,9 @@ If run with "--check", it will only test to see if it can make the correct file 
 		return ctf2, quality
 
 
+	def __filematch(self, i, j):
+		if i in j: return True
+
 
 	def findbinary(self):
 		
@@ -2086,27 +2114,44 @@ If run with "--check", it will only test to see if it can make the correct file 
 
 		# ian: new style: I fixed getbinary, so just do one big BDO lookup instead of many db.findbinary
 		
+		print "remote filenames?:"
+		print filenames
+
 		for count, source in enumerate(self.sources):
 		 	print "\n%s of %s: Looking up file %s in project %s"%(count+1, total, source, self.project)
 
 			q = source.replace(self.options.clip_filename or '', "")
+			gzipstrip = ".gz" in source
+
 			# ian: replace this with functools.partial
-			matches = map(bdosbyfilename.get, filter(lambda x:q in x.split("."), filenames))
+			# matches = map(bdosbyfilename.get, filter(lambda x:q in x.split("."), filenames))
+			matches = []
+			for i in filenames:
+				i2 = i
+				if gzipstrip:
+					i2 = i.replace('.gz','')
+				#if q in i2:
+				if self.__filematch(q, i2):
+					matches.append(bdosbyfilename.get(i))
+			
 			
 			if len(matches) > 1:
 				print "\tAmbiguous match for %s: %s"%(source, [match["filename"] for match in matches])
 				ambiguous[source] = matches
 				continue	
 		
+		
 			if len(matches) == 0:
 				print "\tNo matches for %s"%source
 				nomatches[source] = []
 				continue
 		
+		
 			match = matches[0]
 			print "\tFound %s in record %s, matching filename is %s"%(match["name"], match["recid"], match["filename"])
 			
 			self.source_bdo[source] = match
+		
 						
 		print "\n\nSuccessful Local-Remote Mappings:"
 		for k,v in self.source_bdo.items():
@@ -2182,51 +2227,48 @@ If run with "--check", it will only test to see if it can make the correct file 
 
 	def uploadboxes(self):
 		
-		print "\nUploading boxes..."
-				
+		print "\nPreparing to upload boxes..."
+		newboxes = []
+		
 		for source, boxes in self.source_boxes.items():
 			
 			bdo = self.source_bdo.get(source)
 			box_size = self.source_box_size[source]
 			
 			if not bdo:
-				print "No bdo for source %s..."%source
+				print "\tNo bdo for source %s..."%source
 				continue
 			
 			recid = bdo.get("recid")	
 			
 			# Check remote site for existing boxes
 			remoteboxes = self.db.getchildren(recid, -1, ["box"])
-			remoteboxbdos = self.db.getbinary(remoteboxes)
-			
-			print "%s / %s has %s boxes with box size %s"%(source, recid, len(boxes), box_size)
-			
-			# Copied from e2boxer base
-			outfile = []
-			for box in boxes:
-				xc = box[0] - box_size/2
-				yc = box[1] - box_size/2
-				bc = str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n'
-				outfile.append(bc)
-			
-			outfile = "".join(outfile)			
-			outfile_md5 = hashlib.md5(outfile).hexdigest()
 
-			if outfile_md5 in [i.get("md5") for i in remoteboxbdos]:
-				print "This box already appears to be in the database with MD5 %s"%outfile_md5
-				continue
+			if len(remoteboxes) == 1:
+				print "\tUpdating existing box record"
+				newbox = self.db.getrecord(remoteboxes.pop())				
 
-			# Drop the file extension
-			filename = os.path.splitext(source)[0] + ".box"
+			else:
+				if len(remoteboxes) > 1:
+					print "\tNote: more than one box record already specified!"
+				
+				print "\tCreating new box record"
+				newbox = self.db.newrecord("box", recid)
 			
-			applyparams = {
-				"box_size": box_size,
-				"box_count": len(boxes)
-			}
+			print "\t%s / %s has %s boxes with box size %s"%(source, recid, len(boxes), box_size)
+
+			newbox["box_coords"] = boxes
+			newbox["box_size"] = box_size
 			
-			# Upload boxes
-			dbt = BoxHandler(db=self.db, filename=filename, filedata=outfile, applyparams=applyparams, recid=recid)
-			dbt.upload()
+			newboxes.append(newbox)
+			
+			# print "-----"
+			# print newbox
+			# print "-----"
+
+		print "\tCommitting %s box records"%(len(newboxes))
+		newrecs = self.db.putrecord(newboxes)
+		# print "\t... %s"%", ".join([i.get('recid') for i in newrecs])
 			
 		
 		
@@ -2312,8 +2354,8 @@ def main():
 
 	controllers = {
 		"download":DownloadController,
-		"upload":UploadController
-		#"sync":SyncController
+		"upload":UploadController,
+		"sync":SyncController
 	}
 
 	try:
