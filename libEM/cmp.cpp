@@ -1211,6 +1211,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	EXITFUNC;
 
 
+	if (!Util::goodf(&sum)) sum=-3.0e38;
 	//.Note the negative! This is because EMAN2 follows the convention that
 	// smaller return values from comparitors indicate higher similarity -
 	// this enables comparitors to be used in a generic fashion.
