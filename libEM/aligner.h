@@ -773,7 +773,7 @@ namespace EMAN
 				d.put("n", EMObject::INT,"An alternative to the delta argument, this is the number of points you want generated on the sphere. Default is OFF");
 				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10.");
 				d.put("rphi", EMObject::FLOAT,"The range of angles to sample in the phi direction. Default is 180.");
-				d.put("dotrans", EMObject::BOOL,"Do a translational search.");
+				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
