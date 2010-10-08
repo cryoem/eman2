@@ -603,12 +603,14 @@ namespace EMAN
 		static const string NAME;
 	};
 
-
+	
 	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
 	 * Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
 	 * a point on the sphere (POTS), manipulating them independently. The POTS is"jiggled" in a local circular
 	 * sub manifold of the sphere (of radius stepdelta). Phi is allowed to vary as a normal variable. The result
 	 * is combined into a single transform and then a similarity is computed, etc. Translation also varies.
+	 * Currently this is not working as an identity transfromation is applied to the input maps(no matter what 
+	 * the reference map is. John F
 	 * @author David Woolford
 	 * @date June 23 2009
 	 */
@@ -616,7 +618,7 @@ namespace EMAN
 	{
 		public:
 			virtual EMData * align(EMData * this_img, EMData * to_img,
-						   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+						   const string & cmp_name="sqeuclidean", const Dict& cmp_params = Dict()) const;
 
 			virtual EMData * align(EMData * this_img, EMData * to_img) const
 			{
@@ -643,7 +645,7 @@ namespace EMAN
 				TypeDict d;
 				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
 				d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
-				d.put("stepy", EMObject::FLOAT,"The y increment used to create the starting simplex. Default is 1");
+				d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
 				d.put("stepz", EMObject::FLOAT, "The z increment used to create the starting simplex. Default is 1." );
 				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to creat the starting simplex. This is the increment applied to the inplane rotation. Default is 5." );
 				d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions. Default is 5.");
@@ -765,6 +767,7 @@ namespace EMAN
 				d.put("n", EMObject::INT,"An alternative to the delta argument, this is the number of points you want generated on the sphere. Default is OFF");
 				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10.");
 				d.put("rphi", EMObject::FLOAT,"The range of angles to sample in the phi direction. Default is 180.");
+				d.put("dotrans", EMObject::BOOL,"Do a translational search.");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");

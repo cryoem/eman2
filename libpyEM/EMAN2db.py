@@ -717,6 +717,7 @@ class EMAN2DB:
 		EMAN2DB.lock.release()
 		return ret
 	
+
 	open_db=staticmethod(open_db)
 	
 	def __init__(self,path=None):

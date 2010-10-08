@@ -1146,6 +1146,9 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+//This 'sexy way' of doing the alignment turned out to not work very well, hence I have gone back to the
+//old fashioned way John Flanagan 10/08/2010
+/*
 static Transform refalin3d_perturb(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
 {
 	Dict orig_params = t->get_params("eman");
@@ -1204,6 +1207,7 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 static double refalifn3d(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
+
 	double x = gsl_vector_get(v, 0);
 	double y = gsl_vector_get(v, 1);
 	double z = gsl_vector_get(v, 2);
@@ -1223,11 +1227,13 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
 	delete t; t = 0;
-// 	cout << result << " " << az << " " << alt << " " << phi << " " << x << " " << y << " " << z << endl;
+	Vec3f xx = soln.get_trans();
+	Dict yy = soln.get_params("eman");
+ 	cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << " " << xx[0]  << " " << xx[1] << " " << xx[2] << endl;
 	return result;
-}
+}*/
 
-/*
+
 static double refalifn3d(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
@@ -1240,27 +1246,27 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	double phi = gsl_vector_get(v, 5);
 	EMData *this_img = (*dict)["this"];
 	EMData *with = (*dict)["with"];
-	bool mirror = (*dict)["mirror"];
+	//bool mirror = (*dict)["mirror"];
 
 	Dict d("type","eman","az",static_cast<float>(az));
 	d["alt"] = static_cast<float>(alt);
 	d["phi"] = static_cast<float>(phi);
 	Transform t(d);
 	t.set_trans((float)x,(float)y,(float)z);
-	t.set_mirror(mirror);
+	//t.set_mirror(mirror);
 	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
-
+	
 	return result;
-}*/
+}
 
 EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
-
+	
 	if (!to || !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
 
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
@@ -1298,15 +1304,21 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	float half_circle_step = 180.0f; // This shouldn't be altered
-	float stepphi = params.set_default("stephi",5.0f);
-	float stepdelta = params.set_default("stepdelta",5.0f);
+	//float half_circle_step = 180.0f; // This shouldn't be altered
+	//float stepphi = params.set_default("stephi",5.0f);
+	//float stepdelta = params.set_default("stepdelta",5.0f);
+	float stepaz = params.set_default("stepaz",5.0f);
+	float stepalt = params.set_default("stepalt",5.0f);
+	float stepphi = params.set_default("stepphi",5.0f);
 
 	gsl_vector_set(ss, 0, stepx);
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepz);
-	gsl_vector_set(ss, 3, half_circle_step);
-	gsl_vector_set(ss, 4, stepdelta);
+	//gsl_vector_set(ss, 3, half_circle_step);
+	//gsl_vector_set(ss, 4, stepdelta);
+	//gsl_vector_set(ss, 5, stepphi);
+	gsl_vector_set(ss, 3, stepaz);
+	gsl_vector_set(ss, 4, stepalt);
 	gsl_vector_set(ss, 5, stepphi);
 
 	gsl_vector *x = gsl_vector_alloc(np);
@@ -1352,17 +1364,29 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	EMData *result;
 	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
 	{
-		float x = (float)gsl_vector_get(s->x, 0);
-		float y = (float)gsl_vector_get(s->x, 1);
-		float z = (float)gsl_vector_get(s->x, 2);
 
-		float arc = (float)gsl_vector_get(s->x, 3);
-		float delta = (float)gsl_vector_get(s->x, 4);
-		float phi = (float)gsl_vector_get(s->x, 5);
+		//float x = (float)gsl_vector_get(s->x, 0);
+		//float y = (float)gsl_vector_get(s->x, 1);
+		//float z = (float)gsl_vector_get(s->x, 2);
+		//float arc = (float)gsl_vector_get(s->x, 3);
+		//float delta = (float)gsl_vector_get(s->x, 4);
+		//float phi = (float)gsl_vector_get(s->x, 5);
 
-		Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
+		//Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
 
- 		result = this_img->process("xform",Dict("transform",&tsoln));
+ 		//result = this_img->process("xform",Dict("transform",&tsoln));
+		//result->set_attr("xform.align3d",&tsoln);
+		Dict parms;
+		parms["type"] = "eman";
+		parms["tx"] = (float)gsl_vector_get(s->x, 0);
+		parms["ty"] = (float)gsl_vector_get(s->x, 1);
+		parms["tz"] = (float)gsl_vector_get(s->x, 2);
+                parms["az"] = (float)gsl_vector_get(s->x, 3);
+		parms["alt"] = (float)gsl_vector_get(s->x, 4);
+		parms["phi"] = (float)gsl_vector_get(s->x, 5);
+		
+		Transform tsoln(parms);
+		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 
 	} else { // The refine aligner failed - this shift went beyond the max shift
@@ -1460,10 +1484,11 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			end_az = 0.0f;
 		}
 
-		for ( float az = begin_az; az <= end_az; az += daz ){
+		for ( float az = begin_az; az <= end_az; az += daz ){	//Dict yy = t.get_params("eman");
+        //cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << endl;
 			for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
 				d["alt"] = alt;
-				d["phi"] = phi;
+				d["phi"] = phi; 
 				d["az"] = az;
 				Transform t(d);
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
@@ -1526,7 +1551,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-
+         
+	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -1587,22 +1613,23 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			}
 		}
 		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
-			params["phi"] = phi;
+			
+                        params["phi"] = phi;
 			Transform t(params);
 			EMData* transformed = this_img->process("xform",Dict("transform",&t));
-			EMData* ccf = transformed->calc_ccf(to);
-			IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-			Dict altered_cmp_params(cmp_params);
-			if (cmp_name == "dot.tomo") {
-				altered_cmp_params["ccf"] = ccf;
-				altered_cmp_params["tx"] = point[0];
-				altered_cmp_params["ty"] = point[1];
-				altered_cmp_params["tz"] = point[2];
+			
+			if(dotrans){
+			        EMData* ccf = transformed->calc_ccf(to);
+			        IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+                                t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+                                transformed = this_img->process("xform",Dict("transform",&t));
+				delete ccf; ccf =0;
 			}
 
-			float best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+			float best_score = transformed->cmp(cmp_name,to,cmp_params);
+			
 			delete transformed; transformed =0;
-			delete ccf; ccf =0;
+			
 
 			unsigned int j = 0;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {

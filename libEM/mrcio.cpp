@@ -345,7 +345,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
-	if(nz<=1 && dict.has_key("xform.projection")) {
+	if(nz<=1 && dict.has_key("xform.projection") && !dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.projection"];
 		Dict d = t->get_params("imagic");
 		mrch.alpha = d["alpha"];
@@ -356,7 +356,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.zorigin = d["tz"];
 		if(t) {delete t; t=0;}
 	}
-	else if(nz>1 && dict.has_key("xform.align3d")) {
+	else if(nz>1 && dict.has_key("xform.align3d") && !dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.align3d"];
 		Dict d = t->get_params("imagic");
 		mrch.alpha = d["alpha"];

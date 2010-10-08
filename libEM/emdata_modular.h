@@ -89,7 +89,7 @@ float cmp(const string & cmpname, EMData * with, const Dict & params = Dict());
  * @return The result image.
  */
 EMData *align(const string & aligner_name, EMData * to_img,
-			  const Dict & params = Dict(), const string & cmp_name = "dot",
+			  const Dict & params = Dict(), const string & cmp_name = "",
 			  const Dict& cmp_params = Dict());
 
 /** Align this image with another image, return the parameters of the "n best" solutions
