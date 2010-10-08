@@ -603,16 +603,20 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	
-	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
-	 * Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
+	//No longer does this (doesn't work so well):
+	/*
+	   Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
 	 * a point on the sphere (POTS), manipulating them independently. The POTS is"jiggled" in a local circular
 	 * sub manifold of the sphere (of radius stepdelta). Phi is allowed to vary as a normal variable. The result
-	 * is combined into a single transform and then a similarity is computed, etc. Translation also varies.
-	 * Currently this is not working as an identity transfromation is applied to the input maps(no matter what 
-	 * the reference map is. John F
-	 * @author David Woolford
-	 * @date June 23 2009
+	 * is combined into a single transform and then a similarity is computed, etc.
+	
+	*/
+	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
+	 * Target function for the simplex  algorithm is a transformation of the 3D model by az, alt, phi, tx, ty, tz
+	 * The simplex algorithm downs the function downhill in a ameboa like fasion, hence it may get stuck in a local 
+	 * minima if the two 3D models are already roughly aligned.
+	 * @author David Woolford and John Flanagan
+	 * @date June 23 2009 and Oct 8th 2010
 	 */
 	class Refine3DAligner:public Aligner
 	{
@@ -647,8 +651,10 @@ namespace EMAN
 				d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
 				d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
 				d.put("stepz", EMObject::FLOAT, "The z increment used to create the starting simplex. Default is 1." );
-				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to creat the starting simplex. This is the increment applied to the inplane rotation. Default is 5." );
-				d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions. Default is 5.");
+				d.put("stepaz", EMObject::FLOAT, "The az increment used to create the starting simplex. Default is 5." );
+				d.put("stepalt", EMObject::FLOAT, "The alt increment used to create the starting simplex. Default is 5." );
+				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to create the starting simplex. Default is 5." );
+				//d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions. Default is 5.");
 				d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04." );
 				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 60.");
 				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
@@ -661,7 +667,7 @@ namespace EMAN
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
 	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
 	 * but very useful  if you want to search in a specific, small, local area.
-	 * @author David Woolford (ported from Mike Schmid's e2tomohunter code - Mike Schmid is the intellectual author)
+	 * @author David Woolford (ported from Mike Schmid's e2tomohuntThis is the increment applied to the inplane rotationer code - Mike Schmid is the intellectual author)
 	 * @date June 23 2009
 	 */
 	class RT3DGridAligner:public Aligner

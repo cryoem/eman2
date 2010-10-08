@@ -1147,7 +1147,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 }
 
 //This 'sexy way' of doing the alignment turned out to not work very well, hence I have gone back to the
-//old fashioned way John Flanagan 10/08/2010
+//'old fashioned' way John Flanagan 10/08/2010
 /*
 static Transform refalin3d_perturb(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
 {
@@ -1199,7 +1199,7 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 	Transform phi_rot(g);
 	Transform soln = t_no_phi*perturb*phi_rot;
 	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
-
+This is the increment applied to the inplane rotation
 	Dict params = soln.get_params("eman");
 	return soln;
 }
