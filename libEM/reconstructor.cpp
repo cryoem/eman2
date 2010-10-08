@@ -2591,7 +2591,7 @@ int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& tra
                   {
 		 
  
- 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
+ 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2&&!(0==i))
 		
  		     {
       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
@@ -2603,7 +2603,7 @@ int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& tra
                   {
 		 
  
- 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
+ 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2&&!(0==i))
 		
  		     {
       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
