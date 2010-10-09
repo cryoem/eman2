@@ -565,8 +565,14 @@ def main():
 		average.append_image(outfile);
 
 	if options.fftavg:
-		ffgavg.mult(1.0 / sqrt(n1 - n0 + 1))
+		fftavg.mult(1.0 / sqrt(n1 - n0 + 1))
 		fftavg.write_image(options.fftavg, 0)
+
+		curve = fftavg.calc_radial_dist(ny, 0, 0.5,1)
+		outfile2 = options.fftavg+".txt"
+		
+		sf_dx = 1.0 / (apix * 2.0 * ny)
+		Util.save_data(0, sf_dx, curve, outfile2)
 	
 	try:
 		n_outimg = EMUtil.get_image_count(outfile)
