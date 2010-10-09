@@ -1011,11 +1011,17 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		for name in names :
 			data=self.target().data[name]
-			name="".join(name.split(".")[:-1])
-			out="plt_"+file("plt_%s"%name,"w")+".txt"
+			name2="plt_%s.txt"%(name)
+			i=0
+			while os.path.exists(name2):
+				name2="plt_%s_%02d.txt"%(name,i)
+				i+=1
+				
+			out=file(name2,"w")
 			for i in xrange(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
-			print "Wrote ",name
+				
+			print "Wrote ",name2
 
 	def updPlot(self,s=None):
 		if self.quiet : return
