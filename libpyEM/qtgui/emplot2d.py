@@ -768,6 +768,21 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 		
+		hbl0=QtGui.QHBoxLayout()
+		hbl0.setMargin(0)
+		hbl0.setSpacing(6)
+		vbl.addLayout(hbl0)
+		
+		self.saveb=QtGui.QPushButton(self)
+		self.saveb.setText("Save")
+		hbl0.addWidget(self.saveb)
+
+		self.loadb=QtGui.QPushButton(self)
+		self.loadb.setText("Load")
+		self.loadb.setEnabled(False)
+		hbl0.addWidget(self.loadb)
+
+
 		self.color=QtGui.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
@@ -923,6 +938,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
 		self.datachange()
 		
 	def on_bad_button(self,unused=False):
@@ -988,7 +1004,19 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.__remove_from_file("xian_bad.txt",names)
 		self.__at_to_file("xian_good.txt",names)
 
-		
+	def savePlot(self):
+		"""Saves the contents of the current plot to a text file"""
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names) == 0: return
+
+		for name in names :
+			data=self.target().data[name]
+			name="".join(name.split(".")[:-1])
+			out="plt_"+file("plt_%s"%name,"w")+".txt"
+			for i in xrange(len(data[0])):
+				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
+			print "Wrote ",name
+
 	def updPlot(self,s=None):
 		if self.quiet : return
 		if self.xlogtog.isChecked() : xl="log"
