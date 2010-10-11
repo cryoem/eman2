@@ -50,6 +50,7 @@ def main():
         
         #options associated with e2refine3d.py
         parser.add_option("--shrink",type="float",default=None,help="Fractional amount to shrink the maps by, default=-1.0")
+        parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
         #options form the sphere alinger
         parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=10.0")
         parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=10.0")
@@ -112,6 +113,17 @@ def main():
 	    if fixed.get_attr('nx') <= 50:
 	        options.shrink = 1.0
 	
+	#preprocess maps
+	if options.preprocess != None:
+	    for p in options.preprocess:
+	        try:
+		    (processorname, param_dict) = parsemodopt(p)
+		    if not param_dict : param_dict={}
+		    fixed.process_inplace(str(processorname), param_dict)
+		    moving.process_inplace(str(processorname), param_dict)
+		except:
+		    print "warning - application of the pre processor",p," failed. Continuing anyway"
+	
 	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
 	smoving = moving.process('xform.scale', {'scale':options.shrink})
 	
@@ -137,8 +149,8 @@ def main():
 	#if output is mrc format 
 	if outfile[-4:].lower() == ".mrc":
 	    galignedref.set_attr('UCSF.chimera',1)
-	    
-	galignedref.write_image(outfile)
+  
+	galignedref.write_image(outfile, 0)
 	
 if __name__ == "__main__":
     main()
