@@ -6333,8 +6333,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 				if(total_iter > nise):
 					#from random import random
 					#from fundamentals import rot_shift3D
-					#from filter import filt_gaussl
-					#vol = filt_gaussl(vol, 0.25)
+					from filter import filt_gaussl
+					vol = filt_gaussl(vol, 0.25)
 					#vol = rot_shift3D(vol, dphi*random(), 0., 0., 0., 0., (dp/pixel_size)*(random()-0.5))
 					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
