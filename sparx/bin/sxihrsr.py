@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc"
+	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -75,6 +75,7 @@ def main():
 	parser.add_option("--nise",     type="int",    default= 2,                  help="start symmetrization after nise steps")
 	parser.add_option("--npad",     type="int",    default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
+	parser.add_option("--new",      action="store_true", default=False,         help="use rectangular recon and projection version")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -91,15 +92,23 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-
-		from applications import ihrsr
-		global_def.BATCH = True
-		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
+		if (options.new):
+			from development import ihrsr_new
+			global_def.BATCH = True
+			print "new helical code is called"
+			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
+			options.yr, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi,options.psi_max, options.rmin, options.rmax, options.fract, 				options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
+			global_def.BATCH = False
+		
+		else:
+			from applications import ihrsr
+			global_def.BATCH = True
+			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
 			options.yr, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
-		#	options.ndp_step, options.ndphi_step, options.dp_percent, options.dphi_percent, 
+			#	options.ndp_step, options.ndphi_step, options.dp_percent, options.dphi_percent, 
 			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
 			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
-		global_def.BATCH = False
+			global_def.BATCH = False
 		
 		if options.MPI:
 			from mpi import mpi_finalize
