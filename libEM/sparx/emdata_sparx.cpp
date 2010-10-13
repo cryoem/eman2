@@ -5950,26 +5950,18 @@ EMData* EMData::helicise_rect(float pixel_size, float dp, float dphi, float sect
 		throw ImageDimensionException("helicise needs a 3-D image.");
 	if (is_complex())
 		throw ImageFormatException("helicise requires a real image");
-	std::cout<<"rect helicise is called"<<std::endl;
-	std::cout<<"rmax=="<<radius<<"rmin==="<<minrad<<std::endl;
+
 	EMData* result = this->copy_head();
 	result->to_zero();
 	int nyc = ny/2;
 	int nxc = nx/2;
-	int nzc = nz/2;
 	int nb = int(nz*(1.0f - section_use)/2.);
-	int ne = nz - nb -1;
+	int ne = nx - nb -1;
 	int numst = int((ne - nb)/dp*pixel_size + 0.5);
 	// how many steps needed
 	int nst = int(nz*pixel_size/dp+0.5);
 	float r2, ir;
-	float rx=float(nx)/float(nz);
-	float ry=float(ny)/float(nz);
-	float rx2=rx*rx;
-	float ry2=ry*ry;
-	
-	
-	if(radius < 0.0f) r2 = (float)((nzc-1)*(nzc-1));
+	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
 	if(minrad < 0.0f) ir = 0.0f;
 	else ir = minrad*minrad;
@@ -5979,7 +5971,7 @@ EMData* EMData::helicise_rect(float pixel_size, float dp, float dphi, float sect
 			int jj = jy*jy;
 			for (int i = 0; i<nx; i++) {
 				int ix = i - nxc;
-				float d2 = (float)(float(ix*ix)/rx2 + float(jj)/ry2);
+				float d2 = (float)(ix*ix + jj);
 				if(d2 <= r2 && d2>=ir) {
 					int nq = 1;
 					for ( int ist = -nst; ist <= nst; ist++) {
