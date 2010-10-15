@@ -3811,7 +3811,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.add_new_autoboxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.add_copy_autoboxer)
 		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.delete_autoboxer)
-		self.connect(self.ab_table, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.ab_table_item_changed)
+		self.connect(self.ab_table, QtCore.SIGNAL("itemChanged(QTableWidgetItem *)"), self.ab_table_item_changed)
 		self.connect(self.ab_table, QtCore.SIGNAL("cellChanged(int,int)"), self.ab_table_cell_changed)
 		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
