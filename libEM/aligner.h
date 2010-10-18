@@ -713,6 +713,7 @@ namespace EMAN
 				d.put("rphi", EMObject::FLOAT,"The range of angles to sample in the phi direction. Default is 180.");
 				d.put("dalt", EMObject::FLOAT,"The angle increment in the altitude direction. Default is 10.");
 				d.put("ralt", EMObject::FLOAT,"The range of angles to sample in the altitude direction. Default is 180.");
+				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");

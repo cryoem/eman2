@@ -43,7 +43,7 @@ using namespace EMAN;
 const string CccCmp::NAME = "ccc";
 const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
-const string TomoDotCmp::NAME = "dot.tomo";
+const string TomoCccCmp::NAME = "ccc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
 const string PhaseCmp::NAME = "phase";
@@ -54,7 +54,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<CccCmp>();
 	force_add<SqEuclideanCmp>();
 	force_add<DotCmp>();
-	force_add<TomoDotCmp>();
+	force_add<TomoCccCmp>();
 	force_add<QuadMinDotCmp>();
 	force_add<OptVarianceCmp>();
 	force_add<PhaseCmp>();
@@ -480,36 +480,38 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 	return (float) (negative*result);
 }
 
+// This implements the technique of Mike Schmid where by the cross correlation is normalized
+// in an effort to remove the effects of the missing wedge. Somewhat of a heuristic solution, but it seems
+// to work. Basiaclly it relies on the observation that 'good' matchs will conentrate the correlation
+// signal in the peak, wheras 'bad' correlations will distribute the signal.
+// John Flanagan 18-10-2010
 
-float TomoDotCmp::cmp(EMData * image, EMData *with) const
+float TomoCccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	float threshold = params.set_default("threshold",0.f);
-	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
-
-	if ( threshold > 0) {
-		EMData* ccf = params.set_default("ccf",(EMData*) NULL);
-		bool ccf_ownership = false;
-		if (!ccf) {
-			ccf = image->calc_ccf(with);
-			ccf_ownership = true;
-		}
-		bool norm = params.set_default("norm",false);
-		if (norm) ccf->process_inplace("normalize");
-		int tx = params.set_default("tx",0); int ty = params.set_default("ty",0); int tz = params.set_default("tz",0);
-		float best_score = ccf->get_value_at_wrap(tx,ty,tz)/static_cast<float>(image->get_size());
-		EMData* ccf_fft = ccf->do_fft();// so cuda works, or else we could do an fft_inplace - though honestly doing an fft inplace is less efficient anyhow
-		if (ccf_ownership) delete ccf; ccf = 0;
-		ccf_fft->process_inplace("threshold.binary.fourier",Dict("value",threshold));
-		float map_sum =  ccf_fft->get_attr("mean");
-		if (map_sum == 0.0f) throw UnexpectedBehaviorException("The number of voxels in the Fourier image with an amplitude above your threshold is zero. Please adjust your parameters");
-		best_score /= map_sum;
-		delete ccf_fft; ccf_fft = 0;
-		return -best_score;
-	} else {
-		return -image->dot(with);
+	EMData* ccf = params.set_default("ccf",(EMData*) NULL);
+	bool ccf_ownership = false;
+	if (!ccf) {
+		ccf = image->calc_ccf(with);
+		ccf_ownership = true;
 	}
-
+	bool norm = params.set_default("norm",true);
+	if (norm) ccf->process_inplace("normalize");
+	int searchx = params.set_default("searchx",-1); 
+	int searchy = params.set_default("searchy",-1); 
+	int searchz = params.set_default("searchz",-1);
+	IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+	
+	//this is to prevent us from doing a ccf twice
+	float tx = (float)point[0]; float ty = (float)point[1]; float tz = (float)point[2];
+	image->set_attr("tx", tx);
+	image->set_attr("ty", ty);
+	image->set_attr("tz", tz);
+	
+	float best_score = ccf->get_value_at_wrap(tx,ty,tz)/static_cast<float>(image->get_size());
+        if (ccf_ownership) delete ccf; ccf = 0;
+        
+	return -best_score;
 
 }
 

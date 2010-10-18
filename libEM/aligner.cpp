@@ -1147,7 +1147,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 }
 
 //This 'sexy way' of doing the alignment turned out to not work very well, hence I have gone back to the
-//'old fashioned' way John Flanagan 10/08/2010
+//'old fashioned' way John Flanagan 10/08/2010 (But I could write my own little function that uses quaternions)
 /*
 static Transform refalin3d_perturb(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
 {
@@ -1431,6 +1431,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	int searchy = 0;
 	int searchz = 0;
 
+	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -1492,20 +1493,19 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				d["az"] = az;
 				Transform t(d);
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
-				EMData* ccf = transformed->calc_ccf(to);
+				
+				//need to do things a bit diffrent if we want to compare two tomos
+				
+			        if(dotrans){
+			                EMData* ccf = transformed->calc_ccf(to);
+			                IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+                                        t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+                                        transformed = this_img->process("xform",Dict("transform",&t));
+				        delete ccf; ccf =0;
+			        }
 
-				IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-				Dict altered_cmp_params(cmp_params);
-				if (cmp_name == "dot.tomo") {
-					altered_cmp_params["ccf"] = ccf;
-					altered_cmp_params["tx"] = point[0];
-					altered_cmp_params["ty"] = point[1];
-					altered_cmp_params["tz"] = point[2];
-				}
-
-				float best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+				float best_score = transformed->cmp(cmp_name,to,cmp_params);
 				delete transformed; transformed =0;
-				delete ccf; ccf = 0;
 
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
@@ -1618,6 +1618,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			Transform t(params);
 			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			
+			//need to do things a bit diffrent if we want to compare two tomos
+			
 			if(dotrans){
 			        EMData* ccf = transformed->calc_ccf(to);
 			        IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
@@ -1625,8 +1627,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
                                 transformed = this_img->process("xform",Dict("transform",&t));
 				delete ccf; ccf =0;
 			}
-
-			float best_score = transformed->cmp(cmp_name,to,cmp_params);
+                       
+			float best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not needed if you just want a ccc cmp and translational search was performed JF
 			
 			delete transformed; transformed =0;
 			

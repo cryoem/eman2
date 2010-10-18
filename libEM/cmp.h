@@ -263,41 +263,46 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	/** Use dot product but normalize based on characteristics of the missing wedge
-	* @author David Woolford (a port of Mike Schmid's code - Mike Schmid is the intellectual author)
-	* @date 2009-08-04
-	* @param threshold threshold value to count large fourier amplitudes in the ccf image
+	/** This implements the technique of Mike Schmid where by the cross correlation is normalized
+        * in an effort to remove the effects of the missing wedge. Somewhat of a heuristic solution, but it seems
+        * to work. Basiaclly it relies on the observation that 'good' matchs will conentrate the correlation
+        * signal in the peak, wheras 'bad' correlations will distribute the signal.
+	* @author John Flanagan (a port of Mike Schmid's code - Mike Schmid is the intellectual author)
+	* @date 2010-10-18
+	* @param norm Normalize the ccf (you need to do this if a missing wedge is present)
+	* @param ccf Supply your own ccf function (can be used for speedups)
+	* @param searchx The maximum acceptable tx from the origin
+	* @param searchy The maximum acceptable ty from the origin
+	* @param searchz The maximum acceptable tz from the origin
 	*/
-	class TomoDotCmp:public Cmp
+	class TomoCccCmp:public Cmp
 	{
 	  public:
 		virtual float cmp(EMData * image, EMData * with) const;
 
-		virtual string get_name() const
+		virtual string get_name() const 
 		{
 			return NAME;
 		}
 
 		virtual string get_desc() const
 		{
-			return "straight dot product with consideration given for the missing wedge - normalization is applied by detecting significantly large Fourier amplitudes in the cross correlation image";
+			return "Ccc with consideration given for the missing wedge";
 		}
 
 		static Cmp *NEW()
 		{
-			return new TomoDotCmp();
+			return new TomoCccCmp();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold", EMObject::FLOAT,"Threshold applied to the Fourier amplitudes of the ccf image - helps to correct for the missing wedge.");
-			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized. Default is false.");
+			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized (should be for normalized images). Default is true.");
 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
-			d.put("tx", EMObject::INT, "The x location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
-			d.put("ty", EMObject::INT, "The y location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
-			d.put("tz", EMObject::INT, "The z location of the maximum in the ccf image. May be negative. Useful thing to supply if you know the maximum is not at the phase origin");
-
+			d.put("searchx", EMObject::INT, "The maximum range of the peak location in the x direction. Default is sizex/4");
+			d.put("searchy", EMObject::INT, "The maximum range of the peak location in the y direction. Default is sizey/4");
+			d.put("searchz", EMObject::INT, "The maximum range of the peak location in the z direction. Default is sizez/4");
 			return d;
 		}
 		
