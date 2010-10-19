@@ -1430,7 +1430,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-
+	
 	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
@@ -1459,6 +1459,15 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
+	
+	//in case we arre aligning tomos
+	Dict altered_cmp_params(cmp_params);
+	if (cmp_name == "ccc.tomo") {
+                altered_cmp_params.set_default("searchx", -1);
+		altered_cmp_params.set_default("searchy", -1);
+		altered_cmp_params.set_default("searchz", -1);
+		altered_cmp_params.set_default("norm", true);
+	}
 
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -1495,18 +1504,22 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
 				
 				//need to do things a bit diffrent if we want to compare two tomos
+				float best_score;
+				if (cmp_name == "ccc.tomo") {
+				        best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+					t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
+				} else {	
+			                if(dotrans){
+			                        EMData* ccf = transformed->calc_ccf(to);
+			                        IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+                                                t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+                                                transformed = this_img->process("xform",Dict("transform",&t));
+				                delete ccf; ccf =0;
+			                }
+			                best_score = transformed->cmp(cmp_name,to,cmp_params);
+				}
+                                delete transformed; transformed =0;
 				
-			        if(dotrans){
-			                EMData* ccf = transformed->calc_ccf(to);
-			                IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-                                        t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-                                        transformed = this_img->process("xform",Dict("transform",&t));
-				        delete ccf; ccf =0;
-			        }
-
-				float best_score = transformed->cmp(cmp_name,to,cmp_params);
-				delete transformed; transformed =0;
-
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
 					if ( (float)(*it)["score"] > best_score ) {  // Note greater than - EMAN2 preferes minimums as a matter of policy
@@ -1576,6 +1589,15 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
+	
+	//in case we arre aligning tomos
+	Dict altered_cmp_params(cmp_params);
+	if (cmp_name == "ccc.tomo") {
+                altered_cmp_params.set_default("searchx", -1);
+		altered_cmp_params.set_default("searchy", -1);
+		altered_cmp_params.set_default("searchz", -1);
+		altered_cmp_params.set_default("norm", true);
+	}
 
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -1619,19 +1641,21 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			
 			//need to do things a bit diffrent if we want to compare two tomos
-			
-			if(dotrans){
-			        EMData* ccf = transformed->calc_ccf(to);
-			        IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-                                t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-                                transformed = this_img->process("xform",Dict("transform",&t));
-				delete ccf; ccf =0;
+			float best_score;
+			if (cmp_name == "ccc.tomo") {
+				best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+				t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
+			} else {	
+			        if(dotrans){
+			                EMData* ccf = transformed->calc_ccf(to);
+			                IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+                                        t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+                                        transformed = this_img->process("xform",Dict("transform",&t));
+				        delete ccf; ccf =0;
+			        }
+			        best_score = transformed->cmp(cmp_name,to,cmp_params);
 			}
-                       
-			float best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not needed if you just want a ccc cmp and translational search was performed JF
-			
-			delete transformed; transformed =0;
-			
+                        delete transformed; transformed =0;
 
 			unsigned int j = 0;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
