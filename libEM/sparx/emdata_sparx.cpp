@@ -924,7 +924,7 @@ Output: 2D 3xk real image.
 			gpimage = 0;
 		}
 	}
-	delete[] ret, n1, n2, lr;
+	delete[] ret; delete[]  n1; delete[]  n2; delete[]  lr;
 
 	EXITFUNC;
 	return result;
