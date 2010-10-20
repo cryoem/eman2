@@ -49,14 +49,17 @@ def main():
         parser = OptionParser(usage=usage,version=EMANVERSION)
         
         #options associated with e2refine3d.py
-        parser.add_option("--shrink",type="float",default=None,help="Fractional amount to shrink the maps by, default=-1.0")
+        parser.add_option("--shrink",type="float",default=-1,help="Fractional amount to shrink the maps by (-1 = auto), default=-1.0")
         parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
+        parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
+        parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same', default=0.01")
         #options form the sphere alinger
         parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=10.0")
         parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=10.0")
         parser.add_option("--rphi",type="float",default=180.0,help="search range for the inplane angle phi, default=180.0")
-        parser.add_option("--search",type="int",default=10,help="step size for translational search, default=5")
+        parser.add_option("--search",type="int",default=10,help="maximum extent of the translational search, default=5")
         parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
+        parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
         parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
         parser.add_option("--verbose",type="int",default=0,help="Be Verbose?, default=0")
         #options associated with  the simplex 3D refiner
@@ -67,7 +70,8 @@ def main():
         parser.add_option("--stepy",type="float",default=1.0,help="step size for th y direction, default=1.0")
         parser.add_option("--stepz",type="float",default=1.0,help="step size for th z direction, default=1.0")
         parser.add_option("--maxshift",type="int",default=-1.0,help="maximum shift, (-1 means dim/4), default=-1.0")
-        parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
+        parser.add_option("--maxiter",type="int",default=100,help="maximum number of iterations(you'll need more for courser global searches), default=100")
+        parser.add_option("--rcmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
 
         global options
 	(options, args) = parser.parse_args()
@@ -88,7 +92,7 @@ def main():
 	    print "Not able to read file %s" % sys.argv[2]
 	    exit(1)
 	    
-	if (fixed.get_attr('nx') != fixed.get_attr('ny') != fixed.get_attr('nz')):
+	if (fixed.get_attr('nx') != fixed.get_attr('ny') != fixed.get_a+ options.precttr('nz')):
 	    print "Fixed map must have cubic dimensions!"
 	    exit(1)
 	    
@@ -126,20 +130,37 @@ def main():
 	
 	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
 	smoving = moving.process('xform.scale', {'scale':options.shrink})
-	
-	#globally align the two maps
-	gsaligned = smoving.align('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'rphi':options.rphi, 'sym':options.sym, 'verbose':options.verbose})
-	
-	#now refine the alignment
-	if options.cmp == "dot":
-	    cmpparms = {'normalize':1}
+
+	if options.rcmp == "dot":
+	    rcmpparms = {'normalize':1}
 	else:
-	    cmpparms = {}
-	    
-	t = gsaligned.get_attr('xform.align3d')
-	galigned = moving.process('xform',{'transform':t})
-	galignedref = galigned.align('refine.3d', fixed, {'maxshift':options.maxshift, 'stepalt':options.stepalt,'stepaz':options.stepaz,'stepphi':options.stepphi,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz}, options.cmp, cmpparms) 
+	    rcmpparms = {}
 	
+        #do the global search
+        bestscore = 0
+        bestmodel = 0
+        galignedref = []
+        nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'rphi':options.rphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp)
+
+        #refine each solution found are write out the best one
+        for i, n in enumerate(nbest):
+            galigned = moving.process('xform',{'transform':n["xform.align3d"]})
+            galignedref.append(galigned.align('refine.3d', fixed, {'maxshift':options.maxshift, 'stepalt':options.stepalt,'stepaz':options.stepaz,'stepphi':options.stepphi,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+            score = galignedref[i].get_attr('score')
+            if score < bestscore:
+                bestscore = score
+                bestmodel = i
+            if options.verbose > 0: print "Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score
+	
+        # Find out how many peaks are 'the same'
+        if options.nsolns > 1:
+            thesame = 0
+            for m in galignedref:
+                if (m.get_attr('score') < bestscore + options.prec and m.get_attr('score') > bestscore - options.prec):
+                    thesame += 1
+            print str(thesame)+" solns refined to the 'same' point within a precision of "+str(options.prec)
+        
+
 	#now write out the aligned model
         if sys.argv[3]:
 	    outfile = sys.argv[3]
@@ -148,9 +169,9 @@ def main():
 	    
 	#if output is mrc format 
 	if outfile[-4:].lower() == ".mrc":
-	    galignedref.set_attr('UCSF.chimera',1)
+	    galignedref[bestmodel].set_attr('UCSF.chimera',1)
   
-	galignedref.write_image(outfile, 0)
+	galignedref[bestmodel].write_image(outfile, 0)
 	
 if __name__ == "__main__":
     main()

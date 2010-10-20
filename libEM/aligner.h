@@ -681,7 +681,7 @@ namespace EMAN
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img) const
 			{
-				return align(this_img, to_img, "dot.tomo", Dict());
+				return align(this_img, to_img, "ccc.tomo", Dict());
 			}
 
 

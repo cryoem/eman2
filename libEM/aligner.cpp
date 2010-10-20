@@ -1258,6 +1258,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
+
 	if ( tmp != 0 ) delete tmp;
 	
 	return result;
@@ -1388,6 +1389,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		Transform tsoln(parms);
 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
+		result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
 
 	} else { // The refine aligner failed - this shift went beyond the max shift
 		result = this_img->process("xform",Dict("transform",t));
@@ -1456,8 +1458,6 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float dalt = params.set_default("dalt",10.f);
 	float daz = params.set_default("daz",10.f);
 	float dphi = params.set_default("dphi",10.f);
-	float threshold = params.set_default("threshold",0.f);
-	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
 	
 	//in case we arre aligning tomos
@@ -1496,7 +1496,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 		for ( float az = begin_az; az <= end_az; az += daz ){	//Dict yy = t.get_params("eman");
         //cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << endl;
-			for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
+	                // I have used < rphi-az rather than <= rphi-az to prevent phi from resampling itself(causes big!!! pbs when using >1 solns)
+			for( float phi = -rphi-az; phi < rphi-az; phi += dphi ) {
 				d["alt"] = alt;
 				d["phi"] = phi; 
 				d["az"] = az;
@@ -1623,7 +1624,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 
-	float verbose_alt = -1.0f;;
+	float verbose_alt = -1.0f;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
 		float az = params["az"];
@@ -1634,7 +1635,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				cout << "Trying angle " << alt << endl;
 			}
 		}
-		for( float phi = -rphi-az; phi <= rphi-az; phi += dphi ) {
+		// I have used < rphi-az rather than <= rphi-az to prevent phi from resampling itself(causes big!!! pbs when using >1 solns)
+		for( float phi = -rphi-az; phi < rphi-az; phi += dphi ) { 
 			
                         params["phi"] = phi;
 			Transform t(params);
@@ -1658,6 +1660,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
                         delete transformed; transformed =0;
 
 			unsigned int j = 0;
+			//cout << "alt " <<float(t.get_rotation("eman").get("alt")) << " az " << float(t.get_rotation("eman").get("az")) << " phi " << float(t.get_rotation("eman").get("phi")) << endl;
 			for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
 				if ( (float)(*it)["score"] > best_score ) { // Note greater than - EMAN2 preferes minimums as a matter of policy
 					vector<Dict>::reverse_iterator rit = solns.rbegin();

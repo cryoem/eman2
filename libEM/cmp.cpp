@@ -508,7 +508,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	image->set_attr("ty", ty);
 	image->set_attr("tz", tz);
 	
-	float best_score = ccf->get_value_at_wrap(tx,ty,tz)/static_cast<float>(image->get_size());
+	float best_score = ccf->get_value_at_wrap(tx,ty,tz);
         if (ccf_ownership) delete ccf; ccf = 0;
         
 	return -best_score;
