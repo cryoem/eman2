@@ -8500,7 +8500,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					elif ext == "hdf":
 						EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 					il+=8	
-				elif p[0] == "ctf":
+				elif p == "ctf":
 					if len(parmvalues) < il+6:
 						print "Not enough parameters!"
 						return			
