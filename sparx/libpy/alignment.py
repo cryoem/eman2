@@ -434,6 +434,41 @@ def ringw_real(numr, mode="F"):
 	return wr
 
 
+def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+	"""Determine shift and rotation between image and reference image (refim)
+	   no mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+	"""
+	from math import pi, cos, sin
+	from alignment import ang_n
+	#from utilities import info
+	#print "ORNQ"
+	peak = -1.0E23
+	ky = int(2*yrng/step+0.5)/2
+	kx = int(2*xrng/step+0.5)/2
+	
+	for i in xrange(-ky, ky+1):
+		iy = i*step
+		for j in xrange(-kx, kx+1):
+			ix = j*step
+			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+			Util.Frngs(cimage, numr)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			qn = retvals["qn"]
+			if qn >= peak:
+				sx = -ix
+				sy = -iy
+				ang = ang_n(retvals["tot"], mode, numr[-1])
+				peak = qn
+	# mirror is returned as zero for consistency
+	mirror = 0
+	co =  cos(ang*pi/180.0)
+	so = -sin(ang*pi/180.0)
+	sxs = sx*co - sy*so
+	sys = sx*so + sy*co
+	return  ang, sxs, sys, mirror, peak
+
 
 def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	"""Determine shift and rotation between image and reference image (crefim)
@@ -1574,41 +1609,6 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		#tave,tvar = ave_var_series_g(data,kb)
 		#print  " Criterium on the fly ", tave.cmp("dot", tave, {"negative":0,"mask":mask})
 
-def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
-	"""Determine shift and rotation between image and reference image (refim)
-	   no mirror
-		quadratic interpolation
-		cnx, cny in FORTRAN convention
-	"""
-	from math import pi, cos, sin
-	from alignment import ang_n
-	#from utilities import info
-	#print "ORNQ"
-	peak = -1.0E23
-	ky = int(2*yrng/step+0.5)//2
-	kx = int(2*xrng/step+0.5)//2
-	
-	
-	for i in xrange(-ky,ky+1):
-		iy=i*step
-		for j in xrange(-kx,kx+1):
-			ix=j*step
-			cimage=Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
-			Util.Frngs(cimage, numr)
-			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
-			qn = retvals["qn"]
-			if(qn >= peak):
-				sx = -ix
-				sy = -iy
-				ang = ang_n(retvals["tot"], mode, numr[len(numr)-1])
-				peak=qn
-	# mirror is returned as zero for consistency
-	mirror=0
-	co =  cos(ang*pi/180.0)
-	so = -sin(ang*pi/180.0)
-	sxs = sx*co - sy*so
-	sys = sx*so + sy*co
-	return  ang, sxs, sys, mirror, peak
        
 def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
@@ -1639,6 +1639,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	Util.Frngs(crefim, numr)
 	Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+
 
 def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
