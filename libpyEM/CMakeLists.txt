@@ -98,7 +98,7 @@ ENDIF(ENABLE_OPENGL)
 INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
 #INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py gui/emimagecanvas.py)
-INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/pyshed.py qtgui/emshape.py)
+INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/emshape.py)
 
 INSTALL_FILES(/lib FILES qtgui/emimage3diso.py qtgui/emglobjects.py qtgui/emimage3dslice.py qtgui/emimage3dvol.py qtgui/emimage3dsym.py qtgui/emimagemxrotor.py qtgui/emfloatingwidgets.py qtgui/emimagerotor.py qtgui/emrotor.py qtgui/emapplication.py qtgui/emanimationutil.py qtgui/emborderdecoration.py qtgui/embrowse.py  qtgui/emselector.py qtgui/emdatastorage.py qtgui/emform.py qtgui/emsprworkflow.py qtgui/emtprworkflow.py qtgui/emlights.py qtgui/emplot3d.py qtgui/emsave.py qtgui/em3Dfonts.py qtgui/emboxerbase.py qtgui/empdbvaltool.py qtgui/empdbviewer.py)
 
