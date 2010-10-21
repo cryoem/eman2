@@ -1258,7 +1258,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
-
+        //cout << result << " x " << x << " y " << y << " z " << z << " az " << az << " alt " << alt << " phi " << phi << endl;
 	if ( tmp != 0 ) delete tmp;
 	
 	return result;
@@ -1296,8 +1296,12 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
-	gsl_params["transform"] = t;
-
+	gsl_params["transform"] = t;	
+	Dict altered_cmp_params(cmp_params);
+	if(cmp_name == "ccc.tomo"){
+	    altered_cmp_params["zeroori"] = true;
+	}
+	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
@@ -1331,7 +1335,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_set(x, 5, sphi);
 
 	gsl_multimin_function minex_func;
-	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
+	Cmp *c = Factory < Cmp >::get(cmp_name, altered_cmp_params);
 	gsl_params["cmp"] = (void *) c;
 	minex_func.f = &refalifn3d;
 

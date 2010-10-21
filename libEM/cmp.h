@@ -303,6 +303,7 @@ namespace EMAN
 			d.put("searchx", EMObject::INT, "The maximum range of the peak location in the x direction. Default is sizex/4");
 			d.put("searchy", EMObject::INT, "The maximum range of the peak location in the y direction. Default is sizey/4");
 			d.put("searchz", EMObject::INT, "The maximum range of the peak location in the z direction. Default is sizez/4");
+			d.put("zeroori", EMObject::FLOAT,"When using the ccc.tomo aligner, use the peak at origin (use only with refine3D aligner).");
 			return d;
 		}
 		

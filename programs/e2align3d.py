@@ -51,6 +51,8 @@ def main():
         #options associated with e2refine3d.py
         parser.add_option("--shrink",type="float",default=-1,help="Fractional amount to shrink the maps by (-1 = auto), default=-1.0")
         parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
+        parser.add_option("--maskrad",type="int",default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
+        parser.add_option("--maskfoff",type="float",default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
         parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
         parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same', default=0.01")
         #options form the sphere alinger
@@ -127,9 +129,18 @@ def main():
 		    moving.process_inplace(str(processorname), param_dict)
 		except:
 		    print "warning - application of the pre processor",p," failed. Continuing anyway"
-	
+
 	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
 	smoving = moving.process('xform.scale', {'scale':options.shrink})
+        options.maskrad = options.maskrad*options.shrink
+
+        #mask out all the junk
+        if options.maskrad > 0:
+            sfixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
+            smoving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
+
+        sfixed.set_attr('UCSF.chimera',1)
+        sfixed.write_image('fixed.mrc')
 
 	if options.rcmp == "dot":
 	    rcmpparms = {'normalize':1}

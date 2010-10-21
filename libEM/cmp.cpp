@@ -496,11 +496,19 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		ccf_ownership = true;
 	}
 	bool norm = params.set_default("norm",true);
+	bool zeroori = params.set_default("zeroori",false);
+	
 	if (norm) ccf->process_inplace("normalize");
-	int searchx = params.set_default("searchx",-1); 
-	int searchy = params.set_default("searchy",-1); 
-	int searchz = params.set_default("searchz",-1);
-	IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+
+	IntPoint point;
+	if (zeroori) {
+	        point[0] = 0; point[1] = 0; point[2] = 0;
+	} else {
+	  	int searchx = params.set_default("searchx",-1); 
+	        int searchy = params.set_default("searchy",-1); 
+	        int searchz = params.set_default("searchz",-1);
+	        point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+	}
 	
 	//this is to prevent us from doing a ccf twice
 	float tx = (float)point[0]; float ty = (float)point[1]; float tz = (float)point[2];
