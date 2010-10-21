@@ -37,6 +37,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import os
 
+import warnings
+warnings.warn("emborderdecoration.py is deprecated.", DeprecationWarning)
 
 
 white = (1.0,1.0,1.0,1.0)

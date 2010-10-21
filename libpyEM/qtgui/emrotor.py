@@ -47,6 +47,9 @@ from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
 from emapplication import EMStandAloneApplication, EMGUIModule
 
+import warnings
+warnings.warn("emrotor.py is deprecated.", DeprecationWarning)
+
 class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a

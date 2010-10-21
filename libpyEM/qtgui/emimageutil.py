@@ -42,7 +42,7 @@ import warnings
 
 class EMEventRerouter:
 	def __init__(self,target=None):
-		warnings.warn("EMEventRerouter is deprecated.")
+		warnings.warn("EMEventRerouter is deprecated.", DeprecationWarning)
 		if target != None:
 			self.target = weakref.ref(target)
 			self.orig_target  = weakref.ref(target)

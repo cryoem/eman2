@@ -61,6 +61,9 @@ height_plane = 500
 from emborderdecoration import EM2DPlainBorderDecoration,EM3DPlainBorderDecoration, EMBorderDecoration
 import weakref
 
+import warnings
+warnings.warn("emfloatingwidgets.py is deprecated.", DeprecationWarning)
+
 class GLView:
 	def __init__(self,window=None):
 		if window != None:
