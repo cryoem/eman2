@@ -1249,7 +1249,7 @@ class EMBoxerModule(QtCore.QObject):
 				
 			
 		
-		self.guictl_module = None
+		self.guictl = None
 		self.guiim = None
 		self.guimx = None
 		self.guimxit = None
@@ -1286,7 +1286,7 @@ class EMBoxerModule(QtCore.QObject):
 		something_shown = False
 		# guiim should be last so that it's at the front
 		# guimx should come after guimit in the desktop, just because it's a better setup
-		for gui in [self.form,self.guimxit,self.guimx,self.guictl_module,self.guiim]:
+		for gui in [self.form,self.guimxit,self.guimx,self.guictl,self.guiim]:
 			if gui != None:
 				something_shown = True
 				get_application().show_specific(gui)
@@ -1320,7 +1320,7 @@ class EMBoxerModule(QtCore.QObject):
 			return
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
-			get_application().close_specific(self.form)
+			get_application().close_specific(self.form, False)
 			self.form = None
 			self.__gui_init(options)
 			self.show_guis()
@@ -1455,13 +1455,12 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictlrotor.setWindowTitle("e2boxer Controllers")
 
 	def __init_guictl(self):
-		self.guictl_module = EMBoxerModulePanelModule(get_application(),self,self.ab_sel_mediator)
-		self.guictl = self.guictl_module.qt_widget
+		self.guictl = EMBoxerModulePanel(self,self.ab_sel_mediator)
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("sxboxer Controller")
 		#self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-		#get_application().show_specific(self.guictl_module)
+		#get_application().show_specific(self.guictl)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			#print "Setting GUI for Gauss boxing method"
 			#gauss_method_id = 1
@@ -1494,7 +1493,7 @@ class EMBoxerModule(QtCore.QObject):
 
 	def guimxit_closed(self):
 		self.guimxit = None
-		self.guictl_module.widget.set_guimxit_visible(False)
+		self.guictl.set_guimxit_visible(False)
 
 	def __init_guimx(self):
 		glflags = EMOpenGLFlagsAndTools()
@@ -1514,8 +1513,6 @@ class EMBoxerModule(QtCore.QObject):
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("App")
-		
-		qt_target = get_application().get_qt_emitter(self.guimx)
 
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
 		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
@@ -1528,7 +1525,7 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def guimx_closed(self):
 		self.guimx = None
-		self.guictl_module.widget.set_guimx_visible(False)
+		self.guictl.set_guimx_visible(False)
 	
 	def __init_guiim(self, image=None, imagename=None):
 		if image == None:
@@ -1556,7 +1553,7 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def guiim_closed(self):
 		self.guiim = None
-		self.guictl_module.widget.set_guiim_visible(False)
+		self.guictl.set_guiim_visible(False)
 
 	def __update_guiim_states(self):
 		if self.guiim == None:
@@ -2453,7 +2450,7 @@ class EMBoxerModule(QtCore.QObject):
 	def done(self):
 		if self.boxable != None: self.boxable.cache_exc_to_db()
 		#print "here we
-		if self.guictl_module != None: self.guictl_module.closeEvent(None)
+		if self.guictl != None: self.guictl.closeEvent(None)
 		if self.guiim != None: self.guiim.closeEvent(None)
 		if self.guimx != None: self.guimx.closeEvent(None)
 		if self.guimxit != None: self.guimxit.closeEvent(None)
@@ -3080,31 +3077,15 @@ class CcfHistogram(QtGui.QWidget):
 		for i in xrange( newpos, newpos+2):
 			p.drawLine( i, self.height(), i, int(0.2*self.height()) )
 
-class EMBoxerModulePanelModule(EMQtWidgetModule):
-	'''
-	params should be a list of ParamDef objects
-	application should be an EMAN2 type application
-	After initializing this object you should probably call application.show(this)
-	or application.show_specific(this), depending on what you're doing
-	'''
-	def __init__(self,application,target,ab_sel_mediator):
-		self.application = weakref.ref(application)
-		self.widget = EMBoxerModulePanel(self,target,ab_sel_mediator)
-		EMQtWidgetModule.__init__(self,self.widget)
-		
-	def get_desktop_hint(self):
-		return "inspector"
-
 class EMBoxerModulePanel(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
 
-	def __init__(self,module,target,ab_sel_mediator) :
+	def __init__(self,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		self.ab_sel_mediator = ab_sel_mediator
-		self.module = module # please set this to be a EMBoxerModulePanelModule
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
