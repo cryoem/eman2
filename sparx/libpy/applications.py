@@ -5730,13 +5730,13 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			outlist[2].write_image(file_particle, k)
 		out.close()
 
-def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
-          ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+          txs, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
 	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	  fourvar, debug = False, MPI = False):
 	if MPI:
-		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
-			ts, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+			txs, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
 		return
@@ -5758,11 +5758,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ihrsr", 1)
 	os.mkdir(outdir)
-
+        
 	xrng        = get_input_from_string(xr)
-	if  yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(yr)
-	step        = get_input_from_string(ts)
+	#Guozhi Tao changed----since I cannot test this code, just modify the code to make sure no crash--begin
+	if  ny == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(xr)
+	#since I cannot test this code, just modify the code to make sure no crash--end
+	step        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if (an == "-1"):
@@ -5923,8 +5925,8 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
 
-def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, 
-	ts, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
+def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+	txs, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
@@ -5980,11 +5982,18 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	ref_a= "P"
 
 	xrng        = get_input_from_string(xr)
-	if  yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(yr)
-	step        = get_input_from_string(ts)
+	ynumber	    = get_input_from_string(ynumber)
+	for i in xrange(len(ynumber)):
+		if(ynumber[i]%2==1):
+			ynumber[i]=ynumber[i]+1
+	yrng =[]
+	
+	for i in xrange(len(xrng)):
+		yrng.append(dp/2)
+	
+	stepx        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
-	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
 	if an == "-1":
 		an = [-1] * lstp
 	else:
@@ -6012,8 +6021,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		print_msg("Outer radius                              : %i\n"%(last_ring))
 		print_msg("Ring step                                 : %i\n"%(rstep))
 		print_msg("X search range                            : %s\n"%(xrng))
-		print_msg("Y search range                            : %s\n"%(yrng))
-		print_msg("Translational step                        : %s\n"%(step))
+		print_msg("Y number                                  : %s\n"%(ynumber))
+		print_msg("Translational stepx                        : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
 		print_msg("min radius for helical search (in pix)    : %f\n"%(rmin))
@@ -6089,8 +6098,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		pixel_size = data[0].get_attr('ctf').apix
 	else:
 		pixel_size = data[0].get_attr('pixel_size')
+	for i in xrange(len(xrng)):
+		yrng[i]=dp/(2*pixel_size)
+		
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
+		print_msg("Y search range initialized as             : %s\n\n"%(yrng))
 		
 
 	from time import time	
@@ -6111,13 +6124,18 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 		terminate = 0
 		Iter = -1
  		while(Iter < max_iter-1 and terminate == 0):
+			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
+			if(ynumber==0):
+				stepy=0.0
+			else:
+				stepy=(2*yrng[N_step]/ynumber[N_step])
 			pixer  = [0.0]*nima
 			modphi = [0.0]*nima
 			Iter += 1
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, stepx = %5.2f, stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],stepx[N_step],stepy,ynumber[N_step]))
 
 			volft,kb = prep_vol( vol )
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
@@ -6132,13 +6150,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 
 			for im in xrange( nima ):
 
-				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],psi_max,finfo)
+				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
 					#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
 					dpp = (float(dp)/pixel_size)
 					dyi = (float(syi)/dpp)-int(syi/dpp)
-					jdelta = 0.75/dpp # jdelta could be adjustable input parameter
-					if dyi < -0.5-jdelta:
+					#jdelta = 0.75/dpp # jdelta could be adjustable input parameter
+					jdelta=0.0
+					#change the wrapping part 
+					'''if dyi < -0.5-jdelta:
 						eyi    = dyi+1.0
 						sytemp = eyi*dpp
 						synew  = 0.0
@@ -6158,7 +6178,27 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr,
 	        					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
 	        				else:
 	        					synew  = syi
-	        				phinew = phihi
+	        				phinew = phihi'''
+						
+					if(abs(syi)<=(0.5+jdelta)*dpp):
+						
+						synew  = syi
+						phinew = phihi
+	
+					else:
+						if dyi < -0.5-jdelta:
+							eyi    = dyi+1.0
+							
+						elif dyi > 0.5+jdelta:
+							eyi    = dyi-1.0
+							
+	
+						else:
+							eyi = dyi
+	       					synew= eyi*dpp
+	        				phinew=phihi+abs(dphi)*float(synew-syi)/dpp
+						phinew=phinew%360
+
 					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
 					t2.set_trans(Vec2f(-sxi, -synew))
 					data[im].set_attr("xform.projection", t2)
