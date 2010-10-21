@@ -18177,35 +18177,42 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 
 vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float psi_max, string mode,
-                vector<int>numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny,int ynumber) {
 
 	size_t crefim_len = crefim.size();
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
-	for (int i = -ky; i <= ky; i++) {
-		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+	int   kx = int(2*xrng/step+0.5)/2;
+	//if ynumber==-1, use the old code which process x and y direction equeally.
+	if(ynumber==-1)
+	{
+		int   ky = int(2*yrng/step+0.5)/2;
+		
 
-			Normalize_ring( cimage, numr );
+		for (int i = -ky; i <= ky; i++) 
+			{
+			iy = i * step ;
+			for (int j = -kx; j <= kx; j++) 
+				{
+				ix = j*step ;
+				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Frngs(cimage, numr);
+				Normalize_ring( cimage, numr );
+
+				Frngs(cimage, numr);
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
-				double qn = retvals["qn"];
-				double qm = retvals["qm"];
-				if(qn >= peak || qm >= peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
+				for ( iref = 0; iref < (int)crefim_len; iref++) {
+					Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
+					double qn = retvals["qn"];
+					double qm = retvals["qm"];
+					if(qn >= peak || qm >= peak) {
+						sx = -ix;
+						sy = -iy;
+						nref = iref;
 					if (qn >= qm) {
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>(qn);
@@ -18215,9 +18222,97 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 						peak = static_cast<float>(qm);
 						mirror = 1;
 					}
+					}
+				  }  
+				delete cimage; cimage = 0;
+			}
+		   }
+	}
+	//if ynumber is given, it should be even. We need to check whether it is zeros
+	else if(ynumber==0)
+	{
+	
+		for (int j = -kx; j <= kx; j++) 
+			{
+			ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+
+			Normalize_ring( cimage, numr );
+
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for ( iref = 0; iref < (int)crefim_len; iref++) 
+			     {
+				Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak || qm >= peak) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+				if (qn >= qm) {
+					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					peak = static_cast<float>(qn);
+					mirror = 0;
+					} 
+				else {
+					ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+					peak = static_cast<float>(qm);
+					mirror = 1;
+					}
 				}
-			}  delete cimage; cimage = 0;
-		}
+			   }  
+				delete cimage; cimage = 0;
+			}
+		   
+	
+	}
+	else
+	{
+	        
+	
+		int   ky = int(ynumber/2);		
+		float stepy=2*yrng/ynumber;
+		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
+		for (int i = -ky+1; i <= ky; i++) 
+			{
+			iy = i * stepy ;
+			for (int j = -kx; j <= kx; j++) 
+				{
+				ix = j*step ;
+				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+				Normalize_ring( cimage, numr );
+
+				Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+				for ( iref = 0; iref < (int)crefim_len; iref++) {
+					Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
+					double qn = retvals["qn"];
+					double qm = retvals["qm"];
+					if(qn >= peak || qm >= peak) {
+						sx = -ix;
+						sy = -iy;
+						nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qm);
+						mirror = 1;
+					}
+					}
+				  }  
+				delete cimage; cimage = 0;
+			}
+		   }
+	
+	
+	
 	}
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
