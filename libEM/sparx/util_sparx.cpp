@@ -34,7 +34,7 @@
  */
 
 #ifdef _WIN32
-	#pragma warning(disable:4819)
+#pragma warning(disable:4819)
 #endif	//_WIN32
 
 #include <cstring>
@@ -72,16 +72,16 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	MAX = -FLT_MAX;
 	MIN =  FLT_MAX;
 	count = 0L;
-	Sum1 = 0.0L;
-	Sum2 = 0.0L;
+	Sum1  = 0.0L;
+	Sum2  = 0.0L;
 
 	if (mask == NULL) {
-	   //Vol->update_stat();
-	   stats.push_back(Vol->get_attr("mean"));
-	   stats.push_back(Vol->get_attr("sigma"));
-	   stats.push_back(Vol->get_attr("minimum"));
-	   stats.push_back(Vol->get_attr("maximum"));
-	   return stats;
+		//Vol->update_stat();
+		stats.push_back(Vol->get_attr("mean"));
+		stats.push_back(Vol->get_attr("sigma"));
+		stats.push_back(Vol->get_attr("minimum"));
+		stats.push_back(Vol->get_attr("maximum"));
+		return stats;
 	}
 
 	/* Check if the sizes of the mask and image are same */
@@ -112,13 +112,13 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	maskptr = mask->get_data();
 
 	for (size_t i = 0; i < nx*ny*nz; i++) {
-	      if (maskptr[i]>0.5f == flip) {
-		Sum1 += Volptr[i];
-		Sum2 += Volptr[i]*Volptr[i];
-		MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
-		MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
-		count++;
-	      }
+		if (maskptr[i]>0.5f == flip) {
+			Sum1 += Volptr[i];
+			Sum2 += Volptr[i]*double(Volptr[i]);
+			MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
+			MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
+			count++;
+		}
 	}
 
 	if (count == 0) {
@@ -126,16 +126,15 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 		throw ImageFormatException( "Invalid mask");
 	}
 
-       float avg = static_cast<float>(Sum1/count);
-       float sig2 = static_cast<float>(Sum2 - count*avg*avg)/(count-1);
-       float sig = sqrt(sig2);
+	float avg = static_cast<float>(Sum1/count);
+	float sig = static_cast<float>(sqrt((Sum2 - Sum1*Sum1/count)/(count-1)));
 
-       stats.push_back(avg);
-       stats.push_back(sig);
-       stats.push_back(MIN);
-       stats.push_back(MAX);
+	stats.push_back(avg);
+	stats.push_back(sig);
+	stats.push_back(MIN);
+	stats.push_back(MAX);
 
-       return stats;
+	return stats;
 }
 
 
@@ -19092,8 +19091,15 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 		}
 	}
 
-	delete[] x1_new, y1_new, x2_new, y2_new;
-	delete[] alpha12_0, dalpha12, dsx12, dsy12, mirror1_0;
+	delete[] x1_new;
+	delete[] y1_new;
+	delete[] x2_new;
+	delete[] y2_new;
+	delete[] alpha12_0;
+	delete[] dalpha12;
+	delete[] dsx12;
+	delete[] dsy12;
+	delete[] mirror1_0;
 	
 }
 
