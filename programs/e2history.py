@@ -56,8 +56,8 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.gui:
-		from emapplication import EMStandAloneApplication
-		app = EMStandAloneApplication()
+		from emapplication import EMApp
+		app = EMApp()
 		hist = HistoryForm(app,os.getcwd())
 		app.show()
 		app.execute()
@@ -71,13 +71,13 @@ class HistoryForm:
 		'''
 		self.wd = wd
 		
-		from emform import EMFormModule
-		self.form = EMFormModule(params=self.get_history_table(),application=application)
+		from emform import EMFormWidget
+		self.form = EMFormWidget(params=self.get_history_table())
 		self.form.setWindowTitle("EMAN2 history")
 		
 		from PyQt4 import QtGui,QtCore
-		self.form.qt_widget.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
-		self.form.qt_widget.resize(640,480)
+		self.form.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.form.resize(640,480)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
 		
@@ -159,10 +159,10 @@ class HistoryForm:
  		return params
  	
  	def on_ok(self):
- 		self.form.closeEvent(None)
+ 		self.form.close()
  		
  	def on_cancel(self):
- 		self.form.closeEvent(None)
+ 		self.form.close()
  			
 	
 def local_datetime(secs):

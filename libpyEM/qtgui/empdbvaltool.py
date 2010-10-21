@@ -30,95 +30,95 @@
 #
 #
 
-from em3dmodule import *
-from EMAN2 import PDBReader
-
+from EMAN2 import PDBReader, EMData
+from PyQt4 import QtCore, QtGui
+from emimage3d import EMImage3DWidget
+from emimage3diso import EMIsosurfaceModel
 from empdbviewer import *
-from emimage3diso import *
-import sys
-import os
 
-
-class EMPDBValTool(EM3DModule):
+class EMPDBValTool(QtCore.QObject):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
 	def __init__(self, application=None,ensure_gl_context=True,application_control=True):
-		EM3DModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
-		self.pdb_module = None # will eventually be a EMPDBViewer
-		self.iso_module = None # will eventuall be a EMImage3DModule
+		QtCore.QObject.__init__(self)
+		self.pdb_model = None # will eventually be a EMPDBModel
+		self.iso_model = None # will eventually be a EMIsosurfaceModel
 
 		self.current_mrc = "" #holds the current mrc file name
 		self.current_pdb = "" #holds the current pdb file name
 
 		self.t = 0
 
-	def __init_pdb_module(self):
-		if self.pdb_module == None:
-			self.pdb_module = EMPDBViewer(None,False,False)
-			self.__set_module_contexts(self.pdb_module)
-			self.get_inspector().addTab(self.pdb_module.get_inspector(),"PDB")
-			
-	def __set_module_contexts(self,module):
-		module.set_qt_context_parent(self.qt_context_parent)
-		module.set_gl_context_parent(self.gl_context_parent)
-		module.set_gl_widget(self.gl_context_parent)
-		module.set_dont_delete_parent() # stops a RunTimeError
-		module.under_qt_control = self.under_qt_control
+		self.parent_widget = EMImage3DWidget()
+		self.__init_pdb_model()
+		self.__init_iso_model()
 		
-	def __init_iso_module(self):
-		if self.iso_module == None:
+		self.inspector = None
+		self.get_inspector()
+		self.parent_widget.inspector = self.inspector #FIXME: this seems like a hack
 
-			self.iso_module = EMIsosurfaceModule(None,None,False,False, enable_file_browse=True)
+	def __init_pdb_model(self):
+		if self.pdb_model == None:
+			self.pdb_model = EMPDBModel(None,False,False)
+			self.parent_widget.add_model(self.pdb_model)
+			self.__set_model_contexts(self.pdb_model)
 
-			self.get_inspector().addTab(self.iso_module.get_inspector(),"Isosurface")
-			self.__set_module_contexts(self.iso_module)
+			
+	def __set_model_contexts(self,model):
+		model.set_qt_context_parent(self.parent_widget)
+		model.set_gl_context_parent(self.parent_widget)
+		model.set_gl_widget(self.parent_widget)
+		model.set_dont_delete_parent() # stops a RunTimeError
+		model.under_qt_control = True #self.under_qt_control
+		
+	def __init_iso_model(self):
+		if self.iso_model == None:
+			self.iso_model = EMIsosurfaceModel(None,None,False,False, enable_file_browse=True)
+			self.parent_widget.add_model(self.iso_model)
+			self.__set_model_contexts(self.iso_model)
 
 	
 	def set_pdb_file(self,pdb_file):
 		self.current_pdb = pdb_file
 		print self.current_pdb
-		if self.pdb_module == None:
-			self.__init_pdb_module()
-		self.pdb_module.set_current_text(pdb_file) #updates GL with the new pdb file
+		if self.pdb_model == None:
+			self.__init_pdb_model()
+		self.pdb_model.set_current_text(pdb_file) #updates GL with the new pdb file
 
 		
 	def set_iso_file(self,file_name):
 		self.current_mrc = file_name
 		data = EMData(file_name)
 		self.set_iso_data(data)
-		self.iso_module.get_inspector().mrc_text.setText(file_name)
+		self.iso_model.get_inspector().mrc_text.setText(file_name)
 
 	def set_iso_data(self,data):
-		if self.iso_module == None: self. __init_iso_module()
-		self.iso_module.set_data(data)
+		if self.iso_model == None: self. __init_iso_model()
+		self.iso_model.set_data(data)
 		print "set force update"
-		self.iso_module.set_force_update(True)
-		self.iso_module.updateGL()
+		self.iso_model.set_force_update(True)
+		self.iso_model.updateGL()
 
 	def update_pdb_file(self):  #updates current_pdb with the current file
-		self.current_pdb = self.pdb_module.get_pdb_file()
+		self.current_pdb = self.pdb_model.get_pdb_file()
 
 	def update_mrc_file(self):  #updates current_mrc with the current file
-		if self.iso_module.get_inspector().mrcChanged:		
-			self.current_mrc = self.iso_module.get_mrc_file()
+		if self.iso_model.get_inspector().mrcChanged:		
+			self.current_mrc = self.iso_model.get_mrc_file()
 	
 	def draw_objects(self):
-		
-		if self.pdb_module == None:
-			self.__init_pdb_module()
-
-		if self.iso_module == None: 
-			self. __init_iso_module()
-
-		if self.pdb_module != None:
+		if self.pdb_model == None:
+			self.__init_pdb_model()
+		if self.iso_model == None: 
+			self. __init_iso_model()
+		if self.pdb_model != None:
 			glPushMatrix()
-			self.pdb_module.draw_objects()
+			self.pdb_model.draw_objects()
 			glPopMatrix()
-			
-		if self.iso_module != None:
+		if self.iso_model != None:
 			glPushMatrix()
-			self.iso_module.render()
+			self.iso_model.render()
 			glPopMatrix()
 			
 	def get_inspector(self):
@@ -130,23 +130,31 @@ class EMPDBValTool(EM3DModule):
 		val1 = int(self.get_inspector().text1.text()) #val 1 = number of transformations
 		val2 = float(self.get_inspector().text2.text()) #val 2 = isosurface threshold value
 
+		self.emit(QtCore.SIGNAL("HELP!"))
 		self.emit(QtCore.SIGNAL("run_validate"), str(self.current_mrc), str(self.current_pdb), val1, val2)
 
-class EMPDBValToolInspector(EM3DInspector):
-	def __init__(self,target,enable_advanced=False):
-		EM3DInspector.__init__(self,target,enable_advanced)
 
+class EMPDBValToolInspector(QtGui.QWidget):
+	def __init__(self,target,enable_advanced=False):
+		QtGui.QWidget.__init__(self,None)
+		self.target = weakref.ref(target) # prevent a strong cycle - this target object should be an EM3DModel, but that could change depending on who builds on this object
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
+		
+		self.tabwidget = QtGui.QTabWidget()
+		self.vbl = QtGui.QVBoxLayout(self) # this is the main vbl
+		self.vbl.addWidget(self.tabwidget) 
+		self.setLayout(self.vbl)
+
+		self.advanced_tab = None
 		self.text1 = "" #text line edit for "number of transformations"
 		self.text2 = "" #text line edit for "isosurface threshold value"
-
 		self.options_module = None # will eventually be the options tab
-		self.__init_options_module()
-
-
 		
-	def addTab(self,widget,name):
-		self.tabwidget.addTab(widget,name)
-
+		self.addTab(self.target().iso_model.get_inspector(),"Isosurface")
+		if enable_advanced:
+			self.insert_advanced_tab()
+		self.addTab(self.target().pdb_model.get_inspector(), "PDB")
+		self.__init_options_module()
 
 	def __init_options_module(self):
 		if self.options_module == None:
@@ -186,9 +194,22 @@ class EMPDBValToolInspector(EM3DInspector):
 
 			QtCore.QObject.connect(self.validate, QtCore.SIGNAL("clicked(bool)"), self.runValidate)
 
-
-
-	def runValidate(self, i):	
+	def addTab(self,widget,name):
+		self.tabwidget.addTab(widget,name)
+		
+	def insert_advanced_tab(self):
+		#FIXME: doesn't work (EMImageInspector3D vs EMPDBValToolInspector)
+		if self.advanced_tab == None:
+			from emimage3d import EM3DAdvancedInspector
+			self.advanced_tab = EM3DAdvancedInspector(self.target(), self)
+			
+		self.advanced_tab.update_rotations(self.target().get_current_transform())
+		self.advanced_tab.set_scale(self.target().cam.scale)
+		self.tabwidget.addTab(self.advanced_tab,"Advanced")
+		self.settingsrow = self.tabwidget.count()-1
+		self.tabwidget.setCurrentIndex(self.settingsrow)
+		
+	def runValidate(self, i):
 		self.target().update_pdb_file()
 		self.target().update_mrc_file()
 		
@@ -202,15 +223,36 @@ class EMPDBValToolInspector(EM3DInspector):
 		if (str(self.target().current_pdb) == ""):
 			print "Please properly load a pdb file"
 
+	def set_directional_light_dir(self,d):
+		if self.advanced_tab: self.advanced_tab.set_directional_light_dir(d)
+		
+	def set_positional_light_dir(self,d):
+		if self.advanced_tab: self.advanced_tab.set_positional_light_dir(d)
+			
+	def set_positional_light_pos(self,d):
+		if self.advanced_tab: self.advanced_tab.set_positional_light_pos(d)
+			
+	def set_scale(self,val):
+		if self.advanced_tab: self.advanced_tab.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		if self.advanced_tab: self.advanced_tab.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		if self.advanced_tab: self.advanced_tab.set_xyz_trans(x,y,z)
+		
+	def update_rotations(self,t3d):
+		if self.advanced_tab:
+			self.advanced_tab.update_rotations(t3d)
+
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EMPDBValTool()
+	from emapplication import EMApp
+	em_app = EMApp()
+	pdb_tool = EMPDBValTool()
+
+	pdb_tool.set_pdb_file("fh-solution-0-1UF2-T.pdb")
+	pdb_tool.set_iso_file("rdv-target2.mrc")
 	em_app.show()
-
-	window.set_pdb_file("fh-solution-0-1UF2-T.pdb")
-	window.set_iso_file("rdv-target2.mrc")
-
 	em_app.execute()
 
 		

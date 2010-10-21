@@ -34,35 +34,27 @@
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 import os
-from emapplication import EMQtWidgetModule,ModuleEventsManager
+from emapplication import ModuleEventsManager
 from emsprworkflow import *
 from emtprworkflow import *
-from emselector import EMBrowserModule
+from emselector import EMBrowser
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
 from emanimationutil import Animator
-from emimage import EMModuleFromFile
+from emimage import EMWidgetFromFile
 
 import time
 import weakref
-
-class EMTaskMonitorModule(EMQtWidgetModule):
-	def __init__(self,application=None):
-		self.application = application
-		self.widget = EMTaskMonitorWidget(self,application)
-		self.widget.resize(256,200)
-		EMQtWidgetModule.__init__(self,self.widget)
 
 class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def get_desktop_hint(self):
 		return "workflow"
 
-	def __init__(self,module,application):
+	def __init__(self):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "workflow.png"))
 		self.setWindowTitle("Running Tasks")
 		Animator.__init__(self)
-		self.module = weakref.ref(module)
 		# animation specific
 		self.timer_interval = 500 # half a second time interval
 		self.register_animatable(self)
@@ -121,6 +113,9 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		self.set_entries(self.entries_dict)
 	
 		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
+		
+		self.resize(256,200)
+		get_application().attach_child(self)
 		
 	def animate(self,time):
 		global HOMEDB
@@ -240,7 +235,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		#if val == None:
 			#print "error, this shouldn't happen"
 		#print item.module
-		self.module().emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
+		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
 	
 	def on_kill(self):
 		selected_items = self.list_widget.selectedItems()
@@ -256,7 +251,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			else:
 				#print self.entries_dict
 				self.entries_dict.pop(item.module)
-				self.module().emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
+				self.emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
 				self.set_entries(self.entries_dict)
 			
 	def keyPressEvent(self,event):
@@ -284,40 +279,19 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			#print "removing item",item
 			#self.list_widget.removeItemWidget(item)
 
-class EMWorkFlowSelector(EMQtWidgetModule):
-	def __init__(self,application,task_monitor):
-		self.application = application
-		self.widget = EMWorkFlowSelectorWidget(self,application,task_monitor)
-		#self.widget.resize(256,200)
-		EMQtWidgetModule.__init__(self,self.widget)
-
-
-#class EMWorkFlowSelector(object):
-	#def __new__(cls,parent,application,task_monitor):
-		#widget = EMWorkFlowSelectorWidget(parent,application,task_monitor)
-		#widget.resize(200,200)
-		##gl_view = EMQtGLView(EMDesktop.main_widget,widget)
-		#module = EMQtWidgetModule(widget,application)
-		#application.show_specific(module)
-		##desktop_task_widget = EM2DGLWindow(gl_view)
-		#return module
 	
 class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "workflow"
 	
-	def __init__(self,module,application,task_monitor):
+	def __init__(self,task_monitor):
 		'''
-		Target is not really currently used
-		application is required
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
 		self.__init_icons()
 		self.setWindowIcon(self.icons["desktop"])
 		self.setWindowTitle("EMAN2 Tasks")
-		self.application = weakref.ref(application)
-		self.module = weakref.ref(module)
 		self.task_monitor = task_monitor
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -360,6 +334,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
 
+		get_application().attach_child(self)
 	def __init_icons(self):
 		self.icons = {}
 		self.icons["single_image"] = QtGui.QIcon(get_image_directory() + "single_image.png")
@@ -562,10 +537,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		util_list.append(plot3d)
 		self.launchers["3D Plot"] = self.launch_3d_plot_tool
 		self.launchers["3D Volume Viewer"] = self.launch_3d_volume_viewer
-		desktop = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Desktop"))
-		desktop.setIcon(0,self.icons["desktop"])
-		util_list.append(desktop)
-		self.launchers["3D Desktop"] = self.launch_desktop
 		iso3d = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Isosurface Viewer"))
 		iso3d.setIcon(0,self.icons["single_image_3d"])
 		util_list.append(iso3d)
@@ -730,8 +701,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def task_killed(self,module_string,module):
 		print module
-		module.closeEvent(None)
-		self.module().emit(QtCore.SIGNAL("module_closed"),"module_string",module)
+		module.close()
+		self.emit(QtCore.SIGNAL("module_closed"),"module_string",module)
 	
 	def display_file(self,filename):
 		get_application().setOverrideCursor(Qt.BusyCursor)
@@ -743,8 +714,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			res = get_e2resolution_results_list(keys)
 			eo = get_e2eotest_results_list(keys)
 			conv = get_convergence_results_list(keys)
-			from emplot2d import EMPlot2DModule,colortypes
-			module = EMPlot2DModule(get_application())
+			from emplot2d import EMPlot2DWidget,colortypes
+			module = EMPlot2DWidget(get_application())
 			i = 0
 			max = len(colortypes)
 			
@@ -760,18 +731,18 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			module.show()
 			self.add_module([str(module),"Display",module])
 		else:
-			module = EMModuleFromFile(filename,get_application())
+			module = EMWidgetFromFile(filename,get_application())
 			if module != None:
-				self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+				self.emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 				get_application().show_specific(module)
 				self.add_module([str(module),"Display",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
-		from emimage3dsym import EM3DSymViewerModule
+		from emimage3dsym import EM3DSymModel
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EM3DSymViewerModule()
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",module)
+		module = EM3DSymModel()
+		self.emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Eulerxplor",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -780,7 +751,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from e2eulerxplor import EMEulerExplorer
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMEulerExplorer(get_application(),auto=True)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Eulerxplor",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -789,7 +760,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from emlights import EMLights
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EMLights(application=em_app)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"EMLights",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -798,48 +769,44 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from em3Dfonts import EM3DFontWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EM3DFontWidget()
-		self.module().emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"EMLights",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-
-	def launch_desktop(self):
-		print "The EMAN2 desktop has been deprecated and is no longer supported."
-
 	
 	def launch_3d_volume_viewer(self):
-		from emimage3dvol import EMVolumeModule
-		self.launch_3d_viewer(EMVolumeModule(application=em_app),"3D Volumer Viewer")
+		from emimage3dvol import EMVolumeModel
+		self.launch_3d_viewer(EMVolumeModel(application=em_app),"3D Volumer Viewer")
 	
 	def launch_3d_iso_viewer(self):
-		from emimage3diso import EMIsosurfaceModule
-		self.launch_3d_viewer(EMIsosurfaceModule(application=em_app),"3D Isosurface Viewer")
+		from emimage3diso import EMIsosurfaceModel
+		self.launch_3d_viewer(EMIsosurfaceModel(application=em_app),"3D Isosurface Viewer")
 		
 	def launch_3d_slice_viewer(self):
-		from emimage3dslice import EM3DSliceViewerModule
-		self.launch_3d_viewer(EM3DSliceViewerModule(application=em_app),"3D Slice Viewer")
+		from emimage3dslice import EM3DSliceModel
+		self.launch_3d_viewer(EM3DSliceModel(application=em_app),"3D Slice Viewer")
 	
 	def launch_3d_image_viewer(self):
-		from emimage3d import EMImage3DModule
-		self.launch_3d_viewer(EMImage3DModule(application=em_app),"3D Image Viewer")
+		from emimage3d import EMImage3DWidget
+		self.launch_3d_viewer(EMImage3DWidget(application=em_app),"3D Image Viewer")
 
 	def launch_3d_viewer(self,module,name):
-		from emimage3dvol import EMVolumeModule
+		from emimage3dvol import EMVolumeModel
 		
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		#module = EMVolumeModule(application=em_app)
+		#module = EMVolumeModel(application=em_app)
 		module.set_data(test_image_3d(1,size=(64,64,64)))
-		self.module().emit(QtCore.SIGNAL("launching_module"),name,module)
+		self.emit(QtCore.SIGNAL("launching_module"),name,module)
 		get_application().show_specific(module)
 		self.add_module([str(module),name,module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 
 	def launch_2d_image_viewer(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		from emimage2d import EMImage2DModule
-		module = EMImage2DModule(application=em_app)
+		from emimage2d import EMImage2DWidget
+		module = EMImage2DWidget(application=em_app)
 		module.set_data(test_image(Util.get_irand(0,10),size=(256,256)))
-		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Image Viewer",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"2D Image Viewer",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"2D Image Viewer",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -847,11 +814,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def launch_2d_stack_viewer(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		from emimagemx import EMImageMXModule
-		module = EMImageMXModule(application=em_app)
+		from emimagemx import EMImageMXWidget
+		module = EMImageMXWidget(application=em_app)
 		data = [test_image(Util.get_irand(0,9)) for i in range(64)]
 		module.set_data(data)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"2D Set Viewer",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"2D Set Viewer",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"2D Set Viewer",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -859,31 +826,31 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 	def launch_flat_form(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		from emform import get_small_example_form_params,EMFormModule
-		module = EMFormModule(params=get_small_example_form_params(),application=em_app)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Flat Form",module)
+		from emform import get_small_example_form_params,EMFormWidget
+		module = EMFormWidget(params=get_small_example_form_params())
+		self.emit(QtCore.SIGNAL("launching_module"),"Flat Form",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Flat Form",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_table_form(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		from emform import get_example_table_form_params,EMTableFormModule
-		module = EMTableFormModule(params=get_example_table_form_params(),application=em_app)
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Tabular Form",module)
+		from emform import get_example_table_form_params,EMTableFormWidget
+		module = EMTableFormWidget(params=get_example_table_form_params())
+		self.emit(QtCore.SIGNAL("launching_module"),"Tabular Form",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Tabular Form",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	  	
 	def launch_3d_plot_tool(self):
-		from emplot3d import EMPlot3DModule,get_test_data,get_other_test_data
+		from emplot3d import EMPlot3DWidget,get_test_data,get_other_test_data
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EMPlot3DModule(application=em_app)
+		module = EMPlot3DWidget()
 		module.set_data(get_test_data(),"test data")
 		module.set_data(get_other_test_data(),"other data",shape="Cube")
 		#module.set_data("test data",get_test_data())
 		#module.set_data("other data",get_other_test_data(),shape="Cube")
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Plot3D",module)
+		self.emit(QtCore.SIGNAL("launching_module"),"Plot3D",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Plot3D",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -892,8 +859,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 #		import subprocess
 #		subprocess.Popen("e2display.py")
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EMBrowserModule()
-		self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
+		module = EMBrowser()
+		self.emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 		get_application().show_specific(module)
 		self.add_module([str(module),"Browse",module])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1026,7 +993,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		if len(self.tasks) > 0: 
 			self.__clear_tasks()
 			
-		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
+		self.emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key("Change directory"):
 			task = ChangeDirectoryTask()
 			
@@ -1041,7 +1008,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		if len(self.tasks) > 0: 
 			self.__clear_tasks()
 		
-		self.module().emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
+		self.emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key(task_unique_identifier):
 			#task = task_type()
 			
@@ -1071,11 +1038,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			tasks_dict[val[2]] = val[1]
 			tasks.append(str(val[1]))
 		
-		self.module().emit(QtCore.SIGNAL("tasks_updated"),tasks_dict)
+		self.emit(QtCore.SIGNAL("tasks_updated"),tasks_dict)
 	
 	def __clear_tasks(self):
 		for v in self.tasks.values():
-			v.closeEvent(None)
+			v.close()
 			#get_application().close_specific(v)
 		self.tasks = {}
 		self.event_managers = {}
@@ -1097,7 +1064,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		Essentially saying, "make this task disappear, but keep a reference to it until the associated gui ends"
 		'''
 		
-		self.module().emit(QtCore.SIGNAL("launching_module"),module_string_name,module) # for the desktop to prepare a cube
+		self.emit(QtCore.SIGNAL("launching_module"),module_string_name,module) # for the desktop to prepare a cube
 		module = [self.tasks.pop(task_key),module_string_name,module]
 		self.gui_modules.append(module)
 		self.module_events.append(None) # this makes the handling of the gui_modules and module_events more general, see code
@@ -1143,15 +1110,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				if not self.browser.isVisible(): self.browser.show()
 			except: pass
 	
-#	def tree_widget_double_click(self,tree_item,i):
-#		task = tree_item.text(0)
-#		if task == "Browse":
-#			self.target.add_browser_frame()
-#		if task == "Thumb":
-#			self.target.add_selector_frame()
-#		elif task == "Boxer":
-#			self.target.add_boxer_frame()
-
 
 class TaskEventsManager:
 	'''
@@ -1195,24 +1153,24 @@ class EMWorkFlowManager:
 		self.application = weakref.ref(application)
 		
 	
-		self.task_monitor = EMTaskMonitorModule(get_application())
-		self.selector = EMWorkFlowSelector(application,self.task_monitor.qt_widget)
-		self.selector.qt_widget.resize(300,540)
-		QtCore.QObject.connect(self.selector.emitter(), QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
-		QtCore.QObject.connect(self.task_monitor.emitter(), QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
+		self.task_monitor = EMTaskMonitorWidget()
+		self.selector = EMWorkFlowSelectorWidget(self.task_monitor)
+		self.selector.resize(300,540)
+		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.set_entries)
+		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.task_killed)
 		
 	
 	
 	def close(self):
-		self.selector().closeEvent(None)
-		self.task_monitor.closeEvent(None)
+		self.selector().close()
+		self.task_monitor.close()
 		#get_application().close_specific(self.selector)
 		#get_application().close_specific(self.task_monitor)
 
 if __name__ == '__main__':
 	logid=E2init(sys.argv)
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
+	from emapplication import EMApp
+	em_app = EMApp()
 	sprinit = EMWorkFlowManager(em_app)
 	
 	em_app.show()

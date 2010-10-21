@@ -30,7 +30,7 @@
 #
 #
 
-from emform import EMFormModule,EMParamTable,EMTableFormModule
+from emform import EMFormWidget,EMParamTable,EMTableFormWidget
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
@@ -38,8 +38,8 @@ from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_
 from EMAN2 import *
 import os
 import copy
-from emapplication import EMProgressDialogModule,get_application
-from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
+from emapplication import EMProgressDialog,get_application
+from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
 import weakref
 from e2history import HistoryForm
@@ -142,14 +142,14 @@ class WorkFlowTask:
 		self.core_object.deleteLater()
 		
 	def run_form(self):
-		self.form = EMFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 	
 	def get_params(self): raise NotImplementedError
 	
@@ -161,22 +161,22 @@ class WorkFlowTask:
 			self.write_db_entry(k,v)
 		
 		self.disconnect_form()
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
 	def on_form_cancel(self):
 		self.disconnect_form()
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
 	def disconnect_form(self):
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 	
 	
 	def emit(self,*args,**kargs):
@@ -187,7 +187,7 @@ class WorkFlowTask:
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 	def closeEvent(self,event):
-		if self.form != None: self.form.closeEvent(None)
+		if self.form != None: self.form.close()
 		#self.emit(QtCore.SIGNAL("task_idle")
 		
 	def write_db_entries(self,dictionary):
@@ -470,14 +470,14 @@ class HistoryTask(WorkFlowTask,HistoryForm):
 		self.window_title = "History"
 	
 	def run_form(self):	
-		self.form = EMFormModule(self.get_history_table(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMFormWidget(self.get_history_table())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
-		self.form.qt_widget.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
+		self.form.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/feather.png"))
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 		
 class ChangeDirectoryTask(WorkFlowTask):
 	def __init__(self):
@@ -495,7 +495,7 @@ class ChangeDirectoryTask(WorkFlowTask):
 		
 	def closeEvent(self,event):
 		pass
-		#self.form.closeEvent(None)
+		#self.form.close()
 
 class EMProjectDataDict:
 	''' This class encapsulate the common routines used to get, add to and remove data dictionaries from the database.
@@ -958,13 +958,13 @@ Note that the data cannot be filtered unless it is imported."
 			def __call__(self,list_of_names,table_widget):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
-				from emselector import EMSelectorModule
-				em_qt_widget = EMSelectorModule(save_as_mode=False)
+				from emselector import EMSelectorDialog
+				selector = EMSelectorDialog(save_as_mode=False)
 				
-				em_qt_widget.widget.set_selection_text("Selection(s)")
-				em_qt_widget.widget.set_validator(self.validator)
-				files = em_qt_widget.exec_()
-				em_qt_widget.closeEvent(None)
+				selector.set_selection_text("Selection(s)")
+				selector.set_validator(self.validator)
+				files = selector.exec_()
+				selector.close()
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
@@ -1001,7 +1001,7 @@ Note that the data cannot be filtered unless it is imported."
 	def on_form_cancel(self):
 		self.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -1015,7 +1015,7 @@ Note that the data cannot be filtered unless it is imported."
 	
 	
 	def on_form_ok(self,params):
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 
@@ -1135,7 +1135,7 @@ project database, and gives an opportunity to apply a number of common filters t
  		
 		self.do_filtering(params,self.output_names)
 
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -1229,8 +1229,8 @@ project database, and gives an opportunity to apply a number of common filters t
 		if params["norm.edgemean"]:num_processing_operations += 1
 		
 		# now add the files to db (if they don't already exist
-		progress = EMProgressDialogModule(get_application(),"Filtering Raw Files", "Abort", 0, len(filenames)*num_processing_operations,None)
-		progress.qt_widget.show()
+		progress = EMProgressDialog("Filtering Raw Files", "Abort", 0, len(filenames)*num_processing_operations,None)
+		progress.show()
 		i = 0
 		cancelled = False # if the user cancels the import then we must act
 		cancelled_writes = []
@@ -1242,7 +1242,7 @@ project database, and gives an opportunity to apply a number of common filters t
 			e = EMData()
 			e.read_image(name,0)
 			i += 1
-			progress.qt_widget.setValue(i)	
+			progress.setValue(i)	
 			get_application().processEvents()
 			e.set_attr("disk_file_name",name)
 			
@@ -1250,21 +1250,21 @@ project database, and gives an opportunity to apply a number of common filters t
 			if params["norm.edgemean"]:
 				e.process_inplace("normalize.edgemean")
 				i += 1
-				progress.qt_widget.setValue(i)
+				progress.setValue(i)
 				get_application().processEvents()
 				write_large = True
 			
 			if params["invert"]:
 				e.mult(-1)
 				i += 1
-				progress.qt_widget.setValue(i)
+				progress.setValue(i)
 				get_application().processEvents()
 				write_large = True
 			
 			if params["xraypixel"]:
 				e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
 				i += 1
-				progress.qt_widget.setValue(i)
+				progress.setValue(i)
 				get_application().processEvents()
 				write_large = True
 			
@@ -1272,7 +1272,7 @@ project database, and gives an opportunity to apply a number of common filters t
 			#db_close_dict(db_name)
 			cancelled_writes.append(outname)
 			i += 1
-			progress.qt_widget.setValue(i)
+			progress.setValue(i)
 			get_application().processEvents()
 				
 			if params["thumbs"]:
@@ -1283,15 +1283,15 @@ project database, and gives an opportunity to apply a number of common filters t
 				if not write_large: outname = name
 				set_idd_image_entry(outname,"image_thumb",thumb) # boxer uses the full name
 				i += 1
-				progress.qt_widget.setValue(i)
+				progress.setValue(i)
 				get_application().processEvents()
 				
-			if progress.qt_widget.wasCanceled():
+			if progress.wasCanceled():
 				cancelled = True
 				break
 			
-		progress.qt_widget.setValue(len(filenames))
-		progress.qt_widget.close()
+		progress.setValue(len(filenames))
+		progress.close()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 		if not cancelled and params["project_associate"]:
@@ -1399,13 +1399,13 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			
 		def __call__(self,list_of_names,table_widget):
 		
-			from emselector import EMSelectorModule
-			em_qt_widget = EMSelectorModule(save_as_mode=False)
+			from emselector import EMSelectorDialog
+			selector = EMSelectorDialog(save_as_mode=False)
 			
 			if self.validator != None: 
-				em_qt_widget.widget.set_validator(self.validator)
-			files = em_qt_widget.exec_()
-			em_qt_widget.closeEvent(None)
+				selector.set_validator(self.validator)
+			files = selector.exec_()
+			selector.close()
 			
 			if files != "":
 				if isinstance(files,str): files = [files]
@@ -1572,7 +1572,7 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 	def on_form_cancel(self):
 		self.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -1688,7 +1688,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			data_dict.add_names(params["name_map"].values(),use_file_tag=True)
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 	def import_data(self,params):
@@ -1797,13 +1797,13 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			def __call__(self,list_of_names,table_widget):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
-				from emselector import EMSelectorModule
-				em_qt_widget = EMSelectorModule(save_as_mode=False)
+				from emselector import EMSelectorDialog
+				selector = EMSelectorDialog(save_as_mode=False)
 				
-				em_qt_widget.widget.set_selection_text("Selection(s)")
-				em_qt_widget.widget.set_validator(self.validator)
-				files = em_qt_widget.exec_()
-				em_qt_widget.closeEvent(None)
+				selector.set_selection_text("Selection(s)")
+				selector.set_validator(self.validator)
+				files = selector.exec_()
+				selector.close()
 #				print files
 				if files != "":
 					if isinstance(files,str): files = [files]
@@ -1869,7 +1869,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 			print "imported ",f," into ",fsp
 								
 		self.disconnect_form()
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
@@ -2084,7 +2084,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	def on_form_cancel(self):
 		if self.report_task != None:
 			self.report_task.recover_original_raw_data_list()
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -2108,18 +2108,18 @@ class E2BoxerGenericTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 		if params["running_mode"] == "Interactive boxing":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerGuiTaskGeneral(),"e2boxer interface launcher")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "Autoboxing":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerAutoTaskGeneral(),"e2boxer automated boxing")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "Write output":
 			self.emit(QtCore.SIGNAL("replace_task"),E2BoxerOutputTaskGeneral(),"e2boxer write output")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None	
 		else:
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 			return
@@ -2253,7 +2253,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 
 class E2BoxerAutoTaskGeneral(E2BoxerAutoTask):
@@ -2454,7 +2454,7 @@ Generally you don't want to work with more than ~10 at a time. To autobox, make 
 			self.emit(QtCore.SIGNAL("gui_running"),"Boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-			self.form.closeEvent(None)
+			self.form.close()
 #			self.boxer_module.show_guis()
 			self.boxer_module.show_interfaces()
 			self.form = None
@@ -2565,7 +2565,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 			temp_file_name = "e2boxer_autobox_stdout.txt"
 			self.spawn_single_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 
 class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
@@ -2685,7 +2685,7 @@ class E2BoxerProgramOutputTask(E2BoxerOutputTask):
 				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["format"],normproc,params["norm"],params["invert"])
 				
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 
 class E2CTFWorkFlowTask(EMParticleReportTask):
@@ -2855,18 +2855,18 @@ class E2CTFGenericTask(ParticleWorkFlowTask):
 	def on_form_ok(self,params):
 		if params["running_mode"] == "auto params":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFAutoFitTaskGeneral(),"ctf auto fit")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "interactively fine tune":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFGuiTaskGeneral(),"fine tune ctf")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 		elif params["running_mode"] == "write output":
 			self.emit(QtCore.SIGNAL("replace_task"),E2CTFOutputTaskGeneral(),"ctf output")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None	
 		else:
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 			self.emit(QtCore.SIGNAL("task_idle"))
 			return
@@ -3016,7 +3016,7 @@ the following pattern:
 			temp_file_name = "e2ctf_autofit_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
-			self.form.closeEvent(None)
+			self.form.close()
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
 		else:
@@ -3163,7 +3163,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 			#self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
-			self.form.closeEvent(None)
+			self.form.close()
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
 			return
@@ -3203,7 +3203,7 @@ class E2CTFSFOutputTask(E2CTFWorkFlowTask):
 		temp_file_name = "e2ctf_sfoutput_stdout.txt"
 		self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.emit(QtCore.SIGNAL("task_idle"))
 		self.write_db_entries(params)
 
@@ -3299,15 +3299,15 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 			self.spawn_single_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
 
-			self.form.closeEvent(None)
+			self.form.close()
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
-			self.form.closeEvent(None)
+			self.form.close()
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
 	def on_form_cancel(self):
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -3368,9 +3368,9 @@ important when manually fitting before determining a structure factor."
 			img_sets = get_gui_arg_img_sets(options.filenames)
 		
 			
-			self.gui=GUIctfModule(get_application(),img_sets)
+			self.gui=GUIctf(get_application(),img_sets)
 			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
-			self.form.closeEvent(None)
+			self.form.close()
 			QtCore.QObject.connect(self.gui.emitter(),QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
 			self.gui.show_guis()
 		else:
@@ -3530,7 +3530,7 @@ this stage. It is used for display purposes only !"
 					
 			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,self.name_map),"Particle Set Examination")
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -3579,7 +3579,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 	
 	
 	def on_form_ok(self,params):
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
@@ -3589,7 +3589,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 		
 	def on_form_cancel(self):
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -3619,7 +3619,7 @@ class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 			
 			self.emit(QtCore.SIGNAL("replace_task"),E2MakeSetTask(particles,name_map,self.name_map),"Make Particle Sets")
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -3812,7 +3812,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		proceed = self.execute(params)
 		if not proceed: return
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -3876,7 +3876,7 @@ class EMSetReportTask(ParticleWorkFlowTask):
 	def on_form_cancel(self):
 		self.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -3920,7 +3920,7 @@ class E2Refine2DReportTask(ParticleWorkFlowTask):
 	def on_form_cancel(self):
 		self.rfcat.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -4298,8 +4298,8 @@ class E2Refine2DTask(EMClassificationTools):
 		options.input = None
 		options.filenames = [] # important - makes the spawn_process task work
 		if len(params["filenames"]) > 1 or options.shrink > 1:
-			progress = EMProgressDialogModule(get_application(),"Processing files...", "Abort import", 0, len(params["filenames"]),None)
-			progress.qt_widget.show()
+			progress = EMProgressDialog("Processing files...", "Abort import", 0, len(params["filenames"]),None)
+			progress.show()
 		
 			for i,file in enumerate(params["filenames"]):
 				cmd = "e2proc2d.py"
@@ -4322,18 +4322,18 @@ class E2Refine2DTask(EMClassificationTools):
 	 				return ["Command %s failed" %cmd]
 	 			
 	 			
-	 			progress.qt_widget.setValue(i+1)
+	 			progress.setValue(i+1)
 	 			get_application().processEvents()
-	 			if progress.qt_widget.wasCanceled():
+	 			if progress.wasCanceled():
 	 				db_remove_dict(options.input)
-	 				progress.qt_widget.close()
+	 				progress.close()
 	 				return ["Processing was cancelled"]
 	 			
 	 		try: db_close_dict(out_name)
 	 		except:
 	 			print "db close dict failed",out_name
 	 			
-	 		progress.qt_widget.close()
+	 		progress.close()
 	 		
 	 	else:
 	 		options.input = params["filenames"][0]
@@ -4384,7 +4384,7 @@ class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DWithGenericTask(),"e2refine2d arguments")
 		else:
 			self.emit(QtCore.SIGNAL("replace_task"),E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]]),"e2refine2d arguments")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -4425,7 +4425,7 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 			task = E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]])
 			task.single_selection = True
 			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -4473,14 +4473,14 @@ documentation for other details. Don't forget the other tabs !\
 		
 	
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
 	 	params = []
@@ -4551,7 +4551,7 @@ documentation for other details. Don't forget the other tabs !\
 		temp_file_name = "e2refine2d_stdout.txt"
 		self.spawn_single_task("e2refine2d.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 
 class E2Refine2DWithGenericTask(E2Refine2DRunTask):
@@ -4624,7 +4624,7 @@ class EMInitialModelReportTask(ParticleWorkFlowTask):
 	def on_form_cancel(self):
 		self.imt.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 		
@@ -4668,7 +4668,7 @@ class E2InitialModel(ParticleWorkFlowTask):
 		if not params.has_key("filenames"):
 			# THERE ARE no classes to choose from and the user has hit ok
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 			return
 		
@@ -4704,12 +4704,12 @@ class E2InitialModel(ParticleWorkFlowTask):
 			temp_file_name = "e2initialmodel_stdout.txt"
 			self.spawn_single_task("e2initialmodel.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 	def on_form_cancel(self):
 		self.rfcat.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -5023,14 +5023,14 @@ post-process - This is an optional filter to apply to the model as a final step,
 			return self.filt_map[name]
 		
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
 	 	params = []
@@ -5048,7 +5048,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 	def on_form_cancel(self):
 		if self.imt != None: self.imt.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -5085,7 +5085,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 
 # This functionality is being redesigned and pends a discussion with Steve ludtke with respect to the history mechanism
@@ -5627,7 +5627,7 @@ detailed refinement options."
 			task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
 			task.single_selection = self.single_selection
 			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 		
 		self.write_db_entries(params)
@@ -5844,26 +5844,16 @@ those used during refinement."
 	 	self.window_title = "Run e2eotest"
 	 	self.form_db_name = "bdb:emform.e2eotest"
 	 	self.dir_and_iter = {} # will eventually be useful information about directories that will work for e2eotest
-	 	
-#	def run_form(self):
-#		self.form = EMTableFormModule(self.get_params(),get_application())
-#		self.form.qt_widget.resize(*self.preferred_size)
-#		self.form.setWindowTitle(self.window_title)
-#		get_application().show_specific(self.form)
-#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-#		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
-	
+	 		
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	
 	def get_params(self):
@@ -6044,7 +6034,7 @@ those used during refinement."
 	   	options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2eotest.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 #	
 class E2ResolutionTask(WorkFlowTask):
@@ -6139,16 +6129,16 @@ class E2ResolutionTask(WorkFlowTask):
 	   	options.filenames = [] # spawn single task expects a filenames attribute
 		self.spawn_single_task("e2resolution.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 #	
 
 	
 if __name__ == '__main__':
 	
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	sprinit = SPRInitTask(em_app)
+	from emapplication import EMApp
+	em_app = EMApp()
+	sprinit = SPRInitTask()
 	window = sprinit.run_form() 
 	#em_app.show()
 	em_app.execute()	

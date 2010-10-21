@@ -39,7 +39,6 @@ from math import *
 from numpy import *
 import time
 #from pylab import scatter, subplot, show, figure, colorbar
-from emapplication import EMStandAloneApplication
 
 
 class E2FoldHunterStat:
@@ -497,8 +496,8 @@ class E2FoldHunterStat:
 		
 
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
+	from emapplication import EMApp
+	em_app = EMApp()
 	window2 = E2FoldHunterStat()
 	print "This program is meant to be run in conjunction with e2validatemed.py in the programs directory"
 	em_app.show()

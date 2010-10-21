@@ -53,22 +53,20 @@ import sys
 import signal
 from copy import *
 #from OpenGL import contextdata
-from emglplot import *
-from emapplication import EMProgressDialogModule,get_application
+from emapplication import EMProgressDialog,get_application
 # import SPARX definitions
 import global_def
 from global_def import *
 # end import SPARX definitions
 
 
-#from emglplot import *
 
 from time import time,sleep
 
 from sys import getrefcount
 
 from emglobjects import EMOpenGLFlagsAndTools
-from emapplication import EMStandAloneApplication,EMQtWidgetModule
+from emapplication import EMApp,EMQtWidgetModule
 import weakref
 
 
@@ -240,12 +238,11 @@ for single particle analysis."""
 		dab = RawDatabaseAutoBoxer(logid)
 		dab.go(options)
 	else:
-		application = EMStandAloneApplication()
+		application = EMApp()
 		options.boxes = boxes
 		options.logid = logid
 		gui=EMBoxerModule(application,options)
 		gui.show_guis()
-	#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 		application.execute()
 
 	E2end(logid)
@@ -1058,8 +1055,8 @@ def gen_thumbs(image_names,n):
 	application = get_application()
 	nim = len(image_names)
 	thumbs = [None for i in range(nim)]
-	progress = EMProgressDialogModule(application,"Generating thumbnails", "Abort", 0, nim,None)
-	progress.qt_widget.show()
+	progress = EMProgressDialog("Generating thumbnails", "Abort", 0, nim,None)
+	progress.show()
 	prog = 0
 	for i in range(nim):
 #				thumb = self.get_image_thumb(i)
@@ -1082,21 +1079,21 @@ def gen_thumbs(image_names,n):
    	   	#gc.collect()
    	   	#print "collected"
 		prog += 1
-		progress.qt_widget.setValue(prog)
+		progress.setValue(prog)
 		application.processEvents()
 		#print "got thumb",i
 		#thumbs[i] = thumb
 			
-		if progress.qt_widget.wasCanceled():
-			progress.qt_widget.setValue(nim)
-			progress.qt_widget.close()
+		if progress.wasCanceled():
+			progress.setValue(nim)
+			progress.close()
 			return -1 
 		
 	for i in range(nim):
 		thumbs[i] = get_idd_image_entry(image_names[i],"image_thumb")
 	
-	progress.qt_widget.setValue(nim)
-	progress.qt_widget.close()
+	progress.setValue(nim)
+	progress.close()
 	
 	return thumbs
 			
@@ -1130,13 +1127,13 @@ class DatabaseAutoBoxer(QtCore.QObject,RawDatabaseAutoBoxer):
 			self.autobox_images(options)
 
 	def __run_form_initialization(self,options):
-		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),get_application())
+		from emform import EMFormWidget
+		self.form = EMFormWidget(self.get_params(options))
 		self.form.setWindowTitle("Auto boxing parameters")
 		get_application().show_specific(self.form)
 		#print emitter
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -1298,12 +1295,12 @@ class EMBoxerModule(QtCore.QObject):
 			self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __run_form_initialization(self,options):
-		from emform import EMFormModule
-		self.form = EMFormModule(self.get_params(options),get_application())
+		from emform import EMFormWidget
+		self.form = EMFormWidget(self.get_params(options))
 		self.form.setWindowTitle("Boxer input variables")
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_cancel)
 		
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -1334,9 +1331,9 @@ class EMBoxerModule(QtCore.QObject):
 			self.__auto_box_from_db(options)
 			
 	def __disconnect_form_signals(self):
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.disconnect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.disconnect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
 		
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
@@ -1521,13 +1518,13 @@ class EMBoxerModule(QtCore.QObject):
 		qt_target = get_application().get_qt_emitter(self.guimx)
 
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_image_selected"),self.box_selected)
-		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
-		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_mouseup"),self.box_released)
-		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
-		QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("module_closed"),self.guimx_closed)
+		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
+		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
+		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("mx_mouseup"),self.box_released)
+		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
+		QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("module_closed"),self.guimx_closed)
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
-			QtCore.QObject.connect(self.guimx.emitter(),QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
+			QtCore.QObject.connect(self.guimx,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 	
 	def guimx_closed(self):
 		self.guimx = None
@@ -1549,13 +1546,13 @@ class EMBoxerModule(QtCore.QObject):
 		
 		self.guiim.setWindowTitle(imagename)
 		
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("keypress"),self.keypress)
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("mousemove"),self.mouse_move)
-		QtCore.QObject.connect(self.guiim.emitter(),QtCore.SIGNAL("module_closed"),self.guiim_closed)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mouse_move)
+		QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("module_closed"),self.guiim_closed)
 	
 	def guiim_closed(self):
 		self.guiim = None
@@ -2612,8 +2609,8 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def write_box_image_files(self,image_names,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.ramp.normvar",invert=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(get_application(),"Writing boxed images", "Abort", 0, len(image_names),None)
-		progress.qt_widget.show()
+		progress = EMProgressDialog("Writing boxed images", "Abort", 0, len(image_names),None)
+		progress.show()
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			try:
@@ -2645,22 +2642,22 @@ class EMBoxerModule(QtCore.QObject):
 			else: 
 				self.autoboxer.write_box_images(self.boxable, normalize, options.normproc, imageformat)
 				
-			if progress.qt_widget.wasCanceled():
+			if progress.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
 				break
 				
-			progress.qt_widget.setValue(i+1)
+			progress.setValue(i+1)
 			get_application().processEvents()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		progress.qt_widget.close()
+		progress.close()
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.write_coord_files(self.image_names,box_size,forceoverwrite)
 
 	def write_coord_files(self,image_names,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
-		progress = EMProgressDialogModule(get_application(),"Writing Coordinate  Files", "Abort", 0, len(image_names),None)
-		progress.qt_widget.show()
+		progress = EMProgressDialog("Writing Coordinate  Files", "Abort", 0, len(image_names),None)
+		progress.show()
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		for i,image_name in enumerate(image_names):
 			
@@ -2689,15 +2686,15 @@ class EMBoxerModule(QtCore.QObject):
 			else:
 				self.autoboxer.write_box_coords(self.boxable)
 				
-			if progress.qt_widget.wasCanceled():
+			if progress.wasCanceled():
 				# yes we could probably clean up all of the images that were written to disk but not time...
 				break;
 			
 				
-			progress.qt_widget.setValue(i+1)
+			progress.setValue(i+1)
 			get_application().processEvents()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		progress.qt_widget.close()
+		progress.close()
  
 	
 	def center(self,technique):
@@ -3580,31 +3577,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.adv_inspector = QtGui.QWidget()
 		self.advanced_vbl =  QtGui.QVBoxLayout(self.adv_inspector)
 		
-		#Insert the plot widget
-#		self.plothbl = QtGui.QHBoxLayout()
-		
-		# This was commented out because the extra GL context crashes the desktop
-#		self.window = EMGLPlotWidget(self)
-#		self.window.setInit()
-#		self.window.resize(100,100)
-#		self.window2=EMParentWin(self.window)
-#		self.window2.resize(100,100)
-#		
-#		self.plothbl.addWidget(self.window)
-		
-#		self.plotbuttonvbl = QtGui.QVBoxLayout()
-#		
-#		self.trythat=QtGui.QPushButton("Try That")
-#		self.plotbuttonvbl.addWidget(self.trythat)
-#		
-#		self.reset=QtGui.QPushButton("Reset")
-#		self.plotbuttonvbl.addWidget(self.reset)
-#		
-#		self.plothbl.addLayout(self.plotbuttonvbl)
-#		
 		self.advanced_hbl2 = QtGui.QHBoxLayout()
-		
-#		self.advanced_vbl2.addLayout(self.plothbl)
 
 		self.enable_interactive_params  = QtGui.QCheckBox("Enable")
 		self.enable_interactive_params.setChecked(False) #FIXME should this be related to the state of the autoboxer?

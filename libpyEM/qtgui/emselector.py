@@ -31,46 +31,29 @@
 #
 #
 
-import PyQt4
+from EMAN2 import get_image_directory, e2getcwd, get_dtag, EMData, \
+	get_files_and_directories, db_open_dict, strip_file_tag, remove_file, \
+	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, get_file_tag, \
+	db_check_dict, file_exists, base_name
+from EMAN2db import EMAN2DB, db_convert_path
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
+from emapplication import ModuleEventsManager, EMApp, get_application
+from emimage2d import EMImage2DWidget
+from emimagemx import EMImageMXWidget
+from emplot2d import EMPlot2DWidget
+from emsave import save_data
+import PyQt4
+import math
 import os
 import re
-from EMAN2 import get_image_directory,e2getcwd,get_dtag,EMData,get_files_and_directories,db_open_dict,strip_file_tag,remove_file
-from EMAN2 import remove_directories_from_name,Util,EMUtil,IMAGE_UNKNOWN,get_file_tag,db_check_dict,file_exists, base_name
-from emimage2d import EMImage2DModule
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMProgressDialogModule, get_application
-from EMAN2db import EMAN2DB
-from EMAN2db import db_convert_path
-from emplot2d import EMPlot2DModule
-from emapplication import EMQtWidgetModule, ModuleEventsManager
 import weakref
-import copy
-from emsave import save_data
-import math
+import warnings
 
 read_header_only = True
 EMAN2DB = "EMAN2DB"
 
 MDS = "%" # metadata separator
-
-class EMSelectorModule(EMQtWidgetModule):
-	def __init__(self,single_selection=False,save_as_mode=True):
-		#self.widget = EMSelectorTemplate(QtGui.QDialog)(self,single_selection)
-		self.widget = EMSelectorDialog(self,single_selection)
-		EMQtWidgetModule.__init__(self,self.widget)
-		self.widget.setWindowTitle("EMAN2 Selector")
-		
-#	def __del__(self):
-#		import sys
-#		print "selector module death", sys.getrefcount(self.widget)
-		
-	def exec_(self):
-		'''
-		Wraps self.widget.exec_
-		@return a list of selected filenames
-		'''
-		return self.widget.exec_()
 
 class EMActionDelegate:
 	'''
@@ -149,23 +132,31 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			self.data_functors = data_functors # functors that can be called once the data is acquired
 			
 		def item_action(self,item,target):
+			from emimage3d import EMImage3DWidget
 			single_mode = target.single_preview_only()
 			if single_mode and len(self.display_modules) != 0:
 				old_module = self.display_modules[-1]
 				data = getattr(item,self.get_data_attr)()
 				for funct in self.data_functors: funct(data)
-				if self.module_type == EMPlot2DModule: # aka template specialization
+				if self.module_type == EMPlot2DWidget: # aka template specialization
 					old_module.set_data(data,item.get_url())
+				elif self.module_type == EMImage3DWidget:
+					old_module.set_data(data)
+					old_module.get_inspector().add_isosurface()
 				else: old_module.set_data(data)
 				old_module.setWindowTitle(item.get_url())
+				old_module.show()
 				old_module.updateGL()
 				return
 		
 			module = self.module_type()
 			data = getattr(item,self.get_data_attr)()
 			for funct in self.data_functors: funct(data)
-			if self.module_type == EMPlot2DModule: # aka template specialization
+			if self.module_type == EMPlot2DWidget: # aka template specialization
 				module.set_data(data,item.get_url())
+			elif self.module_type == EMImage3DWidget:
+				module.set_data(data)
+				module.get_inspector().add_isosurface()
 			else: module.set_data(data)
 			
 			self.display_modules.append(module)
@@ -193,11 +184,10 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			
 	return DataDisplayModule
 
-from emimagemx import EMImageMXModule
-class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXModule,"get_2d_stack"),EMMultiItemAction):
+class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXWidget,"get_2d_stack"),EMMultiItemAction):
 	'''
 	This is like a template specialization of the DataDisplayModuleTemplate in the case of
-	using an EMImageMXModule. The reason is because we support a special "Preview Subset" action.
+	using an EMImageMXWidget. The reason is because we support a special "Preview Subset" action.
 	'''
 	def multi_item_action(self,items,target):
 		single_mode = target.single_preview_only()
@@ -248,14 +238,13 @@ def EMSelectorBaseTemplate(Type):
 	Types currently in use are the QtGui.QWidget and the QtGui.QDialog
 	'''
 	class EMSelectorBase(Type):
-		def __init__(self,module,single_selection=False):
+		def __init__(self, single_selection=False):
 			'''
-			@param module - should be an EMSelectorModule
 			@param single_selection - should selections be limited to singles?
 			'''
 			Type.__init__(self,None)
 			self.setFocusPolicy(Qt.StrongFocus)
-			self.module=weakref.ref(module) # Avoid strong cycle
+#			self.module=weakref.ref(module) # Avoid strong cycle
 			self.desktop_hint = "dialog" # So the desktop knows how to display this
 			self.single_selection = single_selection # Flag indicating single selection in interface
 			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
@@ -275,7 +264,7 @@ def EMSelectorBaseTemplate(Type):
 			self.lock = True
 			self.list_widgets = []
 			self.previews = [] # keeps track of all of the preview windows
-			self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
+#			self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 			self.list_widget_data= [] # entries should be tuples containing (current folder item)
 			self.splitter = QtGui.QSplitter(self)
 			self.splitter.setChildrenCollapsible(False)
@@ -307,6 +296,8 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.selected_files = []
 			
+			get_application().attach_child(self)
+			
 		def __init_buttons(self):
 			self.ok_button = QtGui.QPushButton("Ok")
 			self.ok_button.adjustSize()
@@ -319,11 +310,13 @@ def EMSelectorBaseTemplate(Type):
 		
 		def ok_button_clicked(self,bool):
 			''' Slot for OK button '''
-			self.module().emit(QtCore.SIGNAL("ok"),self.selections)
+			print "EMSelectorBase.ok_button_clicked"
+			self.emit(QtCore.SIGNAL("ok"),self.selections)
 		
 		def cancel_button_clicked(self,bool):
 			''' Slot for Cancel button '''
-			self.module().emit(QtCore.SIGNAL("cancel"),self.selections)
+			print "EMSelectorBase.cancel_button_clicked"
+			self.emit(QtCore.SIGNAL("cancel"),self.selections)
 		
 		
 		def __del__(self):
@@ -591,11 +584,6 @@ def EMSelectorBaseTemplate(Type):
 				self.list_widgets[i].clear()
 				self.list_widget_data[i] = None
 		
-		
-		def closeEvent(self,event):
-			self.module().closeEvent(None)
-			#self.timer.stop()
-		
 		def get_file_filter(self):
 			return str(self.filter_combo.currentText())
 		
@@ -676,8 +664,8 @@ def fspsort(x):
 
 EMBrowserType = EMSelectorBaseTemplate(QtGui.QWidget)
 class EMBrowser(EMBrowserType):
-	def __init__(self,module,single_selection=False):
-		EMBrowserType.__init__(self,module,single_selection)
+	def __init__(self, single_selection=False):
+		EMBrowserType.__init__(self,single_selection)
 		
 		self.add_list_widget() # 3 panels in browsing mode
 		
@@ -700,37 +688,45 @@ class EMBrowser(EMBrowserType):
 		bottom_hbl2.addWidget(self.groupbox)
 		self.resize(480,480)
 	
+		#Below: from old EMBrowserModule
+		self.setWindowTitle("EMAN2 Browser")
+		self.preview_options.setCurrentIndex(0)
+		self.preview_options_changed(self.preview_options.currentText())
+		self.ok_button.setEnabled(False)
+		self.cancel_button.setEnabled(False)
+		#End of old EMBrowserModule code
+	
 	def __del__(self):
 		pass
 	
 	def closeEvent(self,event):
 		for delegate in self.action_delegates.values():
 			delegate.closeEvent(event)
-		self.module().closeEvent(None)
+		EMBrowserType.closeEvent(self, event)
 	
 	def __init_action_delegates(self):
 		'''
 		All of the available actions for the context menu (right click)
 		'''
 		self.action_delegates = {}
-		from emimage3d import EMImage3DModule
-		self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DModule)()
-		from emimage3dvol import EMVolumeModule
+		from emimage3d import EMImage3DWidget
+		self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DWidget)()
+		from emimage3dvol import EMVolumeModel
 		from emimagemx import ApplyProcessor
-		self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModule,data_functors=[ApplyProcessor("normalize",{})])()
-		from emimage3dslice import EM3DSliceViewerModule
-		self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceViewerModule,data_functors=[ApplyProcessor("normalize",{})])()
-		from emimage2d import EMImage2DModule
-		self.action_delegates[SINGLE_2D_VIEWER] = DataDisplayModuleTemplate(EMImage2DModule)()
-		from emimagemx import EMImageMXModule
+		self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModel,data_functors=[ApplyProcessor("normalize",{})])()
+		from emimage3dslice import EM3DSliceModel
+		self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceModel,data_functors=[ApplyProcessor("normalize",{})])()
+		from emimage2d import EMImage2DWidget
+		self.action_delegates[SINGLE_2D_VIEWER] = DataDisplayModuleTemplate(EMImage2DWidget)()
+		from emimagemx import EMImageMXWidget
 		stack_action = EM2DStackPreviewAction()
-		self.action_delegates[MULTI_2D_VIEWER] = stack_action #DataDisplayModuleTemplate(EMImageMXModule,"get_2d_stack")
-		from emplot2d import EMPlot2DModule
-		self.action_delegates[PLOT_2D_VIEWER] = DataDisplayModuleTemplate(EMPlot2DModule)()
-		from emplot3d import EMPlot3DModule
-		self.action_delegates[PLOT_3D_VIEWER] = DataDisplayModuleTemplate(EMPlot3DModule)()
-		from emimage3dsym import EM3DSymViewerModule
-		self.action_delegates[EULER_VIEWER] = DataDisplayModuleTemplate(EM3DSymViewerModule)()
+		self.action_delegates[MULTI_2D_VIEWER] = stack_action #DataDisplayModuleTemplate(EMImageMXWidget,"get_2d_stack")
+		from emplot2d import EMPlot2DWidget
+		self.action_delegates[PLOT_2D_VIEWER] = DataDisplayModuleTemplate(EMPlot2DWidget)()
+		from emplot3d import EMPlot3DWidget
+		self.action_delegates[PLOT_3D_VIEWER] = DataDisplayModuleTemplate(EMPlot3DWidget)()
+		from emimage3dsym import EM3DSymModel
+		self.action_delegates[EULER_VIEWER] = DataDisplayModuleTemplate(EM3DSymModel)()
 		from e2simmxxplor import EMSimmxExplorer
 		self.action_delegates[SIMMX_EULER_VIEWER] = DataDisplayModuleTemplate(EMSimmxExplorer,"get_url")()
 		
@@ -873,9 +869,8 @@ class EMBrowser(EMBrowserType):
 
 EMSelectorDialogType = EMSelectorBaseTemplate(QtGui.QDialog)
 class EMSelectorDialog(EMSelectorDialogType):
-	
-	def __init__(self,module,single_selection=False):
-		EMSelectorDialogType.__init__(self,module,single_selection)
+	def __init__(self,single_selection=False,save_as_mode=True): #TODO: figure out whether save_as_mode is needed (unused)
+		EMSelectorDialogType.__init__(self,single_selection)	
 
 		hbl2=QtGui.QHBoxLayout()
 		hbl2.setMargin(0)
@@ -892,6 +887,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		self.ok_button.setDefault(True)
 			
 		self.resize(480,400)
+		self.setWindowTitle("EMAN2 Selector")
 		
 	def exec_(self):
 		'''
@@ -954,9 +950,13 @@ class EMSelectorDialog(EMSelectorDialogType):
 		self.save_as_line_edit.setText(text)
 	
 	def cancel_button_clicked(self,bool):
+		EMSelectorDialogType.cancel_button_clicked(self, bool)
+		
 		self.accept()
 	
 	def ok_button_clicked(self,bool):
+		EMSelectorDialogType.ok_button_clicked(self, bool)
+		
 		directory = self.get_current_directory()
 		if directory == None:
 			msg = QtGui.QMessageBox()
@@ -1364,7 +1364,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 			except:
 				item = EMGenericFileItem(self,file,full_name)
 		
-		elif EMPlot2DModule.is_file_readable(full_name):
+		elif EMPlot2DWidget.is_file_readable(full_name):
 			item = EMFSPlotItem(self,file,full_name)
 		else:
 			if filt != "EM types":
@@ -1721,7 +1721,7 @@ class EMFSPlotItem(EMListItem):
 		return EMFSPlotItem.ICON
 	
 	def get_data(self):
-		return EMPlot2DModule.get_data_from_file(self.get_url())
+		return EMPlot2DWidget.get_data_from_file(self.get_url())
 		
 	def get_url(self): return self.full_path
 	
@@ -2148,38 +2148,18 @@ class EMGenericFileItem(EMGenericItem):
 	def get_url(self):
 		return str(self.key)
 
-class EMBrowserModule(EMQtWidgetModule):
-	def __init__(self):
-		selector = EMBrowser(self,False)
-		selector.setWindowTitle("EMAN2 Browser")
-		selector.preview_options.setCurrentIndex(0)
-		selector.preview_options_changed(selector.preview_options.currentText())
-		selector.ok_button.setEnabled(False)
-		selector.cancel_button.setEnabled(False)
-		self.widget = selector
-		EMQtWidgetModule.__init__(self,self.widget)
-		
-#	def __del__(self):
-#		print "delete browse module"
-#		import sys
-#		print "browser module death", sys.getrefcount(self.widget)
 
 app = None
-def on_done(string_list):
-	if len(string_list) != 0:
-		for s in string_list:
-			print s,
-		print
-	app.quit()
 
-def on_cancel(string_list):
-	app.quit()
 
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	#dialog = EMSelector(None,em_app)
-	em_qt_widget = EMSelectorModule(save_as_mode=False)
-	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("ok"),on_done)
-	QtCore.QObject.connect(em_qt_widget.emitter(),QtCore.SIGNAL("cancel"),on_cancel)
-	em_app.show()
-	em_app.execute()
+	em_app = EMApp()
+#	em_qt_widget = EMSelectorModule(save_as_mode=False)
+#    em_app.show()
+	
+	em_selector = EMSelectorDialog()
+	files = em_selector.exec_()
+	print files
+	print "Press Ctrl-C to exit" #FIXME: figure out why Ctrl-C is required to terminate the program
+	em_app.exit(0)
+	em_app.execute() 

@@ -44,8 +44,8 @@ import time
 
 from emfloatingwidgets import EMGLRotorWidget,EM3DGLWindowOverride,EMGLViewQtWidget
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emglobjects import EMOpenGLFlagsAndTools, EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
+from emapplication import EMStandAloneApplication, EMGUIModule
 
 class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images

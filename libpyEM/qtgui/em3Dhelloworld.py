@@ -40,26 +40,19 @@ from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
-import sys
-import numpy
-from emimageutil import ImgHistogram,EMParentWin
-from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
-
 from time import *
-
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2
+from emglobjects import EM3DModel, Camera2,get_default_gl_colors,EMViewportDepthTools2
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DHelloWorld(EMImage3DGUIModule):
+class EM3DHelloWorld(EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def __init__(self, application,parent=None):
-		EMImage3DGUIModule.__init__(self,application)
+		EM3DModel.__init__(self,application)
 		self.parent = parent
+		self.gl_context_parent = parent
 		
 		self.init()
 		self.initialized = True
@@ -395,10 +388,16 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.z_trans.setSingleStep(zscale)
 
 	def update_rotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
+		convention = str( self.src.currentText() )
+		#FIXME: Transform3D.get_rotation() wants a string sometimes and a EulerType other times
+		try:
+			rot = t3d.get_rotation(str(self.src_map[convention]))
+		except StandardError, e: #doing a quick fix
+			print e
+			print "Developers: This catches a large range of exceptions... a better way surely exists"
+			rot = t3d.get_rotation(self.src_map[convention])
 		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
+		if ( self.src_map[convention] == EULER_SPIN ):
 			self.n3.setValue(rot[self.n3.getLabel()],True)
 		
 		self.az.setValue(rot[self.az.getLabel()],True)
@@ -520,9 +519,12 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EM3DHelloWorld(application=em_app)
+	from emapplication import EMApp
+	from emimage3d import EMImage3DWidget
+	em_app = EMApp()
+	window = EMImage3DWidget()
+	hello_world = EM3DHelloWorld(application=em_app, parent=window)
+	window.add_model(hello_world)
 	em_app.show()
 	em_app.execute()
 	

@@ -42,25 +42,20 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
-import numpy
-from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
 import weakref
 from time import *
 
-from emglobjects import EMImage3DGUIModule, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
-from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emglobjects import EM3DModel, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
+from emimageutil import ImgHistogram, EMTransformPanel
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSliceViewerModule(EMImage3DGUIModule):
+class EM3DSliceModel(EM3DModel):
 	
 	def __init__(self,image=None, application=None,ensure_gl_context=True,application_control=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
+		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
 		self.init()
 		self.initialized = True
 		
@@ -185,8 +180,8 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.inspector.set_slice(self.zslice)
 		self.generate_current_display_list()
 		
-		from emimage3d import EMImage3DGeneralWidget
-		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+		from emglobjects import EM3DGLWidget
+		if isinstance(self.gl_context_parent,EM3DGLWidget):
 			self.gl_context_parent.set_camera_defaults(self.data)
 			
 		if ( self.tex_dl != 0 ): 
@@ -437,7 +432,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		else:
 			self.axes[3] = point
 
-	def resizeEvent(self,width=0,height=0):
+	def resize(self):
 		self.vdtools.set_update_P_inv()
 		
 
@@ -599,8 +594,11 @@ class EM3DSliceInspector(QtGui.QWidget):
 		
 	
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	window = EM3DSliceViewerModule(application=em_app)
+	from emapplication import EMApp
+	from emglobjects import EM3DGLWidget
+	em_app = EMApp()
+	slice_model = EM3DSliceModel(application=em_app)
+	window = EM3DGLWidget(slice_model)
 	
 	if len(sys.argv)==1 : 
 		data = []
@@ -612,6 +610,11 @@ if __name__ == '__main__':
 		a=EMData(sys.argv[1])
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
+
+	#TODO: reconsider design so these lines aren't necessary
+	slice_model.under_qt_control = True
+	slice_model.set_gl_widget(window)
+	slice_model.set_gl_context_parent(window)
 		
 	em_app.show()
 	em_app.execute()

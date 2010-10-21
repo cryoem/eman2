@@ -40,7 +40,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import threading
 from IPython.Shell import *
-from emapplication import EMStandAloneApplication
+from emapplication import EMApp
 
 class IPShellQt4a(threading.Thread):
 	"""Run a Qt event loop in a separate thread.
@@ -56,22 +56,7 @@ class IPShellQt4a(threading.Thread):
 
 		from PyQt4 import QtGui
 
-		#class newQApplication2:
-			#def __init__( self ):
-				#self.QApplication = QtGui.QApplication
-
-			#def __call__( *args, **kwargs ):
-				#return QtGui.qApp
-
-			#def exec_loop( *args, **kwargs ):
-				#pass
-
-			#def __getattr__( self, name ):
-				#return getattr( self.QApplication, name )
-
-		self.app = EMStandAloneApplication()
-	
-		QtGui.QApplication = self.app.get_app()
+		self.app = EMApp()
 
 		# Allows us to use both Tk and QT.
 		self.tk = get_tk()
@@ -102,9 +87,7 @@ class IPShellQt4a(threading.Thread):
 		from PyQt4 import QtCore, QtGui
 
 		self._banner = banner
-
-		if QtGui.QApplication.startingUp():
-			a = QtGui.QApplication.QApplication(sys.argv)
+		
 		self.timer = QtCore.QTimer()
 		QtCore.QObject.connect( self.timer, QtCore.SIGNAL( 'timeout()' ), self.on_timer )
 

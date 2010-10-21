@@ -31,42 +31,39 @@
 #
 #
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import *
+from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from valslider import ValSlider
-from math import *
-from EMAN2 import *
-from libpyGLUtils2 import *
-import sys
-import numpy
-from emimageutil import ImgHistogram,EMParentWin
-from weakref import WeakKeyDictionary
-import weakref
-from time import time
-from PyQt4.QtCore import QTimer
-
-from time import *
-import copy
-
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,draw_volume_bounds,get_default_gl_colors,init_glut
-from emlights import *
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+from emglobjects import EM3DModel, Camera2, EMViewportDepthTools2, draw_volume_bounds, get_default_gl_colors, init_glut, EM3DGLWidget
 from emimageutil import EMTransformPanel
+from emlights import *
+from emimage3d import EMImage3DWidget
+from libpyGLUtils2 import *
+from math import *
+from time import *
+from valslider import ValSlider
+import copy
+import weakref
+
+
+
 
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
+class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, application=None,parent=None,winid=None):
-		EMImage3DGUIModule.__init__(self,application,winid=winid)
+	def __init__(self, parent=None):
+		EM3DModel.__init__(self)
 		EMLightsDrawer.__init__(self)
-		self.parent = parent
+		self.gl_context_parent = parent
+		self.gl_widget = parent
 		
 		self.mmode = 0
 		self.wire = False
@@ -85,13 +82,13 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		self.b = None #Added by Muthu for transforms
 		self.e2fhstat=0 #Added by Muthu as a switch for e2fhstat options in the widget 
 		self.colorCol = 3 #Added by Muthu
-
+		
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
 		
 		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
 		self.gl_context_parent.cam.cam_z = -25 # this is me hacking
 		self.basic_colors = get_default_gl_colors()
-	
+		
 		self.highresspheredl = 0 # display list i
 		self.draw_dl = 0
 		self.clear_data() # use this so there's only one function
@@ -153,12 +150,24 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.02,-0.02,1.,0.])
-		 
 	def get_type(self):
 		return "lights"
-
-	def mouseReleaseEvent(self,event): ####
-
+	def mouseDoubleClickEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseDoubleClickEvent(self, event)
+		else:
+			EM3DModel.mouseDoubleClickEvent(self, event)
+	def mouseMoveEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseMoveEvent(self, event)
+		else:
+			EM3DModel.mouseMoveEvent(self, event)
+	def mousePressEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mousePressEvent(self, event)
+		else:
+			EM3DModel.mousePressEvent(self, event)
+	def mouseReleaseEvent(self,event):
 		proceed = True
 		if proceed:
 			v = glGetIntegerv(GL_VIEWPORT).tolist()
@@ -185,9 +194,8 @@ class EMPlot3DModule(EMLightsDrawer,EMImage3DGUIModule):
 					self.on_hit_update(c[0]-1)
 					break
 			return
-		
-		
-		EMImage3DGUIModule.mouseReleaseEvent(self,event)
+				
+		EM3DModel.mouseReleaseEvent(self,event)
 
 	def on_hit_update(self,indexer): 
 		if (self.e2fhstat!=3): return
@@ -1348,13 +1356,28 @@ def get_other_test_data():
 	
 	return data
 
+class EMPlot3DWidget(EMImage3DWidget):
+	def __init__(self):
+		EMImage3DWidget.__init__(self)
+		self.plot_model = EMPlot3DModel(self)
+		self.add_model(self.plot_model)
+#		self.set_perspective(True) #camera isn't set correctly for this
+	def set_data(self, data,key="data",clear_current=False,shape="Sphere"):
+		self.plot_model.set_data(data, key, clear_current, shape)
+
+
+class EMPlot3DModule(EMPlot3DModel):
+	def __init__(self, parent):
+		EMPlot3DModel.__init__(self, parent)
+		import warnings
+		warnings.warn("convert EMPlot3DModule to EMPlot3DModel", DeprecationWarning)
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EMPlot3DModule(application=em_app)
-	window.set_data(get_test_data(),"test data")
-	window.set_data(get_other_test_data(),"other data",shape="Cube")
+	from emapplication import EMApp
+	em_app = EMApp()
+	widget = EMPlot3DWidget()
+	widget.set_data(get_test_data(),"test data")
+	widget.set_data(get_other_test_data(),"other data",shape="Cube")
 	em_app.show()
 	em_app.execute()
 	

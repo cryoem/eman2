@@ -34,17 +34,15 @@ from optparse import OptionParser
 import sys
 import os
 from EMAN2 import *
-from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
-from emimage2d import EMImage2DModule
+from emapplication import EMApp
+from emimage2d import EMImage2DWidget
 from emimage3d import EMImage3DModule
 from valslider import ValSlider
 import weakref
 from emshape import EMShape
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-import math
 #import EMAN2db
-import time
 
 reconmodes=["gauss_2","gauss_3","gauss_5"]
 
@@ -76,7 +74,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 
 	logid=E2init(sys.argv)
 	
-	app = EMStandAloneApplication()
+	app = EMApp()
 
 	
 	track=TrackerControl(app,options.maxshift,options.invert,options.seqali,options.tiltstep)
@@ -140,18 +138,17 @@ class TrackerControl(QtGui.QWidget):
 		QtCore.QObject.connect(self.vslpfilt,QtCore.SIGNAL("valueChanged"),self.do_filter)
 
 		# the single image display widget
-		self.im2d =    EMImage2DModule(application=app,winid="tomotrackbox.big")
-		self.imboxed = EMImage2DModule(application=app,winid="tomotrackbox.small")
-		self.improj =  EMImage2DModule(application=app,winid="tomotrackbox.proj")
-		self.imslice = EMImage2DModule(application=app,winid="tomotrackbox.3dslice")
+		self.im2d =    EMImage2DWidget(application=app,winid="tomotrackbox.big")
+		self.imboxed = EMImage2DWidget(application=app,winid="tomotrackbox.small")
+		self.improj =  EMImage2DWidget(application=app,winid="tomotrackbox.proj")
+		self.imslice = EMImage2DWidget(application=app,winid="tomotrackbox.3dslice")
 		self.imvol =   EMImage3DModule(application=app,winid="tomotrackbox.3d")
 	
-		# get some signals from the window. With a regular Qt object this would just
-		# be the window, but with 'Module' objects we must use the emitter
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mousedown"),self.down)
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mousedrag"),self.drag)
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mouseup"),self.up)
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("increment_list_data"),self.change_tilt)
+		# get some signals from the window. 
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedown"),self.down)
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedrag"),self.drag)
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mouseup"),self.up)
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("increment_list_data"),self.change_tilt)
 	
 		self.imagefile=None
 		self.imageparm=None

@@ -48,9 +48,8 @@ from EMAN2 import *
 from emfloatingwidgets import EMGLRotorWidget, EM2DGLView,EM3DGLWindow,EM2DGLWindow
 from emimagemx import EMImageMXModule
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
-from emimage import EMImageModule
+from emglobjects import EMOpenGLFlagsAndTools, EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
+from emapplication import EMStandAloneApplication, EMGUIModule
 
 
 class EMImageRotorWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):

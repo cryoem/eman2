@@ -37,14 +37,14 @@
 from EMAN2 import *
 from math import *
 from PyQt4 import QtCore
-from emapplication import EMStandAloneApplication
-from emimage2d import EMImage2DModule
+from emapplication import EMApp
+from emimage2d import EMImage2DWidget
 from emshape import EMShape
 
 
 def main():
 	# an application
-	em_app = EMStandAloneApplication()
+	em_app = EMApp()
 	control1=TestControl(em_app)
 	control2=TestControl(em_app)
 
@@ -53,13 +53,12 @@ def main():
 class TestControl():
 	def __init__(self,app):
 		# the single image display widget
-		self.im2d = EMImage2DModule(application=app)
+		self.im2d = EMImage2DWidget(application=app)
 	
-		# get some signals from the window. With a regular Qt object this would just
-		# be the window, but with 'Module' objects we must use the emitter
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mousedown"),self.down)
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mousedrag"),self.drag)
-		QtCore.QObject.connect(self.im2d.emitter(),QtCore.SIGNAL("mouseup"),self.up)
+		# get some signals from the window.
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedown"),self.down)
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedrag"),self.drag)
+		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mouseup"),self.up)
 	
 		#self explanatory
 		a=test_image(size=(512,512))

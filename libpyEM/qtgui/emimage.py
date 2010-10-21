@@ -33,20 +33,16 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-
-from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
-from sys import argv
-from copy import deepcopy
 from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D,EMData
 
 
 
 def image_update():
-	from emimage2d import EMImage2DModule
-	from emimagemx import EMImageMXModule
-	from emimage3d import EMImage3DModule
-	for i in EMImage2DModule.allim.keys():
+	from emimage2d import EMImage2DWidget
+	from emimagemx import EMImageMXWidget
+	from emimage3d import EMImage3DWidget
+	for i in EMImage2DWidget.allim.keys():
 		try:
 			if i.is_visible() and i.data["changecount"] !=i.get_last_render_image_display_count():
 				i.force_display_update()
@@ -54,14 +50,14 @@ def image_update():
 				i.updateGL()
 		except: pass
 	
-	for i in EMImageMXModule.allim.keys():
+	for i in EMImageMXWidget.allim.keys():
 		try:
 			if i.is_visible() and i.data[0]["changecount"]!=i.get_last_render_image_display_count():
 				i.force_display_update()
 				i.updateGL()
 		except: pass
 		
-	for i in EMImage3DModule.allim.keys():
+	for i in EMImage3DWidget.allim.keys():
 		try:
 			if i.is_visible() and i.data["changecount"]!=i.get_last_render_image_display_count():
 				i.updateGL()
@@ -89,7 +85,7 @@ def get_app():
 	return app
 
 
-class EMImageModule(object):
+class EMImageWidget(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename="",replace=True):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
@@ -106,72 +102,73 @@ class EMImageModule(object):
 			return None
 		
 		if force_plot or (isinstance(data,EMData) and data.get_zsize()==1 and data.get_ysize()==1):
-			from emplot2d import EMPlot2DModule
+			from emplot2d import EMPlot2DWidget
 			if old:
-				if isinstance(old,EMPlot2DModule) :
+				if isinstance(old,EMPlot2DWidget) :
 					old.set_data(data,remove_directories_from_name(filename),replace)
 					return old
-			module = EMPlot2DModule(application=app)
-			module.set_data(data,remove_directories_from_name(filename),replace)
-			return module	
+			widget = EMPlot2DWidget(application=app)
+			widget.set_data(data,remove_directories_from_name(filename),replace)
+			return widget	
 		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
-			from emimage2d import EMImage2DModule
+			from emimage2d import EMImage2DWidget
 			if old:
-				if isinstance(old,EMImage2DModule) :
+				if isinstance(old,EMImage2DWidget) :
 					old.set_data(data,filename)
 					return old
-			module = EMImage2DModule(application=app)
-			module.set_data(data,filename)
-			return module
+			widget = EMImage2DWidget(application=app)
+			widget.set_data(data,filename)
+			return widget
 		elif isinstance(data,EMData):
-			from emimage3d import EMImage3DModule
+			from emimage3d import EMImage3DWidget
 			if old:
-				if isinstance(old,EMImage3DModule) :
+				if isinstance(old,EMImage3DWidget) :
 					old.set_data(data,filename,replace)
 					return old
-			module = EMImage3DModule(application=app)
-			module.set_data(data,filename,replace)
-			return module
+			widget = EMImage3DWidget(application=app)
+			widget.set_data(data,filename,replace)
+			widget.get_inspector().add_isosurface()
+			return widget
 		elif isinstance(data,list) and isinstance(data[0],EMData):
-			from emimagemx import EMImageMXModule
+			from emimagemx import EMImageMXWidget
 			if old:
-				if isinstance(old,EMImageMXModule) :
+				if isinstance(old,EMImageMXWidget) :
 					old.set_data(data,filename)
 					return old
-			module = EMImageMXModule(application=app)
-			module.set_data(data,filename)
-			return module
+			widget = EMImageMXWidget(application=app)
+			widget.set_data(data,filename)
+			return widget
 		elif isinstance(data,list):
-			from emplot3d import EMPlot3DModule
+			from emplot3d import EMPlot3DWidget
 			if len(data) > 2:
 				if old:
-					if isinstance(old,EMPlot3DModule) :
+					if isinstance(old,EMPlot3DWidget) :
 						old.set_data(remove_directories_from_name(filename),data,replace)
 						return old
-				module = EMPlot3DModule(application=app)
-				module.set_data(remove_directories_from_name(filename),data,replace)
-				return module	
+				widget = EMPlot3DWidget()
+				widget.set_data(remove_directories_from_name(filename),data,replace)
+				return widget	
 			else:
-				from emplot2d import EMPlot2DModule
+				from emplot2d import EMPlot2DWidget
 				if old:
-					if isinstance(old,EMPlot2DModule) :
+					if isinstance(old,EMPlot2DWidget) :
 						old.set_data(data,remove_directories_from_name(filename),replace)
 						return old
-				module = EMPlot2DModule(application=app)
-				module.set_data(data,remove_directories_from_name(filename),replace)
-				return module	
+				widget = EMPlot2DWidget(application=app)
+				widget.set_data(data,remove_directories_from_name(filename),replace)
+				return widget	
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"
 
 
-class EMModuleFromFile(object):
+class EMWidgetFromFile(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMDisplay class,
 	using only a file name as input. Can force plot and force 2d display, also.
 	
 	Used by emselector.py and e2display.py.
 	
-	This object was retrospectively altered to allow a file name to be passed into the EMImageMXModule's set_data function,
-	this is to facilitate viewing large images using the EMImageMXModule's caching mechanism. The object reads the images
+	This object was retrospectively altered to allow a file name to be passed into the EMImageMXWidget's set_data function,
+	this is to facilitate viewing large images using the EMImageMXWidget's caching mechanism. The object reads the images
 	from disk internally, allowing the user to view very large sets.
 	
 	"""
@@ -188,11 +185,11 @@ class EMModuleFromFile(object):
 			return None
 		
 		if force_plot:
-			from emplot2d import EMPlot2DModule
-			if isinstance(old,EMPlot2DModule): module = old
-			else: module = EMPlot2DModule(application=application)
-			module.set_data_from_file(filename)
-			return module
+			from emplot2d import EMPlot2DWidget
+			if isinstance(old,EMPlot2DWidget): widget = old
+			else: widget = EMPlot2DWidget(application=application)
+			widget.set_data_from_file(filename)
+			return widget
 		
 		if em_file_type != IMAGE_UNKNOWN or filename[:4] == "bdb:":
 			n = EMUtil.get_image_count(filename)
@@ -202,7 +199,7 @@ class EMModuleFromFile(object):
 					a = EMData()
 					data=a.read_images(filename)
 				else:
-					data = None # This is like a flag - the ImageMXModule only needs the file name
+					data = None # This is like a flag - the ImageMXWidget only needs the file name
 			else:
 				data = EMData()
 				data.read_image(filename,0)
@@ -212,33 +209,36 @@ class EMModuleFromFile(object):
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
 				if isinstance(data,list) or data.get_ysize() != 1:
-					from emimage2d import EMImage2DModule
-					if isinstance(old,EMImage2DModule): module = old
-					else: module= EMImage2DModule(application=application)
+					from emimage2d import EMImage2DWidget
+					if isinstance(old,EMImage2DWidget): widget = old
+					else: widget= EMImage2DWidget(application=application)
 				else:
-					from emplot2d import EMPlot2DModule
-					if isinstance(old,EMPlot2DModule): module = old
-					else: module = EMPlot2DModule(application=application)
-					module.set_data_from_file(filename)
-					return module
+					from emplot2d import EMPlot2DWidget
+					if isinstance(old,EMPlot2DWidget): widget = old
+					else: widget = EMPlot2DWidget(application=application)
+					widget.set_data_from_file(filename)
+					return widget
 			elif isinstance(data,EMData):
-				from emimage3d import EMImage3DModule
-				if isinstance(old,EMImage3DModule): module = old
-				else: module = EMImage3DModule(application=application)
+				from emimage3d import EMImage3DWidget
+				if isinstance(old,EMImage3DWidget): widget = old
+				else: widget = EMImage3DWidget(application=application)
+				widget.set_data(data,filename)
+				widget.get_inspector().add_isosurface()
+				return widget
 			elif data == None or isinstance(data,list):
-				from emimagemx import EMImageMXModule
-				if isinstance(old,EMImageMXModule): module = old
-				else: module = EMImageMXModule(application=application)
+				from emimagemx import EMImageMXWidget
+				if isinstance(old,EMImageMXWidget): widget = old
+				else: widget = EMImageMXWidget(application=application)
 				data = filename
 			else: 
 				print filename
 				raise # weirdness, this should never happen
-			module.set_data(data,filename)
-			return module
+			widget.set_data(data,filename)
+			return widget
 		else:
-			from emplot2d import EMPlot2DModule
-			if isinstance(old,EMPlot2DModule): module = old
-			else: module = EMPlot2DModule(application=application)
-			module.set_data_from_file(filename)
-			return module
+			from emplot2d import EMPlot2DWidget
+			if isinstance(old,EMPlot2DWidget): widget = old
+			else: widget = EMPlot2DWidget(application=application)
+			widget.set_data_from_file(filename)
+			return widget
 

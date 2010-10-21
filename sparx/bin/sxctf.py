@@ -42,9 +42,10 @@ from sparx import *
 from optparse import OptionParser
 from OpenGL import GL,GLUT
 from numpy import *
-import time
 import os
 import sys
+import weakref
+from emapplication import EMApp
 
 from Simplex import Simplex
 
@@ -53,7 +54,7 @@ logid=None
 
 sfcurve=None		# This will store a global structure factor curve if specified
 envelopes=[]		# simplex minimizer needs to use a global at the moment
-import weakref
+
 
 def main():
 	global debug,logid
@@ -160,10 +161,9 @@ images far from focus."""
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		if len(img_sets) == 0:
 			E2end(logid)
-			exit(1)
-		from emapplication import EMStandAloneApplication
-		app=EMStandAloneApplication()
-		gui=GUIctfModule(app,img_sets)
+			sys.exit(1)
+		app=EMApp()
+		gui=GUIctf(app,img_sets)
 		gui.show_guis()
 		app.exec_()
 
@@ -476,7 +476,6 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		imf.ri2inten()
 		if i==0: av2=imf
 		else: av2+=imf
-	from sys import exit
 	
 	av1/=(float(n)*av1.get_ysize()*av1.get_ysize()*ratio1)
 	av1.set_value_at(0,0,0.0)
@@ -838,44 +837,24 @@ except:
 			print "Qt4 has not been loaded"
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
-	
-from emapplication import EMQtWidgetModule
 
-class GUIctfModule(EMQtWidgetModule):
-	def __init__(self,application,data):
-		self.guictf = GUIctf(application,data,self)
-		EMQtWidgetModule.__init__(self,self.guictf)
-		self.application = weakref.ref(application)
-		self.setWindowTitle("CTF")
-		
-		#GLUT.glutInit([]) # this should be taken care of now
-
-		
-	def get_desktop_hint(self):
-		return "inspector"
-	
-	def show_guis(self):
-		self.guictf.show_guis()
-		
 class GUIctf(QtGui.QWidget):
-	def __init__(self,application,data,module=None):
+	def __init__(self,application,data):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
-			from emimage import EMImageModule
-			from emimage2d import EMImage2DModule
+			from emimage2d import EMImage2DWidget
 		except:
-			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
 			sys.exit(1)
 		try: 
-			from emplot2d import EMPlot2DModule
+			from emplot2d import EMPlot2DWidget
 		except:
 			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			sys.exit(1)
 		
 		self.app = weakref.ref(application)
-		self.module = weakref.ref(module)
 		
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -884,17 +863,13 @@ class GUIctf(QtGui.QWidget):
 		self.curset=0
 		self.plotmode=0
 		
-		self.guiim=EMImage2DModule(application=self.app())
-		self.guiplot=EMPlot2DModule(application=self.app())
+		self.guiim=EMImage2DWidget(application=self.app())
+		self.guiplot=EMPlot2DWidget(application=self.app())
 		
-		# FIXME these "emitters" might be unnecessary.
-		im_qt_target = self.app().get_qt_emitter(self.guiim)
-		plot_qt_target = self.app().get_qt_emitter(self.guiplot)
-		
-		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		plot_qt_target.connect(plot_qt_target,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
 
@@ -975,9 +950,8 @@ class GUIctf(QtGui.QWidget):
 		
 		self.update_data()
 		self.resize(460,380) # figured these values out by printing the width and height in resize event
+		self.setWindowTitle("CTF")
 		
-#	def resizeEvent(self,event):
-#		print self.width(),self.height()
 	def on_save_params(self):
 		
 		if len(self.setlist.selectedItems()) == 0: return
@@ -1026,7 +1000,7 @@ class GUIctf(QtGui.QWidget):
 	
 	def on_output(self):
 		from emsprworkflow import E2CTFOutputTaskGeneral
-		self.form = E2CTFOutputTaskGeneral(self.app())
+		self.form = E2CTFOutputTaskGeneral()
 		self.form.run_form()
 	
 	def show_guis(self):
@@ -1035,7 +1009,7 @@ class GUIctf(QtGui.QWidget):
 		if self.guiplot != None:
 			self.app().show_specific(self.guiplot)
 		
-		self.app().show_specific(self.module())
+		self.app().show_specific(self)
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
@@ -1045,9 +1019,6 @@ class GUIctf(QtGui.QWidget):
 		if self.guiplot != None:
 			self.app().close_specific(self.guiplot)
 		event.accept()
-		if self.module != None:
-			self.app().close_specific(self.module())
-			self.module().emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data

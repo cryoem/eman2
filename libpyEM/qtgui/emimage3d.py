@@ -31,197 +31,222 @@
 #
 #
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import *
+from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import QTimer, Qt
+from e2eulerxplor import EMEulerExplorer
+from emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
+from emimage3diso import EMIsosurfaceModel
+from emimage3dslice import EM3DSliceModel
+from emimage3dsym import EM3DSymModel
+from emimage3dvol import EMVolumeModel
+from emimageutil import EMTransformPanel
+from emlights import EMLightsInspectorBase, EMLightsDrawer
 from math import *
-from EMAN2 import *
-import sys
-import numpy
+from weakref import WeakKeyDictionary
 import weakref
 
-from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
 
-from emimage3diso import EMIsosurfaceModule
-from emimage3dvol import EMVolumeModule
-from emimage3dslice import EM3DSliceViewerModule
-from emimage3dsym import EM3DSymViewerModule
-from e2eulerxplor import EMEulerExplorer
-from emlights import EMLightsInspectorBase,EMLightsDrawer
 
-from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule,EMGLProjectionViewMatrices,EMOpenGLFlagsAndTools,get_default_gl_colors
-from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
-from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-
-class EMImage3DGeneralWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
-	def __init__(self, em_3d_module):
-		assert(isinstance(em_3d_module,EMImage3DGUIModule))
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self,em_3d_module)
-		EMGLProjectionViewMatrices.__init__(self)
-		
-		self.fov = 30 # field of view angle used by gluPerspective
-		self.startz = 1
-		self.endz = 500
-		self.cam = Camera()
-		self.resize(480,480)
-		
-	def set_camera_defaults(self,data):
-		if isinstance(data,EMData):
-			self.cam.default_z = -1.25*data.get_xsize()
-			self.cam.cam_z = -1.25*data.get_xsize()
-		elif isinstance(data,float):
-			self.cam.default_z = -1.25*data
-			self.cam.cam_z = -1.25*data
-		
-	def set_data(self,data):
-		self.target().set_data(data)
-		self.set_camera_defaults(data)
-		
-		
-	def initializeGL(self):
-		glEnable(GL_NORMALIZE)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		GL.glClearColor(0,0,0,0)
-		#GL.glClearAccum(0,0,0,0)
-	
-		glShadeModel(GL_SMOOTH)
-		
-		glClearStencil(0)
-		glEnable(GL_STENCIL_TEST)
-		
-	def paintGL(self):
-		#glClear(GL_ACCUM_BUFFER_BIT)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.cam.position()
-		
-		glPushMatrix()
-		self.target().render()
-		glPopMatrix()
-		
-		#glAccum(GL_ADD, self.target.glbrightness)
-		#glAccum(GL_ACCUM, self.target.glcontrast)
-		#glAccum(GL_RETURN, 1.0)
-		
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : return # this is fine, the window has be size interactively to zero, for example
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.set_projection_view_update()
-		self.target().resizeEvent()
-
-	def get_start_z(self):
-		return self.startz
-	
-	def get_near_plane_dims(self):
-		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
-		width = self.aspect * height
-		return [width,height]
-
-	def show_inspector(self,force=0):
-		self.target().show_inspector(self,force)
-
-	def get_render_dims_at_depth(self,depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		
-		return [width,height]
-
-	def load_perspective(self):
-		
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-
-class EMImage3DWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
+class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
-	def __init__(self, image_3d_module, parent=None):
-		self.target = None
+	allim=WeakKeyDictionary()
+	def add_model(self,model,num=0):
+		
+		model.set_qt_context_parent(self.qt_parent)
+		model.set_gl_context_parent(self)
+		model.set_gl_widget(self)
+		model.set_dont_delete_parent() # stops a RunTimeError
+		model.under_qt_control = True
+		
+		self.viewables.append(model)
+		name = model.get_type()+" " + str(num)
+		self.viewables[-1].set_name(name)
+		self.viewables[-1].set_rank(len(self.viewables))
+		self.currentselection = len(self.viewables)-1
+		self.updateGL()
+	def __del__(self):
+		if not self.dont_delete_parent:
+			self.qt_parent.deleteLater()
+		self.core_object.deleteLater()
+	def __init__(self, parent=None, image=None,application=None,winid=None):
+		EMImage3DWidget.allim[self] = 0
+		EMGLWidget.__init__(self,parent)
+		EMLightsDrawer.__init__(self)
+		EMGLProjectionViewMatrices.__init__(self)
+		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
 		fmt.setStencil(True)
 		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self,image_3d_module)
-		EMGLProjectionViewMatrices.__init__(self)
+		self.setFormat(fmt)
+		
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.d = 0
 		self.zwidth = 0
 		self.yheight = None
-		self.perspective = True
+		
+		self.data = None # should eventually be an EMData object
 
-		self.cam = Camera()
+#		self.cam = Camera()
+		self.cam = Camera2(self)
 		self.cam.cam_z = -250
-
+		
 		self.resize(480,480)
 		self.startz = 1
 		self.endz = 500
-	
+		
+		self.currentselection = -1
+		self.inspector = None
+		
+		self.viewables = []
+		self.num_iso = 0
+		self.num_vol = 0
+		self.num_sli = 0
+		self.num_sym = 0
+		self.suppress_inspector = False 	
+
+		self.vdtools = EMViewportDepthTools(self)
+		
+		self.last_window_width = -1 # used for automatic resizing from the desktop
+		self.last_window_height = -1 # used for automatic resizing from the desktop
+		
+		self.file_name = None		
+		self.emit_events = False		
+		self.perspective = False
+
+		if image != None: 
+			self.set_data(image)
+		
+		#From get_qt_widget...
+		for i in self.viewables:
+			i.set_qt_context_parent(self.qt_parent)
+			i.set_gl_context_parent(self)
+			i.set_gl_widget(self)
+			i.under_qt_control = True
+		
+		if isinstance(self.data,EMData):
+			self.set_cam_z_from_fov_image(self.get_fov(),self.data)
+		
+		self.qt_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
+		#End from get_qt_widget
+		
+		self.updateGL() #Solves "error, OpenGL seems not to be initialized" message
+		
+	def __set_model_contexts(self):
+		for v in self.viewables:
+			v.set_qt_context_parent(self.qt_parent)
+			v.set_gl_context_parent(self)
+			v.set_gl_widget(self)
+			#self.application.register_qt_emitter(v,self.application.get_qt_emitter(self))
+	def add_isosurface(self):
+		model = EMIsosurfaceModel(self.data,None,False,False)
+		self.num_iso += 1
+		self.add_model(model,self.num_iso)
+	def add_slice_viewer(self):
+		model = EM3DSliceModel(self.data,None,False,False)
+		self.num_sli += 1
+		self.add_model(model,self.num_sli)
+	def add_sym(self):
+		# the difference between the EMEulerExplorer and the EM3DSymModel
+		# is only that the EMEulerExplorer will look in the current directory for refinement directories and
+		# display related information. Simply change from one to the other if you don't like it
+		model = EMEulerExplorer(None,True,False)
+		#model = EM3DSymModel(None,True,False)
+		model.set_radius(self.radius)
+		self.num_sym += 1
+		self.add_model(model,self.num_sym)
+	def add_volume(self):
+		model = EMVolumeModel(self.data,None,False,False)
+		self.num_vol += 1
+		self.add_model(model,self.num_vol)
+	def delete_current(self, val):
+		if ( len(self.viewables) == 0 ): return
+		
+		v = self.viewables.pop(val)
+		
+		
+		#self.application.deregister_qt_emitter(v)
+		if (len(self.viewables) == 0 ) : 
+			self.currentselection = -1
+		elif ( len(self.viewables) == 1):
+			self.currentselection = 0
+		elif ( val == 0):
+			pass
+		else:
+			self.currentselection = val - 1
+		
+		
+		# Need to set the rank appropriately
+		for i in range(0,len(self.viewables)):
+			self.viewables[i].set_rank(i+1)
+	def enable_emit_events(self,val=True):
+		for v in self.viewables: v.enable_emit_events(val)
+		self.emit_events = val
+		self.cam.enable_emit_events(val)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
+	def get_current_idx(self):
+		return self.currentselection
+	def get_current_inspector(self):
+		if self.currentselection == -1 : return None
+		elif self.currentselection >= len(self.viewables):
+			print "error, current selection too large", self.currentselection,len(self.viewables)
+			return None
+		return self.viewables[self.currentselection].get_inspector()		
+	def get_current_name(self):
+		if self.currentselection == -1 : return ""
+		elif self.currentselection >= len(self.viewables):
+			print "error, current selection too large", self.currentselection,len(self.viewables)
+			return ""
+		return self.viewables[self.currentselection].get_name()
+	def get_current_transform(self):
+		size = len(self.cam.t3d_stack)
+		return self.cam.t3d_stack[size-1]
+	def get_data_dims(self):
+		if self.data != None:
+			return [self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()]
+		else: return [0,0,0]
+	def get_emit_signals_and_connections(self):
+		ret = {}
+		for v in self.viewables: ret.update(v.get_emit_signals_and_connections())
+		ret.update(self.cam.get_emit_signals_and_connections())
+		ret.update({"set_perspective":self.set_perspective})
+		
+		return ret
 	def get_fov(self):
 		return self.fov
-
-	def set_cam_z(self,fov,image):
-		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
-		self.zwidth = image.get_zsize()
-		self.yheight = image.get_ysize()
-		self.xwidth = image.get_xsize()
-		self.cam.default_z = -self.d
-		self.cam.cam_z = -self.d
-		
-		max = self.zwidth
-		if self.yheight > max: max = self.yheight
-		if self.xwidth > max: mas = self.xwidth
-		self.startz = self.d - 2.0*max
-		self.endz = self.d + 2.0*max
-	def set_data(self,data):
-		self.target().set_data(data)
-		if ( data != None and isinstance(data,EMData)):
-			self.set_cam_z(self.fov,data)
-			
-		self.resize(640,640)
-		
+	def get_inspector(self):
+		if not self.inspector :  self.inspector=EMImageInspector3D(self)
+		return self.inspector
+	def get_near_plane_dims(self):
+		if self.perspective:
+			height = 2.0*self.startz * tan(self.fov/2.0*pi/180.0)
+			width = self.aspect * height
+			return [width,height]
+		else:
+			return [self.xwidth,self.yheight]
+	def get_render_dims_at_depth(self, depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		return [width,height]
+	def get_start_z(self):
+		return self.startz
+	def get_sundry_inspector(self):
+		return self.viewables[self.currentselection].get_inspector()
 	def initializeGL(self):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
@@ -259,12 +284,70 @@ class EMImage3DWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatri
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
 		GL.glClearColor(0,0,0,0)
-		try:
-			self.target().initializeGL()
-		except:
-			pass
 		
 		
+		glEnable(GL_NORMALIZE)
+	def is_emitting(self): return self.emit_events
+	def load_last_viewable_camera(self):
+		return
+		size = len(self.viewables)
+		if ( size <= 1 ): return
+		self.viewables[size-1].set_camera(self.viewables[0].get_current_camera())
+	def load_orthographic(self):
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		
+		if self.yheight == None: self.yheight = self.height()
+		
+		self.aspect = float(self.width())/float(self.height())
+		self.xwidth = self.aspect*self.yheight
+		if self.xwidth == 0 or self.yheight == 0: return # probably startup
+		
+		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+	def load_perspective(self):
+		self.aspect = float(self.width())/float(self.height())
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		if self.startz < 0: self.startz = 1
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+	def load_rotation(self,t3d):
+		self.cam.load_rotation(t3d)
+		self.updateGL()
+	def mouseMoveEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseMoveEvent(self, event)
+		else:
+			for model in self.viewables:
+				try:
+					model.mouseMoveEvent(event)
+				except AttributeError, e:
+					pass
+		self.updateGL()
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			self.show_inspector()
+		if self.current_mouse_mode:
+			EMLightsDrawer.mousePressEvent(self, event)
+		else:
+			for model in self.viewables:
+				try:
+					model.mousePressEvent(event)
+				except AttributeError, e:
+					pass
+		self.updateGL()
+	def mouseReleaseEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseReleaseEvent(self, event)
+		else:
+			for model in self.viewables:
+				try:
+					model.mouseReleaseEvent(event)
+				except AttributeError, e:
+					pass
+		self.updateGL()
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
@@ -274,16 +357,55 @@ class EMImage3DWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatri
 		except:
 			return
 
-		if ( self.target != None ):
-			self.target().render()
-
-
+		self.render()
+	def render(self):
+		try: 
+			self.image_change_count = self.data["changecount"] # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		except:
+			try: self.image_change_count = self.data[0]["changecount"]
+			except: pass
+			
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
+		dz = None
+		if not self.perspective:
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix() 
+			self.load_orthographic()
+			glMatrixMode(GL_MODELVIEW)
+		
+		glPushMatrix()
+		self.cam.position()
+		
+		for i in self.viewables:
+			glPushMatrix()
+			i.render()
+			glPopMatrix()
+		glPopMatrix()
+		
+		
+		glPushMatrix()
+		self.cam.translate_only()
+		EMLightsDrawer.draw(self)
+		glPopMatrix()
+		
+		if not self.perspective:
+			glMatrixMode(GL_PROJECTION)
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
+	def resizeEvent(self, event):
+		self.vdtools.set_update_P_inv()
+		EMGLWidget.resizeEvent(self, event)
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
 		
 		if width == 0 or height == 0: return # this is fine
 		
-		glViewport(0,0,self.width(),self.height())
+		glViewport(0,0,width,height)
 		
 		# maintain the aspect ratio of the window we have
 		#self.aspect = float(self.width())/float(self.height())
@@ -317,241 +439,59 @@ class EMImage3DWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatri
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		if (self.target != None):
-			try: self.target().resizeEvent(width,height)
-			except: pass
 		self.set_projection_view_update()
 		self.updateGL()
-
-	def load_orthographic(self):
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		
-		if self.yheight == None: self.yheight = self.height()
-		
-		self.aspect = float(self.width())/float(self.height())
-		self.xwidth = self.aspect*self.yheight
-		if self.xwidth == 0 or self.yheight == 0: return # probably startup
-		
-		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
-		glMatrixMode(GL_MODELVIEW)
-		
-	def load_perspective(self):
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		if self.startz < 0: self.startz = 1
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		glMatrixMode(GL_MODELVIEW)
-	
-	def viewing_volume(self):
-		'''
-		A useful function for getting the viewing volume as a list - so
-		the calling function can figure out what to draw
-		'''
-		
-		return [-self.xwidth/2.0,-self.yheight/2.0,self.startz, self.xwidth/2.0,self.yheight/2.0,self.endz]
-		
-		
-	def get_start_z(self):
-		return self.startz
-	
-	def get_near_plane_dims(self):
-		if self.perspective:
-			height = 2.0*self.startz * tan(self.fov/2.0*pi/180.0)
-			width = self.aspect * height
-			return [width,height]
+	def resize_event(self,width,height):
+		if self.last_window_width == -1:
+			self.last_window_width = width
+			self.last_window_height = height
 		else:
-			return [self.xwidth,self.yheight]
+			height_scale = height/float(self.last_window_height)
+			width_scale = width/float(self.last_window_width)
+			
+			if height_scale < width_scale: width_scale = height_scale
+			#print width_scale, "is the factor"
+			self.cam.scale *= width_scale
+			self.last_window_width = width
+			self.last_window_height = height
+	def rowChanged(self,row):
+		if ( row == self.currentselection ): return
+		self.currentselection=row
+		self.updateGL()
+	def set_cam_x(self,x):
+		self.cam.set_cam_x( x )
+		self.updateGL()	
+	def set_cam_y(self,y):
+		self.cam.set_cam_y( y )
+		self.updateGL()		
+	def set_cam_z(self,z):
+		self.cam.set_cam_z( z )
+		self.updateGL()
+	def set_cam_z_from_fov_image(self,fov,image):
+		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
+		self.zwidth = image.get_zsize()
+		self.yheight = image.get_ysize()
+		self.xwidth = image.get_xsize()
+		self.cam.default_z = -self.d
+		self.cam.cam_z = -self.d
 		
+		max = self.zwidth
+		if self.yheight > max: max = self.yheight
+		if self.xwidth > max: mas = self.xwidth
+		self.startz = self.d - 2.0*max
+		self.endz = self.d + 2.0*max
 	def set_camera_defaults(self,data):
-		self.cam.default_z = -1.25*data.get_xsize()
-		self.cam.cam_z = -1.25*data.get_xsize()
-	
-	def set_data(self,data):
-		self.target().set_data(data)
-		self.set_camera_defaults()
-	
-	def show_inspector(self,force=0):
-		self.target().show_inspector()
-
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		return [width,height]		
-		
-class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
-	
-	def get_qt_widget(self):
-		if self.qt_context_parent == None:	
-			from emimageutil import EMParentWin
-			self.under_qt_control = True
-			self.gl_context_parent = EMImage3DWidget(self)
-			if self.noparent :
-				self.qt_context_parent = self.gl_context_parent
-			else :
-				self.qt_context_parent = EMParentWin(self.gl_context_parent)
-				self.gl_widget = self.gl_context_parent
-				self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
-			
-			for i in self.viewables:
-				i.set_qt_context_parent(self.qt_context_parent)
-				i.set_gl_context_parent(self.gl_context_parent)
-				i.set_gl_widget(self.gl_context_parent)
-				i.under_qt_control = True
-				
-			if isinstance(self.data,EMData):
-				self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
-			
-		
-		return self.qt_context_parent
-	
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		self.under_qt_control = False
-		ret = EMImage3DGUIModule.get_gl_widget(self,qt_context_parent,gl_context_parent)
-		self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
-		self.__set_module_contexts()
-		return ret
-	
-	def get_desktop_hint(self):
-		return "image"
-	
-	allim=WeakKeyDictionary()
-	def __init__(self, image=None,application=None,winid=None,noparent=False):
-		self.noparent=noparent
-		self.viewables = []
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True,winid=winid)
-		EMLightsDrawer.__init__(self)
-		EMImage3DModule.allim[self] = 0
-		self.currentselection = -1
-		self.inspector = None
-		#self.isosurface = EMIsosurfaceModule(image,self)
-		#self.volume = EMVolumeModule(image,self)
-		self.viewables = []
-		self.num_iso = 0
-		self.num_vol = 0
-		self.num_sli = 0
-		self.num_sym = 0
-		self.suppress_inspector = False 	
-		self.cam = Camera2(self)
-		self.vdtools = EMViewportDepthTools(self)
-		
-		if image != None: self.set_data(image)
-			
-		self.em_qt_inspector_widget = None
-		
-		self.last_window_width = -1 # used for automatic resizing from the desktop
-		self.last_window_height = -1 # used for automatic resizing from the desktop
-		
-		self.file_name = None
-		
-		self.emit_events = False
-		
-		self.perspective = False
-		
-	def __del__(self):
-		if self.under_qt_control and not self.dont_delete_parent:
-			self.qt_context_parent.deleteLater()
-		self.core_object.deleteLater()
-	
-	
-	def enable_emit_events(self,val=True):
-		for v in self.viewables: v.enable_emit_events(val)
-		self.emit_events = val
-		self.cam.enable_emit_events(val)
-		
-	def is_emitting(self): return self.emit_events
-	
-	def get_emit_signals_and_connections(self):
-		ret = {}
-		for v in self.viewables: ret.update(v.get_emit_signals_and_connections())
-		ret.update(self.cam.get_emit_signals_and_connections())
-		ret.update({"set_perspective":self.set_perspective})
-		
-		return ret
-		
-	def set_file_name(self,name):
-		self.file_name = name
-		if self.qt_context_parent != None:
-			self.qt_context_parent.setWindowTitle(remove_directories_from_name(self.file_name))
-	
-	def width(self):
-		try: return self.gl_widget.width()
-		except: return 0
-		
-	def height(self):
-		try: return self.gl_widget.height()
-		except: return 0
-	
-	#def updateGL(self):
-		#from emfloatingwidgets import EM3DGLWindow
-		#if self.gl_widget != None and not isinstance(self.gl_widget,EM3DGLWindow):
-			#self.gl_widget.updateGL()
-	
-	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
-	
-	def initializeGL(self):
-		glEnable(GL_NORMALIZE)
-	
-	def render(self):
-		try: 
-			self.image_change_count = self.data["changecount"] # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
-		except:
-			try: self.image_change_count = self.data[0]["changecount"]
-			except: pass
-			
-		glPushMatrix()
-		self.cam.position(True)
-		# the ones are dummy variables atm... they don't do anything
-		self.vdtools.update(1,1)
-		glPopMatrix()
-		
-		dz = None
-		if not self.perspective:
-			glMatrixMode(GL_PROJECTION)
-			glPushMatrix() 
-			self.gl_context_parent.load_orthographic()
-			glMatrixMode(GL_MODELVIEW)
-		
-		glPushMatrix()
-		self.cam.position()
-		
-		for i in self.viewables:
-			glPushMatrix()
-			i.render()
-			glPopMatrix()
-		glPopMatrix()
-		
-		
-		glPushMatrix()
-		self.cam.translate_only()
-		EMLightsDrawer.draw(self)
-		glPopMatrix()
-		
-		if not self.perspective:
-			glMatrixMode(GL_PROJECTION)
-			glPopMatrix()
-			glMatrixMode(GL_MODELVIEW)
-		
-	def resizeEvent(self, width, height):
-		for i in self.viewables:
-			i.resizeEvent()
-	
-	def get_data_dims(self):
-		if self.data != None:
-			return [self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()]
-		else: return [0,0,0]
-
+		if data:
+			self.cam.default_z = -1.25*data.get_xsize()
+			self.cam.cam_z = -1.25*data.get_xsize()
 	def set_data(self,data,file_name="",replace=True):
 		self.file_name = file_name # fixme fix this later
-		if self.qt_context_parent != None:
-			self.qt_context_parent.setWindowTitle(remove_directories_from_name(self.file_name))
+		if self.qt_parent != None:
+			self.qt_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 
-		if data == None: return
+		if data == None: 
+			self.set_camera_defaults(data)
+			return
 		
 		if data.get_zsize() == 1:
 			new_data = EMData(data.get_xsize(),data.get_ysize(),2)
@@ -571,180 +511,47 @@ class EMImage3DModule(EMLightsDrawer,EMImage3DGUIModule):
 		#for i in self.viewables:
 			#i.set_data(data)
 		
-		if isinstance(self.gl_context_parent,EMImage3DWidget):
-			self.resizeEvent(self.gl_context_parent.width(),self.gl_context_parent.height())
-			self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
+		if isinstance(self,EMImage3DWidget):
+			self.resize(self.width(),self.height())
+			self.set_cam_z_from_fov_image(self.get_fov(),self.data)
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
 		
 		if replace:
 			self.inspector.delete_all()
-		self.inspector.add_isosurface()
-	
-	def get_inspector(self):
-		if not self.inspector :  self.inspector=EMImageInspector3D(self)
-		return self.inspector
-
-	def set_cam_z(self,z):
-		self.cam.set_cam_z( z )
-		self.updateGL()
+#		self.inspector.add_isosurface()
 		
-	def set_cam_y(self,y):
-		self.cam.set_cam_y( y )
-		self.updateGL()
-		
-	def set_cam_x(self,x):
-		self.cam.set_cam_x( x )
-		self.updateGL()
-	
-	def set_scale(self,val):
-		self.cam.scale = val
-		self.updateGL()
-
-	def get_render_dims_at_depth(self, depth):
-		return self.gl_context_parent.get_render_dims_at_depth(depth)
-
-	def get_sundry_inspector(self):
-		return self.viewables[self.currentselection].get_inspector()
-	
-	def add_sym(self):
-		# the difference between the EMEulerExplorer and the EM3DSymViewerModule
-		# is only that the EMEulerExplorer will look in the current directory for refinement directories and
-		# display related information. Simply change from one to the other if you don't like it
-		module = EMEulerExplorer(None,True,False)
-		#module = EM3DSymViewerModule(None,True,False)
-		module.set_radius(self.radius)
-		self.num_sym += 1
-		self.__add_module(module,self.num_sym)
-	
-	def add_isosurface(self):
-		module = EMIsosurfaceModule(self.data,None,False,False)
-		self.num_iso += 1
-		self.__add_module(module,self.num_iso)
-		
-	def add_volume(self):
-		module = EMVolumeModule(self.data,None,False,False)
-		self.num_vol += 1
-		self.__add_module(module,self.num_vol)
-	
-	def add_slice_viewer(self):
-		module = EM3DSliceViewerModule(self.data,None,False,False)
-		self.num_sli += 1
-		self.__add_module(module,self.num_sli)
-	
-	def __add_module(self,module,num=0):
-		
-		module.set_qt_context_parent(self.qt_context_parent)
-		module.set_gl_context_parent(self.gl_context_parent)
-		
-		module.set_gl_widget(self.gl_context_parent)
-		module.set_dont_delete_parent() # stops a RunTimeError
-		module.under_qt_control = self.under_qt_control
-		
-		self.viewables.append(module)
-		module.set_gl_context_parent(self.gl_context_parent)
-		name = module.get_type()+" " + str(num)
-		self.viewables[len(self.viewables)-1].set_name(name)
-		self.viewables[len(self.viewables)-1].set_rank(len(self.viewables))
-		self.currentselection = len(self.viewables)-1
-		self.updateGL()
-	
-	
-	def __set_module_contexts(self):
-		for v in self.viewables:
-			v.set_qt_context_parent(self.qt_context_parent)
-			v.set_gl_context_parent(self.gl_context_parent)
-			v.set_gl_widget(self.gl_context_parent)
-			#self.application.register_qt_emitter(v,self.application.get_qt_emitter(self))
-	
-	def load_last_viewable_camera(self):
-		return
-		size = len(self.viewables)
-		if ( size <= 1 ): return
-		self.viewables[size-1].set_camera(self.viewables[0].get_current_camera())
-
-	def rowChanged(self,row):
-		if ( row == self.currentselection ): return
-		self.currentselection=row
-		self.updateGL()
-		
-	def get_current_idx(self):
-		return self.currentselection
-		
-	def get_current_name(self):
-		if self.currentselection == -1 : return ""
-		elif self.currentselection >= len(self.viewables):
-			print "error, current selection too large", self.currentselection,len(self.viewables)
-			return ""
-		return self.viewables[self.currentselection].get_name()
-	
-	def get_current_inspector(self):
-		if self.currentselection == -1 : return None
-		elif self.currentselection >= len(self.viewables):
-			print "error, current selection too large", self.currentselection,len(self.viewables)
-			return None
-		return self.viewables[self.currentselection].get_inspector()
-	
-	def delete_current(self, val):
-		if ( len(self.viewables) == 0 ): return
-		
-		v = self.viewables.pop(val)
-		
-		
-		#self.application.deregister_qt_emitter(v)
-		if (len(self.viewables) == 0 ) : 
-			self.currentselection = -1
-		elif ( len(self.viewables) == 1):
-			self.currentselection = 0
-		elif ( val == 0):
-			pass
-		else:
-			self.currentselection = val - 1
-		
-		
-		# Need to set the rank appropriately
-		for i in range(0,len(self.viewables)):
-			self.viewables[i].set_rank(i+1)
-			
-	
-	def resizeEvent(self,width=0,height=0):
-		self.vdtools.set_update_P_inv()
-	
-	def resize_event(self,width,height):
-		if self.last_window_width == -1:
-			self.last_window_width = width
-			self.last_window_height = height
-		else:
-			height_scale = height/float(self.last_window_height)
-			width_scale = width/float(self.last_window_width)
-			
-			if height_scale < width_scale: width_scale = height_scale
-			#print width_scale, "is the factor"
-			self.cam.scale *= width_scale
-			self.last_window_width = width
-			self.lsat_window_height = height
-	
+		self.set_camera_defaults(data)
+	def set_file_name(self,name):
+		self.file_name = name
+		if self.qt_parent != None:
+			self.qt_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 	def set_perspective(self,bool):
 		self.perspective = bool
 		if self.emit_events: self.emit(QtCore.SIGNAL("set_perspective"),bool)
 		self.updateGL()
-		#self.gl_context_parent.set_perspective(bool)
+		#self.set_perspective(bool)
+	def set_scale(self,val):
+		self.cam.scale = val
+		self.updateGL()
 		
-	def load_rotation(self,t3d):
-		self.cam.load_rotation(t3d)
+
+	def viewing_volume(self):
+		'''
+		A useful function for getting the viewing volume as a list - so
+		the calling function can figure out what to draw
+		'''
+		
+		return [-self.xwidth/2.0,-self.yheight/2.0,self.startz, self.xwidth/2.0,self.yheight/2.0,self.endz]
+	def wheelEvent(self, event):
+		for model in self.viewables:
+			try:
+				model.wheelEvent(event)
+			except AttributeError, e:
+				pass
 		self.updateGL()
 
-	def get_current_transform(self):
-		size = len(self.cam.t3d_stack)
-		return self.cam.t3d_stack[size-1]
-	
-	def get_start_z(self):
-		return self.gl_context_parent.get_start_z()
-	
-	def get_near_plane_dims(self):
-		return self.gl_context_parent.get_near_plane_dims()
-	
 class EMImageInspector3D(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
@@ -982,13 +789,20 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 	def ortho_clicked(self):
 		self.target().set_perspective(False)
-		
 
 
+class EMImage3DModule(EMImage3DWidget):
+	def __init__(self, parent=None, image=None,application=None,winid=None):
+		import warnings	
+		warnings.warn("convert EMImage3DModule to EMImage3DWidget", DeprecationWarning)
+		EMImage3DWidget.__init__(self, parent, image, application, winid)
 	
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	window = EMImage3DModule(application=em_app)
+	from emapplication import EMApp
+	import sys
+	em_app = EMApp()
+	window = EMImage3DWidget(application=em_app)
+
 	if len(sys.argv)==1 : 
 		data = []
 		#for i in range(0,200):
@@ -996,9 +810,8 @@ if __name__ == '__main__':
 		window.set_data(e)
 	else :
 		a=EMData(sys.argv[1])
-		window.set_file_name(sys.argv[1])
-		window.set_data(a)
-		
+		window.set_data(a,sys.argv[1])
+	window.get_inspector().add_isosurface()
+
 	em_app.show()
 	em_app.execute()
-

@@ -33,7 +33,6 @@
 from OpenGL import GL,GLUT
 from math import *
 from EMAN2 import get_3d_font_renderer, Util
-import sys
 import warnings
 
 from libpyGLUtils2 import *

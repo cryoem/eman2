@@ -35,11 +35,12 @@ from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 import os
-from emselector import EMSelectorModule
-from emapplication import EMQtWidgetModule,get_application
+from emselector import EMSelectorDialog
+from emapplication import get_application
 from EMAN2 import Util, get_image_directory,file_exists,dump_aligners_list,dump_processors_list
 import EMAN2
 import weakref
+import warnings
 
 class EMButtonDialog:
 	'''
@@ -107,7 +108,6 @@ class EMOrientationDistDialog(EMButtonDialog):
 		from emimage3dsym import EMSymChoiceDialog
 		dialog = EMSymChoiceDialog(symname)
 		result = dialog.exec_()
-		#dialog.closeEvent(None)
 		if result != None:
 			combo = name_map["orientgen"][0] # assume the first entry in the list is the combo
 			s = [combo.itemText(i) for i in range(combo.count())]
@@ -157,7 +157,7 @@ class EMOrientationDistDialog(EMButtonDialog):
 class EMParamTable(list):
 	'''
 	NOTE: THE EMPARAMTABLE BECAME DEPRECATED IN FAVOR OF THE EMFILETABLE around May 2009. However, this class is still used in remote cases that need to be cleaned up
-	This object is constructed as a table in the EMFormModule
+	This object is constructed as a table in the EMFormWidget
 	This object list of ParamDef objects : each of these ParamDef objects are generally a list-type of some sort, such
 	as intlist, floatlist, stringlist etc. They should all be the same length, but this is not tested - to do so would 
 	require the list.append function to be redefined
@@ -166,7 +166,7 @@ class EMParamTable(list):
 	def __init__(self,name=None,desc_short=None,desc_long=""):
 		'''
 		@param name the all important name of the parameter supplied by this object, becomes a key in a dictionary.
-		@param desc_short a concise (short) descriptive title. Will become a general title for the associated table in EMFormModule
+		@param desc_short a concise (short) descriptive title. Will become a general title for the associated table in EMFormWidget
 		@param desc_long will be used as a tool tip. Text that is helpful but not too long
 		'''
 		list.__init__(self)
@@ -174,7 +174,7 @@ class EMParamTable(list):
 		self.name = name #
 		self.desc_short = desc_short # Will become a general title for the associated table
 		self.desc_long = desc_long # For the tool tip
-		self.enable_multiple_selection = True # use by EMFormModule when it creates the associated table - the user can select more than one entry if this is true
+		self.enable_multiple_selection = True # use by EMFormWidget when it creates the associated table - the user can select more than one entry if this is true
 		
 	def custom_addition(self,layout,table_widget):
 		'''
@@ -187,7 +187,7 @@ class EMParamTable(list):
 	
 	def add_optional_table_attr(self,table_widget):
 		'''
-		Called by the EMFormModule to add extra attributes to the the table widget, and this is used
+		Called by the EMFormWidget to add extra attributes to the the table widget, and this is used
 		as the basis for creating context menus (context_menu attribute, which is a dictionary), and for
 		converting the name in the table to the absolute file system path (convert_text attribute,
 		which is a function)
@@ -259,7 +259,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.default_selections = [] # Default selected names in first column
 		self.desc_short = desc_short
 		self.desc_long = desc_long
-		self.vartype = "file_table" # This is used by the EMFormModule to insert this object correctly into a widget
+		self.vartype = "file_table" # This is used by the EMFormWidget to insert this object correctly into a widget
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
 		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
@@ -654,8 +654,8 @@ class EM2DFileTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMModuleFromFile
-			self.display_module = EMModuleFromFile(filename,get_application())
+			from emimage import EMWidgetFromFile
+			self.display_module = EMWidgetFromFile(filename,get_application())
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
@@ -745,8 +745,8 @@ class EM2DStackTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMModuleFromFile
-			self.display_module = EMModuleFromFile(filename,get_application())
+			from emimage import EMWidgetFromFile
+			self.display_module = EMWidgetFromFile(filename,get_application())
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
@@ -784,8 +784,8 @@ class EMPlotTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMModuleFromFile
-			self.display_module = EMModuleFromFile(filename,get_application())
+			from emimage import EMWidgetFromFile
+			self.display_module = EMWidgetFromFile(filename,get_application())
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
@@ -841,8 +841,8 @@ class EM2DStackExamineTable(EM2DStackTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimagemx import EMImageMXModule
-			self.display_module = EMImageMXModule(None,get_application())
+			from emimagemx import EMImageMXWidget
+			self.display_module = EMImageMXWidget(None,get_application())
 			from emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		
@@ -870,23 +870,23 @@ class EMBrowseEventHandler:
 	intercept the "ok" and "cancel" signals.... instead just use exec_ ... 
 	'''
 	def __init__(self,browse_button):
+		warnings.warn(EMBrowseEventHandler.__init__(), DeprecationWarning)
 		self.browser = None
 		self.browser_title = "Set this to be clear"
 		QtCore.QObject.connect(browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
-			self.browser = EMSelectorModule(False,False)
-			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
+			self.browser = EMSelectorDialog(False, False)
+			self.browser.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
-			get_application().show_specific(self.browser)
-			QtCore.QObject.connect(self.browser.emitter(),QtCore.SIGNAL("ok"),self.on_browser_ok)
-			QtCore.QObject.connect(self.browser.emitter(),QtCore.SIGNAL("cancel"),self.on_browser_cancel)
+			self.browser.exec_()
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
 		else:
-			get_application().show_specific(self.browser)
+			self.browser.exec_()
 
 	def on_browser_cancel(self):
-		get_application().close_specific(self.browser)
 		self.browser = None
 
 	def on_browser_ok(self,string_list):
@@ -1056,33 +1056,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		
 		dict[self.name] = result
-	
-		
-class EMFormModule(EMQtWidgetModule):
-	'''
-	params should be a list of ParamDef objects
-	application should be an EMAN2 type application
-	After initializing this object you should probably call application.show(this)
-	or application.show_specific(this), depending on what you're doing
-	'''
-	def __init__(self,params,application):
-		self.application = weakref.ref(application)
-		EMQtWidgetModule.__init__(self, EMFormWidget(self,params))
-		#self.test_ref = weakref.ref(self.qt_widget)
-		
-#	def __del__(self):
-#		self.qt_widget.deleteLater()
-#		print "form module death"
-#		import sys
-#		self.test_ref().destroy()
-#		print "form module death", sys.getrefcount(self.test_ref()),self.test_ref(),self.test_ref
-		
-		
-	def get_desktop_hint(self):
-		return "form"
-	
-	#def __del__(self):
-		#EMQtWidgetModule.__del__(self)
+
 
 class EMFormWidget(QtGui.QWidget):
 	'''
@@ -1090,9 +1064,9 @@ class EMFormWidget(QtGui.QWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
 	'''
-	def __init__(self,parent,params=None,disable_ok_cancel=False):
+	def __init__(self,params=None,disable_ok_cancel=False):
 		QtGui.QWidget.__init__(self,None)
-		self.parent = weakref.ref(parent)
+#		self.parent = weakref.ref(parent) #From when its parent was an EMQtWidgetModule -- line of code should be removed after debugging
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.resize_event_handlers = [] # used to keep resize event handlers in memory
@@ -1122,11 +1096,12 @@ class EMFormWidget(QtGui.QWidget):
 		self.incorporate_params(self.params,vbl)
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
 		self.setLayout(vbl)
-#		
-	def __del__(self):
-		# this stops the QOBject : do not delete message
+		
+		get_application().attach_child(self)
 
-		self.deleteLater()
+#	def __del__(self):
+#		# this stops the QOBject : do not delete message
+#		self.deleteLater()
 		
 	def __init_icons(self):
 		self.emdata_icon = QtGui.QIcon(get_image_directory() + "/single_image.png")
@@ -1326,29 +1301,19 @@ class EMFormWidget(QtGui.QWidget):
 	def ok_pressed(self,bool):
 		ret = {}
 		for output in self.output_writers: output.write_data(ret)
-		self.parent().emit(QtCore.SIGNAL("emform_ok"),ret) # getting the parent to emit ensures integration with the desktop
+		self.emit(QtCore.SIGNAL("emform_ok"),ret)
 		
 	def cancel_pressed(self,bool):
-		self.parent().emit(QtCore.SIGNAL("emform_cancel")) # getting the parent to emit ensures integration with the desktop
+		self.emit(QtCore.SIGNAL("emform_cancel"))
 
 
 	def update_texture(self):
-		self.parent().force_texture_update()
-#		
-#	def closeEvent(self,event):
-#		if self.parent() != None:
-#			self.parent().emit(QtCore.SIGNAL("emform_close"))
-#			self.parent().closeEvent(event)
-#		
-#		event.accept()
-#		
-#	def resizeEvent(self,event):
-#		return
-#		for event_handler in self.resize_event_handlers:
-#			event_handler.resizeEvent(event)
-#
+#		self.parent().force_texture_update() #Called a function from EMQtWidgetModule... line of code should be removed after debugging
+		pass
+
+
 	def display_file(self,filename):
-		self.parent().emit(QtCore.SIGNAL("display_file"),filename)
+		self.emit(QtCore.SIGNAL("display_file"),filename)
 
 
 class IncorpStrategy:
@@ -1610,7 +1575,7 @@ class IncorpUrl:
 		
 		layout.addWidget(groupbox,0)
 		
-		target.event_handlers.append(UrlEventHandler(target,text_edit,browse_button,clear_button,target.parent().application(),param.desc_short))
+		target.event_handlers.append(UrlEventHandler(target,text_edit,browse_button,clear_button,get_application(),param.desc_short))
 		target.output_writers.append(UrlParamWriter(param.name,text_edit))
 		target.name_widget_map[param.name] = groupbox
 
@@ -1891,7 +1856,7 @@ class EMParamTableEventHandler:
 	def table_item_clicked(self,item):
 		#
 		pass
-	def resizeEvent(self,event):
+	def resize(self):
 		return
 		cols = self.table_widget.columnCount()
 		cumulative_width = 0
@@ -1991,18 +1956,6 @@ class BoolDependentsEventHandler:
 				for widget in widgets: widget.setEnabled(enabled)
 			else: widgets.setEnabled(enabled)
 		
-
-class EMTableFormModule(EMQtWidgetModule):
-	def __init__(self,params,application):
-		self.application = weakref.ref(application)
-		EMQtWidgetModule.__init__(self,EMTableFormWidget(self,params))
-		
-	def get_desktop_hint(self):
-		return "form"
-	
-#	def __del__(self):
-#		print "table form module death"
-		
 		
 class EMTableFormWidget(EMFormWidget):
 	'''
@@ -2010,8 +1963,8 @@ class EMTableFormWidget(EMFormWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
 	'''
-	def __init__(self,parent,params=None):
-		EMFormWidget.__init__(self,parent,params)
+	def __init__(self,params=None):
+		EMFormWidget.__init__(self,params)
 	
 #	def __del__(self): print "del table form widget"
 		
@@ -2141,24 +2094,18 @@ def on_cancel():
 # This is just for testing, of course
 if __name__ == '__main__':
 	
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EMFormModule(params=get_example_form_params(),application=em_app)
+	from emapplication import EMApp
+	em_app = EMApp()
+	window = EMFormWidget(params=get_example_form_params())
 	window.setWindowTitle("A test form")
-	QtCore.QObject.connect(window.emitter(),QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window.emitter(),QtCore.SIGNAL("emform_cancel"),on_cancel)
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
-	window2= EMTableFormModule(params=get_example_table_form_params(),application=em_app)
+	window2= EMTableFormWidget(params=get_example_table_form_params())
 	window2.setWindowTitle("A test form")
-	QtCore.QObject.connect(window2.emitter(),QtCore.SIGNAL("emform_ok"),on_ok)
-	QtCore.QObject.connect(window2.emitter(),QtCore.SIGNAL("emform_cancel"),on_cancel)
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_ok"),on_ok)
+	QtCore.QObject.connect(window2,QtCore.SIGNAL("emform_cancel"),on_cancel)
 	
-#	
-#	import sys
-#	tt = TestWidget()
-#	#test = TestWidgetModule()
-#	tt.show()
-#	#print sys.getrefcount(tt)
 	em_app.show()
 	em_app.execute()
 	

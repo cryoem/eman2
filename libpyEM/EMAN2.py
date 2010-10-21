@@ -521,7 +521,7 @@ def display(img,force_2d=False,force_plot=False):
 	if GUIMode:
 		import emimage
 		if isinstance(img,tuple) : img=list(img)
-		image = emimage.EMImageModule(img,None,app,force_2d,force_plot)
+		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		app.show_specific(image)
 		try: image.optimally_resize()
 		except: pass
@@ -542,7 +542,6 @@ def display(img,force_2d=False,force_plot=False):
 def euler_display(emdata_list):
 	if len(emdata_list) == 0: return
 	if GUIMode:
-		#from emimage3dsym import EM3DSymViewerModule
 		from e2eulerxplor import EMEulerExplorer
 		module = EMEulerExplorer(auto=False,sparse_mode=True)
 		if isinstance(emdata_list[0],EMData): module.set_emdata_list_as_data(emdata_list)
@@ -555,9 +554,10 @@ def euler_display(emdata_list):
 
 def browse():
 	if GUIMode:
-		from emselector import EMBrowserModule
-		dialog = EMBrowserModule()
-		app.show_specific(dialog)
+		from emselector import EMBrowser
+		browser = EMBrowser()
+		app.attach_child(browser)
+		app.show_specific(browser)
 	else:
 		os.system("e2display.py")
 		
@@ -569,11 +569,11 @@ class EMImage(object):
 		a new instance."""
 		if GUIMode:	
 			import emimage
-			image = emimage.EMImageModule(data,old,app)
+			image = emimage.EMImageWidget(data,old,app)
 			app.show_specific(image)
 			try: image.optimally_resize()
 			except: pass
-			return image.get_qt_widget()
+			return image
 		else: print "can not instantiate EMImage in non gui mode"
 
 def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
@@ -596,10 +596,10 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 def plot(data,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	if GUIMode:
-		from emplot2d import EMPlot2DModule
-		plotw=EMPlot2DModule(application=app)
+		from emplot2d import EMPlot2DWidget
+		plotw=EMPlot2DWidget(application=app)
 		plotw.set_data(data,"interactive")
-		plotw.get_qt_widget().setWindowTitle("2D Plot")
+		plotw.setWindowTitle("2D Plot")
 		app.show_specific(plotw)
 		return plotw
 	else :

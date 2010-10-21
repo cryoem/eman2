@@ -11,9 +11,9 @@ import os
 
 try:
     from PyQt4 import QtGui, QtCore
-    from emapplication import EMStandAloneApplication, get_application
-    from emimage2d import EMImage2DModule
-    from emselector import EMSelectorModule
+    from emapplication import EMApp, get_application
+    from emimage2d import EMImage2DWidget
+    from emselector import EMSelectorDialog
     from emshape import EMShape, EMShapeDict
     
     ENABLE_GUI = True
@@ -84,7 +84,7 @@ def main():
     if options.gui:
         if ENABLE_GUI:
             logid=E2init(sys.argv)
-            app = EMStandAloneApplication()
+            app = EMApp()
             helixboxer = EMHelixBoxerWidget(args, app, options.helix_width)
             helixboxer.show()
             app.execute()
@@ -674,7 +674,7 @@ if ENABLE_GUI:
                 self.helices_images_line_edit.setText(file_path)
     
     # EMSelector isn't working well: it sets the filename to the innermost directory and the file filter doesn't work        
-    #        selector = EMSelectorModule(single_selection=True,save_as_mode=False)
+    #        selector = EMSelectorDialog(single_selection=True,save_as_mode=False)
     #        path = selector.exec_()
     #        if path:
     #            path = os.path.dirname(path)
@@ -698,7 +698,7 @@ if ENABLE_GUI:
                 file_path = str(file_path)
                 self.ptcls_images_line_edit.setText(file_path)
     # EMSelector isn't working well: it sets the filename to the innermost directory and the file filter doesn't work
-    #        selector = EMSelectorModule(single_selection=True,save_as_mode=False)
+    #        selector = EMSelectorDialog(single_selection=True,save_as_mode=False)
     #        path = selector.exec_()
     #        if path:
     #            if os.path.isdir(path):
@@ -767,8 +767,8 @@ if ENABLE_GUI:
             self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
             self.setWindowTitle("e2helixboxer")
             
-            self.main_image = None #Will be an EMImage2DModule instance
-            self.helix_viewer = None #Will be an EMImage2DModule instance
+            self.main_image = None #Will be an EMImage2DWidget instance
+            self.helix_viewer = None #Will be an EMImage2DWidget instance
             self.write_helix_files_dlg = None
             
             self.color = (0, 0, 1)
@@ -869,17 +869,17 @@ if ENABLE_GUI:
             self.main_image.updateGL()
         def display_helix(self, helix_emdata):
             """
-            launches or updates an EMImage2DModule to display helix_emdata
+            launches or updates an EMImage2DWidget to display helix_emdata
             @helix_emdata: an EMData object that stores the image data for a helix
             """
             self.color_boxes()
             if not self.helix_viewer:
-                self.helix_viewer = EMImage2DModule(application=get_application())
+                self.helix_viewer = EMImage2DWidget(application=get_application())
                 self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
                 self.helix_viewer.setWindowTitle("Current Boxed helix")
-                self.helix_viewer.get_qt_widget().resize(300,800)
+                self.helix_viewer.resize(300,800)
                 self.helix_viewer.set_scale(1)
-            QtCore.QObject.connect(self.helix_viewer.emitter(), QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
+            QtCore.QObject.connect(self.helix_viewer, QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
             self.helix_viewer.set_data(helix_emdata)
             get_application().show_specific(self.helix_viewer)
             self.helix_viewer.updateGL()
@@ -947,7 +947,7 @@ if ENABLE_GUI:
         def load_micrograph(self, micrograph_emdata):
             """
             This displays a micrograph in self.main_image, resetting member variables that refer to other micrographs.
-            If self.main_image == None, a new EMImage2DModule is instatiated.
+            If self.main_image == None, a new EMImage2DWidget is instatiated.
             @micrograph_emdata: the EMData object that holds the micrograph to display
             """
             self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
@@ -956,11 +956,11 @@ if ENABLE_GUI:
             self.click_loc = None #Will be (x,y) tuple
             
             if not self.main_image:
-                self.main_image = EMImage2DModule(application=self.app)
-                QtCore.QObject.connect(self.main_image.emitter(),QtCore.SIGNAL("module_closed"), self.main_image_closed)
-                QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedown"), self.mouse_down)
-                QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mousedrag"), self.mouse_drag)
-                QtCore.QObject.connect( self.main_image.emitter(), QtCore.SIGNAL("mouseup"), self.mouse_up)
+                self.main_image = EMImage2DWidget(application=self.app)
+                QtCore.QObject.connect(self.main_image,QtCore.SIGNAL("module_closed"), self.main_image_closed)
+                QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mousedown"), self.mouse_down)
+                QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mousedrag"), self.mouse_drag)
+                QtCore.QObject.connect( self.main_image, QtCore.SIGNAL("mouseup"), self.mouse_up)
             self.main_image.set_data( micrograph_emdata, self.micrograph_filepath )
             self.main_image.shapes = EMShapeDict()
             self.main_image.shapechange=1
@@ -1000,7 +1000,7 @@ if ENABLE_GUI:
             This should execute when self.main_image is closed.
             """
             if self.helix_viewer:
-                self.helix_viewer.closeEvent(None)
+                self.helix_viewer.close()
             self.main_image = None
         def micrograph_table_selection(self, row, column):
             """
@@ -1018,7 +1018,7 @@ if ENABLE_GUI:
             """
             loads a file browser to select a micrograph or multiple microgrpahs to add to the micrograph table
             """
-            selector = EMSelectorModule(single_selection=False,save_as_mode=False)
+            selector = EMSelectorDialog(single_selection=False,save_as_mode=False)
             new_micrographs = selector.exec_()
             if isinstance(new_micrographs, str): #Just one file was selected
                 if sys.version_info >= (2, 6):

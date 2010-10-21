@@ -228,10 +228,10 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		
 		self.validator = EMSaveImageValidator([item])
 		self.__item = item
-		from emselector import EMSelectorModule
-		em_qt_widget = EMSelectorModule(True,True)
-		em_qt_widget.widget.set_validator(self.validator)
-		file = em_qt_widget.exec_()
+		from emselector import EMSelectorDialog
+		selector = EMSelectorDialog(True,True)
+		selector.set_validator(self.validator)
+		file = selector.exec_()
 		if file != "":
 			self.__save_file(file)
 
@@ -395,11 +395,11 @@ class EMStackSaveDialog(EMFileSaver):
 			raise RuntimeError("item_list must be a list of EMData instances, a list of ListWidgetItems, or an EMDataListCache")
 
 		self.__item_list = item_list
-		from emselector import EMSelectorModule
-		em_qt_widget = EMSelectorModule(True,True)
+		from emselector import EMSelectorDialog
+		selector = EMSelectorDialog(True,True)
 		self.validator = EMSaveImageValidator(item_list)
-		em_qt_widget.widget.set_validator(self.validator)
-		file = em_qt_widget.exec_()
+		selector.set_validator(self.validator)
+		file = selector.exec_()
 		if file != "":
 			self.__save_file(str(file))
 

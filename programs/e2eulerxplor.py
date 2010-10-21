@@ -31,27 +31,22 @@
 #
 #
 
-from emapplication import EMStandAloneApplication
-from emimage3dsym import EM3DSymViewerModule,EMSymInspector
-from emglobjects import EMImage3DGUIModule
-from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt
+from EMAN2 import *
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import weakref
-from optparse import OptionParser
-from EMAN2 import *
-from emapplication import get_application
-from emimagemx import EMImageMXModule
+from PyQt4 import QtGui,QtCore
+from PyQt4.QtCore import Qt
+from emanimationutil import OrientationListAnimation,Animator
+from emapplication import EMApp, get_application
 from emimage2d import EMImage2DModule
+from emimage3dsym import EM3DSymModel, EMSymInspector, EMSymViewerWidget
+from emimagemx import EMImageMXWidget, EMLightWeightParticleCache
+from emsprworkflow import error
+from optparse import OptionParser
 import os
 import sys
-from libpyGLUtils2 import GLUtil
-from emsprworkflow import error
-from emanimationutil import OrientationListAnimation,Animator
-from emimagemx import EMLightWeightParticleCache
-from time import time
+import weakref
 
 def get_eulers_from(filename):
 	eulers = []
@@ -91,135 +86,57 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
-	em_app = EMStandAloneApplication()
-	window = EMEulerExplorer(application=em_app)
+	em_app = EMApp()
+	euler_explorer = EMEulerExplorer(application=em_app)
+	window = EMSymViewerWidget(euler_explorer)
+	#TODO: reconsider design so these lines aren't necessary
+	euler_explorer.under_qt_control = True
+	euler_explorer.set_gl_widget(window)
+	euler_explorer.set_gl_context_parent(window)
 
 	em_app.show()
 	em_app.execute()
 	
 	E2end(logid)
 
-class InputEventsHandler:
-	'''
-	Perhaps the final installation in terms of what I think is the best design for the mouse events
-	handling class. Others exist in emimage2d, emimagemx, and e2boxer. Eventually they should all use the same approach, and 
-	I vote for using this one
-	'''
-	def __init__(self,parent=None):
-		if parent != None:
-			self.parent = weakref.ref(parent)
+	
+class EMEulerExplorer(EM3DSymModel,Animator):
+	
+	def mousePressEvent(self,event):
+		if self.events_mode == "inspect":
+			self.current_hit = self.get_hit(event)
+			if self.current_hit == None: 
+				EM3DSymModel.mousePressEvent(self,event)
 		else:
-			self.parent = None
-		
-	def mousePressEvent(self,event):
-		pass
+			EM3DSymModel.mousePressEvent(self,event)
 	
 	def mouseReleaseEvent(self,event):
-		pass
-	
-	def mouseMoveEvent(self,event):
-		pass
-	
-	def mouseDoubleClickEvent(self,event):
-		pass
-	
-	def keyPressEvent(self,event):
-		pass
-
-	def wheelEvent(self,event):
-		pass
-	
-class InputEventsManager(InputEventsHandler):
-	def __init__(self):
-		InputEventsHandler.__init__(self)
-		self.current_events_handler = None
-		
-	def mousePressEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.mousePressEvent(event)
-	
-	def mouseReleaseEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.mouseReleaseEvent(event)
-	
-	def mouseMoveEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.mouseMoveEvent(event)
-	
-	def mouseDoubleClickEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.mouseDoubleClickEvent(event)
-	
-	def keyPressEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.keyPressEvent(event)
-	
-	def wheelEvent(self,event):
-		if self.current_events_handler != None:
-			self.current_events_handler.wheelEvent(event)
-
-
-class NavigationEvents(InputEventsHandler):
-	def __init__(self,parent):
-		InputEventsHandler.__init__(self,parent)
-		
-	def mousePressEvent(self,event):
-		EMImage3DGUIModule.mousePressEvent(self.parent(),event)
-	
-	def mouseReleaseEvent(self,event):
-		EMImage3DGUIModule.mouseReleaseEvent(self.parent(),event)
-	
-	def mouseMoveEvent(self,event):
-		EMImage3DGUIModule.mouseMoveEvent(self.parent(),event)
-	
-	def mouseDoubleClickEvent(self,event):
-		EMImage3DGUIModule.mouseDoubleClickEvent(self.parent(),event)
-	
-	def keyPressEvent(self,event):
-		EMImage3DGUIModule.keyPressEvent(self.parent(),event)
-		
-	def wheelEvent(self,event):
-		EMImage3DGUIModule.wheelEvent(self.parent(),event)
-		
-
-
-class ClassOrientationEvents(InputEventsHandler,QtCore.QObject): 
-	def __init__(self,parent):
-		InputEventsHandler.__init__(self,parent)
-		QtCore.QObject.__init__(self)
-#		self.old_intersection = -1
-#		self.old_color = None
-#		self.nc = None
-#		self.intsct = None
-		self.current_hit = None
-		
-	def mousePressEvent(self,event):
-		self.current_hit = self.get_hit(event)
-		if self.current_hit == None: EMImage3DGUIModule.mousePressEvent(self.parent(),event)
-	
-	def mouseReleaseEvent(self,event):
-		
-		if self.current_hit != None:
-			self.parent().updateGL() # there needs to be a clear or something  in order for the picking to work. This is  bit of hack but our rendering function doesn't take long anyhow
-			hit = self.get_hit(event)
-			if hit == self.current_hit:
-				self.emit(QtCore.SIGNAL("point_selected"),self.current_hit,event)
+		if self.events_mode == "inspect":
+			if self.current_hit != None:
+				self.updateGL() # there needs to be a clear or something  in order for the picking to work. This is  bit of hack but our rendering function doesn't take long anyhow
+				hit = self.get_hit(event)
+				if hit == self.current_hit:
+					self.emit(QtCore.SIGNAL("point_selected"),self.current_hit,event)
+			else:
+				EM3DSymModel.mouseReleaseEvent(self,event)
+					
+			self.current_hit = None
 		else:
-			EMImage3DGUIModule.mouseReleaseEvent(self.parent(),event)
-				
-		self.current_hit = None
+			EM3DSymModel.mouseReleaseEvent(self, event)
 		
 	def mouseMoveEvent(self,event):
-		if not self.current_hit:
-			EMImage3DGUIModule.mouseMoveEvent(self.parent(),event)
+		if self.events_mode == "inspect" and self.current_hit:
+			pass
+		else:
+			EM3DSymModel.mouseMoveEvent(self,event)
 		
 	def get_hit(self,event):
-		v = self.parent().vdtools.wview.tolist()
-		self.parent().gl_widget.makeCurrent() # prevents a stack underflow
+		v = self.vdtools.wview.tolist()
+		self.gl_widget.makeCurrent() # prevents a stack underflow
 #		x = event.x()
 #		y = v[-1]-event.y()
 #		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
-#		vals = self.parent().render(color_picking=True)
+#		vals = self.render(color_picking=True)
 #		glFlush()
 #		vv = glReadPixels(x,y,1,1,GL_RGB,GL_FLOAT)
 #		reslt = Vec3f(float(vv[0][0][0]),float(vv[0][0][1]),float(vv[0][0][2]))
@@ -240,10 +157,10 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 		glPushMatrix()
 		glLoadIdentity()
 		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
-		self.parent().gl_context_parent.load_perspective()
+		self.gl_context_parent.load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()
-		self.parent().render()
+		self.render()
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
@@ -258,17 +175,9 @@ class ClassOrientationEvents(InputEventsHandler,QtCore.QObject):
 				break
 			
 		return intersection
+
 	
-	def mouseDoubleClickEvent(self,event):
-		EMImage3DGUIModule.mouseDoubleClickEvent(self.parent(),event)
 	
-	def keyPressEvent(self,event):
-		EMImage3DGUIModule.keyPressEvent(self.parent(),event)
-		
-	def wheelEvent(self,event):
-		EMImage3DGUIModule.wheelEvent(self.parent(),event)
-	
-class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
 		
@@ -280,23 +189,26 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			self.generate_current_display_list(True)
 			self.updateGL()
 		else:
-			EMImage3DGUIModule.keyPressEvent(self,event)
+			EM3DSymModel.keyPressEvent(self,event)
 	
 	def __init__(self,application=None,ensure_gl_context=True,application_control=True,auto=True,sparse_mode=False):
+		self.current_hit = None
+		self.events_mode_list = ["navigate", "inspect"]
+		self.events_mode = self.events_mode_list[0]
+		
+		
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
 		
-		EM3DSymViewerModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
-		InputEventsManager.__init__(self)
+		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		Animator.__init__(self)
-		self.height_scale = 8.0 # This is a value used in EM3DSymViewerModule which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
-		self.__init_events_handlers() # Makes a dictionary of event handlers
+		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
 		self.projection_file = None  # This is a string - the name of the projection images file
 		self.average_file = None # This is a string - the name of the class averages file
-		self.proj_class_viewer = None # This will be an EMImageMXModule that shows the class and/or projection
-		self.particle_viewer = None  # This will be an EMImageMXModule that shows the particles in a class
+		self.proj_class_viewer = None # This will be an EMImageMXWidget that shows the class and/or projection
+		self.particle_viewer = None  # This will be an EMImageMXWidget that shows the particles in a class
 		self.clsdb = None # I think this will become redundant - it used to be the old database that stores which particles are in a class, but now that's stored in the header
 		self.particle_file = None # This will be a string - the name of the file that has the particle files in it. This might be made redundant with the new approach
 		self.alignment_file = None # This will be a string - the name of the file containing the alignment parameters - this is essential if you we want to show the aligned particles
@@ -315,7 +227,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.previous_len = -1 # To keep track of the number of class averages that were previously viewable. This helps to make sure we can switch to the same class average in the context of a different refinement iteration
 		self.mirror_eulers = False
 		if sparse_mode:
-			self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
+			self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymModel.make_sym_dl_lis
 				
 		# Grab the symmetry from the workflow database if possible
 		sym = "icos"
@@ -344,7 +256,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		self.force_update=True # Force a display udpdate in EMImage3DSymModule
 		
 	def __del__(self):
-		EM3DSymViewerModule.__del__(self) # this is here for documentation purposes - beware that the del function is important
+		EM3DSymModel.__del__(self) # this is here for documentation purposes - beware that the del function is important
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -356,7 +268,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		'''
 		if self.init_lock: return 0
 		if self.au_data == None or len(self.au_data) == 0:
-			EM3DSymViewerModule.generate_current_display_list(self,force)
+			EM3DSymModel.generate_current_display_list(self,force)
 		
 		self.init_basic_shapes()
 		if self.nomirror == True : val = 0
@@ -536,14 +448,6 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			headers.append(e)
 		return headers
 	
-	def __init_events_handlers(self):
-		self.events_mode = "navigate"
-		self.events_handlers = {}
-		self.events_handlers["navigate"] = NavigationEvents(self)
-		self.events_handlers["inspect"] = ClassOrientationEvents(self)
-		QtCore.QObject.connect(self.events_handlers["inspect"],QtCore.SIGNAL("point_selected"), self.au_point_selected)
-		self.current_events_handler = self.events_handlers["inspect"]
-	
 	def au_point_selected(self,i,event=None):
 		if i == None: 
 			if event != None and event.modifiers()&Qt.ShiftModifier:
@@ -574,7 +478,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 		first = False
 		if self.proj_class_viewer == None:
 			first = True
-#			self.proj_class_viewer = EMImageMXModule(data=None,application=get_application())
+#			self.proj_class_viewer = EMImageMXWidget(data=None,application=get_application())
 			self.proj_class_viewer = EMImage2DModule(image=None,application=get_application())
 			QtCore.QObject.connect(self.proj_class_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 #			self.proj_class_viewer.set_mouse_mode("App" )
@@ -708,7 +612,7 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			first = False
 			if self.particle_viewer == None:
 				first = True
-				self.particle_viewer = EMImageMXModule(data=None,application=get_application())
+				self.particle_viewer = EMImageMXWidget(data=None,application=get_application())
 				self.particle_viewer.set_mouse_mode("App" )
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
 				QtCore.QObject.connect(self.particle_viewer.emitter(),QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
@@ -778,18 +682,18 @@ class EMEulerExplorer(InputEventsManager,EM3DSymViewerModule,Animator):
 			
 		
 	def set_events_mode(self,mode):
-		if not self.events_handlers.has_key(mode):
+		if not mode in self.events_mode_list:
 			print "error, unknown events mode", mode
 			return
 		
 		else:
-			self.current_events_handler = self.events_handlers[mode]
+			self.events_mode = mode
 			
 	def closeEvent(self,event):
 		if self.inspector !=None: self.inspector.close()
-		if self.proj_class_viewer !=None: self.proj_class_viewer.closeEvent(None)
-#		if self.proj_class_single !=None: self.proj_class_single.closeEvent(None)
-		if self.particle_viewer != None: self.particle_viewer.closeEvent(None)
+		if self.proj_class_viewer !=None: self.proj_class_viewer.close()
+#		if self.proj_class_single !=None: self.proj_class_single.close()
+		if self.particle_viewer != None: self.particle_viewer.close()
 		get_application().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is
 

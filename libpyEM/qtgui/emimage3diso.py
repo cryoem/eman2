@@ -42,27 +42,24 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from weakref import WeakKeyDictionary
 from time import time
-from PyQt4.QtCore import QTimer
 import weakref
 from time import *
 from libpyGLUtils2 import GLUtil
 
-from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors,get_RGB_tab
-from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors,get_RGB_tab, EM3DModel
+from emimageutil import ImgHistogram, EMTransformPanel
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurfaceModule(EMImage3DGUIModule):
+class EMIsosurfaceModel(EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
 	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True,enable_file_browse=False):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control=application_control)
+		EM3DModel.__init__(self)#, ensure_gl_context,application_control=application_control)
 		self.init()
 		self.initialized = True
 		
@@ -288,8 +285,8 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.load_colors()
 		self.inspector.set_materials(self.colors,self.isocolor)
 		
-		from emimage3d import EMImage3DGeneralWidget
-		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+		from emglobjects import EM3DGLWidget
+		if isinstance(self.gl_context_parent,EM3DGLWidget):
 			self.gl_context_parent.set_camera_defaults(self.data)
 	
 	def load_colors(self):
@@ -361,7 +358,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.update_data_and_texture()
 		self.updateGL()
 		
-	def resizeEvent(self,width=0,height=0):
+	def resize(self):
 		self.vdtools.set_update_P_inv()
 
 	def get_mrc_file(self): #added by muthu
@@ -715,20 +712,20 @@ class EMIsoInspector(QtGui.QWidget):
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-		
-		
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	window = EMIsosurfaceModule(application=em_app)
-	if len(sys.argv)==1 : 
-		data = []
-		#for i in range(0,200):
-		e = test_image_3d(1,size=(64,64,64))
-		window.set_data(e)
-	else :
-		a=EMData(sys.argv[1])
-		window.set_file_name(sys.argv[1])
-		window.set_data(a)
-		
-	em_app.show()
-	em_app.execute()
+	from emglobjects import EM3DGLWidget
+	from emapplication import EMApp
+	app = EMApp()
+	iso_model = EMIsosurfaceModel(test_image_3d(1,size=(64,64,64)))
+	iso_model.updateGL()
+	window = EM3DGLWidget(iso_model)
+	
+	
+	#TODO: reconsider design so these lines aren't necessary
+	iso_model.under_qt_control = True
+	iso_model.set_gl_widget(window)
+	iso_model.set_gl_context_parent(window)
+	
+	
+	app.show()
+	app.execute()

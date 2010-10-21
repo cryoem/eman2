@@ -30,25 +30,18 @@
 #
 #
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import *
+from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
-from math import *
-from EMAN2 import *
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+from emapplication import EMGLWidget, get_application
 from libpyGLUtils2 import GLUtil
-
-import weakref
-from emapplication import EMGUIModule,EMQtWidgetModule
-from emimageutil import EventsEmitterAndReciever
-
+from math import *
+from valslider import ValSlider
 import numpy
-import sys
-import array
-
-
+import weakref
 
 glut_inited = False
 
@@ -1153,7 +1146,7 @@ class EMOpenGLFlagsAndTools:
 		return setattr(self.__instance, attr, value)
 
 
-class Camera2(EventsEmitterAndReciever):
+class Camera2:
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
 	
 	The camera object stores x,y,z coordinates and a single transform object.
@@ -1168,7 +1161,7 @@ class Camera2(EventsEmitterAndReciever):
 	
 	"""
 	def __init__(self,parent):
-		EventsEmitterAndReciever.__init__(self)
+		self.emit_events = False
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=weakref.ref(parent)
@@ -1191,6 +1184,12 @@ class Camera2(EventsEmitterAndReciever):
 		self.allow_rotations = True
 		self.allow_translations = True
 		self.allow_phi_rotations = True
+
+	
+	def enable_emit_events(self,val=True):
+		#print "set emit events to",val
+		self.emit_events = val
+	def is_emitting(self): return self.emit_events	
 		
 	def get_emit_signals_and_connections(self):
 		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
@@ -1453,6 +1452,7 @@ class Camera2(EventsEmitterAndReciever):
 		if (self.basicmapping == False):
 			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
+			print "Camera2 (object).basicmapping==True"
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
 		d = abs(dx) + abs(dy)
@@ -1468,6 +1468,7 @@ class Camera2(EventsEmitterAndReciever):
 		if (self.basicmapping == False):
 			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
+			print "Camera2 (object).basicmapping==True"
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
 		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
@@ -1809,297 +1810,6 @@ def draw_volume_bounds(width,height,depth,color=True):
 	glEnd()
 
 
-class EMImage3DGUIModule(EMGUIModule):
-	
-	def __init__(self,application=None,ensure_gl_context=True,application_control=True,winid=None):
-		self.blendflags = EMOpenGLFlagsAndTools()
-		self.bcscreen = EMBrightContrastScreen()
-		
-		self.name = None # a name variable, accessed by set and get
-		self.rand = None # a rand varaible
-		self.cam = None # should be a camera, either Camera or Camera2
-		self.cube = False # whether a cube should be drawn
-		
-		
-		self.data = None # should eventually be an EMData object
-		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
-		self.help_window = None # eventually will become a Qt help widget of some kind
-		EMGUIModule.__init__(self,ensure_gl_context,application_control,winid=winid)
-		self.dont_delete_parent = True
-	
-	
-		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
-	
-	def __del__(self):
-		if self.under_qt_control and not self.dont_delete_parent:
-			self.qt_context_parent.deleteLater()
-		self.core_object.deleteLater()
-	
-	def render(self): raise NotImplementedException("Inheriting classes should implemented this") # should do the main drawing
-	def get_type(self):  NotImplementedException("Inheriting classes should implemented this") #should return a unique string
-	
-	def set_dont_delete_parent(self,val=True): self.dont_delete_parent = val
-	def set_rank(self,rank): self.rank = rank
-	def set_name(self, name): self.name = name
-	def get_name(self): return self.name
-	def set_file_name(self,file_name): self.file_name = file_name
-	def get_file_name(self): return self.file_name
-	
-	def get_qt_widget(self):
-		self.under_qt_control = True
-		if self.qt_context_parent == None:	
-			from emimageutil import EMParentWin
-			from emimage3d import EMImage3DGeneralWidget
-			self.gl_context_parent = EMImage3DGeneralWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			self.qt_context_parent.initGL()
-			self.gl_widget = self.gl_context_parent
-			if isinstance(self.data,EMData):
-				self.gl_context_parent.set_camera_defaults(self.data)
-			self.under_qt_control = True
-		
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image_3d.png"))
-		return self.qt_context_parent
-
-	
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EM3DGLView, EM3DGLWindow
-		if self.gl_widget == None:
-			
-			if gl_context_parent != None: self.gl_context_parent = gl_context_parent
-			if qt_context_parent != None: self.qt_context_parent = qt_context_parent
-			
-			gl_view = EM3DGLView(self,image=None)
-			self.gl_widget = EM3DGLWindow(self,gl_view)
-			
-			self.gl_widget.target_translations_allowed(True)
-			#self.gl_widget.allow_camera_rotations(True)
-			self.under_qt_control = False
-			
-			
-		return self.gl_widget
-
-		
-	def setWindowTitle(self,filename):
-		from emimage3d import EMImage3DGeneralWidget,EMImage3DWidget
-		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget) or isinstance(self.gl_context_parent,EMImage3DWidget):
-			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
-		else:
-			if self.gl_widget != None:
-				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
-				
-	#def get_gl_widget(self,qt_parent=None):
-		#from emfloatingwidgets import EM3DGLView,EM3DGLWindow
-		#if self.gl_widget == None:
-			#gl_view = EM3DGLView(self,image=None)
-			#self.gl_widget = EM3DGLWindow(self,gl_view)
-			#self.set_gl_parent(qt_parent)
-			#self.gl_widget.target_translations_allowed(True)
-			#self.gl_widget.allow_camera_rotations(True)
-		#return self.gl_widget
-	
-	def get_current_camera(self): return self.cam.get_thin_copy()
-	
-	def set_camera(self,camera): self.cam = camera
-	
-	def scale_event(self,delta):
-		self.cam.scale_event(delta)
-		if self.inspector: self.inspector.set_scale(self.cam.scale)
-
-	def get_translate_scale(self):
-#		try:
-		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
-
-		xscale = rx/float(self.get_parent().width())
-		yscale = ry/float(self.get_parent().height())
-		
-		return [xscale,yscale]
-	
-	def motion_translate(self,x,y):
-		[xscale,yscale] = self.get_translate_scale()
-		self.cam.cam_x += x*xscale
-		self.cam.cam_y += y*yscale
-		self.inspector.set_xy_trans(self.cam.cam_x, self.cam.cam_y)
-
-	
-	def get_current_transform(self):
-		size = len(self.cam.t3d_stack)
-		return self.cam.t3d_stack[size-1]
-
-	def set_cam_z(self,z):
-		self.cam.set_cam_z( z )
-		self.updateGL()
-		
-	def set_cam_y(self,y):
-		self.cam.set_cam_y( y )
-		self.updateGL()
-		
-	def set_cam_x(self,x):
-		self.cam.set_cam_x( x )
-		self.updateGL()
-		
-	def motion_rotate(self,x,y):
-		self.cam.motion_rotate(x,y)
-		size = len(self.cam.t3d_stack)
-		self.update_inspector(self.cam.t3d_stack[size-1])
-		
-	def set_scale(self,val):
-		self.cam.scale = val
-		self.updateGL()
-	
-	def load_rotation(self,t3d):
-		self.cam.t3d_stack.append(t3d)
-		self.updateGL()
-		
-	def resizeEvent(self):
-		if self.inspector == None: return
-		[xscale,yscale] = self.get_translate_scale()
-		if ( xscale > yscale ): self.inspector.set_translate_scale(xscale,yscale,yscale)
-		else: self.inspector.set_translate_scale(xscale,yscale,xscale)
-		
-	def draw_bc_screen(self):
-		'''
-		Assumes the gl_context_parent is an EMGLProjectionViewMatrices instance
-		'''
-		try:
-			vh = self.gl_context_parent.viewport_height()
-			vw = self.gl_context_parent.viewport_width()
-		except:
-			# this means the set up isn't quite right, but the bc screen isn't that valuable anyhow
-			return
-		
-		if vh == 0 or vw == 0: return
-		glMatrixMode(GL_PROJECTION)
-		glPushMatrix()
-		glLoadIdentity()
-		
-		glOrtho(0,vw,0,vh,-1,1)
-
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		
-		glStencilFunc(GL_EQUAL,self.rank,self.rank)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
-		
-		glScalef(vw,vh,1)
-		self.bcscreen.draw_bc_screen()
-		
-		glPopMatrix()
-		
-		glStencilFunc(GL_ALWAYS,1,1)
-		
-		glMatrixMode(GL_PROJECTION)
-		glPopMatrix()
-		
-		glMatrixMode(GL_MODELVIEW)
-
-	def set_GL_contrast(self,val):
-		self.bcscreen.set_GL_contrast(val)
-		try:
-			self.updateGL()
-		except:
-			# the parent may not have been set
-			pass
-	
-	def set_GL_brightness(self,val):
-		self.bcscreen.set_GL_brightness(val)
-		try:
-			self.updateGL()
-		except:
-			# the parent may not have been set
-			pass
-		
-	def draw_volume_bounds(self):
-		# FIXME - should be a display list
-		width = self.data.get_xsize()
-		height = self.data.get_ysize()
-		depth = self.data.get_zsize()
-		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		draw_volume_bounds(width,height,depth)
-	
-	def toggle_cube(self):
-		self.cube = not self.cube
-		self.updateGL()
-		
-	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-	   	
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			self.show_inspector(1)
-			if self.inspector == None: return
-			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-			self.inspector.set_scale(self.cam.scale)
-			
-		else:
-			self.cam.mousePressEvent(event)
-
-		self.updateGL()
-	
-	def mouseDoubleClickEvent(self,event):
-		pass
-	
-	def mouseMoveEvent(self, event):
-		if self.cam.mouseMoveEvent(event):
-			self.update_inspector_texture()
-			
-		if self.inspector != None:
-			if event.buttons()&Qt.LeftButton:
-				self.inspector.update_rotations(self.get_current_transform())
-			elif event.buttons()&Qt.RightButton:
-				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
-				#self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-		self.updateGL()
-	
-	def mouseReleaseEvent(self, event):
-		
-		if self.cam.mouseReleaseEvent(event): self.update_inspector_texture()
-		self.updateGL()
-			
-	def wheelEvent(self, event):
-		if self.cam.wheelEvent(event): self.update_inspector_texture()
-		if self.inspector != None :
-			self.inspector.set_scale(self.cam.scale)
-		self.updateGL()
-		
-	def keyPressEvent(self,event):
-		
-		if event.key() == Qt.Key_F1:
-			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimage3d")
-		elif event.key() == Qt.Key_Up:
-			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,-1)
-			else: self.cam.explicit_translate(0,1,0)
-			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-			self.updateGL()
-			
-		elif event.key() == Qt.Key_Down:
-			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,1)
-			else:self.cam.explicit_translate(0,-1,0)
-			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-			self.updateGL()
-			
-		elif event.key() == Qt.Key_Left:
-			self.cam.explicit_translate(-1,0,0)
-			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-			self.updateGL()
-			
-		elif event.key() == Qt.Key_Right:
-			self.cam.explicit_translate(1,0,0)
-			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
-			self.updateGL()
-			
-		elif event.key() == Qt.Key_I:
-			self.show_inspector()
-	
-	def leaveEvent(self,event):
-		pass
-		
-	def initializeGL(self):
-		# redefine this if you want to do any OpenGL specific initialization
-		pass
-				
-
 def get_RGB_tab(parent, name=""):
 	rgbtab = QtGui.QWidget(parent)
 	rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
@@ -2184,8 +1894,8 @@ def get_default_gl_colors():
 	copper["emission"] = [0,0,0]
 	
 	obsidian = {}
-	obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
-	obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
+	obsidian["ambient"] = [0.05375,  0.05,	 0.06625 ,1.0]
+	obsidian["diffuse"] = [0.18275,  0.17,	 0.22525,1.0]
 	obsidian["specular"] = [0.66, 0.65, 0.69,1.0]
 	obsidian["shininess"] = 128.0
 	obsidian["emission"] = [0,0,0]
@@ -2306,3 +2016,348 @@ def get_default_gl_colors():
 	
 	return colors
 
+class EM3DModel(QtCore.QObject):
+	FTGL = "ftgl"
+	GLUT = "glut"
+	def __init__(self, parent = None):#, ensure_gl_context=False,application_control=True,winid=None):
+		
+		#TODO: Figure out which of these is needed
+		self.qt_context_parent = None
+		self.gl_context_parent = None
+		self.gl_widget = None
+		self.under_qt_control = False
+		self.emit_events = False
+		self.disable_inspector = False
+		self.suppress_inspector = False # turn on to suppress showing the inspector
+		
+		
+		QtCore.QObject.__init__(self)
+		self.blendflags = EMOpenGLFlagsAndTools()
+		self.bcscreen = EMBrightContrastScreen()
+		
+		self.name = None # a name variable, accessed by set and get
+#		self.rand = None # a rand varaible
+		self.cam = None # should be a camera, either Camera or Camera2
+#		self.cube = False # whether a cube should be drawn
+		
+		self.data = None # should eventually be an EMData object
+		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
+		self.help_window = None # eventually will become a Qt help widget of some kind
+#		self.dont_delete_parent = True
+		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
+
+	def draw_bc_screen(self):
+		'''
+		Assumes the gl_context_parent is an EMGLProjectionViewMatrices instance
+		'''
+		try:
+			vh = self.gl_context_parent.viewport_height()
+			vw = self.gl_context_parent.viewport_width()
+		except:
+			# this means the set up isn't quite right, but the bc screen isn't that valuable anyhow
+			return
+		
+		if vh == 0 or vw == 0: return
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		
+		glOrtho(0,vw,0,vh,-1,1)
+
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		glLoadIdentity()
+		
+		glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
+		
+		glScalef(vw,vh,1)
+		self.bcscreen.draw_bc_screen()
+		
+		glPopMatrix()
+		
+		glStencilFunc(GL_ALWAYS,1,1)
+		
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		
+		glMatrixMode(GL_MODELVIEW)
+	def draw_volume_bounds(self):
+		# FIXME - should be a display list
+		width = self.data.get_xsize()
+		height = self.data.get_ysize()
+		depth = self.data.get_zsize()
+		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
+		draw_volume_bounds(width,height,depth)
+	def enable_inspector(self,val=True): self.disable_inspector = not val
+	def get_current_camera(self): 
+		return self.cam.get_thin_copy()
+	def get_current_transform(self):
+		size = len(self.cam.t3d_stack)
+		return self.cam.t3d_stack[size-1]
+	def get_emit_signals_and_connections(self):
+		return {}
+	def get_gl_context_parent(self): return self.gl_context_parent
+	def get_inspector(self): raise NotImplementedError("Inheriting classes should implemented this") # this need to be supplied
+	def get_name(self): return self.name
+	def get_translate_scale(self):
+#		try:
+		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
+
+		xscale = rx/float(self.gl_widget.width())
+		yscale = ry/float(self.gl_widget.height())
+		
+		return [xscale,yscale]
+	def keyPressEvent(self,event):
+		
+		if event.key() == Qt.Key_F1:
+			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimage3d")
+		elif event.key() == Qt.Key_Up:
+			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,-1)
+			else: self.cam.explicit_translate(0,1,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Down:
+			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,1)
+			else:self.cam.explicit_translate(0,-1,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Left:
+			self.cam.explicit_translate(-1,0,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Right:
+			self.cam.explicit_translate(1,0,0)
+			if self.inspector: self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_I:
+			self.show_inspector()
+	def load_rotation(self,t3d):
+		self.cam.t3d_stack.append(t3d)
+		self.updateGL()
+	def mouseDoubleClickEvent(self,event):
+		pass
+	def mouseMoveEvent(self, event):
+		if self.cam.mouseMoveEvent(event):
+			self.update_inspector_texture()
+			
+		if self.inspector != None:
+			if event.buttons()&Qt.LeftButton:
+				self.inspector.update_rotations(self.get_current_transform())
+			elif event.buttons()&Qt.RightButton:
+				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
+				#self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+	   	
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			self.show_inspector(1)
+			if self.inspector == None: return
+			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
+			self.inspector.set_scale(self.cam.scale)
+			
+		else:
+			self.cam.mousePressEvent(event)
+
+	def mouseReleaseEvent(self, event):
+		if self.cam.mouseReleaseEvent(event): self.update_inspector_texture()
+	def render(self): raise NotImplementedError("Inheriting classes should implemented this") # should do the main drawing
+	def resize(self):
+		if self.inspector == None: return
+		[xscale,yscale] = self.get_translate_scale()
+		if ( xscale > yscale ): self.inspector.set_translate_scale(xscale,yscale,yscale)
+		else: self.inspector.set_translate_scale(xscale,yscale,xscale)
+	def set_cam_x(self,x):
+		self.cam.set_cam_x( x )
+		self.updateGL()
+	def set_cam_y(self,y):
+		self.cam.set_cam_y( y )
+		self.updateGL()
+	def set_cam_z(self,z):
+		self.cam.set_cam_z( z )
+		self.updateGL()
+	def set_camera(self,camera): self.cam = camera
+	def set_dont_delete_parent(self,val=True): self.dont_delete_parent = val
+	def set_file_name(self,file_name): self.file_name = file_name
+	
+	def set_GL_brightness(self,val):
+		self.bcscreen.set_GL_brightness(val)
+		try:
+			self.updateGL()
+		except:
+			# the parent may not have been set
+			pass
+	def set_GL_contrast(self,val):
+		self.bcscreen.set_GL_contrast(val)
+		try:
+			self.updateGL()
+		except:
+			# the parent may not have been set
+			pass
+	def set_gl_context_parent(self,parent): self.gl_context_parent = parent
+	def set_gl_widget(self,gl_widget): self.gl_widget = gl_widget
+	def set_name(self, name): self.name = name
+	def set_qt_context_parent(self,parent): self.qt_context_parent = parent
+	def set_rank(self,rank): self.rank = rank
+	def set_scale(self,val):
+		self.cam.scale = val
+		self.updateGL()
+	def show(self): raise #TODO: determine whether this method should exist
+	def show_inspector(self,force=0): #Copied from EMGLWidget
+		if self.disable_inspector: return
+		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
+		app = get_application()
+		if app == None:
+			print "can't show an inspector with having an associated application"
+		
+		if self.suppress_inspector: return
+		if not force and self.inspector==None : return
+		if not self.inspector : 
+			self.inspector = self.get_inspector()
+			if self.inspector == None: return # sometimes this happens
+		if not app.child_is_attached(self.inspector):
+			app.attach_child(self.inspector)
+		app.show_specific(self.inspector)
+	def toggle_cube(self):
+		self.cube = not self.cube
+		self.updateGL()
+	def updateGL(self):
+		if self.gl_widget != None and self.under_qt_control:
+			self.gl_widget.updateGL()
+#		raise DeprecationWarning
+	def update_inspector_texture(self):
+		pass
+#		if self.em_qt_inspector_widget != None:
+#			self.em_qt_inspector_widget.force_texture_update()
+	def wheelEvent(self, event):
+		if self.cam.wheelEvent(event): self.update_inspector_texture()
+		if self.inspector != None :
+			self.inspector.set_scale(self.cam.scale)
+class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
+	def __init__(self, model = None):
+		EMGLWidget.__init__(self)
+		EMGLProjectionViewMatrices.__init__(self)
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		fmt.setSampleBuffers(True)
+		self.setFormat(fmt)
+		
+		self.fov = 30.0 # field of view angle used by gluPerspective
+		self.startz = 1.0
+		self.endz = 500.0
+		self.cam = Camera()
+		#self.cam = Camera2(self.target())
+		if model:
+			self.set_model(model)
+
+		self.resize(480,480)
+	def get_current_transform(self):
+		size = len(self.cam.t3d_stack)
+		return self.cam.t3d_stack[size-1]
+	def get_near_plane_dims(self):
+		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
+	def get_render_dims_at_depth(self,depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		return [width,height]
+	def get_start_z(self):
+		return self.startz
+	def initializeGL(self):
+		glEnable(GL_NORMALIZE)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+		GL.glClearColor(0,0,0,0)
+		#GL.glClearAccum(0,0,0,0)
+	
+		glShadeModel(GL_SMOOTH)
+		
+		glClearStencil(0)
+		glEnable(GL_STENCIL_TEST)
+	def keyPressEvent(self,event):
+		self.target().keyPressEvent(event)
+		self.updateGL()
+	def load_perspective(self):
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+	def mouseDoubleClickEvent(self,event):
+		self.target().mouseDoubleClickEvent(event)
+		self.updateGL()
+	def mouseMoveEvent(self, event):
+		self.target().mouseMoveEvent(event)
+		self.updateGL()
+	def mousePressEvent(self, event):
+		self.target().mousePressEvent(event)
+		self.updateGL()
+	def mouseReleaseEvent(self, event):
+		self.target().mouseReleaseEvent(event)
+		self.updateGL()
+	def paintGL(self):
+		#glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		self.cam.position()
+		
+		glPushMatrix()
+		self.target().render()
+		glPopMatrix()
+		
+		#glAccum(GL_ADD, self.target.glbrightness)
+		#glAccum(GL_ACCUM, self.target.glcontrast)
+		#glAccum(GL_RETURN, 1.0)
+	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : return # this is fine, the window has be size interactively to zero, for example
+		# just use the whole window for rendering
+		glViewport(0,0,width,height)
+		
+		# maintain the aspect ratio of the window we have
+		self.aspect = float(width)/float(height)
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		#using gluPerspective for simplicity
+		gluPerspective(self.fov, self.aspect, self.startz, self.endz)
+		
+		# switch back to model view mode
+		glMatrixMode(GL_MODELVIEW)
+		self.target().resize()
+	def set_camera_defaults(self,data):
+		if isinstance(data,EMData):
+			self.cam.default_z = -1.25*data.get_xsize()
+			self.cam.cam_z = -1.25*data.get_xsize()
+		elif isinstance(data,float):
+			self.cam.default_z = -1.25*data
+			self.cam.cam_z = -1.25*data
+
+	def set_data(self,data):
+		self.target().set_data(data)
+		self.set_camera_defaults(data)
+	def set_model(self, model):
+		assert(isinstance(model,EM3DModel))
+		self.target = weakref.ref(model)
+		self.set_camera_defaults(self.target().data)
+
+	def show_inspector(self,force=0):
+		self.target().show_inspector(force)
+	def wheelEvent(self, event):
+		self.target().wheelEvent(event)
+		self.updateGL()

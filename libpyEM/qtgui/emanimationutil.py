@@ -32,12 +32,9 @@
 
 from time import time
 
-import PyQt4
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt4 import QtCore
 from math import sin,acos
 from EMAN2 import Vec3f, Transform
-import EMAN2db
 
 class Animator:
 	'''

@@ -31,8 +31,8 @@
 #
 #
 
-from emapplication import EMStandAloneApplication, get_application
-from emimage3dsym import EM3DSymViewerModule,EMSymInspector
+from emapplication import EMApp, get_application
+from emimage3dsym import EM3DSymModel,EMSymInspector
 from e2eulerxplor import InputEventsManager
 import os,sys
 from EMAN2 import *
@@ -62,7 +62,7 @@ read into memory. Do not use it on large sets of particles !!!
 	
 	logid=E2init(sys.argv)
 	
-	em_app = EMStandAloneApplication()
+	em_app = EMApp()
 	window = EMCmpExplorer(application=em_app)
 	window.set_data(args[0],args[1])
 
@@ -72,13 +72,13 @@ read into memory. Do not use it on large sets of particles !!!
 	E2end(logid)
 
 
-class EMCmpExplorer(EM3DSymViewerModule):
+class EMCmpExplorer(EM3DSymModel):
 	def get_desktop_hint(self): return "image"
 	
 	def __init__(self,application=None,ensure_gl_context=True,application_control=True,projection_file=None,simmx_file=None,particle_file=None):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
-		EM3DSymViewerModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		self.window_title = "SimmxXplor"
 		#InputEventsManager.__init__(self)
 	
@@ -148,7 +148,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 	def render(self):
 		if self.inspector == None: self.get_inspector()
 			
-		EM3DSymViewerModule.render(self)
+		EM3DSymModel.render(self)
 	
 	def object_picked(self,object_number):
 		if object_number == self.current_projection: return
@@ -299,7 +299,7 @@ class EMCmpExplorer(EM3DSymViewerModule):
 		progress.close()
 		self.set_emdata_list_as_data(self.proj_data,"cmp")
 #		self.regen_dl(True)
-		EM3DSymViewerModule.render(self)
+		EM3DSymModel.render(self)
 	
 class EMSimmxXplorInspector(EMSymInspector):
 	def get_desktop_hint(self):

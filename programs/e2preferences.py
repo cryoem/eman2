@@ -80,22 +80,22 @@ class EMPreferencesTask(WorkFlowTask):
 
 	def on_form_ok(self, params):
 		self.write_db_entries(params)
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		from PyQt4 import QtCore
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
 	def run_form(self):
-		from emform import EMTableFormModule
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		from emform import EMTableFormWidget
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
 		
 		from PyQt4 import QtCore
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
 		
 	def write_db_entries(self,params):
 		HOMEDB.open_dict("display_preferences")
@@ -113,9 +113,9 @@ class EMPreferencesTask(WorkFlowTask):
 			
 		
 def main():
-	from emapplication import EMStandAloneApplication
+	from emapplication import EMApp
 
-	em_app = EMStandAloneApplication()
+	em_app = EMApp()
 	
 	pref_task = EMPreferencesTask()
 	pref_task.run_form()

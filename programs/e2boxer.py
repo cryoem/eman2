@@ -108,21 +108,14 @@ e2boxer.py ????.mrc --boxsize=256
 		parser.error(error)
 	
 	if cache_box_size: db["box_size"] = options.boxsize
-	
-	# QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
-	
-	# if options.autoboxer2:
-	# 	autobox2(args, options, logid)
-	# 	return
-	
+
 	if options.autoboxer:
 		autobox(args,options,logid)
 		return
-		
 	if options.write_dbbox or options.write_ptcls:
 		write_output(args,options,logid)
 	else:
-		application = EMStandAloneApplication()
+		application = EMApp()
 		module = EMBoxerModule(args,options.boxsize)
 		# this is an example of how to add your own custom tools:
 		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
@@ -138,8 +131,6 @@ e2boxer.py ????.mrc --boxsize=256
 		
 	E2end(logid)
 	
-	
-	
 def autobox(args,options,logid):
 	
 	boxer = SwarmBoxer()
@@ -149,10 +140,6 @@ def autobox(args,options,logid):
 		boxer.target = weakref.ref(boxer_vitals)
 		boxer.auto_box(arg, False, True, True)
 		E2progress(logid,float(i+1)/len(args))
-
-
-
-
 		
 def write_output(args,options,logid):
 	params = {}
@@ -208,7 +195,7 @@ def write_output(args,options,logid):
 			E2progress(logid,progress/total_progress)
 			
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
-
+	
 	ptcls = []
 	mediator = SwarmShrunkenImageMediator(box_size/(2*shrink),shrink)
 	
@@ -682,7 +669,7 @@ class SwarmBoxer:
 		Closes the template viewer if it exists
 		'''
 		if self.template_viewer != None:
-			self.template_viewer.closeEvent(None)
+			self.template_viewer.close()
 			self.template_viewer = None
 	
 	def reset(self):
@@ -1093,12 +1080,12 @@ class SwarmBoxer:
 		if self.template_viewer == None:
 			from emimagemx import EMImageMXModule
 			self.template_viewer = EMImageMXModule()
-			self.template_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
+#			self.template_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
 				
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
 			self.template_viewer.setWindowTitle("Templates")
 			from PyQt4 import QtCore
-			QtCore.QObject.connect(self.template_viewer.emitter(),QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
+			QtCore.QObject.connect(self.template_viewer,QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
 			
 		get_application().show_specific(self.template_viewer)
 		
@@ -1258,8 +1245,7 @@ class SwarmBoxer:
 		else:
 			box_num = self.target().add_box(x,y,type=SwarmBoxer.WEAK_REF_NAME)
 				
-		if self.gui_mode:
-			self.get_2d_window().updateGL()
+		self.get_2d_window().updateGL()
 		
 		return box_num
 		
@@ -1307,8 +1293,6 @@ class SwarmBoxer:
 		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
 		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
 		'''
-
-
 		self.proximal_boxes = [] # this is always res
 		if self.gui_mode:
 			from PyQt4 import QtCore 

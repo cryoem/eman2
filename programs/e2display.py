@@ -32,16 +32,15 @@
 #
 
 from EMAN2 import EMANVERSION,E2init,E2end,EMData,get_file_tag,file_exists
-from emimage import EMImageModule,EMModuleFromFile
+from emimage import EMImageWidget,EMWidgetFromFile
 
-from emimageutil import EMParentWin
 import sys
 from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
-from emapplication import EMStandAloneApplication, EMProgressDialogModule
-from emselector import EMBrowserModule
+from emapplication import EMApp
+from emselector import EMBrowser
 import os
 import EMAN2db
 
@@ -69,7 +68,7 @@ def main():
 
 #	logid=E2init(sys.argv)
 
-	app = EMStandAloneApplication()
+	app = EMApp()
 	gapp = app
 	#QtGui.QApplication(sys.argv)
 	win=[]
@@ -80,9 +79,9 @@ def main():
 		
 		
 	if len(args)<1 :
-		dialog = EMBrowserModule()
-		QtCore.QObject.connect(dialog.emitter(),QtCore.SIGNAL("ok"),on_browser_done)
-		QtCore.QObject.connect(dialog.emitter(),QtCore.SIGNAL("cancel"),on_browser_cancel)
+		dialog = EMBrowser()
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
 	elif options.plot:
 		plot(args,app)
@@ -211,8 +210,8 @@ def getmxim(fsp,fsp2,clsnum):
 	return imgs
 
 def display_file(filename,app):
-	w = EMModuleFromFile(filename,application=app)
-	w.get_qt_widget().setWindowTitle(get_file_tag(filename))
+	w = EMWidgetFromFile(filename,application=app)
+	w.setWindowTitle(get_file_tag(filename))
 	
 	app.show_specific(w)
 	try: w.optimally_resize()
@@ -222,8 +221,8 @@ def display_file(filename,app):
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImageModule(data=img,old=None,app=app)
-	w.get_qt_widget().setWindowTitle(title)
+	w=EMImageWidget(data=img,old=None,app=app)
+	w.setWindowTitle(title)
 	try:
 		if file_exists(title):
 			w.set_file_name(title)
@@ -234,20 +233,20 @@ def display(img,app,title="EMAN2 image"):
 	return w
 
 def plot(files,app):
-	from emplot2d import EMPlot2DModule
-	plotw=EMPlot2DModule(application=app)
+	from emplot2d import EMPlot2DWidget
+	plotw=EMPlot2DWidget(application=app)
 	for f in files:
 		plotw.set_data_from_file(f)
-	plotw.get_qt_widget().setWindowTitle("2D Plot")
+	plotw.setWindowTitle("2D Plot")
 	app.show_specific(plotw)
 	return plotw
 
 def plot_3d(files,app):
-	from emplot3d import EMPlot3DModule
-	plotw=EMPlot3DModule(application=app)
+	from emplot3d import EMPlot3DWidget
+	plotw=EMPlot3DWidget()
 	for f in files:
 		plotw.set_data_from_file(f)
-	plotw.get_qt_widget().setWindowTitle("3D Plot")
+	plotw.setWindowTitle("3D Plot")
 	app.show_specific(plotw)
 	return plotw
 

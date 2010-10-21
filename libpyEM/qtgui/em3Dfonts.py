@@ -39,19 +39,12 @@ from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
-import sys
-import numpy
-import random
-from emimageutil import ImgHistogram,EMParentWin,EMTransformPanel
-from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
+from emimageutil import EMTransformPanel
 import weakref
 from time import *
 from libpyGLUtils2 import *
 
-from emimage3diso import EMIsosurfaceModule, EMIsoInspector
-from emglobjects import EMImage3DGUIModule, Camera2,EMViewportDepthTools, EMGLProjectionViewMatrices, EMGLProjViewMatrices, get_default_gl_colors
+from emglobjects import EM3DModel, Camera2,EMViewportDepthTools, get_default_gl_colors
 from emlights import *
 
 MAG_INCREMENT_FACTOR = 101.1
@@ -63,9 +56,9 @@ class DynamicFonts:
 	def set_depth(self,length):
 		self.font_renderer.set_depth(length)
 
-class EM3DFontWidget(EMLightsDrawer,EMImage3DGUIModule,DynamicFonts):
+class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 	def __init__(self):
-		EMImage3DGUIModule.__init__(self)
+		EM3DModel.__init__(self)
 		DynamicFonts.__init__(self)
 		#self.parent = parent
 
@@ -73,6 +66,7 @@ class EM3DFontWidget(EMLightsDrawer,EMImage3DGUIModule,DynamicFonts):
 		self.initialized = True
 		self.load_colors()
 		self.cam=Camera2(self)
+		self.cam.basicmapping = True #Ross's experiment... fixes translation
 
 		self.brightness = 0
 		self.contrast = 10
@@ -85,8 +79,8 @@ class EM3DFontWidget(EMLightsDrawer,EMImage3DGUIModule,DynamicFonts):
 		self.bgB = 1.0
 		self.bg_a = 1
 		self.lspacing = 75
-		self.gl_context_parent.cam.default_z = -25	# this is me hacking
-		self.gl_context_parent.cam.cam_z = -25 		# this is me hacking
+#		self.gl_context_parent.cam.default_z = -25	# this is me hacking
+#		self.gl_context_parent.cam.cam_z = -25 		# this is me hacking
 		self.vdtools = EMViewportDepthTools(self)
 		self.font_renderer = get_3d_font_renderer()
 		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
@@ -233,7 +227,26 @@ class EM3DFontWidget(EMLightsDrawer,EMImage3DGUIModule,DynamicFonts):
 	def load_colors(self):
 		self.colors = get_default_gl_colors()
 		self.currentcolor = "ruby"
-
+	def mouseDoubleClickEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseDoubleClickEvent(self, event)
+		else:
+			EM3DModel.mouseDoubleClickEvent(self, event)
+	def mouseMoveEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseMoveEvent(self, event)
+		else:
+			EM3DModel.mouseMoveEvent(self, event)
+	def mousePressEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mousePressEvent(self, event)
+		else:
+			EM3DModel.mousePressEvent(self, event)
+	def mouseReleaseEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseReleaseEvent(self, event)
+		else:
+			EM3DModel.mouseReleaseEvent(self, event)
 	def setColor(self,val):
 		self.currentcolor = str(val)
 		self.updateGL()
@@ -258,15 +271,16 @@ class EM3DFontWidget(EMLightsDrawer,EMImage3DGUIModule,DynamicFonts):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def resizeEvent(self,width=0,height=0):
-		self.vdtools.set_update_P_inv()
+#	def resize(self):
+#		self.vdtools.set_update_P_inv()
+	def get_type(self):
+		return "EM3DFontModel"
 
 
 class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
-		#EMIsosurfaceModule.__init__(self)
 		self.target=weakref.ref(target)
 		self.transform_panel = EMTransformPanel(target,self)
 		self.transform_vbl = None # This will eventually be a vertical box layout for the transform panel
@@ -638,9 +652,13 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 #		
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EM3DFontWidget()
-#	window.setInit()
+	from emapplication import EMApp
+	from emimage3d import EMImage3DWidget
+	em_app = EMApp()
+	font_model = EM3DFontModel()
+	window = EMImage3DWidget()
+	window.add_model(font_model)
+	window.cam.default_z = -25	# From David's "this is me hacking"
+	window.cam.cam_z = -25 		# From David's "this is me hacking"
 	em_app.show()
 	em_app.execute()

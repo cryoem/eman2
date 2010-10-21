@@ -36,32 +36,25 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from valslider import ValSlider
 from math import *
 from EMAN2 import *
-import EMAN2
 import sys
-import numpy
 from emshape import *
-from emimageutil import ImgHistogram,EMParentWin
-from weakref import WeakKeyDictionary
 import weakref
 from pickle import dumps,loads
 import struct
-import traceback
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
-from emapplication import EMStandAloneApplication, EMGUIModule
-from emimageutil import EMEventRerouter, EMParentWin
+from emapplication import EMApp, EMGLWidget
 from emglobjects import EMOpenGLFlagsAndTools,init_glut
 
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
-colortypes=["k","b","r","g","y","c","m"]
+colortypes=["k","b","r","g","y","c","m","0.5"]
 qt_color_map = {}
 qt_color_map["k"] = QtGui.QColor(0,0,0)
 qt_color_map["b"] = QtGui.QColor(0,0,255)
@@ -70,37 +63,27 @@ qt_color_map["g"] = QtGui.QColor(0,255,0)
 qt_color_map["y"] = QtGui.QColor(255,255,0)
 qt_color_map["c"] = QtGui.QColor(0,255,255)
 qt_color_map["m"] = QtGui.QColor(255,0,255)
+qt_color_map["0.5"] = QtGui.QColor(127,127,127)
 
-class EMPlot2DWidget(EMEventRerouter,QtOpenGL.QGLWidget):
+class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
-	def __init__(self, em_plot_module):
-		assert(isinstance(em_plot_module,EMPlot2DModule))
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
-		QtOpenGL.QGLWidget.__init__(self,fmt, None)
-		EMEventRerouter.__init__(self,em_plot_module) # sets self.target to em_plot_module
-
-		self.resize(480,480)
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 	def paintGL(self):
 
-		if not self.parentWidget() : return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-		self.target().render()
+		self.render()
 		
 	def resizeGL(self, width, height):
 #		print "resize ",self.width()
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
-	
-		
 		
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -108,11 +91,11 @@ class EMPlot2DWidget(EMEventRerouter,QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.target().resize_event(width,height)
+		self.resize_event(width,height)
 		
 	def closeEvent(self,event):
-		self.target().clear_gl_memory()
-		self.target().closeEvent(None)
+		self.clear_gl_memory()
+		EMGLWidget.closeEvent(self, event)
 		
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
@@ -128,49 +111,27 @@ class EMPlot2DWidget(EMEventRerouter,QtOpenGL.QGLWidget):
 				
 				if not self.browser.isVisible(): self.browser.show()
 			except: pass
-		else:
-			EMEventRerouter.keyPressEvent(self,event)
-		
-class EMPlot2DModule(EMGUIModule):
+						
+			
 
 	def get_desktop_hint(self):
 		return "plot"
 
-	def get_qt_widget(self):
-		if self.qt_context_parent == None:	
-			self.under_qt_control = True
-			self.gl_context_parent = EMPlot2DWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			self.gl_widget = self.gl_context_parent
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
-		return self.qt_context_parent
-	
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
-		self.init_size_flag = False
-		if self.gl_widget == None:
-			self.under_qt_control = False
-			self.gl_context_parent = gl_context_parent
-			self.qt_context_parent = qt_context_parent
-			
-			gl_view = EM2DGLView(self,image=None)
-			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.gl_widget.target_translations_allowed(True)
-			self.gl_widget.setWindowTitle("2D Plot")
-			
-		return self.gl_widget
-
 	def setWindowTitle(self,filename):
-		if isinstance(self.gl_context_parent,EMPlot2DWidget):
-			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
-		else:
-			if self.gl_widget != None:
-				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
+		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
 	
 	def __init__(self,application=None,winid=None):
-		EMGUIModule.__init__(self,winid=winid)
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True);
+		EMGLWidget.__init__(self, winid=winid)
+		self.setFormat(fmt)
+		self.resize(480,480)
+		self.under_qt_control = True
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		
 		self.axes={}
-		self.pparm={}
+		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize
 		self.inspector=None
 		self.needupd=1
 		self.plotimg=None
@@ -196,14 +157,8 @@ class EMPlot2DModule(EMGUIModule):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
-	
-	def __del__(self):
-		if self.under_qt_control:
-			self.qt_context_parent.deleteLater()
-		#self.clear_gl_memory()
-		self.core_object.deleteLater()
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -230,7 +185,11 @@ class EMPlot2DModule(EMGUIModule):
 		except: return
 		
 		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
-		self.pparm[key]=(color,1,0,linewidth,0,0,5)
+		if linetype>=0 : doline=1
+		else : doline,linetype=0,0
+		if symtype>=0 : dosym=1
+		else : dosym,symtype=0,0
+		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,4)
 		
 		if not isinstance(data[0],list):
 			x_axis = [i for i in range(len(data))]
@@ -256,18 +215,6 @@ class EMPlot2DModule(EMGUIModule):
 			self.inspector=EMPlot2DInspector(self)
 			self.inspector.datachange()
 		return self.inspector
-	
-	
-	def width(self):
-		try: return self.gl_widget.width()
-		except: pass
-		
-	def height(self):
-		try: return self.gl_widget.height()
-		except: pass
-	
-	def updateGL(self):
-		if  self.gl_widget != None and self.under_qt_control: self.gl_widget.updateGL()
 		
 	def set_data_from_file(self,filename,replace=False):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
@@ -663,10 +610,6 @@ class EMPlot2DModule(EMGUIModule):
 		self.shapechange=1
 		#self.updateGL()
 	
-	def keyPressEvent(self,event):
-		# this event is being sent by the deskto
-		pass
-	
 		
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
@@ -790,7 +733,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.color.addItem("green")
 		self.color.addItem("yellow")
 		self.color.addItem("cyan")
-		self.color.addItem("magenta	")
+		self.color.addItem("magenta")
+		self.color.addItem("grey")
 		vbl.addWidget(self.color)
 
 		hbl2 = QtGui.QHBoxLayout()
@@ -1099,15 +1043,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 			self.target().full_refresh()
 			self.target().updateGL()
 
+class EMPlot2DModule(EMPlot2DWidget):
+	def __init__(self, application=None,winid=None):
+		EMPlot2DWidget.__init__(self, application, winid)
+		import warnings
+		warnings.warn("convert EMPlot2DModule to EMPlot2DWidget", DeprecationWarning)
 
 # This is just for testing, of course
 if __name__ == '__main__':
 
-	app = EMStandAloneApplication()
-	window = EMPlot2DModule(app)
+	app = EMApp()
+	window = EMPlot2DWidget(app)
 	if len(sys.argv)==1 : 
 		l=[i/30.*pi for i in range(30)]
-		window.set_data([[1,2,3,4],[2,3,4,3]],test)
+		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
 		window.set_data([l,[sin(2*i) for i in l]],"test2")
 	else:
 		for i in range(1,len(sys.argv)):

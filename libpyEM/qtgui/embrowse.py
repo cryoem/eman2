@@ -33,8 +33,8 @@
 
 import PyQt4
 from PyQt4 import QtCore, QtGui
-from emapplication import EMStandAloneApplication
-from emselector import EMBrowserModule
+from emapplication import EMApp
+from emselector import EMBrowser
 
 
 from EMAN2 import EMData
@@ -50,10 +50,10 @@ def on_done(string_list):
 
 # This is just an example of how to make a browser. You should import the browser module from emselector
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
+	em_app = EMApp()
 	app = em_app
-	dialog = EMBrowserModule(em_app)
-	QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_done)
+	browser = EMBrowser()
+	QtCore.QObject.connect(browser,QtCore.SIGNAL("done"),on_done)
 	em_app.show()
 	em_app.execute()
 

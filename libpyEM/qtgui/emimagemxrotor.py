@@ -43,14 +43,13 @@ import time
 from weakref import WeakKeyDictionary
 
 from EMAN2 import *
-from emimageutil import  EMEventRerouter
 from emglobjects import *
 from EMAN2db import EMAN2DB
 
 from emfloatingwidgets import EMGLRotorWidget, EM2DGLView, EM3DGLWindowOverride, EM2DGLWindow
 from emimagemx import EMImageInspectorMX, EMImageMXModule,EMDataListCache
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule, EMGLProjectionViewMatrices
+from emglobjects import EMOpenGLFlagsAndTools, EMGLProjectionViewMatrices
 from emapplication import EMStandAloneApplication, EMGUIModule,get_application
 
 

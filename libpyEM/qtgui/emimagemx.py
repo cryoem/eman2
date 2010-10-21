@@ -43,7 +43,7 @@ import EMAN2
 import copy
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMEventRerouter,EMParentWin
+from emimageutil import ImgHistogram, EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
@@ -51,106 +51,15 @@ from PyQt4.QtCore import QTimer
 from libpyGLUtils2 import *
 
 from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects,init_glut
-from emapplication import EMStandAloneApplication, EMGUIModule,get_application
+from emapplication import EMGLWidget, get_application, EMApp
 from emanimationutil import LineAnimation
 import weakref
 
-from emapplication import EMProgressDialogModule
-
-class EMImageMXWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
-	"""
-	"""
-	def __init__(self, em_mx_module,parent=None):
-		#self.initflag = True
-		self.mmode = "Drag"
-
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMEventRerouter.__init__(self,em_mx_module)
-		EMGLProjectionViewMatrices.__init__(self)
-		self.imagefilename = None
-		
-	def get_target(self):
-		return self.target()
-	
-	def set_data(self,data):
-		self.target().set_data(data)
-	
-	def set_file_name(self,name):
-		#print "set image file name",name
-		self.imagefilename = name
-		
-	def get_image_file_name(self):
-		return self.imagefilename
-	
-	def initializeGL(self):
-		glClearColor(0,0,0,0)
-		
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		#glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.4, 0.4, 0.4, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
-		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
-		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intenionally turned off
-
-		glEnable(GL_CULL_FACE)
-		glCullFace(GL_BACK)
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		if ( self.target() == None ): return
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Matrix context is", context
-		self.target().render()
-
-	
-	def resizeGL(self, width, height):
-		if width <= 0 or height <= 0: return
-		GL.glViewport(0,0,width,height)
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GL.glOrtho(0.0,width,0.0,height,-50,50)
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		
-		glLightfv(GL_LIGHT0, GL_POSITION, [width/2,height/2,100.,1.])
-		
-		self.set_projection_view_update()
-		try: self.target().resize_event(width,height)
-		except: pass
-	def set_mouse_mode(self,mode):
-		self.mmode = mode
-		self.target().set_mouse_mode(mode)
-	
-	def get_frame_buffer(self):
-		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
-		# (because display lists are involved)
-		# December 2008 - tested in MAC it doesn't work,only returns a blank image
-		return self.renderPixmap(0,0,True)
-
-	def closeEvent(self,event):
-		self.target().clear_gl_memory()
-		self.target().closeEvent(None)
-		
-		
+from emapplication import EMProgressDialog
 
 class EMMXCoreMouseEvents:
 	'''
-	A base class for objects that handle mouse events in the EMImageMXModule
+	A base class for objects that handle mouse events in the EMImageMXWidget
 	'''
 	def __init__(self,mediator):
 		'''
@@ -200,14 +109,14 @@ class EMMXCoreMouseEvents:
 class EMMXCoreMouseEventsMediator:
 	'''
 	This class is like documentation. It doesn't really need to exist. MouseEventHandlers talk to this
-	and not to the EMImageMXModule. This talks to the EMImageMXModule. So instead the MouseEventHandlers could
-	just talk directly to EMImageMXModule - I like it here because I can see exactly what's required of the
+	and not to the EMImageMXWidget. This talks to the EMImageMXWidget. So instead the MouseEventHandlers could
+	just talk directly to EMImageMXWidget - I like it here because I can see exactly what's required of the
 	MouseEventHandlers - however the problem could be solved using subclassing as a method of documentation
 	It's much of a muchness.
 	'''
 	def __init__(self,target):
-		if not isinstance(target,EMImageMXModule):
-			print "error, the target should be a EMImageMXModule"
+		if not isinstance(target,EMImageMXWidget):
+			print "error, the target should be a EMImageMXWidget"
 			return
 		
 		self.target = weakref.ref(target)
@@ -356,7 +265,7 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 	
 				resize_necessary = False
 				if self.class_window == None:
-					self.class_window = EMImageMXModule()
+					self.class_window = EMImageMXWidget()
 					QtCore.QObject.connect(self.class_window.emitter(),QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
 					resize_necessary = True
 				
@@ -386,18 +295,18 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 			if xians_stuff:
 				if lc[0] != None:
 					image = self.mediator.get_box_image(lc[0])
-    				cx = image.get_xsize()/2
-    				cy = image.get_ysize()/2
-    				x = lc[1]-cx
-    				y = lc[2]-cy
-    				angle = atan2(y,x)*180.0/pi
-    				# convert from clockwise to anti clockwise and convert to Xian's axis definition
-    				angle = 270-angle
-    				angle %= 360
-    				print "Filename: ", self.mediator.get_image_file_name()
-    				print "Sequence#: ",lc[0]
-    				print "Angle: ", angle
-    			 	
+					cx = image.get_xsize()/2
+					cy = image.get_ysize()/2
+					x = lc[1]-cx
+					y = lc[2]-cy
+					angle = atan2(y,x)*180.0/pi
+					# convert from clockwise to anti clockwise and convert to Xian's axis definition
+					angle = 270-angle
+					angle %= 360
+					print "Filename: ", self.mediator.get_image_file_name()
+					print "Sequence#: ",lc[0]
+					print "Angle: ", angle
+				 	
 			
 	def mouse_move(self,event):
 		if event.buttons()&Qt.LeftButton:
@@ -555,7 +464,64 @@ class EMMatrixPanel:
 	
 		
 
-class EMImageMXModule(EMGUIModule):
+class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
+	def initializeGL(self):
+		glClearColor(0,0,0,0)
+				
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		#glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.4, 0.4, 0.4, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
+		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intenionally turned off
+
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		#context = OpenGL.contextdata.getContext(None)
+		#print "Matrix context is", context
+		self.render()
+
+	
+	def resizeGL(self, width, height):
+		if width <= 0 or height <= 0: return
+		GL.glViewport(0,0,width,height)
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GL.glOrtho(0.0,width,0.0,height,-50,50)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+		glLightfv(GL_LIGHT0, GL_POSITION, [width/2,height/2,100.,1.])
+		
+		self.set_projection_view_update()
+		try: self.resize_event(width,height)
+		except: pass
+	
+	def get_frame_buffer(self):
+		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
+		# (because display lists are involved)
+		# December 2008 - tested in MAC it doesn't work,only returns a blank image
+		return self.renderPixmap(0,0,True)
+
+	def closeEvent(self,event):
+		self.clear_gl_memory()
+		EMGLWidget.closeEvent(self, event)		
+		
+	
 	
 	def enable_set(self,name,lst=[],display=True,update=True):
 		'''
@@ -585,50 +551,33 @@ class EMImageMXModule(EMGUIModule):
 		
 	def load_font_renderer(self):
 		try:
-			self.font_render_mode = EMGUIModule.FTGL
+			self.font_render_mode = EMGLWidget.FTGL
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(self.font_size)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		except:
-			self.font_render_mode = EMGUIModule.GLUT
-	
-	def get_qt_widget(self):
-		if self.qt_context_parent == None:	
-			self.under_qt_control = True
-			self.gl_context_parent = EMImageMXWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			QtCore.QObject.connect(self.qt_context_parent,QtCore.SIGNAL("destroyed(QObject*)"),self.qt_parent_destroyed)
-			self.gl_widget = self.gl_context_parent
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
-			#self.optimally_resize()
-			#self.qt_context_parent.setAcceptDrops(True)
+			self.font_render_mode = EMGLWidget.GLUT
 		
-		return self.qt_context_parent
-	
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
-		self.init_size_flag = False
-		if self.gl_widget == None:
-			self.under_qt_control = False
-			self.gl_context_parent = gl_context_parent
-			self.qt_context_parent = qt_context_parent
-			self.draw_background = True
-			
-			gl_view = EM2DGLView(self,image=None)
-			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.gl_widget.target_translations_allowed(True)
-			self.setWindowTitle(self.file_name)
-		return self.gl_widget
-	
 	def get_desktop_hint(self):
 		return self.desktop_hint
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,application=None,winid=None):
+	def __init__(self, data=None,application=None,winid=None, parent=None):
+		
+		self.emit_events = False
+
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		#fmt.setSampleBuffers(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMGLProjectionViewMatrices.__init__(self)
+		
+		
 		self.desktop_hint = "image"
 		self.init_size_flag = True
 		self.data=None
-		EMGUIModule.__init__(self,ensure_gl_context=True,winid=winid)
-		EMImageMXModule.allim[self] = 0
+#		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
+		EMGLWidget.__init__(self,winid=winid)
+		EMImageMXWidget.allim[self] = 0
 		self.file_name = ''
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -698,7 +647,7 @@ class EMImageMXModule(EMGUIModule):
 	def __del__(self):
 		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		if self.under_qt_control:
-			self.qt_context_parent.deleteLater()
+			self.deleteLater()
 		self.core_object.deleteLater()
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
@@ -709,14 +658,11 @@ class EMImageMXModule(EMGUIModule):
 		'''	
 		return self.data
 	
-	def width(self):
-		if self.gl_widget != None:
-			return self.view_width()
-		else:
-			return 0
+#	def width(self):
+#		return self.view_width()
 	
 	def using_ftgl(self):
-		return self.font_render_mode == EMGUIModule.FTGL
+		return self.font_render_mode == EMGLWidget.FTGL
 	
 	def get_font_size(self):
 		return self.font_renderer.get_face_size()
@@ -725,13 +671,7 @@ class EMImageMXModule(EMGUIModule):
 		self.font_renderer.set_face_size(value)
 		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
 		self.updateGL()
-		
-	def height(self):
-		if self.gl_widget != None:
-			return self.gl_widget.height()
-		else:
-			return 0
-	
+			
 	def __init_mouse_handlers(self):
 		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
@@ -794,7 +734,7 @@ class EMImageMXModule(EMGUIModule):
 		return self.data[idx]
 
 	def clear_gl_memory(self):
-		self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
+		self.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
@@ -837,15 +777,10 @@ class EMImageMXModule(EMGUIModule):
 		return self.file_name
 	
 	def optimally_resize(self):
-		
-	
-		if isinstance(self.gl_context_parent,EMImageMXWidget):
-			self.qt_context_parent.resize(*self.get_parent_suggested_size())
-		else:
-			self.gl_widget.resize(*self.get_parent_suggested_size())
+		self.resize(*self.get_parent_suggested_size())
 			
 		# I disabled this because it was giving me problems
-#		self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+#		self.scale =  self.matrix_panel.get_min_scale(self.view_width(),.height(),self.scale,self.data) # this is to prevent locking
 #		print self.scale
 		
 	def get_parent_suggested_size(self):
@@ -863,11 +798,7 @@ class EMImageMXModule(EMGUIModule):
 		else: return (512+12,512+12)
 	
 	def setWindowTitle(self,filename):
-		if isinstance(self.gl_context_parent,EMImageMXWidget):
-			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
-		else:
-			if self.gl_widget != None:
-				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
+		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
 	
 	def xyz_changed(self,xyz):
 		if self.data.set_xyz(str(xyz)):
@@ -982,9 +913,6 @@ class EMImageMXModule(EMGUIModule):
 		
 		#if update_gl: self.updateGL()
 
-	def updateGL(self):
-		if self.gl_widget != None and self.under_qt_control:
-			self.gl_widget.updateGL()
 			
 	def set_den_range(self,x0,x1,update_gl=True):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
@@ -1023,23 +951,23 @@ class EMImageMXModule(EMGUIModule):
 	def set_scale(self,newscale,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 			
-		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.gl_widget.height() or self.data.get_xsize()*newscale>self.view_width()):
-			newscale=min(float(self.gl_widget.height())/self.data.get_ysize(),float(self.view_width())/self.data.get_xsize())
+		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.height() or self.data.get_xsize()*newscale>self.view_width()):
+			newscale=min(float(self.height())/self.data.get_ysize(),float(self.view_width())/self.data.get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
 		
 		oldscale = self.scale
 		self.scale=newscale
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
+		self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 		
 		
-		view_height = self.gl_widget.height()
+		view_height = self.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_height :
 			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
-			#if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			#if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
-			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
+			self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 		else:
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()	
@@ -1051,14 +979,14 @@ class EMImageMXModule(EMGUIModule):
 		self.scroll_bar.height = height
 		
 		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1],self)
-		view_height = self.gl_widget.height()
+		view_height = self.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_heights :
 			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
-			#self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.gl_widget.height(),self.scale,self.data) # this is to prevent locking
+			#self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
-			self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
+			self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 		else:
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()	
@@ -1105,8 +1033,8 @@ class EMImageMXModule(EMGUIModule):
 	
 	def display_state_changed(self):
 		display_states = []
-		display_states.append(self.gl_widget.width())
-		display_states.append(self.gl_widget.height())
+		display_states.append(self.width())
+		display_states.append(self.height())
 		display_states.append(self.origin[0])
 		display_states.append(self.origin[1])
 		display_states.append(self.scale)
@@ -1130,10 +1058,10 @@ class EMImageMXModule(EMGUIModule):
 			
 	
 	def set_font_render_resolution(self):
-		if self.font_render_mode != EMGUIModule.FTGL:
+		if self.font_render_mode != EMGLWidget.FTGL:
 			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
 			
-		#self.font_renderer.set_face_size(int(self.gl_widget.height()*0.015))
+		#self.font_renderer.set_face_size(int(self.height()*0.015))
 		#print "scale is",self.scale
 	
 	def __draw_backdrop(self):
@@ -1144,21 +1072,21 @@ class EMImageMXModule(EMGUIModule):
 		glBegin(GL_QUADS)
 		glVertex(0,0,-1)
 		glColor(.9,.9,.9)
-		glVertex(self.gl_widget.width(),0,-1)
+		glVertex(self.width(),0,-1)
 		glColor(.9,.9,.9)
-		glVertex(self.gl_widget.width(),self.gl_widget.height(),-1)
+		glVertex(self.width(),self.height(),-1)
 		glColor(.9,.9,.9)
-		glVertex(0,self.gl_widget.height(),-1)
+		glVertex(0,self.height(),-1)
 		glEnd()
 		if light: glEnable(GL_LIGHTING)
 	
 	
 	def view_width(self):
-		return self.gl_widget.width() - self.draw_scroll*self.scroll_bar.width
+		return EMGLWidget.width(self) - self.draw_scroll*self.scroll_bar.width
 	
 	def render(self):
 		if not self.data : return
-		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
+		if self.font_render_mode == EMGLWidget.FTGL: self.set_font_render_resolution()
 		try: 
 			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		except:
@@ -1187,7 +1115,7 @@ class EMImageMXModule(EMGUIModule):
 				render = True
 		else: render = True
 		
-		self.matrix_panel.update_panel_params(self.view_width(),self.gl_widget.height(),self.scale,self.data,self.origin[1],self)
+		self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 		
 		if render: 
 			deleted_idxs = self.deletion_manager.deleted_ptcls()
@@ -1207,7 +1135,7 @@ class EMImageMXModule(EMGUIModule):
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
 
-			if self.font_render_mode == EMGUIModule.GLUT:
+			if self.font_render_mode == EMGLWidget.GLUT:
 				init_glut()
 				try:
 					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
@@ -1227,7 +1155,7 @@ class EMImageMXModule(EMGUIModule):
 			#x,y=-self.origin[0],-self.origin[1]
 			x,y = self.matrix_panel.xoffset,int(self.origin[1])
 			w=int(min(self.data.get_xsize()*self.scale,self.view_width()))
-			h=int(min(self.data.get_ysize()*self.scale,self.gl_widget.height()))
+			h=int(min(self.data.get_ysize()*self.scale,self.height()))
 				
 			invscale=1.0/self.scale
 			self.set_label_ratio = 0.1
@@ -1260,9 +1188,9 @@ class EMImageMXModule(EMGUIModule):
 		
 						#print h,row,y
 						#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-						if (ty+th) > self.gl_widget.height():
-							#print "ty + th was greater than",self.gl_widget.height()
-							th = int(self.gl_widget.height()-ty)
+						if (ty+th) > self.height():
+							#print "ty + th was greater than",self.height()
+							th = int(self.height()-ty)
 						elif ty<0:
 							drawlabel = False
 							ry = int(ceil(-ty*invscale))
@@ -1285,7 +1213,7 @@ class EMImageMXModule(EMGUIModule):
 							excluded = True
 						except: pass
 						if not excluded:
-							#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
+							#print rx,ry,tw,th,self.width(),self.height(),self.origin
 							if not self.glflags.npt_textures_unsupported():
 								if self.data[i]==None : print "bad image (tex) ",i
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
@@ -1469,7 +1397,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
 		bgcol = [1-v for v in txtcol]
-		if self.font_render_mode == EMGUIModule.FTGL:
+		if self.font_render_mode == EMGLWidget.FTGL:
 			
 			glEnable(GL_TEXTURE_2D)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -1494,7 +1422,7 @@ class EMImageMXModule(EMGUIModule):
 					self.font_renderer.render_string(sidx)
 					
 				else : 
-					try :
+					try:
 						av=self.data[i].get_attr(v)
 						try:
 							if isinstance(av,float) : avs="%1.4g"%av
@@ -1505,7 +1433,7 @@ class EMImageMXModule(EMGUIModule):
 								avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
 							else: avs=str(av)
 						except:avs ="???"
-					except: avs=""
+					except: avs = ""
 					bbox = self.font_renderer.bounding_box(avs)
 					
 					GLUtil.mx_bbox(bbox,txtcol,bgcol)
@@ -1517,7 +1445,7 @@ class EMImageMXModule(EMGUIModule):
 			if lighting:
 				glEnable(GL_LIGHTING)
 			glDisable(GL_TEXTURE_2D)
-		elif self.font_render_mode == EMGUIModule.GLUT:
+		elif self.font_render_mode == EMGLWidget.GLUT:
 			tagy = ty
 			glColor(*txtcol)
 			glDisable(GL_LIGHTING)
@@ -1594,7 +1522,7 @@ class EMImageMXModule(EMGUIModule):
 		self.tex_names.append(tex_name)
 	
 	def render_text(self,x,y,s):
-#	     print 'in render Text'
+#		 print 'in render Text'
 		glRasterPos(x+2,y+2)
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
@@ -1613,10 +1541,10 @@ class EMImageMXModule(EMGUIModule):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try: 
-				self.targetorigin=(0,self.coords[n][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-self.height()/2+self.data.get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data.get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data.get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data.get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data.get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -1651,7 +1579,7 @@ class EMImageMXModule(EMGUIModule):
 		of the contained images. """ 
 		if  self.max_idx == 0: return # there is no data
 		
-		absloc=((vec[0]),(self.gl_widget.height()-(vec[1])))
+		absloc=((vec[0]),(self.height()-(vec[1])))
 		for item in self.coords.items():
 			index = item[0]+self.img_num_offset
 			if index != 0: index %= self.max_idx
@@ -1701,20 +1629,20 @@ class EMImageMXModule(EMGUIModule):
 		f = file(fsp,'w')
 		f.write('#LST\n')
 		
-		progress = EMProgressDialogModule(get_application(),"Writing files", "abort", 0, len(self.data),None)
-		progress.qt_widget.show()
+		progress = EMProgressDialog("Writing files", "abort", 0, len(self.data),None)
+		progress.show()
 		for i in xrange(0,len(self.data)):
 			d = self.data[i]
 			if d == None: continue # the image has been excluded
-			progress.qt_widget.setValue(i)
+			progress.setValue(i)
 			get_application().processEvents()
-			if progress.qt_widget.wasCanceled():
+			if progress.wasCanceled():
 				#remove_file(fsp)# we could do this but if they're overwriting the original data then they lose it all
 				f.close()
-				progress.qt_widget.close()
+				progress.close()
 				return
 				#pass
-		progress.qt_widget.close()
+		progress.close()
 		f.close()
 	
 	def dropEvent(self,event):
@@ -1783,7 +1711,7 @@ class EMImageMXModule(EMGUIModule):
 
 	def mousePressEvent(self, event):
 		if not self.data: return
-		if (self.gl_widget.width()-event.x() <= self.scroll_bar.width):
+		if (self.width()-event.x() <= self.scroll_bar.width):
 			self.scroll_bar_has_mouse = True
 			self.scroll_bar.mousePressEvent(event)
 			return
@@ -1823,7 +1751,7 @@ class EMImageMXModule(EMGUIModule):
 			self.origin=(self.matrix_panel.xoffset,newy)
 			if self.emit_events: self.emit(QtCore.SIGNAL("set_origin"),self.origin[0],self.origin[1],False)
 			self.mousedrag=(event.x(),event.y())
-			try:self.gl_widget.updateGL()
+			try:self.updateGL()
 			except: pass
 		else: 
 			self.mouse_event_handler.mouse_move(event)
@@ -1847,7 +1775,7 @@ class EMImageMXModule(EMGUIModule):
 			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
 			self.set_scale(self.scale * self.invmag)
-		#self.resize_event(self.gl_widget.width(),self.gl_widget.height())
+		#self.resize_event(self.width(),self.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 	
@@ -1857,10 +1785,10 @@ class EMImageMXModule(EMGUIModule):
 			self.mousedrag=None
 			
 	def get_frame_buffer(self):
-		return self.gl_widget.get_frame_buffer()
+		return self.get_frame_buffer()
 	
 	def draw_scroll_bar(self):
-		width = self.gl_widget.width()
+		width = self.width()
 		glEnable(GL_LIGHTING)
 		glEnable(GL_NORMALIZE)
 		glDisable(GL_TEXTURE_2D)
@@ -1915,7 +1843,7 @@ class EMGLScrollBar:
 		
 	def update_stuff(self):
 	
-		view_height = self.target().gl_widget.height()
+		view_height = self.target().height()
 		current_y = self.target().origin[1]
 		panel_height = self.target().matrix_panel.height
 		adjusted_height = panel_height - view_height # adjusted height is the maximum value for current y!
@@ -1935,7 +1863,7 @@ class EMGLScrollBar:
 		return True
 	def update_target_ypos(self):
 		
-		view_height = self.target().gl_widget.height()
+		view_height = self.target().height()
 		panel_height = self.target().matrix_panel.height
 		adjusted_height = panel_height - view_height # adjusted height is the maximum value for current y!
 	
@@ -2033,14 +1961,14 @@ class EMGLScrollBar:
 	
 	def scroll_down(self,color_change=True):
 		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
-		newy  = self.target().origin[1]+ self.target().gl_widget.height()
+		newy  = self.target().origin[1]+ self.target().height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
 		self.target().set_origin(oldx,newy)
 
 	def scroll_up(self,color_change=True):
 		if color_change: self.scroll_bar_color = self.scroll_bar_press_color
-		newy  = self.target().origin[1] - self.target().gl_widget.height()
+		newy  = self.target().origin[1] - self.target().height()
 		newy = self.target().check_newy(newy)
 		oldx = self.target().origin[0]
 		self.target().set_origin(oldx,newy)
@@ -2055,8 +1983,8 @@ class EMGLScrollBar:
 		self.target().updateGL()
 		
 	def mousePressEvent(self,event):
-		x = self.target().gl_widget.width()-event.x()
-		y = self.target().gl_widget.height()-event.y()
+		x = self.target().width()-event.x()
+		y = self.target().height()-event.y()
 		if x < 0 or x > self.width: return # this shouldn't happen but it's nice to check I guess
 		
 		if y < self.arrow_button_height:
@@ -2077,7 +2005,7 @@ class EMGLScrollBar:
 	
 	def mouseMoveEvent(self,event):
 		if self.mouse_scroll_pos != None:
-			y = self.target().gl_widget.height()-event.y()
+			y = self.target().height()-event.y()
 			dy = y - self.mouse_scroll_pos
 			self.scroll_move(dy)
 			self.mouse_scroll_pos = y
@@ -2110,8 +2038,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 				action.setCheckable(1)
 				action.setChecked(0)
 		except Exception, inst:
-			print type(inst)     # the exception instance
-			print inst.args      # arguments stored in .args
+			print type(inst)	 # the exception instance
+			print inst.args	  # arguments stored in .args
 		
 		action=self.vals.addAction("Img #")
 		action.setCheckable(1)
@@ -2259,7 +2187,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 	
 	def set_mouse_mode(self,mode):
 		b = (button for button in self.mouse_mode_but_grp.buttons() if str(button.text()) == mode ).next() # raises if it's not there, as it should
-		b.setChecked(True) # triggers an event telling the EMImageMXModule to changes its mouse event handler
+		b.setChecked(True) # triggers an event telling the EMImageMXWidget to changes its mouse event handler
 
 	def set_current_tab(self,widget):
 		self.tabwidget.setCurrentWidget(widget)
@@ -2707,7 +2635,7 @@ class EMMXSetsManager:
 	'''
 	
 	def __init__(self,target):
-		self.target = weakref.ref(target) # target should be an EMImageMXModule
+		self.target = weakref.ref(target) # target should be an EMImageMXWidget
 		# set stuff
 		self.visible_sets = [] # this is a list of visible sets, ints
 		self.sets = {} # this is a dictionary, keys are set numbers, values are list of indices of particles in the set 
@@ -2743,7 +2671,7 @@ class EMMXSetsManager:
 		'''
 		A way to get a unique name for this object. If we end up adding more modules in the same
 		fashion then they should have the same function, etc. For the time being this is the only
-		object that is added in a modular fashion to the EMImageMXModule
+		object that is added in a modular fashion to the EMImageMXWidget
 		'''
 		return "Sets"
 	
@@ -2987,7 +2915,7 @@ class EMMXDataCache:
 		raise NotImplementedException
 	def on_idle(self):
 		'''
-		the EMImageMXModule is at liberty to call this function when it becomes idle, etc.
+		the EMImageMXWidget is at liberty to call this function when it becomes idle, etc.
 		This function is useful for miserly caching-strategies, i.e. you can load images that
 		are not already in memory
 		'''
@@ -3199,6 +3127,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Work horse function for reading an image and applying any of the supplied functions 
 		'''
 		data = self.data[idx]
+		
 		try: 
 			a = EMData(data[0],data[1])
 			if a==None : raise Exception
@@ -3210,6 +3139,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 				except: continue
 				break
 			a.to_zero()
+		
 		for func in data[2]: func(a) 
 		self.cache[adj_idx] = a
 		return a
@@ -3501,7 +3431,7 @@ class EMDataListCache(EMMXDataCache):
 class EM3DDataListCache(EMMXDataCache):
 	'''
 	A class that looks like a list to the outside word
-	automated way of handling 3d images for the EMImageMXModule
+	automated way of handling 3d images for the EMImageMXWidget
 	
 	'''
 	def __init__(self,filename):
@@ -3629,10 +3559,15 @@ class EM3DDataListCache(EMMXDataCache):
 	
 	def is_3d(self): return True
 
+class EMImageMXModule(EMImageMXWidget):
+	def __init__(self, data=None,application=None,winid=None, parent=None):
+		EMImageMXWidget.__init__(self, data, application, winid, parent)
+		import warnings
+		warnings.warn("convert EMImageMXModule to EMImageMXWidget", DeprecationWarning)
 
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	window = EMImageMXModule(application=em_app)
+	em_app = EMApp()
+	window = EMImageMXWidget(application=em_app)
 	
 	if len(sys.argv)==1 : 
 		data = []
@@ -3646,7 +3581,7 @@ if __name__ == '__main__':
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
 		
+#	widget.show()
 	em_app.show()
 	window.optimally_resize()
 	em_app.execute()
-

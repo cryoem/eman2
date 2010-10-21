@@ -30,21 +30,19 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
 from optparse import OptionParser
 import sys
 import os
+
 from EMAN2 import file_exists, gimme_image_dimensions3D,EMANVERSION,EMData,Region,Transform,get_image_directory,db_check_dict,db_open_dict,db_close_dict
 from EMAN2 import get_file_tag,check_eman2_type,Processors,parsemodopt,E2init,E2end,E2progress,get_platform
-from emapplication import get_application, EMStandAloneApplication,EMQtWidgetModule
+from emapplication import get_application, EMApp
 from emimage2d import EMImage2DModule
 from emimage3d import EMImage3DModule
-import weakref
 from emshape import EMShape
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
-import math
-import EMAN2db
-import time
+
 
 tomo_db_name = "bdb:e2tomoboxercache#"
 
@@ -76,7 +74,7 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
-	app = EMStandAloneApplication()
+	app = EMApp()
 	boxer=EMTomoBoxer(args[0])
 	boxer.show()
 	app.execute()
@@ -90,28 +88,28 @@ class EMBoxViewer(QtGui.QWidget):
 		
 		self.gbl = QtGui.QGridLayout(self)
 		self.xyview = EMImage2DModule(noparent=True)
-		self.gbl.addWidget(self.xyview.get_qt_widget(),1,0)
+		self.gbl.addWidget(self.xyview,1,0)
 
 		self.xzview = EMImage2DModule(noparent=True)
-		self.gbl.addWidget(self.xzview.get_qt_widget(),0,0)
+		self.gbl.addWidget(self.xzview,0,0)
 
 		self.zyview = EMImage2DModule(noparent=True)
-		self.gbl.addWidget(self.zyview.get_qt_widget(),1,1)
+		self.gbl.addWidget(self.zyview,1,1)
 
 		self.d3view = EMImage3DModule(noparent=True)
-		self.gbl.addWidget(self.d3view.get_qt_widget(),0,1)
+		self.gbl.addWidget(self.d3view,0,1)
 
-		QtCore.QObject.connect(self.xyview.emitter(),QtCore.SIGNAL("mousedown"),self.xy_down)
-		QtCore.QObject.connect(self.xyview.emitter(),QtCore.SIGNAL("mousedrag"),self.xy_drag)
-		QtCore.QObject.connect(self.xyview.emitter(),QtCore.SIGNAL("mouseup")  ,self.xy_up  )
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
 
-		QtCore.QObject.connect(self.xzview.emitter(),QtCore.SIGNAL("mousedown"),self.xz_down)
-		QtCore.QObject.connect(self.xzview.emitter(),QtCore.SIGNAL("mousedrag"),self.xz_drag)
-		QtCore.QObject.connect(self.xzview.emitter(),QtCore.SIGNAL("mouseup")  ,self.xz_up  )
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
 
-		QtCore.QObject.connect(self.zyview.emitter(),QtCore.SIGNAL("mousedown"),self.zy_down)
-		QtCore.QObject.connect(self.zyview.emitter(),QtCore.SIGNAL("mousedrag"),self.zy_drag)
-		QtCore.QObject.connect(self.zyview.emitter(),QtCore.SIGNAL("mouseup")  ,self.zy_up  )
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
 
 #		self.setSizeGripEnabled(True)
 

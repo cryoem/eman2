@@ -44,30 +44,19 @@ from EMAN2 import *
 import sys
 import numpy
 from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
 import weakref
 from time import *
 
-from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,EMOpenGLFlagsAndTools
-from emimageutil import ImgHistogram,EMEventRerouter, EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emglobjects import EM3DModel, EMViewportDepthTools, Camera2, Camera, EMOpenGLFlagsAndTools
+from emimageutil import ImgHistogram, EMTransformPanel
 
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMVolumeModule(EMImage3DGUIModule):
-	
-#	def get_qt_widget(self):
-#		if self.parent == None:	
-#			self.parent = EMVolumeWidget(self)
-#			if isinstance(self.data,EMData):
-#				self.parent.set_camera_defaults(self.data)
-#		return EMGUIModule.darwin_check(self)
-	
+class EMVolumeModel(EM3DModel):
 	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True):
 		self.data = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
+		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
 		self.parent = None
 		
 		self.init()
@@ -168,8 +157,8 @@ class EMVolumeModule(EMImage3DGUIModule):
 		
 		self.update_data_and_texture()
 		
-		from emimage3d import EMImage3DGeneralWidget
-		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+		from emglobjects import EM3DGLWidget
+		if isinstance(self.gl_context_parent,EM3DGLWidget):
 			self.gl_context_parent.set_camera_defaults(self.data)
 		
 	def test_accum(self):
@@ -263,7 +252,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		glDisable(GL_BLEND)
 		glPopMatrix()
 
-		# this is the accumulation buffer version of the volume renderer - it was for testing purposes
+		# this is the accumulation buffer version of the volume model - it was for testing purposes
 		# and is left here commented out incase anyone wants to investigate it in the future
 		#glPushMatrix()
 		#glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
@@ -574,103 +563,9 @@ class EMVolumeModule(EMImage3DGUIModule):
 		if not self.inspector : self.inspector=EMVolumeInspector(self)
 		return self.inspector
 		
-	def resizeEvent(self,width=0,height=0):
+	def resize(self):
 		self.vdtools.set_update_P_inv()
 
-class EMVolumeWidget(EMEventRerouter,QtOpenGL.QGLWidget):
-	
-	allim=WeakKeyDictionary()
-	def __init__(self, em_volume_module):
-		EMVolumeWidget.allim[self]=0
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self)
-		
-		self.fov = 50 # field of view angle used by gluPerspective
-		self.startz = 1
-		self.endz = 5000
-		self.cam = Camera()
-		
-		self.target = weakref.ref(em_volume_module)
-	
-	def set_camera_defaults(self,data):
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
-	
-	def set_data(self,data):
-		self.target().set_data(data)
-		self.set_camera_defaults()
-		
-	def initializeGL(self):
-		
-		#glEnable(GL_NORMALIZE)
-		#glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		#glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		#glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		#glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		#glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		glClearColor(0,0,0,0)
-	
-		glShadeModel(GL_SMOOTH)
-	def paintGL(self):
-		glClear(GL_ACCUM_BUFFER_BIT)
-		glClear(GL_STENCIL_BUFFER_BIT)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.cam.position()
-		
-		glPushMatrix()
-		self.target().render()
-		glPopMatrix()
-	
-		
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			print "bad size"
-			return
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.target().resizeEvent()
-		
-	def get_start_z(self):
-		return self.startz
-	
-	def get_near_plane_dims(self):
-		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
-		width = self.aspect * height
-		return [width,height]
-
-	def get_render_dims_at_depth(self,depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		
-		return [width,height]
-		
 
 class EMVolumeInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -823,8 +718,12 @@ class EMVolumeInspector(QtGui.QWidget):
 
 
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
-	window = EMVolumeModule(application=em_app)
+	from emapplication import EMApp
+	from emglobjects import EM3DGLWidget
+	em_app = EMApp()
+	vol_model = EMVolumeModel()
+	
+	window = EM3DGLWidget(vol_model)
 	
 	if len(sys.argv)==1 : 
 		data = []
@@ -833,8 +732,14 @@ if __name__ == '__main__':
 		window.set_data(e)
 	else :
 		a=EMData(sys.argv[1])
-		window.set_file_name(sys.argv[1])
+		vol_model.set_file_name(sys.argv[1])
 		window.set_data(a)
-		
+
+	
+	#TODO: reconsider design so these lines aren't necessary
+	vol_model.under_qt_control = True
+	vol_model.set_gl_widget(window)
+	vol_model.set_gl_context_parent(window)
+	
 	em_app.show()
 	em_app.execute()

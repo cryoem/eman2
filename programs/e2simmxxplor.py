@@ -31,9 +31,8 @@
 #
 #
 
-from emapplication import EMStandAloneApplication, get_application
-from emimage3dsym import EM3DSymViewerModule,EMSymInspector
-from e2eulerxplor import InputEventsManager
+from emapplication import EMApp, get_application
+from emimage3dsym import EM3DSymModel,EMSymInspector
 import os,sys
 from EMAN2 import *
 from optparse import OptionParser
@@ -65,7 +64,7 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
-	em_app = EMStandAloneApplication()
+	em_app = EMApp()
 	window = EMSimmxExplorer(application=em_app)
 	if len(args) > 0: window.set_simmx_file(args[0])
 	if len(args) > 1: window.set_projection_file(args[1])
@@ -77,16 +76,15 @@ def main():
 	E2end(logid)
 
 
-class EMSimmxExplorer(EM3DSymViewerModule):
+class EMSimmxExplorer(EM3DSymModel):
 	def get_desktop_hint(self): return "image"
 	
 	def __init__(self,application=None,ensure_gl_context=True,application_control=True,projection_file=None,simmx_file=None,particle_file=None):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
-		EM3DSymViewerModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
 		self.window_title = "SimmxXplor"
-		#InputEventsManager.__init__(self)
-	
+			
 		self.projection_file = projection_file # a projection file produced by e2project3d
 		self.simmx_file = simmx_file # a similarity matrix produced by e2simmx or by e2classaverage - should have the same number of columns (nx) as the number of projections
 		self.particle_file = particle_file # a similarity matrix produced by e2simmx or by e2classaverage - should have the same number of columns (nx) as the number of projections
@@ -96,7 +94,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 		self.projections = None # a list of the projections - the initial design keeps them all in memory - this could be overcome
 		self.mx_display = None # mx display module for displaying projection and aligned particle
 		self.frc_display = None # 2d plot for displaying comparison between particle and projection
-		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymViewerModule.make_sym_dl_lis
+		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymModel.make_sym_dl_lis
 		
 	def set_data(self,simmx_file):
 		'''
@@ -174,7 +172,7 @@ class EMSimmxExplorer(EM3DSymViewerModule):
 			#	print "failed to initialize vital information"
 			#	return
 			
-		EM3DSymViewerModule.render(self)
+		EM3DSymModel.render(self)
 	
 	def object_picked(self,object_number):
 		if object_number == self.current_projection: return

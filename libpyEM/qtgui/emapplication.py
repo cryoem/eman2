@@ -31,37 +31,17 @@
 #
 #
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
-import platform
-from emimageutil import EMParentWin,EventsEmitterAndReciever
+from emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory
 import EMAN2db
 import weakref
-
+import warnings
 
 try: from PyQt4 import QtWebKit
 except: pass
-
-class EMModule:
-	'''
-	An EM module is something that provides a form data (list of ParamdDef objects) in order to gather input
-	'''
-	def __init__(self):
-		pass
-	
-	def get_params(self):
-		'''
-		Must supply this. Should return a list of ParamDef objects
-		'''
-		raise
-	
-	def get_blurb(self):
-		'''
-		Must supply this, should return a list of ParamDef objects. If the blurb is only a string
-		'''
-		raise
 
 class ModuleEventsManager:
 	'''
@@ -69,13 +49,20 @@ class ModuleEventsManager:
 	To begin with this is only the close event, then I added the idle event
 	'''
 	def __init__(self,target,module):
+		warnings.warn("Developers: ModuleEventsManager class should probably be deprecated and eventually removed.", DeprecationWarning)
 		self.target = weakref.ref(target)
 		self.module = weakref.ref(module)
-		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("module_idle"), self.module_idle)
-		
-		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.connect(self.module().emitter(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		try:
+			emitter = self.module().emitter()
+			print "It has an emitter() function! Check whether it should be converted to a QWidget subclass."
+		except AttributeError:
+			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
+			
+		QtCore.QObject.connect(emitter, QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.connect(emitter, QtCore.SIGNAL("module_idle"), self.module_idle)
+	
+		QtCore.QObject.connect(emitter, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.connect(emitter, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
 		
 	
 	def module_closed(self):
@@ -88,28 +75,119 @@ class ModuleEventsManager:
 		
 	def module_ok(self,*args,**kargs):
 		self.disconnect_object()
-		self.module().closeEvent(None)
+		self.module().close()
 		
 	def module_cancel(self):
 		self.disconnect_object()
-		self.module().closeEvent(None)
+		self.module().close()
 	
 	
 	def disconnect_object(self):
-		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("module_idle"), self.module_idle)
+		try:
+			emitter = self.module().emitter()
+		except AttributeError:
+			emitter = self.module() #Ross's hack to get this to work with QWidget's as well
+			
+		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("module_idle"), self.module_idle)
+	
+		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+
+class EMGLWidget(QtOpenGL.QGLWidget):
+	FTGL = "ftgl"
+	GLUT = "glut"
+	def hide(self):
+		if self.qt_parent:
+			self.qt_parent.hide()
+	def resize(self, w, h):
+		if self.qt_parent:
+			QtOpenGL.QGLWidget.resize(self, w, h)
+			self.qt_parent.resize(w, h)
+	def show(self):
+		if self.qt_parent:
+			self.qt_parent.show()
+	def setWindowTitle(self, title):
+		if self.qt_parent:
+			self.qt_parent.setWindowTitle(title)
+	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
+		QtOpenGL.QGLWidget.__init__(self,parent)
+		self.qt_parent = EMParentWin(self, enable_timer)
 		
-		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.disconnect(self.module().emitter(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		self.core_object =  QtCore.QObject()
+		self.under_qt_control = True #TODO: figure out which value works better -- eventually eliminate this Qt control vs GL control was from 3D desktop days
+		self.suppress_inspector = False # turn on to suppress showing the inspector
+		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
+		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
 		
-class EMGUIModule(EventsEmitterAndReciever):
+		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		app = get_application()
+		if app != None and application_control:
+			app.attach_child(self)
+		
+		self.application_control = application_control
+		self.file_name = ""
+		self.disable_inspector = False
+	
+	def closeEvent(self, event):
+		QtOpenGL.QGLWidget.closeEvent(self, event)
+		self.qt_parent.close()
+		
+	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
+	
+		try:
+			try:
+				import webbrowser
+				webbrowser.open(url)
+			except:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl())
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show(url)
+		except:
+			pass
+
+	def enable_inspector(self,val=True): self.disable_inspector = not val
+	def load_font_renderer(self):
+		try:
+			self.font_render_mode = EMGLWidget.FTGL
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		except:
+			self.font_render_mode = EMGLWidget.GLUT
+	def show_inspector(self,force=0):
+		if self.disable_inspector: return
+		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
+		app = get_application()
+		if app == None:
+			print "can't show an inspector with having an associated application"
+		
+		if self.suppress_inspector: return
+		if not force and self.inspector==None : return
+		if not self.inspector : 
+			self.inspector = self.get_inspector()
+			if self.inspector == None: return # sometimes this happens
+		if not app.child_is_attached(self.inspector):
+			app.attach_child(self.inspector)
+		app.show_specific(self.inspector)
+	def update_inspector_texture(self):
+		if self.inspector != None:
+			self.inspector.update()
+
+class EMGUIModule:
 	FTGL = "ftgl"
 	GLUT = "glut"
 	
 	def __init__(self,ensure_gl_context=False,application_control=True,winid=None):
+		warnings.warn("EMGUIModule.__init__()--use EMGLWidget instead", DeprecationWarning)
 		self.core_object =  QtCore.QObject()
 		self.under_qt_control = False
-		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
+		self.em_qt_inspector_widget = None # should be = EMQtWidgetModule(application) somewhere 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.winid=None # a 'unique' identifier for the window used to restore locations on the screen
@@ -133,10 +211,21 @@ class EMGUIModule(EventsEmitterAndReciever):
 		if ensure_gl_context and app != None:
 			app.ensure_gl_context(self)
 		
-		EventsEmitterAndReciever.__init__(self)
+		self.emit_events = False
 		self.disable_inspector = False
 		
 		self.winid=winid
+
+		
+	def enable_emit_events(self,val=True):
+		#print "set emit events to",val
+		self.emit_events = val
+	
+	def is_emitting(self): return self.emit_events
+	
+	def get_emit_signals_and_connections(self): return {}
+	
+	
 	
 	def setWindowTitle(self,title):
 		pass
@@ -322,6 +411,7 @@ get_application = em_app_instance.get_instance
 
 class EMApplication:
 	def __init__(self,qt_application_control=True):
+		warnings.warn("EMApplication.__init__()--use EMApp instead", DeprecationWarning)
 		self.children = []
 		if qt_application_control:
 			self.app = QtGui.QApplication(sys.argv)
@@ -405,7 +495,7 @@ class EMApplication:
 
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
-		
+		warnings.warn("EMStandAloneApplication.__init__()--use EMApp instead", DeprecationWarning)
 		
 		# Stuff for display synchronization in e2.py
 		self.timer_function = None
@@ -549,9 +639,125 @@ class EMStandAloneApplication(EMApplication):
 		else:
 			print "warning, can't stop a timer when there is none"
 
+
+
+class EMApp(QtGui.QApplication):
+	def __init__(self,qt_application_control=True):
+		self.children = []
 		
+		# Stuff for display synchronization in e2.py
+		self.timer_function = None
+		self.tmr = None
+		
+		QtGui.QApplication.__init__(self, sys.argv)
+		
+		if em_app_instance.get_instance() == None:
+			em_app_instance.set_instance(self)
+	
+#	def __del__(self):
+#		print "stand alone application death"
+	def child_is_attached(self,query_child):
+		if query_child in self.children: return True
+		else: return False
+	def detach_child(self,child):
+		for i,child_ in enumerate(self.children):
+			if child_ == child:
+				self.children.pop(i)
+				return
+	
+		print "error, can't detach a child that doesn't belong to this",child,child.get_child()
+	
+	def attach_child(self,child):
+		for i in self.children:
+			if i == child:
+				print "error, can't attach the same child twice",child
+				return
+			
+		self.children.append(child)
+		
+	def isVisible(self,child):
+		if child != None:
+			return child.isVisible()
+		else: return False
+	
+	def show(self):
+		for child in self.children:
+			if child.isVisible() == False:
+				child.show()
+				
+	def close_specific(self,child,inspector_too=True):
+		for i,child_ in enumerate(self.children):
+			if child == child_:
+				self.children.pop(i) # need to double check that this is the correct behavior
+				if child != None: 
+					child.close()
+#					widget.deleteLater() #TODO: see if this is still needed
+				if inspector_too and child.inspector != None:
+					inspector = child.get_inspector()
+					inspector.close()
+				return
+			
+		#print "couldn't close",child
+		
+	def execute(self):
+		return sys.exit(self.exec_())
+		
+	def hide_specific(self,child,inspector_too=True):
+		for child_ in self.children:
+			if child == child_:
+				child.hide()
+				inspector = child.get_inspector()
+				if inspector != None:
+					inspector.hide()
+				return
+			
+		print "couldn't hide",child
+		
+
+	def show_specific(self,child):
+		for child_ in self.children:
+			if child == child_:
+#				print "show",child
+				if child.isVisible() == False:
+					child.show()
+					child.setFocus()
+				child.raise_()
+				return
+	
+		# if we make it here than we automatically attach the child
+		self.attach_child(child)
+		if child.isVisible() == False:
+			child.show()
+			child.setFocus()
+
+	def start_timer(self,interval,function):
+	
+		if self.tmr != None:
+			print "can't start a timer, already have one running. Call stop_timer first"
+			#FIXME, add support for mutliple timers
+			return
+	
+		self.tmr=QtCore.QTimer()
+		self.tmr.setInterval(interval)
+		QtCore.QObject.connect(self.tmr,QtCore.SIGNAL("timeout()"), function)
+		self.tmr.start()
+		
+		self.timer_function = function
+		
+	
+	def stop_timer(self):
+		if self.tmr != None:
+			QtCore.QObject.disconnect(self.tmr, QtCore.SIGNAL("timeout()"), self.timer_function)
+			self.tmr = None
+			self.timer_function = None
+		else:
+			print "warning, can't stop a timer when there is none"
+
+
+
 class EMQtWidgetModule(EMGUIModule):
 	def __init__(self,qt_widget,winid=None):
+		warnings.warn("EMQtWidgetModule.__init__()--use EMGLWidget, QWidget, or QDialog instead", DeprecationWarning)
 		self.qt_widget = qt_widget
 		self.gl_widget = None
 		EMGUIModule.__init__(self,winid=winid)
@@ -579,26 +785,6 @@ class EMQtWidgetModule(EMGUIModule):
 		self.under_qt_control = True
 #		print "returning self.qt_widget"
 		return self.qt_widget
-		
-	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EMGLViewQtWidget
-		from emfloatingwidgets import EMQtGLView, EM2DQtGLWindow
-		if self.gl_widget == None:
-			self.under_qt_control = False
-			if qt_context_parent != None: self.qt_context_parent = qt_context_parent
-			if gl_context_parent != None: self.gl_context_parent = gl_context_parent
-			gl_view = EMQtGLView(self,self.qt_widget)
-			gl_view.setQtWidget(self.qt_widget)
-			self.gl_widget = EM2DQtGLWindow(self,gl_view)
-			self.gl_widget.setWindowTitle(self.file_name)
-			self.gl_widget.set_selected(self.selected)
-			#self.gl_widget = EMGLViewQtWidget(gl_context_parent)
-			#self.gl_widget.setQtWidget(self.qt_widget)
-		return self.gl_widget
-	
-	def setWindowTitle(self,title):
-		self.file_name = title
-		if self.qt_context_parent != None: self.qt_context_parent.setWindowTitle(self.file_name)
 	
 	def get_desktop_hint(self):
 		return self.qt_widget.get_desktop_hint()
@@ -615,7 +801,7 @@ class EMQtWidgetModule(EMGUIModule):
 	def unlock_texture(self):
 		self.gl_widget.unlock_texture()
 		
-	def width(self): return self.qt_widget.widht()
+	def width(self): return self.qt_widget.width()
 	
 	def height(self): return self.qt_widget.height()
 	
@@ -651,49 +837,11 @@ class EMQtWidgetModule(EMGUIModule):
 		if self.qt_widget != None:
 			self.qt_widget.setWindowTitle(title)
 			
-class EMProgressDialogModule(EMQtWidgetModule):
-	'''
-	params should be a list of ParamDef objects
-	application should be an EMAN2 type application
-	After initializing this object you should probably call application.show(this)
-	or application.show_specific(this), depending on what you're doing
-	'''
-	def __init__(self,application,label_text,cancel_button_text, minimum, maximum, parent):
-		self.application = weakref.ref(application)
-		self.widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
-		self.widget.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-		EMQtWidgetModule.__init__(self,self.widget)
-		
-	def get_desktop_hint(self):
-		return "dialog"
-		
-
-#class EMProgressDialogModule(object):
-	#def __new__(cls,application,label_text,cancel_button_text, minimum, maximum, parent):
-		#widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
-
-		##gl_view = EMQtGLView(EMDesktop.main_widget,widget)
-		#module = EMQtWidgetModule(widget,application)
-		#widget.widget_module = module
-		#application.show_specific(module)
-		##desktop_task_widget = EM2DGLWindow(gl_view)
-		#return module
 	
 class EMProgressDialog(QtGui.QProgressDialog):
-	'''
-	We need to do it this way in order to make the progress dialog work in the desktopp
-	'''
 	def __init__(self,label_text,cancel_button_text, minimum, maximum, parent = None):
 		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
-		self.widget_module = None # this should be immediately set after init
-		
-	def set_widget_module(self,module):
-		self.widget_module = weakref.ref(module)
-		
-	def __setattr__( self, attr, value ):
-		QtGui.QProgressDialog.__setattr__(self,attr,value)
-		if self.widget_module != None:
-			self.widget_module().force_texture_update()
-		
-
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
+	def get_desktop_hint(self): #TODO: get_desktop_hint() functions should probably be removed everywhere--remnant of 3D desktop days --Ross
+		return "dialog"
 			

@@ -31,27 +31,19 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-
-
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import *
+from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+from emapplication import EMApp, get_application
+from emglobjects import EM3DModel, EM3DGLWidget, Camera2, EMViewportDepthTools2, get_default_gl_colors
+from emimageutil import EMTransformPanel
 from math import *
-from EMAN2 import *
-import sys
-import numpy
-from weakref import WeakKeyDictionary
-from time import time
-from PyQt4.QtCore import QTimer
-
 from time import *
-
-from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools2,EMGLProjectionViewMatrices,get_default_gl_colors
-from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule, get_application
+from valslider import ValSlider
+from weakref import WeakKeyDictionary
 import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
@@ -180,7 +172,7 @@ class MixedColor:
 
 class EulerData:
 	'''
-	A mixin for the EM3DSymViewerModule - takes care of everything that needs to occur
+	A mixin for the EM3DSymModel - takes care of everything that needs to occur
 	if you have supplied a list of EMData objects - the EMData's must have the
 	'xform.projection' header attribute
 	'''
@@ -251,25 +243,12 @@ class EulerData:
 		return n
 	
 	
-class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
-
-	def get_qt_widget(self):
-		if self.qt_context_parent == None:	
-			self.under_qt_control = True
-			from emimageutil import EMParentWin
-			self.gl_context_parent = EMSymViewerWidget(self)
-			self.qt_context_parent = EMParentWin(self.gl_context_parent)
-			self.qt_context_parent.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
-			self.qt_context_parent.setWindowTitle(self.window_title)
-			self.gl_widget = self.gl_context_parent
-		return self.qt_context_parent
-
-
+class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
 		self.window_title = "EulerXplor"
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context,application_control)
+		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
 		Orientations.__init__(self)
 		ColumnGraphics.__init__(self)
 		
@@ -343,15 +322,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		if self.image_display_window != None:
 			w = self.image_display_window 
 			self.image_display_window = None
-			w.closeEvent(None)
-		
-		EMImage3DGUIModule.__del__(self)
+			w.close()
+			
 		self.close_image_display()
 	def close_image_display(self):
 		if self.image_display_window:
 			tmp = self.image_display_window
 			self.image_display_window = None
-			tmp.closeEvent(None)
+			tmp.close()
 			
 	def clear_gl_memory(self):
 		try: self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
@@ -425,14 +403,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			self.generate_current_display_list(True)
 			self.updateGL()
 		else:
-			EMImage3DGUIModule.keyPressEvent(self,event)
+			EM3DModel.keyPressEvent(self,event)
 			
 	def object_picked(self,object_number):
 		resize_necessary = False
 		if self.image_display_window == None:
-			from emimage2d import EMImage2DModule
-			self.image_display_window = EMImage2DModule()
-			QtCore.QObject.connect(self.image_display_window.emitter(),QtCore.SIGNAL("module_closed"),self.on_image_display_window_closed)
+			from emimage2d import EMImage2DWidget
+			self.image_display_window = EMImage2DWidget()
+			QtCore.QObject.connect(self.image_display_window,QtCore.SIGNAL("module_closed"),self.on_image_display_window_closed)
 			resize_necessary = True
 				
 		self.image_display_window.set_data(self.euler_data[object_number],"Data")
@@ -485,7 +463,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			#return
 		
 		
-		EMImage3DGUIModule.mouseReleaseEvent(self,event)
+		EM3DModel.mouseReleaseEvent(self,event)
 	
 	def get_type(self):
 		return "Symmetry Viewer"
@@ -729,10 +707,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 			glEndList()
 		
 	def closeEvent(self,event):
+		print "EM3DSymModel.closeEvent()!"
 		self.close_image_display()
-		EMGUIModule.closeEvent(self,event)
-#		import sys
-#		print sys.getrefcount(self)
 
 	def generate_current_display_list(self,force=False):
 		self.init_basic_shapes()
@@ -1029,7 +1005,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 
 	def set_gl_context_parent(self,parent):
 		'''
-		Needed to specialized this function (from EMGUIModule) because self.vdtools is absolutely required to be current and accurate
+		Needed to specialized this function (from EM3DModel) because self.vdtools is absolutely required to be current and accurate
 		(this object uses GLU picking and needs access to the viewport matrix) 
 		'''
 		self.vdtools = EMViewportDepthTools2(parent)
@@ -1145,7 +1121,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 		self.force_update = True
 		self.updateGL()
 			
-	def resizeEvent(self,width=0,height=0):
+	def resize(self):
 		pass
 	
 		#self.vdtools.set_update_P_inv()
@@ -1162,44 +1138,23 @@ class EM3DSymViewerModule(EMImage3DGUIModule,Orientations,ColumnGraphics):
 	def reducetog(self,bool):
 		self.reduce = bool
 
-class EMSymViewerWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
-	
+class EMSymViewerWidget(EM3DGLWidget):	
 	allim=WeakKeyDictionary()
-	def __init__(self, em_slice_viwer):
-
-		assert(isinstance(em_slice_viwer,EM3DSymViewerModule))
-		
+	def __init__(self, em_sym_viewer):
+		assert(isinstance(em_sym_viewer,EM3DSymModel))
 		EMSymViewerWidget.allim[self]=0
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self,em_slice_viwer)
-		EMGLProjectionViewMatrices.__init__(self)
-		self.em_slice_viewer = weakref.ref(em_slice_viwer)
+		EM3DGLWidget.__init__(self, em_slice_viewer)
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
-		self.cam = Camera()
 		self.cam.setCamTrans("default_z",-100)
-		
 		self.resize(640,640)
-		
-#	def __del__(self):
-#		print "sym viewer widget died"
-
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-#		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-#		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.8,.8,.8, 1.0])
-#		glLightfv(GL_LIGHT0, GL_SPECULAR, [.2, .2, .2, 1.0])
-#		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.4,.4,.4, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [.1,.1,.1, 1.0])
@@ -1207,66 +1162,11 @@ class EMSymViewerWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMat
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		GL.glClearColor(0.875,0.875,0.875,1)
-		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
 		
 		#glClearStencil(0)
 		#glEnable(GL_STENCIL_TEST)
-	def paintGL(self):
-		#glClear(GL_ACCUM_BUFFER_BIT)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.cam.position()
-		
-		glPushMatrix()
-		self.target().render()
-		glPopMatrix()
-		
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			return
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		self.set_projection_view_update()
-		self.target().resizeEvent()
-		
-	def load_perspective(self):
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-
-	def get_start_z(self):
-		return self.startz
-	
-	def get_near_plane_dims(self):
-		height = 2.0 * self.get_start_z()*tan(self.fov/2.0*pi/180.0)
-		width = self.aspect * height
-		return [width,height]
-
-	def show_inspector(self,force=0):
-		self.target().show_inspector(self,force)
-
-	def get_render_dims_at_depth(self,depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		
-		return [width,height]
 
 
 class SparseSymChoicesWidgets:
@@ -1277,10 +1177,10 @@ class SparseSymChoicesWidgets:
 	def __init__(self,widget,target):
 		'''
 		@param widget some kind of QtWidget, used as the first argument when initializing Validators (really)
-		@param target an EM3DSymViewerModule instance
+		@param target an EM3DSymModel instance
 		
 		The target is very important, the signals emitted by this object are connect to functions in the 
-		EM3DSymVeiwerModule
+		EM3DSymViewerWidget
 		'''
 		self.widget = weakref.ref(widget)
 		self.target = weakref.ref(target)
@@ -1590,6 +1490,9 @@ class SparseSymChoicesWidgets:
 		
 		return d
 
+sym_model = None #TODO: remove after debugging @ __NAME__ == '__MAIN__'
+sym_widget = None #TODO: remove after debugging @ __NAME__ == '__MAIN__'
+
 class EMSymChoiceDialog(QtGui.QDialog):
 	'''
 	This is a dialog one can use to get the parameters you can use for 
@@ -1601,10 +1504,7 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		'''
 		@param sym some kind of symmetry, such as "d7", "icos" etc
 		'''
-		QtGui.QDialog.__init__(self)
-		self.target = EM3DSymViewerModule()
-		self.target.enable_inspector(False)
-		
+		QtGui.QDialog.__init__(self)		
 		self.setWindowTitle("Choose Distribution Parameters")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 
@@ -1613,11 +1513,26 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.target)
+		self.sym_model = EM3DSymModel()
+		global sym_model #TODO: remove after debugging @ __NAME__ == '__MAIN__'
+		sym_model = self.sym_model
+		print "EM3DSymModel: ", hex(id(self.sym_model))
+		self.sym_model.enable_inspector(False)
+		
+		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.sym_model)
 		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		self.sparse_syms_widgets.add_symmetry_options(self.vbl)
 
-		self.vbl.addWidget(self.target.get_qt_widget(),10)
+		global sym_widget #TODO: remove after debugging @ __NAME__ == '__MAIN__'
+		self.sym_widget = EMSymViewerWidget(self.sym_model)
+		sym_widget = self.sym_widget
+		print "EMSymViewerWidget:", hex(id(self.sym_widget))
+		#TODO: reconsider design so these lines aren't necessary
+		self.sym_model.under_qt_control = True
+		self.sym_model.set_gl_widget(self.sym_widget)
+		self.sym_model.set_gl_context_parent(self.sym_widget)
+
+		self.vbl.addWidget(self.sym_widget,10)
 		
 		self.button_hbl = QtGui.QHBoxLayout()
 		self.ok = QtGui.QPushButton("Ok")
@@ -1635,8 +1550,8 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
 		
 		self.sparse_syms_widgets.set_sym(sym)
-		self.target.set_symmetry(sym)
-		self.target.regen_dl()
+		self.sym_model.set_symmetry(sym)
+		self.sym_model.regen_dl()
 		
 	def on_ok(self,unused=None):
 		'''
@@ -1944,11 +1859,16 @@ class EMSymInspector(QtGui.QWidget):
 
 	
 if __name__ == '__main__':
-	em_app = EMStandAloneApplication()
+	from emglobjects import EM3DGLWidget
+	em_app = EMApp()
 	
 	dialog = EMSymChoiceDialog()
-	print dialog.exec_()
+	choices_dict = dialog.exec_()
+	print choices_dict
 	
-	window = EM3DSymViewerModule(application=em_app)
-	em_app.show()
+	window = EMSymViewerWidget(sym_model)
+#	print sym_widget.target()
+#	sym_widget.updateGL()
+	
+	em_app.show() #FIXME: get the orientations to show up in sym_widget (they should be in sym_widget.target())
 	em_app.execute()

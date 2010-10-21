@@ -33,7 +33,7 @@
 from EMAN2 import *
 from PyQt4 import QtCore
 from emfoldhunterstat import *
-from emapplication import EMStandAloneApplication,get_application
+from emapplication import get_application
 from empdbvaltool import EMPDBValTool
 from emplot3d import *
 import os
@@ -48,14 +48,14 @@ class E2ValidateMed():
 	def start(self): #program starts here, inits the empdbvaltool module
 		if self.em_val == None:
 			self.__init_em_val()
-				
-		get_application().show_specific(self.em_val)
+		
+		get_application().show()
 
 	def __init_em_val(self): #formally creates the empdbvaltool module, waits for a signal to validate or close
 		if self.em_val == None: 
 			self.em_val = EMPDBValTool()
-			QtCore.QObject.connect(self.em_val.emitter(), QtCore.SIGNAL("run_validate"),self.on_em_validate_requested)
-			QtCore.QObject.connect(self.em_val.emitter(), QtCore.SIGNAL("module_closed"),self.on_em_val_closed)
+			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("run_validate"),self.on_em_validate_requested)
+			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("module_closed"),self.on_em_val_closed)
 	
 	def on_em_val_closed(self):
 		self.em_val = None
@@ -63,13 +63,13 @@ class E2ValidateMed():
 	def __init_plot3d(self):
 		if self.plot3d == None: 
 			self.plot3d = EMPlot3DModule()
-			QtCore.QObject.connect(self.plot3d.emitter(), QtCore.SIGNAL("view_transform"),self.on_view_transform_requested)
-			QtCore.QObject.connect(self.plot3d.emitter(), QtCore.SIGNAL("module_closed"),self.on_plot3d_closed)
+			QtCore.QObject.connect(self.plot3d, QtCore.SIGNAL("view_transform"),self.on_view_transform_requested)
+			QtCore.QObject.connect(self.plot3d, QtCore.SIGNAL("module_closed"),self.on_plot3d_closed)
 
 	def on_view_transform_requested(self, new_pdb_file):
 		if self.em_val == None:
 			self.__init_em_val()
-			get_application().show_specific(self.em_val)
+			get_application().show()
 		self.em_val.set_pdb_file(str(new_pdb_file))
 		os.remove(str(new_pdb_file))
 
@@ -106,7 +106,7 @@ class E2ValidateMed():
 		print "Note: The original probe is displayed by a cube"
 		print " " 
 
-		get_application().show_specific(self.plot3d)
+		get_application().show()
 		self.plot3d.set_Vals(vals)
 		self.plot3d.set_Rotations(rotList)
 		self.plot3d.set_Probe(b)
@@ -114,8 +114,8 @@ class E2ValidateMed():
 		self.plot3d.set_data(initPoint, "Original Probe",shape="Cube") #note: original probe is displayed with a cube
 
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
+	from emapplication import EMApp
+	em_app = EMApp()
 	window = E2ValidateMed()
 	window.start()
 	#em_app.show()

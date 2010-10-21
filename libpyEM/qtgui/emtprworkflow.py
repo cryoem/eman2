@@ -244,7 +244,7 @@ class EMReconstructAliFile(WorkFlowTask):
 		
 		self.write_db_entries(params)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 
 class EMTomoPtclReportTool:
@@ -367,7 +367,7 @@ class EMTomoChooseAlignedSetTask(EMBaseTomoChooseFilteredPtclsTask):
 #				
 		task = EMTomoPtclAlignmentReportTask(self.particles_map[self.particles_name_map[choice]])
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Alignment Parameters")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.write_db_entries(params)
 
@@ -522,7 +522,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		self.tomo_boxer_module.show_guis()
 		
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 	
@@ -548,7 +548,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		if self.report_task:
 			self.report_task.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 	
@@ -664,14 +664,14 @@ class E2TomoBoxerOutputTask(WorkFlowTask):
 			temp_file_name = "e2tomoboxer_output_stdout.txt"
 			self.spawn_task("e2tomoboxer.py",options,string_args,bool_args,additional_args,temp_file_name)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.form.closeEvent(None)
+			self.form.close()
 			self.form = None
 
 	def on_form_cancel(self):
 		if self.tools:
 			self.tools.recover_original_raw_data_list()
 		
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.emit(QtCore.SIGNAL("task_idle"))
 
@@ -689,7 +689,7 @@ class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		task = EMTomoGenericReportTask(self.particles_map[self.particles_name_map[choice]])
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -819,7 +819,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 			return
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.write_db_entries(params)	
@@ -949,7 +949,7 @@ class E2TomoScaleClipTask(E2TomoFilterParticlesTask):
 			return
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.write_db_entries(params)	
@@ -1024,7 +1024,7 @@ class E2TomoMaskTask(E2TomoFilterParticlesTask):
 			return
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.write_db_entries(params)	
@@ -1102,7 +1102,7 @@ class E2TomoNormalizeInvertTask(E2TomoFilterParticlesTask):
 			return
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 	
 		self.write_db_entries(params)	
@@ -1152,7 +1152,7 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		task = self.task_type(self.particles_map[self.particles_name_map[choice]],self.name_map)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -1171,7 +1171,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		choice = params["tomo_filt_choice"]
 		task = EMTomoBootstrapTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -1196,14 +1196,14 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		self.name_map = name_map
 		
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
 		table_params = []
@@ -1308,7 +1308,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		temp_file_name = "e2tomoaverage_stdout.txt"
 		self.spawn_single_task('e2tomoaverage.py',options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 
 
@@ -1328,14 +1328,14 @@ class EMTomohunterTask(WorkFlowTask):
 		self.name_map = name_map
 		
 	def run_form(self):
-		self.form = EMTableFormModule(self.get_params(),get_application())
-		self.form.qt_widget.resize(*self.preferred_size)
+		self.form = EMTableFormWidget(self.get_params())
+		self.form.resize(*self.preferred_size)
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form.emitter(),QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
 		
 	def get_params(self):
 		table_params = []
@@ -1441,7 +1441,7 @@ class EMTomohunterTask(WorkFlowTask):
 		temp_file_name = "e2tomohunter_stdout.txt"
 		self.spawn_single_task('e2tomohunter.py',options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 
 
@@ -1460,7 +1460,7 @@ class EMTomoChooseTomoHunterPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		print "tomo hunter chose"
 		task = EMTomohunterTask(self.particles_map[self.particles_name_map[choice]],self.name_map)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)
@@ -1522,7 +1522,7 @@ class E2TomoAverageChooseAliTask(WorkFlowTask):
 		task = E2TomoGenerateAverageTask(self.ali_probe_map[self.selection_map[params["probe_choice"]]],self.selection_map[params["probe_choice"]])
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Generate Tomo Average")
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
@@ -1575,7 +1575,7 @@ class EMTomoGenerateAverageChooseDataTask(WorkFlowTask):
 				
 		task = E2TomoGenerateAverageTask(final_set,probe,ali_set)
 		self.emit(QtCore.SIGNAL("replace_task"),task,"Filter Tomo Particles")
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		self.write_db_entries(params)
 
@@ -1651,7 +1651,7 @@ class E2TomoGenerateAverageTask(WorkFlowTask):
 		temp_file_name = "e2tomohunter_average_stdout.txt"
 		self.spawn_single_task("e2tomohunter.py",options,string_args,bool_args,additional_args,temp_file_name)
 		self.emit(QtCore.SIGNAL("task_idle"))
-		self.form.closeEvent(None)
+		self.form.close()
 		self.form = None
 		
 		self.write_db_entries(params)

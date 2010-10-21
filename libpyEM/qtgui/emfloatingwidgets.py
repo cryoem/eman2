@@ -51,6 +51,7 @@ from math import sqrt
 try: from emimage import EMImage
 except: pass
 
+from emapplication import EMGLWidget
 from emglobjects import EMViewportDepthTools,EMViewportDepthTools2, Camera2, EMBasicOpenGLObjects, Camera
 from emimageutil import EMEventRerouter
 from emplot2d import EMPlot2DModule
@@ -1589,7 +1590,8 @@ class EM3DGLView(EM3DVolume,EMEventRerouter,GLView):
 		self.cam = Camera2(self)
 		self.cam.motiondull = 1.0
 		
-		if isinstance(parent,EMImage3DGUIModule):
+#		if isinstance(parent,EMImage3DGUIModule):
+		if isinstance(parent, EM3DModel):
 			self.drawable = self.parent
 			#self.w = self.drawable.width()
 			#self.h = self.drawable.height()
@@ -1953,9 +1955,9 @@ class EM2DGLView(EMEventRerouter,GLView):
 		self.drawable().set_shapes(shapes,shrink)
 		
 	def become_2d_image(self,a):
-		self.module = EMImage2DModule(a)
+		self.module = EMImage2DWidget(a)
 		self.drawable = weakref.ref(self.module)
-		self.drawable().set_parent(self)
+#		self.drawable().set_parent(self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
 		#if self.w > self.parent.width(): self.w = self.parent.width()
@@ -2870,9 +2872,9 @@ class EMGLViewQtWidget:
 
 
 
-class EMFloatingWidgets(EMImage3DGUIModule):
+class EMFloatingWidgets(EMGLWidget):
 	def __init__(self,parent=None):
-		EMImage3DGUIModule.__init__(self)
+		EMGLWidget.__init__(self)
 		#fmt=QtOpenGL.QGLFormat()
 		#fmt.setDoubleBuffer(True)
 		# enable multisampling to combat aliasing
@@ -2883,8 +2885,8 @@ class EMFloatingWidgets(EMImage3DGUIModule):
 		
 		#self.setMouseTracking(True)
 		self.fov = 2*180*atan2(1,5)/pi
-		self.zNear= 1000
-		self.zFar = 3000
+		self.startz= 1000
+		self.endz = 3000
 		self.floatwidget = EMFloatingWidgetsCore(self)
 		
 		self.cam = Camera()
@@ -2980,7 +2982,7 @@ class EMFloatingWidgets(EMImage3DGUIModule):
 		depth = self.get_depth_for_height(height_plane)
 		
 		#gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
-		gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -3035,12 +3037,12 @@ class EMFloatingWidgets(EMImage3DGUIModule):
 		self.floatwidget.hoverEvent(event)
 
 	def get_near_plane_dims(self):
-		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
+		height = 2.0*self.startz * tan(self.fov/2.0*pi/180.0)
 		width = self.aspect * height
 		return [width,height]
 	
 	def get_start_z(self):
-		return self.zNear
+		return self.startz
 
 class EMFloatingWidgetsCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -3305,13 +3307,8 @@ class EMFloatingWidgetsCore:
 
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
+	from emapplication import EMApp
+	em_app = EMApp()
 	window = EMFloatingWidgets()
 	em_app.show()
 	em_app.execute()
-	
-#	window2 = EMParentWin(window)
-#	window2.show()
-#	
-#	sys.exit(app.exec_())

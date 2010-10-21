@@ -32,27 +32,21 @@
 #
 #
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import *
+from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from valslider import ValSlider
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+from emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
+from emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
-from EMAN2 import *
-import sys
-import numpy
-from emimageutil import ImgHistogram,EMParentWin
-from weakref import WeakKeyDictionary
-import weakref
-from time import time
-from PyQt4.QtCore import QTimer
-
 from time import *
+from valslider import ValSlider
+import weakref # for EMLightsInspector
 
-from emglobjects import EMImage3DGUIModule, Camera2,get_default_gl_colors,EMViewportDepthTools2,get_RGB_tab,get_gl_lights_vector,init_glut
-from emimageutil import EMTransformPanel
+
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -64,7 +58,8 @@ class EMLightsDrawer:
 		
 		self.gl_lights = get_gl_lights_vector()
 		self.colors = get_default_gl_colors()
-		self.mouse_target = None
+		self.mouse_modes = [None, "directional", "point source"]
+		self.current_mouse_mode = None
 		self.current_light = GL_LIGHT0 # change this to change which light is drawn
 		self.display_lights = False
 		self.ball_dl = 0 # makes a funny kind of ball
@@ -78,16 +73,19 @@ class EMLightsDrawer:
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
 		
+		self.inspector = None
+		self.mpressx = None
+		self.mpressy = None
+
+		
 	def set_current_light(self,light):
-		#print "setting current light",light
 		self.current_light = light
-		if self.mouse_target != None:
+		if self.current_mouse_mode != None:
 			pos = glGetLightfv(self.current_light,GL_POSITION)
 			if pos[3] == 0:
-				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
+				self.current_mouse_mode = "directional"
 			else:
-				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
-			#self.mouse_target =  DirectionalLightMouseEvents(self.current_light,self.inspector)\
+				self.current_mouse_mode = "point source"
 			
 	def generate_arcs(self,points,n,halt=0):
 		for i in range(0,n-halt):
@@ -135,7 +133,7 @@ class EMLightsDrawer:
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["ruby"]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors["ruby"]["specular"])
 		glMaterial(GL_FRONT, GL_SHININESS, self.colors["ruby"]["shininess"])
-		glCallList(self.cylinderdl)
+		glCallList(self.cylinderdl) #FIXME: this cylinder isn't visible on Mac OS
 		glPopMatrix()
 
 	
@@ -226,7 +224,8 @@ class EMLightsDrawer:
 		glPopMatrix()
 	
 	def position_light(self):
-		
+		if not self.gl_lights:
+			self.gl_lights = get_gl_lights_vector()
 		for light in self.gl_lights:
 			
 			if not glIsEnabled(light):continue
@@ -254,12 +253,12 @@ class EMLightsDrawer:
 				glRotate(-d["phi"],0,0,1)
 				glRotate(-d["alt"],1,0,0)
 				glRotate(-d["az"],0,0,1)
-				
+
+
 				glCallList(self.ball_dl)
 				
 				
 			else:
-				
 				v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
 				t = Transform()
 				t.set_rotation(v)
@@ -278,7 +277,7 @@ class EMLightsDrawer:
 		'''
 		draw a nice looking torch
 		'''
-		
+
 		n = 20 # height discretizations
 		bot = 0.5 # square width at bottom
 		top = 1.0 # square width at top
@@ -340,7 +339,7 @@ class EMLightsDrawer:
 		'''
 		draw a nice looking torch
 		'''
-		
+
 		n = 20 # height discretizations
 		bot = 0.5 # square width at bottom
 		top = 1.0 # square width at top
@@ -385,11 +384,11 @@ class EMLightsDrawer:
 		if state:
 			pos = glGetLightfv(self.current_light,GL_POSITION)
 			if pos[3] == 0:
-				self.mouse_target = DirectionalLightMouseEvents(self.current_light,self.inspector)
+				self.current_mouse_mode = "directional"
 			else:
-				self.mouse_target = PointSourceLightMouseEvents(self.current_light,self.inspector)
+				self.current_mouse_mode = "point source"
 		else:
-			self.mouse_target = None
+			self.current_mouse_mode = None
 			
 	def show_lights(self,state):
 		self.display_lights = state
@@ -398,34 +397,145 @@ class EMLightsDrawer:
 	def draw(self):
 		if self.display_lights:
 			self.draw_lights()
-			
+	def motion_translate_z_only(self,prev_x,prev_y,event):
+		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		dx /= 10.0
+		dy /= 10.0
+		d = abs(dx) + abs(dy)
+		if dy > 0: d = -d 
+		
+		pos = glGetLightfv(self.current_light,GL_POSITION)
+		
+		test_pos = [0,0,0,1]
+		glLightfv(self.current_light,GL_POSITION,test_pos)
+		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
+		# reset to the correction position
+		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
+		pos[2] += d
+
+		pos.append(1)
+		glLightfv(self.current_light,GL_POSITION,pos)
+		if self.inspector:
+			self.inspector.set_positional_light_pos(pos)
+		
+	def motion_translate(self,prev_x,prev_y,event):
+		
+		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		dx /= 10.0
+		dy /= 10.0
+		pos = glGetLightfv(self.current_light,GL_POSITION)
+		
+		test_pos = [0,0,0,1]
+		glLightfv(self.current_light,GL_POSITION,test_pos)
+		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
+		# reset to the correction position
+		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
+		pos[0] += dx
+		pos[1] += dy
+		
+		pos.append(1)
+		glLightfv(self.current_light,GL_POSITION,pos)
+		if self.inspector:
+			self.inspector.set_positional_light_pos(pos)
+	def motion_rotate(self,x,y,fac=1.0):
+		# this function implements mouse interactive rotation
+		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
+		# Rotation occurs about the vector 90 degrees to [x,y,0]
+		# The amount of rotation is linealy proportional to the length of [x,y]
+		
+		if self.current_mouse_mode not in ["directional", "point source"]:
+			raise NotImplementedError
+		
+		if ( x == 0 and y == 0): return
+		
+		theta = atan2(-y,x)
+
+		rotaxis_x = -sin(theta)
+		rotaxis_y = cos(theta)
+		rotaxis_z = 0
+		length = sqrt(x*x + y*y)
+		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
+		angle = 4*fac*length/pi # the four is just because I liked the feel of it
+		
+		t = Transform()
+		quaternion = {}
+		quaternion["Omega"] = angle
+		quaternion["n1"] = rotaxis_x
+		quaternion["n2"] = rotaxis_y
+		quaternion["n3"] = rotaxis_z
+		quaternion["type"] = "spin"
+		
+		t.set_rotation( quaternion )
+		
+		if self.current_mouse_mode == "point source":
+			dr = glGetLightfv(self.current_light,GL_SPOT_DIRECTION)
+			v = Vec3f(float(dr[0]),float(dr[1]),float(dr[2]))
+		elif self.current_mouse_mode == "directional":
+			pos = glGetLightfv(self.current_light,GL_POSITION)
+			v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
+
+		torig = Transform()
+		torig.set_rotation(v)
+		
+		
+		t2 = t*torig
+		if self.current_mouse_mode == "point source":
+			new_dr = t2*Vec3f(0,0,1)
+			new_dr_list = [new_dr[i] for i in range(3)]
+	
+			glLightfv(self.current_light,GL_SPOT_DIRECTION,new_dr_list)
+			if self.inspector != None: self.inspector.set_positional_light_dir(new_dr_list)
+		elif self.current_mouse_mode == "directional":
+			new_pos = t2*Vec3f(0,0,1)
+			new_pos_list = [new_pos[i] for i in range(3)]
+			new_pos_list.append(0)
+			glLightfv(self.current_light,GL_POSITION,new_pos_list)
+			if self.inspector != None: self.inspector.set_directional_light_dir(new_pos_list)
+
 	def mousePressEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mousePressEvent(event)
+		if self.current_mouse_mode != None:
+			self.mpressx = event.x()
+			self.mpressy = event.y()
 			self.updateGL()
-		else: EMImage3DGUIModule.mousePressEvent(self,event)
 	
 	def mouseMoveEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mouseMoveEvent(event)
+		if self.current_mouse_mode == "point source":
+			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
+				
+				self.motion_translate_z_only(self.mpressx, self.mpressy,event)
+				self.mpressx = event.x()
+				self.mpressy = event.y()
+	
+			elif event.buttons()&Qt.RightButton:
+				self.motion_translate(self.mpressx, self.mpressy,event)
+				
+				self.mpressx = event.x()
+				self.mpressy = event.y()
+			else:
+				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
+				self.mpressx = event.x()
+				self.mpressy = event.y()
 			self.updateGL()
-		else: EMImage3DGUIModule.mouseMoveEvent(self,event)
+		elif self.current_mouse_mode == "directional":
+			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
+			self.mpressx = event.x()
+			self.mpressy = event.y()
+			self.updateGL()
 	
 	def mouseReleaseEvent(self,event):
-		if self.mouse_target != None:
-			self.mouse_target.mouseReleaseEvent(event)
-			self.updateGL()
-		else: EMImage3DGUIModule.mouseReleaseEvent(self,event)
+		if self.current_mouse_mode != None:
+			pass
 	
-class EMLights(EMLightsDrawer,EMImage3DGUIModule):
+class EMLights(EMLightsDrawer,EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, application,parent=None):
-		EMImage3DGUIModule.__init__(self,application)
+	def __init__(self, gl_context_parent):
+		EM3DModel.__init__(self)
 		EMLightsDrawer.__init__(self)
 		self.display_lights = True
-		self.parent = parent
+		self.gl_context_parent = gl_context_parent
 		
 		self.init()
 		self.initialized = True
@@ -440,7 +550,6 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 		self.inspector=None
 		
 		self.currentcolor = "emerald"
-		
 		
 		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
 		
@@ -605,190 +714,21 @@ class EMLights(EMLightsDrawer,EMImage3DGUIModule):
 			self.inspector=EMLightsInspector(self)
 			self.inspector.set_colors(self.colors,self.currentcolor)
 		return self.inspector
-
-
-class PointSourceLightMouseEvents:
-	def __init__(self,current_light,inspector):
-		self.current_light = current_light
-		self.inspector = inspector
-		self.mpressx = None
-		self.mpressy = None
-		
-	def mousePressEvent(self,event):
-		self.mpressx = event.x()
-		self.mpressy = event.y()
-
-	def mouseMoveEvent(self,event):
-		if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
-					
-			self.motion_translate_z_only(self.mpressx, self.mpressy,event)
-			self.mpressx = event.x()
-			self.mpressy = event.y()
-
-		elif event.buttons()&Qt.RightButton:
-			self.motion_translate(self.mpressx, self.mpressy,event)
-				
-			self.mpressx = event.x()
-			self.mpressy = event.y()
+	def mouseMoveEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseMoveEvent(self, event)
 		else:
-			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-			self.mpressx = event.x()
-			self.mpressy = event.y()
-
-	def mouseReleaseEvent(self,event):
-		pass
-	
-	def motion_translate_z_only(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
-		dx /= 10.0
-		dy /= 10.0
-		d = abs(dx) + abs(dy)
-		if dy > 0: d = -d 
-		
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		
-		test_pos = [0,0,0,1]
-		glLightfv(self.current_light,GL_POSITION,test_pos)
-		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
-		# reset to the correction position
-		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
-		pos[2] += d
-
-		pos.append(1)
-		glLightfv(self.current_light,GL_POSITION,pos)
-
-		self.inspector.set_positional_light_pos(pos)
-		
-	def motion_translate(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
-		dx /= 10.0
-		dy /= 10.0
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		
-		test_pos = [0,0,0,1]
-		glLightfv(self.current_light,GL_POSITION,test_pos)
-		test_pos_out = glGetLightfv(self.current_light,GL_POSITION)
-		# reset to the correction position
-		pos = [ (pos[i] - test_pos_out[i]) for i in range(3)]
-		pos[0] += dx
-		pos[1] += dy
-		
-		pos.append(1)
-		glLightfv(self.current_light,GL_POSITION,pos)
-
-		self.inspector.set_positional_light_pos(pos)
-		
-	def motion_rotate(self,x,y,fac=1.0):
-		# this function implements mouse interactive rotation
-		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
-		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
-		
-		if ( x == 0 and y == 0): return
-		
-		theta = atan2(-y,x)
-
-		rotaxis_x = -sin(theta)
-		rotaxis_y = cos(theta)
-		rotaxis_z = 0
-		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = 4*fac*length/pi # the four is just because I liked the feel of it
-		
-		t = Transform()
-		quaternion = {}
-		quaternion["Omega"] = angle
-		quaternion["n1"] = rotaxis_x
-		quaternion["n2"] = rotaxis_y
-		quaternion["n3"] = rotaxis_z
-		quaternion["type"] = "spin"
-		
-		t.set_rotation( quaternion )
-		
-		dr = glGetLightfv(self.current_light,GL_SPOT_DIRECTION)
-		v = Vec3f(float(dr[0]),float(dr[1]),float(dr[2]))
-		torig = Transform()
-		torig.set_rotation(v)
-		
-		
-		t2 = t*torig
-		
-		new_dr = t2*Vec3f(0,0,1)
-		new_dr_list = [new_dr[i] for i in range(3)]
-
-		glLightfv(self.current_light,GL_SPOT_DIRECTION,new_dr_list)
-		if self.inspector != None: self.inspector.set_positional_light_dir(new_dr_list)
-		#self.light_x_dir.setValue(pos[0])
-		#self.light_y_dir.setValue(pos[1])
-		#self.light_z_dir.setValue(pos[2])
-
-
-class DirectionalLightMouseEvents:
-	def __init__(self,current_light,inspector):
-		self.current_light = current_light
-		self.inspector = inspector
-		self.mpressx = None
-		self.mpressy = None
-	
-	def mousePressEvent(self,event):
-		self.mpressx = event.x()
-		self.mpressy = event.y()
-
-	def mouseMoveEvent(self,event):
-		self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-		self.mpressx = event.x()
-		self.mpressy = event.y()
-
-	def mouseReleaseEvent(self,event):
-		pass
-		
-	def motion_rotate(self,x,y,fac=1.0):
-		# this function implements mouse interactive rotation
-		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
-		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
-		
-		if ( x == 0 and y == 0): return
-		
-		theta = atan2(-y,x)
-
-		rotaxis_x = -sin(theta)
-		rotaxis_y = cos(theta)
-		rotaxis_z = 0
-		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = 4*fac*length/pi # the four is just because I liked the feel of it
-		
-		t = Transform()
-		quaternion = {}
-		quaternion["Omega"] = angle
-		quaternion["n1"] = rotaxis_x
-		quaternion["n2"] = rotaxis_y
-		quaternion["n3"] = rotaxis_z
-		quaternion["type"] = "spin"
-		
-		t.set_rotation( quaternion )
-		
-		pos = glGetLightfv(self.current_light,GL_POSITION)
-		v = Vec3f(float(pos[0]),float(pos[1]),float(pos[2]))
-		torig = Transform()
-		torig.set_rotation(v)
-		
-		
-		t2 = t*torig
-		
-		new_pos = t2*Vec3f(0,0,1)
-		new_pos_list = [new_pos[i] for i in range(3)]
-		new_pos_list.append(0)
-		#new_pos_list[0] = new_pos_list[0]
-		#print self.current_light
-		glLightfv(self.current_light,GL_POSITION,new_pos_list)
-		if self.inspector != None: self.inspector.set_directional_light_dir(new_pos_list)
-		#self.light_x_dir.setValue(pos[0])
-		#self.light_y_dir.setValue(pos[1])
-		#self.light_z_dir.setValue(pos[2])
+			EM3DModel.mouseMoveEvent(self, event)
+	def mousePressEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mousePressEvent(self, event)
+		else:
+			EM3DModel.mousePressEvent(self, event)
+	def mouseReleaseEvent(self, event):
+		if self.current_mouse_mode:
+			EMLightsDrawer.mouseReleaseEvent(self, event)
+		else:
+			EM3DModel.mouseReleaseEvent(self, event)
 
 
 class EMLightsInspectorBase:
@@ -1487,9 +1427,14 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMStandAloneApplication
-	em_app = EMStandAloneApplication()
-	window = EMLights(application=em_app)
+	from emapplication import EMApp
+	from emglobjects import EM3DGLWidget
+	em_app = EMApp()
+	window = EM3DGLWidget()
+	em_lights = EMLights(window)
+	em_lights.set_gl_widget(window)
+	window.set_model(em_lights)
+	
 	em_app.show()
 	em_app.execute()
 	
