@@ -371,10 +371,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		return image_type;
 	}
 
-	if (MrcIO::is_valid(first_block, file_size)) {
-		image_type = IMAGE_MRC;
-	}
-	else if (DM3IO::is_valid(first_block)) {
+	if (DM3IO::is_valid(first_block)) {
 		image_type = IMAGE_DM3;
 	}
 #ifdef EM_HDF5
@@ -442,6 +439,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else if (Df3IO::is_valid(first_block)) {
 		image_type = IMAGE_DF3;
+	}
+	else if (MrcIO::is_valid(first_block, file_size)) {
+		image_type = IMAGE_MRC;
 	}
 	else {
 		//LOGERR("I don't know this image's type: '%s'", filename.c_str());
