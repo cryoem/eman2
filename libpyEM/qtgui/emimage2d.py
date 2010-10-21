@@ -618,7 +618,7 @@ class EMImage2DWidget(EMGLWidget):
 		
 	def register_scroll_motion(self,x,y):
 		animation = LineAnimation(self,self.origin,(x*self.scale-self.width()/2,y*self.scale-self.height()/2))
-		self.get_qt_context_parent().register_animatable(animation)
+		self.qt_parent.register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale):
@@ -1275,7 +1275,7 @@ class EMImage2DWidget(EMGLWidget):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
 			
-			self.get_qt_context_parent().register_animatable(animation)
+			self.qt_parent.register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
@@ -1510,7 +1510,7 @@ class EMImage2DWidget(EMGLWidget):
 		if self.key_mvt_animation == None:
 			new_origin=(self.origin[0]+dx,self.origin[1]+dy)
 			self.key_mvt_animation = LineAnimation(self,self.origin,new_origin)
-			self.get_qt_context_parent().register_animatable(self.key_mvt_animation)
+			self.qt_parent.register_animatable(self.key_mvt_animation)
 		else:
 			new_origin = self.key_mvt_animation.get_end()
 			new_origin = (new_origin[0]+dx,new_origin[1]+dy)
