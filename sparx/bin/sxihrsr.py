@@ -42,14 +42,14 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
 	parser.add_option("--rs",       type="int",    default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/xr ")
-	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (if = -1 then same as xr)")
-	parser.add_option("--ts", 	type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--txs", 	type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--ynumber",  type="string", default= "4 8 16 32 32",     help="even number of the translation search in y direction, search is (-dpp/2,-dpp/2+dpp/ny,,..,0,..,dpp/2-dpp/ny dpp/2]")
 	parser.add_option("--delta",    type="string", default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches")
 	parser.add_option("--maxit",    type="float",  default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
@@ -103,8 +103,9 @@ def main():
 		else:
 			from applications import ihrsr
 			global_def.BATCH = True
+			#print (options.ynumber,options.txs)
 			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
-			options.yr, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
+			options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
 			#	options.ndp_step, options.ndphi_step, options.dp_percent, options.dphi_percent, 
 			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
 			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
