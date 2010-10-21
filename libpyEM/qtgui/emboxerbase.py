@@ -1916,7 +1916,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.output_task != None: return
 		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names,dfl_boxsize=self.box_size)
-		QtCore.QObject.connect(self.output_task,QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
+		QtCore.QObject.connect(self.output_task.emitter(),QtCore.SIGNAL("task_idle"),self.on_output_task_idle)
 		self.output_task.run_form()
 
 
