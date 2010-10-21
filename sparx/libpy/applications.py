@@ -366,8 +366,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	
-		
+
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
@@ -482,7 +481,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		else:
 			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
-	else : 
+	else:
 		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
