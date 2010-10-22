@@ -3371,7 +3371,7 @@ important when manually fitting before determining a structure factor."
 			self.gui=GUIctf(get_application(),img_sets)
 			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
 			self.form.close()
-			QtCore.QObject.connect(self.gui.emitter(),QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
+			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
 			self.gui.show_guis()
 		else:
 			return

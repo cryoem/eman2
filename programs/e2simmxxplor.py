@@ -180,12 +180,12 @@ class EMSimmxExplorer(EM3DSymModel):
 		resize_necessary = False
 		if self.mx_display == None:
 			self.mx_display = EMImageMXModule()
-			QtCore.QObject.connect(self.mx_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
+			QtCore.QObject.connect(self.mx_display,QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
 
 		if self.frc_display == None:
 			self.frc_display = EMPlot2DModule()
-#			QtCore.QObject.connect(self.frc_display.emitter(),QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
+#			QtCore.QObject.connect(self.frc_display,QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
 		self.update_display(False)
 

@@ -1483,10 +1483,10 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guimxit != None:
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.optimally_resize()
-				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("image_selected"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
-				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("mx_mouseup"),self.image_selected)
-				QtCore.QObject.connect(self.guimxit.emitter(),QtCore.SIGNAL("module_closed"),self.guimxit_closed)
+				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("mx_mouseup"),self.image_selected)
+				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("module_closed"),self.guimxit_closed)
 		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
