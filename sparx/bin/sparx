@@ -52,7 +52,7 @@ if global_def.GUIUSE:
 	from PyQt4.QtCore import Qt
 	import threading
 	from IPython.Shell import *
-	from emapplication import EMStandAloneApplication
+	from emapplication import EMApp
 
 	class IPShellQt4a(threading.Thread):
 	      """Run a Qt event loop in a separate thread.
@@ -81,9 +81,9 @@ if global_def.GUIUSE:
 	      		#def __getattr__( self, name ):
 	      			#return getattr( self.QApplication, name )
 
-	      	self.app = EMStandAloneApplication()
+	      	self.app = EMApp()
 
-	      	QtGui.QApplication = self.app.get_app()
+	      	QtGui.QApplication = self.app
 
 	      	# Allows us to use both Tk and QT.
 	      	self.tk = get_tk()
