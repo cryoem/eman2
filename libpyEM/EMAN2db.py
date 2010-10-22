@@ -541,7 +541,12 @@ class EMTaskQueue:
 			try: 
 				if k[0]!="cache" : continue
 			except: continue
-			did=self.todid(k[1])
+			try:
+				did=self.todid(k[1])
+			except:
+				print "Invalid data item %s: %s"%(str(j),str(k))
+				print str(task)
+				sys.exit(1)
 			try: k[1]=did
 			except:
 				task.data[j]=list(k)
