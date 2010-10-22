@@ -181,7 +181,6 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case GAUSS_HIGH_PASS:
 		case GAUSS_INVERSE:
 			omega = params["cutoff_abs"];
-			cout << omega<<endl;
 			omega = 0.5f/omega/omega;
 			break;
 		case GAUSS_BAND_PASS:
