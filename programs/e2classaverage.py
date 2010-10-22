@@ -274,12 +274,14 @@ class ClassAvTask(EMTask):
 	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
 		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,verbose=0,n=0):
 		if usefilt==None : usefilt=imagefile
-		EMTask.__init__(self,"ClassAv",{"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums],"ref":["cache",ref,n]},{},"")
+		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
+		if ref!=None : data["ref"]=["cache",ref,n]
+		EMTask.__init__(self,"ClassAv",data,{},"")
 
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
 			"automask":automask,"verbose":verbose,"n":n}
-			
+	
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
 		options=self.options
