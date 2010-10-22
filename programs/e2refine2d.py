@@ -256,7 +256,7 @@ def main():
 		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
-		if options.shrink: e2simmxcmd += "--shrink=%d" %options.shrink
+		if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 		run(e2simmxcmd)
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
