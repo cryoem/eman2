@@ -1452,7 +1452,9 @@ def ali_vol_func_only_scale(params, data):
 
 def helios_func(params, data):
 	sm = data[0].helicise(data[2], params[0], params[1], data[3], data[4], data[5])
-	q = sm.cmp("dot", sm, {"negative":0})
+	#try other sim creteria
+	#q = sm.cmp("dot", sm, {"negative":0})
+	q = sm.cmp("dot", data[0], {"negative":0})# corelation  with the recon data
 	#print  params,q
 	return  q
 

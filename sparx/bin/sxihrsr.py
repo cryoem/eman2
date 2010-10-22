@@ -97,7 +97,9 @@ def main():
 			global_def.BATCH = True
 			print "new helical code is called"
 			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
-			options.yr, options.ts, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi,options.psi_max, options.rmin, options.rmax, options.fract, 				options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
+			options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
+			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
+			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
 			global_def.BATCH = False
 		
 		else:

@@ -6203,8 +6203,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					t2.set_trans(Vec2f(-sxi, -synew))
 					data[im].set_attr("xform.projection", t2)
 					pixer[im] = max_3D_pixel_error(t1, t2, numr[-3])
-					sx += sxi
-					sy += synew
+					#sx += sxi
+					#sy += synew
 					#end of Jeanmod
 				else:
 					pixer[im] = 0.0
@@ -6212,8 +6212,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
+			
 
-			sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			'''sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if( myid == main_node ):
 				sx = float(sx[0])/total_nima
@@ -6228,7 +6229,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
 				modphi[im]=paramali[0]
 				# end jeanmod
-				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])
+				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])'''
 
 			#output pixel errors
 			from mpi import mpi_gatherv
