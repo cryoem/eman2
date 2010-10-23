@@ -80,8 +80,8 @@ for ii in xrange(1,696+1) :
 		deci.set_attr_dict({'active':1, 'ctf_applied':0})
 
 		# Here, we convert the amp_contrast into the new convention
-		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
-		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_contrast])
+		amp_cont = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
+		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_cont])
 
 		deci.write_image( proj_out, total_high_proj )
 
