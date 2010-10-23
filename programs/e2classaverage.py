@@ -323,7 +323,8 @@ class ClassAvTask(EMTask):
 			
 		if ref_orient!=None: 
 			avg["xform.projection"]=ref_orient
-			avg["projection_image_idx"]=self.data["ref"][2]
+			try: avg["projection_image_idx"]=self.data["ref"][2]
+			except: pass
 		
 		return {"average":avg,"info":ptcl_info,"n":options["n"]}
 
