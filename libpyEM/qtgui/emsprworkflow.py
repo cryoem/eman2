@@ -186,9 +186,11 @@ class WorkFlowTask:
 		self.disconnect_form()
 		self.emit(QtCore.SIGNAL("task_idle"))
 
-	def closeEvent(self,event):
+	def close(self):
 		if self.form != None: self.form.close()
 		#self.emit(QtCore.SIGNAL("task_idle")
+	def closeEvent(self,event):
+		self.close()
 		
 	def write_db_entries(self,dictionary):
 		'''
