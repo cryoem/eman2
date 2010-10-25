@@ -5956,7 +5956,7 @@ EMData* EMData::helicise_rect(float pixel_size, float dp, float dphi, float sect
 	int nyc = ny/2;
 	int nxc = nx/2;
 	int nb = int(nz*(1.0f - section_use)/2.);
-	int ne = nx - nb -1;
+	int ne = nz - nb -1;
 	int numst = int((ne - nb)/dp*pixel_size + 0.5);
 	// how many steps needed
 	int nst = int(nz*pixel_size/dp+0.5);
