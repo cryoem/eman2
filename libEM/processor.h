@@ -1681,7 +1681,7 @@ The basic design of EMAN Processors: <br>\
 
 			virtual string get_desc() const
 			{
-				return "f(k) = 0 + 0i if ||f(k)|| < value; f(k) = 1 + 0i if ||f(k)|| >= value.";
+				return "f(k) = 0 + 0i if ||f(k)|| < value; f(k) = a + bi if ||f(k)|| >= value.";
 			}
 
 			static const string NAME;

@@ -272,6 +272,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	// Generate the comparison metrics for both rotational candidates
 	float rot_cmp = rot_aligned->cmp(cmp_name, to, cmp_params);
 	float rot_180_cmp = rot_align_180->cmp(cmp_name, to, cmp_params);
+
 	// Decide on the result
 	float score = 0.0;
 	EMData* result = NULL;

@@ -1002,6 +1002,12 @@ void set_supp_pickle(int i);
 
 vector<Vec3i> mask_contig_region(const float& val, const Vec3i& seed);
 
+/** return the FFT amplitude which is greater than thres %
+ *
+ * @exception ImageFormatException If the image is not a complex image.
+ * @return The FFT amplitude which is greater than thres %.
+ */
+float get_amplitude_thres(float thres);
 
 private:
 /** Make the attributes of this EMData exactly equal to the argument dictionary

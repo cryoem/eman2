@@ -1191,6 +1191,23 @@ void EMData::set_supp_pickle(int)
 	this->supp = 0;
 }
 
+float EMData::get_amplitude_thres(float thres)
+{
+
+	if (thres < 0 || thres > 1){
+	        LOGERR("threshold bust be between 0 and 1.");
+	        throw InvalidValueException(thres, "thres: 0 <= thres <= 1");
+	}
+		
+	EMData * amps = get_fft_amplitude();
+	vector<float> ampvector = amps->get_data_as_vector();
+	// yes I realize this may be slow if the map is big, but then again this function is only suited for tomo alignments, which if you have a big map will be VERY slow anyways!
+	sort (ampvector.begin(), ampvector.end()); 
+	int thresidx = int(thres * ampvector.size());
+	float thresamp =  ampvector[thresidx];
+
+	return thresamp;
+}
 
 vector<Vec3i > find_region(EMData* image,const vector<Vec3i >& coords, const float value, vector<Vec3i >& region)
 {
@@ -1242,4 +1259,3 @@ vector<Vec3i> EMData::mask_contig_region(const float& value, const Vec3i& seed) 
 	}
 	return region;
 }
-

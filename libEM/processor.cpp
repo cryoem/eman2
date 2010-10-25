@@ -3756,11 +3756,10 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	ENTERFUNC;
 	if (!image->is_complex()) throw ImageFormatException("Fourier binary thresholding processor only works for complex images");
 
-	float threshold = params.set_default("value",-1.0f);
-	if (threshold < 0) throw InvalidParameterException("For fourier amplitude-based thresholding, the threshold must be greater than or equal to 0.");
-
+	float threshold = params.set_default("value",0.0f);
 	image->ri2ap(); //  works for cuda
 
+// This is rubbish!!! Needs fixing as does not do the same thing as below....
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
 		EMDataForCuda tmp = image->get_data_struct_for_cuda();
@@ -3771,20 +3770,17 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 		return;
 	}
 #endif
-
+        //compete rubbish!! doesn't work I need to fix this....
 	float* d = image->get_data();
 	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
-		float v = *d;
-		if ( v >= threshold ) {
-			*d = 1;
-			*(d+1) = 0;
-		} else {
+		//float v = *d;
+		if ( *d < threshold ) {
 			*d = 0;
 			*(d+1) = 0;
-		}
+		} 
 	}
 
-	// No need to run ap2ri, because 1+0i is the same in either notation
+        image->ap2ri();
 	image->set_ri(true); // So it can be used for fourier multiplaction, for example
 	image->update();
 	EXITFUNC;

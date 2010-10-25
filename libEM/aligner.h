@@ -178,7 +178,7 @@ namespace EMAN
 
 		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "", Dict());
+			return align(this_img, to_img, "dot", Dict());
 		}
 
 		virtual string get_name() const
@@ -222,7 +222,7 @@ namespace EMAN
 
 		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "", Dict());
+			return align(this_img, to_img, "dot", Dict());
 		}
 
 		virtual string get_name() const
@@ -262,7 +262,7 @@ namespace EMAN
 
 		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "", Dict());
+			return align(this_img, to_img, "dot", Dict());
 		}
 
 		virtual string get_name() const
@@ -388,7 +388,7 @@ namespace EMAN
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		virtual EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "", Dict());
+			return align(this_img, to_img, "dot", Dict());
 		}
 		virtual string get_name() const
 		{
@@ -675,7 +675,7 @@ namespace EMAN
 			/** See Aligner comments for more details
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img,
-						   const string & cmp_name, const Dict& cmp_params) const;
+						   const string & cmp_name="ccc.tomo", const Dict& cmp_params = Dict()) const;
 			/** See Aligner comments for more details
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img) const
@@ -736,7 +736,7 @@ namespace EMAN
 			/** See Aligner comments for more details
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img,
-								   const string & cmp_name, const Dict& cmp_params) const;
+								   const string & cmp_name= "sqeuclidean", const Dict& cmp_params = Dict()) const;
 			/** See Aligner comments for more details
 			 */
 			virtual EMData * align(EMData * this_img, EMData * to_img) const
