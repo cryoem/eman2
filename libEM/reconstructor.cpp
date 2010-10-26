@@ -2158,7 +2158,9 @@ void circumf( EMData* win , int npad)
 		}
 	}
 
-	delete[] sincx, sincy, sincz;
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2785,7 +2787,9 @@ void circumf_rect_new( EMData* win , int npad,float m_xratio, float m_yratio)
 		}
 	}
 
-	delete[] sincx, sincy, sincz;
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2860,7 +2864,9 @@ void circumf_rect( EMData* win , int npad)
 		}
 	}
 
-	delete[] sincx, sincy, sincz;
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
