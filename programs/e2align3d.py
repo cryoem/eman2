@@ -54,6 +54,7 @@ def main():
         parser.add_option("--maskrad",type="int",default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
         parser.add_option("--maskfoff",type="float",default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
         parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
+        parser.add_option("--famps",type="float",default=1,help="fraction of Fourier amps to exclude from recons, default=0.0")
         parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same', default=0.01")
         #options form the sphere alinger
         parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=10.0")
@@ -119,6 +120,10 @@ def main():
 	    if fixed.get_attr('nx') <= 50:
 	        options.shrink = 1.0
 	
+	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
+	smoving = moving.process('xform.scale', {'scale':options.shrink})
+        options.maskrad = options.maskrad*options.shrink
+        
 	#preprocess maps
 	if options.preprocess != None:
 	    for p in options.preprocess:
@@ -130,17 +135,32 @@ def main():
 		except:
 		    print "warning - application of the pre processor",p," failed. Continuing anyway"
 
-	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
-	smoving = moving.process('xform.scale', {'scale':options.shrink})
-        options.maskrad = options.maskrad*options.shrink
+        #denoise recons
+	if options.famps > 0:
+	    tmp = sfixed.do_fft()
+	    fth = tmp.get_amplitude_thres(options.famps)
+	    tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+	    sfixed = tmp.do_ift()
+	    tmp = fixed.do_fft()
+	    tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+	    fixed = tmp.do_ift()
+	    
+	    tmp = smoving.do_fft()
+	    mth = tmp.get_amplitude_thres(options.famps)
+	    tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+	    smoving = tmp.do_ift()
+	    tmp = moving.do_fft()
+	    tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+	    moving = tmp.do_ift()
 
         #mask out all the junk
         if options.maskrad > 0:
-            sfixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
+            sfixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'rae2align3d.pydius_z':options.maskrad,'gauss_width':options.maskfoff})
             smoving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 
-        sfixed.set_attr('UCSF.chimera',1)
-        sfixed.write_image('fixed.mrc')
+        #sort of a debugging step
+        fixed.set_attr('UCSF.chimera',1)
+        fixed.write_image('filtered_fixed.mrc')
 
 	if options.rcmp == "dot":
 	    rcmpparms = {'normalize':1}
@@ -172,6 +192,14 @@ def main():
             print str(thesame)+" solns refined to the 'same' point within a precision of "+str(options.prec)
         
 
+        #apply the transform to the original model
+        moving.read_image(sys.argv[2])
+        t1 = nbest[bestmodel]["xform.align3d"]
+        t2 = galignedref[bestmodel].get_attr("xform.align3d")
+        #ft = nbest[bestmodel]["xform.align3d"]*galignedref[bestmodel].get_attr("xform.align3d") #BUG!!! need to fixed EMAN2's operator* for the transform object
+        moving.process_inplace("xform",{"transform":t1})
+        moving.process_inplace("xform",{"transform":t2})
+        
 	#now write out the aligned model
         if sys.argv[3]:
 	    outfile = sys.argv[3]
@@ -180,9 +208,11 @@ def main():
 	    
 	#if output is mrc format 
 	if outfile[-4:].lower() == ".mrc":
+	    moving.set_attr('UCSF.chimera',1)
 	    galignedref[bestmodel].set_attr('UCSF.chimera',1)
   
-	galignedref[bestmodel].write_image(outfile, 0)
+	galignedref[bestmodel].write_image(("filtered_"+outfile), 0)
+	moving.write_image(outfile, 0)
 	
 if __name__ == "__main__":
     main()

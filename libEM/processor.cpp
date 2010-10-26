@@ -87,6 +87,7 @@ const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
 const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
 const string BinarizeProcessor::NAME = "threshold.binary";
+//const string BinarizeAmpProcessor::NAME = "threshold.amp.binary";
 const string BinarizeFourierProcessor::NAME = "threshold.binary.fourier";
 const string CollapseProcessor::NAME = "threshold.compress";
 const string LinearXformProcessor::NAME = "math.linear";
@@ -276,6 +277,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ToMinvalProcessor>();
 	force_add<CutToZeroProcessor>();
 	force_add<BinarizeProcessor>();
+//	force_add<BinarizeAmpProcessor>();
 	force_add<BinarizeFourierProcessor>();
 	force_add<CollapseProcessor>();
 	force_add<LinearXformProcessor>();
@@ -3786,7 +3788,24 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	EXITFUNC;
 }
 
+//currently broken...
+//void BinarizeAmpProcessor::process_inplace(EMData* image) {
+// 	ENTERFUNC;
+//	if (image->is_complex()) throw ImageFormatException("Binary amp thresholding processor only works for real images");
 
+//	float fractamps = params.set_default("fractamps",0.0f);
+//	image->do_fft_inplace();
+//	float threshold = image->get_amplitude_thres(fractamps);
+//	cout << threshold << endl;
+//	Dict d;
+//	d["value"] = threshold;
+//	image->process_inplace("threshold.binary.fourier", d);
+//      image->do_ift_inplace();
+//	image->update();
+	
+//	EXITFUNC;
+//} 
+  
 void BilateralProcessor::process_inplace(EMData * image)
 {
 	if (!image) {

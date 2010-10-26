@@ -1642,14 +1642,10 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/** A thresholding processor for Fourier images based on the amplitude component.
-	 * Useful in tomography when you want to count large complex pixels. Not the fastest approach,
-	 * if you were going for efficiency it would probably be better just to iterate through the pixels
-	 * and count. But if you do it this way you can just get the mean of the resulting image (and multiplying by 2). So it's
-	 * basically easier, but lazy.
-	 * Originally added for use by e2tomohunter.py
-	 *@author David Woolford
-	 *@date April 29th 2009
-	 *@ingroup CUDA_ENABLED
+	 * All maps set below value are set to zero
+	 * Useful in tomography when you want to toss complex components with low amplitides
+	 *@author John Flanagan
+	 *@date Oct 25th 2010
 	 *@param value The Fourier amplitude threshold cutoff
 	 */
 	class BinarizeFourierProcessor:public Processor
@@ -1666,9 +1662,7 @@ The basic design of EMAN Processors: <br>\
 
 			/**
 			 * @exception ImageFormatException if the input image is not complex
-			 * @exception InvalidParameterException if the threshold is less than 0
 			 * Note result is always in real-imaginary format
-			 * Note input can be real-imaginary or amplitude-phase
 			 */
 			virtual void process_inplace(EMData* image);
 
@@ -1686,6 +1680,46 @@ The basic design of EMAN Processors: <br>\
 
 			static const string NAME;
 		};
+		
+//	/** A thresholding processor for real images based on the amplitude component.
+//	 * All maps set below value are set to zero
+//	 * Useful in tomography when you want to toss complex components with low amplitides
+//	 *@author John Flanagan
+//	 *@date Oct 25th 2010
+//	 *@param value The Fourier amplitude threshold cutoff
+//	 */
+//	class BinarizeAmpProcessor:public Processor
+//		{
+//		  public:
+//			virtual string get_name() const
+//			{
+//				return NAME;
+//			}
+//			static Processor *NEW()
+//			{
+//				return new BinarizeAmpProcessor();
+//			}
+
+//			/**
+//			 * @exception ImageFormatException if the input image is not complex
+//			 * Note result is always in real-imaginary format
+//			 */
+//			virtual void process_inplace(EMData* image);
+
+//			virtual TypeDict get_param_types() const
+//			{
+//				TypeDict d;
+//				d.put("fractamps", EMObject::FLOAT, "Fractional Fourier amplitude threshold cutoff" );
+//				return d;
+//			}
+
+//			virtual string get_desc() const
+//			{
+//				return "A thresholding processor for real images based on the amplitude component";
+//			}
+
+//			static const string NAME;
+//		};
 
 	/**f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r
 	 *@param range The range about 'value' which will be collapsed to 'value'
