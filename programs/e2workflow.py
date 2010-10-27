@@ -759,12 +759,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from emlights import EMLights
 		from emglobjects import EM3DGLWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		em_lights = EMLights(None)
+		em_lights = EMLights()
 		window = EM3DGLWidget(em_lights)
-		em_lights.seg_gl_context_parent(window)
+		#TODO: reconsider design so these lines aren't necessary
+		em_lights.under_qt_control = True
 		em_lights.set_gl_widget(window)
-		window.set_model(em_lights)
-		
+		em_lights.set_gl_context_parent(window)
 		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",window)
 		get_application().show_specific(window)
 		self.add_module([str(window),"EMLights",window])
