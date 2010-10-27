@@ -2239,7 +2239,7 @@ class EM3DModel(QtCore.QObject):
 		if self.inspector != None :
 			self.inspector.set_scale(self.cam.scale)
 class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
-	def __init__(self, model):
+	def __init__(self, model=None):
 		EMGLWidget.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
@@ -2253,7 +2253,7 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.startz = 1.0
 		self.endz = 500.0
 		self.cam = Camera()
-		#self.cam = Camera2(self.target())
+		#self.cam = Camera2(self.model)
 		self.set_model(model)
 		self.resize(480,480)
 	def get_current_transform(self):
@@ -2290,22 +2290,27 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
 	def keyPressEvent(self,event):
-		self.target().keyPressEvent(event)
-		self.updateGL()
+		if self.model:
+			self.model.keyPressEvent(event)
+			self.updateGL()
 	def load_perspective(self):
 		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 	def mouseDoubleClickEvent(self,event):
-		self.target().mouseDoubleClickEvent(event)
-		self.updateGL()
+		if self.model:
+			self.model.mouseDoubleClickEvent(event)
+			self.updateGL()
 	def mouseMoveEvent(self, event):
-		self.target().mouseMoveEvent(event)
-		self.updateGL()
+		if self.model:
+			self.model.mouseMoveEvent(event)
+			self.updateGL()
 	def mousePressEvent(self, event):
-		self.target().mousePressEvent(event)
-		self.updateGL()
+		if self.model:
+			self.model.mousePressEvent(event)
+			self.updateGL()
 	def mouseReleaseEvent(self, event):
-		self.target().mouseReleaseEvent(event)
-		self.updateGL()
+		if self.model:
+			self.model.mouseReleaseEvent(event)
+			self.updateGL()
 	def paintGL(self):
 		#glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
@@ -2315,12 +2320,13 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		self.cam.position()
 		
-		glPushMatrix()
-		self.target().render()
-		glPopMatrix()
+		if self.model:
+			glPushMatrix()
+			self.model.render()
+			glPopMatrix()
 		
-		#glAccum(GL_ADD, self.target.glbrightness)
-		#glAccum(GL_ACCUM, self.target.glcontrast)
+		#glAccum(GL_ADD, self.model.glbrightness)
+		#glAccum(GL_ACCUM, self.model.glcontrast)
 		#glAccum(GL_RETURN, 1.0)
 	def resizeGL(self, width, height):
 		if width<=0 or height<=0 : return # this is fine, the window has be size interactively to zero, for example
@@ -2337,7 +2343,8 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
-		self.target().resize()
+		if self.model:
+			self.model.resize()
 	def set_camera_defaults(self,data):
 		if isinstance(data,EMData):
 			self.cam.default_z = -1.25*data.get_xsize()
@@ -2347,15 +2354,18 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.cam.cam_z = -1.25*data
 
 	def set_data(self,data):
-		self.target().set_data(data)
+		if self.model:
+			self.model.set_data(data)
 		self.set_camera_defaults(data)
 	def set_model(self, model):
-		assert(isinstance(model,EM3DModel))
-		self.target = weakref.ref(model)
-		self.set_camera_defaults(self.target().data)
+		assert(model == None or isinstance(model,EM3DModel))
+		self.model = model
+		self.set_camera_defaults(self.model.data)
 
 	def show_inspector(self,force=0):
-		self.target().show_inspector(force)
+		if self.model:
+			self.model.show_inspector(force)
 	def wheelEvent(self, event):
-		self.target().wheelEvent(event)
+		if self.model:
+			self.model.wheelEvent(event)
 		self.updateGL()
