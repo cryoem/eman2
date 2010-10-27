@@ -870,7 +870,7 @@ class EMBrowseEventHandler:
 	intercept the "ok" and "cancel" signals.... instead just use exec_ ... 
 	'''
 	def __init__(self,browse_button):
-		warnings.warn(EMBrowseEventHandler.__init__(), DeprecationWarning)
+		warnings.warn("EMBrowseEventHandler.__init__()", DeprecationWarning)
 		self.browser = None
 		self.browser_title = "Set this to be clear"
 		QtCore.QObject.connect(browse_button,QtCore.SIGNAL("clicked(bool)"),self.browse_pressed)
