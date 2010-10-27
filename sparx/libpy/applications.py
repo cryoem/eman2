@@ -224,12 +224,6 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
 		NRING = 2**(int(log(last_ring)/log(2))+1)
 
-	if center == -2:
-		# A temporary measure for Stefan's data
-		from alignment import align2d
-		from fundamentals import rot_shift2D
-		ref_image = get_image("ref_image.hdf")
-
 	for N_step in xrange(len(xrng)):
 
 		if CUDA:
@@ -289,17 +283,6 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 				tavg = fshift(tavg, -cs[0], -cs[1])
 				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 				print_msg(msg)
-			elif center == -2:
-				ref_data[1] = 0
-				cs[0] = sx_sum/float(nima)
-				cs[1] = sy_sum/float(nima)
-				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-				print_msg(msg)
-				tavg = fshift(tavg, -cs[0], -cs[1])
-				alpha, sx, sy, mirror, peak = align2d(tavg, ref_image)
-				tavg = rot_shift2D(tavg, alpha)
-				ref_data[2] = tavg
-				tavg, cs = user_func(ref_data)
 			else:
 				tavg, cs = user_func(ref_data)
 
@@ -583,12 +566,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	total_iter = 0
 	cs = [0.0]*2
 
-	if center == -2:
-		# A temporary measure for Stefan's data
-		from alignment import align2d
-		from fundamentals import rot_shift2D
-		ref_image = get_image("ref_image.hdf")
-
 	if CUDA:
 		from math import log, pi
 		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
@@ -662,17 +639,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 					print_msg(msg)
-				elif center == -2:
-					ref_data[1] = 0
-					cs[0] = float(sx_sum)/nima
-					cs[1] = float(sy_sum)/nima
-					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-					print_msg(msg)
-					tavg = fshift(tavg, -cs[0], -cs[1])
-					alpha, sx, sy, mirror, peak = align2d(tavg, ref_image)
-					tavg = rot_shift2D(tavg, alpha)
-					ref_data[2] = tavg
-					tavg, cs = user_func(ref_data)
 				else:
 					tavg, cs = user_func(ref_data)
 
@@ -698,7 +664,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 			if Fourvar:  del vav
 			bcast_EMData_to_all(tavg, myid, main_node)
-		
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = map(float, cs)
 			if total_iter != max_iter*len(xrng):
