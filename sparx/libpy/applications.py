@@ -218,12 +218,17 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 
 	cs = [0.0]*2
 	total_iter = 0
+	
+	if CUDA:
+		from math import log, pi
+		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
+		NRING = 2**(int(log(last_ring)/log(2))+1)
 
 	for N_step in xrange(len(xrng)):
 
 		if CUDA:
 			R = CUDA_Aligner()
-			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
+			R.setup(len(data), nx, nx, RING_LENGTH, NRING, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
 			if CTF:  R.filter_stack(all_ctf_params, GPUID)
 
@@ -561,11 +566,16 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	total_iter = 0
 	cs = [0.0]*2
 
+	if CUDA:
+		from math import log, pi
+		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
+		NRING = 2**(int(log(last_ring)/log(2))+1)
+
 	for N_step in xrange(len(xrng)):
 
 		if CUDA:
 			R = CUDA_Aligner()
-			R.setup(len(data), nx, nx, 256, 32, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
+			R.setup(len(data), nx, nx, RING_LENGTH, NRING, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
 			if CTF:  R.filter_stack(all_ctf_params, GPUID)
 

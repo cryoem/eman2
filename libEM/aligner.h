@@ -851,6 +851,31 @@ namespace EMAN
 		float STEP;
 	};
 
+	class CUDA_multiref_aligner
+	{
+	  public:
+	  	CUDA_multiref_aligner();
+
+		void finish();
+
+		void setup(int nima, int nref, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf);
+		
+		void setup_params(vector<float> all_ali_params, vector<float> all_ctf_params);
+
+		void insert_image(EMData *image, int num);
+		
+		void insert_ref_image(EMData *image, int num);
+
+		vector<float> multiref_ali2d(int gpuid, int silent);
+
+	  private:
+	        float *image_stack, *ref_image_stack, *ref_image_stack_filtered;
+		float *ccf;
+		float *ali_params, *ctf_params;
+		int NIMA, NREF, NX, NY, RING_LENGTH, NRING, OU, KX, KY;
+		bool CTF;
+		float STEP;
+	};
 
 	template <> Factory < Aligner >::Factory();
 

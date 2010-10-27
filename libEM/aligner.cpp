@@ -2038,18 +2038,17 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 	}
 }
 
-
+#ifdef EMAN2_USING_CUDA
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
 	image_stack_filtered = NULL;
 	ccf = NULL;
 }
 
-#ifdef EMAN2_USING_CUDA
 void CUDA_Aligner::finish() {
-	if (image_stack) delete image_stack;
-	if (image_stack_filtered) delete image_stack_filtered;
-	if (ccf) delete ccf;
+	if (image_stack) free(image_stack);
+	if (image_stack_filtered) free(image_stack_filtered);
+	if (ccf) free(ccf);
 }
 
 void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
@@ -2271,6 +2270,151 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 	return align_result;
 }
 
+
+CUDA_multiref_aligner::CUDA_multiref_aligner() {
+	image_stack = NULL;
+	ref_image_stack = NULL;
+	ref_image_stack_filtered = NULL;
+	ccf = NULL;
+	ctf_params = NULL;
+	ali_params = NULL;
+}
+
+
+void CUDA_multiref_aligner::finish() {
+	if (image_stack) free(image_stack);
+	if (ref_image_stack) free(ref_image_stack);
+	if (ref_image_stack_filtered) free(ref_image_stack_filtered);
+	if (ccf) free(ccf);
+	if (ctf_params) free(ctf_params);
+	if (ali_params) free(ali_params);
+}
+
+void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
+
+	NIMA = nima;
+	NREF = nref;
+	NX = nx;
+	NY = ny;
+	RING_LENGTH = ring_length;
+        NRING = nring;
+	STEP = step;
+	KX = kx;
+	KY = ky;
+	OU = ou;
+	CTF = ctf;
+	
+	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
+	ref_image_stack = (float *)malloc(NREF*NX*NY*sizeof(float));
+	if (CTF == 1) ref_image_stack_filtered = (float *)malloc(NREF*NX*NY*sizeof(float));
+	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NREF*(RING_LENGTH+2)*sizeof(float));
+}
+
+void CUDA_multiref_aligner::setup_params(vector<float> all_ali_params, vector<float> all_ctf_params) {
+	
+	ali_params = (float *)malloc(NIMA*4*sizeof(float));
+	for (int i=0; i<NIMA*4; i++)   ali_params[i] = all_ali_params[i];
+	if (CTF == 1) {
+		ctf_params = (float *)malloc(NIMA*6*sizeof(float));
+		for (int i=0; i<NIMA*6; i++)  ctf_params[i] = all_ctf_params[i];
+	}
+}
+
+void CUDA_multiref_aligner::insert_image(EMData *image, int num) {
+
+	int base_address = num*NX*NY;
+
+	for (int y=0; y<NY; y++)
+		for (int x=0; x<NX; x++)
+			image_stack[base_address+y*NX+x] = (*image)(x, y);
+}
+
+void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
+
+	int base_address = num*NX*NY;
+
+	for (int y=0; y<NY; y++)
+		for (int x=0; x<NX; x++)
+			image_ref_stack[base_address+y*NX+x] = (*image)(x, y);
+}
+
+vector<float> CUDA_multiref_alignment::multiref_ali2d(int gpuid, int silent) {
+
+	float previous_defocus = 0.0;
+	float *params = (float *)malloc(NREF*6*sizeof(float));
+	float *sx2 = (float *)malloc(NREF*sizeof(float));
+	float *sy2 = (float *)malloc(NREF*sizeof(float));
+	vector<float> align_results;
+	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
+	
+	for (int i=0; i<NREF; i++) {
+		sx2[i] = 0.0f; sy2[i] = 0.0f;
+	}
+	
+	for (int i=0; i<NIMA; i++) {
+		if (CTF == 1) {
+			if (ctf_params[i*6] != previous_defocus) {
+				for (int im = 0; im < NREF; im++) 
+					for (int j = 0; j < 6; j++)
+						params[im*6+j] = ctf_params[i*6+j];
+				filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, params, gpuid);
+				previous_defocus = ctf_params[i*6];
+			}
+			calculate_ccf(ref_image_stack_filtered, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		} else {
+			calculate_ccf(ref_image_stack, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		}
+
+		float max_ccf = -1.0e22;
+		int nref = -1;
+		for (int im=0; im<NREF; im++) {
+			for (int kx=-KX; kx<=KX; kx++) {
+				for (int ky=-KY; ky<=KY; ky++) {
+					int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2);
+					for (int l=0; l<RING_LENGTH; l++) {
+						ts = ccf[base_address+l];
+						tm = ccf[base_address+l+ccf_offset];
+						if (ts > max_ccf) {
+							ang = float(l)/RING_LENGTH*360.0;
+							sx = -kx*STEP;
+							sy = -ky*STEP;
+							mirror = 0;
+							max_ccf = ts;
+							nref = im;
+						}
+						if (tm > max_ccf) {
+							ang = float(l)/RING_LENGTH*360.0; 
+							sx = -kx*STEP;
+							sy = -ky*STEP;
+							mirror = 1;
+							max_ccf = tm;
+							nref = im;
+						}
+					}
+				}
+			}
+		}
+
+		co =  cos(ang*M_PI/180.0);
+		so = -sin(ang*M_PI/180.0);
+		
+		sxs = (sx-sx2[nref])*co-(sy-sy2[nref])*so;
+		sys = (sx-sx2[nref])*so+(sy-sy2[nref])*co;
+
+		align_results.push_back(ang);
+		align_results.push_back(sxs);
+		align_results.push_back(sys);
+		align_results.push_back(mirror);
+		align_results.push_back(nref);
+		align_results.push_back(max_ccf);
+	}
+	
+	free(params);
+	free(sx2);
+	free(sy2);
+	
+	return align_results;
+}
 
 #endif
 

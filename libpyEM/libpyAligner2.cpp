@@ -405,6 +405,16 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
         .def("ali2d_single_iter", &EMAN::CUDA_Aligner::ali2d_single_iter)
     ;
+
+    class_< EMAN::CUDA_multiref_aligner, boost::noncopyable>("CUDA_multiref_aligner", init<>())
+    	.def("finish", &EMAN::CUDA_multiref_aligner::finish)
+        .def("setup", &EMAN::CUDA_multiref_aligner::setup)
+	.def("setup_params", &EMAN::CUDA_multiref_aligner::setup_params)
+        .def("insert_image", &EMAN::CUDA_multiref_aligner::insert_image)
+        .def("insert_ref_image", &EMAN::CUDA_multiref_aligner::insert_ref_image)
+	.def("multiref_ali2d", &EMAN::CUDA_multiref_aligner::multiref_ali2d)
+    ;
+
 #endif
 
 
