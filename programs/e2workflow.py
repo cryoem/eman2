@@ -748,21 +748,26 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_eulers(self):
-		from e2eulerxplor import EMEulerExplorer
+		from e2eulerxplor import launch_euler_explorer
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EMEulerExplorer(get_application(),auto=True)
-		self.emit(QtCore.SIGNAL("launching_module"),"Eulers",module)
-		get_application().show_specific(module)
-		self.add_module([str(module),"Eulerxplor",module])
+		widget = launch_euler_explorer(auto=True)
+		self.emit(QtCore.SIGNAL("launching_module"),"Eulers",widget)
+		self.add_module([str(widget),"Eulerxplor",widget])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_lights_tool(self):
 		from emlights import EMLights
+		from emglobjects import EM3DGLWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EMLights(application=em_app)
-		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",module)
-		get_application().show_specific(module)
-		self.add_module([str(module),"EMLights",module])
+		em_lights = EMLights(None)
+		window = EM3DGLWidget(em_lights)
+		em_lights.seg_gl_context_parent(window)
+		em_lights.set_gl_widget(window)
+		window.set_model(em_lights)
+		
+		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",window)
+		get_application().show_specific(window)
+		self.add_module([str(window),"EMLights",window])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 	
 	def launch_fonts_tool(self):
@@ -788,17 +793,30 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def launch_3d_image_viewer(self):
 		from emimage3d import EMImage3DWidget
-		self.launch_3d_viewer(EMImage3DWidget(application=em_app),"3D Image Viewer")
-
-	def launch_3d_viewer(self,module,name):
-		from emimage3dvol import EMVolumeModel
+		widget = EMImage3DWidget(application=em_app)
 		
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		#module = EMVolumeModel(application=em_app)
-		module.set_data(test_image_3d(1,size=(64,64,64)))
-		self.emit(QtCore.SIGNAL("launching_module"),name,module)
-		get_application().show_specific(module)
-		self.add_module([str(module),name,module])
+		data = test_image_3d(1,size=(64,64,64))
+		widget.set_data(data)
+		widget.get_inspector().add_isosurface()
+		name = "3D Image Viewer"
+		self.emit(QtCore.SIGNAL("launching_module"), name, widget)
+		get_application().show_specific(widget)
+		self.add_module([str(widget),name,widget])
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+
+	def launch_3d_viewer(self,model,name):
+		from emimage3d import EMImage3DWidget
+		widget = EMImage3DWidget(application=em_app)
+		
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		data = test_image_3d(1,size=(64,64,64))
+		model.set_data(data)
+		widget.set_data(data)
+		widget.add_model(model)
+		self.emit(QtCore.SIGNAL("launching_module"),name,widget)
+		get_application().show_specific(widget)
+		self.add_module([str(widget),name,widget])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 
 	def launch_2d_image_viewer(self):
