@@ -1140,10 +1140,18 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 
 class EMSymViewerWidget(EM3DGLWidget):	
 	allim=WeakKeyDictionary()
-	def __init__(self, em_sym_viewer):
-		assert(isinstance(em_sym_viewer,EM3DSymModel))
+	def __init__(self, sym_model, sym="d7"):
+		assert(isinstance(sym_model,EM3DSymModel))
 		EMSymViewerWidget.allim[self]=0
-		EM3DGLWidget.__init__(self, em_slice_viewer)
+		EM3DGLWidget.__init__(self, sym_model)
+		
+		#TODO: reconsider design so these lines aren't necessary
+		sym_model.under_qt_control = True
+		sym_model.set_gl_widget(self)
+		sym_model.set_gl_context_parent(self)
+		sym_model.set_symmetry(sym)
+		sym_model.regen_dl()
+		
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
@@ -1490,9 +1498,6 @@ class SparseSymChoicesWidgets:
 		
 		return d
 
-sym_model = None #TODO: remove after debugging @ __NAME__ == '__MAIN__'
-sym_widget = None #TODO: remove after debugging @ __NAME__ == '__MAIN__'
-
 class EMSymChoiceDialog(QtGui.QDialog):
 	'''
 	This is a dialog one can use to get the parameters you can use for 
@@ -1514,19 +1519,13 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		self.vbl.setObjectName("vbl")
 		
 		self.sym_model = EM3DSymModel()
-		global sym_model #TODO: remove after debugging @ __NAME__ == '__MAIN__'
-		sym_model = self.sym_model
-		print "EM3DSymModel: ", hex(id(self.sym_model))
 		self.sym_model.enable_inspector(False)
 		
 		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.sym_model)
 		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		self.sparse_syms_widgets.add_symmetry_options(self.vbl)
 
-		global sym_widget #TODO: remove after debugging @ __NAME__ == '__MAIN__'
 		self.sym_widget = EMSymViewerWidget(self.sym_model)
-		sym_widget = self.sym_widget
-		print "EMSymViewerWidget:", hex(id(self.sym_widget))
 		#TODO: reconsider design so these lines aren't necessary
 		self.sym_model.under_qt_control = True
 		self.sym_model.set_gl_widget(self.sym_widget)
@@ -1862,13 +1861,14 @@ if __name__ == '__main__':
 	from emglobjects import EM3DGLWidget
 	em_app = EMApp()
 	
+	#First demonstration
 	dialog = EMSymChoiceDialog()
 	choices_dict = dialog.exec_()
 	print choices_dict
 	
+	#Second demonstration
+	sym_model = EM3DSymModel()
 	window = EMSymViewerWidget(sym_model)
-#	print sym_widget.target()
-#	sym_widget.updateGL()
 	
-	em_app.show() #FIXME: get the orientations to show up in sym_widget (they should be in sym_widget.target())
+	em_app.show()
 	em_app.execute()
