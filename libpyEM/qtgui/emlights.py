@@ -55,9 +55,7 @@ class EMLightsDrawer:
 	Base clase, works with EMLightsInspectorBase
 	'''
 	def __init__(self):
-		
-		self.gl_lights = get_gl_lights_vector()
-		self.colors = get_default_gl_colors()
+
 		self.mouse_modes = [None, "directional", "point source"]
 		self.current_mouse_mode = None
 		self.current_light = GL_LIGHT0 # change this to change which light is drawn
@@ -67,17 +65,23 @@ class EMLightsDrawer:
 		self.cylinderdl = 0
 		self.arc_t = 16
 		self.radius = 10 #  This is an important variable. Set this value to adapt the way the lights appear in your scene.
+		
+		self.inspector = None
+		self.mpressx = None
+		self.mpressy = None
+	
+	def set_gl_context_parent(self, qglwidget):
+		self.gl_context_parent = qglwidget
+		
+		self.gl_lights = get_gl_lights_vector()
+		self.colors = get_default_gl_colors()
+		
 		self.gq=gluNewQuadric()
 		gluQuadricDrawStyle(self.gq,GLU_FILL)
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
-		
-		self.inspector = None
-		self.mpressx = None
-		self.mpressy = None
-
-		
+	
 	def set_current_light(self,light):
 		self.current_light = light
 		if self.current_mouse_mode != None:
@@ -531,12 +535,11 @@ class EMLights(EMLightsDrawer,EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, gl_context_parent):
+	def __init__(self):#, gl_context_parent):
 		EM3DModel.__init__(self)
 		EMLightsDrawer.__init__(self)
 		self.display_lights = True
-		self.gl_context_parent = gl_context_parent
-		
+
 		self.init()
 		self.initialized = True
 		
@@ -548,18 +551,16 @@ class EMLights(EMLightsDrawer,EM3DModel):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-		
 		self.currentcolor = "emerald"
-		
-		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
-		
-		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
-		self.gl_context_parent.cam.cam_z = -25 # this is me hacking
-	
+		self.vdtools = None	
 		self.highresspheredl = 0 # display list id
-
 		self.draw_dl = 0
 
+	def set_gl_context_parent(self, qglwidget):
+		EMLightsDrawer.set_gl_context_parent(self, qglwidget)
+		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
+		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
+		self.gl_context_parent.cam.cam_z = -25 # this is me hacking		
 	def get_type(self):
 		return "lights"
 
@@ -1430,11 +1431,12 @@ if __name__ == '__main__':
 	from emapplication import EMApp
 	from emglobjects import EM3DGLWidget
 	em_app = EMApp()
-	window = EM3DGLWidget()
-	em_lights = EMLights(window)
+	em_lights = EMLights()
+	window = EM3DGLWidget(em_lights)
+	#TODO: reconsider design so these lines aren't necessary
+	em_lights.under_qt_control = True
 	em_lights.set_gl_widget(window)
-	window.set_model(em_lights)
-	
+	em_lights.set_gl_context_parent(window)
 	em_app.show()
 	em_app.execute()
 	
