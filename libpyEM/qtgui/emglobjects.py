@@ -2239,7 +2239,7 @@ class EM3DModel(QtCore.QObject):
 		if self.inspector != None :
 			self.inspector.set_scale(self.cam.scale)
 class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
-	def __init__(self, model = None):
+	def __init__(self, model):
 		EMGLWidget.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
@@ -2254,9 +2254,7 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.endz = 500.0
 		self.cam = Camera()
 		#self.cam = Camera2(self.target())
-		if model:
-			self.set_model(model)
-
+		self.set_model(model)
 		self.resize(480,480)
 	def get_current_transform(self):
 		size = len(self.cam.t3d_stack)
