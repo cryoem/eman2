@@ -87,19 +87,17 @@ def main():
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	euler_explorer = EMEulerExplorer(application=em_app)
-	window = EMSymViewerWidget(euler_explorer)
-	#TODO: reconsider design so these lines aren't necessary
-	euler_explorer.under_qt_control = True
-	euler_explorer.set_gl_widget(window)
-	euler_explorer.set_gl_context_parent(window)
-
-	em_app.show()
+	window = get_euler_widget(em_app)
+	em_app.show()#_specific(window)
 	em_app.execute()
 	
 	E2end(logid)
 
-	
+def get_euler_widget(em_app=None, auto = True):
+	euler_explorer = EMEulerExplorer(application=em_app, auto=auto)
+	window = EMSymViewerWidget(euler_explorer)
+	return window
+
 class EMEulerExplorer(EM3DSymModel,Animator):
 	
 	def mousePressEvent(self,event):

@@ -739,19 +739,21 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
-		from emimage3dsym import EM3DSymModel
+		from emimage3dsym import EM3DSymModel, EMSymViewerWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		module = EM3DSymModel()
-		self.emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",module)
-		get_application().show_specific(module)
-		self.add_module([str(module),"Eulerxplor",module])
+		widget = EMSymViewerWidget(module)
+		self.emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",widget)
+		get_application().show_specific(widget)
+		self.add_module([str(widget),"Eulerxplor",widget])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_eulers(self):
-		from e2eulerxplor import launch_euler_explorer
+		from e2eulerxplor import get_euler_widget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		widget = launch_euler_explorer(auto=True)
+		widget = get_euler_widget(auto=True)
 		self.emit(QtCore.SIGNAL("launching_module"),"Eulers",widget)
+		get_application().show_specific(widget)
 		self.add_module([str(widget),"Eulerxplor",widget])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
