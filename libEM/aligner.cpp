@@ -2252,6 +2252,8 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 		sxs = (sx-sx2[im])*co-(sy-sy2[im])*so;
 		sys = (sx-sx2[im])*so+(sy-sy2[im])*co;
 
+		//if (sxs*sxs+sys*sys >= 7*7) { sxs=0; sys=0; }
+
 		align_result.push_back(ang);
 		align_result.push_back(sxs);
 		align_result.push_back(sys);
@@ -2335,10 +2337,10 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 
 	for (int y=0; y<NY; y++)
 		for (int x=0; x<NX; x++)
-			image_ref_stack[base_address+y*NX+x] = (*image)(x, y);
+			ref_image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-vector<float> CUDA_multiref_alignment::multiref_ali2d(int gpuid, int silent) {
+vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 
 	float previous_defocus = 0.0;
 	float *params = (float *)malloc(NREF*6*sizeof(float));
@@ -2346,7 +2348,7 @@ vector<float> CUDA_multiref_alignment::multiref_ali2d(int gpuid, int silent) {
 	float *sy2 = (float *)malloc(NREF*sizeof(float));
 	vector<float> align_results;
 	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
-	
+
 	for (int i=0; i<NREF; i++) {
 		sx2[i] = 0.0f; sy2[i] = 0.0f;
 	}
@@ -2360,13 +2362,15 @@ vector<float> CUDA_multiref_alignment::multiref_ali2d(int gpuid, int silent) {
 				filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, params, gpuid);
 				previous_defocus = ctf_params[i*6];
 			}
-			calculate_ccf(ref_image_stack_filtered, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+			calculate_ccf(ref_image_stack_filtered, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, gpuid, silent);
 		} else {
-			calculate_ccf(ref_image_stack, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+			calculate_ccf(ref_image_stack, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, gpuid, silent);
 		}
 
 		float max_ccf = -1.0e22;
 		int nref = -1;
+		float ts, tm, ang, sx, sy, co, so, sxs, sys;
+		int mirror;
 		for (int im=0; im<NREF; im++) {
 			for (int kx=-KX; kx<=KX; kx++) {
 				for (int ky=-KY; ky<=KY; ky++) {
