@@ -1146,28 +1146,26 @@ def image_decimate(img,decimation=2, fit_to_fft=1,frequency_low=0, frequency_hig
 		img = Util.decimate(e1, int(decimation), int(decimation), 1)
 	return  img
 
-def inverse_transform2(alpha, sx=0.0, sy=0.0, scale=1.0):
-	"""Print the inverse of the 2d rot and trans matrix
+def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
+	"""Returns the inverse of the 2d rot and trans matrix
 
-	    Usage: inverse_transform2(alpha,sx,sy,scale)
+	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
 	"""
-	invparams = inverse_transform3(0,0,alpha,sx,sy,0,scale)
-	return invparams[2], invparams[3],invparams[4], invparams[6]
+	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
+	t = t.inverse()
+	t = t.get_params("2D")
+	return t[ "alpha" ], t[ "tx" ], t[ "ty" ], t[ "mirror" ]
 
-def inverse_transform3(phi, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0):
-	"""Print the inverse of the 3d rot and trans matrix
+def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror = 0, scale=1.0):
+	"""Returns the inverse of the 3d rot and trans matrix
 
-	    Usage: inverse_transform3(phi,theta,psi,sx,sy,sz,scale)
+	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
 	       angles in degrees
 	"""
-	R1       = Transform({'scale': scale})
-	R2       = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
-	R        = R1 * R2
-	Rinv     = R.inverse()
-	inveuler = Rinv.get_rotation('spider')
-	invtrans = Rinv.get_trans()
-	invscale = Rinv.get_scale()
-	return inveuler['phi'], inveuler['theta'], inveuler['psi'], invtrans.at(0), invtrans.at(1), invtrans.at(2), invscale
+	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
+	d = d.inverse()
+	d = d.get_params("spider")
+	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
 
 def list_syms():
 	"""Create a list of available symmetries

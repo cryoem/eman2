@@ -59,7 +59,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			ima = data[im]
 		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
 		# align current image to the reference
 		if random_method == "SA":
@@ -94,7 +94,7 @@ def ali2d_single_iter_CUDA(data, cs, tavg, R, GPUID, CTF, ali_params="xform.alig
 	for im in xrange(len(data)):
 		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 		sx_list.append(sxi)
 		sy_list.append(syi)
 
@@ -140,7 +140,7 @@ def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode,
 			ima = data[im]
 		alpha, sx, sy, mirror, dummy = get_params2D(ima, ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy, 1.0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
 		# align current image to the reference
 		if random_method == "SA":

@@ -1643,7 +1643,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 					data[im] = filt_ctf(data[im], ctf_params)
 					data[im].set_attr('ctf_applied', 1)
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
 			# align current image to the reference
@@ -1899,7 +1899,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(data[im-image_start])
-			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			# align current image to the reference
