@@ -1839,7 +1839,6 @@ class EMGLScrollBar:
 		self.up_arrow_color = self.scroll_bar_idle_color
 		self.down_arrow_color = self.scroll_bar_idle_color
 		
-		glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
 		
 	def update_stuff(self):
 	
@@ -1882,6 +1881,7 @@ class EMGLScrollBar:
 		ex = self.width
 		ey = self.height
 		
+		glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
 		glNormal(0,0,1) # this normal is fine for everything that is drawn here
 		# this provides some defaults for specular and shininess
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
