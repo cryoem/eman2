@@ -308,6 +308,7 @@ class ClassAvTask(EMTask):
 
 		# Final alignment to the reference (if there is one)
 		if ref!=None :
+			#ref.process_inplace("normalize.edgemean")
 			ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
 			fxf=ali["xform.align2d"]
 			avg1=avg
