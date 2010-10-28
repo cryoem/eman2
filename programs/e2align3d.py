@@ -64,7 +64,6 @@ def main():
         parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
         parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
         parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
-        parser.add_option("--verbose",type="int",default=0,help="Be Verbose?, default=0")
         #options associated with  the simplex 3D refiner
         parser.add_option("--stepalt",type="float",default=5.0,help="step size for alt angle, default=5.0")
         parser.add_option("--stepaz",type="float",default=5.0,help="step size for az angle, default=5.0")
@@ -75,6 +74,7 @@ def main():
         parser.add_option("--maxshift",type="int",default=-1.0,help="maximum shift, (-1 means dim/4), default=-1.0")
         parser.add_option("--maxiter",type="int",default=100,help="maximum number of iterations(you'll need more for courser global searches), default=100")
         parser.add_option("--rcmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
+        parser.add_option("--verbose","-v",type="int",default=0,help="Level of verboseness, default=0")
 
         global options
 	(options, args) = parser.parse_args()
@@ -172,6 +172,7 @@ def main():
         bestmodel = 0
         galignedref = []
         nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'rphi':options.rphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp)
+	if verbose: print len(nbest), " best orientations"
 
         #refine each solution found are write out the best one
         for i, n in enumerate(nbest):
