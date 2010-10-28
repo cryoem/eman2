@@ -1517,6 +1517,68 @@ def print_image_slice(input, iz=0):
 	    	line.append("\n")
 	    	if(nx%5 != 0): line.append("\n")
 	print "".join(line)
+	
+def print_image_slice_3d(input, num=0,direction="z"):
+	"""Print the data in slice iz of an image to standard out in a format that agrees with v2
+
+	Usage: print_image_slice(image, int)
+	   or
+	       print_image_slice("path/to/image", int)
+	"""
+	#print "print slice at 3 directions"
+	image=get_image(input)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	if(direction=="x"):
+		#print "xxxxx"
+		ix=num
+		print "(x = %d slice)" % (ix)
+		line = []
+		for iz in xrange(nz-1,-1,-1):
+			line.append("Z ")
+			line.append("%4i " % iz)
+			for iy in xrange(ny):
+				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+				if ((iy + 1) % 5 == 0): 
+					line.append("\n   ")
+					line.append("      ")
+	    		line.append("\n")
+	    		if(ny%5 != 0): line.append("\n")
+		print "".join(line)
+	elif(direction=="y"):
+		#print "yyy"
+		iy=num
+		print "(y = %d slice)" % (iy)
+		line = []
+		for iz in xrange(nz-1,-1,-1):
+			line.append("Z ")
+			line.append("%4i " % iz)
+			for ix in xrange(nx):
+				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+				if ((ix + 1) % 5 == 0): 
+					line.append("\n   ")
+					line.append("      ")
+	    		line.append("\n")
+	    		if(nx%5 != 0): line.append("\n")
+		print "".join(line)
+	else:
+		#print "zzzz"
+		iz=num
+		print "(z = %d slice)" % (iz)
+		line = []
+		for iy in xrange(ny-1,-1,-1):
+			line.append("Row ")
+			line.append("%4i " % iy)
+			for ix in xrange(nx):
+				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+				if ((ix + 1) % 5 == 0): 
+					line.append("\n   ")
+					line.append("      ")
+	    		line.append("\n")
+	    		if(nx%5 != 0): line.append("\n")
+		print "".join(line)
+		
 
 def print_list_format(m, narray = 0):
 	from string 	import split
