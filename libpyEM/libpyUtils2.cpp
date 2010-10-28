@@ -334,11 +334,11 @@ int pyk_means_cont_table(array& group1, array& group2, array& stb, long int s1, 
 }
 
 // bb_enumerateMPI is locate in util_sparx.cpp
-vector<int> pybb_enumerateMPI(array& parts, array& classDims, int nParts, int nClasses, int T, int nTop, int nguesses, bool doMPI, array& Levels, int LARGEST_CLASS) {
+vector<int> pybb_enumerateMPI(array& parts, array& classDims, int nParts, int nClasses, int T, int nguesses,int LARGEST_CLASS,int J, int max_branching, float stmult, int
+branchfunc, int LIM) {
     int* pt_parts = get_iptr(parts);
     int* pt_classDims = get_iptr(classDims);
-    int* pt_Levels = get_iptr(Levels);
-    return EMAN::Util::bb_enumerateMPI_(pt_parts, pt_classDims, nParts, nClasses,T,nTop,nguesses,doMPI,pt_Levels, LARGEST_CLASS);
+    return EMAN::Util::bb_enumerateMPI_(pt_parts, pt_classDims, nParts, nClasses,T,nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM);
 }
 
 // Module ======================================================================
@@ -550,7 +550,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("sdot",   &pysdot, args("n", "x", "incx", "y", "incy"), "")
 		.def("readarray", &readarray, args("f", "x", "size"), "")
 		.def("k_means_cont_table", &pyk_means_cont_table, args("group1", "group2", "stb", "s1", "s2", "flag"), "k_means_cont_table_ is locate to util_sparx.cpp\nhelper to create the contengency table for partition matching (k-means)\nflag define is the list of stable obj must be store to stb, but the size st\nmust be know before. The trick is first start wihtout the flag to get number\nof elements stable, then again with the flag to get the list. This avoid to\nhave two differents functions for the same thing.")
-		.def("bb_enumerateMPI", &pybb_enumerateMPI, args("parts", "classDims", "nParts", "nClasses", "T", "nTop", "nguesses", "doMPI", "levels", "LARGEST_CLASS"), "bb_enumerateMPI is locate in util_sparx.cpp\nK is the number of classes in each partition (should be the same for all partitions)\nthe first element of each class is its original index in the partition, and second is dummy var\nMPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array.\nThe first element is reserved for max_levels (the size of the smallest\npartition after pruning).\nif nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called\nto find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.\nessentially the same as bb_enumerate but with the option to do mpi version.")
+		.def("bb_enumerateMPI", &pybb_enumerateMPI, args("parts", "classDims", "nParts", "nClasses", "T", "nguesses", "LARGEST_CLASS","J","max_branching","stmult","branchfunc", "LIM"), "bb_enumerateMPI is locate in util_sparx.cpp\nK is the number of classes in each partition (should be the same for all partitions)\nthe first element of each class is its original index in the partition, and second is dummy var\nMPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array.\nThe first element is reserved for max_levels (the size of the smallest\npartition after pruning).\nif nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called\nto find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.\nessentially the same as bb_enumerate but with the option to do mpi version.")
 		.def("Normalize_ring", &EMAN::Util::Normalize_ring, args("ring", "numr"), "")
 		.def("image_mutation", &EMAN::Util::image_mutation, args("img", "mutation_rate"), "")
 		.def("list_mutation", &EMAN::Util::list_mutation, args("list", "rate", "min_val", "max_val", "K", "is_mirror"), "")
