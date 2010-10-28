@@ -485,6 +485,8 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.cam.default_z = -1.25*data.get_xsize()
 			self.cam.cam_z = -1.25*data.get_xsize()
 	def set_data(self,data,file_name="",replace=True):
+		was_previous_data = bool(self.data)
+		
 		self.file_name = file_name # fixme fix this later
 		if self.qt_parent != None:
 			self.qt_parent.setWindowTitle(remove_directories_from_name(self.file_name))
@@ -511,9 +513,9 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		#for i in self.viewables:
 			#i.set_data(data)
 		
-		if isinstance(self,EMImage3DWidget):
+		if isinstance(self,EMImage3DWidget) and not was_previous_data:
 			self.resize(self.width(),self.height())
-			self.set_cam_z_from_fov_image(self.get_fov(),self.data)
+			self.set_cam_z_from_fov_image(self.get_fov(),self.data) #perhaps this should be done every time
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
