@@ -139,12 +139,12 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 		printf("Initialization on the host memory done.\n");
 
 		printf("\nMemory to be allocated on the video card:\n");
-		printf("For %5d subject images  		    : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4/1000000.0);
+		printf("For %5d subject images                      : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4.0/1000000.0);
 		printf("For reference image			      : %10.3f KB\n", NX*NY*4/1000.0);
-		printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4/1000000.0);
+		printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4.0/1000000.0);
 		printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
-		printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*4/1000000.0);
-		printf("Total memory used			      : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE)*4/1000000.0);
+		printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*4.0/1000000.0);
+		printf("Total memory used			      : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE)*4.0/1000000.0);
 	}
 
 
