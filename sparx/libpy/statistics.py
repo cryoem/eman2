@@ -9044,7 +9044,7 @@ class pcanalyzebck:
 # MATCH is a list of arrays, where each array is a match
 # STB_PART is a list of lists, each list in the list, i.e.STB_PART[0] is a stable set (i.e., the common intersection of a matching)
 # For consistency with k_means_stab_pwa, STB_PART will be initialized to be a list of K lists, and of course some will be empty
-def k_means_stab_bbenum(PART, T=10, nguesses=5,levels=[], doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+def k_means_stab_bbenum(PART, T=10, nguesses=5, J=1, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
 	
 	from copy import deepcopy
 	
@@ -9052,16 +9052,16 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5,levels=[], doMPI_init=False, njob
 	MATCH=[]
 	
 	# do MPI_init: compute pruned partitions and Njobs top matches and return
-	if doMPI_init:
-		newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, nguesses=nguesses, levels=levels, DoMPI_init=True,Njobs=njobs)
-		return newParts, topMatches, class_dim,num_found
+	#if doMPI_init:
+	#	newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, J=J, nguesses=nguesses, DoMPI_init=True,Njobs=njobs)
+	#	return newParts, topMatches, class_dim,num_found
 	
-	if do_mpi:
-		MATCH,cost= k_means_match_bbenum(PART, T=T, nguesses=nguesses, levels=levels, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
-		return MATCH,cost
+	#if do_mpi:
+	#	MATCH,cost= k_means_match_bbenum(PART, T=T, J=J, nguesses=nguesses, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
+	#	return MATCH,cost
 		
 	if do_mpi==False and doMPI_init == False:
-		MATCH= k_means_match_bbenum(PART, T=T, nguesses=nguesses, levels=levels, DoMPI=False)
+		MATCH= k_means_match_bbenum(PART, T=T, J=J, max_branching=max_branching, stmult=stmult, branchfunc=branchfunc, LIM=LIM, nguesses=nguesses, DoMPI=False)
 	
 	
 	K=len(PART[0])
@@ -9115,7 +9115,7 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5,levels=[], doMPI_init=False, njob
 
 # DO NOT copy memory - could lead to crashes	
 # This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
-def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
+def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
 	from numpy import array, append, insert
 	
 	MATCH=[]
@@ -9172,10 +9172,7 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 		
 		K = len(PART[0])		
 		# serialize all the arguments in preparation for passing into c++ function
-		if len(levels)<1:	
-			for i in xrange(K):
-				levels.append(1)
-		ar_levels = array(levels, 'int32')
+		
 		
 		for i in xrange(np):
 			for j in xrange(K):
@@ -9203,7 +9200,7 @@ def k_means_match_bbenum(PART, T=10, nguesses=5,levels=[], DoMPI_init=False, Njo
 		
 
 		# Single processor version
-		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T,levels[0], nguesses,False, ar_levels, LARGEST_CLASS)
+		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T, nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM)
 		
 	# first element of output is the total  cost of the solution, second element is the number of matches
 	# in the output solution, and then follows the list of matches.

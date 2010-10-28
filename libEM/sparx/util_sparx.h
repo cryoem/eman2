@@ -628,15 +628,7 @@ class FakeKaiserBessel : public KaiserBessel {
 			size_curintx, int* next, int size_next, int depth);
 
 	
-	/** find max_num_matches feasible matches (if possible) which has weight gt T, and weight gteq weight of all other feasible matches.
-	 * return the results in the pre-allocated arrays matchlist and costlist.
-	 * Each match is a sequence (stored in a 1D array) of nParts numbers, where the i-th element in the sequence is the original index of the class from the i-th
-	 * partition.
-	 * Those classes in argParts whose dummy variable is 1 are the classes which are not yet used (i.e., those which can be used to construct the feasible matches)
-	 * returns the number of matches found. it's less than the number request if there aren't that many that's over the threshold
-	*/
-	static int findTopLargest(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int max_num_matches, int*
-			costlist, int n_guesses, int LARGEST_CLASS);
+	
 
 	/** make an intelligent "guess" at the largest weight of all possible feasible matches.
 	 * we make "n_guesses" guesses and return the largest one.
@@ -647,11 +639,11 @@ class FakeKaiserBessel : public KaiserBessel {
 	/** return the weight of the largest weighted feasible match, along with the match in the (preallocated) argument curmax.
 	 * The returned weight has to be gt newT. If there is no such feasible matching, return 0 as *curmax
 	*/
-	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curmax);
-
-	static int* explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int newT, int* curintx, int size_curintx, int* next, int
-			size_next, int depth);
-
+	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int* costlist, int J);
+	
+	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, int* next, int size_next, int depth, int J, int* matchlist, int*
+costlist, int* curbranch);
+	
 	/** First element of output is total cost of the matches in the output
 	 * Second element of output is the total number of matches in output
 	 * So output has 2+(*(output+1))nParts elements.
@@ -667,7 +659,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	 *
 	 * essentially the same as bb_enumerate but with the option to do mpi version.
 	*/
-	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int nTop, int n_guesses, bool doMPI, int* Levels, int LARGEST_CLASS);
+	static vector<int> bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int n_guesses, int LARGEST_CLASS, int J, int max_branching, float stmult,
+	int branchfunc, int LIM);
 
 	
 	/** same as branch except the nFirst (=Levels[0]) possibilites for the first match are already chosen
@@ -675,8 +668,13 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
 	 * and the rest is the list of matches. output is in one dimensional form.
 	*/
-	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* Levels, int nLevels, int curlevel,int n_guesses, int nFirst, int* firstmatches, int LARGEST_CLASS);
+	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int curlevel,int n_guesses, int LARGEST_CLASS, int J, int max_branching,
+	float stmult, int branchfunc, int LIM);
 
+	static int branch_factor_1(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel);
+	static int branch_factor_2(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int LIM);
+	static int branch_factor_3(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int K, int LIM);
+	static int branch_factor_4(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, float stmult);
 	// new code common-lines
 
 	//helper function for the weights calculation by Voronoi to Cml
