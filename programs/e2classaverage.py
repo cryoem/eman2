@@ -445,7 +445,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		ref.process_inplace("normalize.circlemean")
 		gmw=max(5,ref["nx"]/16)		# gaussian mask width
 		ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
-		ref.process_inplace("xform.centeracf")						# TODO: should probably check how well this works
+		ref.process_inplace("xform.centerofmass",{"threshold":1.0})						# TODO: should probably check how well this works
 		ref_orient=None
 	else:
 		ref_orient=ref["xform.projection"]

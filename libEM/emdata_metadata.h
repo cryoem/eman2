@@ -180,11 +180,11 @@ IntPoint calc_max_location() const;
  */
 IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
 
-/** Calculate the center of mass using an algorithm written by S Ludtke
- * @author David Woolford
+/** Calculate the center of mass with a threshold (Default 0, so only positive values are considered)
+ * @author Steve Ludtke
  * @date Fri Jun 6th 2008
  */
-FloatPoint calc_center_of_mass();
+FloatPoint calc_center_of_mass(const float threshold=0);
 
 /** Calculates the index of minimum-value pixel when assuming
  * all pixels are in a 1D array.

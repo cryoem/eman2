@@ -5487,11 +5487,12 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
+	float threshold = params.set_default("threshold",0.0);
 //	int positive = params.set_default("positive",0);
 
 	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
 
-	FloatPoint com = image->calc_center_of_mass();
+	FloatPoint com = image->calc_center_of_mass(threshold);
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();

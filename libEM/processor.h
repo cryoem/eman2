@@ -4923,13 +4923,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "ToMassCenterProcessor centers image at center of mass. Note: includes only values > mean+0.75*sigma";
+			return "ToMassCenterProcessor centers image at center of mass, with a threshold. Only values higher than the threshold are considered.";
 		}
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
+			d.put("threshold", EMObject::FLOAT, "Only values larger than the threshold are included in the center of mass computation. Default is 0.");
 //			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
 			return d;
 		}

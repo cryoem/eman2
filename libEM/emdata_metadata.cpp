@@ -448,8 +448,7 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 	return peak;
 }
 
-// Note that this is not a true center of mass due to the use of a threshold
-FloatPoint EMData::calc_center_of_mass()
+FloatPoint EMData::calc_center_of_mass(float threshold)
 {
 	float *data = get_data();
 
@@ -463,10 +462,10 @@ FloatPoint EMData::calc_center_of_mass()
 			int j2 = nx * j;
 			for (int k = 0; k < nz; ++k) {
 				size_t l = i + j2 + k * nxy;
-				if (data[l] >= sigma * 1.25 + mean) {		// arbitrary constant to threshold out noise
-					com[0] += i * data[l];
-					com[1] += j * data[l];
-					com[2] += k * data[l];
+				if (data[l] >= threshold) {		// threshold out noise (and negative density)
+					com[0] += i * (data[l]);
+					com[1] += j * (data[l]);
+					com[2] += k * (data[l]);
 					m += data[l];
 				}
 			}
