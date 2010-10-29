@@ -6154,10 +6154,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
 
-			sx = 0.0
-			sy = 0.0
-
-
 			for im in xrange( nima ):
 
 				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
@@ -6167,79 +6163,32 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					dyi = (float(syi)/dpp)-int(syi/dpp)
 					#jdelta = 0.75/dpp # jdelta could be adjustable input parameter
 					jdelta=0.0
-					#change the wrapping part 
-					'''if dyi < -0.5-jdelta:
-						eyi    = dyi+1.0
-						sytemp = eyi*dpp
-						synew  = 0.0
-						phinew = phihi+abs(dphi)*float(syi-sytemp)/dpp
-						#print  im," A ",syi,dyi,eyi,synew, phihi[im],phinew[im]
-					elif dyi > 0.5+jdelta:
-						eyi    = dyi-1.0
-						sytemp = eyi*dpp
-						synew  = 0.0
-						phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
-						#print  im," B ",syi,dyi,eyi,synew, phihi[im],phinew[im]
-					else:
-						if abs(int(syi/dpp)) > 0:
-							eyi         = dyi
-	        					sytemp = eyi*dpp
-	        					synew  = 0.0
-	        					phinew=phihi+abs(dphi)*float(syi-sytemp)/dpp
-	        				else:
-	        					synew  = syi
-	        				phinew = phihi'''
 						
 					if(abs(syi)<=(0.5+jdelta)*dpp):
-						
 						synew  = syi
 						phinew = phihi
-	
 					else:
-						if dyi < -0.5-jdelta:
-							eyi    = dyi+1.0
-							
-						elif dyi > 0.5+jdelta:
-							eyi    = dyi-1.0
-							
-	
-						else:
-							eyi = dyi
-	       					synew= eyi*dpp
-	        				phinew=phihi+abs(dphi)*float(synew-syi)/dpp
-						phinew=phinew%360
+						if dyi < -0.5-jdelta:  eyi = dyi+1.0
+						elif dyi > 0.5+jdelta:  eyi = dyi-1.0
+						else:                   eyi = dyi
+	       					synew  = eyi*dpp
+	        				phinew = phihi+abs(dphi)*float(synew-syi)/dpp
+						phinew = phinew%360
 
 					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
 					t2.set_trans(Vec2f(-sxi, -synew))
 					data[im].set_attr("xform.projection", t2)
-					pixer[im] = max_3D_pixel_error(t1, t2, numr[-3])
-					#sx += sxi
-					#sy += synew
-					#end of Jeanmod
+					pixer[im]  = max_3D_pixel_error(t1, t2, numr[-3])
+					modphi[im] = phinew
 				else:
-					pixer[im] = 0.0
+					# peak not found, parameters not modified
+					pixer[im]  = 0.0
+					phihi, theta, psi, sxi, syi = get_params_proj(data[im])
+					modphi[im] = phihi
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
-			
-
-			'''sx = mpi_reduce(sx, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			sy = mpi_reduce(sy, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			if( myid == main_node ):
-				sx = float(sx[0])/total_nima
-				sy = float(sy[0])/total_nima
-			else:
-				sx = 0.0
-				sy = 0.0
-			sx = bcast_number_to_all(sx, source_node = main_node)
-			sy = bcast_number_to_all(sy, source_node = main_node)
-			for im in xrange( nima ):
-				paramali = get_params_proj(data[im])
-				# jeanmod - for stats, gets phi mapped back into 0-359 degrees range
-				modphi[im]=paramali[0]
-				# end jeanmod
-				set_params_proj(data[im], [paramali[0], paramali[1], paramali[2], paramali[3] - sx, paramali[4] - sy])'''
 
 			#output pixel errors
 			from mpi import mpi_gatherv
@@ -6326,40 +6275,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
 			else:
-				'''
-				datap = [None]*(len(data)//2+len(data)%2)
-				for i in xrange(0,len(data),2):
-					datap[i//2] = data[i]
-				vol1 = recons3d_4nn_MPI(myid, datap, npad = npad)
-				datap = [None]*(len(data)//2)
-				for i in xrange(1,len(data),2):
-					datap[i//2] = data[i]
-				vol2 = recons3d_4nn_MPI(myid, datap, npad = npad)
-				del datap
-				if myid == main_node:
-					from statistics import fsc
-					nx = vol1.get_xsize()
-					ny = vol1.get_ysize()
-					nz = vol1.get_zsize()
-					m = 0
-					for i in xrange(nz//2,nz//2+nz//4):
-						fst = fsc(vol1.get_clip(Region(0,0,i,nx,ny,1)),vol2.get_clip(Region(0,0,i,nx,ny,1)))
-						m += 1
-						if(i == nz//2):
-							frc = [[],[]]
-							for j in xrange(len(fst[0])):
-								frc[0].append(fst[0][j])
-								frc[1].append(fst[1][j])
-						else:
-							for j in xrange(len(fst[0])):
-								frc[1][j] += fst[1][j]
-					del fst
-					for j in xrange(len(frc[0])):
-						frc[1][j] /= m
-					from utilities import write_text_file
-					write_text_file(frc, os.path.join(outdir, "frc%04d.txt"%total_iter))
-				del vol1, vol2
-				'''
 				vol = recons3d_4nn_MPI(myid, data, npad = npad)
 
 			if myid == main_node:
@@ -6402,7 +6317,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 				print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
 				start_time = time()
-				
+
 			#jeanmod
 			dp   = bcast_number_to_all(dp,   source_node = main_node)
 			dphi = bcast_number_to_all(dphi, source_node = main_node)
