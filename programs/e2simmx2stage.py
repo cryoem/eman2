@@ -200,7 +200,7 @@ def main():
 		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)
 	
 	if options.verbose>0:
-		cmd += " --verbose=%d"%options.verbose-1
+		cmd += " --verbose=%d"%(options.verbose-1)
 	
 	if options.prefilt : cmd+=" --prefilt"
 	if options.parallel: cmd += " --parallel=%s" %options.parallel
