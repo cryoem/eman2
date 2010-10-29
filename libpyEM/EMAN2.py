@@ -459,6 +459,16 @@ def parsemodopt(optstr):
 
 	return (p_1[0], r2)
 
+def parsedict(dictstr):
+	cmpparms = {}
+        for d in dictstr:
+	        keyval = d.split(":")
+	        try:
+	                cmpparms[keyval[0]] = float(keyval[1])
+	        except:
+	                cmpparms[keyval[0]] = keyval[1]
+	return cmpparms
+	
 parseparmobj_op = re.compile("\+=|-=|\*=|\/=|%=")
 parseparmobj_logical = re.compile(">=|<=|==|~=|!=|<|>") 	# finds the logical operators <=, >=, ==, ~=, !=, <, >
 parseparmobj_op_words = re.compile("\w*[^=+-\/\*%][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"

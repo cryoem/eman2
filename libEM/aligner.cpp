@@ -1457,9 +1457,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		searchz = params.set_default("searchz",3);
 	}
 
-	float ralt = params.set_default("ralt",180.f);
-	float rphi = params.set_default("rphi",180.f);
-	float raz = params.set_default("raz",180.f);
+        float lalt = params.set_default("lalt",0.0f);
+        float laz = params.set_default("laz",0.0f);
+        float lphi = params.set_default("lphi",0.0f);
+	float ualt = params.set_default("ualt",179.9f); // I am using 179.9 rather than 180 to avoid resampling
+	float uphi = params.set_default("uphi",359.9f); // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
+	float uaz = params.set_default("uaz",359.9f);   // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
 	float dalt = params.set_default("dalt",10.f);
 	float daz = params.set_default("daz",10.f);
 	float dphi = params.set_default("dphi",10.f);
@@ -1485,24 +1488,14 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
-	for ( float alt = 0.0f; alt <= ralt; alt += dalt) {
+	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
 		if (verbose) {
 			cout << "Trying angle " << alt << endl;
 		}
-
-		float begin_az = -raz;
-		float end_az = raz;
-		if (alt == 0.0f) {
-			begin_az = 0.0f;
-			end_az = 0.0f;
-		}
-
-		for ( float az = begin_az; az <= end_az; az += daz ){	//Dict yy = t.get_params("eman");
-        //cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << endl;
-	                // I have used < rphi-az rather than <= rphi-az to prevent phi from resampling itself(causes big!!! pbs when using >1 solns)
-			for( float phi = -rphi-az; phi < rphi-az; phi += dphi ) {
+		for ( float az = laz; az <= uaz; az += daz ){	
+			for( float phi = lphi; phi <= uphi; phi += dphi ) {
 				d["alt"] = alt;
 				d["phi"] = phi; 
 				d["az"] = az;
@@ -1590,7 +1583,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		searchz = params.set_default("searchz",3);
 	}
 
-	float rphi = params.set_default("rphi",180.f);
+	float lphi = params.set_default("lphi",0.0f);
+	float uphi = params.set_default("uphi",359.9f);
 	float dphi = params.set_default("dphi",10.f);
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
@@ -1632,7 +1626,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	float verbose_alt = -1.0f;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
-		float az = params["az"];
 		if (verbose) {
 			float alt = params["alt"];
 			if ( alt != verbose_alt ) {
@@ -1640,8 +1633,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				cout << "Trying angle " << alt << endl;
 			}
 		}
-		// I have used < rphi-az rather than <= rphi-az to prevent phi from resampling itself(causes big!!! pbs when using >1 solns)
-		for( float phi = -rphi-az; phi < rphi-az; phi += dphi ) { 
+
+		for( float phi = lphi; phi <= uphi; phi += dphi ) { 
 			
                         params["phi"] = phi;
 			Transform t(params);

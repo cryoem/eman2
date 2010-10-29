@@ -98,52 +98,52 @@ void rt1()
 	}
 }
 
-void rt2()
-{
-	EMData *image = new EMData();
+//void rt2()
+//{
+//	EMData *image = new EMData();
 
-	image->read_image(get_test_image());
-	Transform3D r = Transform3D(Vec3f(16,16,16), 1.0329837512591338,3.7260642381912579,
-							5.7671541529246966);
-	image->rotate_translate(r);
-	image->write_image("rt2.mrc");
-	if( image )
-	{
-		delete image;
-		image = 0;
-	}
-}
+//	image->read_image(get_test_image());
+//	Transform3D r = Transform3D(Vec3f(16,16,16), 1.0329837512591338,3.7260642381912579,
+//							5.7671541529246966);
+//	image->rotate_translate(r);
+//	image->write_image("rt2.mrc");
+//	if( image )
+//	{
+//		delete image;
+//		image = 0;
+//	}
+//}
 
-void compare_image()
-{
-	EMData *image1 = new EMData();
-	EMData *image2 = new EMData();
+//void compare_image()
+//{
+//	EMData *image1 = new EMData();
+//	EMData *image2 = new EMData();
 	
-	image1->read_image(get_test_image());
-	image2->read_image(get_test_image());
+//	image1->read_image(get_test_image());
+//	image2->read_image(get_test_image());
 	
-	image1->translate(Vec3f(100.5, 100.5, 0));
-	image1->write_image("tran1.mrc");
+//	image1->translate(Vec3f(100.5, 100.5, 0));
+//	image1->write_image("tran1.mrc");
 	
-	Transform3D r = Transform3D(Vec3f(100.5, 100.5, 0), 0,0,0);
-	image2->rotate_translate(r);
-	image2->write_image("tran2.mrc");
+//	Transform3D r = Transform3D(Vec3f(100.5, 100.5, 0), 0,0,0);
+//	image2->rotate_translate(r);
+//	image2->write_image("tran2.mrc");
 	
-	float *data1 = image1->get_data();
-	float *data2 = image2->get_data();
-	int size = sizeof(float) * image1->get_xsize() * image1->get_ysize() * image1->get_zsize();
-	int cmp = memcmp( (void*)data1, (void*)data2, size );
-	cout << "Compare reault is: " << cmp << endl;
+//	float *data1 = image1->get_data();
+//	float *data2 = image2->get_data();
+//	int size = sizeof(float) * image1->get_xsize() * image1->get_ysize() * image1->get_zsize();
+//	int cmp = memcmp( (void*)data1, (void*)data2, size );
+//	cout << "Compare reault is: " << cmp << endl;
 	
-	if( image1 ) {
-		delete image1;
-		image1 = 0;
-	}
-	if( image2 ) {
-		delete image2;
-		image2 = 0;
-	}
-}
+//	if( image1 ) {
+//		delete image1;
+//		image1 = 0;
+//	}
+//	if( image2 ) {
+//		delete image2;
+//		image2 = 0;
+//	}
+//}
 
 void debug_align()
 {
@@ -732,7 +732,7 @@ int main()
 		//rt2();
 		//t2();
 		//compare_image();
-		//debug_align();
+		debug_align();
 		//debug_log();
 		//debug_set_size();
 		//debug_footprint();
@@ -750,8 +750,8 @@ int main()
 		//debug_common_lines();
 		//debug_sigma_processor();
 		//debug_peak_search();
-		EMObject obj;
-		emobject_cast_test(obj);
+		//EMObject obj;
+		//emobject_cast_test(obj);
 	}
 	catch (E2Exception & e) {
 		cout << e.what();

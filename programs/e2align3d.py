@@ -59,10 +59,12 @@ def main():
         #options form the sphere alinger
         parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=10.0")
         parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=10.0")
-        parser.add_option("--rphi",type="float",default=180.0,help="search range for the inplane angle phi, default=180.0")
+        parser.add_option("--lphi",type="float",default=0.0,help="lower bound for the inplane angle phi, default=0.0")
+        parser.add_option("--uphi",type="float",default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
         parser.add_option("--search",type="int",default=10,help="maximum extent of the translational search, default=5")
         parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
         parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
+        parser.add_option("--cmpparms",type="string",action="append",default=None,help="comparitor paramters")
         parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
         #options associated with  the simplex 3D refiner
         parser.add_option("--stepalt",type="float",default=5.0,help="step size for alt angle, default=5.0")
@@ -74,7 +76,11 @@ def main():
         parser.add_option("--maxshift",type="int",default=-1.0,help="maximum shift, (-1 means dim/4), default=-1.0")
         parser.add_option("--maxiter",type="int",default=100,help="maximum number of iterations(you'll need more for courser global searches), default=100")
         parser.add_option("--rcmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
+<<<<<<< e2align3d.py
+        parser.add_option("--rcmpparms",type="string",action="append",default=None,help="refine comparitor paramters")
+=======
         parser.add_option("--verbose","-v",type="int",default=0,help="Level of verboseness, default=0")
+>>>>>>> 1.25
 
         global options
 	(options, args) = parser.parse_args()
@@ -101,7 +107,7 @@ def main():
 	    
 	if (moving.get_attr('nx') != moving.get_attr('ny') != moving.get_attr('nz')):
 	    print "Fixed map must have cubic dimensions!"
-	    exit(1)
+	    exit(1)	#(zzz, cmppars) = parsemodopt(options.cmpparms)	 
 	    
 	if (moving.get_attr('nx') != fixed.get_attr('nx')):
 	    print "Fixed and model maps must have the same dimensions!"
@@ -134,6 +140,16 @@ def main():
 		    moving.process_inplace(str(processorname), param_dict)
 		except:
 		    print "warning - application of the pre processor",p," failed. Continuing anyway"
+	
+	#scope is ok here
+        if options.cmpparms:
+            cmpparms = parsedict(options.cmpparms)
+        else:
+	    cmpparms = {}
+	if options.rcmpparms:
+            rcmpparms = parsedict(options.rcmpparms)
+        else:
+	    rcmpparms = {}
 
         #denoise recons
 	if options.famps > 0:
@@ -163,16 +179,18 @@ def main():
         fixed.write_image('filtered_fixed.mrc')
 
 	if options.rcmp == "dot":
-	    rcmpparms = {'normalize':1}
-	else:
-	    rcmpparms = {}
+	    rcmpparms['normalize']=1
 	
         #do the global search
         bestscore = 0
         bestmodel = 0
         galignedref = []
+<<<<<<< e2align3d.py
+        nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'lphi':options.lphi, 'uphi':options.uphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
+=======
         nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'rphi':options.rphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp)
 	if verbose: print len(nbest), " best orientations"
+>>>>>>> 1.25
 
         #refine each solution found are write out the best one
         for i, n in enumerate(nbest):
@@ -195,11 +213,8 @@ def main():
 
         #apply the transform to the original model
         moving.read_image(sys.argv[2])
-        t1 = nbest[bestmodel]["xform.align3d"]
-        t2 = galignedref[bestmodel].get_attr("xform.align3d")
-        #ft = nbest[bestmodel]["xform.align3d"]*galignedref[bestmodel].get_attr("xform.align3d") #BUG!!! need to fixed EMAN2's operator* for the transform object
-        moving.process_inplace("xform",{"transform":t1})
-        moving.process_inplace("xform",{"transform":t2})
+        ft = galignedref[bestmodel].get_attr("xform.align3d")*nbest[bestmodel]["xform.align3d"] #composition transform
+        moving.process_inplace("xform",{"transform":ft})
         
 	#now write out the aligned model
         if sys.argv[3]:

@@ -930,8 +930,9 @@ EMObject EMData::get_attr(const string & key) const
 	ENTERFUNC;
 
 	size_t size = nx * ny * nz;
-	update_stat();
-
+	if ((flags & EMDATA_NEEDUPD) && (key != "is_fftpad")){update_stat();} //this gives a spped up of 7.3% according to e2speedtest
+        //update_stat();
+	
 	if (key == "kurtosis") {
 		float mean = attr_dict["mean"];
 		float sigma = attr_dict["sigma"];
