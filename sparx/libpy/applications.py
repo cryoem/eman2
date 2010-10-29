@@ -6135,7 +6135,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		Iter = -1
  		while(Iter < max_iter-1 and terminate == 0):
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
-			if(ynumber==0):
+			if(ynumber[N_step]==0):
 				stepy=0.0
 			else:
 				stepy=(2*yrng[N_step]/ynumber[N_step])
