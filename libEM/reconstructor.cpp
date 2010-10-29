@@ -2168,11 +2168,9 @@ void circumf( EMData* win , int npad)
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
 				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) {
-					if(LR >= (size_t)L2P && LR <= (size_t)L2) {
-						TNR += tw(i,j,k);
-						++m;
-					}
+				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
+					TNR += tw(i,j,k);
+					++m;
 				}
 			}
 		}
@@ -2834,8 +2832,6 @@ void circumf_rect( EMData* win , int npad)
 	int ix = win->get_xsize();
 	int iy = win->get_ysize();
 	int iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
 
 	int IP = ix/2+1;
 	int JP = iy/2+1;
@@ -2867,18 +2863,22 @@ void circumf_rect( EMData* win , int npad)
 	delete[] sincx;
 	delete[] sincy;
 	delete[] sincz;
+	
+	float dxx = 0.25f/ix/ix;
+	float dyy = 0.25f/iy/iy;
+	float dzz = 0.25f/iz/iz;
+	
+	float LR2 = (ix/2-2)*(ix/2-2)*dxx + (iy/2-2)*(iy/2-2)*dyy + (iz/2-2)*(iz/2-2)*dzz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
-				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) {
-					if(LR >= (size_t)L2P && LR <= (size_t)L2) {
-						TNR += tw(i,j,k);
-						++m;
-					}
+				float LR = (k-KP)*(k-KP)*dzz+(j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
+				if (LR<=1.0f && LR >= LR2) {
+					TNR += tw(i,j,k);
+					++m;
 				}
 			}
 		}
@@ -2889,13 +2889,9 @@ void circumf_rect( EMData* win , int npad)
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
-			//	size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-                        // if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
-			// else                tw(i,j,k) = 0.0f;
-			float LR = float((k-KP)*(k-KP))/(0.25*iz*iz)+float((j-JP)*(j-JP))/(0.25*iy*iy)+float((i-IP)*(i-IP))/(0.25*ix*ix);
-			if (LR<=1) tw(i,j,k)=tw(i,j,k)-TNR;
-			 else                tw(i,j,k) = 0.0f;	
-
+				float LR = (k-KP)*(k-KP)*dzz+(j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
+				if (LR<=1.0f)  tw(i,j,k)=tw(i,j,k)-TNR;
+			 	else 		tw(i,j,k) = 0.0f;	
 			}
 		}
 	}
