@@ -235,7 +235,6 @@ Output: 1-2-3D real image with the result
 		// If the center flag is true, put the center of the correlation in the middle
 		// If it is false, put it in (0,0), this approach saves time, but it is diffcult to manage the result
 		if (center) {
-		        cout << "center" << endl;
 			//  Multiply two functions (the real work of this routine)
 			int itmp = nx/2;
 			//float sx  = float(-twopi*float(itmp)/float(nxp));
