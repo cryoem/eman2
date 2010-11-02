@@ -222,7 +222,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * 
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_snr(amp1, gamma, s);
 			if (s && sf) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
+				r[i] *= sf->get_yatx(s);
 			}
 			s += ds;
 		}
@@ -239,7 +239,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * 
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_snr(amp1, gamma, s);
 			if (s && sf) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
+				r[i] *= sf->get_yatx(s);
 			}
 
 			r[i] = 1.0f / (1.0f + 1.0f / r[i]);
@@ -257,7 +257,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * 
 			float gamma = calc_gamma(g1, g2, s);
 			if (sf) {
 				r[i] = calc_ctf1(amp1, gamma, s);
-				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
+				r[i] = r[i] * r[i] * sf->get_yatx(s) + calc_noise(s);
 			}
 			else {
 				r[i] = calc_ctf1(amp1, gamma, s);
@@ -377,7 +377,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				f = f * f / noise;
 
 				if (s && sf) {
-					f *= pow(10.0f, sf->get_yatx(s));
+					f *= sf->get_yatx(s);
 				}
 				d[x * 2 + ynx] *= f;
 				d[x * 2 + ynx + 1] = 0;
@@ -403,7 +403,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				f = f * f / noise;
 
 				if (s) {
-					f *= pow(10.0f, sf->get_yatx(s));
+					f *= sf->get_yatx(s);
 				}
 				f = 1.0f / (1.0f + 1.0f / f);
 				d[x * 2 + ynx] *= f;
@@ -430,7 +430,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				f = f * f;
 
 				if (sf && s) {
-					f *= pow(10.0f, sf->get_yatx(s));
+					f *= sf->get_yatx(s);
 				}
 				f+=noise;
 
@@ -697,24 +697,79 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 		}
 		break;
 	case CTF_SNR_SMOOTH:
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);	// we base the width of our smoothing on gamma
-			float f = s/dsbg;
-			int j = (int)floor(f);
+		// This apparently complicated routine tries to make a nice smooth and accurate SNR curve. It does this
+		// by fitting local regions of the SNR vs the theoretical SNR (theoretical CTF^2/measured background),
+		// then taking the slope of the result times the theoretical SNR to produce a local SNR estimate
 
-			double sum=0,norm=0;
-			for (int k=max_int(j-5,1); k<min_int(j+6,np); k++) {
-				float s2=f-k;
-				float e=exp(-14.0f*s2*s2/(gamma));
-				if (k>(int)snr.size()) break;
-				sum+=e*snr[k];
-				norm+=e;
-//				printf("%d\t%f\t%f\t%f\t%f\n",k,e,snr[k],sum,norm);
+		{ // <- is to permit new temporary value allocation
+			vector < float >tsnr;	// theoretical SNR
+			tsnr.resize(np);
+			vector < float >dsnr;	// data SNR
+			dsnr.resize(np);
+			
+			float s0=s;
+			
+			for (int i = 0; i < np; i++) {
+				float gamma = calc_gamma(g1, g2, s);
+				tsnr[i] = calc_ctf1(amp1, gamma, s);		// ctf amp
+
+				// background value
+				float f = s/dsbg;
+				int j = (int)floor(f);
+				f-=j;
+				float bg;
+				if (j>(int)background.size()-2) bg=background.back();
+				else bg=background[j]*(1.0f-f)+background[j+1]*f;
+				if (bg <=0) bg=.001;
+
+				tsnr[i] = tsnr[i]*tsnr[i]/bg;		// This is now a SNR curve
+				if (sf && s) {
+					tsnr[i] *= sf->get_yatx(s);
+				}
+
+				
+				// This is the SNR computed from the data without fitting
+				if (j>(int)snr.size()-2) dsnr[i]=snr.back();
+				else dsnr[i]=snr[j]*(1.0f-f)+snr[j+1]*f;
+				
+				s+=ds;
 			}
-			r[i]=(float)(norm==0?0:sum/norm);
-			s+=ds;
+
+
+			s=s0;
+			for (int i = 1; i < np; i++) {
+				// simple linear regression embedded here
+				double sum = 0;
+				double sum_x = 0;
+				double sum_y = 0;
+				double sum_xx = 0;
+				double sum_xy = 0;
+
+				for (int k=max_int(i-5,1); k<min_int(i+6,np); k++) {
+					double y = dsnr[k];
+					double x = tsnr[k];
+
+					sum_x += x;
+					sum_y += y;
+					sum_xx += x * x;
+					sum_xy += x * y;
+					sum++;
+				}
+
+				double div = sum * sum_xx - sum_x * sum_x;
+				if (div == 0) {
+					div = 0.0000001f;
+				}
+
+	//			*intercept = (float) ((sum_xx * sum_y - sum_x * sum_xy) / div);
+	//			*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
+
+				r[i]=(float) ((sum * sum_xy - sum_x * sum_y) / div)*tsnr[i];
+				
+				s+=ds;
+			}
+			r[0]=0;
 		}
-		r[0]=0;
 		break;
 
 	case CTF_WIENER_FILTER:
@@ -746,20 +801,16 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 		break;
 
 	case CTF_TOTAL:
-		if (!sf) {
-			LOGERR("CTF computation error, no SF found\n");
-			return r;
-		}
 
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
 			if (sf) {
 				r[i] = calc_ctf1(amp1, gamma, s);
-//				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
+				r[i] = r[i] * r[i] * sf->get_yatx(s) + calc_noise(s);
 			}
 			else {
 				r[i] = calc_ctf1(amp1, gamma, s);
-//				r[i] = r[i] * r[i] + calc_noise(s);
+				r[i] = r[i] * r[i] + calc_noise(s);
 			}
 			s += ds;
 		}
@@ -935,7 +986,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				f = f * f;
 
 				if (sf && s) {
-					f *= pow(10.0f, sf->get_yatx(s));
+					f *= sf->get_yatx(s);
 				}
 				f+=noise;
 

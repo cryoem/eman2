@@ -169,13 +169,15 @@ def init_sfcurve(opt):
 	if opt != None and opt.lower()!="none" and opt.lower()!="auto" :
 		sfcurve2=XYData()
 		sfcurve2.read_file(opt)
-		for i in range(sfcurve2.get_size()):
-			v=sfcurve2.get_y(i)
-			if v<=0 :
-				print "Warning values <=0 found in structure factor file. Please remove."
-				sfcurve2.set_y(i,-10.0)
-			else : sfcurve2.set_y(i,log10(v))
-		sfcurve2.update()
+		
+		# We used to pass in log10(sf), but no longer do this
+		#for i in range(sfcurve2.get_size()):
+			#v=sfcurve2.get_y(i)
+			#if v<=0 :
+				#print "Warning values <=0 found in structure factor file. Please remove."
+				#sfcurve2.set_y(i,-10.0)
+			#else : sfcurve2.set_y(i,log10(v))
+		#sfcurve2.update()
 
 	elif opt != None and opt.lower()=="auto":
 		try:
@@ -185,7 +187,7 @@ def init_sfcurve(opt):
 			sfcurve2=XYData()		# this is really slow and stupid
 			for i,j in enumerate(m):
 				sfcurve2.set_x(i,j[0])
-				sfcurve2.set_y(i,log10(j[1]))
+				sfcurve2.set_y(i,j[1])
 			
 			sfcurve2.update()
 		except : sfcurve2=None
@@ -777,12 +779,11 @@ def smooth_bg(curve,ds):
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 #	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 
-def least_square(data,dolog=0):
+def least_square(data):
 	"simple linear regression for y=mx+b on a list of (x,y) points. Use the C routine if you need speed."
 	sum,sum_x,sum_y,sum_xx,sum_xy=0,0,0,0,0
 	for d in data:
-		if dolog : y=log10(d[1])
-		else : y=d[1]
+		y=d[1]
 
 		sum_x+=d[0]
 		sum_xx+=d[0]*d[0]
@@ -809,7 +810,7 @@ def sfact2(s):
 	global sfcurve2
 	if sfcurve2==None : init_sfcurve("auto")
 
-	return 10.0**sfcurve2.get_yatx(s,1)
+	return sfcurve2.get_yatx(s,1)
 
 def sfact(s):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
@@ -818,7 +819,7 @@ def sfact(s):
 	global sfcurve
 	if sfcurve==None : init_sfcurve("auto")
 
-	return 10.0**sfcurve.get_yatx(s,1)
+	return sfcurve.get_yatx(s,1)
 	
 	#if s<.004 : return 0
 ##	if s<.006 : return 0
@@ -1295,6 +1296,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Integrated SNR")
 		self.splotmode.addItem("Total CTF")
 		self.splotmode.addItem("<debug>")
+		self.splotmode.addItem("SNR Scaling")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -1528,9 +1530,10 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==3:
+			global sfcurve2
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True,color=0)
-			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
+			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,sfcurve2)		# The smoothed curve
 			self.guiplot.set_data((s,ssnr[:len(s)]),"ssnr",color=1)
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==4:
@@ -1574,6 +1577,17 @@ class GUIctf(QtGui.QWidget):
 			#fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
 
 			#self.guiplot.set_data("fit",(s,fit))
+		elif self.plotmode==7:
+			# SNR computed from fit and background
+			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=[sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i]) for i in range(len(s))]		# squared * structure factor/background
+
+			# SNR from data
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
+
+			self.guiplot.set_data((fit,snr),"SNR plot",True)
+			self.guiplot.setAxisParms("SNR (fit)","SNR (meas)")
+
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
