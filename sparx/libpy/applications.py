@@ -5940,7 +5940,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
-	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios
+	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
@@ -5951,6 +5951,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -6274,8 +6275,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				start_time = time()
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
-			else:
-				vol = recons3d_4nn_MPI(myid, data, npad = npad)
+			else:    vol = recons3d_4nn_MPI(myid, data, npad = npad)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
@@ -6293,37 +6293,96 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					drop_image(varf, os.path.join(outdir, "varf%04d.hdf"%(total_iter)))
 			else:  varf = None
 
+			#search for helical symmetry
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
-				if(total_iter > nise):
-					#from random import random
-					#from fundamentals import rot_shift3D
-					from filter import filt_gaussl
-					vol = filt_gaussl(vol, 0.25)
-					#vol = rot_shift3D(vol, dphi*random(), 0., 0., 0., 0., (dp/pixel_size)*(random()-0.5))
-					vol, dp, dphi = helios(vol, pixel_size, dp, dphi, fract, rmax, rmin)
-					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+							
+			if(total_iter > nise):
+				bcast_EMData_to_all(vol, myid, main_node)
+				#from filter import filt_gaussl
+				#vol = filt_gaussl(vol, 0.25)
+				ndp    = 12
+				sndp   = 0.1
+				ndphi  = 12
+				sndphi = 0.1
+				nlprms = (2*ndp+1)*(2*ndphi+1)
+
+				if myid == main_node:
+					lprms = []
+					for i in xrange(-ndp,ndp+1,1):
+						for j in xrange(-ndphi,ndphi+1,1):
+							lprms.append( dp   + i*sndp)
+							lprms.append( dphi + j*sndphi)
+					print "lprms===",lprms
+					recvpara = []
+					for im in xrange(number_of_proc):
+						helic_ib, helic_ie = MPI_start_end(nlprms, number_of_proc, im)
+						recvpara.append(helic_ib )
+						recvpara.append(helic_ie )
+
+				para_start, para_end = MPI_start_end(nlprms, number_of_proc, myid)
+
+				list_dps     = [0.0]*((para_end-para_start)*2)
+				list_fvalues = [-1.0]*((para_end-para_start)*1)
+
+				if myid == main_node:
+					for n in xrange(number_of_proc):
+						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 				else:
+					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+				list_dps = map(float, list_dps)
+
+				local_pos = [0.0, 0.0, -1.0e20]
+				for i in xrange(para_end-para_start):
+					fvalue = helios7(vol, pixel_size, list_dps[i*2], list_dps[i*2+1], fract, rmax, rmin)
+					if(fvalue >= local_pos[2]):
+						local_pos = [list_dps[i*2], list_dps[i*2+1], fvalue ]
+				if myid == main_node:
+					list_return = [0.0]*(3*number_of_proc)
+					for n in xrange(number_of_proc):
+						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+ 						else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
+				else:
+					mpi_send(local_pos, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+				if myid == main_node:	
+					maxvalue = list_return[2]
+					for i in xrange(number_of_proc):
+						if( list_return[i*3+2] >= maxvalue ):
+							maxvalue = list_return[i*3+2]
+							dp       = list_return[i*3+0]
+							dphi     = list_return[i*3+1]
+					dp   = float(dp)
+					dphi = float(dphi)
+					print  "  GOT dp dphi",dp,dphi
+
+					vol  = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
+					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))		
+			
+			else:
+				if myid==main_node:
 					#  in the first nise steps the symmetry is imposed
 					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
 					print_msg("Imposed delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+			if(myid==main_node):
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
-                                ref_data = [vol]
-                                if  fourvar:  ref_data.append(varf)
-                                #  call user-supplied function to prepare reference image, i.e., filter it
-                                vol = user_func(ref_data)
+				ref_data = [vol]
+				if  fourvar:  ref_data.append(varf)
+				vol = user_func(ref_data)
+
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 				print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
 				start_time = time()
 
-			#jeanmod
+			bcast_EMData_to_all(vol, myid, main_node)
 			dp   = bcast_number_to_all(dp,   source_node = main_node)
 			dphi = bcast_number_to_all(dphi, source_node = main_node)
-			#end jeanmod
+			#
 			del varf
-			bcast_EMData_to_all(vol, myid, main_node)
 	par_str = ["xform.projection"]
 	if myid == main_node:
 	   	if(file_type(stack) == "bdb"):
@@ -6336,7 +6395,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		start_time = time()
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
-
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""
