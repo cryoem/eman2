@@ -2302,7 +2302,8 @@ void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_l
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ref_image_stack = (float *)malloc(NREF*NX*NY*sizeof(float));
 	if (CTF == 1) ref_image_stack_filtered = (float *)malloc(NREF*NX*NY*sizeof(float));
-	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NREF*(RING_LENGTH+2)*sizeof(float));
+	int max_batch = 10;
+	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NREF*(RING_LENGTH+2)*max_batch*sizeof(float));
 }
 
 void CUDA_multiref_aligner::setup_params(vector<float> all_ali_params, vector<float> all_ctf_params) {
@@ -2335,75 +2336,105 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 
 vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 
-	float previous_defocus = 0.0;
-	float *params = (float *)malloc(NREF*6*sizeof(float));
+	float params = (float *)malloc(NIMA*6*sizeof(float));	
 	float *sx2 = (float *)malloc(NREF*sizeof(float));
 	float *sy2 = (float *)malloc(NREF*sizeof(float));
 	vector<float> align_results;
 	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
-	for (int i=0; i<NREF; i++) {
-		sx2[i] = 0.0f; sy2[i] = 0.0f;
+	// This number can be increased according to the memory.
+	const int max_batch = 10;
+	vector<int> batch_size;
+	vector<int> batch_begin;
+	
+	if (CTF == 1) {
+		float previous_defocus = ctf_params[0];
+		int current_size = 1;
+		for (int i=1; i<NIMA; i++) {
+			if (ctf_params[i*6] != previous_defocus || current_size >= batch_size) {
+				batch_size.push_back(current_size);
+			} else current_size++;			
+		}
+		batch_size.push_back(current_size);
+	} else {
+		batch_size.resize(nima/max_batch, max_batch);
+		if (nima%max_batch != 0)  batch_size.push_back(nima%max_batch);
+	}
+	int num_batch = batch_size.size();
+	batch_begin.resize(num_batch, 0);
+	for (int i=1; i<num_batch i++) batch_begin.push_back(batch_size[i-1]+batch_begin[i-1]);
+	assert batch_begin[num_batch]+batch_size[num_batch] == nima-1
+
+	for (int i=0; i<NIMA; i++) {
+		ang = ali_params[i*4]/180.0*M_PI;
+		sx = ali_params[i*4+1];
+		sy = ali_params[i*4+2];
+		co = cos(ang);
+		so = sin(ang);
+		sx2[i] = -(sx*co-sy*so);
+		sy2[i] = -(sx*so+sy*co);
 	}
 	
-	for (int i=0; i<NIMA; i++) {
+	for (int i=0; i<num_batch; i++) {
+		
 		if (CTF == 1) {
-			if (ctf_params[i*6] != previous_defocus) {
-				for (int im = 0; im < NREF; im++) 
-					for (int j = 0; j < 6; j++)
-						params[im*6+j] = ctf_params[i*6+j];
-				filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, params, gpuid);
-				previous_defocus = ctf_params[i*6];
-			}
-			calculate_ccf(ref_image_stack_filtered, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, gpuid, silent);
+			for (int p=0; p<NREF; p++)
+				for (int q=0; q<6; q++)
+					params[p*6+q] = ctf_params[batch_begin[i]*6+q];
+			filter_image(ref_image_stack, ref_image_stack_filtered, NIMA, NX, NY, params, id);
+			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack_filtered, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
+				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		} else {
-			calculate_ccf(ref_image_stack, image_stack+i*NX*NY, ccf, NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, gpuid, silent);
+			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
+				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		}
-
-		float max_ccf = -1.0e22;
-		int nref = -1;
-		float ts, tm, ang, sx, sy, co, so, sxs, sys;
-		int mirror;
-		for (int im=0; im<NREF; im++) {
-			for (int kx=-KX; kx<=KX; kx++) {
-				for (int ky=-KY; ky<=KY; ky++) {
-					int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2);
-					for (int l=0; l<RING_LENGTH; l++) {
-						ts = ccf[base_address+l];
-						tm = ccf[base_address+l+ccf_offset];
-						if (ts > max_ccf) {
-							ang = float(l)/RING_LENGTH*360.0;
-							sx = -kx*STEP;
-							sy = -ky*STEP;
-							mirror = 0;
-							max_ccf = ts;
-							nref = im;
-						}
-						if (tm > max_ccf) {
-							ang = float(l)/RING_LENGTH*360.0; 
-							sx = -kx*STEP;
-							sy = -ky*STEP;
-							mirror = 1;
-							max_ccf = tm;
-							nref = im;
+		for (int j=0; j<batch_size[i]; j++) {
+		
+			float max_ccf = -1.0e22;
+			int nref = -1;
+			float ts, tm, ang, sx, sy, co, so, sxs, sys;
+			int mirror;
+			int img_num = batch_begin[i]+j;
+			for (int im=0; im<NREF; im++) {
+				for (int kx=-KX; kx<=KX; kx++) {
+					for (int ky=-KY; ky<=KY; ky++) {
+						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*img_num;
+						for (int l=0; l<RING_LENGTH; l++) {
+							ts = ccf[base_address+l];
+							tm = ccf[base_address+l+ccf_offset];
+							if (ts > max_ccf) {
+								ang = float(l)/RING_LENGTH*360.0;
+								sx = -kx*STEP;
+								sy = -ky*STEP;
+								mirror = 0;
+								max_ccf = ts;
+								nref = im;
+							}
+							if (tm > max_ccf) {
+								ang = float(l)/RING_LENGTH*360.0; 
+								sx = -kx*STEP;
+								sy = -ky*STEP;
+								mirror = 1;
+								max_ccf = tm;
+								nref = im;
+							}
 						}
 					}
 				}
 			}
-		}
-
-		co =  cos(ang*M_PI/180.0);
-		so = -sin(ang*M_PI/180.0);
+			co =  cos(ang*M_PI/180.0);
+			so = -sin(ang*M_PI/180.0);
 		
-		sxs = (sx-sx2[nref])*co-(sy-sy2[nref])*so;
-		sys = (sx-sx2[nref])*so+(sy-sy2[nref])*co;
+			sxs = (sx-sx2[img_num])*co-(sy-sy2[img_num])*so;
+			sys = (sx-sx2[img_num])*so+(sy-sy2[img_num])*co;
 
-		align_results.push_back(ang);
-		align_results.push_back(sxs);
-		align_results.push_back(sys);
-		align_results.push_back(mirror);
-		align_results.push_back(nref);
-		align_results.push_back(max_ccf);
+			align_results.push_back(ang);
+			align_results.push_back(sxs);
+			align_results.push_back(sys);
+			align_results.push_back(mirror);
+			align_results.push_back(nref);
+			align_results.push_back(max_ccf);
+		}
 	}
 	
 	free(params);

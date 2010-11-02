@@ -73,22 +73,25 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	size_t* offset = (size_t *)malloc(sizeof(size_t));
 
 	int BLOCK_SIZE = RING_LENGTH/2+1;
+	int POINTS_PER_IMAGE = (RING_LENGTH+2)*NRING;
+
 	// For a texture reference bound to a two-dimensional CUDA array,
 	// the maximum width is 2^16 (=65536) and the maximum height is 2^15 (=32768)
 	int NIMAGE_ROW = 32768/NX;
 	int NROW = NIMAGE/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
-	// For a texture reference bound to linear memory, the maximum width is 2^27
-	int NIMAGE_IN_TEXTURE = (1<<27)/((RING_LENGTH+2)*NRING)*9/10;  
 
+	// For a texture reference bound to linear memory, the maximum width is 2^27
+	int NIMAGE_IN_TEXTURE = (1<<27)/POINTS_PER_IMAGE*9/10;  
 	int NTEXTURE = NIMAGE/NIMAGE_IN_TEXTURE;
 	int NIMAGE_LEFT_TEXTURE = NIMAGE%NIMAGE_IN_TEXTURE;
 
 	int IMAGE_PER_BATCH1 = 65535/NRING;            // The maximum FFT per batch is 65535
 	int IMAGE_BATCH1 = NIMAGE/IMAGE_PER_BATCH1;
 	int IMAGE_LEFT_BATCH1 = NIMAGE%IMAGE_PER_BATCH1;
-	int POINTS_PER_IMAGE = 2*(2*KX+1)*(2*KY+1);
-	int IMAGE_PER_BATCH2 = 65535/POINTS_PER_IMAGE; // The maximum FFT per batch is 65535
+
+	int POS_PER_IMAGE = 2*(2*KX+1)*(2*KY+1);
+	int IMAGE_PER_BATCH2 = 65535/POS_PER_IMAGE; // The maximum FFT per batch is 65535
 	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
 	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
 
@@ -111,9 +114,9 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	if (IMAGE_LEFT_BATCH1 != 0)
 		cufftPlan1d(&plan_subject_image_rest, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_LEFT_BATCH1);
 	cufftPlan1d(&plan_ref_image, RING_LENGTH, CUFFT_R2C, NRING);
-	cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POINTS_PER_IMAGE*IMAGE_PER_BATCH2);
+	cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_PER_BATCH2);
 	if (IMAGE_LEFT_BATCH2 != 0)
-		cufftPlan1d(&plan_ccf_rest, RING_LENGTH, CUFFT_C2R, POINTS_PER_IMAGE*IMAGE_LEFT_BATCH2);
+		cufftPlan1d(&plan_ccf_rest, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_LEFT_BATCH2);
 
 	/* Allocate host memory for the coordinates of sampling points */
 	points = (float *)malloc(RING_LENGTH*NRING*2*sizeof(float));
@@ -141,10 +144,10 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 		printf("\nMemory to be allocated on the video card:\n");
 		printf("For %5d subject images                      : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4.0/1000000.0);
 		printf("For reference image			      : %10.3f KB\n", NX*NY*4/1000.0);
-		printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*(RING_LENGTH+2)*NRING*4.0/1000000.0);
+		printf("For %5d subject images in polar coordinates : %10.3f MB\n", NIMAGE, NIMAGE*POINTS_PER_IMAGE*4.0/1000000.0);
 		printf("For reference image in polar coordinates      : %10.3f KB\n", (RING_LENGTH+2)*NRING*4/1000.0);
-		printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*4.0/1000000.0);
-		printf("Total memory used			      : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+(RING_LENGTH+2)*NRING)+(RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE)*4.0/1000000.0);
+		printf("For all cross-correlation functions (CCF)     : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE*4.0/1000000.0);
+		printf("Total memory used			      : %10.3f MB\n\n", ((NIMAGE+1)*(NX*NY+POINTS_PER_IMAGE)+(RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE)*4.0/1000000.0);
 	}
 
 
@@ -158,13 +161,13 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	cudaMallocArray(&ref_image_array, &channelDesc, NX, NY);
 
 	/* Allocate the matrix for all NIMAGE subject images in polar coordinates on the video card */
-	cudaMalloc((void**)&d_subject_image_polar, NIMAGE*(RING_LENGTH+2)*NRING*sizeof(float));
+	cudaMalloc((void**)&d_subject_image_polar, NIMAGE*POINTS_PER_IMAGE*sizeof(float));
 
 	/* Allocate the matrix for the reference image in polar coordinates on the video card */
-	cudaMalloc((void**)&d_ref_image_polar, (RING_LENGTH+2)*NRING*sizeof(float));
+	cudaMalloc((void**)&d_ref_image_polar, POINTS_PER_IMAGE*sizeof(float));
 
 	/* Allocate the matrix for the ccf on the video card */
-	cudaMalloc((void**)&d_ccf, (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*sizeof(float));
+	cudaMalloc((void**)&d_ccf, (RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE*sizeof(float));
 
 	/* Allocate the matrix for the coordinates of the sampling points on the video card */
 	cudaMalloc((void**)&d_points, RING_LENGTH*NRING*2*sizeof(float));
@@ -238,7 +241,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*2*sizeof(float));
 
 				/* Convert NIMAGE_ROW subject images to the polar coordinates */
-				resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING, *offset);
+				resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*POINTS_PER_IMAGE, x, y, NX, NY, RING_LENGTH, NRING, *offset);
 		    		cudaThreadSynchronize();
 		    		cudaUnbindTexture(tex);
 			}
@@ -247,7 +250,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*2*sizeof(float));
 
 				/* Convert NIMAGE_LEFT subject images to the polar coordinates */
-				resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*(RING_LENGTH+2)*NRING, x, y, NX, NY, RING_LENGTH, NRING, *offset);
+				resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*POINTS_PER_IMAGE, x, y, NX, NY, RING_LENGTH, NRING, *offset);
 		    		cudaThreadSynchronize();
 		    		cudaUnbindTexture(tex);
 			}
@@ -255,22 +258,22 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 			
 			/* Conduct FFT for all subject images */
 			for (k=0; k<IMAGE_BATCH1; k++)
-				cufftExecR2C(plan_subject_image, (cufftReal *)(d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)), (cufftComplex *)(d_subject_image_polar+k*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)));
+				cufftExecR2C(plan_subject_image, (cufftReal *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex*)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 			if (IMAGE_LEFT_BATCH1 != 0)
-				cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*NRING*IMAGE_PER_BATCH1*(RING_LENGTH+2)));
+				cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex*)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 			
 			cudaGetTextureReference(&texPtr, "texim_ref");
-			cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, (RING_LENGTH+2)*NRING*sizeof(float));
+			cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, POINTS_PER_IMAGE*sizeof(float));
 
 			cudaGetTextureReference(&texPtr, "texim_subject");
 		    	ccf_base_addr = ((j+KY)*(2*KX+1)+(i+KX))*NIMAGE*(RING_LENGTH+2);
 			for (k=0; k<NTEXTURE; k++) {
-				cudaBindTexture(0, texPtr, d_subject_image_polar+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING, &channelDesc, NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING*sizeof(float));
+				cudaBindTexture(0, texPtr, d_subject_image_polar+k*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
 				complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
 				cudaThreadSynchronize();
 			}
 			if (NIMAGE_LEFT_TEXTURE != 0) {
-				cudaBindTexture(0, texPtr, d_subject_image_polar+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2)*NRING, &channelDesc, NIMAGE_LEFT_TEXTURE*(RING_LENGTH+2)*NRING*sizeof(float));
+				cudaBindTexture(0, texPtr, d_subject_image_polar+NTEXTURE*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_LEFT_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
 				complex_mul<<<NIMAGE_LEFT_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
 				cudaThreadSynchronize();
 			}
@@ -281,12 +284,12 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	cudaUnbindTexture(texim_points);
 
 	for (i=0; i<IMAGE_BATCH2; i++)
-	    	cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+i*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+	    	cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
 	if (IMAGE_LEFT_BATCH2 != 0) 
-	    	cufftExecC2R(plan_ccf_rest, (cufftComplex *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+IMAGE_BATCH2*POINTS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+	    	cufftExecC2R(plan_ccf_rest, (cufftComplex *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
 
 
-	cudaMemcpy(ccf, d_ccf, (RING_LENGTH+2)*NIMAGE*POINTS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(ccf, d_ccf, (RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
 
 	/* Memory clean up */
 	for (k=0; k<NROW; k++)
@@ -313,6 +316,295 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 
 	return;
 }
+
+void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NREF, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
+{    
+	float *d_subject_image_polar, *d_ref_image_polar;
+	float *d_ccf;
+	float *points, *d_points;
+	float *shifts_ref, *d_shifts_ref;
+	float *shifts_subject, *d_shifts_subject;
+	int i, j, k, index;
+	int ccf_base_addr;
+	float x, y, ang;
+	size_t* offset = (size_t *)malloc(sizeof(size_t));
+
+	int BLOCK_SIZE = RING_LENGTH/2+1;
+	int POINTS_PER_IMAGE = (RING_LENGTH+2)*NRING;
+	
+	// For a texture reference bound to a two-dimensional CUDA array,
+	// the maximum width is 2^16 (=65536) and the maximum height is 2^15 (=32768)
+	int NIMAGE_ROW = 32768/NX;
+	int NROW = NIMAGE/NIMAGE_ROW;
+	int NIMAGE_LEFT = NIMAGE%NIMAGE_ROW;
+	int NROW_REF = NREF/NIMAGE_ROW;
+	int NREF_LEFT = NREF%NIMAGE_ROW;
+
+	// For a texture reference bound to linear memory, the maximum width is 2^27
+	int NIMAGE_IN_TEXTURE = (1<<27)/POINTS_PER_IMAGE*9/10;  
+	int NTEXTURE = NIMAGE/NIMAGE_IN_TEXTURE;
+	int NIMAGE_LEFT_TEXTURE = NIMAGE%NIMAGE_IN_TEXTURE;
+	int NTEXTURE_REF = NREF/NIMAGE_IN_TEXTURE;
+	int NREF_LEFT_TEXTURE = NREF%NIMAGE_IN_TEXTURE;
+
+	int IMAGE_PER_BATCH1 = 65535/NRING;            // The maximum FFT per batch is 65535
+	int IMAGE_BATCH1 = NIMAGE/IMAGE_PER_BATCH1;
+	int IMAGE_LEFT_BATCH1 = NIMAGE%IMAGE_PER_BATCH1;
+
+	int POS_PER_IMAGE = 2*(2*KX+1)*(2*KY+1);
+	int IMAGE_PER_BATCH2 = 65535/POS_PER_IMAGE; // The maximum FFT per batch is 65535
+	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
+	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
+
+	// Block this line if you have only one GPU
+	cudaSetDevice(id); 
+
+	cudaArray *subject_image_array[NROW], *subject_image_array_left, *ref_image_array[NROW_REF], *ref_image_array_left;
+	dim3 GridSize1(NRING, NIMAGE_ROW);
+	dim3 GridSize2(NRING, NIMAGE_LEFT);
+	dim3 GridSize3(NRING, NREF_LEFT);
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
+	const textureReference *texPtr;
+
+	tex.normalized = false;
+	tex.filterMode = cudaFilterModeLinear;
+	tex.addressMode[0] = cudaAddressModeWrap;
+	tex.addressMode[1] = cudaAddressModeWrap;
+
+	cufftHandle plan_image, plan_image_left, plan_ccf, plan_ccf_left;
+	cufftPlan1d(&plan_image, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_PER_BATCH1);
+	if (IMAGE_LEFT_BATCH1 != 0)
+		cufftPlan1d(&plan_image_left, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_LEFT_BATCH1);
+	cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_PER_BATCH2);
+	if (IMAGE_LEFT_BATCH2 != 0)
+		cufftPlan1d(&plan_ccf_left, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_LEFT_BATCH2);
+
+	/* Allocate host memory for the coordinates of sampling points */
+	points = (float *)malloc(RING_LENGTH*NRING*2*sizeof(float));
+	if (points == 0) {
+		fprintf (stderr, "Host memory allocation error!\n");
+		return;
+	}
+
+	/* Allocate host memory for the coordinates of all shifts */
+	shifts_ref = (float *)malloc(2*sizeof(float));
+	if (shifts_ref == 0) {
+		fprintf (stderr, "Host memory allocation error!\n");
+		return;
+	}
+
+	shifts_subject = (float *)malloc(NIMAGE*2*sizeof(float));
+	if (shifts_subject == 0) {
+		fprintf(stderr, "Host memory allocation error!\n");
+		return;
+	}
+
+	if (silent == 0) {
+		printf("Initialization on the host memory done.\n");
+
+		printf("\nMemory to be allocated on the video card:\n");
+		printf("For %5d subject images                        : %10.3f MB\n", NIMAGE, NIMAGE*NX*NY*4.0/1000000.0);
+		printf("For %5d reference images                      : %10.3f MB\n", NREF, NREF*NX*NY*4.0/1000000.0);
+		printf("For %5d subject images in polar coordinates   : %10.3f MB\n", NIMAGE, NIMAGE*POINTS_PER_IMAGE*4.0/1000000.0);
+		printf("For %5d reference images in polar coordinates : %10.3f MB\n", NREF, NREF*POINTS_PER_IMAGE*4.0/1000000.0);
+		printf("For all cross-correlation functions (CCF)       : %10.3f MB\n", (RING_LENGTH+2)*NIMAGE*NREF*POS_PER_IMAGE*4.0/1000000.0);
+		printf("Total memory used			        : %10.3f MB\n\n", ((NIMAGE+NREF)*(NX*NY+POINTS_PER_IMAGE)+(RING_LENGTH+2)*NIMAGE*NREF*POS_PER_IMAGE)*4.0/1000000.0);
+	}
+
+
+	/* Allocate the matrix for all NIMAGE subject images on the video card */
+	for (k=0; k<NROW; k++)
+		cudaMallocArray(&subject_image_array[k], &channelDesc, NX, NY*NIMAGE_ROW);
+	if (NIMAGE_LEFT != 0)
+		cudaMallocArray(&subject_image_array_left, &channelDesc, NX, NY*NIMAGE_LEFT);
+
+	/* Allocate the matrix for all NREF reference images on the video card */
+	for (k=0; k<NROW_REF; k++)
+		cudaMallocArray(&ref_image_array, &channelDesc, NX, NY*NREF_ROW);
+	if (NREF_LEFT != 0)
+		cudaMallocArray(&ref_image_array_left, &channelDesc, NX, NY*NREF_LEFT);
+
+	/* Allocate the matrix for all NIMAGE subject images in polar coordinates on the video card */
+	cudaMalloc((void**)&d_subject_image_polar, NIMAGE*POINTS_PER_IMAGE*sizeof(float));
+
+	/* Allocate the matrix for all NREF reference images in polar coordinates on the video card */
+	cudaMalloc((void**)&d_ref_image_polar, NREF*POINTS_PER_IMAGE*sizeof(float));
+
+	/* Allocate the matrix for the ccf on the video card */
+	cudaMalloc((void**)&d_ccf, (RING_LENGTH+2)*NIMAGE*NREF*POS_PER_IMAGE*sizeof(float));
+
+	/* Allocate the matrix for the coordinates of the sampling points on the video card */
+	cudaMalloc((void**)&d_points, RING_LENGTH*NRING*2*sizeof(float));
+
+	/* Allocate the matrix for the coordinates of the shifts of reference image on the video card */
+	cudaMalloc((void**)&d_shifts_ref, 2*sizeof(float));
+
+	/* Allocate the matrix for the coordinates of the shifts of subject images on the video card */
+	cudaMalloc((void**)&d_shifts_subject, NIMAGE*2*sizeof(float));
+
+	/* Fill the matrix for the coordinates of sampling points */
+	for (i = 0; i < NRING; i++) 
+		for (j = 0; j < RING_LENGTH; j++) {
+			index = i*RING_LENGTH+j;
+			ang = float(j)/RING_LENGTH*PI*2;
+			points[index*2] = (i+1)*sinf(ang)*float(OU)/float(NRING);
+			points[index*2+1] = (i+1)*cosf(ang)*float(OU)/float(NRING);
+		}
+
+	/* Fill the matrix for the coordinates of shifts for reference images (currently hard-wired to 0.0) */
+	shifts_ref[0] = 0.0;
+	shifts_ref[1] = 0.0;
+
+	/* Copy the matrix for the coordinates of sampling points to the video card */
+	cudaMemcpy(d_points, points, RING_LENGTH*NRING*2*sizeof(float), cudaMemcpyHostToDevice);
+	cudaGetTextureReference(&texPtr, "texim_points");
+	cudaBindTexture(0, texPtr, d_points, &channelDesc, RING_LENGTH*NRING*2*sizeof(float));
+
+	/* Copy the matrix for the coordinates of shifts to the video card */
+	cudaMemcpy(d_shifts_ref, shifts_ref, 2*sizeof(float), cudaMemcpyHostToDevice);
+	cudaGetTextureReference(&texPtr, "texim_shifts");
+	cudaBindTexture(offset, texPtr, d_shifts_ref, &channelDesc, 2*sizeof(float));
+
+	/* Fill the matrix for the coordinates of shifts for subject images */
+	for (i = 0; i < NIMAGE; i++) {
+		shifts_subject[i*2] = sx[i];
+		shifts_subject[i*2+1] = sy[i];
+	} 
+
+	/* Copy the matrix for the coordinates of shifts to the video card */
+	cudaMemcpy(d_shifts_subject, shifts_subject, NIMAGE*2*sizeof(float), cudaMemcpyHostToDevice);
+
+	/* Copy the matrix for NIMAGE_ROW*NROW subject images to the video card */
+	for (k=0; k<NROW; k++)  
+	    cudaMemcpyToArray(subject_image_array[k], 0, 0, subject_image+k*NIMAGE_ROW*NX*NY, NIMAGE_ROW*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
+	/* Copy the matrix for NIMAGE_LEFT subject images to the video card */
+	if (NIMAGE_LEFT != 0) 
+	    cudaMemcpyToArray(subject_image_array_left, 0, 0, subject_image+NROW*NIMAGE_ROW*NX*NY, NIMAGE_LEFT*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
+
+	/* Copy the matrix for NIMAGE_ROW*NROW_REF reference images to the video card */
+	for (k=0; k<NROW_REF; k++)  
+	    cudaMemcpyToArray(ref_image_array[k], 0, 0, ref_image+k*NIMAGE_ROW*NX*NY, NIMAGE_ROW*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
+	/* Copy the matrix for NREF_LEFT subject images to the video card */
+	if (NREF_LEFT != 0)
+	    cudaMemcpyToArray(ref_image_array_left, 0, 0, ref_image+NROW_REF*NIMAGE_ROW*NX*NY, NREF_LEFT*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
+
+	cudaGetTextureReference(&texPtr, "texim_shifts");
+	for (k=0; k<NROW_REF; k++) { 
+		cudaBindTextureToArray(tex, ref_image_array[k], channelDesc);
+		cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*2*sizeof(float));
+
+		/* Convert NIMAGE_ROW reference images to the polar coordinates */
+		resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_ref_image_polar+k*NIMAGE_ROW*POINTS_PER_IMAGE, 0.0f, 0.0f, NX, NY, RING_LENGTH, NRING, *offset);
+		cudaThreadSynchronize();
+		cudaUnbindTexture(tex);
+	}
+	if (NREF_LEFT != 0) {
+		cudaBindTextureToArray(tex, ref_image_array_left, channelDesc);
+		cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*NROW_REF, &channelDesc, NREF_LEFT*2*sizeof(float));
+
+		/* Convert NREF_LEFT reference images to the polar coordinates */
+		resample_to_polar<<<GridSize3, RING_LENGTH>>>(d_ref_image_polar+NROW_REF*NIMAGE_ROW*POINTS_PER_IMAGE, 0.0f, 0.0f, NX, NY, RING_LENGTH, NRING, *offset);
+		cudaThreadSynchronize();
+		cudaUnbindTexture(tex);
+	}
+	cudaUnbindTexture(texim_shifts);
+	
+	/* Conduct FFT for all reference images */
+	for (k=0; k<IMAGE_BATCH1; k++)
+		cufftExecR2C(plan_subject_image, (cufftReal *)(d_ref_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS));
+	if (IMAGE_LEFT_BATCH1 != 0)
+		cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_ref_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+
+	for (i=-KX; i<=KX; i++) {
+		for (j=-KY; j<=KY; j++) {
+			
+			x = i*STEP;
+			y = j*STEP;
+
+			cudaGetTextureReference(&texPtr, "texim_shifts");
+		    	for (k=0; k<NROW; k++) { 
+		    		cudaBindTextureToArray(tex, subject_image_array[k], channelDesc);
+				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*2*sizeof(float));
+
+				/* Convert NIMAGE_ROW subject images to the polar coordinates */
+				resample_to_polar<<<GridSize1, RING_LENGTH>>>(d_subject_image_polar+k*NIMAGE_ROW*POINTS_PER_IMAGE, x, y, NX, NY, RING_LENGTH, NRING, *offset);
+		    		cudaThreadSynchronize();
+		    		cudaUnbindTexture(tex);
+			}
+			if (NIMAGE_LEFT != 0) {
+		    		cudaBindTextureToArray(tex, subject_image_array_left, channelDesc);
+				cudaBindTexture(offset, texPtr, d_shifts_subject+2*NIMAGE_ROW*NROW, &channelDesc, NIMAGE_LEFT*2*sizeof(float));
+
+				/* Convert NIMAGE_LEFT subject images to the polar coordinates */
+				resample_to_polar<<<GridSize2, RING_LENGTH>>>(d_subject_image_polar+NROW*NIMAGE_ROW*POINTS_PER_IMAGE, x, y, NX, NY, RING_LENGTH, NRING, *offset);
+		    		cudaThreadSynchronize();
+		    		cudaUnbindTexture(tex);
+			}
+			cudaUnbindTexture(texim_shifts);
+			
+			/* Conduct FFT for all subject images */
+			for (k=0; k<IMAGE_BATCH1; k++)
+				cufftExecR2C(plan_subject_image, (cufftReal *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+			if (IMAGE_LEFT_BATCH1 != 0)
+				cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+			
+			cudaGetTextureReference(&texPtr, "texim_ref");
+			cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, NREF*POINTS_PER_IMAGE*sizeof(float));
+
+			cudaGetTextureReference(&texPtr, "texim_subject");
+		    	ccf_base_addr = ((j+KY)*(2*KX+1)+(i+KX))*NIMAGE*(RING_LENGTH+2);
+			for (k=0; k<NTEXTURE; k++) {
+				cudaBindTexture(0, texPtr, d_subject_image_polar+k*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
+				complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+				cudaThreadSynchronize();
+			}
+			if (NIMAGE_LEFT_TEXTURE != 0) {
+				cudaBindTexture(0, texPtr, d_subject_image_polar+NTEXTURE*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_LEFT_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
+				complex_mul<<<NIMAGE_LEFT_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+				cudaThreadSynchronize();
+			}
+			cudaUnbindTexture(texim_subject);
+			cudaUnbindTexture(texim_ref);
+		}
+	}
+	cudaUnbindTexture(texim_points);
+
+	for (i=0; i<IMAGE_BATCH2; i++)
+	    	cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+	if (IMAGE_LEFT_BATCH2 != 0) 
+	    	cufftExecC2R(plan_ccf_left, (cufftComplex *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
+
+
+	cudaMemcpy(ccf, d_ccf, (RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
+
+	/* Memory clean up */
+	for (k=0; k<NROW; k++)
+		cudaFreeArray(subject_image_array[k]);
+	if (NIMAGE_LEFT!=0)
+		cudaFreeArray(subject_image_array_left);
+	for (k=0; k<NROW_REF; k++)
+		cudaFreeArray(ref_image_array[k]);
+	if (NREF_LEFT!=0)
+		cudaFreeArray(ref_image_array_left);
+	cudaFree(d_subject_image_polar);
+	cudaFree(d_ref_image_polar);
+	cudaFree(d_ccf);
+	cudaFree(d_points);
+	cudaFree(d_shifts_ref);
+	cudaFree(d_shifts_subject);
+	cufftDestroy(plan_image);
+	cufftDestroy(plan_image_left);
+	cufftDestroy(plan_ccf);
+	cufftDestroy(plan_ccf_left);
+
+	free(offset);
+	free(points);
+	free(shifts_ref);
+	free(shifts_subject);
+
+	return;
+}
+
 
 void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, float *params, int id) {
 	
