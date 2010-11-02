@@ -20659,10 +20659,10 @@ return ret;
 		// first element of ret is the total cost of all the matches in ret, and second element is the number of matches in ret
 		totalcost = newcostlist[i] + *ret;
 
-		if (curlevel == 0) {
-			cout <<"totalcost*****************************************************************: "<<totalcost<<", costlist["<<i<<"]="<<newcostlist[i]<<", *ret="<<*ret<<", level: "<<curlevel<<"\n";
+		//if (curlevel == 0) {
+		//	cout <<"totalcost*****************************************************************: "<<totalcost<<", costlist["<<i<<"]="<<newcostlist[i]<<", *ret="<<*ret<<", level: "<<curlevel<<"\n";
 			
-		}
+		//}
 		if (totalcost > *maxreturn) // option 1
 		{
 			nmatches = 1 + *(ret+1);

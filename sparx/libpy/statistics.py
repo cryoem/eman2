@@ -9044,7 +9044,7 @@ class pcanalyzebck:
 # MATCH is a list of arrays, where each array is a match
 # STB_PART is a list of lists, each list in the list, i.e.STB_PART[0] is a stable set (i.e., the common intersection of a matching)
 # For consistency with k_means_stab_pwa, STB_PART will be initialized to be a list of K lists, and of course some will be empty
-def k_means_stab_bbenum(PART, T=10, nguesses=5, J=1, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
 	
 	from copy import deepcopy
 	
