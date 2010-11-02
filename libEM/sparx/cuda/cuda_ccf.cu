@@ -420,7 +420,7 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 
 	/* Allocate the matrix for all NREF reference images on the video card */
 	for (k=0; k<NROW_REF; k++)
-		cudaMallocArray(&ref_image_array, &channelDesc, NX, NY*NREF_ROW);
+		cudaMallocArray(&ref_image_array[k], &channelDesc, NX, NY*NIMAGE_ROW);
 	if (NREF_LEFT != 0)
 		cudaMallocArray(&ref_image_array_left, &channelDesc, NX, NY*NREF_LEFT);
 
@@ -511,9 +511,9 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	
 	/* Conduct FFT for all reference images */
 	for (k=0; k<IMAGE_BATCH1; k++)
-		cufftExecR2C(plan_subject_image, (cufftReal *)(d_ref_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS));
+		cufftExecR2C(plan_image, (cufftReal *)(d_ref_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 	if (IMAGE_LEFT_BATCH1 != 0)
-		cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_ref_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+		cufftExecR2C(plan_image_left, (cufftReal *)(d_ref_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 
 	for (i=-KX; i<=KX; i++) {
 		for (j=-KY; j<=KY; j++) {
@@ -544,9 +544,9 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 			
 			/* Conduct FFT for all subject images */
 			for (k=0; k<IMAGE_BATCH1; k++)
-				cufftExecR2C(plan_subject_image, (cufftReal *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+				cufftExecR2C(plan_image, (cufftReal *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 			if (IMAGE_LEFT_BATCH1 != 0)
-				cufftExecR2C(plan_subject_image_rest, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+				cufftExecR2C(plan_image_left, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
 			
 			cudaGetTextureReference(&texPtr, "texim_ref");
 			cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, NREF*POINTS_PER_IMAGE*sizeof(float));
