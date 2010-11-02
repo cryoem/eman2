@@ -1259,7 +1259,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
-        //cout << result << " x " << x << " y " << y << " z " << z << " az " << az << " alt " << alt << " phi " << phi << endl;
+	//cout << result << " x " << x << " y " << y << " z " << z << " az " << az << " alt " << alt << " phi " << phi << endl;
 	if ( tmp != 0 ) delete tmp;
 	
 	return result;
@@ -1380,14 +1380,14 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 
 		//Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
 
- 		//result = this_img->process("xform",Dict("transform",&tsoln));
+		//result = this_img->process("xform",Dict("transform",&tsoln));
 		//result->set_attr("xform.align3d",&tsoln);
 		Dict parms;
 		parms["type"] = "eman";
 		parms["tx"] = (float)gsl_vector_get(s->x, 0);
 		parms["ty"] = (float)gsl_vector_get(s->x, 1);
 		parms["tz"] = (float)gsl_vector_get(s->x, 2);
-                parms["az"] = (float)gsl_vector_get(s->x, 3);
+		parms["az"] = (float)gsl_vector_get(s->x, 3);
 		parms["alt"] = (float)gsl_vector_get(s->x, 4);
 		parms["phi"] = (float)gsl_vector_get(s->x, 5);
 		
@@ -1457,9 +1457,9 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		searchz = params.set_default("searchz",3);
 	}
 
-        float lalt = params.set_default("lalt",0.0f);
-        float laz = params.set_default("laz",0.0f);
-        float lphi = params.set_default("lphi",0.0f);
+	float lalt = params.set_default("lalt",0.0f);
+	float laz = params.set_default("laz",0.0f);
+	float lphi = params.set_default("lphi",0.0f);
 	float ualt = params.set_default("ualt",179.9f); // I am using 179.9 rather than 180 to avoid resampling
 	float uphi = params.set_default("uphi",359.9f); // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
 	float uaz = params.set_default("uaz",359.9f);   // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
@@ -1508,14 +1508,14 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				        best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
 					t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
 				} else {	
-			                if(dotrans){
-			                        EMData* ccf = transformed->calc_ccf(to);
-			                        IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-                                                t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-                                                transformed = this_img->process("xform",Dict("transform",&t));
-				                delete ccf; ccf =0;
+					if(dotrans){
+						EMData* ccf = transformed->calc_ccf(to);
+						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+						t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						transformed = this_img->process("xform",Dict("transform",&t));
+						delete ccf; ccf =0;
 			                }
-			                best_score = transformed->cmp(cmp_name,to,cmp_params);
+					best_score = transformed->cmp(cmp_name,to,cmp_params);
 				}
                                 delete transformed; transformed =0;
 				
@@ -1628,15 +1628,16 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		Dict params = trans_it->get_params("eman");
 		if (verbose) {
 			float alt = params["alt"];
+			float az = params["az"];
 			if ( alt != verbose_alt ) {
 				verbose_alt = alt;
-				cout << "Trying angle " << alt << endl;
+				cout << "Trying angle alt: " << alt << " az: " << az << endl;
 			}
 		}
 
 		for( float phi = lphi; phi <= uphi; phi += dphi ) { 
 			
-                        params["phi"] = phi;
+			params["phi"] = phi;
 			Transform t(params);
 			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			
@@ -1647,13 +1648,13 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
 			} else {	
 			        if(dotrans){
-			                EMData* ccf = transformed->calc_ccf(to);
-			                IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-                                        t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-                                        transformed = this_img->process("xform",Dict("transform",&t));
+					EMData* ccf = transformed->calc_ccf(to);
+					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+					t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+					transformed = this_img->process("xform",Dict("transform",&t));
 				        delete ccf; ccf =0;
-			        }
-			        best_score = transformed->cmp(cmp_name,to,cmp_params);
+				}
+				best_score = transformed->cmp(cmp_name,to,cmp_params);
 			}
                         delete transformed; transformed =0;
 

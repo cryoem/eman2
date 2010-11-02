@@ -104,7 +104,7 @@ def main():
 	    
 	if (moving.get_attr('nx') != moving.get_attr('ny') != moving.get_attr('nz')):
 		print "Fixed map must have cubic dimensions!"
-		exit(1)	#(zzz, cmppars) = parsemodopt(options.cmpparms)	 
+		exit(1)		 
 	    
 	if (moving.get_attr('nx') != fixed.get_attr('nx')):
 		print "Fixed and model maps must have the same dimensions!"
@@ -122,7 +122,7 @@ def main():
 			options.shrink = 0.5
 		if fixed.get_attr('nx') <= 50:
 			options.shrink = 1.0
-	
+
 	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
 	smoving = moving.process('xform.scale', {'scale':options.shrink})
         options.maskrad = options.maskrad*options.shrink
@@ -157,7 +157,7 @@ def main():
 		tmp = fixed.do_fft()
 		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
 		fixed = tmp.do_ift()
-	    
+
 		tmp = smoving.do_fft()
 		mth = tmp.get_amplitude_thres(options.famps)
 		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
@@ -214,12 +214,16 @@ def main():
 	else:
 		outfile = 'alignedmodel.hdf'
 	    
-	#if output is mrc format 
+	#if output is mrc format or bdb 
 	if outfile[-4:].lower() == ".mrc":
 		moving.set_attr('UCSF.chimera',1)
 		galignedref[bestmodel].set_attr('UCSF.chimera',1)
+	if outfile[:4] == "bdb:":
+		filtoutfile = outfile+"_filtered"
+	else:
+		filtoutfile = "filtered"+outfile
   
-	galignedref[bestmodel].write_image(("filtered_"+outfile), 0)
+	galignedref[bestmodel].write_image(filtoutfile, 0)
 	moving.write_image(outfile, 0)
 	
 if __name__ == "__main__":

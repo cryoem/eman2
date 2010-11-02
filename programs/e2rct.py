@@ -47,7 +47,7 @@ def main():
 	find the azimuthal angles from the untilited dataset and e2make3d.py to make the 3D model
 	from the untilted dataset combined with the azimuthal angles and stage tilt. A model is made
 	foreach e2refine2d.py class(used for alignment)"""
-        parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	#options associated with e2rct.py
 	parser.add_option("--path",type="string",default=None,help="Path for the rct reconstruction, default=auto")
@@ -67,104 +67,101 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if not options.path:
-	    options.path = "bdb:rct/"
+		options.path = "bdb:rct/"
 	else:
-	    options.path = "bdb:"+options.path+"/"
+		options.path = "bdb:"+options.path+"/"
 	
 	if options.stagetilt:
-	    tiltangle = options.stagetilt
+		tiltangle = options.stagetilt
 	else:
-	    print "Error, stagetilt parameter not supplied! Crashing!"
-	    exit(1)
+		print "Error, stagetilt parameter not supplied! Crashing!"
+		exit(1)
 	    
 	if not options.tiltdata:
-	    print "Error, tiltdata needed! Crashing!"
-	    exit(1)
+		print "Error, tiltdata needed! Crashing!"		                #print aligned.get_attr("xform.align2d").get_params("2d")
+		exit(1)
 	
 	if not options.simmx:
-	    print "Error, simmx needed! Crashing!"
-	    exit(1)
-	
+		print "Error, simmx needed! Crashing!"
+		exit(1)
 	
 	# Now get azimuthal data
 	smxdb = db_open_dict(options.simmx)
 	data = []
 	
 	for r in xrange(smxdb[0].get_attr('ny')):
-	    bestscore = 1
-	    bestclass = 0
-	    for c in xrange(smxdb[0].get_attr('nx')):
-	        score = smxdb[0].get_value_at(c, r)
-	        if score < bestscore:
-	            bestscore = score
-	            bestclass = c
-	    if options.verbose >1: print "The bestscore is: %f for class %d" % (bestscore, bestclass)        
-	    data.append((bestclass, smxdb[3].get_value_at(bestclass, r)))
-
+		bestscore = 1
+		bestclass = 0
+		for c in xrange(smxdb[0].get_attr('nx')):
+			score = smxdb[0].get_value_at(c, r)
+			if score < bestscore:
+				bestscore = score
+				bestclass = c
+		if options.verbose >1: print "The bestscore is: %f for class %d" % (bestscore, bestclass)        
+		data.append((bestclass, smxdb[3].get_value_at(bestclass, r)))
+		                #print aligned.get_attr("xform.align2d").get_params("2d")
 	tiltimgs = EMData.read_images(options.tiltdata)
 	
 	# First delete any previous dicts and images from previous runs (prevents any data 'merging')
 	for c in xrange(smxdb[0].get_attr('nx')):
-	    try:
-	        for f in glob("%s/%sEMAN2DB/rctclasses_%02d*" % (getcwd(), options.path[4:len(options.path)],c)):
-	            os.unlink(f)
-	    except:
-	        pass
+		try:
+			for f in glob("%s/%sEMAN2DB/rctclasses_%02d*" % (getcwd(), options.path[4:len(options.path)],c)):
+				os.unlink(f)
+		except:
+			pass
 	   
 	# Now make the stacks and write the transforms
 	classpop = [0] * smxdb[0].get_attr('nx')
 	for r in xrange(smxdb[0].get_attr('ny')):
-	    t = Transform()
-	    t.set_rotation({"type":"eman", "az":data[r][1], "alt":tiltangle})
-	    tiltimgs[r].set_attr("xform.projection", t)
-	    #print tiltimgs[i], classpop[data[i][0]], data[i][0]
-	    tiltimgs[r].write_image("%srctclasses_%02d" % (options.path,data[r][0]), classpop[data[r][0]])
-	    classpop[data[r][0]] += 1
+		t = Transform()
+		t.set_rotation({"type":"eman", "az":data[r][1], "alt":tiltangle})
+		tiltimgs[r].set_attr("xform.projection", t)
+		#print tiltimgs[i], classpop[data[i][0]], data[i][0]
+		tiltimgs[r].write_image("%srctclasses_%02d" % (options.path,data[r][0]), classpop[data[r][0]])
+		classpop[data[r][0]] += 1
 	    
 	db_close_dict(options.simmx)
 	    	    	
 	# For each class average, sort the images by azimuthal angle, align to nearest neighbor, and reconstruct    	    	
 	for c in xrange(smxdb[0].get_attr('nx')):
-	    if db_check_dict("%srctclasses_%02d"  % (options.path,c)):
-	        if  classpop[c] >= options.minproj:
-		    # Do an alignment of nieghboring images
-		    if options.align != None:
-		        if options.verbose>0: print "Starting alignment for %srctrecon_%02d" % (options.path,c)
-		        # Now translatrionaly align the tilted images to each other
-		        imglist = EMData.read_images("%srctclasses_%02d" % (options.path,c))
-		        imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))
-		        
-		        # Align each image to its nearest neighbor (in Fourier Space) and compute comparison, also make class averages(to check sanity)
-		        avgr = Averagers.get('mean')
-		        iniangle = imglist[0].get_attr('xform.projection').get_rotation().get('az')
-		        ai = 0
-		        for r in xrange(len(imglist)):
-		            aligned = imglist[r].align("translational", imglist[r-1], {"maxshift":options.maxshift}) 
-		            aligned.write_image("%srctclassesali_%02d" % (options.path,c), r)
-		            sim = aligned.cmp(options.cmp, imglist[r-1])
+		if db_check_dict("%srctclasses_%02d"  % (options.path,c)):
+			if  classpop[c] >= options.minproj:
+				# Do an alignment of nieghboring images
+				if options.align != None:
+					if options.verbose>0: print "Starting alignment for %srctrecon_%02d" % (options.path,c)
+					# Now translatrionaly align the tilted images to each other
+					imglist = EMData.read_images("%srctclasses_%02d" % (options.path,c))
+					imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))        
+					# Align each image to its nearest neighbor (in Fourier Space) and compute comparison, also make class averages(to check sanity)
+					avgr = Averagers.get('mean')
+					iniangle = imglist[0].get_attr('xform.projection').get_rotation().get('az')
+					ai = 0
+					for r in xrange(len(imglist)):
+						aligned = imglist[r].align("translational", imglist[r-1], {"maxshift":options.maxshift}) 
+						aligned.write_image("%srctclassesali_%02d" % (options.path,c), r)
+						sim = aligned.cmp(options.cmp, imglist[r-1])
 		            
-		            if imglist[r].get_attr('xform.projection').get_rotation().get('az') > iniangle:
-			        ref = avgr.finish()
-			        if ref != None:
-			            ref.set_attr('iniangle',iniangle)
-			            ref.write_image("%srctclassavg_%02d" % (options.path,c), ai)
-			            ai += 1
-			        iniangle = imglist[r].get_attr('xform.projection').get_rotation().get('az')    
-			        avgr = Averagers.get('mean')
-			    else:
-			        avgr.add_image(aligned)
+						if imglist[r].get_attr('xform.projection').get_rotation().get('az') > iniangle:
+							ref = avgr.finish()
+							if ref != None:
+								ref.set_attr('iniangle',iniangle)
+								ref.write_image("%srctclassavg_%02d" % (options.path,c), ai)
+								ai += 1
+							iniangle = imglist[r].get_attr('xform.projection').get_rotation().get('az')    
+							avgr = Averagers.get('mean')
+						else:
+							avgr.add_image(aligned)
 			        
-		            if options.verbose>1: 
-		                print "Image %d has an %s of %f with image %d" % (r,options.cmp,sim,(r-1)) 
-		                #print aligned.get_attr("xform.align2d").get_params("2d")
+						if options.verbose>1: 
+							print "Image %d has an %s of %f with image %d" % (r,options.cmp,sim,(r-1)) 
 		        
-	                # For now we will just use default parms
-	                if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,c)
-	                run("e2make3d.py --input=%srctclassesali_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
-	            else:
-		      	# For now we will just use default parms  
-		      	if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,r)
-	                run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
+					# For now we will just use default parms
+					if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,c)
+					run("e2make3d.py --input=%srctclassesali_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
+				else:
+					# For now we will just use default parms  
+					if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,r)
+					run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
 	
 def run(command):
 	"Execute a command with optional verbose output"
@@ -179,4 +176,4 @@ def run(command):
 		exit(1)
 	
 if __name__ == "__main__":
-    main()
+	main()
