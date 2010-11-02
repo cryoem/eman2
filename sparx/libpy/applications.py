@@ -6173,7 +6173,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						elif dyi > 0.5+jdelta:  eyi = dyi-1.0
 						else:                   eyi = dyi
 	       					synew  = eyi*dpp
-	        				phinew = phihi+abs(dphi)*float(synew-syi)/dpp
+	        				phinew = phihi+dphi*float(synew-syi)/dpp
 						phinew = phinew%360
 
 					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
