@@ -119,7 +119,7 @@ def main():
 		if fixed.get_attr('nx') <= 250:
 			options.shrink = 0.25
 		if fixed.get_attr('nx') <= 100:
-		options.shrink = 0.5
+			options.shrink = 0.5
 		if fixed.get_attr('nx') <= 50:
 			options.shrink = 1.0
 	
@@ -132,7 +132,7 @@ def main():
 		for p in options.preprocess:
 			try:
 				(processorname, param_dict) = parsemodopt(p)
-				if not param_dict : param_dict={}<<<<<<< e2align3d.py
+				if not param_dict : param_dict={}
 				fixed.process_inplace(str(processorname), param_dict)
 				moving.process_inplace(str(processorname), param_dict)
 			except:
