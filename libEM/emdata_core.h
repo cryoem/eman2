@@ -201,11 +201,18 @@ void set_col(const EMData * data, int col_index);
  * @param z The z cooridinate.
  * @return The pixel density value at coordinates (x,y,z).
  */
-inline float get_value_at(int x, int y, int z) const
+float get_value_at(int x, int y, int z) const
 {
 	return get_data()[x + y * nx + z * nxy];
 }
 
+/** Get the pixel density value at index i
+ * @param a The index.
+ */
+inline float get_value_at_index(int i)
+{
+        return *(rdata + i);
+}
 
 /** Get the pixel density value at coordinates (x,y). 2D only.
  * The validity of x, y is not checked.
@@ -494,6 +501,16 @@ inline void set_value_at_fast(int x, int y, int z, float v)
 	changecount++;
 }
 
+/** Set the pixel density value at index
+ *
+ * @param i The index.
+ * @param v The value.
+ */
+
+inline void set_value_at_index(int i, float v)
+{
+        *(rdata + i) = v;
+}
 
 /** Set the pixel density value at coordinates (x,y).
  * 2D image only.

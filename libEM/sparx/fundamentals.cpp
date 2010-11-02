@@ -200,7 +200,9 @@ Output: 1-2-3D real image with the result
 
 		// now one half of the padded, fft-extended size along x
 		const int lsd2 = (nxp + 2 - nxp%2) / 2; 
-		// The [padded] fft-extended fourier version of f is fp.
+		// The [padded] fft-extended fourier version of f is fp
+		// The size of fp
+		const int nxyz = lsd2*nyp*nzp*2;
 
 		EMData* fp = NULL;
 		if (f->is_complex()) { 
@@ -233,6 +235,7 @@ Output: 1-2-3D real image with the result
 		// If the center flag is true, put the center of the correlation in the middle
 		// If it is false, put it in (0,0), this approach saves time, but it is diffcult to manage the result
 		if (center) {
+		        cout << "center" << endl;
 			//  Multiply two functions (the real work of this routine)
 			int itmp = nx/2;
 			//float sx  = float(-twopi*float(itmp)/float(nxp));
@@ -377,6 +380,7 @@ Output: 1-2-3D real image with the result
 			}
 		} else {
 			// If the center flag is false, then just do basic multiplication
+			// Here I aterd the method of complex calculation. This method is much faster than the previous one.
 			switch (ptype) {
 				case AUTOCORRELATION:
 					for (int iz = 1; iz <= nzp; iz++) {
