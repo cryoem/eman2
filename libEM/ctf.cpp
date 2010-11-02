@@ -735,7 +735,9 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				s+=ds;
 			}
 
-
+			int npsm=np/25;			// 1/2 number of points to smooth over, 25 is arbitrary
+			if (npsm<2) npsm=2;
+			
 			s=s0;
 			for (int i = 1; i < np; i++) {
 				// simple linear regression embedded here
@@ -745,7 +747,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				double sum_xx = 0;
 				double sum_xy = 0;
 
-				for (int k=max_int(i-3,1); k<min_int(i+4,np); k++) {
+				for (int k=max_int(i-npsm,1); k<=min_int(i+npsm,np); k++) {
 					double y = dsnr[k];
 					double x = tsnr[k];
 
@@ -765,6 +767,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 	//			*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
 
 				r[i]=(float) ((sum * sum_xy - sum_x * sum_y) / div)*tsnr[i];
+				if (r[i]<0) r[i]=0;
 				
 				s+=ds;
 			}
