@@ -1453,11 +1453,11 @@ def ali_vol_func_only_scale(params, data):
 def helios_func(params, data):
 	sm = data[0].helicise(data[2], params[0], params[1], data[3], data[4], data[5])
 	#try other sim creteria
-	#q = sm.cmp("dot", sm, {"negative":0})
-	q = sm.cmp("dot", data[0], {"negative":0})# corelation  with the recon data
+	q = sm.cmp("dot", sm, {"negative":0})
+	#q = sm.cmp("dot", data[0], {"negative":0})# corelation  with the recon data
 	#print  params,q
 	return  q
-
+	
 def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0.0):
 	from alignment    import helios_func
 	from utilities    import amoeba
@@ -1472,6 +1472,17 @@ def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0
 	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-2, 1.0e-2, 50, data)
 	#print  " new params ", new_params[0], new_params[1]
 	return  vol.helicise(pixel_size, new_params[0][0], new_params[0][1], section_use, radius), new_params[0][0], new_params[0][1]
+	
+def helios7(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0.0):
+	from alignment    import helios_func
+	nx = vol.get_xsize()
+	ny = vol.get_ysize()
+	nz = vol.get_zsize()
+	if(radius <= 0.0):    radius = nx//2-1
+	params = [dp, dphi]
+	data=[vol, params, pixel_size, section_use, radius, rmin]
+	q = helios_func([dp, dphi], data)
+	return q
 
 def sub_favj(ave, data, jtot, mirror, numr):
 	'''
