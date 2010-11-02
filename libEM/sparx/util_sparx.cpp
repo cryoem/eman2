@@ -20702,108 +20702,12 @@ bool jiafunc(int i, int j){
 	return (costlist_global[j] < costlist_global[i]) ;
 
 }
-// determine number of branches to explore based on distribution of cost list
-// only costs over T are valid
-int Util::branch_factor_1(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel){
-	int cur;
-	// sort matchlist by cost
-	int* indx = new int[J];
-	for (int jit=0; jit < J; jit++) indx[jit]=jit;
-	vector<int> myindx (indx, indx+J);
-	vector<int>::iterator it;
-	costlist_global=costlist;
-	sort(myindx.begin(), myindx.begin()+J, jiafunc);
 
-	// put matchlist in the order of mycost
-	int* templist = new int[J];
-	int* temp2list = new int[J*nParts];
-	int next = 0;
-	int ntot=0;
-	for (it=myindx.begin(); it!=myindx.end();++it){
-		cur = *(costlist + *it);
-		if (cur > T){
-			ntot = ntot+1;
-			templist[next] = cur;
-			for (int vt = 0; vt < nParts; vt++) temp2list[next*nParts + vt] = matchlist[ (*it)*nParts + vt];
-			next = next + 1;
-		}
-	}
-	
-	for (int jit=0; jit < ntot; jit++){
-		*(costlist+jit)=*(templist + jit);
-		//cout <<*(costlist+jit)<<", ";
-		for (int vit=0; vit < nParts; vit++) matchlist[jit*nParts + vit]= temp2list[jit*nParts + vit];
-	}
-	//cout <<"\n";
-	
-	delete [] indx;
-	//compute the average 
-	int sum=0;
-	if (ntot==1) {delete [] templist; delete [] temp2list; return 1;}
-	//cout<<"curlevel: "<<curlevel<<":";
-	for (int jit=0; jit < ntot; jit++)
-		sum = sum + *(costlist + jit); 
-		
-	//cout << "\n";
-	
-	float average = (float)sum/ntot;
-	//cout<<"average: "<<average<<"\n";
-	
-	//compute variance
-	float sum_sqr=0;
-	for (int jit=0; jit < ntot; jit++)
-		sum_sqr = sum_sqr+ (float)pow(*(costlist + jit)-average,2);
-	
-	
-	float var = (float)sum_sqr/ntot;
-	float std = sqrt(var);
-	//cout << "var: "<<var<<", std: "<<std<<"\n";
-	
-	// partition matches into groups where matches in each group is mutually feasible, and matches from different groups are not feasible
-	// The number of branches to explore are the mutually exclusive matches. Take the largest of these
-	
-	int B=1;
-	for (int i=1; i<ntot; i++){
-		// look at the i-th match. branch on it only if it is infeasible with ALL previous matches we have decided to
-		// branch on
-		bool infeasible_all = true;
-		for (int j=0; j<B; j++){
-			bool feasible = true;
-			for (int vit=0; vit<nParts; vit++){
-				if (temp2list[i*nParts+vit] == matchlist[j*nParts+vit]) {feasible=false; break;}
-			}
-			if (feasible) {infeasible_all = false; break;}
-		}
-		if (infeasible_all){
-			*(costlist+B)=*(templist+i);
-			for (int vit=0; vit < nParts; vit++)
-				*(matchlist+B*nParts + vit)=*(temp2list+i*nParts + vit);
-			B=B+1;	
-		}
-	}
-	
-	
-	delete [] templist;
-	delete [] temp2list;
-	//return branching factor based on distribution of costlist var and std
-	//if (B>1) {cout<<"curlevel: "<<curlevel<<" , "<<B<<"\n";}
-	//if (curlevel == 0) {cout << "branch on level 0! "<<B<<", branch_all: "<<branch_all<<", ntot: "<<ntot<<"\n";}
-	//cout << "branch_all: "<<branch_all<<"\n";
-	
-	// branch_all < 40, with J=50, T=10 we got improvement of 4077 (vs 4071) of greedy
-	if (branch_all < 40){
-		if (B>1)
-			branch_all = branch_all + B;
-		}
-	else B=1;
-
-
-
-}
-
-
-// determine number of branches to explore based on distribution of cost list
-// only costs over T are valid
+// Given J matches, branch always on the first one (i.e., the one with the largest weight, so the worst case we just end up doing greedy).
+// Branch on the second one only if it is INFEASIBLE with the first, so you know it will never occur in any branching beginning with the first.
+// Branch on subsequent ones only if its infeasible with ALL the ones which we have previously decided to branch on.
+// The other option is to use LIM - so we branch on a match if its infeasible with at least LIM matches which we have previously decoded to branch on.
+// For now, LIM is defaulted to -1, which means we branch on a match only if it is infeasible to ALL matches we have previously decided to branch on.
 int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int LIM){
 	
 	int ntot=0;
@@ -20891,8 +20795,7 @@ int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nPart
 }
 
 
-// determine number of branches to explore based on distribution of cost list
-// only costs over T are valid
+// similar to branch_factor_2 except we branch on a match if it is infeasible with all other matches in matchlist (not just the ones we branch on). LIM plays similar role here.
 int Util::branch_factor_3(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int K, int LIM){
 	
 	int ntot=0;
@@ -20982,7 +20885,10 @@ int Util::branch_factor_3(int* costlist, int* matchlist, int J, int T, int nPart
 
 }
 
-// if small standard deviation (i.e., all kind f similar), then branch more
+// We branch based on distribution of the cost of the J largest matches. Roughly speaking, if there is a match which has significantly larger weight than others, then we branch just on that
+// match. Otherwise, we branch on similar weighted matches.
+// As before we always branch on the match with the largest cost so worst case we'll get greedy.
+// We compute standard dev of the J costs, and then if the difference between the cost of a match and the largest cost is within stmult*standard dev, then we branch on it.
 int Util::branch_factor_4(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, float stmult){
 	int sum=0;
 	float average =0;
