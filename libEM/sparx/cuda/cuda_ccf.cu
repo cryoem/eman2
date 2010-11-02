@@ -324,7 +324,7 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	float *points, *d_points;
 	float *shifts_ref, *d_shifts_ref;
 	float *shifts_subject, *d_shifts_subject;
-	int i, j, k, index;
+	int i, j, k, l, index;
 	int ccf_base_addr;
 	float x, y, ang;
 	size_t* offset = (size_t *)malloc(sizeof(size_t));
@@ -347,14 +347,16 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	int NTEXTURE_REF = NREF/NIMAGE_IN_TEXTURE;
 	int NREF_LEFT_TEXTURE = NREF%NIMAGE_IN_TEXTURE;
 
-	int IMAGE_PER_BATCH1 = 65535/NRING;            // The maximum FFT per batch is 65535
-	int IMAGE_BATCH1 = NIMAGE/IMAGE_PER_BATCH1;
-	int IMAGE_LEFT_BATCH1 = NIMAGE%IMAGE_PER_BATCH1;
+	int NIMAGE_PER_BATCH_FFT = 65535/NRING;            // The maximum FFT per batch is 65535
+	int NIMAGE_BATCH_FFT = NIMAGE/NIMAGE_PER_BATCH_FFT;
+	int NIMAGE_LEFT_BATCH_FFT = NIMAGE%NIMAGE_PER_BATCH_FFT;
+	int NREF_BATCH_FFT = NREF/NIMAGE_PER_BATCH_FFT;
+	int NREF_LEFT_BATCH_FFT = NREF%NIMAGE_PER_BATCH_FFT;
 
 	int POS_PER_IMAGE = 2*(2*KX+1)*(2*KY+1);
-	int IMAGE_PER_BATCH2 = 65535/POS_PER_IMAGE; // The maximum FFT per batch is 65535
-	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
-	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
+	int IMAGE_PER_BATCH_IFFT = 65535/POS_PER_IMAGE;    // The maximum FFT per batch is 65535
+	int NREF_BATCH_IFFT = NREF/IMAGE_PER_BATCH_IFFT;
+	int NREF_LEFT_BATCH_IFFT = NREF%IMAGE_PER_BATCH_IFFT;
 
 	// Block this line if you have only one GPU
 	cudaSetDevice(id); 
@@ -371,13 +373,16 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	tex.addressMode[0] = cudaAddressModeWrap;
 	tex.addressMode[1] = cudaAddressModeWrap;
 
-	cufftHandle plan_image, plan_image_left, plan_ccf, plan_ccf_left;
-	cufftPlan1d(&plan_image, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_PER_BATCH1);
-	if (IMAGE_LEFT_BATCH1 != 0)
-		cufftPlan1d(&plan_image_left, RING_LENGTH, CUFFT_R2C, NRING*IMAGE_LEFT_BATCH1);
-	cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_PER_BATCH2);
-	if (IMAGE_LEFT_BATCH2 != 0)
-		cufftPlan1d(&plan_ccf_left, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*IMAGE_LEFT_BATCH2);
+	cufftHandle plan_image, plan_image_left, plan_ref, plan_ref_left, plan_ccf, plan_ccf_left;
+	cufftPlan1d(&plan_image, RING_LENGTH, CUFFT_R2C, NRING*NIMAGE_PER_BATCH_FFT);
+	if (NIMAGE_LEFT_BATCH_FFT != 0)
+		cufftPlan1d(&plan_image_left, RING_LENGTH, CUFFT_R2C, NRING*NIMAGE_LEFT_BATCH_FFT);
+	cufftPlan1d(&plan_ref, RING_LENGTH, CUFFT_R2C, NRING*NREF_PER_BATCH_FFT);
+	if (NREF_LEFT_BATCH_FFT != 0)
+		cufftPlan1d(&plan_ref_left, RING_LENGTH, CUFFT_R2C, NRING*NREF_LEFT_BATCH_FFT);
+	cufftPlan1d(&plan_ccf, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*NIMAGE_PER_BATCH_IFFT);
+	if (NIMAGE_LEFT_BATCH_IFFT != 0)
+		cufftPlan1d(&plan_ccf_left, RING_LENGTH, CUFFT_C2R, POS_PER_IMAGE*NIMAGE_LEFT_BATCH_IFFT);
 
 	/* Allocate host memory for the coordinates of sampling points */
 	points = (float *)malloc(RING_LENGTH*NRING*2*sizeof(float));
@@ -510,10 +515,10 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	cudaUnbindTexture(texim_shifts);
 	
 	/* Conduct FFT for all reference images */
-	for (k=0; k<IMAGE_BATCH1; k++)
-		cufftExecR2C(plan_image, (cufftReal *)(d_ref_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
-	if (IMAGE_LEFT_BATCH1 != 0)
-		cufftExecR2C(plan_image_left, (cufftReal *)(d_ref_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+	for (k=0; k<NREF_BATCH_FFT; k++)
+		cufftExecR2C(plan_ref_image, (cufftReal *)(d_ref_image_polar+k*NREF_PER_BATCH_FFT*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*NREF_PER_BATCH_FFT*POINTS_PER_IMAGE));
+	if (NREF_LEFT_BATCH_FFT != 0)
+		cufftExecR2C(plan_ref_image_left, (cufftReal *)(d_ref_image_polar+NREF_BATCH_FFT*NREF_PER_BATCH_FFT*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+NREF_BATCH_FFT*NREF_PER_BATCH_FFT*POINTS_PER_IMAGE));
 
 	for (i=-KX; i<=KX; i++) {
 		for (j=-KY; j<=KY; j++) {
@@ -543,38 +548,43 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 			cudaUnbindTexture(texim_shifts);
 			
 			/* Conduct FFT for all subject images */
-			for (k=0; k<IMAGE_BATCH1; k++)
-				cufftExecR2C(plan_image, (cufftReal *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
-			if (IMAGE_LEFT_BATCH1 != 0)
-				cufftExecR2C(plan_image_left, (cufftReal *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+IMAGE_BATCH1*IMAGE_PER_BATCH1*POINTS_PER_IMAGE));
+			for (k=0; k<NIMAGE_BATCH_FFT; k++)
+				cufftExecR2C(plan_image, (cufftReal *)(d_subject_image_polar+k*NIMAGE_PER_BATCH_FFT*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+k*NIMAGE_PER_BATCH_FFT*POINTS_PER_IMAGE));
+			if (NIMAGE_LEFT_BATCH_FFT != 0)
+				cufftExecR2C(plan_image_left, (cufftReal *)(d_subject_image_polar+NIMAGE_BATCH_FFT*NIMAGE_PER_BATCH_FFT*POINTS_PER_IMAGE), (cufftComplex *)(d_subject_image_polar+NIMAGE_BATCH_FFT*NIMAGE_PER_BATCH_FFT*POINTS_PER_IMAGE));
 			
-			cudaGetTextureReference(&texPtr, "texim_ref");
-			cudaBindTexture(0, texPtr, d_ref_image_polar, &channelDesc, NREF*POINTS_PER_IMAGE*sizeof(float));
-
-			cudaGetTextureReference(&texPtr, "texim_subject");
-		    	ccf_base_addr = ((j+KY)*(2*KX+1)+(i+KX))*NIMAGE*(RING_LENGTH+2);
-			for (k=0; k<NTEXTURE; k++) {
-				cudaBindTexture(0, texPtr, d_subject_image_polar+k*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
-				complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
-				cudaThreadSynchronize();
+			for (k=0; k<NIMAGE; k++) {
+				cudaGetTextureReference(&texPtr, "texim_ref");
+				cudaBindTexture(0, texPtr, d_subject_image_polar+k*POINTS_PER_IMAGE, &channelDesc, POINTS_PER_IMAGE*sizeof(float));
+			    	ccf_base_addr = ((j+KY)*(2*KX+1)+(i+KX))*NREF*(RING_LENGTH+2)+k*NREF*POS_PER_IMAGE*(RING_LENGTH+2);
+				for (l=0; l<NTEXTURE_REF; l++) {
+					cudaGetTextureReference(&texPtr, "texim_subject");
+					cudaBindTexture(0, texPtr, d_ref_image_polar+l*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE*POINTS_PER_IMAGE*sizeof(float));
+					complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+k*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+					cudaThreadSynchronize();
+					cudaUnbineTexture(texim_ref);
+				}
+				if (NREF_LEFT_TEXTURE != 0) {
+					cudaGetTextureReference(&texPtr, "texim_ref");
+					cudaBindTexture(0, texPtr, d_ref_image_polar+l*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE*POINTS_PER_IMAGE*sizeof(float));
+					complex_mul<<<NIMAGE_IN_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+NTEXTURE_REF*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
+					cudaThreadSynchronize();
+					cudaUnbineTexture(texim_ref);
+				}
+				cudaUnbindTexture(texim_subject);
 			}
-			if (NIMAGE_LEFT_TEXTURE != 0) {
-				cudaBindTexture(0, texPtr, d_subject_image_polar+NTEXTURE*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_LEFT_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
-				complex_mul<<<NIMAGE_LEFT_TEXTURE, BLOCK_SIZE>>>(d_ccf+ccf_base_addr+NTEXTURE*NIMAGE_IN_TEXTURE*(RING_LENGTH+2), BLOCK_SIZE, NRING, NIMAGE, KX, KY);
-				cudaThreadSynchronize();
-			}
-			cudaUnbindTexture(texim_subject);
-			cudaUnbindTexture(texim_ref);
 		}
 	}
 	cudaUnbindTexture(texim_points);
 
-	for (i=0; i<IMAGE_BATCH2; i++)
-	    	cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+i*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
-	if (IMAGE_LEFT_BATCH2 != 0) 
-	    	cufftExecC2R(plan_ccf_left, (cufftComplex *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)), (cufftReal *)(d_ccf+IMAGE_BATCH2*POS_PER_IMAGE*IMAGE_PER_BATCH2*(RING_LENGTH+2)));
-
-
+	for (k=0; k<NIMAGE; k++) {
+		ccf_base_addr = k*NREF*POS_PER_IMAGE*(RING_LENGTH+2);
+		for (i=0; i<NREF_BATCH_IFFT; i++)
+		    	cufftExecC2R(plan_ccf, (cufftComplex *)(d_ccf+ccf_base_addr+i*POS_PER_IMAGE*NREF_PER_BATCH_IFFT*(RING_LENGTH+2)), (cufftReal *)(d_ccf+ccf_base_addr+i*POS_PER_IMAGE*NREF_PER_BATCH_IFFT*(RING_LENGTH+2)));
+		if (NREF_LEFT_BATCH_IFFT != 0) 
+		    	cufftExecC2R(plan_ccf_left, (cufftComplex *)(d_ccf+ccf_base_addr+NREF_BATCH_IFFT*POS_PER_IMAGE*NREF_PER_BATCH_IFFT*(RING_LENGTH+2)), (cufftReal	*)(d_ccf+ccf_base_addr+NREF_BATCH_IFFT*POS_PER_IMAGE*NREF_PER_BATCH_IFFT*(RING_LENGTH+2)));
+	}
+	
 	cudaMemcpy(ccf, d_ccf, (RING_LENGTH+2)*NIMAGE*POS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
 
 	/* Memory clean up */
@@ -594,6 +604,8 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	cudaFree(d_shifts_subject);
 	cufftDestroy(plan_image);
 	cufftDestroy(plan_image_left);
+	cufftDestroy(plan_ref);
+	cufftDestroy(plan_ref_left);
 	cufftDestroy(plan_ccf);
 	cufftDestroy(plan_ccf_left);
 

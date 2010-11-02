@@ -2342,7 +2342,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 	vector<float> align_results;
 	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
-	// This number can be increased according to the memory.
+	// This number can be increased according to the GPU memory.
 	const int max_batch = 10;
 	vector<int> batch_size;
 	vector<int> batch_begin;
@@ -2353,6 +2353,8 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		for (int i=1; i<NIMA; i++) {
 			if (ctf_params[i*6] != previous_defocus || current_size >= max_batch) {
 				batch_size.push_back(current_size);
+				current_size = 1;
+				previous_defocus = ctf_params[i*6];
 			} else current_size++;			
 		}
 		batch_size.push_back(current_size);
@@ -2362,8 +2364,8 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 	}
 	int num_batch = batch_size.size();
 	batch_begin.resize(num_batch, 0);
-	for (int i=1; i<num_batch; i++) batch_begin.push_back(batch_size[i-1]+batch_begin[i-1]);
-	//assert batch_begin[num_batch]+batch_size[num_batch] == nima-1
+	for (int i=1; i<num_batch; i++) batch_begin[i] = batch_size[i-1]+batch_begin[i-1];
+	assert(batch_begin[num_batch-1]+batch_size[num_batch-1] == nima-1);
 
 	for (int i=0; i<NIMA; i++) {
 		float ang = ali_params[i*4]/180.0*M_PI;
@@ -2398,7 +2400,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 			for (int im=0; im<NREF; im++) {
 				for (int kx=-KX; kx<=KX; kx++) {
 					for (int ky=-KY; ky<=KY; ky++) {
-						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*img_num;
+						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;
 						for (int l=0; l<RING_LENGTH; l++) {
 							ts = ccf[base_address+l];
 							tm = ccf[base_address+l+ccf_offset];
