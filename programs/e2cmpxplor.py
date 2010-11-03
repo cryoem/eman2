@@ -63,8 +63,10 @@ read into memory. Do not use it on large sets of particles !!!
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	window = EMCmpExplorer(application=em_app)
-	window.set_data(args[0],args[1])
+	window = EM3DGLWidget() #TODO: see if this should be a subclass of EMSymViewerWidget instead
+	explorer = EMCmpExplorer(window)
+	window.set_model(explorer)
+	explorer.set_data(args[0],args[1])
 
 	em_app.show()
 	em_app.execute()
@@ -75,10 +77,10 @@ read into memory. Do not use it on large sets of particles !!!
 class EMCmpExplorer(EM3DSymModel):
 	def get_desktop_hint(self): return "image"
 	
-	def __init__(self,application=None,ensure_gl_context=True,application_control=True,projection_file=None,simmx_file=None,particle_file=None):
+	def __init__(self, gl_widget, projection_file=None,simmx_file=None,particle_file=None):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
-		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymModel.__init__(self,gl_widget)
 		self.window_title = "SimmxXplor"
 		#InputEventsManager.__init__(self)
 	

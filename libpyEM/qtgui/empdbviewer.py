@@ -677,12 +677,11 @@ class ValRenderer:
 
 
 class EMPDBModel(EM3DModel):
-	def __init__(self, application=None,ensure_gl_context=True,application_control=True):
+	def __init__(self, gl_widget):
 		self.fName = ""
 		self.text = self.fName
 		self.dl = None
-		#EM3DModule.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
-		EM3DModel.__init__(self)
+		EM3DModel.__init__(self, gl_widget)
 		# basic shapes will be stored in these lists
 		self.gq = None # will be a glu quadric
 		self.cylinderdl = 0 # will be a cylinder with no caps
@@ -819,7 +818,7 @@ class EMPDBModel(EM3DModel):
 			return
 			
 		
-		#self.gl_context_parent.makeCurrent()
+		#self.get_gl_widget().makeCurrent()
 		if (self.text != self.fName): 
 			if (self.dl != None): glDeleteLists(self.dl, 1)
 			self.dl=None
@@ -873,7 +872,7 @@ class EMPDBModel(EM3DModel):
 			glDeleteLists(self.dl,1)
 			self.dl = None
 	def init_basic_shapes(self):
-		#self.gl_context_parent.makeCurrent()
+		#self.get_gl_widget().makeCurrent()
 		if self.gq == None:
 			
 			self.gq=gluNewQuadric() # a quadric for general use
@@ -956,8 +955,8 @@ class EMPDBModel(EM3DModel):
 		self.cylinder_to_from(n, p, 0.2)
 	def render(self):
 		if self.first_render_flag:
-			if not self.perspective:self.gl_context_parent.load_orthographic()
-			else: self.gl_context_parent.load_perspective()
+			if not self.perspective:self.get_gl_widget().load_orthographic()
+			else: self.get_gl_widget().load_perspective()
 			self.first_render_flag = False
 					
 		#self.vdtools.set_update_P_inv()
@@ -1017,8 +1016,8 @@ if __name__ == '__main__':
 	from emimage3d import EMImage3DWidget
 	em_app = EMApp()
 
-	pdb_model = EMPDBModel()
 	window = EMImage3DWidget()
+	pdb_model = EMPDBModel(window)
 	window.add_model(pdb_model)
 
 	em_app.show()

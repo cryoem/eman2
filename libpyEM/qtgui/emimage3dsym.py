@@ -244,11 +244,11 @@ class EulerData:
 	
 	
 class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
-	def __init__(self,application=None,ensure_gl_context=True,application_control=True):
+	def __init__(self, gl_widget):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
 		self.window_title = "EulerXplor"
-		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
+		EM3DModel.__init__(self, gl_widget)
 		Orientations.__init__(self)
 		ColumnGraphics.__init__(self)
 		
@@ -332,7 +332,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			tmp.close()
 			
 	def clear_gl_memory(self):
-		try: self.gl_context_parent.makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
+		try: self.get_gl_widget().makeCurrent() # this is important  when you have more than one OpenGL context operating at the same time
 		except: return # maybe the object is already dead in which case OpenGL probably cleaned the memory up anyway
 		vals = ["sphere_points_dl","spheredl","highresspheredl","diskdl","cappedcylinderdl","great_arc_dl","asym_u_triangles_dl","cylinderdl","trace_dl" ]
 		for dl in vals :
@@ -441,7 +441,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			glPushMatrix()
 			glLoadIdentity()
 			gluPickMatrix(event.x(),v[-1]-event.y(),2,2,v)
-			self.gl_context_parent.load_perspective()
+			self.get_gl_widget().load_perspective()
 			glMatrixMode(GL_MODELVIEW)
 			glInitNames()
 			self.render()
@@ -656,7 +656,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		self.specified_eulers = eulers
 	
 	def init_basic_shapes(self):
-		self.gl_context_parent.makeCurrent()
+		self.get_gl_widget().makeCurrent()
 		if self.gq == None:
 			
 			self.gq=gluNewQuadric() # a quadric for general use
@@ -1003,18 +1003,18 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 	def set_display_all_syms(self,val):
 		self.display_all_syms = val
 
-	def set_gl_context_parent(self,parent):
+	def set_gl_widget(self,gl_widget):
 		'''
 		Needed to specialized this function (from EM3DModel) because self.vdtools is absolutely required to be current and accurate
 		(this object uses GLU picking and needs access to the viewport matrix) 
 		'''
-		self.vdtools = EMViewportDepthTools2(parent)
-		self.gl_context_parent = parent
+		self.vdtools = EMViewportDepthTools2(gl_widget)
+		EM3DModel.set_gl_widget(gl_widget)
 
 	def render(self):
 		self.init_basic_shapes()
 		if self.vdtools == None:
-			self.vdtools = EMViewportDepthTools2(self.get_gl_context_parent())
+			self.vdtools = EMViewportDepthTools2(self.get_gl_widget())
 		
 		if self.update_sphere_points_dl:
 			self.make_sym_dl_list(self.eulers)
@@ -1140,18 +1140,14 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 
 class EMSymViewerWidget(EM3DGLWidget):	
 	allim=WeakKeyDictionary()
-	def __init__(self, sym_model, sym="d7"):
-		assert(isinstance(sym_model,EM3DSymModel))
+	def __init__(self, sym="d7"):
 		EMSymViewerWidget.allim[self]=0
-		EM3DGLWidget.__init__(self, sym_model)
-		
-		#TODO: reconsider design so these lines aren't necessary
-		sym_model.under_qt_control = True
-		sym_model.set_gl_widget(self)
-		sym_model.set_gl_context_parent(self)
+		EM3DGLWidget.__init__(self)
+		sym_model = EM3DSymModel(self)
+		sym_model.under_qt_control = True #TODO: still needed?
+		self.set_model(sym_model)
 		sym_model.set_symmetry(sym)
 		sym_model.regen_dl()
-		
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
@@ -1518,18 +1514,13 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.sym_model = EM3DSymModel()
-		self.sym_model.enable_inspector(False)
+		self.sym_widget = EMSymViewerWidget(sym)		
+		self.sym_widget.model.enable_inspector(False)
 		
-		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.sym_model)
+		self.sparse_syms_widgets = SparseSymChoicesWidgets(self,self.sym_widget.model)
 		self.sparse_syms_widgets.add_top_buttons(self.vbl)
 		self.sparse_syms_widgets.add_symmetry_options(self.vbl)
-
-		self.sym_widget = EMSymViewerWidget(self.sym_model)
-		#TODO: reconsider design so these lines aren't necessary
-		self.sym_model.under_qt_control = True
-		self.sym_model.set_gl_widget(self.sym_widget)
-		self.sym_model.set_gl_context_parent(self.sym_widget)
+		self.sparse_syms_widgets.set_sym(sym)
 
 		self.vbl.addWidget(self.sym_widget,10)
 		
@@ -1548,9 +1539,7 @@ class EMSymChoiceDialog(QtGui.QDialog):
 		QtCore.QObject.connect(self.ok, QtCore.SIGNAL("clicked(bool)"), self.on_ok)
 		QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked(bool)"), self.on_cancel)
 		
-		self.sparse_syms_widgets.set_sym(sym)
-		self.sym_model.set_symmetry(sym)
-		self.sym_model.regen_dl()
+
 		
 	def on_ok(self,unused=None):
 		'''
@@ -1867,8 +1856,7 @@ if __name__ == '__main__':
 	print choices_dict
 	
 	#Second demonstration
-	sym_model = EM3DSymModel()
-	window = EMSymViewerWidget(sym_model)
+	window = EMSymViewerWidget()
 	
 	em_app.show()
 	em_app.execute()

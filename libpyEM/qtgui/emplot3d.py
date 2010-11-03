@@ -59,11 +59,9 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, parent=None):
-		EM3DModel.__init__(self)
+	def __init__(self, gl_widget=None):
+		EM3DModel.__init__(self, gl_widget)
 		EMLightsDrawer.__init__(self)
-		self.gl_context_parent = parent
-		self.gl_widget = parent
 		
 		self.mmode = 0
 		self.wire = False
@@ -83,10 +81,10 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 		self.e2fhstat=0 #Added by Muthu as a switch for e2fhstat options in the widget 
 		self.colorCol = 3 #Added by Muthu
 		
-		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
+		self.vdtools = EMViewportDepthTools2(self.get_gl_widget())
 		
-		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
-		self.gl_context_parent.cam.cam_z = -25 # this is me hacking
+		self.get_gl_widget().cam.default_z = -25	 # this is me hacking
+		self.get_gl_widget().cam.cam_z = -25 # this is me hacking
 		self.basic_colors = get_default_gl_colors()
 		
 		self.highresspheredl = 0 # display list i
@@ -178,7 +176,7 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 			glPushMatrix()
 			glLoadIdentity()
 			gluPickMatrix(event.x(),v[-1]-event.y(),2,2,v)
-			self.gl_context_parent.load_perspective()
+			self.get_gl_widget().load_perspective()
 			glMatrixMode(GL_MODELVIEW)
 			glInitNames()
 			self.render()

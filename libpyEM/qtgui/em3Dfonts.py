@@ -57,10 +57,9 @@ class DynamicFonts:
 		self.font_renderer.set_depth(length)
 
 class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
-	def __init__(self):
-		EM3DModel.__init__(self)
+	def __init__(self, gl_widget):
+		EM3DModel.__init__(self, gl_widget)
 		DynamicFonts.__init__(self)
-		#self.parent = parent
 
 		self.init()
 		self.initialized = True
@@ -79,8 +78,8 @@ class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 		self.bgB = 1.0
 		self.bg_a = 1
 		self.lspacing = 75
-#		self.gl_context_parent.cam.default_z = -25	# this is me hacking
-#		self.gl_context_parent.cam.cam_z = -25 		# this is me hacking
+#		self.get_gl_widget().cam.default_z = -25	# this is me hacking
+#		self.get_gl_widget().cam.cam_z = -25 		# this is me hacking
 		self.vdtools = EMViewportDepthTools(self)
 		self.font_renderer = get_3d_font_renderer()
 		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
@@ -655,8 +654,8 @@ if __name__ == '__main__':
 	from emapplication import EMApp
 	from emimage3d import EMImage3DWidget
 	em_app = EMApp()
-	font_model = EM3DFontModel()
 	window = EMImage3DWidget()
+	font_model = EM3DFontModel(window)
 	window.add_model(font_model)
 	window.cam.default_z = -25	# From David's "this is me hacking"
 	window.cam.cam_z = -25 		# From David's "this is me hacking"

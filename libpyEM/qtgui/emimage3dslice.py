@@ -53,9 +53,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSliceModel(EM3DModel):
 	
-	def __init__(self,image=None, application=None,ensure_gl_context=True,application_control=True):
+	def __init__(self, gl_widget, image=None):
 		self.data = None
-		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
+		EM3DModel.__init__(self, gl_widget)
 		self.init()
 		self.initialized = True
 		
@@ -181,8 +181,8 @@ class EM3DSliceModel(EM3DModel):
 		self.generate_current_display_list()
 		
 		from emglobjects import EM3DGLWidget
-		if isinstance(self.gl_context_parent,EM3DGLWidget):
-			self.gl_context_parent.set_camera_defaults(self.data)
+		if isinstance(self.get_gl_widget(),EM3DGLWidget):
+			self.get_gl_widget().set_camera_defaults(self.data)
 			
 		if ( self.tex_dl != 0 ): 
 			glDeleteLists( self.tex_dl, 1)
@@ -597,8 +597,9 @@ if __name__ == '__main__':
 	from emapplication import EMApp
 	from emglobjects import EM3DGLWidget
 	em_app = EMApp()
-	slice_model = EM3DSliceModel(application=em_app)
-	window = EM3DGLWidget(slice_model)
+	window = EM3DGLWidget()
+	slice_model = EM3DSliceModel(window)
+	window.set_model(slice_model)
 	
 	if len(sys.argv)==1 : 
 		data = []
@@ -613,8 +614,6 @@ if __name__ == '__main__':
 
 	#TODO: reconsider design so these lines aren't necessary
 	slice_model.under_qt_control = True
-	slice_model.set_gl_widget(window)
-	slice_model.set_gl_context_parent(window)
 		
 	em_app.show()
 	em_app.execute()

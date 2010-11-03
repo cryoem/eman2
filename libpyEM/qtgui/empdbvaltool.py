@@ -66,15 +66,13 @@ class EMPDBValTool(QtCore.QObject):
 
 			
 	def __set_model_contexts(self,model):
-		model.set_qt_context_parent(self.parent_widget)
-		model.set_gl_context_parent(self.parent_widget)
 		model.set_gl_widget(self.parent_widget)
 		model.set_dont_delete_parent() # stops a RunTimeError
-		model.under_qt_control = True #self.under_qt_control
+		model.under_qt_control = True #TODO: still needed?
 		
 	def __init_iso_model(self):
 		if self.iso_model == None:
-			self.iso_model = EMIsosurfaceModel(None,None,False,False, enable_file_browse=True)
+			self.iso_model = EMIsosurfaceModel(self.parent_widget, None, enable_file_browse=True)
 			self.parent_widget.add_model(self.iso_model)
 			self.__set_model_contexts(self.iso_model)
 

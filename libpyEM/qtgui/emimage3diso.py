@@ -57,9 +57,9 @@ class EMIsosurfaceModel(EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True,enable_file_browse=False):
+	def __init__(self,gl_widget, image=None,enable_file_browse=False):
 		self.data = None
-		EM3DModel.__init__(self)#, ensure_gl_context,application_control=application_control)
+		EM3DModel.__init__(self, gl_widget)
 		self.init()
 		self.initialized = True
 		
@@ -286,8 +286,8 @@ class EMIsosurfaceModel(EM3DModel):
 		self.inspector.set_materials(self.colors,self.isocolor)
 		
 		from emglobjects import EM3DGLWidget
-		if isinstance(self.gl_context_parent,EM3DGLWidget):
-			self.gl_context_parent.set_camera_defaults(self.data)
+		if isinstance(self.get_gl_widget(),EM3DGLWidget):
+			self.get_gl_widget().set_camera_defaults(self.data)
 	
 	def load_colors(self):
 		self.colors = get_default_gl_colors()
@@ -716,16 +716,13 @@ if __name__ == '__main__':
 	from emglobjects import EM3DGLWidget
 	from emapplication import EMApp
 	app = EMApp()
-	iso_model = EMIsosurfaceModel(test_image_3d(1,size=(64,64,64)))
-	iso_model.updateGL()
-	window = EM3DGLWidget(iso_model)
-	
-	
-	#TODO: reconsider design so these lines aren't necessary
-	iso_model.under_qt_control = True
-	iso_model.set_gl_widget(window)
-	iso_model.set_gl_context_parent(window)
-	
+	window = EM3DGLWidget()
+	iso_model = EMIsosurfaceModel(window, test_image_3d(1,size=(64,64,64)))
+	window.set_model(iso_model)
+	window.updateGL()
+		
+	#TODO: reconsider design so this line isn't necessary
+	iso_model.under_qt_control = True	
 	
 	app.show()
 	app.execute()

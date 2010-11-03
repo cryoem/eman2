@@ -54,10 +54,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 
 class EMVolumeModel(EM3DModel):
-	def __init__(self,image=None,application=None,ensure_gl_context=True,application_control=True):
+	def __init__(self, gl_widget, image=None):
 		self.data = None
-		EM3DModel.__init__(self)#,application,ensure_gl_context,application_control)
-		self.parent = None
+		EM3DModel.__init__(self, gl_widget)
 		
 		self.init()
 		self.initialized = True
@@ -158,8 +157,8 @@ class EMVolumeModel(EM3DModel):
 		self.update_data_and_texture()
 		
 		from emglobjects import EM3DGLWidget
-		if isinstance(self.gl_context_parent,EM3DGLWidget):
-			self.gl_context_parent.set_camera_defaults(self.data)
+		if isinstance(self.get_gl_widget(),EM3DGLWidget):
+			self.get_gl_widget().set_camera_defaults(self.data)
 		
 	def test_accum(self):
 		# this code will do volume rendering using the accumulation buffer
@@ -720,10 +719,12 @@ class EMVolumeInspector(QtGui.QWidget):
 if __name__ == '__main__':
 	from emapplication import EMApp
 	from emglobjects import EM3DGLWidget
-	em_app = EMApp()
-	vol_model = EMVolumeModel()
 	
-	window = EM3DGLWidget(vol_model)
+	em_app = EMApp()
+	window = EM3DGLWidget()
+	vol_model = EMVolumeModel(window)
+	vol_model.under_qt_control = True #TODO: still needed?
+	window.set_model(vol_model)
 	
 	if len(sys.argv)==1 : 
 		data = []
@@ -735,11 +736,5 @@ if __name__ == '__main__':
 		vol_model.set_file_name(sys.argv[1])
 		window.set_data(a)
 
-	
-	#TODO: reconsider design so these lines aren't necessary
-	vol_model.under_qt_control = True
-	vol_model.set_gl_widget(window)
-	vol_model.set_gl_context_parent(window)
-	
 	em_app.show()
 	em_app.execute()

@@ -41,6 +41,8 @@ from emselector import EMBrowser
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
 from emanimationutil import Animator
+from emglobjects import EM3DGLWidget
+from emimage3d import EMImage3DWidget
 from emimage import EMWidgetFromFile
 
 import time
@@ -739,19 +741,18 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_asym_unit(self):
-		from emimage3dsym import EM3DSymModel, EMSymViewerWidget
+		from emimage3dsym import EMSymViewerWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		module = EM3DSymModel()
-		widget = EMSymViewerWidget(module)
+		widget = EMSymViewerWidget()
 		self.emit(QtCore.SIGNAL("launching_module"),"Eulers Tool",widget)
 		get_application().show_specific(widget)
 		self.add_module([str(widget),"Eulerxplor",widget])
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		
 	def launch_eulers(self):
-		from e2eulerxplor import get_euler_widget
+		from e2eulerxplor import EMEulerWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		widget = get_euler_widget(auto=True)
+		widget = EMEulerWidget()
 		self.emit(QtCore.SIGNAL("launching_module"),"Eulers",widget)
 		get_application().show_specific(widget)
 		self.add_module([str(widget),"Eulerxplor",widget])
@@ -761,12 +762,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		from emlights import EMLights
 		from emglobjects import EM3DGLWidget
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		em_lights = EMLights()
-		window = EM3DGLWidget(em_lights)
-		#TODO: reconsider design so these lines aren't necessary
-		em_lights.under_qt_control = True
-		em_lights.set_gl_widget(window)
-		em_lights.set_gl_context_parent(window)
+		window = EM3DGLWidget()
+		em_lights = EMLights(window)
+		em_lights.under_qt_control = True #TODO: still necessary?
+		window.set_model(em_lights)
 		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",window)
 		get_application().show_specific(window)
 		self.add_module([str(window),"EMLights",window])
@@ -783,18 +782,20 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def launch_3d_volume_viewer(self):
 		from emimage3dvol import EMVolumeModel
-		self.launch_3d_viewer(EMVolumeModel(application=em_app),"3D Volumer Viewer")
+		widget = EM3DGLWidget()
+		self.launch_3d_viewer(EMVolumeModel(widget),"3D Volumer Viewer")
 	
 	def launch_3d_iso_viewer(self):
 		from emimage3diso import EMIsosurfaceModel
-		self.launch_3d_viewer(EMIsosurfaceModel(application=em_app),"3D Isosurface Viewer")
+		widget = EM3DGLWidget()
+		self.launch_3d_viewer(EMIsosurfaceModel(widget),"3D Isosurface Viewer")
 		
 	def launch_3d_slice_viewer(self):
 		from emimage3dslice import EM3DSliceModel
-		self.launch_3d_viewer(EM3DSliceModel(application=em_app),"3D Slice Viewer")
+		widget = EM3DGLWidget()
+		self.launch_3d_viewer(EM3DSliceModel(widget),"3D Slice Viewer")
 	
 	def launch_3d_image_viewer(self):
-		from emimage3d import EMImage3DWidget
 		widget = EMImage3DWidget(application=em_app)
 		
 		get_application().setOverrideCursor(Qt.BusyCursor)
@@ -808,14 +809,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 
 	def launch_3d_viewer(self,model,name):
-		from emimage3d import EMImage3DWidget
-		widget = EMImage3DWidget(application=em_app)
-		
 		get_application().setOverrideCursor(Qt.BusyCursor)
+		widget = model.get_gl_widget()
+		widget.set_model(model)
 		data = test_image_3d(1,size=(64,64,64))
 		model.set_data(data)
 		widget.set_data(data)
-		widget.add_model(model)
 		self.emit(QtCore.SIGNAL("launching_module"),name,widget)
 		get_application().show_specific(widget)
 		self.add_module([str(widget),name,widget])

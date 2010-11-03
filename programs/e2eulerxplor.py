@@ -87,16 +87,20 @@ def main():
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	window = get_euler_widget(em_app)
-	em_app.show()#_specific(window)
+	window = EMEulerWidget()
+	em_app.show_specific(window)
 	em_app.execute()
 	
 	E2end(logid)
 
-def get_euler_widget(em_app=None, auto = True):
-	euler_explorer = EMEulerExplorer(application=em_app, auto=auto)
-	window = EMSymViewerWidget(euler_explorer)
-	return window
+class EMEulerWidget(EMSymViewerWidget):
+	def __init__(self, sym="icos", auto=True,sparse_mode=False):
+		EMSymViewerWidget.__init__(self)
+		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
+		euler_explorer.under_qt_control = True #TODO: still needed?
+		self.set_model(euler_explorer)
+		euler_explorer.set_symmetry(sym)
+		euler_explorer.regen_dl()
 
 class EMEulerExplorer(EM3DSymModel,Animator):
 	
@@ -155,7 +159,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glPushMatrix()
 		glLoadIdentity()
 		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
-		self.gl_context_parent.load_perspective()
+		self.get_gl_widget().load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()
 		self.render()
@@ -189,7 +193,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		else:
 			EM3DSymModel.keyPressEvent(self,event)
 	
-	def __init__(self,application=None,ensure_gl_context=True,application_control=True,auto=True,sparse_mode=False):
+	def __init__(self, gl_widget, auto=True,sparse_mode=False):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
 		self.events_mode = self.events_mode_list[0]
@@ -200,7 +204,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
 		
-		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymModel.__init__(self, gl_widget)
 		Animator.__init__(self)
 		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
 		self.projection_file = None  # This is a string - the name of the projection images file

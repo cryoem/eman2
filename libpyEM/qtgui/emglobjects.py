@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+	#!/usr/bin/env python
 
 # Author:  David Woolford 10/26/2007 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -2019,19 +2019,15 @@ def get_default_gl_colors():
 class EM3DModel(QtCore.QObject):
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self, parent = None):#, ensure_gl_context=False,application_control=True,winid=None):
+	def __init__(self, gl_widget):
+		QtCore.QObject.__init__(self)
+		self.gl_widget = weakref.ref(gl_widget)	#A GL context must exist before OpenGL statements are used, so the constructor requires this.
 		
 		#TODO: Figure out which of these is needed
-		self.qt_context_parent = None
-		self.gl_context_parent = None
-		self.gl_widget = None
 		self.under_qt_control = False
 		self.emit_events = False
 		self.disable_inspector = False
-		self.suppress_inspector = False # turn on to suppress showing the inspector
 		
-		
-		QtCore.QObject.__init__(self)
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
 		
@@ -2048,11 +2044,11 @@ class EM3DModel(QtCore.QObject):
 
 	def draw_bc_screen(self):
 		'''
-		Assumes the gl_context_parent is an EMGLProjectionViewMatrices instance
+		Assumes the gl_widget is an EMGLProjectionViewMatrices instance
 		'''
 		try:
-			vh = self.gl_context_parent.viewport_height()
-			vw = self.gl_context_parent.viewport_width()
+			vh = self.get_gl_widget().viewport_height()
+			vw = self.get_gl_widget().viewport_width()
 		except:
 			# this means the set up isn't quite right, but the bc screen isn't that valuable anyhow
 			return
@@ -2097,12 +2093,15 @@ class EM3DModel(QtCore.QObject):
 		return self.cam.t3d_stack[size-1]
 	def get_emit_signals_and_connections(self):
 		return {}
-	def get_gl_context_parent(self): return self.gl_context_parent
+	def get_gl_context_parent(self): 
+		return self.gl_widget()
+	def get_gl_widget(self):
+		return self.gl_widget()
 	def get_inspector(self): raise NotImplementedError("Inheriting classes should implemented this") # this need to be supplied
 	def get_name(self): return self.name
 	def get_translate_scale(self):
 #		try:
-		[rx,ry] = self.gl_context_parent.get_render_dims_at_depth(self.cam.cam_z)
+		[rx,ry] = self.get_gl_widget().get_render_dims_at_depth(self.cam.cam_z)
 
 		xscale = rx/float(self.gl_widget.width())
 		yscale = ry/float(self.gl_widget.height())
@@ -2199,10 +2198,13 @@ class EM3DModel(QtCore.QObject):
 		except:
 			# the parent may not have been set
 			pass
-	def set_gl_context_parent(self,parent): self.gl_context_parent = parent
-	def set_gl_widget(self,gl_widget): self.gl_widget = gl_widget
+	def set_gl_context_parent(self,parent): 
+		self.set_gl_widget(parent)
+	def set_gl_widget(self,gl_widget): 
+		self.gl_widget = weakref.ref(gl_widget)
 	def set_name(self, name): self.name = name
-	def set_qt_context_parent(self,parent): self.qt_context_parent = parent
+	def set_qt_context_parent(self,parent): 
+		self.set_gl_widget(parent)
 	def set_rank(self,rank): self.rank = rank
 	def set_scale(self,val):
 		self.cam.scale = val
@@ -2215,7 +2217,6 @@ class EM3DModel(QtCore.QObject):
 		if app == None:
 			print "can't show an inspector with having an associated application"
 		
-		if self.suppress_inspector: return
 		if not force and self.inspector==None : return
 		if not self.inspector : 
 			self.inspector = self.get_inspector()
@@ -2227,8 +2228,8 @@ class EM3DModel(QtCore.QObject):
 		self.cube = not self.cube
 		self.updateGL()
 	def updateGL(self):
-		if self.gl_widget != None and self.under_qt_control:
-			self.gl_widget.updateGL()
+		if self.get_gl_widget() != None and self.under_qt_control:
+			self.get_gl_widget().updateGL()
 #		raise DeprecationWarning
 	def update_inspector_texture(self):
 		pass
@@ -2239,7 +2240,7 @@ class EM3DModel(QtCore.QObject):
 		if self.inspector != None :
 			self.inspector.set_scale(self.cam.scale)
 class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
-	def __init__(self, model=None):
+	def __init__(self, model=None): #Usually model will be None, because a GL context must be created before a EM3DGLWidget
 		EMGLWidget.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
@@ -2253,8 +2254,9 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.startz = 1.0
 		self.endz = 500.0
 		self.cam = Camera()
+		if model: #Usually model == None here and is set later
+			self.set_model(model)
 		#self.cam = Camera2(self.model)
-		self.set_model(model)
 		self.resize(480,480)
 	def get_current_transform(self):
 		size = len(self.cam.t3d_stack)
@@ -2358,7 +2360,7 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.model.set_data(data)
 		self.set_camera_defaults(data)
 	def set_model(self, model):
-		assert(model == None or isinstance(model,EM3DModel))
+		assert(isinstance(model,EM3DModel))
 		self.model = model
 		self.set_camera_defaults(self.model.data)
 

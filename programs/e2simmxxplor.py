@@ -32,6 +32,7 @@
 #
 
 from emapplication import EMApp, get_application
+from emglobjects import EM3DGLWidget
 from emimage3dsym import EM3DSymModel,EMSymInspector
 import os,sys
 from EMAN2 import *
@@ -65,10 +66,12 @@ def main():
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	window = EMSimmxExplorer(application=em_app)
-	if len(args) > 0: window.set_simmx_file(args[0])
-	if len(args) > 1: window.set_projection_file(args[1])
-	if len(args) > 2: window.set_particle_file(args[2])
+	window = EM3DGLWidget() #TODO: see if this should be a subclass of EMSymViewerWidget instead
+	explorer = EMSimmxExplorer(window)
+	window.set_model(explorer)
+	if len(args) > 0: explorer.set_simmx_file(args[0])
+	if len(args) > 1: explorer.set_projection_file(args[1])
+	if len(args) > 2: explorer.set_particle_file(args[2])
 
 	em_app.show()
 	em_app.execute()
@@ -79,10 +82,10 @@ def main():
 class EMSimmxExplorer(EM3DSymModel):
 	def get_desktop_hint(self): return "image"
 	
-	def __init__(self,application=None,ensure_gl_context=True,application_control=True,projection_file=None,simmx_file=None,particle_file=None):
+	def __init__(self, gl_widget, projection_file=None,simmx_file=None,particle_file=None):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
-		EM3DSymModel.__init__(self,application,ensure_gl_context=ensure_gl_context,application_control=application_control)
+		EM3DSymModel.__init__(self, gl_widget)
 		self.window_title = "SimmxXplor"
 			
 		self.projection_file = projection_file # a projection file produced by e2project3d

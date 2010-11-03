@@ -49,10 +49,8 @@ class EM3DHelloWorld(EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self, application,parent=None):
-		EM3DModel.__init__(self,application)
-		self.parent = parent
-		self.gl_context_parent = parent
+	def __init__(self, gl_widget):
+		EM3DModel.__init__(self, gl_widget)
 		
 		self.init()
 		self.initialized = True
@@ -68,10 +66,10 @@ class EM3DHelloWorld(EM3DModel):
 		self.colors = get_default_gl_colors()
 		self.currentcolor = "bluewhite"
 		
-		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
+		self.vdtools = EMViewportDepthTools2(self.get_gl_widget())
 		
-		self.gl_context_parent.cam.default_z = -1.25*50 # this is me hacking
-		self.gl_context_parent.cam.cam_z = -1.25*50 # this is me hacking
+		self.get_gl_widget().cam.default_z = -1.25*50 # this is me hacking
+		self.get_gl_widget().cam.cam_z = -1.25*50 # this is me hacking
 	
 		self.dl = None # display list id
 	
@@ -523,7 +521,7 @@ if __name__ == '__main__':
 	from emimage3d import EMImage3DWidget
 	em_app = EMApp()
 	window = EMImage3DWidget()
-	hello_world = EM3DHelloWorld(application=em_app, parent=window)
+	hello_world = EM3DHelloWorld(window)
 	window.add_model(hello_world)
 	em_app.show()
 	em_app.execute()

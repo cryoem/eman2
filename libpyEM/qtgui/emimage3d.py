@@ -62,8 +62,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	allim=WeakKeyDictionary()
 	def add_model(self,model,num=0):
 		
-		model.set_qt_context_parent(self.qt_parent)
-		model.set_gl_context_parent(self)
 		model.set_gl_widget(self)
 		model.set_dont_delete_parent() # stops a RunTimeError
 		model.under_qt_control = True
@@ -115,7 +113,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.num_vol = 0
 		self.num_sli = 0
 		self.num_sym = 0
-		self.suppress_inspector = False 	
 
 		self.vdtools = EMViewportDepthTools(self)
 		
@@ -131,8 +128,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		
 		#From get_qt_widget...
 		for i in self.viewables:
-			i.set_qt_context_parent(self.qt_parent)
-			i.set_gl_context_parent(self)
 			i.set_gl_widget(self)
 			i.under_qt_control = True
 		
@@ -146,16 +141,13 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		
 	def __set_model_contexts(self):
 		for v in self.viewables:
-			v.set_qt_context_parent(self.qt_parent)
-			v.set_gl_context_parent(self)
 			v.set_gl_widget(self)
-			#self.application.register_qt_emitter(v,self.application.get_qt_emitter(self))
 	def add_isosurface(self):
-		model = EMIsosurfaceModel(self.data,None,False,False)
+		model = EMIsosurfaceModel(self, self.data, False)
 		self.num_iso += 1
 		self.add_model(model,self.num_iso)
 	def add_slice_viewer(self):
-		model = EM3DSliceModel(self.data,None,False,False)
+		model = EM3DSliceModel(self, self.data)
 		self.num_sli += 1
 		self.add_model(model,self.num_sli)
 	def add_sym(self):
@@ -163,12 +155,12 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		# is only that the EMEulerExplorer will look in the current directory for refinement directories and
 		# display related information. Simply change from one to the other if you don't like it
 		model = EMEulerExplorer(None,True,False)
-		#model = EM3DSymModel(None,True,False)
+		#model = EM3DSymModel(self)
 		model.set_radius(self.radius)
 		self.num_sym += 1
 		self.add_model(model,self.num_sym)
 	def add_volume(self):
-		model = EMVolumeModel(self.data,None,False,False)
+		model = EMVolumeModel(self, self.data)
 		self.num_vol += 1
 		self.add_model(model,self.num_vol)
 	def delete_current(self, val):

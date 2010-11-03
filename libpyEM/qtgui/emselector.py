@@ -148,8 +148,13 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				old_module.show()
 				old_module.updateGL()
 				return
-		
-			module = self.module_type()
+			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
+				from emglobjects import EM3DGLWidget
+				widget = EM3DGLWidget()
+				module = self.module_type(widget)
+				widget.set_model(module)
+			else:
+				module = self.module_type()
 			data = getattr(item,self.get_data_attr)()
 			for funct in self.data_functors: funct(data)
 			if self.module_type == EMPlot2DWidget: # aka template specialization

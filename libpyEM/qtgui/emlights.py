@@ -70,8 +70,8 @@ class EMLightsDrawer:
 		self.mpressx = None
 		self.mpressy = None
 	
-	def set_gl_context_parent(self, qglwidget):
-		self.gl_context_parent = qglwidget
+	def set_gl_widget(self, gl_widget):
+		self.gl_widget = weakref.ref(gl_widget)
 		
 		self.gl_lights = get_gl_lights_vector()
 		self.colors = get_default_gl_colors()
@@ -535,10 +535,11 @@ class EMLights(EMLightsDrawer,EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
-	def __init__(self):#, gl_context_parent):
-		EM3DModel.__init__(self)
+	def __init__(self, gl_widget):
+		EM3DModel.__init__(self, gl_widget)
 		EMLightsDrawer.__init__(self)
 		self.display_lights = True
+		self.set_gl_widget(gl_widget)
 
 		self.init()
 		self.initialized = True
@@ -556,11 +557,11 @@ class EMLights(EMLightsDrawer,EM3DModel):
 		self.highresspheredl = 0 # display list id
 		self.draw_dl = 0
 
-	def set_gl_context_parent(self, qglwidget):
-		EMLightsDrawer.set_gl_context_parent(self, qglwidget)
-		self.vdtools = EMViewportDepthTools2(self.gl_context_parent)
-		self.gl_context_parent.cam.default_z = -25	 # this is me hacking
-		self.gl_context_parent.cam.cam_z = -25 # this is me hacking		
+	def set_gl_widget(self, gl_widget):
+		EMLightsDrawer.set_gl_widget(self, gl_widget)
+		self.vdtools = EMViewportDepthTools2(self.gl_widget())
+		self.gl_widget().cam.default_z = -25	 # this is me hacking
+		self.gl_widget().cam.cam_z = -25 # this is me hacking		
 	def get_type(self):
 		return "lights"
 
@@ -1431,12 +1432,9 @@ if __name__ == '__main__':
 	from emapplication import EMApp
 	from emglobjects import EM3DGLWidget
 	em_app = EMApp()
-	em_lights = EMLights()
-	window = EM3DGLWidget(em_lights)
-	#TODO: reconsider design so these lines aren't necessary
-	em_lights.under_qt_control = True
-	em_lights.set_gl_widget(window)
-	em_lights.set_gl_context_parent(window)
+	window = EM3DGLWidget()
+	em_lights = EMLights(window)
+	window.set_model(em_lights) 
+	em_lights.under_qt_control = True #TODO: still necessary?
 	em_app.show()
 	em_app.execute()
-	
