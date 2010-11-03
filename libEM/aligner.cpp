@@ -1546,7 +1546,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
-https://exchweb.bcm.tmc.edu/owa/?ae=Folder&t=IPF.Note
+
 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
 
 	Dict t;
@@ -1599,9 +1599,9 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	//in case we arre aligning tomos
 	Dict altered_cmp_params(cmp_params);
 	if (cmp_name == "ccc.tomo") {
-                altered_cmp_params.set_default("searchx", -1);
-		altered_cmp_params.set_default("searchy", -1);
-		altered_cmp_params.set_default("searchz", -1);
+                altered_cmp_params.set_default("searchx", searchx);
+		altered_cmp_params.set_default("searchy", searchy);
+		altered_cmp_params.set_default("searchz", searchz);
 		altered_cmp_params.set_default("norm", true);
 	}
 
