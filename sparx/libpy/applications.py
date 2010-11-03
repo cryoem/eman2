@@ -5975,6 +5975,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	if myid == main_node:
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
+	
+	ndp    = 12
+	sndp   = 0.1
+	ndphi  = 12
+	sndphi = 0.1
+	nlprms = (2*ndp+1)*(2*ndphi+1)
+	if nlprms< number_of_proc:
+		ERROR('number of cpus is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
+	
 
 
 	if debug:
@@ -6114,7 +6123,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
-		print_msg("Y search range initialized as             : %s\n\n"%(yrng))
+		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
 		
 
 	from time import time	
@@ -6133,7 +6142,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	# do the projection matching
 	for N_step in xrange(lstp):
 		terminate = 0
-		Iter = -1
+		Iter = 0
  		while(Iter < max_iter-1 and terminate == 0):
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
 			if(ynumber[N_step]==0):
@@ -6147,7 +6156,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, stepx = %5.2f, stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],stepx[N_step],stepy,ynumber[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f,stepx = %5.2f, yrange = %5.2f,  stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
 
 			volft,kb = prep_vol( vol )
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
@@ -6200,7 +6209,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
 				from utilities import write_text_file
-				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer_%04d_%04d.txt"%(N_step,Iter)) )
+				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer_%04d_%04d.txt"%(N_step+1,Iter)) )
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
@@ -6245,7 +6254,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
 			if myid == main_node:
 				
-				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step,Iter)),"w")
+				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step+1,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
 						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
@@ -6302,11 +6311,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				bcast_EMData_to_all(vol, myid, main_node)
 				#from filter import filt_gaussl
 				#vol = filt_gaussl(vol, 0.25)
-				ndp    = 12
-				sndp   = 0.1
-				ndphi  = 12
-				sndphi = 0.1
-				nlprms = (2*ndp+1)*(2*ndphi+1)
 
 				if myid == main_node:
 					lprms = []
