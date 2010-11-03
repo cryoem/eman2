@@ -1486,6 +1486,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		d["xform.align3d"] = &t; // deep copy is going on here
 		solns.push_back(d);
 	}
+	
+	EMData * tofft;
+	if(dotrans || cmp_name == "ccc.tomo"){
+		EMData * tofft = to->do_fft();
+	}
+	
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
@@ -1505,11 +1511,11 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				//need to do things a bit diffrent if we want to compare two tomos
 				float best_score;
 				if (cmp_name == "ccc.tomo") {
-				        best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+				        best_score = transformed->cmp(cmp_name,tofft,altered_cmp_params);
 					t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
 				} else {	
 					if(dotrans){
-						EMData* ccf = transformed->calc_ccf(to);
+						EMData* ccf = transformed->calc_ccf(tofft);
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
 						transformed = this_img->process("xform",Dict("transform",&t));
@@ -1540,7 +1546,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
-
+https://exchweb.bcm.tmc.edu/owa/?ae=Folder&t=IPF.Note
 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
 
 	Dict t;
@@ -1624,6 +1630,12 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 
 	float verbose_alt = -1.0f;
+	//precompute fixed FT, saves a LOT of time!!!
+	EMData * tofft;
+	if(dotrans || cmp_name == "ccc.tomo"){
+		EMData * tofft = to->do_fft();
+	}
+	
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
 		if (verbose) {
@@ -1644,11 +1656,11 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score;
 			if (cmp_name == "ccc.tomo") {
-				best_score = transformed->cmp(cmp_name,to,altered_cmp_params);
+				best_score = transformed->cmp(cmp_name,tofft,altered_cmp_params);
 				t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
 			} else {	
 			        if(dotrans){
-					EMData* ccf = transformed->calc_ccf(to);
+					EMData* ccf = transformed->calc_ccf(tofft);
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
 					transformed = this_img->process("xform",Dict("transform",&t));
@@ -1674,6 +1686,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		}
 	}
 	delete sym; sym = 0;
+	delete tofft; tofft = 0;
 	return solns;
 
 }
