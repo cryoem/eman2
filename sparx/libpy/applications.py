@@ -6140,6 +6140,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				stepy=0.0
 			else:
 				stepy=(2*yrng[N_step]/ynumber[N_step])
+				
 			pixer  = [0.0]*nima
 			modphi = [0.0]*nima
 			Iter += 1
@@ -6313,7 +6314,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						for j in xrange(-ndphi,ndphi+1,1):
 							lprms.append( dp   + i*sndp)
 							lprms.append( dphi + j*sndphi)
-					print "lprms===",lprms
+					#print "lprms===",lprms
 					recvpara = []
 					for im in xrange(number_of_proc):
 						helic_ib, helic_ie = MPI_start_end(nlprms, number_of_proc, im)
@@ -6356,7 +6357,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 							dphi     = list_return[i*3+1]
 					dp   = float(dp)
 					dphi = float(dphi)
-					print  "  GOT dp dphi",dp,dphi
+					#print  "  GOT dp dphi",dp,dphi
 
 					vol  = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))		
