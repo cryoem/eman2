@@ -116,7 +116,6 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		
 		self.core_object =  QtCore.QObject()
 		self.under_qt_control = True #TODO: figure out which value works better -- eventually eliminate this Qt control vs GL control was from 3D desktop days
-		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
 		
@@ -169,7 +168,6 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		if app == None:
 			print "can't show an inspector with having an associated application"
 		
-		if self.suppress_inspector: return
 		if not force and self.inspector==None : return
 		if not self.inspector : 
 			self.inspector = self.get_inspector()

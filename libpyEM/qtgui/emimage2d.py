@@ -197,7 +197,6 @@ class EMImage2DWidget(EMGLWidget):
 		
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
-		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.tex_name = 0			# an OpenGL texture handle
 		
 		self.window_width = None # Used for intelligently managing resize events
@@ -243,7 +242,7 @@ class EMImage2DWidget(EMGLWidget):
 #	def __del__(self):
 #		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 #		if self.under_qt_control:
-#			self.qt_context_parent.deleteLater()
+#			self.qt_parent.deleteLater()
 #		self.core_object.deleteLater()
 		
 	def get_emit_signals_and_connections(self):

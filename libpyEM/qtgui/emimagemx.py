@@ -601,7 +601,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
-		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.image_file_name = None
 		self.first_render = True # a hack, something is slowing us down in FTGL
 		self.scroll_bar = EMGLScrollBar(self)
@@ -934,7 +933,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if self.animation_enabled:
 			if self.line_animation != None and self.line_animation.animated: return # this is so the current animation has to end before starting another one. It could be the other way but I like it this way
 			self.line_animation = LineAnimation(self,self.origin,(x,y))
-			self.get_qt_context_parent().register_animatable(self.line_animation)
+			self.qt_parent.register_animatable(self.line_animation)
 			return True
 		else:
 			self.origin=(x,y)
