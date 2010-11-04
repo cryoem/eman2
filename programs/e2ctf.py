@@ -448,20 +448,26 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 		
 		ctf=EMAN2Ctf()
 		orig=db_parms[name]
-		if db_parms_old.has_key(name) :
-			if options.verbose: print filename," already smoothed. Skipping."
-			skipped+=1
-			continue
+
+		#if db_parms_old.has_key(name) :
+			#if options.verbose: print filename," already smoothed. Skipping."
+			#skipped+=1
+			#continue
 		
 		db_parms_old[name]=orig
 		ctf.from_string(orig[0])
 		olddf.append(ctf.defocus)
+		im_1d=orig[2]
+		bg_1d=orig[3]
 		
 		ds=ctf.dsbg
 		r=len(ctf.background)
 		s=[ds*ii for ii in range(r)]
+
+		# Restore SNR to original unfiltered version
+		ctf.snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
 		
-		# Tune the defocus
+		# Tune the defocus to maximize high res snr
 		if debug : print "Fit Defocus"
 		best=(0,olddf[-1])
 		for df in [olddf[-1]+ddf/1000.0 for ddf in xrange(-100,101)]:
@@ -1600,6 +1606,10 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,snr[:len(s)]),"SNR",True,color=0)
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,sfcurve2)		# The smoothed curve
 			self.guiplot.set_data((s,ssnr[:len(s)]),"Smoothed SNR",color=1)
+
+			# Also display the original unfiltered SNR, which may differ from the CTF stored SNR
+			osnr=[snr_safe(self.data[val][2][i],self.data[val][3][i]) for i in range(len(s))]
+			self.guiplot.set_data((s,osnr),"Original SNR",color=2)
 
 			# we can also optionally display the computed SNR used in the smoothing process
 			#csnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
