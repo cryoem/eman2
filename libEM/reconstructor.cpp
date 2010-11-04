@@ -2177,6 +2177,8 @@ void circumf( EMData* win , int npad)
 	}
 
 	TNR /=float(m);
+	
+	
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
@@ -2864,11 +2866,14 @@ void circumf_rect( EMData* win , int npad)
 	delete[] sincy;
 	delete[] sincz;
 	
-	float dxx = 0.25f/ix/ix;
-	float dyy = 0.25f/iy/iy;
-	float dzz = 0.25f/iz/iz;
 	
-	float LR2 = (ix/2-2)*(ix/2-2)*dxx + (iy/2-2)*(iy/2-2)*dyy + (iz/2-2)*(iz/2-2)*dzz;
+	
+	float dxx = 1.0/float(0.25*ix*ix);
+	float dyy = 1.0/float(0.25*iy*iy);
+	float dzz = 1.0/float(0.25*iz*iz);
+	
+	//float LR2 = (ix/2-2)*(ix/2-2)*dxx + (iy/2-2)*(iy/2-2)*dyy + (iz/2-2)*(iz/2-2)*dzz;
+	float LR2=(float(iz)/2-1)*(float(iz)/2-1)*dzz;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
@@ -2885,6 +2890,7 @@ void circumf_rect( EMData* win , int npad)
 	}
 
 	TNR /=float(m);
+	
 
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
