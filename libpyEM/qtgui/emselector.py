@@ -154,8 +154,8 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				old_module.show()
 				old_module.updateGL()
 				return
-			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel):
-#			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
+			from e2simmxxplor import EMSimmxExplorer
+			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
 				from emglobjects import EM3DGLWidget
 				widget = EM3DGLWidget()
 				module = self.module_type(widget)
@@ -723,21 +723,15 @@ class EMBrowser(EMBrowserType):
 		self.action_delegates = {}
 		from emimage3d import EMImage3DWidget
 		self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DWidget)()
-		from emimage3dvol import EMVolumeModel
 		from emimagemx import ApplyProcessor
 		self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModel,data_functors=[ApplyProcessor("normalize",{})])()
-		from emimage3dslice import EM3DSliceModel
 		self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceModel,data_functors=[ApplyProcessor("normalize",{})])()
-		from emimage2d import EMImage2DWidget
 		self.action_delegates[SINGLE_2D_VIEWER] = DataDisplayModuleTemplate(EMImage2DWidget)()
-		from emimagemx import EMImageMXWidget
 		stack_action = EM2DStackPreviewAction()
 		self.action_delegates[MULTI_2D_VIEWER] = stack_action #DataDisplayModuleTemplate(EMImageMXWidget,"get_2d_stack")
-		from emplot2d import EMPlot2DWidget
 		self.action_delegates[PLOT_2D_VIEWER] = DataDisplayModuleTemplate(EMPlot2DWidget)()
 		from emplot3d import EMPlot3DWidget
 		self.action_delegates[PLOT_3D_VIEWER] = DataDisplayModuleTemplate(EMPlot3DWidget)()
-		from emimage3dsym import EM3DSymModel
 		self.action_delegates[EULER_VIEWER] = DataDisplayModuleTemplate(EM3DSymModel)()
 		from e2simmxxplor import EMSimmxExplorer
 		self.action_delegates[SIMMX_EULER_VIEWER] = DataDisplayModuleTemplate(EMSimmxExplorer,"get_url")()
