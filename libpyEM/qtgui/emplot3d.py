@@ -383,7 +383,7 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 		self.using_global_theme = False
 
 	def render(self): #######
-		self.gl_widget.makeCurrent()
+		self.get_gl_widget().makeCurrent()
 		init_glut()
 		if self.font_renderer == None:
 			self.init_font_renderer()
