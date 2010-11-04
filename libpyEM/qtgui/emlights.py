@@ -55,7 +55,16 @@ class EMLightsDrawer:
 	Base clase, works with EMLightsInspectorBase
 	'''
 	def __init__(self):
-
+		
+		self.gl_lights = get_gl_lights_vector() # [GL_LIGHTS0, GL_LIGHTS1, ... GL_LIGHTS<MAX>]
+		self.colors = get_default_gl_colors()  # a dictionary of dictionaries
+		
+		self.gq=gluNewQuadric()
+		gluQuadricDrawStyle(self.gq,GLU_FILL)
+		gluQuadricNormals(self.gq,GLU_SMOOTH)
+		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+		gluQuadricTexture(self.gq,GL_FALSE)
+		
 		self.mouse_modes = [None, "directional", "point source"]
 		self.current_mouse_mode = None
 		self.current_light = GL_LIGHT0 # change this to change which light is drawn
@@ -72,16 +81,6 @@ class EMLightsDrawer:
 	
 	def set_gl_widget(self, gl_widget):
 		self.gl_widget = weakref.ref(gl_widget)
-		
-		self.gl_lights = get_gl_lights_vector()
-		self.colors = get_default_gl_colors()
-		
-		self.gq=gluNewQuadric()
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
-	
 	def set_current_light(self,light):
 		self.current_light = light
 		if self.current_mouse_mode != None:
