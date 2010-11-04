@@ -71,6 +71,7 @@ images far from focus."""
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
+	parser.add_option("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Important: also replaces the SNR with a smoothed version.",default=False)
 	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
@@ -135,6 +136,10 @@ images far from focus."""
 		app.exec_()
 
 #		print "done execution"
+
+	### Refine defocus and smooth SNR
+	if options.refinebysnr:
+		refine_and_smoothsnr(options,sfcurve2,debug=False)
 
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
@@ -397,7 +402,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if options.fixnegbg : 
 			bg_1d=fixnegbg(bg_1d,im_1d,ds)		# This insures that we don't have unreasonable negative values
 
-		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
+		if debug: Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
@@ -423,6 +428,62 @@ def pspec_and_ctf_fit(options,debug=False):
 	#db_close_dict("bdb:e2ctf.parms")
 	
 	return img_sets
+
+def refine_and_smoothsnr(options,strfact,debug=False):
+	"""This will refine already determined defocus values by maximizing high-resolution smoothed
+	SNR and also replace the stored SNR curve with the smoothed version. Note that this REQUIRES
+	that a structure factor be loaded and present"""
+	global logid
+	img_sets=[]
+	db_parms=db_open_dict("bdb:e2ctf.parms")
+	db_parms_old=db_open_dict("bdb:e2ctf.parms.presmooth")
+
+	olddf=[]
+	newdf=[]
+	skipped=0
+	for i,filename in enumerate(options.filenames):
+		name=get_file_tag(filename)
+
+		if debug : print "Processing ",filename
+		
+		ctf=EMAN2Ctf()
+		orig=db_parms[name]
+		if db_parms_old.has_key(name) :
+			if options.verbose: print filename," already smoothed. Skipping."
+			skipped+=1
+			continue
+		
+		db_parms_old[name]=orig
+		ctf.from_string(orig[0])
+		olddf.append(ctf.defocus)
+		
+		ds=ctf.dsbg
+		r=len(ctf.background)
+		s=[ds*ii for ii in range(r)]
+		
+		# Tune the defocus
+		if debug : print "Fit Defocus"
+		best=(0,olddf[-1])
+		for df in [olddf[-1]+ddf/1000.0 for ddf in xrange(-100,101)]:
+			ctf.defocus=df
+			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,strfact)		# The smoothed curve
+#			print len( ssnr),len(s)
+#			ssnr=[a*b for a,b in enumerate(ssnr)]	# this would impose a r weighting to make high res agreement more important
+			qual=sum(ssnr[int(.08/ds):len(s)-2])
+			best=max(best,(qual,df))
+		
+		newdf.append(best[1])
+		if options.verbose : print "%s: %1.4f -> %1.4f"%(filename,olddf[-1],best[1])
+		
+		ctf.defocus=best[1]
+		ctf.snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,strfact)
+		db_parms[name]=[ctf.to_string()]+orig[1:]
+		
+		if logid : E2progress(logid,float(i+1)/len(options.filenames))
+		
+	if skipped>0 : print "Warning: %d files skipped, because they were already smoothed"%skipped
+	if len(olddf)>0 : print "Mean defocus adjustment : %1.4f"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in xrange(len(olddf))]))/len(olddf))
+
 
 def env_cmp(sca,envelopes):
 #	global envelopes
@@ -1238,6 +1299,10 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 		
+def notzero(x):
+	if x==0 : return 1.0
+	return x
+		
 class GUIctf(QtGui.QWidget):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
@@ -1532,9 +1597,15 @@ class GUIctf(QtGui.QWidget):
 		elif self.plotmode==3:
 			global sfcurve2
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
-			self.guiplot.set_data((s,snr[:len(s)]),"snr",True,color=0)
+			self.guiplot.set_data((s,snr[:len(s)]),"SNR",True,color=0)
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,sfcurve2)		# The smoothed curve
-			self.guiplot.set_data((s,ssnr[:len(s)]),"ssnr",color=1)
+			self.guiplot.set_data((s,ssnr[:len(s)]),"Smoothed SNR",color=1)
+
+			# we can also optionally display the computed SNR used in the smoothing process
+			#csnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			#csnr=[sfact2(s[i])*csnr[i]**2/notzero(self.data[val][3][i]) for i in range(len(s))]		# squared * structure factor/background
+			#self.guiplot.set_data((s,csnr[:len(s)]),"Computed SNR",color=2)
+
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==4:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
