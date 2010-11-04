@@ -41,7 +41,13 @@ from PyQt4.QtCore import Qt
 from emapplication import ModuleEventsManager, EMApp, get_application
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
+from emimage3diso import EMIsosurfaceModel
+from emimage3dslice import EM3DSliceModel
+from emimage3dsym import EM3DSymModel
+from emimage3dvol import EMVolumeModel
+from emimageutil import EMTransformPanel
 from emplot2d import EMPlot2DWidget
+#from e2simmxxplor import EMSimmxExplorer
 from emsave import save_data
 import PyQt4
 import math
@@ -148,7 +154,8 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				old_module.show()
 				old_module.updateGL()
 				return
-			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
+			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel):
+#			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
 				from emglobjects import EM3DGLWidget
 				widget = EM3DGLWidget()
 				module = self.module_type(widget)
