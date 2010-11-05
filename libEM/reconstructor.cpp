@@ -2870,17 +2870,17 @@ void circumf_rect( EMData* win , int npad)
 	
 	float dxx = 1.0/float(0.25*ix*ix);
 	float dyy = 1.0/float(0.25*iy*iy);
-	float dzz = 1.0/float(0.25*iz*iz);
 	
-	//float LR2 = (ix/2-2)*(ix/2-2)*dxx + (iy/2-2)*(iy/2-2)*dyy + (iz/2-2)*(iz/2-2)*dzz;
-	float LR2=(float(iz)/2-1)*(float(iz)/2-1)*dzz;
+	
+	
+	float LR2=(float(ix)/2-1)*(float(ix)/2-1)*dxx;
 
 	float  TNR = 0.0f;
 	size_t m = 0;
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
-				float LR = (k-KP)*(k-KP)*dzz+(j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
+				float LR = (j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
 				if (LR<=1.0f && LR >= LR2) {
 					TNR += tw(i,j,k);
 					++m;
@@ -2895,7 +2895,7 @@ void circumf_rect( EMData* win , int npad)
 	for (int k = 1; k <= iz; ++k) {
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
-				float LR = (k-KP)*(k-KP)*dzz+(j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
+				float LR = (j-JP)*(j-JP)*dyy+(i-IP)*(i-IP)*dxx;
 				if (LR<=1.0f)  tw(i,j,k)=tw(i,j,k)-TNR;
 			 	else 		tw(i,j,k) = 0.0f;	
 			}
@@ -3559,6 +3559,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 		Transform tsym = t.get_sym( m_symmetry, isym );
 
 		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
+				
 		else            m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
 	}
 
@@ -3870,18 +3871,17 @@ int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, int mu
 	return 0;
 }
 
+
 int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
+
+	if (ctf_applied)	m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, t, m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
+	else			m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+
 	m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
-// 	for( int isym=0; isym < m_nsym; isym++) {
-// 		Transform tsym = t.get_sym( m_symmetry, isym );
-// 
-// 		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
-// 		else            m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
-// 	}
 
 	return 0;
 
