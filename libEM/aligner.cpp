@@ -2194,7 +2194,8 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
 	float ts, tm;
-	float ang, sx, sy, mirror, co, so, sxs, sys;
+	float ang = 0.0, sx = 0.0, sy = 0.0, co, so, sxs, sys;
+	int mirror;
 	float *sx2, *sy2;
 	vector<float> align_result;
 
@@ -2351,8 +2352,8 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 
 	float *params = (float *)malloc(NIMA*6*sizeof(float));	
-	float *sx2 = (float *)malloc(NREF*sizeof(float));
-	float *sy2 = (float *)malloc(NREF*sizeof(float));
+	float *sx2 = (float *)malloc(NIMA*sizeof(float));
+	float *sy2 = (float *)malloc(NIMA*sizeof(float));
 	vector<float> align_results;
 	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
@@ -2390,9 +2391,8 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		sx2[i] = -(sx*co-sy*so);
 		sy2[i] = -(sx*so+sy*co);
 	}
-	
+
 	for (int i=0; i<num_batch; i++) {
-		
 		if (CTF == 1) {
 			for (int p=0; p<NREF; p++)
 				for (int q=0; q<6; q++)
@@ -2404,17 +2404,20 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
 				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		}
-		for (int j=0; j<batch_size[i]; j++) {
 		
+		for (int j=0; j<(RING_LENGTH+2)*2*(2*KX+1)*(2*KY+1)*NREF*batch_size[i]; j++)
+			 cout << j << "     " << ccf[j] << endl;
+
+		for (int j=0; j<batch_size[i]; j++) {
 			float max_ccf = -1.0e22;
 			int nref = -1;
-			float ts, tm, ang, sx, sy, co, so, sxs, sys;
-			int mirror;
-			int img_num = batch_begin[i]+j;
+			float ts, tm, ang = 0.0, sx = 0.0, sy = 0.0, co, so, sxs, sys;
+			int mirror = 0;
+
 			for (int im=0; im<NREF; im++) {
 				for (int kx=-KX; kx<=KX; kx++) {
 					for (int ky=-KY; ky<=KY; ky++) {
-						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;
+						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;			
 						for (int l=0; l<RING_LENGTH; l++) {
 							ts = ccf[base_address+l];
 							tm = ccf[base_address+l+ccf_offset];
@@ -2441,6 +2444,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 			co =  cos(ang*M_PI/180.0);
 			so = -sin(ang*M_PI/180.0);
 		
+			int img_num = batch_begin[i]+j;
 			sxs = (sx-sx2[img_num])*co-(sy-sy2[img_num])*so;
 			sys = (sx-sx2[img_num])*so+(sy-sy2[img_num])*co;
 
