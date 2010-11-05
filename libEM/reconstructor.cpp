@@ -3752,8 +3752,8 @@ void nn4_ctf_rectReconstructor::setup( const string& symmetry, int sizeprojectio
 	m_xratio=float(m_vnx)/float(sizeprojection);	
 	m_yratio=float(m_vny)/float(sizeprojection);
 
-	std::cout<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
-	std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
+	//std::cout<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
+	//std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
 
 	m_vnxp = m_vnx*npad;
 	m_vnyp = m_vny*npad;
@@ -3881,7 +3881,7 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	if (ctf_applied)	m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, t, m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
 	else			m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
 
-	m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+	
 
 	return 0;
 
