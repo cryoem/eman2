@@ -6045,14 +6045,14 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Translational stepx                        : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("min radius for helical search (in pix)    : %f\n"%(rmin))
-		print_msg("max radius for helical search (in pix)    : %f\n"%(rmax))
-		print_msg("fraction of volume used for helical search: %f\n"%(fract))
-		print_msg("initial symmetry - angle                  : %f\n"%(dphi))
-		print_msg("initial symmetry - axial rise             : %f\n"%(dp))
+		print_msg("min radius for helical search (in pix)    : %5.2f\n"%(rmin))
+		print_msg("max radius for helical search (in pix)    : %5.2f\n"%(rmax))
+		print_msg("fraction of volume used for helical search: %5.2f\n"%(fract))
+		print_msg("initial symmetry - angle                  : %5.2f\n"%(dphi))
+		print_msg("initial symmetry - axial rise             : %5.2f\n"%(dp))
 		print_msg("Maximum iteration                         : %i\n"%(max_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
-		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
+		print_msg("Signal-to-Noise Ratio                     : %5.2f\n"%(snr))
 		print_msg("symmetry output doc file                  : %s\n"%(datasym))
 		print_msg("number of times initial symmetry is imposed: %i\n"%(nise))
 		print_msg("npad                                      : %i\n"%(npad))
@@ -6122,8 +6122,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		yrng[i]=dp/(2*pixel_size)
 		
 	if myid == main_node:
-		print_msg("Pixel size in Angstroms                   : %f\n\n"%(pixel_size))
-		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
+		print_msg("Pixel size in Angstroms                   : %5.2f\n\n"%(pixel_size))
+		print_msg("Y search range (pix) initialized as       : %5.2f\n\n"%(yrng))
 		
 
 	from time import time	
@@ -6217,7 +6217,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+					msg = " %10.2f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
 				# Terminate if 95% within 1 pixel error
 				im = 0
@@ -6238,7 +6238,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				msg = "\n      Distribution of phi\n      phi         number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+					msg = " %10.2f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
 				del region, histo
 			del recvbuf
