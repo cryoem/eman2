@@ -3875,7 +3875,7 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
-	m_volume->insert_rect_slice_ctf(m_wptr,padfft,t,m_sizeofprojection,m_xratio,m_yratio,m_npad,mult);
+	m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
 // 	for( int isym=0; isym < m_nsym; isym++) {
 // 		Transform tsym = t.get_sym( m_symmetry, isym );
 // 

@@ -1011,7 +1011,7 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-        if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
+        	if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
 //        if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
@@ -1564,7 +1564,6 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-
         Ctf* ctf = myfft->get_attr("ctf");
         ctf_store::init( ny, ctf );
         if(ctf) {delete ctf; ctf=0;}
@@ -1698,10 +1697,6 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
 	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
 	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
 
-
-
-
-
 	float ellipse_length_x=std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
 	int ellipse_length_x_int=int(ellipse_length_x);
@@ -1726,53 +1721,50 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
         if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
-
 	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
 	
-	for(int i=0;i<ellipse_length_x_int;i++)
-	    {
-		for(int j=-1*ellipse_length_y_int+1;j<-1;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2&&!(0==i))
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz);
- 			put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-		for(int j=-1;j<=-1;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2&&!(0==i))
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear_yminusone(myfft,coordinate_2d_sqaure,nz); 
- 			put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-		for(int j=0;j<=ellipse_length_y_int;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2)
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz); 
- 			put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-			
-	    }
+	for(int i=0;i<ellipse_length_x_int;i++) {
+		    for(int j=-1*ellipse_length_y_int+1;j<-1;j++) {
+		     
+ 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+ 		    if(r2_at_point<=r2&&!(0==i))
+	
+ 		    	 {
+		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
+       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
+ 		    	    c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz);
+ 		    	    put_rect_value_nn_ctf(w, c1, coordinate_3dnew, mult, ctf_value, remove);
+ 		    	  }
+        	      }
+		    for(int j=-1;j<=-1;j++)
+        	      {
+		     
+ 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+ 		    if(r2_at_point<=r2&&!(0==i))
+	
+ 		    	 {
+		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
+       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
+ 		    	    c1=get_rect_value_bilinear_yminusone(myfft,coordinate_2d_sqaure,nz); 
+ 		    	    put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
+ 		    	  }
+        	      }
+		    for(int j=0;j<=ellipse_length_y_int;j++)
+        	      {
+		     
+ 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+ 		    if(r2_at_point<=r2)
+	
+ 		    	 {
+		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
+       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
+ 		    	    c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz); 
+ 		    	    put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
+ 		    	  }
+        	      }
+		    	    
+		}
 
 
 	//end insert rectanular fft
@@ -1859,29 +1851,29 @@ Data::onelinenn_ctf(int j, int n, int n2,
 void EMData::put_rect_value_nn_ctf(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove)
 	{
 		//////////3d nearest neighborhood begin
-			
-			float xnew = coordinate_3dnew[0];
-			float ynew = coordinate_3dnew[1];
-			float znew = coordinate_3dnew[2];
-			std::complex<float> btq;
-			if (xnew < 0.) {
-				xnew = -xnew;
-				ynew = -ynew;
-				znew = -znew;
-				btq = conj(c1);
-			} else {
-				btq = c1;
-			}
-			int ixn = int(xnew + 0.5 + nx) - nx;
-			int iyn = int(ynew + 0.5 + ny) - ny;
-			int izn = int(znew + 0.5 + nz) - nz;
+		
+		float xnew = coordinate_3dnew[0];
+		float ynew = coordinate_3dnew[1];
+		float znew = coordinate_3dnew[2];
+		std::complex<float> btq;
+		if (xnew < 0.) {
+			xnew = -xnew;
+			ynew = -ynew;
+			znew = -znew;
+			btq = conj(c1);
+		} else {
+			btq = c1;
+		}
+		int ixn = int(xnew + 0.5 + nx) - nx;
+		int iyn = int(ynew + 0.5 + ny) - ny;
+		int izn = int(znew + 0.5 + nz) - nz;
 
-			int iza, iya;
-			if (izn >= 0)  iza = izn + 1;
-			else	       iza = nz + izn + 1;
+		int iza, iya;
+		if (izn >= 0)  iza = izn + 1;
+		else	       iza = nz + izn + 1;
 
-			if (iyn >= 0) iya = iyn + 1;
-			else	      iya = ny + iyn + 1;
+		if (iyn >= 0) iya = iyn + 1;
+		else	      iya = ny + iyn + 1;
 /*
 			cmplx(ixn,iya,iza) += btq*float(mult);
 			(*w)(ixn,iya,iza)+=float(mult);*/
