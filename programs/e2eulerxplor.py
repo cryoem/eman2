@@ -134,7 +134,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		
 	def get_hit(self,event):
 		v = self.vdtools.wview.tolist()
-		self.gl_widget.makeCurrent() # prevents a stack underflow
+		self.get_gl_widget().makeCurrent() # prevents a stack underflow
 #		x = event.x()
 #		y = v[-1]-event.y()
 #		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
@@ -175,7 +175,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			if len(c) > 0:
 				intersection = c[0]-1
 				break
-			
+		
 		return intersection
 
 	
@@ -196,7 +196,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 	def __init__(self, gl_widget, auto=True,sparse_mode=False):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
-		self.events_mode = self.events_mode_list[0]
+		self.events_mode = self.events_mode_list[1]
 		
 		
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
@@ -256,6 +256,8 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 						
 		self.init_lock = False
 		self.force_update=True # Force a display udpdate in EMImage3DSymModule
+		
+		QtCore.QObject.connect(self, QtCore.SIGNAL("point_selected"), self.au_point_selected)
 		
 	def __del__(self):
 		EM3DSymModel.__del__(self) # this is here for documentation purposes - beware that the del function is important
@@ -459,6 +461,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			return
 #		self.arc_anim_points = None
 		self.projection = None
+		print "self.euler_data ==", self.euler_data
 		if self.euler_data:
 #			db = db_open_dict(self.average_file)
 #			a = db.get(i)
