@@ -51,6 +51,8 @@ from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
 from emapplication import EMStandAloneApplication, EMGUIModule
 
+import warnings
+warnings.warn("emimagerotor.py is deprecated.", DeprecationWarning)
 
 class EMImageRotorWidget(EMEventRerouter,QtOpenGL.QGLWidget,EMGLProjectionViewMatrices):
 	"""
