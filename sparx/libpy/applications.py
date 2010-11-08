@@ -6123,7 +6123,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.2f\n\n"%(pixel_size))
-		print_msg("Y search range (pix) initialized as       : %5.2f\n\n"%(yrng))
+		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
 		
 
 	from time import time	
