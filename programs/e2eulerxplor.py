@@ -94,12 +94,11 @@ def main():
 	E2end(logid)
 
 class EMEulerWidget(EMSymViewerWidget):
-	def __init__(self, sym="icos", auto=True,sparse_mode=False):
+	def __init__(self, auto=True,sparse_mode=False):
 		EMSymViewerWidget.__init__(self)
 		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
 		euler_explorer.under_qt_control = True #TODO: still needed?
 		self.set_model(euler_explorer)
-		euler_explorer.set_symmetry(sym)
 		euler_explorer.regen_dl()
 
 class EMEulerExplorer(EM3DSymModel,Animator):
@@ -239,7 +238,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				sym = db["symname"] + db["symnumber"]
 			#db_close_dict("bdb:emform.e2refine")
 		
-		# Have to tell the EMImage3DSymModule that there is a new sym
+		# Have to tell the EM3DSymModel that there is a new sym
 		self.set_symmetry(sym)
 		
 		# this object will have 
