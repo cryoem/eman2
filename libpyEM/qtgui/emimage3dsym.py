@@ -706,9 +706,9 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 				
 			glEndList()
 		
-	def closeEvent(self,event):
-		print "EM3DSymModel.closeEvent()!"
-		self.close_image_display()
+#	def closeEvent(self,event):
+#		print "EM3DSymModel.closeEvent()!"
+#		self.close_image_display()
 
 	def generate_current_display_list(self,force=False):
 		self.init_basic_shapes()
@@ -1290,14 +1290,13 @@ class SparseSymChoicesWidgets:
 		self.symmetries.append(' Tetrahedral ')
 		self.symmetries.append(' D ')
 		self.symmetries.append(' C ')
-		self.symmetries.append(' H ')
+
 		self.sym_map = {}
 		self.sym_map[" Icosahedral "] = "icos"
 		self.sym_map[" Octahedral "] = "oct"
 		self.sym_map[" Tetrahedral "] = "tet"
 		self.sym_map[" D "] = "d"
 		self.sym_map[" C "] = "c"
-		self.sym_map[" H "] = "h"
 
 		idx_default = 0
 		for idx,i in enumerate(self.symmetries): 
@@ -1307,7 +1306,7 @@ class SparseSymChoicesWidgets:
 		self.hbl_sym.addWidget(self.sym_combo)
 		
 		self.sym_label = QtGui.QLabel()
-		self.sym_label.setText('C/D/H sym')
+		self.sym_label.setText('C/D sym')
 		self.hbl_sym.addWidget(self.sym_label)
 		
 		self.pos_int_validator = QtGui.QIntValidator(self.widget())
@@ -1459,8 +1458,6 @@ class SparseSymChoicesWidgets:
 				self.sym_combo.setCurrentIndex(3)
 			elif s[0] == "c":
 				self.sym_combo.setCurrentIndex(4)
-			elif s[0] == "h":
-				self.sym_combo.setCurrentIndex(5)
 			else:
 				print "can't interpret",sym
 				return
@@ -1473,7 +1470,7 @@ class SparseSymChoicesWidgets:
 		@return a symmetry string such as "c3", "icos", "h3" etc
 		'''
 		sym = self.sym_map[str(self.sym_combo.currentText())]
-		if sym in ['c','d','h']:
+		if sym in ['c','d']:
 			sym = sym+self.sym_text.displayText()
 		return str(sym)
 	
