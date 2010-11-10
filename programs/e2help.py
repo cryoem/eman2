@@ -91,6 +91,8 @@ Interactive help on a variety of topics."""
 	elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators") :
 		print "Available orientation generators:"
 		l=dump_orientgens_list()
+	elif args[0] in ("version"):
+	   print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
 	else:
 		print helpstring
 		print "unknown option:",args[0]
