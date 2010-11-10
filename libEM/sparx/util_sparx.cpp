@@ -17848,6 +17848,38 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 	return res;
 }
 
+vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector<int>numr, float cnx, float cny) {
+
+	size_t crefim_len = crefim.size();
+
+	int   ky = int(2*yrng/step+0.5)/2;
+	int   kx = int(2*xrng/step+0.5)/2;
+	float iy, ix;
+	vector<float> peak(crefim_len, -1.0e23f);
+	for (int i = -ky; i <= ky; i++) {
+		iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Normalize_ring( cimage, numr );
+			Frngs(cimage, numr);
+			for (int iref = 0; iref < (int)crefim_len; iref++) {
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak[iref] || qm >= peak[iref]) {
+					if (qn >= qm) peak[iref] = static_cast<float>(qn);
+					else peak[iref] = static_cast<float>(qm);
+				}
+			}  delete cimage; cimage = 0;
+		}
+	}
+	return peak;
+}
+
+
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny, float delta_start, float delta) {

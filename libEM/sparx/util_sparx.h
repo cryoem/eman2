@@ -828,6 +828,10 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
+	/* In this version, we return a list of peaks for all reference images */
+	static vector<float> multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
 	 * images (crefim, weights have to be applied) quadratic
