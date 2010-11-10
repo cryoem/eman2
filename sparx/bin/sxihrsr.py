@@ -59,12 +59,12 @@ def main():
 	parser.add_option("--fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--dp",       type="float",  default= 1.0,                help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",  default= 1.0,                help="delta phi - rotation in degrees")  
-	'''	
-	parser.add_option("--ndp_step",     type="int",  default= 10,                help="number of delta z steps in symmetrization") 
-	parser.add_option("--ndphi_step",     type="int",  default= 10,                help="number of dphi steps in symmetrization")  
-	parser.add_option("--dp_percent",     type="float",  default= 0.001,                help="delta z step percentage for symmetrization")  
-	parser.add_option("--dphi_percent",     type="float",  default= 0.001,                help="dphi step percentage for symmetrization")
-	'''   
+		
+	parser.add_option("--ndp",     type="int",  default= 12,                help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
+	parser.add_option("--ndphi",   type="int",  default= 12,                help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
+	parser.add_option("--dp_step",  type="float",  default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
+	parser.add_option("--dphi_step",type="float",  default= 0.1,                help="dphi step for symmetrization")
+	   
 	parser.add_option("--psi_max",  type="float",  default= 20.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",     type="float",  default= 0.0,                help="minimal radius for hsearch")   
 	parser.add_option("--rmax",     type="float",  default= 80.0,               help="maximal radius for hsearch")
@@ -96,10 +96,7 @@ def main():
 			from development import ihrsr_new
 			global_def.BATCH = True
 			print "new helical code is called"
-			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
-			options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
-			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
-			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
+			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp,options.dp_step,options.dphi,options.ndphi,options.dphi_step,options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
 			global_def.BATCH = False
 		
 		else:
