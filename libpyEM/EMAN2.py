@@ -45,7 +45,8 @@ from pyemtbx.imagetypes import *
 from pyemtbx.box import *
 #from Sparx import *
 
-EMANVERSION="EMAN2 v1.99"
+EMANVERSION="EMAN2 RC3"
+CVSDATESTAMP="$Date$"
 
 HOMEDB=None
 
