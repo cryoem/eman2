@@ -38,7 +38,7 @@ from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emapplication import EMApp, get_application
-from emglobjects import EM3DModel, EM3DGLWidget, Camera2, EMViewportDepthTools2, get_default_gl_colors
+from emglobjects import EM3DModel, EMGLWidget, Camera, Camera2, EMViewportDepthTools2, EMGLProjectionViewMatrices, get_default_gl_colors
 from emimageutil import EMTransformPanel
 from math import *
 from time import *
@@ -1138,27 +1138,57 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 	def reducetog(self,bool):
 		self.reduce = bool
 
-class EMSymViewerWidget(EM3DGLWidget):	
+class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	allim=WeakKeyDictionary()
 	def __init__(self, sym="d7"):
 		EMSymViewerWidget.allim[self]=0
-		EM3DGLWidget.__init__(self)
-		sym_model = EM3DSymModel(self)
-		sym_model.under_qt_control = True #TODO: still needed?
-		self.set_model(sym_model)
-		sym_model.set_symmetry(sym)
-		sym_model.regen_dl()
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		fmt.setSampleBuffers(True)
 		
+		EMGLWidget.__init__(self)
+		self.setFormat(fmt)
+		EMGLProjectionViewMatrices.__init__(self)
+
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
+		self.cam = Camera()
 		self.cam.setCamTrans("default_z",-100)
+		
+		sym_model = EM3DSymModel(self)
+		sym_model.under_qt_control = True #TODO: still needed?
+		self.model = sym_model
+		sym_model.set_symmetry(sym)
+		sym_model.regen_dl()
+		
 		self.resize(640,640)
+		
+#	def __del__(self):
+#		print "sym viewer widget died"
+	def get_near_plane_dims(self):
+		height = 2.0 * self.get_start_z()*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
+	def get_render_dims_at_depth(self,depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		
+		return [width,height]
+	def get_start_z(self):
+		return self.startz
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-
+		#print "Initializing"
+#		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+#		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.8,.8,.8, 1.0])
+#		glLightfv(GL_LIGHT0, GL_SPECULAR, [.2, .2, .2, 1.0])
+#		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [.4,.4,.4, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [.1,.1,.1, 1.0])
@@ -1166,11 +1196,71 @@ class EMSymViewerWidget(EM3DGLWidget):
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		GL.glClearColor(0.875,0.875,0.875,1)
+		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
 		
 		#glClearStencil(0)
 		#glEnable(GL_STENCIL_TEST)
+	def keyPressEvent(self,event):
+		if self.model:
+			self.model.keyPressEvent(event)
+			self.updateGL()
+	def load_perspective(self):
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+	def mouseDoubleClickEvent(self,event):
+		if self.model:
+			self.model.mouseDoubleClickEvent(event)
+			self.updateGL()
+	def mouseMoveEvent(self, event):
+		if self.model:
+			self.model.mouseMoveEvent(event)
+			self.updateGL()
+	def mousePressEvent(self, event):
+		if self.model:
+			self.model.mousePressEvent(event)
+			self.updateGL()
+	def mouseReleaseEvent(self, event):
+		if self.model:
+			self.model.mouseReleaseEvent(event)
+			self.updateGL()
+	def paintGL(self):
+		#glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		self.cam.position()
+		
+		glPushMatrix()
+		self.model.render()
+		glPopMatrix()
+	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : 
+			return
+		# just use the whole window for rendering
+		glViewport(0,0,self.width(),self.height())
+		
+		# maintain the aspect ratio of the window we have
+		self.aspect = float(self.width())/float(self.height())
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		# using gluPerspective for simplicity
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		
+		# switch back to model view mode
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		self.set_projection_view_update()
+		self.model.resize()
+	def show_inspector(self,force=0):
+		self.model.show_inspector(self,force)
+	def wheelEvent(self, event):
+		if self.model:
+			self.model.wheelEvent(event)
+		self.updateGL()
 
 
 class SparseSymChoicesWidgets:
@@ -1844,7 +1934,6 @@ class EMSymInspector(QtGui.QWidget):
 
 	
 if __name__ == '__main__':
-	from emglobjects import EM3DGLWidget
 	em_app = EMApp()
 	
 	#First demonstration
