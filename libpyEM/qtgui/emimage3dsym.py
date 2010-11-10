@@ -252,13 +252,13 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		Orientations.__init__(self)
 		ColumnGraphics.__init__(self)
 		
+		self.vdtools = EMViewportDepthTools2(gl_widget)
 		self.eulers = [] # will eventually store Transform objects
 		#self.points = [] # will eventually store the points on the asymmetric unit
 		self.point_colors = [] # will eventually store colors for the different points
 		self.cam = Camera2(self) # Stores the camera position
 		self.cam.allow_phi_rotations = False
-		self.vdtools = None # VDTools are very import in the context of the e2desktop
-		
+
 		self.cube = False
 		self.inspector=None
 		self.mouse_mode = None # In future we might facilitate changing mouse modes
