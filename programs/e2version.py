@@ -31,6 +31,10 @@
 #
 #
 
-EMVER = "2.0RC3 " + "$Date$"
+VERSION = "2.0RC3"
+
+DATE_STAMP = "$Date$"
+
+EMVER = VERSION + DATE_STAMP[6:-2]
 
 print 'EMAN '+ EMVER
