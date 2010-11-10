@@ -75,7 +75,7 @@ IS_LOGFILE_OPEN = False
 
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v2.0"
+SPARXVERSION = "SPARX v2.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
 
 def ERROR(message, where, action = 1, myid = 0):
 	"""
