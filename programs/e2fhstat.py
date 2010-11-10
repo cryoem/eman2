@@ -62,9 +62,9 @@ class E2ValidateMed():
 
 	def __init_plot3d(self):
 		if self.plot3d == None: 
-			self.plot3d = EMPlot3DModule()
-			QtCore.QObject.connect(self.plot3d, QtCore.SIGNAL("view_transform"),self.on_view_transform_requested)
-			QtCore.QObject.connect(self.plot3d, QtCore.SIGNAL("module_closed"),self.on_plot3d_closed)
+			self.plot3d = EMPlot3DWidget()
+			QtCore.QObject.connect(self.plot3d.plot_model, QtCore.SIGNAL("view_transform"),self.on_view_transform_requested)
+			QtCore.QObject.connect(self.plot3d.plot_model, QtCore.SIGNAL("module_closed"),self.on_plot3d_closed)
 
 	def on_view_transform_requested(self, new_pdb_file):
 		if self.em_val == None:
@@ -107,11 +107,11 @@ class E2ValidateMed():
 		print " " 
 
 		get_application().show()
-		self.plot3d.set_Vals(vals)
-		self.plot3d.set_Rotations(rotList)
-		self.plot3d.set_Probe(b)
-		self.plot3d.set_data(data,"Results for Fit Validation")
-		self.plot3d.set_data(initPoint, "Original Probe",shape="Cube") #note: original probe is displayed with a cube
+		self.plot3d.plot_model.set_Vals(vals)
+		self.plot3d.plot_model.set_Rotations(rotList)
+		self.plot3d.plot_model.set_Probe(b)
+		self.plot3d.plot_model.set_data(data,"Results for Fit Validation")
+		self.plot3d.plot_model.set_data(initPoint, "Original Probe",shape="Cube") #note: original probe is displayed with a cube
 
 if __name__ == '__main__':
 	from emapplication import EMApp

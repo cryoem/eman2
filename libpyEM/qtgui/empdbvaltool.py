@@ -60,7 +60,7 @@ class EMPDBValTool(QtCore.QObject):
 
 	def __init_pdb_model(self):
 		if self.pdb_model == None:
-			self.pdb_model = EMPDBModel(None,False,False)
+			self.pdb_model = EMPDBModel(self.parent_widget)
 			self.parent_widget.add_model(self.pdb_model)
 			self.__set_model_contexts(self.pdb_model)
 
