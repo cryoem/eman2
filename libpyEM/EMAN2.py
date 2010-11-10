@@ -43,10 +43,8 @@ import socket
 from EMAN2_cppwrap import *
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
+from e2version import *
 #from Sparx import *
-
-EMANVERSION="EMAN2 RC3"
-CVSDATESTAMP="$Date$"
 
 HOMEDB=None
 
