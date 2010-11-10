@@ -39,7 +39,7 @@ from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from emanimationutil import OrientationListAnimation,Animator
 from emapplication import EMApp, get_application
-from emimage2d import EMImage2DModule
+from emimage2d import EMImage2DWidget
 from emimage3dsym import EM3DSymModel, EMSymInspector, EMSymViewerWidget
 from emimagemx import EMImageMXWidget, EMLightWeightParticleCache
 from emsprworkflow import error
@@ -96,9 +96,11 @@ def main():
 class EMEulerWidget(EMSymViewerWidget):
 	def __init__(self, auto=True,sparse_mode=False):
 		EMSymViewerWidget.__init__(self)
+		
+		#Replacing the EM3DSymModel that was created in the base class
 		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
 		euler_explorer.under_qt_control = True #TODO: still needed?
-		self.set_model(euler_explorer)
+		self.model = euler_explorer
 		euler_explorer.regen_dl()
 
 class EMEulerExplorer(EM3DSymModel,Animator):
@@ -460,7 +462,6 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			return
 #		self.arc_anim_points = None
 		self.projection = None
-		print "self.euler_data ==", self.euler_data
 		if self.euler_data:
 #			db = db_open_dict(self.average_file)
 #			a = db.get(i)
@@ -483,13 +484,13 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		if self.proj_class_viewer == None:
 			first = True
 #			self.proj_class_viewer = EMImageMXWidget(data=None,application=get_application())
-			self.proj_class_viewer = EMImage2DModule(image=None,application=get_application())
+			self.proj_class_viewer = EMImage2DWidget(image=None,application=get_application())
 			QtCore.QObject.connect(self.proj_class_viewer,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 #			self.proj_class_viewer.set_mouse_mode("App" )
 			QtCore.QObject.connect(self.proj_class_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
 			
-#			self.proj_class_single = EMImage2DModule(image=None,application=get_application())
+#			self.proj_class_single = EMImage2DWidget(image=None,application=get_application())
 #			QtCore.QObject.connect(self.proj_class_single,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 #			QtCore.QObject.connect(self.proj_class_single,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 #			get_application().show_specific(self.proj_class_single)
