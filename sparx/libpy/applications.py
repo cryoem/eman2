@@ -7922,9 +7922,9 @@ def transform2d(stack_data, stack_data_ali):
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -7952,15 +7952,15 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 			if(tmp_list[i] == group):  pid_list.append(i)
 		del tmp_list
 
-	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad)
-	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad)
+	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad, xysize=xysize)
+	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, xysize=xysize)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(vol, vol_stack, "s")
 	else:
 		drop_image(vol, vol_stack)
 	print_end_msg("recons3d_n")
 
-def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
+def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -8018,8 +8018,8 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad)
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad,xysize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")

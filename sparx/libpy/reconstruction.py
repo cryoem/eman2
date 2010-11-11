@@ -59,7 +59,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 
 	return r.finish(True)
 
-def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4):
+def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4,xysize=-1):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
 	   Input:
@@ -101,8 +101,15 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 		ERROR("input data has to be square","recons3d_4nn_ctf",1)
 	"""
 	# reconstructor
-	params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
-	r = Reconstructors.get("nn4_ctf", params)
+	if(xysize==-1):
+		params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
+		r = Reconstructors.get("nn4_ctf", params)
+	else:
+		rx=float(xysize)/size
+		ry=float(xysize)/size
+		params = {"sizeprojection":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign,"xratio":rx,"yratio":ry}
+		r = Reconstructors.get("nn4_ctf_rect", params)
+	
 	r.setup()
 
 
@@ -121,7 +128,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 				r.insert_slice(stack_name[list_proj[i]], xform_proj )
 	return r.finish(True)
 
-def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
+def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4,xysize=-1):
 	from utilities import reduce_EMData_to_root
 	if( len(prjlist) == 0 ):
 		ERROR("empty input list","recons3d_4nn_MPI",1)
@@ -132,9 +139,14 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 
 	fftvol = EMData()
 	weight = EMData()
-
-	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
-	r = Reconstructors.get( "nn4", params )
+	if(xysize==-1):
+		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		r = Reconstructors.get( "nn4", params )
+	else:
+		rx=float(xysize)/imgsize
+		ry=float(xysize)/imgsize
+		params = {"sizeprojection":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol,"weight":weight,"xratio":rx,"yratio":ry}
+		r = Reconstructors.get( "nn4_rect", params )
 	r.setup()
 
 	if( not (info is None) ): nimg = 0
@@ -161,11 +173,14 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4):
 	if myid == 0 :  vol = r.finish(True)
 	else:
 		from utilities import model_blank
-		vol = model_blank(imgsize,imgsize,imgsize)
+		if(xysize==-1):
+			vol = model_blank(imgsize,imgsize,imgsize)
+		else:
+			vol = model_blank(xysize,xysize,imgsize)
 	return vol
 
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad = 4):
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad = 4,xysize = -1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -186,9 +201,14 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 
 	fftvol = EMData()
 	weight = EMData()
-
-	params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
-	r = Reconstructors.get( "nn4_ctf", params )
+	if(xysize==-1):
+		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		r = Reconstructors.get( "nn4_ctf", params )
+	else:
+		rx=float(xysize)/imgsize
+		ry=float(xysize)/imgsize
+		params = {"sizeprojection":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry}
+		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 
 	if( not (info is None) ): nimg = 0
@@ -220,11 +240,13 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		vol = r.finish(True)
 	else:
 		from utilities import model_blank
-		vol = model_blank(imgsize,imgsize,imgsize)
-
+		if(xysize==-1):
+			vol = model_blank(imgsize,imgsize,imgsize)
+		else:
+			vol = model_blank(xysize,xysize,imgsize)
 	return vol
 
-def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True):
+def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True,xysize=-1):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
@@ -259,13 +281,26 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	# sanity check -- image must be square
 	if size != proj.get_ysize():
 		ERROR("input data has to be square","recons3d_4nn",1)
+	print "snr===",snr
 	# reconstructor
-	if snr is None:
-		params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting}
-	else:
-		params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting, "snr":snr, "varsnr":int(varsnr)}
+	if(xysize==-1):
+		if snr is None:
+			params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting}
+		else:
+			params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting, "snr":snr, "varsnr":int(varsnr)}
 	
-	r = Reconstructors.get("nn4", params)
+		r = Reconstructors.get("nn4", params)
+				
+	else:
+		rx=float(xysize)/size
+		ry=float(xysize)/size
+			
+		if snr is None:
+			params = {"sizeprojection":size, "npad":npad, "symmetry":symmetry, "weighting":weighting, "xratio":rx, "yratio":ry}
+		else:
+			params = {"sizeprojection":size, "npad":npad, "symmetry":symmetry, "weighting":weighting, "snr":snr, "varsnr":int(varsnr), "xratio":rx, "yratio":ry}
+	
+		r = Reconstructors.get("nn4_rect", params)
 	r.setup()
 
 	if type(stack_name) == types.StringType:

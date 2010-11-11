@@ -45,7 +45,7 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --new --MPI"
+	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --xysize --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",     action="store_true", default=False, help="apply CTF correction")
@@ -56,9 +56,7 @@ def main():
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	parser.add_option("--npad",    type="int",	    default=4,     help="number of times padding" )
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--new",     action="store_true", default=False, help="call rectangualer reconstruction ")
-	parser.add_option("--rx",  type="float",	    default=1.0,     help="x ratio" )
-	parser.add_option("--ry",  type="float",	    default=1.0,     help="y ratio" )
+	parser.add_option("--xysize",  type="int",	    default=-1,     help="user expected size at xy direction" )
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -90,17 +88,12 @@ def main():
 	if(options.list and options.group > -1):
 		ERROR("options group and list cannot be used together","recon3d_n",1)
 		sys.exit()
-	if (options.new):
-		from development import recons3d_n_new
-		global_def.BATCH = True
-		recons3d_n_new(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI,options.rx,options.ry)
-		global_def.BATCH = False
-	else:
-		from applications import recons3d_n
+	
+	from applications import recons3d_n
 
-		global_def.BATCH = True
-		recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI)
-		global_def.BATCH = False
+	global_def.BATCH = True
+	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize)
+	global_def.BATCH = False
         
 	if options.MPI:
 		from mpi import mpi_finalize
