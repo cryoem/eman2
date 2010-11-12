@@ -3721,14 +3721,14 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
-	from random         import randint
+	from random         import randint, random
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_reduce, mpi_gatherv, MPI_INT, MPI_SUM
+	from mpi            import mpi_reduce, mpi_gatherv, mpi_scatterv, MPI_INT, MPI_SUM
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3990,6 +3990,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		del recvbuf
 
 		if myid == main_node:
+			SA = False
 			maxasi = total_nima//numref
 			asi = [[] for iref in xrange(numref)]
 			nt = total_nima
@@ -3997,17 +3998,31 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			K = range(numref)
 			N = range(total_nima)
 
-
-			while( nt > 0 and kt > 1 ):
+			while nt > 0 and kt > 1:
 				l = d.argmax()
 				group = l//total_nima
 				ima   = l-total_nima*group
+				if SA:
+					J = [0.0]*numref
+					sJ = 0
+					Jc = [0.0]*numref
+					for iref in xrange(numref):
+						J[iref] = exp(d[iref][ima]/T)
+						sJ += J[iref]
+					for iref in xrange(numref):
+						J[iref] /= sJ
+					Jc[0] = J[0]
+					for iref in xrange(1, numref):
+						Jc[iref] = Jc[iref-1]+J[iref]
+					sss = random()
+					for group in xrange(numref):
+						if( sss <= Jc[group]): break
 				asi[group].append(N[ima])
-				for iref in xrange(numref):  d[iref][ima] = -1.0
+				for iref in xrange(numref):  d[iref][ima] = -1.e10
 				nt -= 1
 				masi = len(asi[group])
 				if masi == maxasi:
-					for im in xrange(total_nima):  d[group][im] = -1.0
+					for im in xrange(total_nima):  d[group][im] = -1.e10
 					kt -= 1
 			else:
 				mas = [len(asi[iref]) for iref in xrange(numref)]
@@ -4017,7 +4032,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 					kt = 0
 					go = True
 					while(go and kt < numref):
-						if d[kt][im] > -1.0:
+						if d[kt][im] > -1.e10:
 							asi[group].append(im)
 							go = False
 						kt += 1
@@ -4026,11 +4041,15 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			for iref in xrange(numref):
 				for im in xrange(len(asi[iref])):
 					assignment[asi[iref][im]] = iref
+
 			del asi, d, N, K
+			if  SA:  del J, Jc
+
+
 		else:
 			assignment = []
 
-		assignment = mpi_scatterv(assignment, recvcount, disp, MPI_INT, n_end-n_begin, MPI_INT, main_node, MPI_COMM_WORLD)
+		assignment = mpi_scatterv(assignment, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
 		assignment = map(int, assignment)
 
 
