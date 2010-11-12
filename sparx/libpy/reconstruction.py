@@ -281,7 +281,6 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	# sanity check -- image must be square
 	if size != proj.get_ysize():
 		ERROR("input data has to be square","recons3d_4nn",1)
-	print "snr===",snr
 	# reconstructor
 	if(xysize==-1):
 		if snr is None:

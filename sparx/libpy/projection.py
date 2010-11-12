@@ -111,7 +111,7 @@ def prj(vol, params, stack = None):
 	if(stack):  return
 	else:       return out
 
-def prgs(volft, kb, params):
+def prgs(volft, kb, params, kbx=None, kby=None):
 	"""
 		Name
 			prg - calculate 2-D projection of a 3-D volume
@@ -125,7 +125,11 @@ def prgs(volft, kb, params):
 	from fundamentals import fft
 	from utilities import set_params_proj
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
-	temp = volft.extract_plane(R,kb)
+	if kbx is None:
+		temp = volft.extract_plane(R,kb)
+	else:
+		temp = volft.extract_plane_rect(R,kbx,kby,kb)
+		
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 
@@ -138,7 +142,7 @@ def prgs(volft, kb, params):
 	temp.set_attr_dict({'active':1, 'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
-
+	
 
 def gen_rings_ctf( prjref, nx, ctf, numr):
 	"""
@@ -268,23 +272,44 @@ def prep_vol(vol):
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
 	# prepare the volume
-	M     = vol.get_xsize()
-	# padd two times
-	npad  = 2
-	N     = M*npad
-	# support of the window
+	Mx=vol.get_xsize()
+	My=vol.get_ysize()
+	Mz=vol.get_zsize()
 	K     = 6
 	alpha = 1.75
-	r     = M/2
-	v     = K/2.0/N
-	kb    = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-	volft = vol.copy()
-	volft.divkbsinh(kb)
-	volft = volft.norm_pad(False, npad)
-	volft.do_fft_inplace()
-	volft.center_origin_fft()
-	volft.fft_shuffle()
-	return  volft,kb
+	npad  = 2
+	if(Mx==Mz&My==Mz):
+		M     = vol.get_xsize()
+	# padd two times
+		N     = M*npad
+	# support of the window
+		kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
+		volft = vol.copy()
+		volft.divkbsinh(kb)
+		volft = volft.norm_pad(False, npad)
+		volft.do_fft_inplace()
+		volft.center_origin_fft()
+		volft.fft_shuffle()
+		return  volft,kb
+	else:
+	
+		# padd two times
+		
+		Nx     = Mx*npad
+		Ny     = My*npad
+		Nz     = Mz*npad
+		# support of the window
+		kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
+		kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
+		kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
+		volft = vol.copy()
+		volft.divkbsinh_rect(kbx,kby,kbz)
+		volft = volft.norm_pad(False, npad)
+		volft.do_fft_inplace()
+		volft.center_origin_fft()
+		volft.fft_shuffle()
+		return  volft,kbx,kby,kbz
+		
 
 ###############################################################################################
 ## COMMON LINES NEW VERSION ###################################################################

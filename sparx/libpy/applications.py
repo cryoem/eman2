@@ -7261,7 +7261,14 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 				del maski
 			else:
 				Util.mul_img(vol, mask)
-		volft, kb = prep_vol(vol)
+		nx = vol.get_xsize()
+		ny = vol.get_ysize()
+		nz = vol.get_zsize()
+		
+		if(nx==nz&ny==nz):
+			volft, kb = prep_vol(vol)
+		else:
+			volft, kbx,kby,kbz = prep_vol(vol)
 	else:
 		if(mask):
 			if(type(mask) is types.StringType):
@@ -7271,8 +7278,14 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 				del maski
 			else:
 				Util.mul_img(vol, mask)
-		volft, kb = prep_vol(volume)
-
+		nx = vol.get_xsize()
+		ny = vol.get_ysize()
+		nz = vol.get_zsize()
+		
+		if(nx==nz&ny==nz):
+			volft, kb = prep_vol(vol)
+		else:
+			volft, kbx,kby,kbz = prep_vol(vol)
 
 	if(type(stack) is types.StringType):
 		Disk = True
@@ -7283,12 +7296,19 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	
 	s2x=0
 	s2y=0
+	
 	for i in xrange(len(angles)):
 		if(len(angles[i]) == 3):
-			proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+			if(nx==nz&ny==nz):
+				proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+			else:
+				proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0],kbx,kby)
 			set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		else:
-			proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+			if(nx==nz&ny==nz):
+				proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+			else:
+				proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
 			set_params_proj(proj, angles[i])
 		proj.set_attr_dict({'active':1})
 
