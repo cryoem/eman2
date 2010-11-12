@@ -200,9 +200,6 @@ Output: 1-2-3D real image with the result
 
 		// now one half of the padded, fft-extended size along x
 		const int lsd2 = (nxp + 2 - nxp%2) / 2; 
-		// The [padded] fft-extended fourier version of f is fp
-		// The size of fp
-		const int nxyz = lsd2*nyp*nzp*2;
 
 		EMData* fp = NULL;
 		if (f->is_complex()) { 
