@@ -455,7 +455,10 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 			#continue
 		
 		db_parms_old[name]=orig
-		ctf.from_string(orig[0])
+		try: ctf.from_string(orig[0])
+		except :
+			print "no old data for %s. Skipping"%name
+			continue
 		olddf.append(ctf.defocus)
 		im_1d=orig[1]
 		bg_1d=orig[2]
