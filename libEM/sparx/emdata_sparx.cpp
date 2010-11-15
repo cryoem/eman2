@@ -3244,10 +3244,6 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 		throw ImageDimensionException("Volume not currently supported");
 	nxn = nx/2; nyn = ny/2; nzn = nz/2;
 
-	int K = kb.get_window_size();
-	int kbmin = -K/2;
-	int kbmax = -kbmin;
-
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* ret = this->copy_head();
@@ -3278,8 +3274,6 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
 
-	float *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
-
 	float* data = this->get_data();
 
 	// trig
@@ -3294,10 +3288,9 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 			float yold = x*sang/scale + ycang-iys;
 
-			(*ret)(ix,iy) = Util::get_pixel_conv_new_background(nx, ny, 1, xold, yold, 1, data, kb, ix,iy);
+			(*ret)(ix,iy) = Util::get_pixel_conv_new_background(nx, ny, 1, xold, yold, 1, data, kb, ix, iy);
 		}
 	}
-	if (t) free(t);
 	set_array_offsets(saved_offsets);
 	return ret;
 }
