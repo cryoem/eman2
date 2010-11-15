@@ -96,17 +96,14 @@ def main():
 			from development import ihrsr_new
 			global_def.BATCH = True
 			print "new helical code is called"
-			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp,options.dp_step,options.dphi,options.ndphi,options.dphi_step,options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
+			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi,options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
 			global_def.BATCH = False
 		
 		else:
 			from applications import ihrsr
 			global_def.BATCH = True
 			#print (options.ynumber,options.txs)
-			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, 
-			options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, 
-			#	options.ndp_step, options.ndphi_step, options.dp_percent, options.dphi_percent, 
-			options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
+			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,
 			options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI) 
 			global_def.BATCH = False
 		
