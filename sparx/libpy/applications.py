@@ -3710,6 +3710,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1
 
 	print_end_msg("mref_ali3d")
 
+
 def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
@@ -3854,7 +3855,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 	if(myid == 0):
 		print_msg( "Time to read data: %d\n" % (time()-start_time) );start_time = time()
 	#  Initialize Particle ID and set group number to non-existant -1
- 	for im in xrange(len(data)):
+ 	for im in xrange(nima):
  		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
 
 	if fourvar:
@@ -3967,7 +3968,6 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 						finfo.flush()
 
 				peaks[iref][im] = peak
-				#data[im].set_attr('group', iref)
 				if runtype=="REFINEMENT":
 					pixer[iref][im] = pixel_error
 					trans[iref][im] = data[im].get_attr( "xform.projection" )
@@ -3981,14 +3981,131 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			del refrings
 
 		#  send peak values to the main node, do the assignments, and bring them back
+		from numpy import float32, empty, inner, abs
 		if( myid == 0 ):
-			from numpy import float32, empty
-			d = empty( (numref, total_nima), dtype = float32)
+			dtot = empty( (numref, total_nima), dtype = float32)
 		for  iref in xrange(numref):
 			recvbuf = mpi_gatherv(peaks[iref], nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			if( myid == 0 ): d[iref] = recvbuf
+			if( myid == 0 ): dtot[iref] = recvbuf
+		#  prepare reference directions
+		from utilities import even_angles, get_vec
+		refa = even_angles(15.0)
+		numrefang = len(refa)
+		refanorm = empty( (numrefang, 3), dtype = float32)
+		for i in xrange(numrefang):
+			tmp = getvec(refa[i][0], refa[i][1])
+			for j in xrange(3):
+				refanorm[i][j] = tmp[j]
+		del  refa, tmp
+
+		transv = empty( (nima, 3), dtype = float32)
+		if runtype=="ASSIGNMENT":
+			for im in xrange(nima):
+				trns = data[im].get_attr( "xform.projection" )
+				for j in xrange(3):
+					transv[im][j] = trns.at(2,j)
+		else:
+			# For REFINEMENT we have a problem, as the exact angle is not known only after the next step of assigning projections.
+			# So, we will assume it is the one with max peak
+			for im in xrange(nima):
+				qt = -1.0e23
+				it = -1
+				for iref in xrange(numref):
+					pt = peaks[iref][im]
+					if(pt > qt):
+						qt = pt
+						it = iref
+				for j in xrange(3):
+					transv[im][j] = trans[it][im].at(2,j)
+		#  We have all vectors, now create a list of assignments of images to references
+		refassign = [-1]*nima
+		for im in xrange(nima):
+			refassign[im] = abs(inner(refanorm,transv[im])).argmax()
+		assigntorefa = mpi_gatherv(refassign, nima, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
+		assigntorefa = map(int, assigntorefa)
+
+		del refassign, refanorm, transv
 		del recvbuf
 
+		if myid == main_node:
+			SA = False
+			asi = [[] for iref in xrange(numref)]
+			for imrefa in xrange(numrefa):
+				from utilities import findall
+				N = findall(assigntorefa, imrefa)
+				current_nima = len(N)
+				if( current_nima > numref ):
+					maxasi = current_nima//numref
+					nt = current_nima
+					kt = numref
+					K = range(numref)
+
+					d = empty( (numref, current_nima), dtype = float32)
+					for ima in xrange(current_nima):
+						for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+
+					while nt > 0 and kt > 1:
+						l = d.argmax()
+						group = l//current_nima
+						ima   = l-current_nima*group
+						if SA:
+							J = [0.0]*numref
+							sJ = 0
+							Jc = [0.0]*numref
+							for iref in xrange(numref):
+								J[iref] = exp(d[iref][ima]/T)
+								sJ += J[iref]
+							for iref in xrange(numref):
+								J[iref] /= sJ
+							Jc[0] = J[0]
+							for iref in xrange(1, numref):
+								Jc[iref] = Jc[iref-1]+J[iref]
+							sss = random()
+							for group in xrange(numref):
+								if( sss <= Jc[group]): break
+						asi[group].append(N[ima])
+						for iref in xrange(numref):  d[iref][ima] = -1.e10
+						nt -= 1
+						masi = len(asi[group])
+						if masi == maxasi:
+							for im in xrange(total_nima):  d[group][im] = -1.e10
+							kt -= 1
+					else:
+						mas = [len(asi[iref]) for iref in xrange(numref)]
+						group = mas.index(min(mas))
+						del mas
+						for im in xrange(total_nima):
+							kt = 0
+							go = True
+							while(go and kt < numref):
+								if d[kt][im] > -1.e10:
+									asi[group].append(im)
+									go = False
+								kt += 1
+
+
+					del d, N, K
+					if  SA:  del J, Jc
+					report_error = 0
+				else:
+					report_error = 1
+				del dtot
+
+
+		else:
+			assignment = []
+			report_error = 0
+
+		report_error = bcast_number_to_all(report_error, source_node = main_node)
+		if report_error == 1:  ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
+		if myid == main_node:
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in xrange(len(asi[iref])):
+					assignment[asi[iref][im]] = iref
+			del asi
+
+		"""
 		if myid == main_node:
 			SA = False
 			maxasi = total_nima//numref
@@ -4048,6 +4165,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 
 		else:
 			assignment = []
+		"""
 
 		assignment = mpi_scatterv(assignment, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
 		assignment = map(int, assignment)
@@ -4058,7 +4176,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		npergroup = [0]*numref
 		for im in xrange(nima):
 			iref = data[im].get_attr('group')
-			npergroup[iref] += 1
+			npergroup[assignment[im]] += 1
 			if( iref != assignment[im]): nchng += 1
 			data[im].set_attr('group', assignment[im])
 		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)

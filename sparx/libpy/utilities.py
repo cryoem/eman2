@@ -2856,6 +2856,21 @@ def cone_ang( projangles, phi, tht, ant ) :
 
 	return la
 
+def findall(lo,val):
+	"""
+	  Find all occurences of val on list lo
+	  Returns a list of indices of val on lo.
+	"""
+	u = []
+	i = -1
+	while( i < len(l)-1):
+		try:
+			i = lo.index(val,i+1)
+			u.append(i)
+		except:
+			i += 1
+	return  u
+
 def disable_bdb_cache():
 
 	import EMAN2db
@@ -2992,5 +3007,3 @@ def set_pixel_size(img, pixel_size):
 	if(cc):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
-
-
