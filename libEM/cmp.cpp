@@ -1198,11 +1198,11 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		double weight=1.0;
 		if (sweight) weight*=fsc[(ny2)*2+i];
 		if (ampweight) weight*=amp[i];
-//		if (snrweight) weight*=snr[i];
-		if (snrweight)  {
-			if (snr[i]>0) weight*=sqrt(snr[i]);
-			else weight=0;
-		}
+		if (snrweight) weight*=snr[i];
+//		if (snrweight)  {
+//			if (snr[i]>0) weight*=sqrt(snr[i]);
+//			else weight=0;
+//		}
 //if(snr[i]<0) printf("snr[%d] = %1.5g\n",i,snr[i]);
 		if (pmin>0) weight*=(tanh(5.0*(i-pmin)/pmin)+1.0)/2.0;
 		if (pmax>0) weight*=(1.0-tanh(i-pmax))/2.0;
