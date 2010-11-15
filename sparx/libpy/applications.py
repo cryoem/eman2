@@ -3988,7 +3988,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			recvbuf = mpi_gatherv(peaks[iref], nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			if( myid == 0 ): dtot[iref] = recvbuf
 		#  prepare reference directions
-		from utilities import even_angles, get_vec
+		from utilities import even_angles, getvec
 		refa = even_angles(15.0)
 		numrefang = len(refa)
 		refanorm = empty( (numrefang, 3), dtype = float32)
