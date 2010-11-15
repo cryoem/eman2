@@ -5991,6 +5991,7 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 
 #define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
+
 EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {
 	if (3 != get_ndim())
 		throw ImageDimensionException("helicise needs a 3-D image.");
@@ -6001,8 +6002,8 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	result->to_zero();
 	int nyc = ny/2;
 	int nxc = nx/2;
-	int nb = int(nx*(1.0f - section_use)/2.);
-	int ne = nx - nb -1;
+	int nb = int(nz*(1.0f - section_use)/2.);
+	int ne = nz - nb -1;
 	int numst = int((ne - nb)/dp*pixel_size + 0.5);
 	// how many steps needed
 	int nst = int(nz*pixel_size/dp+0.5);
