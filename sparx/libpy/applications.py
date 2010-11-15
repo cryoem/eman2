@@ -6325,13 +6325,14 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 			outlist[2].write_image(file_particle, k)
 		out.close()
 
+
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-          txs, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+          txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	  fourvar, debug = False, MPI = False):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-			txs, delta, an, maxit, CTF, snr, dp, dphi,  psi_max,
+			txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
 		return
@@ -6521,7 +6522,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	print_end_msg("ihrsr")
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-	txs, delta, an, maxit, CTF, snr, dp, dphi, psi_max,
+	txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
@@ -6561,10 +6562,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	ndp    = 12
+	'''ndp    = 12
 	sndp   = 0.1
 	ndphi  = 12
-	sndphi = 0.1
+	sndphi = 0.1'''
 	nlprms = (2*ndp+1)*(2*ndphi+1)
 	if nlprms< number_of_proc:
 		ERROR('number of cpus is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
@@ -6612,6 +6613,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	vol     = EMData()
 	vol.read_image(ref_vol)
 	nx      = vol.get_xsize()
+	ny      = vol.get_ysize()
+	nz      = vol.get_zsize()
+	if( nx==nz & ny==nz):
+		xysize = -1
+	else:
+		xysize=nx
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if myid == main_node:
@@ -6649,7 +6656,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+	mask2D  = model_circle(last_ring,nz,nz) - model_circle(first_ring,nz,nz)
 
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
@@ -6742,10 +6749,14 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f,stepx = %5.2f, yrange = %5.2f,  stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
-
-			volft,kb = prep_vol( vol )
-			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
-			del volft,kb
+			if( xysize == -1 ):
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
+				del volft,kb
+			else:
+				volft, kbx, kby, kbz = prep_vol( vol )
+				refrings = prepare_refrings( volft, kbz, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby)
+				del volft, kbx, kby, kbz
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
@@ -6869,8 +6880,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad)
-			else:    vol = recons3d_4nn_MPI(myid, data, npad = npad)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad, xysize = xysize)
+			else:    vol = recons3d_4nn_MPI(myid, data, npad = npad, xysize = xysize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
@@ -6901,8 +6912,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					lprms = []
 					for i in xrange(-ndp,ndp+1,1):
 						for j in xrange(-ndphi,ndphi+1,1):
-							lprms.append( dp   + i*sndp)
-							lprms.append( dphi + j*sndphi)
+							lprms.append( dp   + i*dp_step)
+							lprms.append( dphi + j*dphi_step)
 					#print "lprms===",lprms
 					recvpara = []
 					for im in xrange(number_of_proc):
@@ -6985,6 +6996,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		start_time = time()
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
+
+
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""

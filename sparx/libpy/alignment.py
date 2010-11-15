@@ -1018,7 +1018,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus"):
+def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx=None, kby=None):
         from projection   import prep_vol, prgs
         from math         import sin, cos, pi
 	from applications import MPI_start_end
@@ -1028,8 +1028,8 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False, phiEqps
 	mode = "F"
 	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
-	cnx = nx//2 + 1
-	cny = nx//2 + 1
+	cnx = nz//2 + 1
+	cny = nz//2 + 1
 	qv = pi/180.
         num_ref = len(ref_angles)
 
@@ -1051,15 +1051,22 @@ def prepare_refrings( volft, kb, nx, delta, ref_a, sym, numr, MPI=False, phiEqps
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
 		refrings.append(prjref)
-
-        for i in xrange(ref_start, ref_end):
-		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr)
-
-		Util.Frngs(cimage, numr)
-		Applyws(cimage, numr, wr_four)
-		refrings[i] = cimage
+	if kbx is None:
+        	for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Applyws(cimage, numr, wr_four)
+			refrings[i] = cimage
+	else:
+		for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Applyws(cimage, numr, wr_four)
+			refrings[i] = cimage
 
 	if MPI:
 		from utilities import bcast_EMData_to_all
