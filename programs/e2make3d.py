@@ -55,17 +55,17 @@ def get_usage():
 	
 	A simple example of usage is:
 	
-	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128
+	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128
 	
 	Because there are several default settings, this is more or less equivalent to:
 	
-	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
+	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
 	
 	Because the padding is always done using zeroes it is best if your data (or preferably
 	the edge pixels of your data) have mean zero. If you are unsure whether your data are 
 	appropriately normalized you can add the --preprocess flag
 	
-	e2make3d.py --input=classes.img --sym=c3 --out=recon.mrc --pad=128 --preprocess=normalize.edgemean
+	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --preprocess=normalize.edgemean
 	
 	You can add as many --preprocess arguments as you like, which are applied in
 	the order in which they are specified, before padding occurs.
@@ -216,7 +216,7 @@ def main():
 	if options.setsf.lower() != "none" :
 		if options.setsf.lower()!="auto" :
 			sfcurve=XYData()
-			sfcurve.read_file(opt)
+			sfcurve.read_file(options.setsf)
 			for i in range(sfcurve.get_size()):
 				v=sfcurve.get_y(i)
 				if v<=0 :
