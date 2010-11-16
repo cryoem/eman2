@@ -202,8 +202,11 @@ EMData* EMData::get_fft_phase()
 
 float* EMData::get_data() const
 {
+	
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cout << get_cuda_data() << endl;
+		cout << rdata << endl;
 		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
 		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The device to host cudaMemcpy failed : " + string(cudaGetErrorString(error)));
 	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {

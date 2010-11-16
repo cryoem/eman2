@@ -786,6 +786,19 @@ EMDataForCuda* emdata_transform_cuda(const float* const matrix,const int nx,cons
 		return 0; //Calling function should know something went wrong
 	}
 
+        //debugging stuff
+        //printf("CUDA ptr = %d\n", t->data);
+ 
+	//int asize = 10*sizeof(float);
+	//float * rdatax;
+	//float * ddata;
+	//rdatax = (float*) malloc(asize);
+
+        //cudaMalloc((void**)&ddata,asize);
+        //cudaError_t cerror = cudaMemcpy(rdatax,ddata,asize,cudaMemcpyDeviceToHost);
+	//if (cerror != cudaSuccess ){printf("CUDA failed at low level\n");}
+	//printf("Success %d, error %d\n", cudaSuccess, cerror);
+
 	if (grid_y > 0) {
 		const dim3 blockSize(MAX_THREADS,1, 1);
 		const dim3 gridSize(grid_y,1,1);

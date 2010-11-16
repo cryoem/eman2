@@ -494,11 +494,11 @@ namespace EMAN
 		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
 		 * 2D only.
 		 * @ingroup CUDA_ENABLED
-		 * @param r1
-		 * @param r2
-		 * @param xs
-		 * @param dx
-		 * @param dy
+		 * @param r1 inner ring (all rings less than r1 are discarded) Default = 4
+		 * @param r2 outer ring (all rings > r2 are discarded) Default = ny/2 - 2 - floor(hyp(dx,dy))
+		 * @param xs Number of angular bins. Default = (2 if do360) PI * ny/4 - xs % 8
+		 * @param dx origin offset in x
+		 * @param dy origin offest in y
 		 * @param do360  If true, do 0-360 degree mapping. Otherwise, do 0-180 degree mapping.
 		 * @param weight_radial if true (default) reights the pixel value by its radius
 		 * @exception ImageDimensionException If 'this' image is not 2D.

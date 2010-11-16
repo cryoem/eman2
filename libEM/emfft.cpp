@@ -763,28 +763,28 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 }
 #endif	//FFTW2
 
-#ifdef CUDA_FFT
-int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
-{
-	return  cuda_fft_real_to_complex_1d(real_data,complex_data,n);
-}
+//#ifdef CUDA_FFT
+//int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
+//{
+//	return  cuda_fft_real_to_complex_1d(real_data,complex_data,n);
+//}
 
-int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
-{
-	return cuda_fft_complex_to_real_1d(complex_data,real_data,n);
-}
+//int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
+//{
+//	return cuda_fft_complex_to_real_1d(complex_data,real_data,n);
+//}
 
-int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
-{
-	return cuda_fft_real_to_complex_nd(real_data,complex_data,nx,ny,nz);
-}
+//int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+//{
+//	return cuda_fft_real_to_complex_nd(real_data,complex_data,nx,ny,nz);
+//}
 
-int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
-{
-	return cuda_fft_complex_to_real_nd(complex_data,real_data,nx,ny,nz);
-}
+//int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
+//{
+//	return cuda_fft_complex_to_real_nd(complex_data,real_data,nx,ny,nz);
+//}
 
-#endif
+//#endif
 
 #ifdef FFTW3
 

@@ -237,24 +237,24 @@ namespace EMAN
 }
 #endif	//FFTW3
 
-#ifdef CUDA_FFT
-class EMfft
-	{
-	public:
-		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
-		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
+//#ifdef CUDA_FFT
+//class EMfft
+//	{
+//	public:
+//		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
+//		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
 
-		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
-									  int nz);
-		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
-									  int nz);
-	private:
-		static const int EMAN2_REAL_2_COMPLEX;
-		static const int EMAN2_COMPLEX_2_REAL;
-		static const int EMAN2_FFTW2_INPLACE;
-		static const int EMAN2_FFTW2_OUT_OF_PLACE;
-	};
-#endif //CUDA_FFT
+//		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
+//									  int nz);
+//		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
+//									  int nz);
+//	private:
+//		static const int EMAN2_REAL_2_COMPLEX;
+//		static const int EMAN2_COMPLEX_2_REAL;
+//		static const int EMAN2_FFTW2_INPLACE;
+//		static const int EMAN2_FFTW2_OUT_OF_PLACE;
+//	};
+//#endif //CUDA_FFT
 
 
 #ifdef NATIVE_FFT

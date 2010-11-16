@@ -52,11 +52,15 @@ using namespace EMAN;
 
 const string TranslationalAligner::NAME = "translational";
 const string RotationalAligner::NAME = "rotational";
+const string RotationalAlignerIterative::NAME = "rotational.iterative";
 const string RotatePrecenterAligner::NAME = "rotate_precenter";
 const string RotateTranslateAligner::NAME = "rotate_translate";
+const string RotateTranslateAlignerIterative::NAME = "rotate_translate.iterative";
 const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
 const string RotateFlipAligner::NAME = "rotate_flip";
+const string RotateFlipAlignerIterative::NAME = "rotate_flip.iterative";
 const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
+const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip.iterative";
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
@@ -70,10 +74,14 @@ template <> Factory < Aligner >::Factory()
 {
 	force_add<TranslationalAligner>();
 	force_add<RotationalAligner>();
+	force_add<RotationalAlignerIterative>();
 	force_add<RotatePrecenterAligner>();
 	force_add<RotateTranslateAligner>();
+	force_add<RotateTranslateAlignerIterative>();
 	force_add<RotateFlipAligner>();
+	force_add<RotateFlipAlignerIterative>();
 	force_add<RotateTranslateFlipAligner>();
+	force_add<RotateTranslateFlipAlignerIterative>();
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
@@ -348,6 +356,78 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	return rslt;
 }
 
+EMData *RotationalAlignerIterative::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	int r1 = params.set_default("r1",-1);
+	int r2 = params.set_default("r2",-1);
+	//to start lest try the original size image. If needed, we can pad it....
+	EMData * to_polar = to->unwrap(r1,r2,-1,0,0,true);
+	EMData * this_img_polar = this_img->unwrap(r1,r2,-1,0,0,true);
+	int this_img_polar_nx = this_img_polar->get_xsize();
+	
+	EMData *cf = this_img_polar->calc_ccfx(to_polar, 0, this_img->get_ysize());
+	
+	//take out the garbage
+	delete to_polar; to_polar = 0;
+	delete this_img_polar; this_img_polar = 0;
+	
+	float *data = cf->get_data();
+	float peak = 0;
+	int peak_index = 0;
+	Util::find_max(data, this_img_polar_nx, &peak, &peak_index);
+
+	delete cf; cf = 0;
+	float rot_angle = (float) (peak_index * 360.0f / this_img_polar_nx);
+	
+	//return the result
+	//cout << rot_angle << endl;
+	Transform tmp(Dict("type","2d","alpha",rot_angle));
+	EMData * rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
+	rotimg->set_attr("xform.align2d",&tmp);
+	return rotimg;
+	
+}
+
+EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	int maxiter = params.set_default("maxiter", 3);
+	
+	Dict trans_params;
+	trans_params["intonly"] = 0;
+	trans_params["maxshift"] = params.set_default("maxshift", -1);
+	trans_params["useflcf"] = params.set_default("useflcf",0);
+	trans_params["nozero"] = params.set_default("nozero",false);
+	
+	Dict rot_params;
+	rot_params["r1"] = params.set_default("r1", -1);
+	rot_params["r2"] = params.set_default("r2", -1);
+	
+	Transform t;
+	EMData * moving_img = this_img;
+	for(int it = 0; it < maxiter; it++){
+		// First do a translational alignment
+		EMData * trans_align = moving_img->align("translational", to, trans_params, cmp_name, cmp_params);
+		Transform * tt = trans_align->get_attr("xform.align2d");
+		t = *tt*t;
+
+		//now do rotation
+		EMData * rottrans_align = trans_align->align("rotational.spider", to, rot_params, cmp_name, cmp_params);
+		Transform * rt = rottrans_align->get_attr("xform.align2d");
+		t = *rt*t;
+		
+		//this minimizes interpolation errors (all images that are futher processed will be interpolated at most once)
+		moving_img = this_img->process("xform",Dict("transform",&t));  //iterate
+	}
+	
+	//write the total transformation;	
+	moving_img->set_attr("xform.align2d", &t);
+	
+	return moving_img;
+}
+
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
@@ -467,7 +547,58 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to,
+										  const string & cmp_name, const Dict& cmp_params) const
+{
+	// Get the non flipped rotational, tranlsationally aligned image
+	Dict rt_params("maxshift", params["maxshift"],"r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
+	EMData *rot_trans_align = this_img->align("rotate_translate.spider",to,rt_params,cmp_name, cmp_params);
 
+	// Do the same alignment, but using the flipped version of the image
+	EMData *flipped = params.set_default("flip", (EMData *) 0);
+	bool delete_flag = false;
+	if (flipped == 0) {
+		flipped = to->process("xform.flip", Dict("axis", "x"));
+		delete_flag = true;
+	}
+
+	EMData * rot_trans_align_flip = this_img->align("rotate_translate.spider", flipped, rt_params, cmp_name, cmp_params);
+	Transform* t = rot_trans_align_flip->get_attr("xform.align2d");
+	t->set_mirror(true);
+	rot_trans_align_flip->set_attr("xform.align2d",t);
+	delete t;
+
+	// Now finally decide on what is the best answer
+	float cmp1 = rot_trans_align->cmp(cmp_name, to, cmp_params);
+	float cmp2 = rot_trans_align_flip->cmp(cmp_name, flipped, cmp_params);
+
+	if (delete_flag){
+		if(flipped) {
+			delete flipped;
+			flipped = 0;
+		}
+	}
+
+	EMData *result = 0;
+	if (cmp1 < cmp2 )  {
+
+		if( rot_trans_align_flip ) {
+			delete rot_trans_align_flip;
+			rot_trans_align_flip = 0;
+		}
+		result = rot_trans_align;
+	}
+	else {
+		if( rot_trans_align ) {
+			delete rot_trans_align;
+			rot_trans_align = 0;
+		}
+		result = rot_trans_align_flip;
+		result->process_inplace("xform.flip",Dict("axis","x"));
+	}
+
+	return result;
+}
 
 
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
@@ -512,6 +643,46 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+EMData *RotateFlipAlignerIterative::align(EMData * this_img, EMData *to,
+			const string& cmp_name, const Dict& cmp_params) const
+{
+	Dict rot_params("r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
+	EMData *r1 = this_img->align("rotational.spider", to, rot_params,cmp_name, cmp_params);
+
+	EMData* flipped =to->process("xform.flip", Dict("axis", "x"));
+	EMData *r2 = this_img->align("rotational.spider", flipped,rot_params, cmp_name, cmp_params);
+	Transform* t = r2->get_attr("xform.align2d");
+	t->set_mirror(true);
+	r2->set_attr("xform.align2d",t);
+	delete t;
+
+	float cmp1 = r1->cmp(cmp_name, to, cmp_params);
+	float cmp2 = r2->cmp(cmp_name, flipped, cmp_params);
+
+	delete flipped; flipped = 0;
+
+	EMData *result = 0;
+
+	if (cmp1 < cmp2) {
+		if( r2 )
+		{
+			delete r2;
+			r2 = 0;
+		}
+		result = r1;
+	}
+	else {
+		if( r1 )
+		{
+			delete r1;
+			r1 = 0;
+		}
+		result = r2;
+		result->process_inplace("xform.flip",Dict("axis","x"));
+	}
+
+	return result;
+}
 
 // David Woolford says FIXME
 // You will note the excessive amount of EMData copying that's going in this function
@@ -1489,7 +1660,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	
 	EMData * tofft;
 	if(dotrans || cmp_name == "ccc.tomo"){
-		EMData * tofft = to->do_fft();
+		tofft = to->do_fft();
 	}
 	
 	Dict d;
@@ -1633,7 +1804,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	//precompute fixed FT, saves a LOT of time!!!
 	EMData * tofft;
 	if(dotrans || cmp_name == "ccc.tomo"){
-		EMData * tofft = to->do_fft();
+		tofft = to->do_fft();
 	}
 	
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
@@ -2380,7 +2551,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 	int num_batch = batch_size.size();
 	batch_begin.resize(num_batch, 0);
 	for (int i=1; i<num_batch; i++) batch_begin[i] = batch_size[i-1]+batch_begin[i-1];
-	assert(batch_begin[num_batch-1]+batch_size[num_batch-1] == nima-1);
+	assert(batch_begin[num_batch-1]+batch_size[num_batch-1] == NIMA-1);
 
 	for (int i=0; i<NIMA; i++) {
 		float ang = ali_params[i*4]/180.0*M_PI;

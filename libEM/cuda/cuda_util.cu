@@ -35,6 +35,9 @@ void cuda_bind_texture_2d(texture<float, 2, cudaReadModeElementType> &texture, c
 cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, const int nz, const cudaMemcpyKind mem_cpy_flag)
 {
 	cudaArray *array = 0;
+	cudaArray *arrayt = 0;
+	float *dm = 0;
+	size_t msize = 0;
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
 	
 	if (nz > 1) {
@@ -55,8 +58,13 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 			return 0;	
 		}
 	} else if ( ny > 1) {
-// 		printf("It's a 2D one\n");d
+// 		printf("It's a 2D one\n");
+		printf("Strating CUDA\n");
+//		cudaMallocArray(&arrayt,&channelDesc,0,0);
+		cudaMalloc((void**)&dm,msize);
+		printf("Starting CUDA MALLOC\n");
 		cudaMallocArray(&array,&channelDesc,nx,ny);
+		printf("Finishing CUDA MALLOC\n");
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
 // 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
 		cudaMalloc3DArray(&array, &channelDesc, VS);

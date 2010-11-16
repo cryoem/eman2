@@ -57,7 +57,7 @@ class TestControl():
 	
 		# get some signals from the window.
 		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedown"),self.down)
-		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mousedrag"),self.drag)
+		QtCore.QObject.connedisplaydemo.pyct(self.im2d,QtCore.SIGNAL("mousedrag"),self.drag)
 		QtCore.QObject.connect(self.im2d,QtCore.SIGNAL("mouseup"),self.up)
 	
 		#self explanatory

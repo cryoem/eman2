@@ -47,8 +47,10 @@ using namespace EMAN;
 EMData::CudaCache EMData::cuda_cache(100);
 
 float* EMData::get_cuda_data() const {
+	cout << cuda_cache_handle << endl;
 	if (get_size() == 0 ) throw UnexpectedBehaviorException("The size of the data is 0?");
 	if (cuda_cache_handle==-1 || EMDATA_GPU_NEEDS_UPDATE & flags) {
+		cout << "needs an update or handle=-1" << endl;
 		if (cuda_cache_handle != -1 && gpu_ro_is_current() ) {
 			cuda_cache.copy_ro_to_rw(cuda_cache_handle);
 		} else {

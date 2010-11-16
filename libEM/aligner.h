@@ -252,6 +252,48 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** rotational alignment using the iterative method
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @ingroup CUDA_ENABLED
+	*/
+	class RotationalAlignerIterative:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "dot", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment using the SPIDER method";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotationalAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+
 	/** rotational alignment assuming centers are correct
      */
 	class RotatePrecenterAligner:public Aligner
@@ -334,7 +376,57 @@ namespace EMAN
 		
 		static const string NAME;
 	};
+	
+	/** rotational, translational alignment SPIDER style
+	 * @param maxshift Maximum translation in pixels
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @param maxiter maximum number of alignment iterations
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @ingroup CUDA_ENABLED
+     */
+	class RotateTranslateAlignerIterative:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and follows this with translational alignment using the iterative method.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			//d.put("usedot", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
 	/** rotational, translational alignment
 	 * @param maxshift Maximum translation in pixels
 	 * @param snr signal to noise ratio array
@@ -421,13 +513,58 @@ namespace EMAN
 		static const string NAME;
 	};
 
+		/** rotational and flip alignment, iterative style
+
+	 * @ingroup CUDA_ENABLED
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 */
+	class RotateFlipAlignerIterative:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "dot", Dict());
+		}
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs two rotational alignments, iterative style, one using the original image and one using the hand-flipped image. Decides which alignment is better using a comparitor and returns it";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateFlipAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			return static_get_param_types();
+		}
+
+		static TypeDict static_get_param_types() {
+			TypeDict d;
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
 	/** rotational, translational and flip alignment
 	 * @param flip
 	 * @param usedot
 	 * @param maxshift Maximum translation in pixels
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
 	 * @ingroup CUDA_ENABLED
-     */
+	*/
 	class RotateTranslateFlipAligner:public Aligner
 	{
 	  public:
@@ -472,6 +609,57 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** rotational, translational and flip alignment, iterative style
+	 * @param flip
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @param maxiter maximum number of alignment iterations
+	 * @param maxshift Maximum translation in pixels
+	 * @ingroup CUDA_ENABLED
+	*/
+	class RotateTranslateFlipAlignerIterative:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return " Does two 'rotate_translate.iterative' alignments, one to accommodate for possible handedness change. Decided which alignment is better using a comparitor and returns the aligned image as the solution";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateFlipAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			return static_get_param_types();
+		}
+
+		static TypeDict static_get_param_types() {
+			TypeDict d;
+			d.put("flip", EMObject::EMDATA);
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
 	/** rotational, translational and flip alignment using real-space methods. slow
 	 * @param flip
 	 * @param maxshift Maximum translation in pixels
