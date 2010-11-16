@@ -4030,11 +4030,12 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		if myid == main_node:
 			SA = False
 			asi = [[] for iref in xrange(numref)]
+			report_error = 0
 			for imrefa in xrange(numrefang):
 				from utilities import findall
 				N = findall(assigntorefa, imrefa)
 				current_nima = len(N)
-				if( current_nima > numref ):
+				if( current_nima > numref and report_error == 0):
 					maxasi = current_nima//numref
 					nt = current_nima
 					kt = numref
@@ -4086,10 +4087,9 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 
 					del d, N, K
 					if  SA:  del J, Jc
-					report_error = 0
 				else:
 					report_error = 1
-				del dtot
+			del dtot
 
 
 		else:
