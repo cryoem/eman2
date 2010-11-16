@@ -4068,13 +4068,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 						nt -= 1
 						masi = len(asi[group])
 						if masi == maxasi:
-							for im in xrange(total_nima):  d[group][im] = -1.e10
+							for im in xrange(current_nima):  d[group][im] = -1.e10
 							kt -= 1
 					else:
 						mas = [len(asi[iref]) for iref in xrange(numref)]
 						group = mas.index(min(mas))
 						del mas
-						for im in xrange(total_nima):
+						for im in xrange(current_nima):
 							kt = 0
 							go = True
 							while(go and kt < numref):
