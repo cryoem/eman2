@@ -2863,7 +2863,7 @@ def findall(lo,val):
 	"""
 	u = []
 	i = -1
-	while( i < len(l)-1):
+	while( i < len(lo)-1):
 		try:
 			i = lo.index(val,i+1)
 			u.append(i)

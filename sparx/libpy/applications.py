@@ -4030,7 +4030,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 		if myid == main_node:
 			SA = False
 			asi = [[] for iref in xrange(numref)]
-			for imrefa in xrange(numrefa):
+			for imrefa in xrange(numrefang):
 				from utilities import findall
 				N = findall(assigntorefa, imrefa)
 				current_nima = len(N)
