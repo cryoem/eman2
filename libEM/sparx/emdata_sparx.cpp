@@ -3178,7 +3178,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz)
-		throw ImageDimensionException("Volume not currently supported");
+		throw ImageDimensionException("Use rot_scale_conv_new_3D for volumes");
 	int nxn = nx/2; int nyn = ny/2; int nzn = nz/2;
 
 	vector<int> saved_offsets = get_array_offsets();
@@ -3231,6 +3231,85 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	return ret;
 }
 
+EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input) {
+
+	if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = 0.5f*scale_input;
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	int nxn = nx/2; int nyn = ny/2; int nzn = nz/2;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32
+	//ret->to_zero();  //we will leave margins zeroed.
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	int zc = nzn;
+	int izs = nzn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	int zcn = nzn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	float shiftzc = zcn + delz;
+	// bounds if origin at center
+	float zmin = -nz/2.0f;
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float zmax = -zmin;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	if (0 == nz%2) zmax--;
+
+	float* data = this->get_data();
+
+	float cf = cos(phi);   float sf = sin(phi);
+	float ct = cos(theta); float st = sin(theta);
+	float cp = cos(psi);   float sp = sin(psi);
+	// rotation matrix (the transpose is used in the loop to get (xold,yold,zold)):
+	float a11 =  cp*ct*cf-sp*sf; float a12 =  cp*ct*sf+sp*cf; float a13 = -cp*st;
+	float a21 = -sp*ct*cf-cp*sf; float a22 = -sp*ct*sf+cp*cf; float a23 =  sp*st;
+	float a31 =  st*cf;          float a32 =  st*sf;          float a33 =  ct;
+	for (int iz = 0; iz < nzn; iz++) {
+		float z = (float(iz) - shiftzc)/scale;
+		float zco1 = a31*z+xc;
+		float zco2 = a32*z+yc;
+		float zco3 = a33*z+zc;
+		for (int iy = 0; iy < nyn; iy++) {
+			float y = (float(iy) - shiftyc)/scale;
+			float yco1 = zco1+a21*y;
+			float yco2 = zco2+a22*y;
+			float yco3 = zco3+a23*y;
+			for (int ix = 0; ix < nxn; ix++) {
+				float x = (float(ix) - shiftxc)/scale;
+				float xold = yco1+a11*x-ixs; //have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
+				float yold = yco2+a12*x-iys;
+				float zold = yco3+a13*x-izs;
+				(*ret)(ix,iy,iz) = Util::get_pixel_conv_new(nx, ny, nz, xold, yold, zold, data, kb);
+			}
+		}
+	}
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
 EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 
 	int nxn, nyn, nzn;
@@ -3241,7 +3320,7 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz)
-		throw ImageDimensionException("Volume not currently supported");
+		throw ImageDimensionException("Use rot_scale_conv_new_background_3D for volumes");
 	nxn = nx/2; nyn = ny/2; nzn = nz/2;
 
 	vector<int> saved_offsets = get_array_offsets();
@@ -3294,6 +3373,86 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	set_array_offsets(saved_offsets);
 	return ret;
 }
+
+EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input) {
+
+	if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = 0.5f*scale_input;
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	int nxn = nx/2; int nyn = ny/2; int nzn = nz/2;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32
+	//ret->to_zero();  //we will leave margins zeroed.
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	int zc = nzn;
+	int izs = nzn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	int zcn = nzn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	float shiftzc = zcn + delz;
+	// bounds if origin at center
+	float zmin = -nz/2.0f;
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float zmax = -zmin;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	if (0 == nz%2) zmax--;
+
+	float* data = this->get_data();
+
+	float cf = cos(phi);   float sf = sin(phi);
+	float ct = cos(theta); float st = sin(theta);
+	float cp = cos(psi);   float sp = sin(psi);
+	// rotation matrix (the transpose is used in the loop to get (xold,yold,zold)):
+	float a11 =  cp*ct*cf-sp*sf; float a12 =  cp*ct*sf+sp*cf; float a13 = -cp*st;
+	float a21 = -sp*ct*cf-cp*sf; float a22 = -sp*ct*sf+cp*cf; float a23 =  sp*st;
+	float a31 =  st*cf;          float a32 =  st*sf;          float a33 =  ct;
+	for (int iz = 0; iz < nzn; iz++) {
+		float z = (float(iz) - shiftzc)/scale;
+		float zco1 = a31*z+xc;
+		float zco2 = a32*z+yc;
+		float zco3 = a33*z+zc;
+		for (int iy = 0; iy < nyn; iy++) {
+			float y = (float(iy) - shiftyc)/scale;
+			float yco1 = zco1+a21*y;
+			float yco2 = zco2+a22*y;
+			float yco3 = zco3+a23*y;
+			for (int ix = 0; ix < nxn; ix++) {
+				float x = (float(ix) - shiftxc)/scale;
+				float xold = yco1+a11*x-ixs; //have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
+				float yold = yco2+a12*x-iys;
+				float zold = yco3+a13*x-izs;
+				(*ret)(ix,iy,iz) = Util::get_pixel_conv_new_background(nx, ny, nz, xold, yold, zold, data, kb, ix, iy);
+			}
+		}
+	}
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]

@@ -121,6 +121,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_overloads_4_5,
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_new_overloads_4_5, EMAN::EMData::rot_scale_conv_new, 4, 5)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_new_3D_overloads_7_8, EMAN::EMData::rot_scale_conv_new_3D, 7, 8)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_downsample_overloads_1_2, EMAN::EMData::downsample, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, EMAN::EMData::getconvpt2d_kbi0, 3, 4)
@@ -191,6 +193,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_data_overloads_2_6, EMA
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_background_overloads_1_4, EMAN::EMData::rot_scale_trans2D_background, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_new_background_overloads_4_5, EMAN::EMData::rot_scale_conv_new_background, 4, 5)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_new_background_3D_overloads_7_8, EMAN::EMData::rot_scale_conv_new_background_3D, 7, 8)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_delete_disconnected_regions_overloads_0_3, EMAN::EMData::delete_disconnected_regions, 0, 3)
 
@@ -433,7 +437,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, EMAN_EMData_rot_scale_conv_overloads_4_5(args("ang", "delx", "dely", "kb", "scale"), "Rotate-Shift-Scale-Circulantly image using convolution\nIf the image is a volume, then all slices are rotated/translated/scaled.\n \nang - Rotation angle in degrees.\ndelx - Amount to shift rotation origin along x\ndely - Amount to shift rotation origin along y\nkb - convolution kernel\nscale - Scaling factor (default=1.0)\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image\nexception - ImageDimensionException can not rotate 3 D image")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_conv7", &EMAN::EMData::rot_scale_conv7, return_value_policy< manage_new_object >(), args("ang", "delx", "dely", "kb", "scale_input"), " ")
 	.def("rot_scale_conv_new", &EMAN::EMData::rot_scale_conv_new, EMAN_EMData_rot_scale_conv_new_overloads_4_5(args("ang", "delx", "dely", "kb", "scale"), " ")[ return_value_policy< manage_new_object >() ])
+	.def("rot_scale_conv_new_3D", &EMAN::EMData::rot_scale_conv_new_3D, EMAN_EMData_rot_scale_conv_new_3D_overloads_7_8(args("phi", "theta", "psi", "delx", "dely", "delz", "kb", "scale"), " ")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_conv_new_background", &EMAN::EMData::rot_scale_conv_new_background, EMAN_EMData_rot_scale_conv_new_background_overloads_4_5(args("ang", "delx", "dely", "kb", "scale"), "")[return_value_policy< manage_new_object >()])
+	.def("rot_scale_conv_new_background_3D", &EMAN::EMData::rot_scale_conv_new_background_3D, EMAN_EMData_rot_scale_conv_new_background_3D_overloads_7_8(args("phi", "theta", "psi", "delx", "dely", "delz", "kb", "scale"), "")[return_value_policy< manage_new_object >()])
 	.def("downsample", &EMAN::EMData::downsample, EMAN_EMData_downsample_overloads_1_2(args("kb", "scale"), " ")[ return_value_policy< manage_new_object >() ])
 	.def("get_pixel_conv", &EMAN::EMData::get_pixel_conv, args("delx", "dely", "delz", "kb"), "Get pixel value image using convolution\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \ndelx - Amount to shift rotation origin along x\ndely - Amount to shift rotation origin along y\ndelz - Amount to shift rotation origin along z\nkb - convolution kernel\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image")
 	.def("get_pixel_conv7", &EMAN::EMData::get_pixel_conv7, args("delx", "dely", "delz", "kb"), " ")

@@ -615,6 +615,7 @@ def resample(img, sub_rate=0.5, fit_to_fft=False, frequency_low=0.0, frequency_h
 		
 	return 	e
 '''
+
 def prepi(image):
 	"""
 		Name
@@ -637,7 +638,37 @@ def prepi(image):
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	#out = rotshift2dg(image, angle*pi/180., sx, sy, kb,alpha)
 # first pad it with zeros in Fourier space
-	q = image.FourInterpol(2*M, 2*M, 1, 0)
+	q = image.FourInterpol(N, N, 1, 0)
+	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	q = Processor.EMFourierFilter(q, params)
+	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : 0.25, "dopad" : False}
+	q = Processor.EMFourierFilter(q, params)
+	return fft(q), kb
+
+def prepi3D(image):
+	"""
+		Name
+			prepi3D - prepare 3-D image for rotation/shift
+		Input
+			image: input image that is going to be rotated and shifted using rot_shif3D_grid
+		Output
+			imageft: image prepared for gridding rotation and shift
+			kb: interpolants (tabulated Kaiser-Bessel function)
+	"""
+	M = image.get_xsize()
+	# padding size:
+	npad = 2
+	N = M*npad
+	# support of the window:
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	# pad with zeros in Fourier space:
+	q = image.FourInterpol(N, N, N, 0)
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 	q = Processor.EMFourierFilter(q, params)
@@ -823,7 +854,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 
 def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, interpolation_method = None, mode = "background"):
 	"""
-		rotatet/shift image using
+		rotate/shift image using:
 		1. linear    interpolation
 		2. quadratic interpolation
 		3. gridding
@@ -894,7 +925,43 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 	T  = T1*T2
 	if (mode == "cyclic"): return image.rot_scale_trans(T)
 	else: return image.rot_scale_trans_background(T)
-	
+
+
+def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background"):
+	"""
+		rotate/shift/scale image using the gridding method.
+		if kb = None, the image is prepared in this function before the rot/shift operation.
+		If kb is NOT None, then the supplied (img,kb) must be the output from prepi3D.
+		'mode' specifies what will be put in corners, should they stick out:
+			background - leave original values
+			cyclic - use pixels from the image using wrap-around transformation
+	"""
+
+	if scale == 0.0 :  ERROR("scale=0 not allowed","rot_shift3D_grid", 1)
+
+	if(mode == "cyclic"):
+		from math import pi
+		if kb==None:
+			o, kb = prepi3D(img)
+		else:
+			o = img.copy()
+		# gridding rotation/shift:
+		o = o.rot_scale_conv_new_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale)
+		#if  mirror: o.process_inplace("mirror", {"axis":'x'})
+		return o
+	elif(mode == "background"):
+		from math import pi
+		if kb==None:
+			o, kb = prepi3D(img)
+		else:
+			o = img.copy()
+		# gridding rotation
+		o = o.rot_scale_conv_new_background_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale)
+		#if  mirror: o.process_inplace("mirror", {"axis":'x'})
+		return o	
+	else: ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
+
+
 def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
 	"""
 		Name

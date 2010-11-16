@@ -41,6 +41,7 @@
 using namespace EMAN;
 
 const string CccCmp::NAME = "ccc";
+const string LodCmp::NAME = "lod";
 const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
 const string TomoCccCmp::NAME = "ccc.tomo";
@@ -52,6 +53,7 @@ const string FRCCmp::NAME = "frc";
 template <> Factory < Cmp >::Factory()
 {
 	force_add<CccCmp>();
+	force_add<LodCmp>();
 	force_add<SqEuclideanCmp>();
 	force_add<DotCmp>();
 	force_add<TomoCccCmp>();
@@ -145,6 +147,97 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	EXITFUNC;
 }
 
+
+// Added by JAK 11/12/10
+// L^1-norm difference of two maps, after normalization.
+float LodCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	if (image->is_complex() || with->is_complex())
+		throw ImageFormatException( "Complex images not yet supported by CMP::LodCmp");
+	validate_input_args(image, with);
+
+	const float *const d1 = image->get_const_data();
+	const float *const d2 = with->get_const_data();
+
+	float negative = (float)params.set_default("negative", 1);
+	if (negative) negative=-1.0; else negative=1.0;
+
+	double avg1 = 0.0, sig1 = 0.0, avg2 = 0.0, sig2 = 0.0, lod = 0.0;
+	long n = 0;
+	size_t totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	size_t i;
+	
+	bool has_mask = false;
+	EMData* mask = 0;
+	if (params.has_key("mask")) {
+		mask = params["mask"];
+		if(mask!=0) {has_mask=true;}
+	}
+
+	int normalize = 0;
+	if (params.has_key("normalize")) {
+		normalize = params["normalize"];
+	}
+
+	if (normalize) {
+		if (has_mask) {
+			const float *const dm = mask->get_const_data();
+			for (i = 0; i < totsize; ++i) {
+				if (dm[i] > 0.5) {
+					avg1 += double(d1[i]);
+					avg2 += double(d2[i]);
+					n++;
+				}
+			}
+		} else {
+			for (i = 0; i < totsize; ++i) {
+				avg1 += double(d1[i]);
+				avg2 += double(d2[i]);
+			}
+			n = totsize;
+		}
+
+		avg1 /= double(n);
+		avg2 /= double(n);
+
+		if (has_mask) {
+			const float *const dm = mask->get_const_data();
+			for (i = 0; i < totsize; ++i) {
+				if (dm[i] > 0.5) {
+					sig1 += fabs(double(d1[i])-avg1);
+					sig2 += fabs(double(d2[i])-avg2);
+				}
+			}
+		} else {
+			for (i = 0; i < totsize; ++i) {
+				sig1 += fabs(double(d1[i])-avg1);
+				sig2 += fabs(double(d2[i])-avg2);
+			}
+		}
+	} else {
+		avg1 = 0.0; avg2 = 0.0;
+		sig1 = 1.0; sig2 = 1.0;
+	}
+
+	if (has_mask) {
+		const float *const dm = mask->get_const_data();
+		for (i = 0; i < totsize; ++i) {
+			if (dm[i] > 0.5) {
+				lod += fabs((double(d1[i])-avg1)/sig1 - (double(d2[i])-avg2)/sig2);
+			}
+		}
+	} else {
+		for (i = 0; i < totsize; ++i) {
+			lod += fabs((double(d1[i])-avg1)/sig1 - (double(d2[i])-avg2)/sig2);
+		}
+	}
+	
+	lod *= (-0.5);
+	lod *= negative;
+	return static_cast<float>(lod);
+	EXITFUNC;
+}
 
 
 //float SqEuclideanCmp::cmp(EMData * image, EMData *withorig) const

@@ -184,6 +184,42 @@ namespace EMAN
 		static const string NAME;
 	};
 
+
+	/* Compues the L^1 difference, after normalization.*/
+	class LodCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "L^1 normalized difference (positive by default)";
+		}
+
+		static Cmp *NEW()
+		{
+			return new LodCmp();
+		}
+
+		//param mask Image mask
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("negative", EMObject::INT, "If set (which is the default), returns Lod. (The smaller the better)");
+			d.put("normalize", EMObject::INT, "If set, normalizes maps prior to computing the difference. Default=0 (no normalization)");
+			d.put("mask", EMObject::EMDATA, "image mask");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
 	/** Squared Euclidean distance normalized by n between 'this' and 'with'*/
 	//  I corrected this as there is no such thing as "variance between two images"
 	//  I corrected naive coding to avoid square
