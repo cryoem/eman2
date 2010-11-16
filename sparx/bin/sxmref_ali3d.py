@@ -49,8 +49,11 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
+	usage = progname + " stack ref_vols outdir <mask> --focus=3Dmask --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step " +\
+	" --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop " + \
+	" --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--focus",    type="string",       default=None,             help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",         default="-1",	       help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
 	parser.add_option("--maxit",	type= "int",         default=5, 	       help="maximum number of iteration")
@@ -95,7 +98,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		mref_ali3d(args[0], args[1], args[2], maskfile, options.maxit, options.ir, options.ou, options.rs, options.xr,
+		mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, options.xr,
 		options.yr, options.ts, options.delta, options.an, options.center,
 		options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym,
 		options.function, options.MPI, options.npad, options.debug, options.fourvar, options.stoprnct)
