@@ -69,6 +69,8 @@ images far from focus."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
+	parser.add_option("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)
+	parser.add_option("--minptcl",type="int",help="Files with fewer than the specified number of particles will be skipped",default=0)
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Important: also replaces the SNR with a smoothed version.",default=False)
@@ -96,6 +98,12 @@ images far from focus."""
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
+	
+	if options.allparticles:
+		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles") if "_ctf_" not in i]
+		args.sort()
+		if options.verbose : print "%d particle files identified"%len(args)
+		
 	if len(args)<1 : parser.error("Input image required")
 	if options.autofit:
 		if options.voltage==0 : parser.error("Please specify voltage")
@@ -117,7 +125,12 @@ images far from focus."""
 	db_parms=db_open_dict("bdb:e2ctf.parms")
 #	db_misc=db_open_dict("bdb:e2ctf.misc")
 
+	# remove any files that don't have enough particles from the list
+	if options.minptcl>0 :
+		args=[i for i in args if EMUtil.get_image_count(i)>=options.minptcl]
+
 	options.filenames = args
+		
 	### Power spectrum and CTF fitting
 	if options.autofit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
@@ -1369,8 +1382,10 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Smoothed SNR")
 		self.splotmode.addItem("Integrated SNR")
 		self.splotmode.addItem("Total CTF")
-		self.splotmode.addItem("<debug>")
+		self.splotmode.addItem("Total SNR")
+		self.splotmode.addItem("All SNR (peak)")
 		self.splotmode.addItem("SNR Scaling")
+		self.splotmode.addItem("<debug>")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -1627,16 +1642,42 @@ class GUIctf(QtGui.QWidget):
 			for i in range(1,len(snr)): snr[i]/=len(snr)			# this way the relative quality of images can be compared
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
 			self.guiplot.setAxisParms("s (1/A)","Integrated SNR")
+		# Total CTF
 		elif self.plotmode==5:
 			inten=[fabs(i) for i in ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]		# The snr curve
-			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
+			self.guiplot.set_data((s,inten[:len(s)]),"single",True,quiet=True)
 			all=[0 for i in inten]
 			for st in self.data:
 #				print st
 				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
-			self.guiplot.set_data((s,all[:len(s)]),"total")
-		elif self.plotmode==6: 
+			self.guiplot.set_data((s,all[:len(s)]),"total",False,True)
+			self.guiplot.setAxisParms("s (1/A)","CTF Sum")
+		# Total SNR
+		elif self.plotmode==6:
+			inten=[fabs(i) for i in ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)]		# The snr curve
+#			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
+			all=[0 for i in inten]
+			for st in self.data:
+#				print st
+				inten=st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
+				for i in range(len(all)): all[i]+=inten[i]
+			self.guiplot.set_data((s,all[:len(s)]),"total",True,True)
+			self.guiplot.setAxisParms("s (1/A)","SNR Sum")
+		# All SNR
+		elif self.plotmode==7:
+			self.guiplot.set_data(None,None,True,True)		# erase existing data quietly
+			for st in self.data:
+				inten=st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
+				inten=[(s[i],inten[i]) for i in xrange(1,len(inten)-1) if inten[i]>inten[i+1] and inten[i]>inten[i-1]]
+				ls,li=zip(*inten)	# this confusing idiom is unzipping the list
+#				print len(ls),len(li)
+				self.guiplot.set_data((ls,li),st[0],quiet=True,linetype=-1,symtype=0,symsize=2)
+				
+			self.guiplot.setAxisParms("s (1/A)","SNR")
+#			self.guiplot.updateGL()
+		# Debug
+		elif self.plotmode==9: 
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 #			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			
@@ -1661,7 +1702,8 @@ class GUIctf(QtGui.QWidget):
 			#fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
 
 			#self.guiplot.set_data("fit",(s,fit))
-		elif self.plotmode==7:
+		# SNR Scaling
+		elif self.plotmode==8:
 			# SNR computed from fit and background
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i]) for i in range(len(s))]		# squared * structure factor/background
@@ -1669,7 +1711,7 @@ class GUIctf(QtGui.QWidget):
 			# SNR from data
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
 
-			self.guiplot.set_data((fit,snr),"SNR plot",True)
+			self.guiplot.set_data((fit,snr),"SNR plot",True,True)
 			self.guiplot.setAxisParms("SNR (fit)","SNR (meas)")
 
 

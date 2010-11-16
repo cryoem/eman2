@@ -158,7 +158,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -175,6 +175,10 @@ class EMPlot2DWidget(EMGLWidget):
 			self.axes = {}
 			self.visibility = {}
 			
+		if input_data==None :
+			if not quiet: self.updateGL()
+			return
+				
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
 		else: data = input_data
@@ -189,9 +193,9 @@ class EMPlot2DWidget(EMGLWidget):
 		else : doline,linetype=0,0
 		if symtype>=0 : dosym=1
 		else : dosym,symtype=0,0
-		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,4)
-		
-		if not isinstance(data[0],list):
+		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
+				
+		if not isinstance(data[0],list) and not isinstance(data[0],tuple):
 			x_axis = [i for i in range(len(data))]
 			rdata = [ x_axis,data ]
 			self.data[key]= rdata
@@ -552,7 +556,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.del_shapes(("xcross","ycross","lcross"))
 
 	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
-		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
+# skip this since we want a guaranteed redraw somewhere
+#		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
 		self.axisparms=(xlabel,ylabel,xlog,ylog)
 		self.needupd=1
 		self.updateGL()
