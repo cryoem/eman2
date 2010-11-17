@@ -707,6 +707,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		# plot list
 		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSelectionMode(3)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)
 		
@@ -724,6 +725,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.saveb=QtGui.QPushButton(self)
 		self.saveb.setText("Save")
 		hbl0.addWidget(self.saveb)
+
+		self.concatb=QtGui.QPushButton(self)
+		self.concatb.setText("Concat")
+		hbl0.addWidget(self.concatb)
+
 
 		self.loadb=QtGui.QPushButton(self)
 		self.loadb.setText("Load")
@@ -888,6 +894,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
+		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
 		self.datachange()
 		
 	def on_bad_button(self,unused=False):
@@ -952,6 +959,29 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		self.__remove_from_file("xian_bad.txt",names)
 		self.__at_to_file("xian_good.txt",names)
+
+	def saveConcatPlot(self):
+		"""Saves the contents of the current plot to a text file. All sets are concatenated together into a single file"""
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names) == 0: return
+
+		name2="plt_concat.txt"
+		i=0
+		while os.path.exists(name2):
+			name2="plt_concat_%02d.txt"%(i)
+			i+=1
+		out=file(name2,"a")
+
+
+		for name in names :
+			data=self.target().data[name]
+				
+			for i in xrange(len(data[0])):
+				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
+				
+		out=None
+		print "Wrote ",name2
+
 
 	def savePlot(self):
 		"""Saves the contents of the current plot to a text file"""

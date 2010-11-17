@@ -236,8 +236,8 @@ def get_gui_arg_img_sets(filenames):
 	for fsp in filenames:
 		name = get_file_tag(fsp)
 		if not db_parms.has_key(name):
-			print "error, you must first run auto fit before running the gui - there are no parameters for",name
-			return []
+			print "Warning, you must first run auto fit before running the gui - there are no parameters for",name
+			continue
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
 		ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
@@ -1657,12 +1657,20 @@ class GUIctf(QtGui.QWidget):
 		elif self.plotmode==6:
 			inten=[fabs(i) for i in ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)]		# The snr curve
 #			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
-			all=[0 for i in inten]
+			allt=[0 for i in inten]
+			allw=[0 for i in inten]
 			for st in self.data:
 #				print st
 				inten=st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
-				for i in range(len(all)): all[i]+=inten[i]
-			self.guiplot.set_data((s,all[:len(s)]),"total",True,True)
+				for i in range(len(allt)): 
+					allt[i]+=inten[i]
+					allw[i]+=inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)  # *number of particles / number of pixels
+			self.guiplot.set_data((s,allt[:len(s)]),"Total",True,True)
+			
+			# This is a sort of estimated 3-D SNR assuming each pixel contributes to 2 Fourier voxels
+			# and not taking symmetry or oversampling into account. Useful for VERY rough estimates only
+			self.guiplot.set_data((s,allw[:len(s)]),"Total 3D /(sym*oversamp)",False,True)
+
 			self.guiplot.setAxisParms("s (1/A)","SNR Sum")
 		# All SNR
 		elif self.plotmode==7:
