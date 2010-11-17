@@ -1658,7 +1658,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		solns.push_back(d);
 	}
 	
-	EMData * tofft;
+	EMData * tofft = 0;
 	if(dotrans || cmp_name == "ccc.tomo"){
 		tofft = to->do_fft();
 	}
@@ -1711,6 +1711,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		}
 	}
 
+	if(tofft) {delete tofft; tofft = 0;}
 	return solns;
 
 }
@@ -1802,7 +1803,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 	float verbose_alt = -1.0f;
 	//precompute fixed FT, saves a LOT of time!!!
-	EMData * tofft;
+	EMData * tofft = 0;
 	if(dotrans || cmp_name == "ccc.tomo"){
 		tofft = to->do_fft();
 	}
@@ -1857,7 +1858,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		}
 	}
 	delete sym; sym = 0;
-	delete tofft; tofft = 0;
+	if(tofft) {delete tofft; tofft = 0;}
 	return solns;
 
 }

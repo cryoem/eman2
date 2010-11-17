@@ -8333,19 +8333,19 @@ EMData* TransformProcessor::process(const EMData* const image) {
 #ifdef EMAN2_USING_CUDA
 	if (image->gpu_operation_preferred()) {
 	
- 	        cout << "using CUDA" << endl;
+ 	        //cout << "using CUDA" << endl;
 		float * m = new float[12];
 		Transform inv = t->inverse();
 		inv.copy_matrix_into_array(m);
 		image->bind_cuda_texture();
 		EMDataForCuda* tmp = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
-		printf("CUDA ptr = %d\n", tmp->data);
-		size_t num_bytes = tmp->nx*tmp->ny*tmp->nz*sizeof(float);
-		float * rdata;
-		rdata = (float*) malloc(num_bytes);
-		cudaError_t error = cudaMemcpy(rdata,tmp->data,num_bytes,cudaMemcpyDeviceToHost);
-		if (error != cudaSuccess ){cout << "CUDA FAILED!!! " << error << endl;}
-		cout << error << endl;
+		//printf("CUDA ptr = %d\n", tmp->data);
+		//size_t num_bytes = tmp->nx*tmp->ny*tmp->nz*sizeof(float);
+		//float * rdata;
+		//rdata = (float*) malloc(num_bytes);
+		//cudaError_t error = cudaMemcpy(rdata,tmp->data,num_bytes,cudaMemcpyDeviceToHost);
+		//if (error != cudaSuccess ){cout << "CUDA FAILED!!! " << error << endl;}
+		//cout << error << endl;
 		image->unbind_cuda_texture();
 		delete [] m;
 		if (tmp == 0) throw;

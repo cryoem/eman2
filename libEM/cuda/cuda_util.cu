@@ -59,12 +59,12 @@ cudaArray* get_cuda_array(const float * const data,const int nx, const int ny, c
 		}
 	} else if ( ny > 1) {
 // 		printf("It's a 2D one\n");
-		printf("Strating CUDA\n");
+//		printf("Strating CUDA\n");
 //		cudaMallocArray(&arrayt,&channelDesc,0,0);
 		cudaMalloc((void**)&dm,msize);
-		printf("Starting CUDA MALLOC\n");
+//		printf("Starting CUDA MALLOC\n");
 		cudaMallocArray(&array,&channelDesc,nx,ny);
-		printf("Finishing CUDA MALLOC\n");
+//		printf("Finishing CUDA MALLOC\n");
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
 // 		printf("It's a 3D one %d %d %d %d\n",VS.width,VS.height,nx,ny);
 		cudaMalloc3DArray(&array, &channelDesc, VS);
