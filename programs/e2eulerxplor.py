@@ -39,6 +39,7 @@ from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from emanimationutil import OrientationListAnimation,Animator
 from emapplication import EMApp, get_application
+from emglobjects import EM3DModel
 from emimage2d import EMImage2DWidget
 from emimage3dsym import EM3DSymModel, EMSymInspector, EMSymViewerWidget
 from emimagemx import EMImageMXWidget, EMLightWeightParticleCache
@@ -121,11 +122,14 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				if hit == self.current_hit:
 					self.emit(QtCore.SIGNAL("point_selected"),self.current_hit,event)
 			else:
-				EM3DSymModel.mouseReleaseEvent(self,event)
-					
+				#EM3DSymModel.mouseReleaseEvent(self,event)
+				EM3DModel.mouseReleaseEvent(self, event) #behavior in EM3DSymModel is not what we want (needed in sibling classes?)
+				
 			self.current_hit = None
 		else:
-			EM3DSymModel.mouseReleaseEvent(self, event)
+				#EM3DSymModel.mouseReleaseEvent(self,event)
+				EM3DModel.mouseReleaseEvent(self, event) #behavior in EM3DSymModel is not what we want (needed in sibling classes?)
+
 		
 	def mouseMoveEvent(self,event):
 		if self.events_mode == "inspect" and self.current_hit:
