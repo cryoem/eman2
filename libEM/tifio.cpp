@@ -283,8 +283,8 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 							}
 							else if (bitspersample == sizeof(float) * CHAR_BIT) {
 								photometric == PHOTOMETRIC_MINISWHITE ?
-										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((float*)cdata)[i*tileWidth+j] :
-										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((float*)cdata)[i*tileWidth+j];
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -((float*)cdata)[i*tileWidth+j] :
+										rdata[nx*(ny-1)-(ypos*nx)+xpos] = ((float*)cdata)[i*tileWidth+j];
 							}
 							else {
 								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
@@ -355,8 +355,8 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 						}
 						else if (bitspersample == sizeof(float) * CHAR_BIT) {
 							photometric == PHOTOMETRIC_MINISWHITE ?
-								rdata[k] = -(float)((float*)cdata)[l * nx + j] :
-								rdata[k] = (float)((float*)cdata)[l * nx + j];
+								rdata[k] = -((float*)cdata)[l * nx + j] :
+								rdata[k] = ((float*)cdata)[l * nx + j];
 						}
 						k++;
 					}
