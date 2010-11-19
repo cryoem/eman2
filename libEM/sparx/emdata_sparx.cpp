@@ -1130,6 +1130,136 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult)
 	EXITFUNC;
 }
 
+
+void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult)
+{
+	ENTERFUNC;
+	vector<int> saved_offsets = get_array_offsets();
+	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
+	set_array_offsets(0,1,1);
+	myfft->set_array_offsets(0,1);
+	
+	// insert rectangular fft from my nn4_rect code
+
+	Vec2f coordinate_2d_sqaure;
+	Vec3f coordinate_3dnew;
+	Vec3f axis_newx;
+	Vec3f axis_newy;
+	Vec3f tempv;
+	
+       	//begin of scaling factor calculation
+	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
+	axis_newx[0] = xratio*0.5*(sizeofprojection*npad)*trans[0][0];
+	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
+	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
+
+	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
+	
+	int ellipse_length_x_int = int(ellipse_length_x);
+	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float xscale = ellipse_step_x;//scal increased
+
+  	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
+  	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
+  	axis_newy[2] = 0.5*(sizeofprojection*npad)*trans[1][2];
+
+
+
+	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
+	int ellipse_length_y_int = int(ellipse_length_y);
+	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float yscale = ellipse_step_y;
+	//end of scaling factor calculation
+	std::complex<float> c1;
+	nz = get_zsize();
+
+	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
+	float r2_at_point;
+	
+	for(int i=0;i<ellipse_length_x_int;i++) {
+		for(int j=-1*ellipse_length_y_int+1; j<=ellipse_length_y_int; j++) {
+        	    
+			r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+			if(r2_at_point<=r2 ) {
+				
+				
+				coordinate_2d_sqaure[0] = xscale*float(i);
+				coordinate_2d_sqaure[1] = yscale*float(j);
+				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
+				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
+				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_3dnew[0] =xnew*xratio;
+				coordinate_3dnew[1] = ynew*yratio;
+				coordinate_3dnew[2] = znew;
+				
+				//binlinear interpolation
+				float xp = coordinate_2d_sqaure[0];
+				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				std::complex<float> lin_interpolated(0,0);
+				int xlow=int(xp),xhigh=int(xp)+1;
+				int ylow=int(yp),yhigh=int(yp)+1;
+				float tx=xp-xlow,ty=yp-ylow;
+
+				
+				if(j == -1) {
+					
+					if(ylow<yp)
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty) + myfft->cmplx(xhigh,yhigh)*tx*ty;
+					else 
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
+ 		  				+ myfft->cmplx(xhigh,ylow)*tx;
+									
+					}
+				else {
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
+					
+					}
+					
+				c1 = lin_interpolated;
+				
+				//now nearest neighborhood interpolation
+				
+				std::complex<float> btq;
+				if ( coordinate_3dnew[0] < 0.) {
+					coordinate_3dnew[0] = -coordinate_3dnew[0];
+					coordinate_3dnew[1] = -coordinate_3dnew[1];
+					coordinate_3dnew[2] = -coordinate_3dnew[2];
+					btq = conj(c1);
+					} else {
+					btq = c1;
+					}
+				int ixn = int(coordinate_3dnew[0] + 0.5 + nx) - nx;
+				int iyn = int(coordinate_3dnew[1] + 0.5 + ny) - ny;
+				int izn = int(coordinate_3dnew[2] + 0.5 + nz) - nz;
+
+				int iza, iya;
+				if (izn >= 0)  iza = izn + 1;
+				else	       iza = nz + izn + 1;
+
+				if (iyn >= 0) iya = iyn + 1;
+				else	      iya = ny + iyn + 1;
+
+				cmplx(ixn,iya,iza) += btq*float(mult);
+				(*w)(ixn,iya,iza) += mult;
+					
+				}
+			}
+        		    
+		}
+
+
+	//end insert rectanular fft
+		
+	set_array_offsets(saved_offsets);
+	myfft->set_array_offsets(myfft_saved_offsets);
+	EXITFUNC;
+
+}
+
+
+
 void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int)
 {
 	ENTERFUNC;
@@ -1597,81 +1727,6 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) 
 	EXITFUNC;
 }
 
-//get the index among different coordinate system
-//xscal,yscal are scale factor in the 2D fft of the projectin
-//xratio, yratio are scale factor in the 3D fft space
-void get_rect_index(int i, int j,Vec2f& coordinate_2d_sqaure,Vec3f& coordinate_3dnew,const Transform& trans,float xscale,float yscale,float xratio,float yratio)
-	{
-        //i j are the index at scaled 2d fft space
-	//coordinate_2dnew is the corridnate at squre 2D fft space
-	//cordinae_3dnew is the corrdinate at 3d scaled fft space and is used to insert the nearest neighbor value
-	coordinate_2d_sqaure[0]=xscale*float(i);
-	coordinate_2d_sqaure[1]=yscale*float(j);
-	float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
-	float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
-	float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
-
-
-	coordinate_3dnew[0]=xnew*xratio;
-	coordinate_3dnew[1]=ynew*yratio;
-	coordinate_3dnew[2]=znew;
-
-	
-	}
-
-std::complex<float> get_rect_value_bilinear(EMData* padded,Vec2f& coordinate_2d_square,int nz)
-	{
-         //get the complex fft value through linear interpolation
-	 
-	 float xp=coordinate_2d_square[0];
-	 float ynew=coordinate_2d_square[1];
-	 float yp = (ynew >= 0) ? ynew+1 : nz+ynew+1;
-	 std::complex<float> lin_interpolated(0,0);
-	 int xlow=int(xp),xhigh=int(xp)+1;
-	 int ylow=int(yp),yhigh=int(yp)+1;
-
-	 float tx=xp-xlow,ty=yp-ylow;
-
- 	 lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)*(1-ty)
-   			  +padded->cmplx(xlow,yhigh)*(1-tx)*ty
-    			  +padded->cmplx(xhigh,ylow)*tx*(1-ty)
-                          +padded->cmplx(xhigh,yhigh)*tx*ty;
-
-	 return lin_interpolated;
-	 
-	 
-
-;
-	}
-
-std::complex<float> get_rect_value_bilinear_yminusone(EMData* padded,Vec2f& coordinate_2d_square,int nz)
-	{
-         //get the complex fft value through linear interpolation
-	 //y equal to -1 need special processing
-	 float xp=coordinate_2d_square[0];
-	 float ynew=coordinate_2d_square[1];
-	 float yp = (ynew >= 0) ? ynew+1 : nz+ynew+1;
-	 std::complex<float> lin_interpolated(0,0);
-	 int xlow=int(xp),xhigh=int(xp)+1;
-	 int ylow=int(yp),yhigh=int(yp)+1;
-
-	 float tx=xp-xlow,ty=yp-ylow;
-
- 	if(ylow<yp)
-		lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)*(1-ty)
- 			  +padded->cmplx(xlow,yhigh)*(1-tx)*ty
-  			  +padded->cmplx(xhigh,ylow)*tx*(1-ty)
-                            +padded->cmplx(xhigh,yhigh)*tx*ty;
-	else 
-		lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)
- 		  		+padded->cmplx(xhigh,ylow)*tx;
-
-	 return lin_interpolated;
-	 
-	 
-
-;
-	}
 
 void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult)
 {
@@ -1803,13 +1858,6 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 
 	//end insert rectanular fft
 		
-
-
- 
-	//}
-
-	// loop over frequencies in y
-	//for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_applied(iy, ny, nxc, w, myfft, tf, mult);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
@@ -1824,6 +1872,7 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
+	
 	// insert rectangular fft from my nn4_rect code
 
 	Vec2f coordinate_2d_sqaure;
@@ -1838,15 +1887,11 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
 	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
 
-
-
-
-
-	float ellipse_length_x=std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
+	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
-	int ellipse_length_x_int=int(ellipse_length_x);
-	float ellipse_step_x=0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
-	float xscale=ellipse_step_x;//scal increased
+	int ellipse_length_x_int = int(ellipse_length_x);
+	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float xscale = ellipse_step_x;//scal increased
 
   	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
   	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
@@ -1854,76 +1899,102 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 
 
 
-	float ellipse_length_y=std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
-	int ellipse_length_y_int=int(ellipse_length_y);
-	float ellipse_step_y=0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
-	float yscale=ellipse_step_y;
+	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
+	int ellipse_length_y_int = int(ellipse_length_y);
+	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
-	nz=get_zsize();
+	nz = get_zsize();
 	Ctf* ctf = myfft->get_attr( "ctf" );
         ctf_store_new::init( nz, ctf );
         if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
-
 	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
 	
-	for(int i=0;i<ellipse_length_x_int;i++)
-	    {
-		for(int j=-1*ellipse_length_y_int+1;j<-1;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2&&!(0==i))
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz);
- 			put_rect_value_nn_ctf_applied(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-		for(int j=-1;j<=-1;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2&&!(0==i))
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear_yminusone(myfft,coordinate_2d_sqaure,nz); 
- 			put_rect_value_nn_ctf_applied(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-		for(int j=0;j<=ellipse_length_y_int;j++)
-                  {
-		 
- 		r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		if(r2_at_point<=r2)
-		
- 		     {
-			float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		        c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz); 
- 			put_rect_value_nn_ctf_applied(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		      }
-                  }
-			
-	    }
+	for(int i=0;i<ellipse_length_x_int;i++) {
+		for(int j=-1*ellipse_length_y_int+1; j<=ellipse_length_y_int; j++) {
+        	    
+			r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+			if(r2_at_point<=r2 && ! ((0==i) && (j<0))) {
+				
+				float ctf_value = ctf_store_new::get_ctf( r2_at_point );
+				coordinate_2d_sqaure[0] = xscale*float(i);
+				coordinate_2d_sqaure[1] = yscale*float(j);
+				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
+				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
+				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_3dnew[0] =xnew*xratio;
+				coordinate_3dnew[1] = ynew*yratio;
+				coordinate_3dnew[2] = znew;
+				
+				//binlinear interpolation
+				float xp = coordinate_2d_sqaure[0];
+				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				std::complex<float> lin_interpolated(0,0);
+				int xlow=int(xp),xhigh=int(xp)+1;
+				int ylow=int(yp),yhigh=int(yp)+1;
+				float tx=xp-xlow,ty=yp-ylow;
+
+				
+				if(j == -1) {
+					
+					if(ylow<yp)
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty) + myfft->cmplx(xhigh,yhigh)*tx*ty;
+					else 
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
+ 		  				+ myfft->cmplx(xhigh,ylow)*tx;
+									
+					}
+				else {
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
+					
+					}
+					
+				c1 = lin_interpolated;
+				
+				//now nearest neighborhood interpolation
+				
+				std::complex<float> btq;
+				if ( coordinate_3dnew[0] < 0.) {
+					coordinate_3dnew[0] = -coordinate_3dnew[0];
+					coordinate_3dnew[1] = -coordinate_3dnew[1];
+					coordinate_3dnew[2] = -coordinate_3dnew[2];
+					btq = conj(c1);
+					} else {
+					btq = c1;
+					}
+				int ixn = int(coordinate_3dnew[0] + 0.5 + nx) - nx;
+				int iyn = int(coordinate_3dnew[1] + 0.5 + ny) - ny;
+				int izn = int(coordinate_3dnew[2] + 0.5 + nz) - nz;
+
+				int iza, iya;
+				if (izn >= 0)  iza = izn + 1;
+				else	       iza = nz + izn + 1;
+
+				if (iyn >= 0) iya = iyn + 1;
+				else	      iya = ny + iyn + 1;
+
+				if(remove > 0 ) {
+					cmplx(ixn,iya,iza) -= btq*float(mult);
+					(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
+					} else {
+					cmplx(ixn,iya,iza) += btq*float(mult);
+					(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
+					}
+					
+				}
+			}
+        		    
+		}
 
 
 	//end insert rectanular fft
 		
-
-
- 
-	//}
-
-	// loop over frequencies in y
-	//for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_applied(iy, ny, nxc, w, myfft, tf, mult);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
@@ -1997,97 +2068,6 @@ Data::onelinenn_ctf(int j, int n, int n2,
 	}
 }
 */
-
-void EMData::put_rect_value_nn_ctf(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove)
-	{
-		//////////3d nearest neighborhood begin
-		
-		float xnew = coordinate_3dnew[0];
-		float ynew = coordinate_3dnew[1];
-		float znew = coordinate_3dnew[2];
-		std::complex<float> btq;
-		if (xnew < 0.) {
-			xnew = -xnew;
-			ynew = -ynew;
-			znew = -znew;
-			btq = conj(c1);
-		} else {
-			btq = c1;
-		}
-		int ixn = int(xnew + 0.5 + nx) - nx;
-		int iyn = int(ynew + 0.5 + ny) - ny;
-		int izn = int(znew + 0.5 + nz) - nz;
-
-		int iza, iya;
-		if (izn >= 0)  iza = izn + 1;
-		else	       iza = nz + izn + 1;
-
-		if (iyn >= 0) iya = iyn + 1;
-		else	      iya = ny + iyn + 1;
-/*
-			cmplx(ixn,iya,iza) += btq*float(mult);
-			(*w)(ixn,iya,iza)+=float(mult);*/
-
-                        if(remove > 0 ) {
-                                cmplx(ixn,iya,iza) -= btq*ctf_value*float(mult);
-				(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
-                                        } 
-			else {
-				 cmplx(ixn,iya,iza) += btq*ctf_value*float(mult);
-				(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
-                                        }
-
-
-
-
-/////////3d nearest neighborhood end
-
-	}
-void EMData::put_rect_value_nn_ctf_applied(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove)
-	{
-		//////////3d nearest neighborhood begin
-			
-			float xnew = coordinate_3dnew[0];
-			float ynew = coordinate_3dnew[1];
-			float znew = coordinate_3dnew[2];
-			std::complex<float> btq;
-			if (xnew < 0.) {
-				xnew = -xnew;
-				ynew = -ynew;
-				znew = -znew;
-				btq = conj(c1);
-			} else {
-				btq = c1;
-			}
-			int ixn = int(xnew + 0.5 + nx) - nx;
-			int iyn = int(ynew + 0.5 + ny) - ny;
-			int izn = int(znew + 0.5 + nz) - nz;
-
-			int iza, iya;
-			if (izn >= 0)  iza = izn + 1;
-			else	       iza = nz + izn + 1;
-
-			if (iyn >= 0) iya = iyn + 1;
-			else	      iya = ny + iyn + 1;
-/*
-			cmplx(ixn,iya,iza) += btq*float(mult);
-			(*w)(ixn,iya,iza)+=float(mult);*/
-
-                        if(remove > 0 ) {
-                                cmplx(ixn,iya,iza) -= btq*float(mult);
-				(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
-                                        } 
-			else {
-				 cmplx(ixn,iya,iza) += btq*float(mult);
-				(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
-                                        }
-
-
-
-
-/////////3d nearest neighborhood end
-
-	}
 
 
 void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int)
@@ -2304,7 +2284,7 @@ void EMData::symplane0_ctf(EMData* w) {
 	EXITFUNC;
 }
 
-void EMData::symplane0_ctf_rect(EMData* w) {
+void EMData::symplane0_rect(EMData* w) {
 	ENTERFUNC;
 	nx=get_xsize();
 	ny=get_ysize();
@@ -4152,12 +4132,8 @@ void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	set_array_offsets(saved_offsets);
 }
 
-void EMData::divkbsinh_rect(const Util::KaiserBessel& kbx,const Util::KaiserBessel& kby,const Util::KaiserBessel& kbz) {
-	
-	//cout << "divkbsinh_rect is called" << endl;
+void EMData::divkbsinh_rect(const Util::KaiserBessel& kbx, const Util::KaiserBessel& kby, const Util::KaiserBessel& kbz) {
 
-	//throw ImageFormatException("why cout is not excuted.");
-	
 	if (is_complex())
 		throw ImageFormatException("divkbsinh requires a real image.");
 	vector<int> saved_offsets = get_array_offsets();
@@ -4411,20 +4387,16 @@ EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
 
 
 
-EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz) {
+EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby, Util::KaiserBessel& kbz) {
 	
-// 	std::cout<<"extract_plane_rect is called"<<std::endl;
-// 	std::cout<<"nx,ny,nz=="<<nx<<" "<<ny<<" "<<nz<<" "<<std::endl;
+
 	if (!is_complex())
 		throw ImageFormatException("extractplane requires a complex image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
-//	int nxreal = nx - 2;
-	int nxfromz=nz+2;
+
+	int nxfromz = nz+2;
 	int nxcircal = nxfromz - 2;
-// 	if (nxreal != ny || nxreal != nz)
-// 		throw ImageDimensionException("extractplane requires ny == nx == nz");
-	// build complex result image
 	EMData* res = new EMData();
 	res->set_size(nxfromz,nz,1);
 	res->to_zero();
@@ -4435,12 +4407,12 @@ EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,
 	// Array offsets: (0..nhalf,-nhalf..nhalf-1,-nhalf..nhalf-1)
 	int n = nxcircal;
 	int nhalf = n/2;
-	int nxhalf=(nx-2)/2;
-	int nyhalf=ny/2;
-	int nzhalf=nz/2;
-	//std::cout<<"nhalf,nxhalf,nyhalf,nzhalf=="<<nhalf<<" "<<nxhalf<<" "<<nyhalf<<" "<<nzhalf<<std::endl;
+	int nxhalf = (nx-2)/2;
+	int nyhalf = ny/2;
+	int nzhalf = nz/2;
+	
 	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,-nyhalf,-nzhalf);
+	set_array_offsets(0, -nyhalf, -nzhalf);
 	res->set_array_offsets(0,-nhalf,0);
 	// set up some temporary weighting arrays
 	int kbxsize =  kbx.get_window_size();
@@ -4642,19 +4614,18 @@ EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,
 
 
 
-EMData* EMData::extract_plane_rect_fast(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz) {
+EMData* EMData::extract_plane_rect_fast(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby, Util::KaiserBessel& kbz) {
 	
  	
-// 	std::cout<<"nx,ny,nz=="<<nx<<" "<<ny<<" "<<nz<<" "<<std::endl;
+
 	if (!is_complex())
 		throw ImageFormatException("extractplane requires a complex image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
-//	int nxreal = nx - 2;
+
 	int nxfromz=nz+2;
 	int nxcircal = nxfromz - 2;
-// 	if (nxreal != ny || nxreal != nz)
-// 		throw ImageDimensionException("extractplane requires ny == nx == nz");
+
 	// build complex result image
 	float xratio=float(nx-2)/float(nz);
 	float yratio=float(ny)/float(nz);

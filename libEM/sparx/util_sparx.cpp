@@ -18209,7 +18209,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 
 vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float psi_max, string mode,
-                vector<int>numr, float cnx, float cny,int ynumber) {
+                vector<int>numr, float cnx, float cny, int ynumber) {
 
 	size_t crefim_len = crefim.size();
 
@@ -18263,8 +18263,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 	//if ynumber is given, it should be even. We need to check whether it is zeros
 	else if(ynumber==0)
 	{
-	
-		for (int j = -kx; j <= kx; j++) 
+			for (int j = -kx; j <= kx; j++) 
 			{
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
@@ -18296,22 +18295,17 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 				}
 			   }  
 				delete cimage; cimage = 0;
-			}
-		   
-	
+			}		   	
 	}
 	else
 	{
-	        
 	
 		int   ky = int(ynumber/2);		
 		float stepy=2*yrng/ynumber;
 		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
-		for (int i = -ky+1; i <= ky; i++) 
-			{
+		for (int i = -ky+1; i <= ky; i++) {
 			iy = i * stepy ;
-			for (int j = -kx; j <= kx; j++) 
-				{
+			for (int j = -kx; j <= kx; j++)	{
 				ix = j*step ;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -18342,9 +18336,6 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 				delete cimage; cimage = 0;
 			}
 		   }
-	
-	
-	
 	}
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );

@@ -142,6 +142,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param mult
 		 */
 		void nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult=1);
+		void insert_rect_slice( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
@@ -226,8 +227,7 @@ EMData* mult_radial(EMData* radial);
 		**/
 		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult);
 		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad,int mult);
-		void put_rect_value_nn_ctf(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove);
-		void put_rect_value_nn_ctf_applied(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove);
+	
 
 		/** Helper function for method nn4_ctf.
 		 *  here it is assumed the projection data was already multiplied by the ctf...
@@ -259,7 +259,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param w Normalization data.
 		 */
 		void symplane0_ctf(EMData* w);
-		void symplane0_ctf_rect(EMData* w);
+		void symplane0_rect(EMData* w);
 
 
 		/** Symmetrize volume in real space.
@@ -522,8 +522,8 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 		EMData* extract_plane(const Transform& tf, Util::KaiserBessel& kb);
-		EMData* extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz);
-		EMData* extract_plane_rect_fast(const Transform& tf, Util::KaiserBessel& kbx,Util::KaiserBessel& kby,Util::KaiserBessel& kbz);
+		EMData* extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx, Util::KaiserBessel& kby, Util::KaiserBessel& kbz);
+		EMData* extract_plane_rect_fast(const Transform& tf, Util::KaiserBessel& kbx, Util::KaiserBessel& kby, Util::KaiserBessel& kbz);
 
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 
@@ -540,7 +540,7 @@ EMData* mult_radial(EMData* radial);
 		 *        EMData::project() interface rather awkward here.
 		 */
 		void divkbsinh(const Util::KaiserBessel& kb);
-		void divkbsinh_rect(const Util::KaiserBessel& kbx,const Util::KaiserBessel& kby,const Util::KaiserBessel& kbz);
+		void divkbsinh_rect(const Util::KaiserBessel& kbx, const Util::KaiserBessel& kby, const Util::KaiserBessel& kbz);
 
 
 		/** masked_stats -- Compute image statistics under a mask
