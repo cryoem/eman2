@@ -2118,6 +2118,7 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, i
 	return 0;
 }
 
+
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 
 void circumf( EMData* win , int npad)
@@ -2479,9 +2480,8 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 	Assert( mult > 0 );
 
         if( m_ndim==3 ) {
-		//insert_padfft_slice( padfft, t, mult );
-		padfft->set_array_offsets(0,1);
-		insert_rect_slice(padfft,t,mult);
+		insert_padfft_slice( padfft, t, mult );		
+		
 	} else {
 		float ellipse_length,ellipse_step,cos_alpha,sin_alpha;
 		int ellipse_length_int;
@@ -2547,285 +2547,25 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 	checked_delete( padfft );
 	return 0;
 }
-int nn4_rectReconstructor::insert_rect_slice(EMData* padded,const Transform& trans,int mult)
-	{
-	padded->set_array_offsets(0,1);
-	Vec2f coordinate_2d_sqaure;
-	Vec3f coordinate_3dnew;
-	Vec3f axis_newx;
-	Vec3f axis_newy;
-	Vec3f tempv;
-	
-       	//begin of scaling factor calculation
-	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
-	axis_newx[0] = m_xratio*0.5*(m_sizeofprojection*m_npad)*trans[0][0];
-	axis_newx[1] = m_yratio*0.5*(m_sizeofprojection*m_npad)*trans[0][1];
-	axis_newx[2] = 0.5*(m_sizeofprojection*m_npad)*trans[0][2];
 
 
 
 
-
-	float ellipse_length_x=sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
-	
-	int ellipse_length_x_int=int(ellipse_length_x);
-	float ellipse_step_x=0.5*(m_sizeofprojection*m_npad)/float(ellipse_length_x_int);
-	m_xscale=ellipse_step_x;//scal increased
-
-  	axis_newy[0] = m_xratio*0.5*(m_sizeofprojection*m_npad)*trans[1][0];
-  	axis_newy[1] = m_yratio*0.5*(m_sizeofprojection*m_npad)*trans[1][1];
-  	axis_newy[2] = 0.5*(m_sizeofprojection*m_npad)*trans[1][2];
-
-
-
-	float ellipse_length_y=sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
-	int ellipse_length_y_int=int(ellipse_length_y);
-	float ellipse_step_y=0.5*(m_sizeofprojection*m_npad)/float(ellipse_length_y_int);
-	m_yscale=ellipse_step_y;
-	//end of scaling factor calculation
-	std::complex<float> c1;
-	
-
-	float r2=0.25*m_sizeofprojection*m_npad*m_sizeofprojection*m_npad;
-	for(int i=0;i<ellipse_length_x_int;i++)
-	    {
-		for(int j=-1*ellipse_length_y_int+1;j<-1;j++)
-                  {
-		 
- 
- 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
-		
- 		     {
-      			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
-		        c1=get_rect_value_bilinear(padded,coordinate_2d_sqaure);
-			put_rect_value_nn(c1,coordinate_3dnew,mult);
- 		      }
-                  }
-		for(int j=-1;j<=-1;j++)
-                  {
-		 
- 
- 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
-		
- 		     {
-      			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
-		        c1=get_rect_value_bilinear_yminusone(padded,coordinate_2d_sqaure); 
-			put_rect_value_nn(c1,coordinate_3dnew,mult);
- 		      }
-                  }
-		for(int j=0;j<=ellipse_length_y_int;j++)
-                  {
-		 
- 
- 		if((i*m_xscale*i*m_xscale+j*m_yscale*j*m_yscale)<=r2)
-		
- 		     {
-      			get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans);
-		        c1=get_rect_value_bilinear(padded,coordinate_2d_sqaure); 
-			put_rect_value_nn(c1,coordinate_3dnew,mult);
- 		      }
-                  }
-			
-	    }
-
-	}
-void nn4_rectReconstructor::put_rect_value_nn(std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult)
-	{
-		//////////3d nearest neighborhood begin
-			
-			float xnew = coordinate_3dnew[0];
-			float ynew = coordinate_3dnew[1];
-			float znew = coordinate_3dnew[2];
-			std::complex<float> btq;
-			if (xnew < 0.) {
-				xnew = -xnew;
-				ynew = -ynew;
-				znew = -znew;
-				btq = conj(c1);
-			} else {
-				btq = c1;
-			}
-			int ixn = int(xnew + 0.5 + m_vnxp) - m_vnxp;
-			int iyn = int(ynew + 0.5 + m_vnyp) - m_vnyp;
-			int izn = int(znew + 0.5 + m_vnzp) - m_vnzp;
-
-			int iza, iya;
-			if (izn >= 0)  iza = izn + 1;
-			else	       iza = m_vnzp + izn + 1;
-
-			if (iyn >= 0) iya = iyn + 1;
-			else	      iya = m_vnyp + iyn + 1;
-
-			m_volume->cmplx(ixn,iya,iza) += btq*float(mult);
-			(*m_wptr)(ixn,iya,iza)+=float(mult);
-
-
-
-/////////3d nearest neighborhood end
-
-	}
-
-//during insertion of 2D fft, y=-1 need special processing
-std::complex<float> nn4_rectReconstructor::get_rect_value_bilinear_yminusone(EMData* padded,Vec2f& coordinate_2d_square)
-	{
-         //get the complex fft value through linear interpolation
-	 padded->set_array_offsets(0,1);
-	 float xp=coordinate_2d_square[0];
-	 float ynew=coordinate_2d_square[1];
-	 float yp = (ynew >= 0) ? ynew+1 : m_vnzp+ynew+1;
-	 std::complex<float> lin_interpolated(0,0);
-	 int xlow=int(xp),xhigh=int(xp)+1;
-	 int ylow=int(yp),yhigh=int(yp)+1;
-
-	 float tx=xp-xlow,ty=yp-ylow;
-
- 	if(ylow<yp)
-		lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)*(1-ty)
- 			  +padded->cmplx(xlow,yhigh)*(1-tx)*ty
-  			  +padded->cmplx(xhigh,ylow)*tx*(1-ty)
-                            +padded->cmplx(xhigh,yhigh)*tx*ty;
-	else 
-		lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)
- 		  		+padded->cmplx(xhigh,ylow)*tx;
-
-	 return lin_interpolated;
-	 
-	 
-
-;
-	}
-
-std::complex<float> nn4_rectReconstructor::get_rect_value_bilinear(EMData* padded,Vec2f& coordinate_2d_square)
-	{
-         //get the complex fft value through linear interpolation
-	 padded->set_array_offsets(0,1);
-	 float xp=coordinate_2d_square[0];
-	 float ynew=coordinate_2d_square[1];
-	 float yp = (ynew >= 0) ? ynew+1 : m_vnzp+ynew+1;
-	 std::complex<float> lin_interpolated(0,0);
-	 int xlow=int(xp),xhigh=int(xp)+1;
-	 int ylow=int(yp),yhigh=int(yp)+1;
-
-	 float tx=xp-xlow,ty=yp-ylow;
-
- 	 lin_interpolated=padded->cmplx(xlow,ylow)*(1-tx)*(1-ty)
-   			  +padded->cmplx(xlow,yhigh)*(1-tx)*ty
-    			  +padded->cmplx(xhigh,ylow)*tx*(1-ty)
-                          +padded->cmplx(xhigh,yhigh)*tx*ty;
-
-	 return lin_interpolated;
-	 
-	 
-
-;
-	}
-void nn4_rectReconstructor::get_rect_index(int i, int j,Vec2f& coordinate_2d_sqaure,Vec3f& coordinate_3dnew,const Transform& trans)
-	{
-        //i j are the index at scaled 2d fft space
-	//coordinate_2dnew is the corridnate at squre 2D fft space
-	//cordinae_3dnew is the corrdinate at 3d scaled fft space and is used to insert the nearest neighbor value
-	coordinate_2d_sqaure[0]=m_xscale*float(i);
-	coordinate_2d_sqaure[1]=m_yscale*float(j);
-	float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
-	float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
-	float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
-
-
-	coordinate_3dnew[0]=xnew*m_xratio;
-	coordinate_3dnew[1]=ynew*m_yratio;
-	coordinate_3dnew[2]=znew;
-
-	
-	}
-
-int nn4_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
-	// insert slice for all symmetry related positions
-	for (int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn( m_wptr, padfft, tsym, mult);
-        }
-	return 0;
-}
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-void circumf_rect_new( EMData* win , int npad,float m_xratio, float m_yratio)
-{
-	float *tw = win->get_data();
-	//  correct for the fall-off
-	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
-	float L2 = (iz/2)*(iz/2);
-	float L2P = (iz/2-2)*(iz/2-2);
-
-	int IP = ix/2+1;
-	int JP = iy/2+1;
-	int KP = iz/2+1;
 	
-	//  sinc functions tabulated for fall-off
-	float* sincx = new float[IP+1];
-	float* sincy = new float[JP+1];
-	float* sincz = new float[KP+1];
 
-	sincx[0] = 1.0f;
-	sincy[0] = 1.0f;
-	sincz[0] = 1.0f;
-
-	float cdf = M_PI/float(npad*2*ix);
-	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/float(npad*2*iy);
-	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/float(npad*2*iz);
-	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
-	for (int k = 1; k <= iz; ++k) {
-		int kkp = abs(k-KP);
-		for (int j = 1; j <= iy; ++j) {
-			cdf = sincy[abs(j- JP)]*sincz[kkp];
-			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+	for( int isym=0; isym < m_nsym; isym++) {
+		Transform tsym = t.get_sym( m_symmetry, isym );
+		 m_volume->insert_rect_slice(m_wptr, padded, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
 		}
-	}
 
-	delete[] sincx;
-	delete[] sincy;
-	delete[] sincz;
-
-	float  TNR = 0.0f;
-	size_t m = 0;
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-				float LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)/(m_yratio*m_yratio)+(i-IP)*(i-IP)/(m_xratio*m_xratio);
-				
-				if(LR >= L2P && LR <= L2) {
-						TNR += tw(i,j,k);
-						++m;
-				}
-				
-			}
-		}
-	}
-
-	TNR /=float(m);
-	std::cout<<"------------------------------------"<<std::endl;
-	std::cout<<"size==["<<ix<<" "<<iy<<" "<<iz<<"]"<<std::endl;
-	std::cout<<"corectedvalue==="<<TNR<<std::endl;
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-			//	size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-                        // if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
-			// else                tw(i,j,k) = 0.0f;
-			float LR = float((k-KP)*(k-KP))/(0.25*iz*iz)+float((j-JP)*(j-JP))/(0.25*iy*iy)+float((i-IP)*(i-IP))/(0.25*ix*ix);
-			if (LR<=1) tw(i,j,k)=tw(i,j,k);//tw(i,j,k) -= TNR;
-			 else                tw(i,j,k) = 0.0f;	
-
-			}
-		}
-	}
+	return 0;
 
 }
+
+#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 void circumf_rect( EMData* win , int npad)
 {
 	float *tw = win->get_data();
@@ -2905,49 +2645,13 @@ void circumf_rect( EMData* win , int npad)
 }
 #undef tw 
 
-void nn4_rectReconstructor::symplane0_rect( ){
-	
-	int nxc = m_vnxc;
-	int nx = nxc*2;
-	int nyc = m_vnyc;
-	int ny = nyc*2;
-	int nzc = m_vnzc;
-	int nz = nzc*2;
-	
-	// let's treat the local data as a matrix
-	for (int iza = 2; iza <= nzc; iza++) {
-		for (int iya = 2; iya <= nyc; iya++) {
-			m_volume->cmplx(0,iya,iza) += conj(m_volume->cmplx(0,ny-iya+2,nz-iza+2));
-			(*m_wptr)(0,iya,iza) += (*m_wptr)(0,ny-iya+2,nz-iza+2);
-			m_volume->cmplx(0,ny-iya+2,nz-iza+2) = conj(m_volume->cmplx(0,iya,iza));
-			(*m_wptr)(0,ny-iya+2,nz-iza+2) = (*m_wptr)(0,iya,iza);
-			m_volume->cmplx(0,ny-iya+2,iza) += conj(m_volume->cmplx(0,iya,nz-iza+2));
-			(*m_wptr)(0,ny-iya+2,iza) += (*m_wptr)(0,iya,nz-iza+2);
-			m_volume->cmplx(0,iya,nz-iza+2) = conj(m_volume->cmplx(0,ny-iya+2,iza));
-			(*m_wptr)(0,iya,nz-iza+2) = (*m_wptr)(0,ny-iya+2,iza);
-		}
-	}
-	for (int iya = 2; iya <= nyc; iya++) {
-		m_volume->cmplx(0,iya,1) += conj(m_volume->cmplx(0,ny-iya+2,1));
-		(*m_wptr)(0,iya,1) += (*m_wptr)(0,ny-iya+2,1);
-		m_volume->cmplx(0,ny-iya+2,1) = conj(m_volume->cmplx(0,iya,1));
-		(*m_wptr)(0,ny-iya+2,1) = (*m_wptr)(0,iya,1);
-	}
-	for (int iza = 2; iza <= nzc; iza++) {
-		m_volume->cmplx(0,1,iza) += conj(m_volume->cmplx(0,1,nz-iza+2));
-		(*m_wptr)(0,1,iza) += (*m_wptr)(0,1,nz-iza+2);
-		m_volume->cmplx(0,1,nz-iza+2) = conj(m_volume->cmplx(0,1,iza));
-		(*m_wptr)(0,1,nz-iza+2) = (*m_wptr)(0,1,iza);
-	}
-	
-}
+
 
 EMData* nn4_rectReconstructor::finish(bool doift)
 {
 	
         if( m_ndim==3 ) {
-		//m_volume->symplane000(m_wptr);
-		symplane0_rect();
+		m_volume->symplane0_rect(m_wptr);
 	} else {
 		for( int i=1; i <= m_vnyp; ++i ) {
 
@@ -3892,7 +3596,7 @@ EMData* nn4_ctf_rectReconstructor::finish(bool doift)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
-	m_volume->symplane0_ctf_rect(m_wptr);
+	m_volume->symplane0_rect(m_wptr);
 
 	int box = 7;
 	int vol = box*box*box;
