@@ -224,8 +224,8 @@ EMData* mult_radial(EMData* radial);
                 /**
 		 helper function to insert rectangualr slice for ctf rect case
 		**/
-		void insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio,int npad,int mult);
-		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio,int npad,int mult);
+		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult);
+		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad,int mult);
 		void put_rect_value_nn_ctf(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove);
 		void put_rect_value_nn_ctf_applied(EMData* w,std::complex<float>& c1,Vec3f& coordinate_3dnew,int mult,float ctf_value,int remove);
 

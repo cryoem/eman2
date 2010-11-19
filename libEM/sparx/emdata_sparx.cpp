@@ -1673,16 +1673,14 @@ std::complex<float> get_rect_value_bilinear_yminusone(EMData* padded,Vec2f& coor
 ;
 	}
 
-
-
-void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio,int npad,int mult)
+void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult)
 {
 	ENTERFUNC;
-	int nxc = attr_dict["nxc"]; 
 	vector<int> saved_offsets = get_array_offsets();
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
+	
 	// insert rectangular fft from my nn4_rect code
 
 	Vec2f coordinate_2d_sqaure;
@@ -1697,11 +1695,11 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
 	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
 	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
 
-	float ellipse_length_x=std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
+	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
-	int ellipse_length_x_int=int(ellipse_length_x);
-	float ellipse_step_x=0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
-	float xscale=ellipse_step_x;//scal increased
+	int ellipse_length_x_int = int(ellipse_length_x);
+	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float xscale = ellipse_step_x;//scal increased
 
   	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
   	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
@@ -1709,13 +1707,13 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
 
 
 
-	float ellipse_length_y=std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
-	int ellipse_length_y_int=int(ellipse_length_y);
-	float ellipse_step_y=0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
-	float yscale=ellipse_step_y;
+	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
+	int ellipse_length_y_int = int(ellipse_length_y);
+	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
-	nz=get_zsize();
+	nz = get_zsize();
 	Ctf* ctf = myfft->get_attr( "ctf" );
         ctf_store_new::init( nz, ctf );
         if(ctf) {delete ctf; ctf=0;}
@@ -1725,45 +1723,81 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
 	float r2_at_point;
 	
 	for(int i=0;i<ellipse_length_x_int;i++) {
-		    for(int j=-1*ellipse_length_y_int+1;j<-1;j++) {
-		     
- 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		    if(r2_at_point<=r2&&!(0==i))
-	
- 		    	 {
-		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		    	    c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz);
- 		    	    put_rect_value_nn_ctf(w, c1, coordinate_3dnew, mult, ctf_value, remove);
- 		    	  }
-        	      }
-		    for(int j=-1;j<=-1;j++)
-        	      {
-		     
- 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		    if(r2_at_point<=r2&&!(0==i))
-	
- 		    	 {
-		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		    	    c1=get_rect_value_bilinear_yminusone(myfft,coordinate_2d_sqaure,nz); 
- 		    	    put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		    	  }
-        	      }
-		    for(int j=0;j<=ellipse_length_y_int;j++)
-        	      {
-		     
- 		    r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
- 		    if(r2_at_point<=r2)
-	
- 		    	 {
-		    	    float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-       		    	    get_rect_index(i,j,coordinate_2d_sqaure,coordinate_3dnew,trans,xscale,yscale,xratio,yratio);
- 		    	    c1=get_rect_value_bilinear(myfft,coordinate_2d_sqaure,nz); 
- 		    	    put_rect_value_nn_ctf(w,c1,coordinate_3dnew,mult,ctf_value,remove);
- 		    	  }
-        	      }
-		    	    
+		for(int j=-1*ellipse_length_y_int+1; j<=ellipse_length_y_int; j++) {
+        	    
+			r2_at_point=i*xscale*i*xscale+j*yscale*j*yscale;
+			if(r2_at_point<=r2 && ! ((0==i) && (j<0))) {
+				
+				float ctf_value = ctf_store_new::get_ctf( r2_at_point );
+				coordinate_2d_sqaure[0] = xscale*float(i);
+				coordinate_2d_sqaure[1] = yscale*float(j);
+				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
+				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
+				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_3dnew[0] =xnew*xratio;
+				coordinate_3dnew[1] = ynew*yratio;
+				coordinate_3dnew[2] = znew;
+				
+				//binlinear interpolation
+				float xp = coordinate_2d_sqaure[0];
+				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				std::complex<float> lin_interpolated(0,0);
+				int xlow=int(xp),xhigh=int(xp)+1;
+				int ylow=int(yp),yhigh=int(yp)+1;
+				float tx=xp-xlow,ty=yp-ylow;
+
+				
+				if(j == -1) {
+					
+					if(ylow<yp)
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty) + myfft->cmplx(xhigh,yhigh)*tx*ty;
+					else 
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
+ 		  				+ myfft->cmplx(xhigh,ylow)*tx;
+									
+					}
+				else {
+						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
+						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
+					
+					}
+					
+				c1 = lin_interpolated;
+				
+				//now nearest neighborhood interpolation
+				
+				std::complex<float> btq;
+				if ( coordinate_3dnew[0] < 0.) {
+					coordinate_3dnew[0] = -coordinate_3dnew[0];
+					coordinate_3dnew[1] = -coordinate_3dnew[1];
+					coordinate_3dnew[2] = -coordinate_3dnew[2];
+					btq = conj(c1);
+					} else {
+					btq = c1;
+					}
+				int ixn = int(coordinate_3dnew[0] + 0.5 + nx) - nx;
+				int iyn = int(coordinate_3dnew[1] + 0.5 + ny) - ny;
+				int izn = int(coordinate_3dnew[2] + 0.5 + nz) - nz;
+
+				int iza, iya;
+				if (izn >= 0)  iza = izn + 1;
+				else	       iza = nz + izn + 1;
+
+				if (iyn >= 0) iya = iyn + 1;
+				else	      iya = ny + iyn + 1;
+
+				if(remove > 0 ) {
+					cmplx(ixn,iya,iza) -= btq*ctf_value*float(mult);
+					(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
+					} else {
+					cmplx(ixn,iya,iza) += btq*ctf_value*float(mult);
+					(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
+					}
+					
+				}
+			}
+        		    
 		}
 
 
@@ -1782,10 +1816,10 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft,const Transform& tra
 
 }
 
+
 void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio,int npad,int mult)
 {
 	ENTERFUNC;
-	int nxc = attr_dict["nxc"]; 
 	vector<int> saved_offsets = get_array_offsets();
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
@@ -2272,9 +2306,6 @@ void EMData::symplane0_ctf(EMData* w) {
 
 void EMData::symplane0_ctf_rect(EMData* w) {
 	ENTERFUNC;
-	int nxc = attr_dict["nxc"];
-	//int nyc = attr_dict["nyc"];
-	//int nzc = attr_dict["nzc"];
 	nx=get_xsize();
 	ny=get_ysize();
 	nz=get_zsize();
