@@ -1028,7 +1028,19 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
+			
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else	       iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else	      iya = n + iyn + 1;
+
+			cmplx(ixn,iya,iza) += btq;
+			//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
+			(*wptr)(ixn,iya,iza)++;
+			
+			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
 					if (izn >= 0)  iza = izn + 1;
@@ -1052,7 +1064,7 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 					(*wptr)(-ixn,iyt,izt)++;
 				}
-			}
+			}*/
 		}
 	}
 }
@@ -1082,7 +1094,19 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
+			
+			
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else	       iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else	      iya = n + iyn + 1;
+
+			cmplx(ixn,iya,iza) += btq*float(mult);
+			(*wptr)(ixn,iya,iza)+=float(mult);
+			
+			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
 					if (izn >= 0)  iza = izn + 1;
@@ -1104,7 +1128,7 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
 					(*wptr)(-ixn,iyt,izt)+=float(mult);
 				}
-			}
+			}*/
 		}
 	}
 }
@@ -1576,7 +1600,25 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
+			
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+			if(remove > 0 ) {
+				cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
+				(*w)(ixn,iya,iza) -= ctf*ctf*mult;
+			} else {
+				cmplx(ixn,iya,iza) += btq*ctf*float(mult);
+				(*w)(ixn,iya,iza) += ctf*ctf*mult;
+ 			}
+
+  				       //	std::cout<<"	"<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
+		
+			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
 					if (izn >= 0)  iza = izn + 1;
@@ -1612,7 +1654,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 
 				        //	std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
 				}
-			}
+			}*/
 		}
 	}
 }
@@ -1643,8 +1685,24 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
+			
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
 
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+			if( remove > 0 ) {
+				cmplx(ixn,iya,iza) -= btq*float(mult);
+				(*w)(ixn,iya,iza) -= mult*ctf*ctf;
+			} else {
+				cmplx(ixn,iya,iza) += btq*float(mult);
+				(*w)(ixn,iya,iza) += mult*ctf*ctf;
+			}
+
+
+			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
 					if (izn >= 0)  iza = izn + 1;
@@ -1679,7 +1737,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
                                         }
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 				}
-			}
+			}*/
 		}
 	}
 }
