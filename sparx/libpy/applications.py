@@ -3930,7 +3930,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			else:
 				vol =  model_blank(nx, nx, nx)
 			bcast_EMData_to_all(vol, myid, main_node)
-			
+
 			volft, kb = prep_vol(vol)
 			del vol
 			if CTF:
@@ -4041,6 +4041,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		del refassign, refanorm, transv
 		del recvbuf
 
+
 		if myid == main_node:
 			SA = False
 			asi = [[] for iref in xrange(numref)]
@@ -4049,7 +4050,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				from utilities import findall
 				N = findall(assigntorefa, imrefa)
 				current_nima = len(N)
-				if( current_nima > numref and report_error == 0):
+				if( current_nima >= numref and report_error == 0):
+					tasi = [[] for iref in xrange(numref)]
 					maxasi = current_nima//numref
 					nt = current_nima
 					kt = numref
@@ -4059,7 +4061,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					for ima in xrange(current_nima):
 						for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
 
-					while nt > 0 and kt > 1:
+					while nt > 0 and kt > 0:
 						l = d.argmax()
 						group = l//current_nima
 						ima   = l-current_nima*group
@@ -4078,29 +4080,30 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 							sss = random()
 							for group in xrange(numref):
 								if( sss <= Jc[group]): break
-						asi[group].append(N[ima])
+						tasi[group].append(N[ima])
+						N[ima] = -1
 						for iref in xrange(numref):  d[iref][ima] = -1.e10
 						nt -= 1
-						masi = len(asi[group])
+						masi = len(tasi[group])
 						if masi == maxasi:
 							for im in xrange(current_nima):  d[group][im] = -1.e10
 							kt -= 1
 					else:
-						mas = [len(asi[iref]) for iref in xrange(numref)]
-						group = mas.index(min(mas))
-						del mas
-						for im in xrange(current_nima):
-							kt = 0
-							go = True
-							while(go and kt < numref):
-								if d[kt][im] > -1.e10:
-									asi[group].append(im)
-									go = False
-								kt += 1
-
+						for ima in xrange(current_nima):
+							if N[ima] > -1:
+								qm = -1.e10
+								for iref in xrange(numref):
+									qt = dtot[iref][N[ima]]
+									if( qt > qm ):
+										qm = qt
+										group = iref
+								tasi[group].append(N[ima])
 
 					del d, N, K
 					if  SA:  del J, Jc
+					for iref in xrange(numref):
+						asi[iref] += tasi[iref]
+					del tasi
 				else:
 					report_error = 1
 			del dtot
