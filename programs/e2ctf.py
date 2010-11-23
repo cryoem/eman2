@@ -81,6 +81,7 @@ images far from focus."""
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
+	parser.add_option("--dfmax",type="float",help="Maximum defocus for autofitting (default=6.4)",default=None)
 	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
 	parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
@@ -419,7 +420,9 @@ def pspec_and_ctf_fit(options,debug=False):
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
+		if options.dfmax != None : dfhint=(.15,options.dfmax)
+		else: dfhint=None
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
@@ -951,10 +954,13 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	dfbest1=[]
 	
 	# This implies that we already have a general range for the defocus, so we limit the search
-	if dfhint :
+	if isinstance(dfhint,float) :
 		dfhint=int(dfhint*20.0)
 		rng=range(dfhint-3,dfhint+4)
-	else :rng=range(3,128)
+	elif isinstance(dfhint,tuple) :
+		rng=(int(dfhint[0]*20.0),int(dfhint[1]*20.0))
+	else:
+		rng=range(3,128)
 
 
 	# This loop tries to find the best few possible defocuses
