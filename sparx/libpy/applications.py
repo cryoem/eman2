@@ -3726,6 +3726,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
+	from morphology     import binarize
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -3967,7 +3968,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
 					if CTF:  ref = filt_ctf( ref, ctf )
-					if(focus != None):  mask2D = prgs( focus, kb, [phi,tht,psi,-s2x,-s2y])
+					if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
