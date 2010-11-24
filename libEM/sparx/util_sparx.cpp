@@ -112,7 +112,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	maskptr = mask->get_data();
 
 	for (size_t i = 0; i < nx*ny*nz; i++) {
-		if (maskptr[i]>0.5f == flip) {
+		if ((maskptr[i]>0.5f) == flip) {
 			Sum1 += Volptr[i];
 			Sum2 += Volptr[i]*double(Volptr[i]);
 			MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
@@ -507,11 +507,11 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 {
 	vector<float> angles;
 	float psi = 0.0;
-	if ((0.0 == t1)&&(0.0 == t2)||(t1 >= t2)) {
+	if ((0.0 == t1 && 0.0 == t2)||(t1 >= t2)) {
 		t1 = 0.0f;
 		t2 = 90.0f;
 	}
-	if ((0.0 == p1)&&(0.0 == p2)||(p1 >= p2)) {
+	if ((0.0 == p1 && 0.0 == p2)||(p1 >= p2)) {
 		p1 = 0.0f;
 		p2 = 359.9f;
 	}
@@ -15009,7 +15009,7 @@ L14:
     ltri -= ltri_offset;
 
     /* Function Body */
-    if (*n < 3 || *nrow != 6 && *nrow != 9) {
+    if (*n < 3 || (*nrow != 6 && *nrow != 9)) {
 	goto L11;
     }
 
@@ -15306,7 +15306,7 @@ L12:
 
 /*      WRITE (LUN,100) N */
     nl = 3;
-    if (*n < 3 || *n > nmax || *nrow != 6 && *nrow != 9 || *nt < 1 || *nt >
+    if (*n < 3 || *n > nmax || (*nrow != 6 && *nrow != 9) || *nt < 1 || *nt >
 	    nmax) {
 
 /* Print an error message and exit. */
@@ -17069,7 +17069,7 @@ L1:
 /*   the window and KV2 > KV1, or KV1 is inside and KV2 is */
 /*   outside (so that the edge is drawn only once). */
 
-	if (! in1 || in2 && kv2 <= kv1) {
+	if (! in1 || (in2 && kv2 <= kv1)) {
 	    goto L2;
 	}
 	if (p2[2] < 0.) {
@@ -18162,7 +18162,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 			n2[iref] = crefim[iref]->get_attr("n2");
 			n3[iref] = crefim[iref]->get_attr("n3");
 	}
-	bool nomirror = (theta<90.0) || (theta==90.0) && (psi<psi_max);
+	bool nomirror = (theta<90.0) || ((theta==90.0) && (psi<psi_max));
 	if (!nomirror) {
 		phi = fmod(phi+540.0f, 360.0f);
 		theta = 180-theta;
@@ -19681,7 +19681,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 	bool change = true;
 	int it = -1;
 	int ct = -1;
-	while(change && disp < dispold || ct > 0) {
+	while ((change && disp < dispold) || ct > 0) {
 
 		change = false;
 		dispold = disp;
