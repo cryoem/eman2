@@ -455,9 +455,9 @@ FloatPoint EMData::calc_center_of_mass(float threshold)
 {
 	float *data = get_data();
 
-	float sigma = get_attr("sigma");
-	float mean = get_attr("mean");
-	float m = 0;
+	//float sigma = get_attr("sigma");
+	//float mean = get_attr("mean");
+	float m = 0.0;
 
 	FloatPoint com(0,0,0);
 	for (int i = 0; i < nx; ++i) {
@@ -466,9 +466,9 @@ FloatPoint EMData::calc_center_of_mass(float threshold)
 			for (int k = 0; k < nz; ++k) {
 				size_t l = i + j2 + k * nxy;
 				if (data[l] >= threshold) {		// threshold out noise (and negative density)
-					com[0] += i * (data[l]);
-					com[1] += j * (data[l]);
-					com[2] += k * (data[l]);
+					com[0] += i * data[l];
+					com[1] += j * data[l];
+					com[2] += k * data[l];
 					m += data[l];
 				}
 			}

@@ -708,7 +708,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;
 
-	float max = 1 - ERR_LIMIT;
+	//float max = 1 - ERR_LIMIT;
 	float scale;
 	bool x_mirror;
 	get_scale_and_mirror(scale,x_mirror);
@@ -729,8 +729,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 			alt = 0;
 			az=0;
 			phi = (float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
-	} 
-	else if (cosalt <=-1) {
+	} else if (cosalt <=-1) {
 			alt = 180;
 			az=0;
 			phi=360.0f-(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
@@ -767,8 +766,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (fabs(cosalt) > 1) {  // that is, alt close to 0
 		phiS=0;              // used to be if cosalt > max...
 		psiS = az+phi;
-	}
-	else {
+	} else {
 		phiS = az   - 90.0f;
 		psiS = phi  + 90.0f;
 	}
