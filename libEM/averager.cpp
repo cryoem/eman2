@@ -567,7 +567,7 @@ EMData * CtfCWautoAverager::finish()
 	delete tmp;*/
 
 //snrsum->write_image("snrsum.hdf",-1);
-	size_t sz=result->get_xsize()*result->get_ysize();
+	//size_t sz=result->get_xsize()*result->get_ysize();
 	int nx=result->get_xsize();
 	int ny=result->get_ysize();	
 	float *snrsd=snrsum->get_data();
@@ -682,7 +682,7 @@ EMData * CtfCAutoAverager::finish()
 	delete tmp;*/
 
 //	snrsum->write_image("snrsum.hdf",-1);
-	size_t sz=result->get_xsize()*result->get_ysize();
+	//size_t sz=result->get_xsize()*result->get_ysize();
 	int nx=result->get_xsize();
 	int ny=result->get_ysize();	
 	float *snrsd=snrsum->get_data();
