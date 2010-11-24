@@ -20452,21 +20452,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 vector<int> Util::bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int n_guesses, int LARGEST_CLASS, int J,
 int max_branching, float stmult, int branchfunc, int LIM) {
 
-	// ************************ testing memory requirements ***************
-	if (1==0){
-	cout <<"memory testing\n";
-	long unsigned t= (long unsigned)pow(2.0,J);
-	cout << t <<"\n";
-	//int* a = new int[t];
-	cout <<"success\n";
 	
-	exit(0);
-	vector<int> retest(1);
-	retest[0]=-1;
-	return retest;
-	}
-	//*************************************	
-
 	// Indices is an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
 	// So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
 	// Make a vector of nParts vectors of K int* each
