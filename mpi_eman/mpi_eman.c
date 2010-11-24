@@ -76,8 +76,14 @@ static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 	return NULL;
 }
 
-static void mpi_barrier(PyObject *self,PyObject *args) {
+static PyObject * mpi_barrier(PyObject *self,PyObject *args) {
 
+	return NULL;
+}
+
+static PyObject * mpi_finalize(PyObject *self,PyObject *args) {
+	MPI_Finalize();
+	return NULL;
 }
 
 static PyMethodDef EmanMpiMethods[] = {
@@ -87,6 +93,7 @@ static PyMethodDef EmanMpiMethods[] = {
 	{"mpi_recv",mpi_recv,METH_VARARGS,"MPI_Recv(source rank,tag). If either is negative, arbitrary values accepted. Returns the received string."},
 	{"mpi_bcast",mpi_bcast,METH_VARARGS,"MPI_Bcast(string). Pass data on source node. Pass None on others & return data."},
 	{"mpi_barrier",mpi_barrier,METH_VARARGS,"MPI_Barrier(). No arguments or return. Blocks until all nodes call it."},
+	{"mpi_finalize",mpi_finalize,METH_VARARGS,"MPI_Finalize(). No arguments or return. Call before exiting an MPI Python program exactly once."},
 	{NULL,NULL,0,NULL}
 };
 

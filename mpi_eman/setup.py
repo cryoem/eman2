@@ -1,3 +1,10 @@
+#!/bin/env python
+
+import os
+
+os.environ["CC"]="mpicc"
+#os.environ["LDSHARED"]="mpicc"
+
 from distutils.core import setup, Extension
 
 module1 = Extension("mpi_eman", sources = ["mpi_eman.c"])
