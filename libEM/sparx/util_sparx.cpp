@@ -18993,7 +18993,7 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	//        m of limited memory corrections stored.  (n and m should not
 	//        exceed the limits nmax and mmax respectively.)
 	n=nmax;
-	m=10;
+	m=mmax;
 
 	//     We now provide nbd which defines the bounds on the variables:
 	//                    l   specifies the lower bounds,
