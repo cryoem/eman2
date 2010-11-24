@@ -18218,25 +18218,20 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 	float peak = -1.0E23f;
 	float ang=0.0f;
 	int   kx = int(2*xrng/step+0.5)/2;
-	//if ynumber==-1, use the old code which process x and y direction equeally.
-	if(ynumber==-1)
-	{
+	//if ynumber==-1, use the old code which process x and y direction equally.
+	if(ynumber==-1) {
 		int   ky = int(2*yrng/step+0.5)/2;
-		
-
-		for (int i = -ky; i <= ky; i++) 
-			{
+		for (int i = -ky; i <= ky; i++) {
 			iy = i * step ;
-			for (int j = -kx; j <= kx; j++) 
-				{
+			for (int j = -kx; j <= kx; j++)  {
 				ix = j*step ;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 				Normalize_ring( cimage, numr );
 
 				Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
+				//  compare with all reference images
+				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 					Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
 					double qn = retvals["qn"];
@@ -18245,6 +18240,40 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
+						if (qn >= qm) {
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+							mirror = 0;
+						} else {
+							ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qm);
+							mirror = 1;
+						}
+					}
+				}  
+				delete cimage; cimage = 0;
+			}
+		   }
+	}
+	//if ynumber is given, it should be even. We need to check whether it is zero
+	else if(ynumber==0) {
+		sy = 0.0f;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+
+			Normalize_ring( cimage, numr );
+
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for ( iref = 0; iref < (int)crefim_len; iref++)  {
+				Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak || qm >= peak) {
+					sx = -ix;
+					nref = iref;
 					if (qn >= qm) {
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>(qn);
@@ -18254,52 +18283,11 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 						peak = static_cast<float>(qm);
 						mirror = 1;
 					}
-					}
-				  }  
-				delete cimage; cimage = 0;
-			}
-		   }
-	}
-	//if ynumber is given, it should be even. We need to check whether it is zeros
-	else if(ynumber==0)
-	{
-			for (int j = -kx; j <= kx; j++) 
-			{
-			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
-
-			Normalize_ring( cimage, numr );
-
-			Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) 
-			     {
-				Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
-				double qn = retvals["qn"];
-				double qm = retvals["qm"];
-				if(qn >= peak || qm >= peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-				if (qn >= qm) {
-					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-					peak = static_cast<float>(qn);
-					mirror = 0;
-					} 
-				else {
-					ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-					peak = static_cast<float>(qm);
-					mirror = 1;
-					}
 				}
-			   }  
-				delete cimage; cimage = 0;
-			}		   	
-	}
-	else
-	{
-	
+			} 
+			delete cimage; cimage = 0;
+		}		   	
+	} else {
 		int   ky = int(ynumber/2);		
 		float stepy=2*yrng/ynumber;
 		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
@@ -18312,8 +18300,8 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 				Normalize_ring( cimage, numr );
 
 				Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
+				//  compare with all reference images
+				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 					Dict retvals = Crosrng_psi_0_180(crefim[iref], cimage, numr, psi_max);
 					double qn = retvals["qn"];
@@ -18322,20 +18310,20 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qm);
-						mirror = 1;
+						if (qn >= qm) {
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+							mirror = 0;
+						} else {
+							ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qm);
+							mirror = 1;
+						}
 					}
-					}
-				  }  
+				}
 				delete cimage; cimage = 0;
 			}
-		   }
+		}
 	}
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
@@ -20209,7 +20197,7 @@ void Util::search2(int* argParts, int* Indices, int* dimClasses, int nParts, int
 	bool flag = 0;
 	int nintx;
 	int* dummy(0);
-	int* ret;
+	//int* ret;
 	int* curbranch = new int[nParts];
 	
 	//initialize costlist to all 0
@@ -20469,7 +20457,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	cout <<"memory testing\n";
 	long unsigned t= (long unsigned)pow(2.0,J);
 	cout << t <<"\n";
-	int* a = new int[t];
+	//int* a = new int[t];
 	cout <<"success\n";
 	
 	exit(0);
@@ -20533,7 +20521,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 
 	// if we're not doing mpi then keep going and call branchMPI and return the output
 	//cout <<"begin partition matching\n";
-	int* dummy(0);
+	//int* dummy(0);
 	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,0,n_guesses,LARGEST_CLASS, J, max_branching, stmult,
 	branchfunc, LIM);
 	
