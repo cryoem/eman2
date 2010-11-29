@@ -214,16 +214,16 @@ const float MAP_ERR_VAL = 100.0f;
 			Volume * thinnedVolume = new Volume(sourceVolume->getSizeX(), sourceVolume->getSizeY(), sourceVolume->getSizeZ(), 0, 0, 0, sourceVolume);
 			switch(thinningClass) {
 				case THINNING_CLASS_SURFACE_PRESERVATION :
-					thinnedVolume->surfaceSkeletonPres(threshold, preserve);
+					thinnedVolume->surfaceSkeletonPres((float)threshold, preserve);
 					break;
 				case THINNING_CLASS_CURVE_PRESERVATION :
-					thinnedVolume->curveSkeleton(threshold, preserve);
+					thinnedVolume->curveSkeleton((float)threshold, preserve);
 					break;
 				case THINNING_CLASS_CURVE_PRESERVATION_2D :
-					thinnedVolume->curveSkeleton2D(threshold, preserve);
+					thinnedVolume->curveSkeleton2D((float)threshold, preserve);
 					break;
 				case THINNING_CLASS_TOPOLOGY_PRESERVATION :
-					thinnedVolume->skeleton(threshold, preserve, preserve);
+					thinnedVolume->skeleton((float)threshold, preserve, preserve);
 			}
 			return thinnedVolume;
 		}

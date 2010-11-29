@@ -773,7 +773,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
 
-	float thr = params.set_default("thr",0.9);
+	float thr = params.set_default("thr",0.9f);
 	float minsegsep = params.set_default("minsegsep",5.0f);
 	float maxsegsep = params.set_default("maxsegsep",5.1f);
 	int verbose = params.set_default("verbose",0);
@@ -787,9 +787,9 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 //	int nxy=nx*ny;
 
 	// seed the process with the highest valued point
-	centers[0]=pixels[0].x;
-	centers[1]=pixels[0].y;
-	centers[2]=pixels[0].z;
+	centers[0]=(float)pixels[0].x;
+	centers[1]=(float)pixels[0].y;
+	centers[2]=(float)pixels[0].z;
 	pixels.erase(pixels.begin());
 
 	// outer loop. We add one center per iteration
@@ -820,9 +820,9 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 			for (unsigned int j=centers.size()-3; j>0; j-=3) {
 				float d=Util::hypot3(centers[j]-p.x,centers[j+1]-p.y,centers[j+2]-p.z);
 				if (d<maxsegsep) {		// we passed minsegsep question already, so we know we're in the 'good' range
-					centers.push_back(p.x);
-					centers.push_back(p.y);
-					centers.push_back(p.z);
+					centers.push_back((float)p.x);
+					centers.push_back((float)p.y);
+					centers.push_back((float)p.z);
 					pixels.erase(pixels.begin()+i);	// in the centers list now, don't need it any more
 					found=1;
 					break;
@@ -833,9 +833,9 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 		// If we went through the whole list and didn't find one, we need to reseed again
 		if (!found && pixels.size()) {
 			if (verbose) printf("New chain\n");
-			centers.push_back(pixels[0].x);
-			centers.push_back(pixels[0].y);
-			centers.push_back(pixels[0].z);
+			centers.push_back((float)pixels[0].x);
+			centers.push_back((float)pixels[0].y);
+			centers.push_back((float)pixels[0].z);
 			pixels.erase(pixels.begin());
 		}
 
@@ -6014,7 +6014,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 
 	if (to->is_complex()) {
-		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0,0,1.0f,1);
+		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0f,0,1.0f,1);
 		for (size_t i=0; i<rd.size(); i++) {
 			sf->set_x(i,i/(apixto*2.0f*rd.size()));
 			sf->set_y(i,rd[i]);

@@ -140,20 +140,20 @@ namespace EMAN
 			}
 			else if( params.has_key("cutoff_abs") ) {
 			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
-				float val = (float)params["cutoff_abs"] / sqrt(2);
+				float val = (float)params["cutoff_abs"] / sqrt(2.0f);
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 				
 			}
 			else if( params.has_key("cutoff_freq") ) {
 			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
-				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"] / sqrt(2); 
+				float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"] / sqrt(2.0f); 
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
 			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
-				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]) / sqrt(2);
+				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]) / sqrt(2.0f);
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
@@ -323,8 +323,8 @@ namespace EMAN
 			        // here I have added a little function to filter to a resolvability (John Flanagan 20/09/2010)
 				float R = 1/((float)params["cutoff_resolv"]*(float)dict["apix_x"]);    // convert to pixels
 				float rsigma = sqrt((-4*log(0.36f))/(pow(M_PI,2)*pow(R,2)));        // find optimal sigma
-				params["cutoff_abs"] = rsigma / sqrt(2);                               // patch to fix the 2s^2 problem
-				params["sigma"] = rsigma / sqrt(2);                                    // patch to fix the 2s^2 problem
+				params["cutoff_abs"] = rsigma / sqrt(2.0f);                               // patch to fix the 2s^2 problem
+				params["sigma"] = rsigma / sqrt(2.0f);                                    // patch to fix the 2s^2 problem
 			}
 			
 			EMFourierFilterInPlace(image, params);

@@ -1974,14 +1974,14 @@ float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfp
   		Phi=m_best*M_PI/bw;   // ming this is particle image rotation angle
   		Vx=p*cos(Phi);//should use the angle of the centered one
   		Vy=-p*sin(Phi);
-  		Tx=Vx+(floor(com_this_x+0.5)-floor(com_with_x+0.5));
-  		Ty=Vy+(floor(com_this_y+0.5)-floor(com_with_y+0.5));
+  		Tx=Vx+(floor(com_this_x+0.5f)-floor(com_with_x+0.5f));
+  		Ty=Vy+(floor(com_this_y+0.5f)-floor(com_with_y+0.5f));
 
   		dx=-Tx;	// the Rota & Trans value (Tx,Ty, ang_keep) are for the projection image,
   		dy=-Ty;	// need to convert to raw image
 
   		EMData *this_tmp=this_img->copy();//ming change to to
-		this_tmp->rotate(-(Phi2-Phi)*180.0,0.0,0.0);
+		this_tmp->rotate(-(Phi2-Phi)*180.0f,0.0f,0.0f);
 		this_tmp->translate(dx,dy,0.0);
 
 		corre=this_tmp->cmp(cmp_name,to,cmp_params);
@@ -1991,7 +1991,7 @@ float frm_2d_Align(EMData *this_img, EMData *to, float *frm2dhhat, EMData* selfp
 			corre_fcs=corre;
 			result[0+5*p] = float(p);	// rho
 			result[1+5*p] = corre;		// correlation_fcs
-			result[2+5*p] = (Phi2-Phi)*180.0;	// rotation angle
+			result[2+5*p] = (Phi2-Phi)*180.0f;	// rotation angle
 			result[3+5*p] = Tx;		// Translation_x
 			result[4+5*p] = Ty;		// Translation_y
 		}
@@ -2114,16 +2114,16 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 
 	for(int p=0; p<=p_max; ++p){
 		ind1=p*size*bw;
-    	float pp2=p*p;
+    	float pp2=(float)(p*p);
    		for(int n=0;n<bw;++n){         /* loop for n */
     		ind2=ind1+n;
       		for(int r=0;r<=MAXR;++r) {
 				ind3=(ind2+r*bw)*size;
-        		float rr2=r*r;
-				float rp2=r*p;
+        		float rr2=(float)(r*r);
+				float rp2=(float)(r*p);
        			for(int i=0;i<size;++i){                            // beta sampling, to get beta' and r'
        				r2=std::sqrt((float)(rr2+pp2-2.0*rp2*cb[i]));   // r2->r'
-       		 		int r1=floor(r2+0.5);                        // for computing gn(r')
+       		 		int r1=(int)floor(r2+0.5f);                        // for computing gn(r')
        				if(r1>MAXR){
        					comp_in[2*i]=0.0f;
        					comp_in[2*i+1]=0.0f;
@@ -2190,7 +2190,7 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 		dr_frm->translate(dx,dy,0.0); // this
 		EMData *selfpcs = dr_frm->unwrap_largerR(0,MAXR,size, (float)MAXR);
 		//EMData *selfpcs=dr_frm->unwrap(-1,-1,-1,0,0,1);
-		EMData *selfpcsfft = selfpcs->oneDfftPolar(size, MAXR, MAXR);
+		EMData *selfpcsfft = selfpcs->oneDfftPolar(size, (float)MAXR, (float)MAXR);
 		delete selfpcs;
 		delete dr_frm;
 		if(iFlip==0)

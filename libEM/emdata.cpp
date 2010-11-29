@@ -3764,7 +3764,7 @@ EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
 		xs=Util::calc_best_fft_size(xs); // ming
 	}
 	if (r1<0) r1=0;
-	float maxext=ceil(0.6*std::sqrt((double)(get_xsize()*get_xsize()+get_ysize()*get_ysize())));// ming add std::
+	float maxext=ceil(0.6f*std::sqrt((float)(get_xsize()*get_xsize()+get_ysize()*get_ysize())));// ming add std::
 
 	if (r2<r1) r2=(int)maxext;
 	EMData *ret = new EMData;
@@ -3784,8 +3784,8 @@ EMData *EMData::unwrap_largerR(int r1,int r2,int xs, float rmax_f) {
 					dd[i+r*xs]=0.0;
         		break;
 		    }
-			int x1=floor(x);
-			int y1=floor(y);
+			int x1=(int)floor(x);
+			int y1=(int)floor(y);
 			float t=x-x1;
 			float u=y-y1;
 			float f11= d[x1+y1*get_xsize()]; // ming

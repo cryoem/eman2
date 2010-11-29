@@ -58,7 +58,7 @@ using namespace wustl_mm::SkeletonMaker;
 		}
 
 		int VolumeData::GetSize(int dimension) {
-			float ret = 0;
+			int ret = 0;
 			switch (dimension)
 			{
 				case 0: ret = GetSizeX();

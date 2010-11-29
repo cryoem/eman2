@@ -831,8 +831,8 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
  		H5Sclose(memoryspace);
 	} else {
 		hsize_t size = nx*ny*nz;
-		size_t i=0;
-		size_t j=0;
+		hsize_t i=0;
+		hsize_t j=0;
 		unsigned short *usdata = (unsigned short *) data;
 		unsigned char *cdata = (unsigned char *) data;
 		switch(H5Tget_size(dt)) {
@@ -1009,7 +1009,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	}
 
 	//convert data to unsigned short, unsigned char...
-	size_t size = nx*ny*nz;
+	hsize_t size = nx*ny*nz;
 	unsigned char *cdata = 0;
 	unsigned short *usdata = 0;
 	float rendermin = 0.0f;
