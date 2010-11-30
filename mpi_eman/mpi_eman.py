@@ -30,7 +30,10 @@
 
 
 import eman_mpi_c		# these are the actual C functions. We map these selectively to the python namespace so we can enhance their functionality
+import sys
 from cPickle import dumps,loads
+from zlib import compress,decompress
+from struct import pack,unpack
 
 # These functions don't require mapping
 mpi_init=eman_mpi_c.mpi_init
@@ -40,13 +43,49 @@ mpi_barrier=eman_mpi_c.mpi_barrier
 mpi_finalize=eman_mpi_c.mpi_finalize
 
 def mpi_send(data,dest,tag):
-	"""Synchronously send 'data' to 'dest' with tag 'tag'. data may be any pickleable type"""
+	"""Synchronously send 'data' to 'dest' with tag 'tag'. data may be any pickleable type.
+	Compression and pickling will be performed on the fly when deemed useful. Note that data duplication
+	in memory may occur."""
 	if isinstance(data,str):
-		
+		if len(data)>256 : eman_mpi_c.mpi_send("C"+compress(data,1),dest,tag)
+		else : eman_mpi_c.mpi_send("S"+data,dest,tag)
 	else :
 		d2x=dumps(data,-1)
-		if len(d2x>64) 
+		if len(d2x>256) : eman_mpi_c.mpi_send("Z"+compress(d2x,1),dest,tag)
+		else : eman_mpi_c.mpi_send("O"+d2x,dest,tag)
 
-def mpi_recv
+def mpi_recv(src,tag):
+	"""Synchronously receive a message from 'src' with 'tag'. If either source or tag is negative, this implies
+	any source/tag is acceptable."""
+	
+	msg=eman_mpi_c.mpi_Recv(src,tag)
+	if msg[0]=="C" : return decompress(msg[1:])
+	elif msg[0]=="S" : return msg[1:]
+	elif msg[0]=="Z" : return loads(decompress(msg[1:]))
+	elif msg[0]=="O" : return loads(msg[1:])
+	else :
+		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%msg[:128]
+		sys.exit(1)
 
-def mpi_bcast
+	return None		# control should never reach here
+	
+def mpi_bcast_send(data):
+	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
+	called on exactly one core, and receive called on all of the others. This routine also coordinates transfer of
+	variable length objects."""
+
+	data=compress(dumps(data,-1),1)
+	
+	l=pack("I",len(data))
+	eman_mpi_c.mpi_bcast(l)
+	
+	eman_mpi_c.mpi_bcast(data)
+	
+def mpi_bcast_recv(src):
+	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
+	called on exactly one core, and receive called on all of the others. This routine also coordinates transfer of
+	variable length objects. src is the rank of the sender"""
+	
+	l=eman_mpi_c.mpi_bcast(4,src)
+	
+	return loads(decompress(eman_mpi_c.mpi_bcast(l,src)))

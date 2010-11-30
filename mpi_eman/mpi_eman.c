@@ -81,6 +81,13 @@ return ret;
 }
 
 
+/* Calls MPI_Bcast
+ * Different args on source and destinations. 
+ * On source, pass in a string to transmit.
+ * On destinations, pass in the data length and source rank.
+ * The destinations must know the length before transmission. ALL nodes in the group must call this function
+ * before it will complete.
+*/
 static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 	const char * data;
 	int datalen;
@@ -88,7 +95,7 @@ static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
 	if (PyArg_ParseTuple(args,"s#",&data,&datalen)) {
-			printf("Sent: %d, %s\n",datalen,data);
+//			printf("Sent: %d, %s\n",datalen,data);
 			MPI_Bcast((void *)data,datalen,MPI_CHAR,myrank,MPI_COMM_WORLD);
 			Py_RETURN_NONE;
 	}
@@ -96,7 +103,7 @@ static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 		data=(const char *)malloc(datalen);
 		MPI_Bcast((void *)data,datalen,MPI_CHAR,root,MPI_COMM_WORLD);
 
-		printf("Recv: %s\n",data);
+//		printf("Recv: %s\n",data);
 		PyObject *ret = Py_BuildValue("s#",(void *)data,datalen);
 		free((void *)data);
 
