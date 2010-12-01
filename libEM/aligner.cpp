@@ -414,7 +414,7 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 		t = *tt*t;
 
 		//now do rotation
-		EMData * rottrans_align = trans_align->align("rotational.spider", to, rot_params, cmp_name, cmp_params);
+		EMData * rottrans_align = trans_align->align("rotational.iterative", to, rot_params, cmp_name, cmp_params);
 		Transform * rt = rottrans_align->get_attr("xform.align2d");
 		t = *rt*t;
 		
@@ -552,7 +552,7 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 {
 	// Get the non flipped rotational, tranlsationally aligned image
 	Dict rt_params("maxshift", params["maxshift"],"r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
-	EMData *rot_trans_align = this_img->align("rotate_translate.spider",to,rt_params,cmp_name, cmp_params);
+	EMData *rot_trans_align = this_img->align("rotate_translate.iterative",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
@@ -562,7 +562,7 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 		delete_flag = true;
 	}
 
-	EMData * rot_trans_align_flip = this_img->align("rotate_translate.spider", flipped, rt_params, cmp_name, cmp_params);
+	EMData * rot_trans_align_flip = this_img->align("rotate_translate.iterative", flipped, rt_params, cmp_name, cmp_params);
 	Transform* t = rot_trans_align_flip->get_attr("xform.align2d");
 	t->set_mirror(true);
 	rot_trans_align_flip->set_attr("xform.align2d",t);
@@ -647,10 +647,10 @@ EMData *RotateFlipAlignerIterative::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
 	Dict rot_params("r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
-	EMData *r1 = this_img->align("rotational.spider", to, rot_params,cmp_name, cmp_params);
+	EMData *r1 = this_img->align("rotational.iterative", to, rot_params,cmp_name, cmp_params);
 
 	EMData* flipped =to->process("xform.flip", Dict("axis", "x"));
-	EMData *r2 = this_img->align("rotational.spider", flipped,rot_params, cmp_name, cmp_params);
+	EMData *r2 = this_img->align("rotational.iterative", flipped,rot_params, cmp_name, cmp_params);
 	Transform* t = r2->get_attr("xform.align2d");
 	t->set_mirror(true);
 	r2->set_attr("xform.align2d",t);
