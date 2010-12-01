@@ -43,13 +43,12 @@ import warnings
 try: from PyQt4 import QtWebKit
 except: pass
 
-class ModuleEventsManager:
+class ModuleEventsManager: 
 	'''
 	Coordinates events of the various modules.
 	To begin with this is only the close event, then I added the idle event
 	'''
-	def __init__(self,target,module):
-		warnings.warn("Developers: ModuleEventsManager class should probably be deprecated and eventually removed.", DeprecationWarning)
+	def __init__(self,target,module): #TODO: determine if this class should be deprecated and its functionality integrated into self.target
 		self.target = weakref.ref(target)
 		self.module = weakref.ref(module)
 		try:
