@@ -2209,7 +2209,7 @@ class EM3DModel(QtCore.QObject):
 	def set_scale(self,val):
 		self.cam.scale = val
 		self.updateGL()
-	def show(self): raise #TODO: determine whether this method should exist
+	def show(self): self.gl_widget().show()
 	def show_inspector(self,force=0): #Copied from EMGLWidget
 		if self.disable_inspector: return
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
