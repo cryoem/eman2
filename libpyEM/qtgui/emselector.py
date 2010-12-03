@@ -149,27 +149,40 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				elif self.module_type == EMImage3DWidget:
 					old_module.set_data(data)
 					old_module.get_inspector().add_isosurface()
+				elif self.module_type == EM3DSymModel:
+					old_module.model.set_data(data)
 				else: old_module.set_data(data)
 				old_module.setWindowTitle(item.get_url())
 				old_module.show()
 				old_module.updateGL()
 				return
+			
 			from e2simmxxplor import EMSimmxExplorer
-			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
+
+			if self.module_type == EM3DSymModel: #TODO: get correct symmetry or switch to e2eulerxplor.py
+				from emimage3dsym import EMSymViewerWidget
+				widget = EMSymViewerWidget()
+			elif self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EMSimmxExplorer):
 				from emglobjects import EM3DGLWidget
 				widget = EM3DGLWidget()
 				model = self.module_type(widget)
 				widget.set_model(model)
-			else:
+			else: 
 				widget = self.module_type()
+					
 			data = getattr(item,self.get_data_attr)()
-			for funct in self.data_functors: funct(data)
-			if self.module_type == EMPlot2DWidget: # aka template specialization
+			for funct in self.data_functors: 
+				funct(data)
+			
+			if self.module_type == EM3DSymModel:
+				widget.model.set_data(data)
+			elif self.module_type == EMPlot2DWidget:
 				widget.set_data(data,item.get_url())
 			elif self.module_type == EMImage3DWidget:
 				widget.set_data(data)
 				widget.get_inspector().add_isosurface()
-			else: widget.set_data(data)
+			else:
+				widget.set_data(data)
 			
 			self.display_modules.append(widget)
 			self.module_events.append(ModuleEventsManager(self,widget))
