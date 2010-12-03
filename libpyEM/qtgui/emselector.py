@@ -158,24 +158,24 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			if self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EM3DSymModel, EMSimmxExplorer):
 				from emglobjects import EM3DGLWidget
 				widget = EM3DGLWidget()
-				module = self.module_type(widget)
-				widget.set_model(module)
+				model = self.module_type(widget)
+				widget.set_model(model)
 			else:
-				module = self.module_type()
+				widget = self.module_type()
 			data = getattr(item,self.get_data_attr)()
 			for funct in self.data_functors: funct(data)
 			if self.module_type == EMPlot2DWidget: # aka template specialization
-				module.set_data(data,item.get_url())
+				widget.set_data(data,item.get_url())
 			elif self.module_type == EMImage3DWidget:
-				module.set_data(data)
-				module.get_inspector().add_isosurface()
-			else: module.set_data(data)
+				widget.set_data(data)
+				widget.get_inspector().add_isosurface()
+			else: widget.set_data(data)
 			
-			self.display_modules.append(module)
-			self.module_events.append(ModuleEventsManager(self,module))
-			module.show()
-			module.updateGL()
-			module.setWindowTitle(item.get_url())
+			self.display_modules.append(widget)
+			self.module_events.append(ModuleEventsManager(self,widget))
+			widget.show()
+			widget.updateGL()
+			widget.setWindowTitle(item.get_url())
 			
 		def module_closed(self,module):
 			for i,mod in enumerate(self.display_modules):
