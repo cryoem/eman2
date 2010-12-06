@@ -119,7 +119,7 @@ images far from focus."""
 
 	logid=E2init(sys.argv)
 
-#	if options.oversamp>1 : options.apix/=float(options.oversamp)
+ #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
 
 	db_project=db_open_dict("bdb:project")

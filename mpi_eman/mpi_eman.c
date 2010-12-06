@@ -136,7 +136,7 @@ static PyMethodDef EmanMpiMethods[] = {
 	{NULL,NULL,0,NULL}
 };
 
-PyMODINIT_FUNC initmpi_eman(void) {
-	(void) Py_InitModule("mpi_eman", EmanMpiMethods);
+PyMODINIT_FUNC initmpi_eman_c(void) {
+	(void) Py_InitModule("mpi_eman_c", EmanMpiMethods);
 }
 	
