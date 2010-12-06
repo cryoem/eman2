@@ -128,6 +128,8 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.disable_inspector = False
 	
 	def closeEvent(self, event):
+		if self.inspector:
+			self.inspector.close()
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		self.qt_parent.close()
 #		print 'signal: "module_closed"'
