@@ -51,7 +51,7 @@ logid=None
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache","localclient")
+	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache","localclient","mpiclient")
 	usage = """%prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
@@ -104,6 +104,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	elif args[0]=="localclient" :
 		runlocaltask(options.taskin,options.taskout)
 
+	elif args[0]=="mpiclient" :
+		runinmpi(options.verbose)
+		
 	elif args[0]=="rerunall":
 		rerunall()
 
@@ -115,7 +118,15 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		
 def progcb(val):
 	return True
-	
+
+def runinmpi(verbose):
+	"""This function can only be used when called by mpirun from a valid MPI environment"""
+	client=EMMpiClient()
+	client.test(verbose)
+	client.run(verbose)
+
+	sys.exit(0)
+
 def runlocaltask(taskin,taskout):
 	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to stdout. """
 	from cPickle import load,dump

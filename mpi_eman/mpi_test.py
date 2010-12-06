@@ -23,7 +23,7 @@ else :
 	b.mult(-1.5)
 	mpi_send(b,0,0)
 
-# stage 2, broadcast
+# stage 2, broadcast EMData
 if proc==0:
 	a=test_image(1)
 	mpi_bcast_send(a)
@@ -42,6 +42,30 @@ else:
 	a=mpi_bcast_recv(0)
 	a.mult(proc)
 	mpi_send(a,0,1)
+
+mpi_barrier()
+
+# stage 3, broadcast string
+if proc==0:
+	a="a really long test string that im typing here now"
+	mpi_bcast_send(a)
+	
+	allsrc=set(range(1,nproc))	# we use this to make sure we get a reply from all nodes
+	while (1):
+		if len(allsrc)==0 : break
+		l,src,tag = mpi_probe(-1,-1)
+		print "%d (%d) replied"%(src,l)
+		
+		b=mpi_recv(src,tag)[0]
+		print b
+		allsrc.remove(src)
+
+else:
+	x=mpi_bcast_recv(0)
+	mpi_send(x,0,1)
+
+print "done"
+
 
 #print "running on CPU ",proc
 #if proc==0 : mpi_bcast("testing")

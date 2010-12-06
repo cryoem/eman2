@@ -119,7 +119,7 @@ static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
 	if (PyArg_ParseTuple(args,"s#",&data,&datalen)) {
-//			printf("Sent: %d, %s\n",datalen,data);
+//			printf("Sent: %d\n",datalen);
 			MPI_Bcast((void *)data,datalen,MPI_CHAR,myrank,MPI_COMM_WORLD);
 			Py_RETURN_NONE;
 	}
@@ -127,7 +127,7 @@ static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
 		data=(const char *)malloc(datalen);
 		MPI_Bcast((void *)data,datalen,MPI_CHAR,root,MPI_COMM_WORLD);
 
-//		printf("Recv: %s\n",data);
+//		printf("Recv: %d\n",datalen);
 		PyObject *ret = Py_BuildValue("s#",(void *)data,datalen);
 		free((void *)data);
 

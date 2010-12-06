@@ -32,6 +32,7 @@
 import mpi_eman_c		# these are the actual C functions. We map these selectively to the python namespace so we can enhance their functionality
 import sys
 from cPickle import dumps,loads
+#from pickle import dumps,loads
 from zlib import compress,decompress
 from struct import pack,unpack
 
@@ -43,17 +44,36 @@ mpi_barrier=mpi_eman_c.mpi_barrier
 mpi_finalize=mpi_eman_c.mpi_finalize
 mpi_probe=mpi_eman_c.mpi_probe
 
+def mpi_dout(data):
+	"""Convert data for transmission efficiently"""
+
+	if isinstance(data,str):
+		if len(data)>256 : return "C"+compress(data,1)
+		else : return "S"+data
+	else :
+		d2x=dumps(data,-1)
+		if len(d2x)>256 : return "Z"+compress(d2x,1)
+		else : return "O"+d2x
+
+	
+def mpi_din(msg):
+	"""Unpack a data payload prepared by mpi_cout"""
+	
+	if msg[0]=="C" : return decompress(msg[1:])
+	elif msg[0]=="S" : return msg[1:]
+	elif msg[0]=="Z" : return loads(decompress(msg[1:]))
+	elif msg[0]=="O" : return loads(msg[1:])
+	else :
+		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
+		sys.exit(1)
+
 def mpi_send(data,dest,tag):
 	"""Synchronously send 'data' to 'dest' with tag 'tag'. data may be any pickleable type.
 	Compression and pickling will be performed on the fly when deemed useful. Note that data duplication
 	in memory may occur."""
-	if isinstance(data,str):
-		if len(data)>256 : mpi_eman_c.mpi_send("C"+compress(data,1),dest,tag)
-		else : mpi_eman_c.mpi_send("S"+data,dest,tag)
-	else :
-		d2x=dumps(data,-1)
-		if len(d2x)>256 : mpi_eman_c.mpi_send("Z"+compress(d2x,1),dest,tag)
-		else : mpi_eman_c.mpi_send("O"+d2x,dest,tag)
+	
+	mpi_eman_c.mpi_send(mpi_dout(data),dest,tag)
+	
 
 def mpi_recv(src,tag):
 	"""Synchronously receive a message from 'src' with 'tag'. If either source or tag is negative, this implies
@@ -61,22 +81,14 @@ def mpi_recv(src,tag):
 	
 	msg,src,tag=mpi_eman_c.mpi_recv(src,tag)
 
-	if msg[0]=="C" : return (decompress(msg[1:]),src,tag)
-	elif msg[0]=="S" : return (msg[1:],src,tag)
-	elif msg[0]=="Z" : return (loads(decompress(msg[1:])),src,tag)
-	elif msg[0]=="O" : return (loads(msg[1:]),src,tag)
-	else :
-		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
-		sys.exit(1)
-
-	return None		# control should never reach here
+	return (mpi_din(msg),src,tag)
 	
 def mpi_bcast_send(data):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
 	called on exactly one core, and receive called on all of the others. This routine also coordinates transfer of
 	variable length objects."""
 
-	data=compress(dumps(data,-1),1)
+	data=mpi_dout(data)
 	
 	l=pack("I",len(data))
 	mpi_eman_c.mpi_bcast(l)
@@ -91,4 +103,4 @@ def mpi_bcast_recv(src):
 	l=mpi_eman_c.mpi_bcast(4,src)
 	l=unpack("I",l)[0]
 	
-	return loads(decompress(mpi_eman_c.mpi_bcast(l,src)))
+	return mpi_din(mpi_eman_c.mpi_bcast(l,src))

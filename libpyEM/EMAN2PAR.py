@@ -32,6 +32,17 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+import os.path
+import time
+import socket
+import sys
+import random
+import signal
+import traceback
+import shutil
+import subprocess
+import thread,threading
+
 from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
 from e2classaverage import ClassAvTask
@@ -41,13 +52,10 @@ from e2tomoaverage import EMTomoAlignTaskDC
 import SocketServer
 from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
-import os.path
-import time
-import socket
-import sys
-import random
-import signal
-import traceback
+
+# If we can't import it then we probably won't be trying to use MPI
+try : from mpi_eman import *
+except : pass
 
 # if there is a problem with zlib just don't compress
 try: from zlib import compress,decompress
@@ -57,7 +65,7 @@ except:
 	def decompress(s) : return(s)
 
 # used to make sure servers and clients are running the same version
-EMAN2PARVER=13
+EMAN2PARVER=14
 
 # This is the maximum number of active server threads before telling clients to wait
 DCMAXTHREADS=7
@@ -75,6 +83,7 @@ class EMTaskCustomer:
 		"""Specify the type and target host of the parallelism server to use. 
 	dc[:hostname[:port]] - default hostname localhost, default port 9990
 	thread:nthreads[:scratch_dir]
+	mpi:ncpu[:scratch_dir_on_nodes]
 	"""
 		target=target.lower()
 		self.servtype=target.split(":")[0]
@@ -92,11 +101,19 @@ class EMTaskCustomer:
 			try: self.scratchdir=target.split(":")[2]
 			except: self.scratchdir="/tmp"
 			self.handler=EMLocalTaskHandler(self.maxthreads,self.scratchdir)
-		else : raise Exception,"Only 'dc' and 'thread' servertypes currently supported"
+		elif self.servtype=="mpi":
+			self.maxthreads=int(target.split(":")[1])
+			try: self.scratchdir=target.split(":")[2]
+			except: self.scratchdir="/tmp"
+			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir)
+		else : raise Exception,"Only 'dc', 'thread' and 'mpi' servertypes currently supported"
 
 	def __del__(self):
 		if self.servtype=="thread" :
 			print "Cleaning up thread server. Please wait."
+			self.handler.stop()
+		elif self.servtype=="mpi" :
+			print "Stopping MPI. Please wait."
 			self.handler.stop()
 
 	def wait_for_server(self,delay=10):
@@ -121,7 +138,9 @@ class EMTaskCustomer:
 			except:
 				self.wait_for_server()
 				EMDCsendonecom(self.addr,"CACH",filelist)
-		
+		elif self.servtype=="mpi":
+			self.handler.precache(filelist)
+			
 	def cpu_est(self,wait=True):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
@@ -431,9 +450,6 @@ accessible to the server."""
 
 #######################
 # Here we define the classes for local threaded parallelism
-import shutil
-import subprocess
-import thread,threading
 class EMLocalTaskHandler():
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
@@ -526,6 +542,131 @@ class EMLocalTaskHandler():
 
 #######################
 #  Here we define the classes for MPI parallelism
+
+class EMMpiClient():
+
+	def __init__(self):
+		self.proc,self.nproc=mpi_init()
+		
+
+	def test(self,verbose):
+		
+		if verbose and self.proc==0: print "Testing MPI Communications"
+
+		# A little test to make sure MPI communications are really established. Should not be necessary
+		# but if MPI isn't set up properly, then it would be better to fail here than later
+		if self.proc==0:
+			mpi_bcast_send("HELO")
+			
+			allsrc=set(range(1,self.nproc))	# we use this to make sure we get a reply from all nodes
+			while (1):
+				if len(allsrc)==0 : break
+				l,src,tag = mpi_probe(-1,-1)
+				b=mpi_recv(src,tag)[0]
+				if b!="OK" :
+					print "MPI: Failed receive from node=%d"%src
+					mpi_finalize()
+					sys.exit(1)
+				allsrc.remove(src)
+
+			if verbose>1 : print "Successful HELO to all MPI nodes !"
+		else:
+			a=mpi_bcast_recv(0)
+			if a!="HELO" : 
+				print "MPI: Failed receive on node=%d"%proc
+				mpi_finalize()
+				sys.exit(1)
+			mpi_send("OK",0,0)
+
+	def run(self,verbose):
+		if verbose: print "MPI running on %d processors"%self.nproc
+	
+		mpi_finalize()
+	
+	
+
+class EMMpiTaskHandler():
+	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
+	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
+	lock=threading.Lock()
+	def __init__(self,nthreads=2,scratchdir="/tmp"):
+		self.scratchdir="%s/e2tmp.%d"%(scratchdir,random.randint(1,2000000000))
+	
+		os.makedirs(self.scratchdir)
+
+		cmd="mpirun -n %d e2parallel.py "
+	def stop(self):
+		"""Called externally (by the Customer) to nicely shut down the task handler"""
+		self.doexit=1
+		self.thr.join()
+		shutil.rmtree(self.scratchdir,True)
+
+	def add_task(self,task):
+		EMLocalTaskHandler.lock.acquire()
+		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"w"),-1)
+		ret=self.maxid
+		self.maxid+=1
+		EMLocalTaskHandler.lock.release()
+		return ret
+	
+	def check_task(self,id_list):
+		"""Checks a list of tasks for completion. Note that progress is not currently
+		handled, so results are always -1, 0 or 100 """
+		ret=[]
+		for i in id_list:
+			if i>=self.nextid : ret.append(-1)
+			elif i in self.completed : ret.append(100)
+			else: ret.append(0)
+		return ret
+	
+	def get_results(self,taskid):
+		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
+#		print "Retrieve ",taskid
+		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
+		
+		task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
+		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+	
+		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
+		os.unlink("%s/%07d"%(self.scratchdir,taskid))
+		self.completed.remove(taskid)
+		
+		return (task,results)
+		
+	def run(self):
+		
+		while(1):
+			time.sleep(1)		# only go active at most 1/second
+			if self.doexit==1:
+#				shutil.rmtree(self.scratchdir)
+				break
+			
+			for i,p in enumerate(self.running):
+				# Check to see if the task is complete
+				if p[0].poll()!=None :
+					
+					# This means that the task failed to execute properly
+					if p[0].returncode!=0 :
+						print "Error running task : ",p[1]
+						thread.interrupt_main()
+						sys.exit(1)
+					
+#					print "Task complete ",p[1]
+					# if we get here, the task completed
+					self.completed.add(p[1])
+			
+			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
+			
+			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
+#				print "Launch task ",self.nextid
+				EMLocalTaskHandler.lock.acquire()
+				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
+				self.running.append((proc,self.nextid))
+				self.nextid+=1
+				EMLocalTaskHandler.lock.release()
+			
+
 
 
 #######################
