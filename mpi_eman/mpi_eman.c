@@ -80,6 +80,30 @@ free((void *)data);
 return ret;
 }
 
+/*
+Calls MPI_Probe. Expects (source rank(int),tag). 
+If negative, ANY source/tag will be acceptable
+Returns (length,source rank,tag)
+
+Useful for waiting for input from an unknown source
+*/
+static PyObject *mpi_probe(PyObject *self,PyObject *args) {
+MPI_Status status;
+int datalen,src,tag;
+
+// Get a string argument
+if (!PyArg_ParseTuple(args,"ii",&src,&tag)) return NULL;
+
+if (src<0) src=MPI_ANY_SOURCE;
+if (tag<0) tag=MPI_ANY_TAG;
+
+MPI_Probe(src,tag,MPI_COMM_WORLD,&status);
+MPI_Get_count(&status,MPI_CHAR,&datalen);
+
+PyObject *ret = Py_BuildValue("iii",datalen,status.MPI_SOURCE,status.MPI_TAG);
+
+return ret;
+}
 
 /* Calls MPI_Bcast
  * Different args on source and destinations. 
@@ -127,9 +151,10 @@ static PyObject * mpi_finalize(PyObject *self,PyObject *args) {
 static PyMethodDef EmanMpiMethods[] = {
 	{"mpi_init",mpi_init,METH_VARARGS,"MPI_Init command. No arguments. Returns the rank id and process count to each node."},
 	{"mpi_comm_rank",mpi_comm_rank,METH_VARARGS,"This will return the rank id, same as returned by mpi_init."},
-	{"mpi_comm_size",mpi_comm_rank,METH_VARARGS,"This will return the number of processes, same as returned by mpi_init."},
+	{"mpi_comm_size",mpi_comm_size,METH_VARARGS,"This will return the number of processes, same as returned by mpi_init."},
 	{"mpi_send",mpi_send,METH_VARARGS,"MPI_Send(string,destination rank,tag)"},
-	{"mpi_recv",mpi_recv,METH_VARARGS,"MPI_Recv(source rank,tag). If either is negative, arbitrary values accepted. Returns the received string."},
+	{"mpi_recv",mpi_recv,METH_VARARGS,"MPI_Recv(source rank,tag). If either is negative, arbitrary values accepted. Returns (data,src,tag)."},
+	{"mpi_probe",mpi_probe,METH_VARARGS,"MPI_Probe(source rank,tag). If either is negative, arbitrary values accepted. Returns (len,src,tag)."},
 	{"mpi_bcast",mpi_bcast,METH_VARARGS,"MPI_Bcast(string). Pass data on source node, with no return. Pass data length and root rank on others & returns data."},
 	{"mpi_barrier",mpi_barrier,METH_VARARGS,"MPI_Barrier(). No arguments or return. Blocks until all nodes call it."},
 	{"mpi_finalize",mpi_finalize,METH_VARARGS,"MPI_Finalize(). No arguments or return. Call before exiting an MPI Python program exactly once."},

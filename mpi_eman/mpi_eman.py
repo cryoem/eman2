@@ -41,6 +41,7 @@ mpi_comm_rank=mpi_eman_c.mpi_comm_rank
 mpi_comm_size=mpi_eman_c.mpi_comm_size
 mpi_barrier=mpi_eman_c.mpi_barrier
 mpi_finalize=mpi_eman_c.mpi_finalize
+mpi_probe=mpi_eman_c.mpi_probe
 
 def mpi_send(data,dest,tag):
 	"""Synchronously send 'data' to 'dest' with tag 'tag'. data may be any pickleable type.
@@ -51,20 +52,21 @@ def mpi_send(data,dest,tag):
 		else : mpi_eman_c.mpi_send("S"+data,dest,tag)
 	else :
 		d2x=dumps(data,-1)
-		if len(d2x>256) : mpi_eman_c.mpi_send("Z"+compress(d2x,1),dest,tag)
+		if len(d2x)>256 : mpi_eman_c.mpi_send("Z"+compress(d2x,1),dest,tag)
 		else : mpi_eman_c.mpi_send("O"+d2x,dest,tag)
 
 def mpi_recv(src,tag):
 	"""Synchronously receive a message from 'src' with 'tag'. If either source or tag is negative, this implies
 	any source/tag is acceptable."""
 	
-	msg=mpi_eman_c.mpi_recv(src,tag)
-	if msg[0]=="C" : return decompress(msg[1:])
-	elif msg[0]=="S" : return msg[1:]
-	elif msg[0]=="Z" : return loads(decompress(msg[1:]))
-	elif msg[0]=="O" : return loads(msg[1:])
+	msg,src,tag=mpi_eman_c.mpi_recv(src,tag)
+
+	if msg[0]=="C" : return (decompress(msg[1:]),src,tag)
+	elif msg[0]=="S" : return (msg[1:],src,tag)
+	elif msg[0]=="Z" : return (loads(decompress(msg[1:])),src,tag)
+	elif msg[0]=="O" : return (loads(msg[1:]),src,tag)
 	else :
-		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%msg[:128]
+		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
 		sys.exit(1)
 
 	return None		# control should never reach here
@@ -87,5 +89,6 @@ def mpi_bcast_recv(src):
 	variable length objects. src is the rank of the sender"""
 	
 	l=mpi_eman_c.mpi_bcast(4,src)
+	l=unpack("I",l)[0]
 	
 	return loads(decompress(mpi_eman_c.mpi_bcast(l,src)))
