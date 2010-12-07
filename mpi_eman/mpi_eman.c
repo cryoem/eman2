@@ -112,30 +112,40 @@ return ret;
  * The destinations must know the length before transmission. ALL nodes in the group must call this function
  * before it will complete.
 */
-static PyObject *mpi_bcast(PyObject *self,PyObject *args) {
+static PyObject *mpi_bcast_send(PyObject *self,PyObject *args) {
 	const char * data;
 	int datalen;
-	int myrank,root;
+	int myrank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
-	if (PyArg_ParseTuple(args,"s#",&data,&datalen)) {
+	PyArg_ParseTuple(args,"s#",&data,&datalen);
 //			printf("Sent: %d\n",datalen);
-			MPI_Bcast((void *)data,datalen,MPI_CHAR,myrank,MPI_COMM_WORLD);
-			Py_RETURN_NONE;
-	}
-	else if (PyArg_ParseTuple(args,"ii",&datalen,&root)) {
-		data=(const char *)malloc(datalen);
-		MPI_Bcast((void *)data,datalen,MPI_CHAR,root,MPI_COMM_WORLD);
-
-//		printf("Recv: %d\n",datalen);
-		PyObject *ret = Py_BuildValue("s#",(void *)data,datalen);
-		free((void *)data);
-
-		return ret;
-	}
-	else Py_RETURN_NONE;
-
+	MPI_Bcast((void *)data,datalen,MPI_CHAR,myrank,MPI_COMM_WORLD);
+	Py_RETURN_NONE;
 }
+
+/* Calls MPI_Bcast
+ * Different args on source and destinations. 
+ * On source, pass in a string to transmit.
+ * On destinations, pass in the data length and source rank.
+ * The destinations must know the length before transmission. ALL nodes in the group must call this function
+ * before it will complete.
+*/
+static PyObject *mpi_bcast_recv(PyObject *self,PyObject *args) {
+	const char * data;
+	int datalen;
+	int root;
+
+	PyArg_ParseTuple(args,"ii",&datalen,&root);
+	data=(const char *)malloc(datalen);
+	MPI_Bcast((void *)data,datalen,MPI_CHAR,root,MPI_COMM_WORLD);
+
+	PyObject *ret = Py_BuildValue("s#",(void *)data,datalen);
+	free((void *)data);
+
+	return ret;
+}
+
 
 static PyObject * mpi_barrier(PyObject *self,PyObject *args) {
 
@@ -155,7 +165,8 @@ static PyMethodDef EmanMpiMethods[] = {
 	{"mpi_send",mpi_send,METH_VARARGS,"MPI_Send(string,destination rank,tag)"},
 	{"mpi_recv",mpi_recv,METH_VARARGS,"MPI_Recv(source rank,tag). If either is negative, arbitrary values accepted. Returns (data,src,tag)."},
 	{"mpi_probe",mpi_probe,METH_VARARGS,"MPI_Probe(source rank,tag). If either is negative, arbitrary values accepted. Returns (len,src,tag)."},
-	{"mpi_bcast",mpi_bcast,METH_VARARGS,"MPI_Bcast(string). Pass data on source node, with no return. Pass data length and root rank on others & returns data."},
+	{"mpi_bcast_send",mpi_bcast_send,METH_VARARGS,"MPI_Bcast(string). Provide a string to broadcast to other nodes"},
+	{"mpi_bcast_recv",mpi_bcast_recv,METH_VARARGS,"MPI_Bcast(data_length,source). Receives a broadcast of length data_length from source and returns a string."},
 	{"mpi_barrier",mpi_barrier,METH_VARARGS,"MPI_Barrier(). No arguments or return. Blocks until all nodes call it."},
 	{"mpi_finalize",mpi_finalize,METH_VARARGS,"MPI_Finalize(). No arguments or return. Call before exiting an MPI Python program exactly once."},
 	{NULL,NULL,0,NULL}

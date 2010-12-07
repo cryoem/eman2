@@ -47,14 +47,14 @@ mpi_barrier()
 
 # stage 3, broadcast string
 if proc==0:
-	a="a really long test string that im typing here now"
+	a="You should see nodes-1 of these lines"
 	mpi_bcast_send(a)
 	
 	allsrc=set(range(1,nproc))	# we use this to make sure we get a reply from all nodes
 	while (1):
 		if len(allsrc)==0 : break
 		l,src,tag = mpi_probe(-1,-1)
-		print "%d (%d) replied"%(src,l)
+		print "%d replied"%src
 		
 		b=mpi_recv(src,tag)[0]
 		print b
@@ -64,12 +64,15 @@ else:
 	x=mpi_bcast_recv(0)
 	mpi_send(x,0,1)
 
-print "done"
+mpi_finalize()
 
+if proc==0:
+	print "done"
+
+	print "\nIf you didn't see any errors above, then the test was a success."
 
 #print "running on CPU ",proc
 #if proc==0 : mpi_bcast("testing")
 #else : print mpi_bcast(8,0)
 
-mpi_finalize()
 

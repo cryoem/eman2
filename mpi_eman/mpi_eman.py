@@ -91,16 +91,16 @@ def mpi_bcast_send(data):
 	data=mpi_dout(data)
 	
 	l=pack("I",len(data))
-	mpi_eman_c.mpi_bcast(l)
+	mpi_eman_c.mpi_bcast_send(l)
 	
-	mpi_eman_c.mpi_bcast(data)
+	mpi_eman_c.mpi_bcast_send(data)
 	
 def mpi_bcast_recv(src):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
 	called on exactly one core, and receive called on all of the others. This routine also coordinates transfer of
 	variable length objects. src is the rank of the sender"""
 	
-	l=mpi_eman_c.mpi_bcast(4,src)
+	l=mpi_eman_c.mpi_bcast_recv(4,src)
 	l=unpack("I",l)[0]
 	
-	return mpi_din(mpi_eman_c.mpi_bcast(l,src))
+	return mpi_din(mpi_eman_c.mpi_bcast_recv(l,src))
