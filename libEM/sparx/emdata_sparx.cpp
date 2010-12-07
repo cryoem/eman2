@@ -514,16 +514,36 @@ EMData* EMData::rotavg() {
 
 	ENTERFUNC;
 
+
 	if (ny<2 && nz <2) {
 		LOGERR("No 1D images.");
 		throw ImageDimensionException("No 1D images!");
 	}
+	
+	float apix[3];
+	apix[0] = get_attr_default("apix_x",1.0);
+	apix[1] = get_attr_default("apix_y",1.0);
+	apix[2] = get_attr_default("apix_z",1.0);
+	float min_apix = *std::min_element(&apix[0],&apix[3]);
+	//here,only the relative value of apix_x, apix_y, apix_z are considered
+	float apix_x = apix[0]/min_apix;
+	float apix_y = apix[1]/min_apix;
+	float apix_z = 1.0;
+	if( nz > 1) 
+		apix_z=apix[2]/min_apix;
+	float apix_x2 = apix_x*apix_x;
+	float apix_y2 = apix_y*apix_y;
+	float apix_z2 = apix_z*apix_z;
+	cout<<" apx="<<apix_x<<"  apy="<<apix_y<<"  apz="<<apix_z<<" min_apix="<<min_apix<<endl;
+
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(-nx/2,-ny/2,-nz/2);
+	
+	
 #ifdef _WIN32
 	//int rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
 	if ( nz == 1 ) {
-		rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
+		rmax = _cpp_min( nx/2 + nx%2, ny/2 + ny%2);
 	} else {
 		rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
 	}
@@ -535,16 +555,25 @@ EMData* EMData::rotavg() {
 		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
 	}
 #endif	//_WIN32
+
+	float rmax_ratio = 0.0;
+	if (rmax == nx/2 + nx%2 )
+		rmax_ratio = apix_x;
+	else if (rmax == ny/2 + ny%2)
+		rmax_ratio = apix_y;
+	else
+		rmax_ratio = apix_z;
+	
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
 	vector<float> count(rmax+1);
 	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
-		if (abs(k) > rmax) continue;
+		if (abs( k*apix_z) > rmax*rmax_ratio ) continue;
 		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
-			if (abs(j) > rmax) continue;
+			if (abs( j*apix_y ) > rmax*rmax_ratio) continue;
 			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-				float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				float r = std::sqrt(float(k*k*apix_z2) + float(j*j*apix_y2) + float(i*i*apix_x2))/rmax_ratio;
 				int ir = int(r);
 				if (ir >= rmax) continue;
 				float frac = r - float(ir);

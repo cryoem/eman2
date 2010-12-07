@@ -42,6 +42,8 @@ periodogram(EMData* f) {
 	int nx  = f->get_xsize();
 	int ny  = f->get_ysize();
 	int nz  = f->get_zsize();
+	
+	
  		// We manifestly assume no zero-padding here, just the 
 		// necessary extension along x for the fft
 
@@ -52,8 +54,13 @@ periodogram(EMData* f) {
 	EMData* fp = NULL;
 	if(f->is_complex()) fp = f->copy(); // we need to make a full copy so that we don't damage the original
 	else {
+		
 		fp = f->norm_pad(false, 1); // Extend and do the FFT if f is real
 		fp->do_fft_inplace();
+
+		
+		
+		
 	}
 	fp->set_array_offsets(1,1,1);
 
@@ -138,7 +145,17 @@ periodogram(EMData* f) {
 		fp = 0;
 	}
 	//power[0][0][0]=power[1][0][0];  //Steve requested the original origin.
-
+	
+	int sz[3];
+	sz[0] = nx;
+	sz[1] = ny;
+	sz[2] = nz;
+	int max_size = *std::max_element(&sz[0],&sz[3]);
+	// set the pixel size for the power spectrum, only ration of the frequency pixel size is considered 	
+	power.set_attr("apix_x", float(max_size)/nx);
+	if(ny2 > 0) power.set_attr("apix_y", float(max_size)/ny);
+	if(nz2 > 0) power.set_attr("apix_z", float(max_size)/nz);
+	
 	power.update();
 	power.set_array_offsets(0,0,0);
 	return &power;
