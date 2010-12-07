@@ -7787,21 +7787,27 @@ def ali_vol_n(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="ccc",
 	else:
 		return e
 
-def ali_vol_grid(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="dot", kb=None):
+def ali_vol_grid(vol, params, refv, ang_scale, shift_scale, radius=None, discrepancy="dot", kb=None):
 	"""
 		Name
 			sxali_vol_grid - align a 3D structure with respect of a 3D reference structure.
 				Like ali_vol_n, but using gridding transformations.
-		Input
-			vol: 3D structure to be aligned.
-		refv.hdf
-			3D reference structure.
+
+		Arguments:
+		vol
+			3D structure to be aligned
+		params
+			starting parameters to be applied to vol
+		refv
+			3D reference structure
 		ang_scale
 			correct angles are expected to be within +/-ang_scale of the values preset in the header of the structure to be aligned
 		shift_scale
 			correct shifts are expected to be within +/-shift_scale of the values preset in the header of the structure to be aligned
 		radius
 			radius of a spherical mask centered at nx/2, ny/2, nz/2
+		discrepancy
+			discrepancy (or similarity) measure
 		kb
 			if given, then (vol,kb) must be the output from prepi3D. If not given, then prepi3D is called here.
 	"""
@@ -7820,10 +7826,7 @@ def ali_vol_grid(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="do
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
-
 	e = get_image(vol)
-	params =  get_arb_params(e, names_params)
 	
 	if kb==None:
 		ee, kb = prepi3D(e)
@@ -7833,12 +7836,8 @@ def ali_vol_grid(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="do
 	
 	new_params = amoeba(params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_grid, 1.e-5, 1.e-4, 500, data)
 
-	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5]], names_params)
-	if type(vol)==type(""):
-		from utilities import write_headers
-		write_headers( vol, [e], [0])
-	else:
-		return e
+	return [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5]]
+
 
 def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc"):
 	"""
