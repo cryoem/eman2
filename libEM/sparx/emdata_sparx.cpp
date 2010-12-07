@@ -534,8 +534,7 @@ EMData* EMData::rotavg() {
 	float apix_x2 = apix_x*apix_x;
 	float apix_y2 = apix_y*apix_y;
 	float apix_z2 = apix_z*apix_z;
-	cout<<" apx="<<apix_x<<"  apy="<<apix_y<<"  apz="<<apix_z<<" min_apix="<<min_apix<<endl;
-
+	
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(-nx/2,-ny/2,-nz/2);
 	
