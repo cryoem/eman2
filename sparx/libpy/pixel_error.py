@@ -435,7 +435,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	return ali_list
 
 
-def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0):
+def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0):
 
 	def rot_shift(x, y, alpha, sx, sy):
 		from math import pi, sin, cos
@@ -537,7 +537,8 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	err = stable(ps, ali_params_mir_cons)
 	stable_set = []
 	for i in xrange(len(mir_cons_part)):
-		if err[i] < error_threshold: stable_set.append(mir_cons_part[i])
+		if err[i] < individual_error_threshold: stable_set.append([err[i], mir_cons_part[i]])
+	stable_set.sort()
 		
 	return stable_set, mirror_consistent_rate, val
 
