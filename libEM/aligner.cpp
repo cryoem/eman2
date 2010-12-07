@@ -2585,8 +2585,9 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		}
 		
-		for (int j=0; j<(RING_LENGTH+2)*2*(2*KX+1)*(2*KY+1)*NREF*batch_size[i]; j++)
-			 cout << j << "     " << ccf[j] << endl;
+		// This part is for testing purpose, delete it after fixing the problem
+		//for (int j=0; j<(RING_LENGTH+2)*2*(2*KX+1)*(2*KY+1)*NREF*batch_size[i]; j++)
+		//	 cout << j << "     " << ccf[j] << endl;
 
 		for (int j=0; j<batch_size[i]; j++) {
 			float max_ccf = -1.0e22;
