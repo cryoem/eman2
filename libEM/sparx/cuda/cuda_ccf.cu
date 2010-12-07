@@ -360,14 +360,6 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	int NREF_BATCH_IFFT = NREF/NIMAGE_PER_BATCH_IFFT;
 	int NREF_LEFT_BATCH_IFFT = NREF%NIMAGE_PER_BATCH_IFFT;
 
-	// For testing purpose
-/*	printf("%d %d %d %d %d\n", NIMAGE_ROW, NROW, NIMAGE_LEFT, NROW_REF, NREF_LEFT);
-	printf("%d %d %d\n", NIMAGE_IN_TEXTURE, NTEXTURE_REF, NREF_LEFT_TEXTURE);
-	printf("%d %d %d %d %d\n", NIMAGE_PER_BATCH_FFT, NIMAGE_BATCH_FFT, NIMAGE_LEFT_BATCH_FFT, NREF_BATCH_FFT, NREF_LEFT_BATCH_FFT);
-	printf("%d %d %d %d\n", POS_PER_IMAGE, NIMAGE_PER_BATCH_IFFT, NREF_BATCH_IFFT, NREF_LEFT_BATCH_IFFT);
-*/
-	printf(" id = %d\n", id);
-
 	// Block this line if you have only one GPU
 	cudaSetDevice(id); 
 	
@@ -525,17 +517,6 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	}
 	cudaUnbindTexture(texim_shifts);
 
-
-	// This part is for testing purpose, delete it after fixing the problem
-/*	float *pp = (float *)malloc(NREF*POINTS_PER_IMAGE*sizeof(float));
-	cudaMemcpy(pp, d_ref_image_polar, NREF*POINTS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
-	for (i=0; i<NREF; i++)
-		for (j=0; j<NRING; j++)
-			for (k=0; k<RING_LENGTH; k++) {
-				l = i*(RING_LENGTH+2)*NRING+j*(RING_LENGTH+2)+k;
-				printf("%d   %f\n", l, pp[l]);
-			}*/
-
 	cudaGetTextureReference(&texPtr, "texim_polar");
 	for (k=0; k<NTEXTURE_REF; k++) {
 		cudaBindTexture(offset, texPtr, d_ref_image_polar+k*NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE, &channelDesc, NIMAGE_IN_TEXTURE*POINTS_PER_IMAGE*sizeof(float));
@@ -550,16 +531,6 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 		cudaThreadSynchronize();
 	}
 	cudaUnbindTexture(texim_polar);
-
-	// This part is for testing purpose, delete it after fixing the problem
-/*	cudaMemcpy(pp, d_ref_image_polar, NREF*POINTS_PER_IMAGE*sizeof(float), cudaMemcpyDeviceToHost);
-	for (i=0; i<NREF; i++)
-		for (j=0; j<NRING; j++)
-			for (k=0; k<RING_LENGTH; k++) {
-				l = i*(RING_LENGTH+2)*NRING+j*(RING_LENGTH+2)+k;
-				printf("%d   %f\n", l, pp[l]);
-			}
-	free(pp);*/
 
 	/* Conduct FFT for all reference images */
 	for (k=0; k<NREF_BATCH_FFT; k++)

@@ -2585,10 +2585,6 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		}
 		
-		// This part is for testing purpose, delete it after fixing the problem
-		//for (int j=0; j<(RING_LENGTH+2)*2*(2*KX+1)*(2*KY+1)*NREF*batch_size[i]; j++)
-		//	 cout << j << "     " << ccf[j] << endl;
-
 		for (int j=0; j<batch_size[i]; j++) {
 			float max_ccf = -1.0e22;
 			int nref = -1;
@@ -2603,7 +2599,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 							ts = ccf[base_address+l];
 							tm = ccf[base_address+l+ccf_offset];
 							if (ts > max_ccf) {
-								ang = float(l)/RING_LENGTH*360.0;
+								ang = 360.0-float(l)/RING_LENGTH*360.0;
 								sx = -kx*STEP;
 								sy = -ky*STEP;
 								mirror = 0;
