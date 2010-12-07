@@ -2741,7 +2741,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e3.get_ysize(), 1)
         self.assertEqual(e3.get_zsize(), 1)
         
-    def test_set_path(self):
+    def no_test_set_path(self): #set_path no longer expose to Python
         """test set_path() function ........................."""
         e = EMData()
         e.set_size(32,32,32)
