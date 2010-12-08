@@ -36,6 +36,75 @@ from emimage3d import EMImage3DWidget
 from emimage3diso import EMIsosurfaceModel
 from empdbviewer import *
 
+class EMPDBValWidget(QtGui.QWidget):
+	def __init__(self, image_volume = None, pdb_model = None):
+		QtGui.QWidget.__init__(self)
+		self.image = image_volume
+		self.pdb_model = pdb_model
+		self.__init_gui()
+	def __init_gui(self):
+		self.data_groupbox = QtGui.QGroupBox(self.tr("Data"))
+		
+		pdb_label = QtGui.QLabel("PDB:")
+		self.pdb_line_edit = QtGui.QLineEdit()
+		self.pdb_browse_button = QtGui.QPushButton(self.tr("Browse"))
+		pdb_layout = QtGui.QHBoxLayout()
+		pdb_layout.addWidget(pdb_label)
+		pdb_layout.addWidget(self.pdb_line_edit)
+		pdb_layout.addWidget(self.pdb_browse_button)		
+		
+		image_label = QtGui.QLabel("Image:")
+		self.image_line_edit = QtGui.QLineEdit()
+		self.image_browse_button = QtGui.QPushButton(self.tr("Browse"))
+		image_layout = QtGui.QHBoxLayout()
+		image_layout.addWidget(image_label)
+		image_layout.addWidget(self.image_line_edit)
+		image_layout.addWidget(self.image_browse_button)
+		
+		data_layout = QtGui.QVBoxLayout()
+		data_layout.addLayout(pdb_layout)
+		data_layout.addLayout(image_layout)
+		
+		self.data_groupbox.setLayout(data_layout)
+
+		
+		self.validation_groupbox = QtGui.QGroupBox(self.tr("Validation"))
+		
+		transformations_label = QtGui.QLabel(self.tr("&Number of Transformations"))
+		self.transformations_spinbox = QtGui.QSpinBox()
+		self.transformations_spinbox.setValue(20)
+		transformations_label.setBuddy(self.transformations_spinbox)
+		transformations_layout = QtGui.QHBoxLayout()
+		transformations_layout.addWidget(transformations_label)
+		transformations_layout.addWidget(self.transformations_spinbox)
+		
+		threshold_label = QtGui.QLabel(self.tr("Isosurface &Threshold"))
+		self.threshold_doublespinbox = QtGui.QDoubleSpinBox()
+		self.threshold_doublespinbox.setValue(0.1)
+		threshold_label.setBuddy(self.threshold_doublespinbox)
+		threshold_layout = QtGui.QHBoxLayout()
+		threshold_layout.addWidget(threshold_label)
+		threshold_layout.addWidget(self.threshold_doublespinbox)
+		
+		self.validate_button = QtGui.QPushButton(self.tr("&Validate"))
+		
+		validation_layout = QtGui.QVBoxLayout()
+		validation_layout.addLayout(transformations_layout)
+		validation_layout.addLayout(threshold_layout)
+		validation_layout.addWidget(self.validate_button)
+		self.validation_groupbox.setLayout(validation_layout)
+		
+		layout = QtGui.QVBoxLayout()
+		layout.addWidget(self.data_groupbox)
+		layout.addWidget(self.validation_groupbox)
+		
+		self.setLayout(layout)
+	
+	def set_pdb_file(self, pdb_filepath):
+		self.pdb_model.set_current_text(pdb_filepath)
+		
+			
+
 class EMPDBValTool(QtCore.QObject):
 	'''
 	EMPDB versus isosurface visual evaluation
@@ -250,6 +319,10 @@ if __name__ == '__main__':
 
 	pdb_tool.set_pdb_file("fh-solution-0-1UF2-T.pdb")
 	pdb_tool.set_iso_file("rdv-target2.mrc")
+	
+	pdb_widget = EMPDBValWidget()
+	em_app.attach_child(pdb_widget)
+	
 	em_app.show()
 	em_app.execute()
 
