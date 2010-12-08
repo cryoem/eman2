@@ -263,7 +263,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
     centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
     particles = []
     rot_angle = get_helix_rotation_angle(*helix_coords)
-    tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #TODO: figure out the correct transform
+    tr = Transform({"type":"eman","az":-1*rot_angle}) #TODO: figure out the correct transform
     for centroid in centroids:
         ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
         ptcl["ptcl_helix_coords"] = tuple(helix_coords)
