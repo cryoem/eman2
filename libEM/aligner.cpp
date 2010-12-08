@@ -2493,12 +2493,14 @@ void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_l
 	KY = ky;
 	OU = ou;
 	CTF = ctf;
+	// This number can be increased according to the GPU memory. But my tests has shown the speedup 
+	// is limited (~5%) even if I increased the size 10 times, so it's better to be on the safe side.
+	MAX_IMAGE_BATCH = 10;
 	
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ref_image_stack = (float *)malloc(NREF*NX*NY*sizeof(float));
 	if (CTF == 1) ref_image_stack_filtered = (float *)malloc(NREF*NX*NY*sizeof(float));
-	int max_batch = 10;
-	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NREF*(RING_LENGTH+2)*max_batch*sizeof(float));
+	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NREF*(RING_LENGTH+2)*MAX_IMAGE_BATCH*sizeof(float));
 }
 
 void CUDA_multiref_aligner::setup_params(vector<float> all_ali_params, vector<float> all_ctf_params) {
@@ -2531,14 +2533,12 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 
 vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 
-	float *params = (float *)malloc(NIMA*6*sizeof(float));	
+	float *ctf_params_ref = (float *)malloc(NREF*6*sizeof(float));	
 	float *sx2 = (float *)malloc(NIMA*sizeof(float));
 	float *sy2 = (float *)malloc(NIMA*sizeof(float));
 	vector<float> align_results;
 	int ccf_offset = NREF*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
 
-	// This number can be increased according to the GPU memory.
-	const int max_batch = 10;
 	vector<int> batch_size;
 	vector<int> batch_begin;
 	
@@ -2546,7 +2546,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		float previous_defocus = ctf_params[0];
 		int current_size = 1;
 		for (int i=1; i<NIMA; i++) {
-			if (ctf_params[i*6] != previous_defocus || current_size >= max_batch) {
+			if (ctf_params[i*6] != previous_defocus || current_size >= MAX_IMAGE_BATCH) {
 				batch_size.push_back(current_size);
 				current_size = 1;
 				previous_defocus = ctf_params[i*6];
@@ -2554,8 +2554,8 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		}
 		batch_size.push_back(current_size);
 	} else {
-		batch_size.resize(NIMA/max_batch, max_batch);
-		if (NIMA%max_batch != 0)  batch_size.push_back(NIMA%max_batch);
+		batch_size.resize(NIMA/MAX_IMAGE_BATCH, MAX_IMAGE_BATCH);
+		if (NIMA%MAX_IMAGE_BATCH != 0)  batch_size.push_back(NIMA%MAX_IMAGE_BATCH);
 	}
 	int num_batch = batch_size.size();
 	batch_begin.resize(num_batch, 0);
@@ -2576,8 +2576,8 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		if (CTF == 1) {
 			for (int p=0; p<NREF; p++)
 				for (int q=0; q<6; q++)
-					params[p*6+q] = ctf_params[batch_begin[i]*6+q];
-			filter_image(ref_image_stack, ref_image_stack_filtered, NIMA, NX, NY, params, gpuid);
+					ctf_params_ref[p*6+q] = ctf_params[batch_begin[i]*6+q];
+			filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, ctf_params_ref, gpuid);
 			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack_filtered, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
 				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
 		} else {
@@ -2634,7 +2634,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		}
 	}
 	
-	free(params);
+	free(ctf_params_ref);
 	free(sx2);
 	free(sy2);
 	

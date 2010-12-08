@@ -1064,7 +1064,7 @@ namespace EMAN
 	        float *image_stack, *ref_image_stack, *ref_image_stack_filtered;
 		float *ccf;
 		float *ali_params, *ctf_params;
-		int NIMA, NREF, NX, NY, RING_LENGTH, NRING, OU, KX, KY;
+		int NIMA, NREF, NX, NY, RING_LENGTH, NRING, OU, KX, KY, MAX_IMAGE_BATCH;
 		bool CTF;
 		float STEP;
 	};
