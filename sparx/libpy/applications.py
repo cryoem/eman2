@@ -6338,12 +6338,12 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 
 
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-          txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
+          txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	  fourvar, debug = False, MPI = False):
 	if MPI:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-			txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
+			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
 		return
@@ -6533,7 +6533,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	print_end_msg("ihrsr")
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-	txs, delta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
+	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
@@ -6762,11 +6762,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f,stepx = %5.2f, yrange = %5.2f,  stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
 			if( xysize == -1 ):
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero")
+				refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft,kb
 			else:
 				volft, kbx, kby, kbz = prep_vol( vol )
-				refrings = prepare_refrings( volft, kbz, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby)
+				refrings = prepare_refrings( volft, kbz, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft, kbx, kby, kbz
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
@@ -6985,6 +6985,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ref_data = [vol]
 				if  fourvar:  ref_data.append(varf)
 				vol = user_func(ref_data)
+				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
 
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 				print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))

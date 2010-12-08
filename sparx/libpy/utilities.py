@@ -732,10 +732,18 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 	elif(symmetry_string[0]  == "s"):
-		k=int( ((phi2/2) - phi1)/delta ) + 1
-		for i in xrange(k):
-			t = phi1 +i*delta
-			angles.append([t,90.0,90.0])
+	#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
+				
+		theta_number = int((90.0 - theta1)/theta2)
+		for j in xrange(theta_number,-1, -1):
+			if( j == 0):
+				k=int( ((phi2/2) - phi1)/delta ) + 1
+			else:
+				k=int( ((phi2) - phi1)/delta ) + 1 
+			for i in xrange(k):
+					t = phi1 +i*delta
+					angles.append([t,90.0-j*theta2,90.0])
+	
 	else : # This is very close to the Saff even_angles routine on the asymmetric unit;
 		# the only parameters used are symmetry and delta
 		# The formulae are given in the Transform Class Paper

@@ -1018,7 +1018,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx=None, kby=None):
+def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta =None, delta_theta = None):
         from projection   import prep_vol, prgs
         from math         import sin, cos, pi
 	from applications import MPI_start_end
@@ -1026,7 +1026,12 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
-	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	if initial_theta is None:
+		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	else:
+		if delta_theta is None:
+			delta_theta = 1.0
+		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
