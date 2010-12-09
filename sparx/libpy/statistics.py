@@ -9365,4 +9365,33 @@ def center_of_gravity(a):
 def center_of_gravity_phase(a):
 	return a.phase_cog()
 
+def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisquare=False):
+	"""
+		ctf_params = [defocus, cs, voltage, apix, bfactor, ampcont]
+	"""
+	from math import copysign
+	from morphology import ctf_1d
+	from utilities import generate_ctf
+	n = len(crossresolution[1])
+	if(i2 <= i1):  i2 = n
+	nx = 2*n
+	if(rangedef == -1.0): rangedef = ctf_params[0]*0.1
+	sgncrs = [0.0]*n
+	for i in xrange(n):  sgncrs[i] = copysign(1.0, crossresolution[1][i])
+	
+	qt = 1.0e23
+	nstep = 21
+	for j in xrange(21):
+		defi = ctf_params[0]-rangedef + rangedef*0.1*j
+		ctf = ctf_1d(nx, generate_ctf([defi]+ctf_params[1:]))
+		disc = 0.0
+		if chisquare:
+			for k in xrange(i1,i2):
+				disc += ((sgncrs[k] - copysign(1.0, ctf[k]))/crossresolution[2][k])**2
+		else:
+			for k in xrange(i1,i2):
+				disc += (sgncrs[k] - copysign(1.0, ctf[k]))**2
+		if( disc < qt): best_def = defi
+	return best_def
+	
 
