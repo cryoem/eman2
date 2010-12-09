@@ -2586,25 +2586,22 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 		}
 		
 		for (int j=0; j<batch_size[i]; j++) {
-			float max_ccf = -1.0e22;
-			int nref = -1;
-			float ts, tm, ang = 0.0, sx = 0.0, sy = 0.0, co, so, sxs, sys;
-			int mirror = 0;
-
 			for (int im=0; im<NREF; im++) {
+				float max_ccf = -1.0e22;
+				float ang = 0.0, sx = 0.0, sy = 0.0;
+				int mirror = 0;
 				for (int kx=-KX; kx<=KX; kx++) {
 					for (int ky=-KY; ky<=KY; ky++) {
 						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;			
 						for (int l=0; l<RING_LENGTH; l++) {
-							ts = ccf[base_address+l];
-							tm = ccf[base_address+l+ccf_offset];
+							float ts = ccf[base_address+l];
+							float tm = ccf[base_address+l+ccf_offset];
 							if (ts > max_ccf) {
 								ang = 360.0-float(l)/RING_LENGTH*360.0;
 								sx = -kx*STEP;
 								sy = -ky*STEP;
 								mirror = 0;
 								max_ccf = ts;
-								nref = im;
 							}
 							if (tm > max_ccf) {
 								ang = float(l)/RING_LENGTH*360.0; 
@@ -2612,25 +2609,23 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 								sy = -ky*STEP;
 								mirror = 1;
 								max_ccf = tm;
-								nref = im;
 							}
 						}
 					}
 				}
-			}
-			co =  cos(ang*M_PI/180.0);
-			so = -sin(ang*M_PI/180.0);
+				float co =  cos(ang*M_PI/180.0);
+				float so = -sin(ang*M_PI/180.0);
 		
-			int img_num = batch_begin[i]+j;
-			sxs = (sx-sx2[img_num])*co-(sy-sy2[img_num])*so;
-			sys = (sx-sx2[img_num])*so+(sy-sy2[img_num])*co;
+				int img_num = batch_begin[i]+j;
+				float sxs = (sx-sx2[img_num])*co-(sy-sy2[img_num])*so;
+				float sys = (sx-sx2[img_num])*so+(sy-sy2[img_num])*co;
 
-			align_results.push_back(ang);
-			align_results.push_back(sxs);
-			align_results.push_back(sys);
-			align_results.push_back(mirror);
-			align_results.push_back(nref);
-			align_results.push_back(max_ccf);
+				align_results.push_back(max_ccf);
+				align_results.push_back(ang);
+				align_results.push_back(sxs);
+				align_results.push_back(sys);
+				align_results.push_back(mirror);
+			}
 		}
 	}
 	
