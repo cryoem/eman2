@@ -9391,7 +9391,9 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 		else:
 			for k in xrange(i1,i2):
 				disc += (sgncrs[k] - copysign(1.0, ctf[k]))**2
-		if( disc < qt): best_def = defi
+		if( disc < qt):
+			best_def = defi
+			qt = disc
 	return best_def
 	
 
