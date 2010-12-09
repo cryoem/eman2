@@ -916,7 +916,8 @@ Transform Symmetry3D::reduce(const Transform& t, int n) const
 	// This should never happen
 	if ( soln == -1 ) {
 		cout << "error, no solution found!" << endl;
-		throw;
+//		throw;
+		return t;
 	}
 
 	// Get the symmetry operation corresponding to the intersection asymmetric unit
@@ -1010,7 +1011,8 @@ int Symmetry3D::point_in_which_asym_unit(const Vec3f& p) const
 	if (cached_au_planes == 0) {
 		cache_au_planes();
 	}
-
+	
+	float epsNow=0.01;
 	int k = 0;
 	for(int i = 0; i < get_nsym(); ++i) {
 		for( int j = 0; j < num_triangles; ++j,++k) {
@@ -1064,7 +1066,8 @@ int Symmetry3D::point_in_which_asym_unit(const Vec3f& p) const
 			if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ) t = 1;
 
 			// The final decision, if this is true then we've hit the jackpot
-			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
+			if ( s >= -epsNow && t >= -epsNow && (s+t) <= 1+epsNow ) {
+//				cout << " i " << i << " j " << j << " s " << s  << " t " << t << " s+t " << s+t << endl;
 				return i;
 			}
 		}
