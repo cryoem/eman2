@@ -48,10 +48,7 @@ def main():
 	parser.add_option("--xr", type="float", default=0, help="  range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr", type="float", default=-1, help="  range for translation search in y direction, search is +/-yr ")
 	parser.add_option("--ts", type="float", default=1, help="  step of translation search in both directions")
-	parser.add_option("--min_class_size", type="float", default=1, help="  mininum size of class (set to 1) ")
-	parser.add_option("--max_class_size", type="float", default=-1, help="  maximum size of class (set to -1, means can be any number) ")
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference assignment")
-	parser.add_option("--deactive", action="store_true", default=False, help=" set particles to inactive")
 	parser.add_option("--CUDA", action="store_true", default=False, help=" whether to use CUDA")
 	parser.add_option("--GPUID", type="string", default="0 1 2 3",  help=" the IDs of GPU to use")
 	parser.add_option("--SA",   action="store_true", default=False,  help=" whether ti use simulated annealing")
@@ -78,8 +75,7 @@ def main():
 	from development import multi_assign
 	global_def.BATCH = True
 	multi_assign(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts,  
-			options.min_class_size, options.max_class_size, options.CTF, options.deactive, options.CUDA, options.GPUID, 
-			options.SA, options.T, options.MPI)
+			options.CTF, options.CUDA, options.GPUID, options.SA, options.T, options.MPI)
 	global_def.BATCH = False
 	
 	if options.MPI:
