@@ -689,6 +689,7 @@ class EMTask:
 								# (after transmission):
 								# - actual data item
 								# - ['cache',didEMD, did is a (modtime,int) tuple
+		self.modtimes={}		# Used by MPI parallelism. A dictionary of the last modification times of files specified for caching in data
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting

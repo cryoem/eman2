@@ -105,6 +105,34 @@ PyObject *ret = Py_BuildValue("iii",datalen,status.MPI_SOURCE,status.MPI_TAG);
 return ret;
 }
 
+/*
+Calls MPI_Iprobe (nonblocking). Expects (source rank(int),tag). 
+If negative, ANY source/tag will be acceptable
+Returns (length,source rank,tag)
+
+Returns None immediately if no suitable receives are pending
+*/
+static PyObject *mpi_iprobe(PyObject *self,PyObject *args) {
+MPI_Status status;
+int datalen,src,tag,flag;
+
+// Get a string argument
+if (!PyArg_ParseTuple(args,"ii",&src,&tag)) return NULL;
+
+if (src<0) src=MPI_ANY_SOURCE;
+if (tag<0) tag=MPI_ANY_TAG;
+
+MPI_Iprobe(src,tag,MPI_COMM_WORLD,&flag,&status);
+if (!flag) Py_RETURN_NONE;
+
+MPI_Get_count(&status,MPI_CHAR,&datalen);
+
+PyObject *ret = Py_BuildValue("iii",datalen,status.MPI_SOURCE,status.MPI_TAG);
+
+return ret;
+}
+
+
 /* Calls MPI_Bcast
  * Different args on source and destinations. 
  * On source, pass in a string to transmit.
@@ -165,6 +193,7 @@ static PyMethodDef EmanMpiMethods[] = {
 	{"mpi_send",mpi_send,METH_VARARGS,"MPI_Send(string,destination rank,tag)"},
 	{"mpi_recv",mpi_recv,METH_VARARGS,"MPI_Recv(source rank,tag). If either is negative, arbitrary values accepted. Returns (data,src,tag)."},
 	{"mpi_probe",mpi_probe,METH_VARARGS,"MPI_Probe(source rank,tag). If either is negative, arbitrary values accepted. Returns (len,src,tag)."},
+	{"mpi_iprobe",mpi_iprobe,METH_VARARGS,"MPI_Iprobe(source rank,tag). If either is negative, arbitrary values accepted. Returns (len,src,tag) or None if no recieves are pending."},
 	{"mpi_bcast_send",mpi_bcast_send,METH_VARARGS,"MPI_Bcast(string). Provide a string to broadcast to other nodes"},
 	{"mpi_bcast_recv",mpi_bcast_recv,METH_VARARGS,"MPI_Bcast(data_length,source). Receives a broadcast of length data_length from source and returns a string."},
 	{"mpi_barrier",mpi_barrier,METH_VARARGS,"MPI_Barrier(). No arguments or return. Blocks until all nodes call it."},

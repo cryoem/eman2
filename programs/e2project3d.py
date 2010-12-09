@@ -217,7 +217,7 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
-	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen")
+	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen. Example: --orientgen=eman:delta=3.0:inc_mirror=0:perturb=1")
 	parser.add_option("--outfile", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
 	# add --perturb
 	parser.add_option("--smear", dest = "smear", type = "int", default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")

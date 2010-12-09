@@ -77,6 +77,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--taskin", type="string",help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_option("--taskout", type="string",help="Internal use only. Used when executing local threaded tasks.")
+	parser.add_option("--scratchdir", type="string",help="Internal use only. Used by the MPI client",default="/tmp")
 #	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
@@ -105,7 +106,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		runlocaltask(options.taskin,options.taskout)
 
 	elif args[0]=="mpiclient" :
-		runinmpi(options.verbose)
+		runinmpi(options.scratchdir,options.verbose)
 		
 	elif args[0]=="rerunall":
 		rerunall()
@@ -119,9 +120,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 def progcb(val):
 	return True
 
-def runinmpi(verbose):
+def runinmpi(scratchdir,verbose):
 	"""This function can only be used when called by mpirun from a valid MPI environment"""
-	client=EMMpiClient()
+	client=EMMpiClient(scratchdir)
 	client.test(verbose)
 	client.run(verbose)
 

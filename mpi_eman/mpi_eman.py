@@ -43,6 +43,7 @@ mpi_comm_size=mpi_eman_c.mpi_comm_size
 mpi_barrier=mpi_eman_c.mpi_barrier
 mpi_finalize=mpi_eman_c.mpi_finalize
 mpi_probe=mpi_eman_c.mpi_probe
+mpi_iprobe=mpi_eman_c.mpi_iprobe
 
 def mpi_dout(data):
 	"""Convert data for transmission efficiently"""
