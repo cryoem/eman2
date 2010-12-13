@@ -720,7 +720,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				float bg;
 				if (j>(int)background.size()-2) bg=background.back();
 				else bg=background[j]*(1.0f-f)+background[j+1]*f;
-				if (bg <=0) bg=.001;
+				if (bg <=0) bg=.001f;
 
 				tsnr[i] = tsnr[i]*tsnr[i]/bg;		// This is now a SNR curve
 				if (sf && s) {

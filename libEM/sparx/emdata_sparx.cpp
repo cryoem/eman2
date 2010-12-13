@@ -1201,31 +1201,31 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 	
        	//begin of scaling factor calculation
 	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
-	axis_newx[0] = xratio*0.5*(sizeofprojection*npad)*trans[0][0];
-	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
-	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
+	axis_newx[0] = xratio*0.5f*(sizeofprojection*npad)*trans[0][0];
+	axis_newx[1] = yratio*0.5f*(sizeofprojection*npad)*trans[0][1];
+	axis_newx[2] = 0.5f*(sizeofprojection*npad)*trans[0][2];
 
 	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
 	int ellipse_length_x_int = int(ellipse_length_x);
-	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float ellipse_step_x = 0.5f*(sizeofprojection*npad)/float(ellipse_length_x_int);
 	float xscale = ellipse_step_x;//scal increased
 
-  	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
-  	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
-  	axis_newy[2] = 0.5*(sizeofprojection*npad)*trans[1][2];
+  	axis_newy[0] = xratio*0.5f*(sizeofprojection*npad)*trans[1][0];
+  	axis_newy[1] = yratio*0.5f*(sizeofprojection*npad)*trans[1][1];
+  	axis_newy[2] = 0.5f*(sizeofprojection*npad)*trans[1][2];
 
 
 
 	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
 	int ellipse_length_y_int = int(ellipse_length_y);
-	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float ellipse_step_y = 0.5f*(sizeofprojection*npad)/float(ellipse_length_y_int);
 	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
 	nz = get_zsize();
 
-	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
+	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
 	
 	for(int i=0;i<ellipse_length_x_int;i++) {
@@ -1832,25 +1832,25 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 	
        	//begin of scaling factor calculation
 	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
-	axis_newx[0] = xratio*0.5*(sizeofprojection*npad)*trans[0][0];
-	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
-	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
+	axis_newx[0] = xratio*0.5f*(sizeofprojection*npad)*trans[0][0];
+	axis_newx[1] = yratio*0.5f*(sizeofprojection*npad)*trans[0][1];
+	axis_newx[2] = 0.5f*(sizeofprojection*npad)*trans[0][2];
 
 	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
 	int ellipse_length_x_int = int(ellipse_length_x);
-	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float ellipse_step_x = 0.5f*(sizeofprojection*npad)/float(ellipse_length_x_int);
 	float xscale = ellipse_step_x;//scal increased
 
-  	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
-  	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
-  	axis_newy[2] = 0.5*(sizeofprojection*npad)*trans[1][2];
+  	axis_newy[0] = xratio*0.5f*(sizeofprojection*npad)*trans[1][0];
+  	axis_newy[1] = yratio*0.5f*(sizeofprojection*npad)*trans[1][1];
+  	axis_newy[2] = 0.5f*(sizeofprojection*npad)*trans[1][2];
 
 
 
 	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
 	int ellipse_length_y_int = int(ellipse_length_y);
-	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float ellipse_step_y = 0.5f*(sizeofprojection*npad)/float(ellipse_length_y_int);
 	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
@@ -1860,7 +1860,7 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
         if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
-	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
+	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
 	
 	for(int i=0;i<ellipse_length_x_int;i++) {
@@ -1969,25 +1969,25 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 	
        	//begin of scaling factor calculation
 	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
-	axis_newx[0] = xratio*0.5*(sizeofprojection*npad)*trans[0][0];
-	axis_newx[1] = yratio*0.5*(sizeofprojection*npad)*trans[0][1];
-	axis_newx[2] = 0.5*(sizeofprojection*npad)*trans[0][2];
+	axis_newx[0] = xratio*0.5f*(sizeofprojection*npad)*trans[0][0];
+	axis_newx[1] = yratio*0.5f*(sizeofprojection*npad)*trans[0][1];
+	axis_newx[2] = 0.5f*(sizeofprojection*npad)*trans[0][2];
 
 	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
 	int ellipse_length_x_int = int(ellipse_length_x);
-	float ellipse_step_x = 0.5*(sizeofprojection*npad)/float(ellipse_length_x_int);
+	float ellipse_step_x = 0.5f*(sizeofprojection*npad)/float(ellipse_length_x_int);
 	float xscale = ellipse_step_x;//scal increased
 
-  	axis_newy[0] = xratio*0.5*(sizeofprojection*npad)*trans[1][0];
-  	axis_newy[1] = yratio*0.5*(sizeofprojection*npad)*trans[1][1];
-  	axis_newy[2] = 0.5*(sizeofprojection*npad)*trans[1][2];
+  	axis_newy[0] = xratio*0.5f*(sizeofprojection*npad)*trans[1][0];
+  	axis_newy[1] = yratio*0.5f*(sizeofprojection*npad)*trans[1][1];
+  	axis_newy[2] = 0.5f*(sizeofprojection*npad)*trans[1][2];
 
 
 
 	float ellipse_length_y = std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
 	int ellipse_length_y_int = int(ellipse_length_y);
-	float ellipse_step_y = 0.5*(sizeofprojection*npad)/float(ellipse_length_y_int);
+	float ellipse_step_y = 0.5f*(sizeofprojection*npad)/float(ellipse_length_y_int);
 	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
@@ -1997,7 +1997,7 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
         if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
-	float r2=0.25*sizeofprojection*npad*sizeofprojection*npad;
+	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
 	
 	for(int i=0;i<ellipse_length_x_int;i++) {
@@ -4716,25 +4716,25 @@ EMData* EMData::extract_plane_rect_fast(const Transform& tf, Util::KaiserBessel&
 	float xratio=float(nx-2)/float(nz);
 	float yratio=float(ny)/float(nz);
 	Vec3f axis_newx,axis_newy;
-	axis_newx[0] = xratio*0.5*nz*tf[0][0];
-	axis_newx[1] = yratio*0.5*nz*tf[0][1];
-	axis_newx[2] = 0.5*nz*tf[0][2];
+	axis_newx[0] = xratio*0.5f*nz*tf[0][0];
+	axis_newx[1] = yratio*0.5f*nz*tf[0][1];
+	axis_newx[2] = 0.5f*nz*tf[0][2];
 
 
 	float ellipse_length_x=std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
 	int ellipse_length_x_int=int(ellipse_length_x);
-	float ellipse_step_x=0.5*nz/float(ellipse_length_x_int);
+	float ellipse_step_x=0.5f*nz/float(ellipse_length_x_int);
 	float xscale=ellipse_step_x;//scal increased
 
-  	axis_newy[0] = xratio*0.5*nz*tf[1][0];
-  	axis_newy[1] = yratio*0.5*nz*tf[1][1];
-  	axis_newy[2] = 0.5*nz*tf[1][2];
+  	axis_newy[0] = xratio*0.5f*nz*tf[1][0];
+  	axis_newy[1] = yratio*0.5f*nz*tf[1][1];
+  	axis_newy[2] = 0.5f*nz*tf[1][2];
 
 
 	float ellipse_length_y=std::sqrt(axis_newy[0]*axis_newy[0]+axis_newy[1]*axis_newy[1]+axis_newy[2]*axis_newy[2]);
 	int ellipse_length_y_int=int(ellipse_length_y);
-	float ellipse_step_y=0.5*nz/float(ellipse_length_y_int);
+	float ellipse_step_y=0.5f*nz/float(ellipse_length_y_int);
 	float yscale=ellipse_step_y;
 	//end of scaling factor calculation
 	int nx_e=ellipse_length_x_int*2;

@@ -318,8 +318,8 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float paltmin = params.set_default("alt_min",0.0);
-	float paltmax = params.set_default("alt_max",180.0);
+	float paltmin = params.set_default("alt_min",0.0f);
+	float paltmax = params.set_default("alt_max",180.0f);
 	if (altmax>paltmax) altmax=paltmax;
 	
 	float alt_iterator = 0.0f;
@@ -389,8 +389,8 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float paltmin = params.set_default("alt_min",0.0);
-	float paltmax = params.set_default("alt_max",180.0);
+	float paltmin = params.set_default("alt_min",0.0f);
+	float paltmax = params.set_default("alt_max",180.0f);
 	if (altmax>paltmax) altmax=paltmax;
 
 	bool perturb = params.set_default("perturb",true);
@@ -1012,7 +1012,7 @@ int Symmetry3D::point_in_which_asym_unit(const Vec3f& p) const
 		cache_au_planes();
 	}
 	
-	float epsNow=0.01;
+	float epsNow=0.01f;
 	int k = 0;
 	for(int i = 0; i < get_nsym(); ++i) {
 		for( int j = 0; j < num_triangles; ++j,++k) {

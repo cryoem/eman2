@@ -925,9 +925,9 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 				float ry = (float) y/iny;
 
 				// This deals with the SNR weight
-				float rn = hypot(rx,ry);
+				float rn = (float)hypot(rx,ry);
 				if (rn>=.5) continue;		// no SNR in the corners, and we're going to mask them later anyway
-				rn*=snr.size()*2.0;
+				rn*=snr.size()*2.0f;
 				int rni=(int)floor(rn);
 				if (rni>=snr.size()-1) weight=snr[snr.size()-1]*sub;
 				else {
@@ -2493,7 +2493,7 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 		temp2=m_yratio*sin(alpha)*float(m_sizeofprojection*m_npad)/2;
 		ellipse_length=sqrt(temp1*temp1+temp2*temp2);
 		ellipse_length_int=int(ellipse_length);
-		ellipse_step=0.5*(m_sizeofprojection*m_npad)/float(ellipse_length_int);
+		ellipse_step=0.5f*(m_sizeofprojection*m_npad)/float(ellipse_length_int);
 		loop_range=ellipse_length_int;
 		cos_alpha=temp1/ellipse_length;
 		sin_alpha=temp2/ellipse_length;
@@ -2608,8 +2608,8 @@ void circumf_rect( EMData* win , int npad)
 	
 	
 	
-	float dxx = 1.0/float(0.25*ix*ix);
-	float dyy = 1.0/float(0.25*iy*iy);
+	float dxx = 1.0f/float(0.25*ix*ix);
+	float dyy = 1.0f/float(0.25*iy*iy);
 	
 	
 	
