@@ -6804,6 +6804,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					phihi, theta, psi, sxi, syi = get_params_proj(data[im])
 					modphi[im] = phihi
 
+			del refrings
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
@@ -6811,6 +6812,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			#output pixel errors
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			del pixer		
 			mpi_barrier(MPI_COMM_WORLD)
 			terminate = 0
 			if(myid == main_node):
@@ -6838,6 +6840,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			recvbuf = mpi_gatherv(modphi, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			#end jeanmod
 			mpi_barrier(MPI_COMM_WORLD)
+			del modphi
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
 				lhist = 30
@@ -6851,7 +6854,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
-			del pixer, modphi
 			if myid == main_node:
 				print_msg("Time to compute pixer = %d\n"%(time()-start_time))
 				start_time = time()
