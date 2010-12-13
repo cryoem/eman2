@@ -129,7 +129,7 @@ def runinmpi(scratchdir,verbose):
 	sys.exit(0)
 
 def runlocaltask(taskin,taskout):
-	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to stdout. """
+	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to taskout. """
 	from cPickle import load,dump
 
 #	print "Executing %s (%s)"%(taskin,taskout)

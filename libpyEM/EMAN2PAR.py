@@ -43,9 +43,10 @@ import shutil
 import subprocess
 import thread,threading
 import getpass
+import select
 
 from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
-from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict
+from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime
 from e2classaverage import ClassAvTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
@@ -115,7 +116,8 @@ class EMTaskCustomer:
 			self.handler.stop()
 		elif self.servtype=="mpi" :
 			print "Stopping MPI. Please wait."
-			self.handler.stop()
+			try: self.handler.stop()
+			except: print "Error: MPI environment was never established, cannot clean it up"
 
 	def wait_for_server(self,delay=10):
 		print "%s: Server communication failure, sleeping %d secs"%(time.ctime(),delay)
@@ -146,7 +148,8 @@ class EMTaskCustomer:
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet. If wait is set, it will not return until ncpu > 1"""
-		if self.servtype in ("thread","mpi") : return self.maxthreads
+		if self.servtype =="thread" : return self.maxthreads
+		if self.servtype =="mpi" : return self.maxthreads-1
 		
 		if self.servtype=="dc" :
 			n=0
@@ -597,7 +600,7 @@ class EMMpiClient():
 				sys.exit(1)
 			mpi_send("OK",0,0)
 
-	def mpi_send_com(target,com,data=None):
+	def mpi_send_com(self,target,com,data=None):
 		"""Syncronously sends a command to a specified target rank as a tuple, and waits for a
 		single object in reply (which is returned)."""
 		
@@ -605,7 +608,7 @@ class EMMpiClient():
 		return mpi_recv(target,2)[0]
 
 	def run(self,verbose):
-		
+
 		# rank 0 is responsible for communications and i/o, and otherwise does no real work
 		if self.rank==0:
 			if verbose: print "MPI running on %d processors"%self.nrank
@@ -632,7 +635,7 @@ class EMMpiClient():
 					com,data=load(self.fmcon)
 					if com=="EXIT" :
 						dump("OK",self.tocon,-1)
-						for i in range(1,self.nproc):
+						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
 							if r!="OK" : print "Error: Unexpected reply when shutting down from rank %d"%i
 							
@@ -645,7 +648,7 @@ class EMMpiClient():
 					elif com=="CHEK" :
 						for i in xrange(len(data)):
 							if data[i]>=self.nextjob : data[i]=-1		# not started yet
-							elif data[i] in rankjobs : data[i]=0		# running now (status not handled yet
+							elif data[i] in self.rankjobs : data[i]=0		# running now (status not handled yet
 							else : data[i]=100							# if we get here, must be complete or we would have crashed
 				
 						dump(data,self.tocon,-1)
@@ -665,20 +668,25 @@ class EMMpiClient():
 				
 				# Finally, see if we have any jobs that need to be executed
 				if self.nextjob<=self.maxjob :
-					if -1 in rankjobs :
-						rank=index(-1)
+					
+					if -1 in self.rankjobs :
+						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d"%(self.nextjob,rank)
 						
 						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"r"))
 						r=self.mpi_send_com(rank,"EXEC",task)
 						
 						if r=="OK" : pass
-						# The rank needs data to proceed, we get ("NEED",(file,#s),(file,#s),...)
+						# The rank needs data to proceed, we get ("NEED",(file,#|min,max|(#'s)),...)
 						elif r[0]=="NEED" :
-							imgs=filesenum(r[1:])		# a generator enumerating all of the required images
+							if verbose>2:
+								print "Task used :",task.data
+								print "rank %d requested :"%rank,r[1]
+							imgs=filesenum(r[1])		# a generator enumerating all of the required images
+
+							d2s=[]
+							ds=0
 							while 1:
-								d2s=[]
-								ds=0
 								try: img=imgs.next()
 								except: break
 								
@@ -701,6 +709,8 @@ class EMMpiClient():
 								print "ERROR sending LAST to rank %d"%rank
 								sys.exit(1)
 						
+							if verbose>2 : print "Send requested data to rank %d"%rank
+							
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
 						self.nextjob+=1
@@ -715,7 +725,7 @@ class EMMpiClient():
 					com,data=mpi_recv(r[1],r[2])[0]
 					
 					if com=="EXIT":
-						mpi_send("OK",0,2)			# we reply immediately, assuming eventually we will kill our job and finalize
+						mpi_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
 						
 						if self.job!=None :
 							self.job.terminate()			# Try to kill the job nicely
@@ -728,20 +738,97 @@ class EMMpiClient():
 							break
 
 					if com=="EXEC":
-						mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
-						
-						mpiout=file("%s/jobout.txt"%self.scratchdir,"a")
-						mpierr=file("%s/joberr.txt"%self.scratchdir,"a")
+						task=data		# just for clarity
+						if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to MPI for execution !"
 
-						cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2"%(ncpus,self.scratchdir)
-						mpiout.write("============== %s\n"%cmd)
-						mpierr.write("============== %s\n"%cmd)
+						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
+						self.taskout="%s/taskout.%d"%(self.queuedir,os.getpid())
+
+						### make a list of data objects we need to get from rank 0
+						needlst=[]
+						for k in task.data:
+							i=task.data[k]
+							try: 
+								if i[0]!="cache" : raise Exception
+							except: continue
+							
+							# if we're here, then we have a 'cache' object
+							# if true, we need to ask for everything in this file
+							try : 
+								if not db_check_dict(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
+							except:
+								needlst.append(i[1:])
+								continue
+							
+							# enumerate all individual images in the specified list and check the cache for them
+							db=db_open_dict(pathtocache(i[1]))
+							neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
+							if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
+								needlst.append((i[1],neednums[0],neednums[-1]+1))
+							else : needlst.append((i[1],tuple(neednums)))
 						
-						self.job=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
+						### Send the request for specific needed image data back to the server
+						# and write the returned data to the cache
+						if len(needlst)>0 : 
+							mpi_send(("NEED",needlst),0,2)
+							
+							while 1:
+								ncom,ndata=mpi_recv(0,-1)[0]
+								mpi_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
+								
+								# unpack the received data into the appropriate cache file
+								for fsp,num,img in ndata:
+									img.write_image(self.pathtocache(fsp),num)
+									
+								if ncom=="LAST" : break			# the data we just wrote must have been the end of what we requested
+								
+						else :
+							mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
 						
+						### Ok, we should have everything we need. Let's get the actual job started now
+						
+						# Fix the cache filenames in our task
+						for i in task.data:
+							j=task.data[i]
+							try: 
+								if j[0]!="cache" : raise Exception
+							except: continue
+							
+							task.data[i]=list(task.data[i])
+							task.data[i][1]=self.pathtocache(task.data[i][1])
+							
+						# Run the job
+						dump(task,file(self.taskfile,"w"),-1)		# write the task to disk
+
+						cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
+						
+						self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
+					
+				# Now see if the running job has terminated
+				elif self.job!=None :
+					self.job.poll()
+					if self.job.returncode!=None:
+						if verbose : print "Process done :",self.job.pid
+						r=self.mpi_send_com(0,"DONE",load(file(self.taskout,"r")))
+						if r!="OK" : print "Warning, sent results to rank 0 and got ",r
+						self.job=None
+						os.unlink(self.taskout)
+						os.unlink(self.taskfile)
+					else: 
+						time.sleep(1)
+#						if self.job!=None : print "sleep, ",self.job.pid,self.job.poll()
+				else: 
+					time.sleep(1)
+#					print "sleep -"
 
 		mpi_finalize()
 	
+
+	def pathtocache(self,path):
+		"""This will convert a remote filename to a local (unique) cache-file name"""
+		
+		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
+		return "bdb:%s#%s"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 def filesenum(lst):
 	"""This is a generator that takes a list of (name,#), (name,(#,#,#)), or (name,min,max) specifiers
@@ -760,6 +847,16 @@ def fileenum(lst):
 	else :
 		for i in lst[1]: yield (lst[0],i)
 		
+def imgnumenum(lst):
+	"""like fileenum, but skips the 'name' references on return"""
+	if len(lst)==3 :
+		for i in xrange(lst[1],lst[2]) : yield i
+	elif isinstance(lst[1],int) :
+		yield lst[1]
+	else :
+		for i in lst[1]: yield i
+	
+
 
 class EMMpiTaskHandler():
 	"""MPI based task handler. This exists as a thread in the customer and handles communications with the actual
@@ -823,11 +920,11 @@ class EMMpiTaskHandler():
 		return load(self.fmmpi)
 
 	def add_task(self,task):
-#		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
 		
 		# Add last modification times for cache entries
-		for i in task.data:
+		for k in task.data:
+			i=task.data[k]
 			try : 
 				if i[0]!="cache" : raise Exception
 			except: pass
@@ -836,63 +933,38 @@ class EMMpiTaskHandler():
 		
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"w"),-1)
 		ret=self.maxid
+		self.sendcom("NEWJ",self.maxid)
+
 		self.maxid+=1
 		
-		self.sendcom("NEWJ",self.maxid)
-#		EMLocalTaskHandler.lock.release()
 		return ret
 	
 	def check_task(self,id_list):
 		"""Checks a list of tasks for completion."""
 		
-		return self.sendcom("CHEK",id_list)
+		chk=self.sendcom("CHEK",id_list)
+		for i,j in enumerate(id_list):
+			self.completed[j]=chk[i]
+		
+		return chk
 	
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
-		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
+
+		# This double checks that the task really did finish and the customer checked to make
+		# sure that it had finished
+		if taskid not in self.completed or self.completed[taskid]!=100  : raise Exception,"Task %d not complete !!!"%taskid
 		
-		task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
-		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+		task=load(file("%s/%07d"%(self.queuedir,taskid),"r"))
+		results=load(file("%s/%07d.out"%(self.queuedir,taskid),"r"))
 	
-		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
-		os.unlink("%s/%07d"%(self.scratchdir,taskid))
-		self.completed.remove(taskid)
+		os.unlink("%s/%07d.out"%(self.queuedir,taskid))
+		os.unlink("%s/%07d"%(self.queuedir,taskid))
+		del self.completed[taskid]
 		
 		return (task,results)
 		
-	def run(self):
-		
-		while(1):
-			time.sleep(1)		# only go active at most 1/second
-			if self.doexit==1:
-#				shutil.rmtree(self.scratchdir)
-				break
-			
-			for i,p in enumerate(self.running):
-				# Check to see if the task is complete
-				if p[0].poll()!=None :
-					
-					# This means that the task failed to execute properly
-					if p[0].returncode!=0 :
-						print "Error running task : ",p[1]
-						thread.interrupt_main()
-						sys.exit(1)
-					
-#					print "Task complete ",p[1]
-					# if we get here, the task completed
-					self.completed.add(p[1])
-			
-			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
-			
-			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
-#				print "Launch task ",self.nextid
-				EMLocalTaskHandler.lock.acquire()
-				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
-				self.running.append((proc,self.nextid))
-				self.nextid+=1
-				EMLocalTaskHandler.lock.release()
-			
 
 
 

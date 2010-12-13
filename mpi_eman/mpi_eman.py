@@ -72,7 +72,8 @@ def mpi_send(data,dest,tag):
 	"""Synchronously send 'data' to 'dest' with tag 'tag'. data may be any pickleable type.
 	Compression and pickling will be performed on the fly when deemed useful. Note that data duplication
 	in memory may occur."""
-	
+
+#	print "send ",data,dest,tag
 	mpi_eman_c.mpi_send(mpi_dout(data),dest,tag)
 	
 
