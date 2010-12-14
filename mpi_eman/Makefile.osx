@@ -1,0 +1,12 @@
+mpi_eman_c.so: mpi_eman_c.o
+	mpicc -Wl,-F. -bundle -undefined dynamic_lookup -arch x86_64 mpi_eman_c.o -o mpi_eman_c.so
+
+mpi_eman_c.o: mpi_eman.c
+	mpicc -fno-strict-aliasing -fno-common -dynamic -DNDEBUG -g -fwrapv -Os -Wall -Wstrict-prototypes -DENABLE_DTRACE -arch x86_64 -pipe -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6 -c mpi_eman.c -o mpi_eman_c.o
+
+install: mpi_eman_c.so mpi_eman.py
+	cp mpi_eman_c.so mpi_eman.py ${EMAN2DIR}/lib
+
+clean:
+	rm -f mpi_eman_c.o mpi_eman_c.so
+
