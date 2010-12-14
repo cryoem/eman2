@@ -574,7 +574,7 @@ class EMMpiClient():
 			self.job.terminate()			# Try to kill the job nicely
 			
 			# we give the job 3 seconds to die
-			for i in range(3:
+			for i in range(3):
 				time.sleep(1)
 				if self.job.poll() : break
 			else : self.job.kill()			# before we kill it
