@@ -46,7 +46,7 @@ import getpass
 import select
 
 from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
-from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime
+from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime,db_check_dict
 from e2classaverage import ClassAvTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
@@ -569,6 +569,17 @@ class EMMpiClient():
 		
 		self.job=None		# running subprocess on all ranks but 0
 
+	def __del__(self):
+		if self.job!=None :		#shouldn't really happen, we should have gotten a clean 'EXIT' command
+			self.job.terminate()			# Try to kill the job nicely
+			
+			# we give the job 3 seconds to die
+			for i in range(3:
+				time.sleep(1)
+				if self.job.poll() : break
+			else : self.job.kill()			# before we kill it
+			self.job=None
+
 	def test(self,verbose):
 		"""This routine will test MPI communications by broadcasting HELO to all of the cpus,
 		then waiting for an OK response."""
@@ -732,10 +743,11 @@ class EMMpiClient():
 							self.job.terminate()			# Try to kill the job nicely
 							
 							# we give the job 10 seconds to die
-							for i in range(10):
+							for i in range(5):
 								time.sleep(1)
 								if self.job.poll() : break
 							else : self.job.kill()			# before we kill it
+							self.job=None
 							break
 
 					if com=="EXEC":
@@ -763,17 +775,18 @@ class EMMpiClient():
 								continue
 							
 							# enumerate all individual images in the specified list and check the cache for them
-							db=db_open_dict(pathtocache(i[1]))
+							db=db_open_dict(self.pathtocache(i[1]))
 							neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
-							if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
-								needlst.append((i[1],neednums[0],neednums[-1]+1))
-							else : needlst.append((i[1],tuple(neednums)))
+							if len(neednums)>0 :
+								if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
+									needlst.append((i[1],neednums[0],neednums[-1]+1))
+								else : needlst.append((i[1],tuple(neednums)))
 						
 						### Send the request for specific needed image data back to the server
 						# and write the returned data to the cache
 						if len(needlst)>0 : 
 							mpi_send(("NEED",needlst),0,2)
-							if verbose>2 : "rank %d: I need data :"%rank,needlst
+							if verbose>2 : print "rank %d: I need data :"%self.rank,needlst
 
 
 							while 1:
@@ -788,6 +801,8 @@ class EMMpiClient():
 								
 						else :
 							mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
+							
+						if verbose>2 : print "rank %d: I have the data I need"%self.rank
 						
 						### Ok, we should have everything we need. Let's get the actual job started now
 						
@@ -807,7 +822,7 @@ class EMMpiClient():
 						cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
 						
 						self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
-						if verbose>2 : "rank %d: started my job:"%self.rank,self.taskfile
+						if verbose>2 : print "rank %d: started my job:"%self.rank,self.taskfile
 					
 				# Now see if the running job has terminated
 				elif self.job!=None :
@@ -821,12 +836,10 @@ class EMMpiClient():
 						os.unlink(self.taskfile)
 					else: 
 						time.sleep(1)
-						if verbose>2 : "rank %d: running but not done"%self.rank
-#						if self.job!=None : print "sleep, ",self.job.pid,self.job.poll()
+#						if verbose>2 : print "rank %d: running but not done"%self.rank
 				else: 
 					time.sleep(1)
-					if verbose>2 : "rank %d: waiting"%self.rank
-#					print "sleep -"
+#					if verbose>2 : print "rank %d: waiting"%self.rank
 
 		mpi_finalize()
 	
