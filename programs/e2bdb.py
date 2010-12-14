@@ -364,7 +364,14 @@ def db_cleanup(force=False):
 			for i in s: 
 				try: print os.popen("ps %s"%i,"r").readlines()[-1]
 				except: print i
-				
+			
+			reply=raw_input("Would you like me to kill all of these jobs (YES/NO) : ")
+			if reply != "YES" : 
+				print "Not killing jobs. Please exit them manually then retry."
+				return
+
+			for i in s: os.kill(int(i),15)
+			print "Signal sent to kill job(s). Please retry e2bdb.py -c"
 			return
 
 	# ok, properly close the cache and delete it
