@@ -725,7 +725,7 @@ class EMMpiClient():
 					com,data=mpi_recv(r[1],r[2])[0]
 					
 					if com=="EXIT":
-						if verbose>1 : print "rank %d: I was just told to exit"%rank
+						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
 						mpi_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
 						
 						if self.job!=None :
@@ -739,7 +739,7 @@ class EMMpiClient():
 							break
 
 					if com=="EXEC":
-						if verbose>1 : print "rank %d: I just got a task to execute:"%rank,data
+						if verbose>1 : print "rank %d: I just got a task to execute:"%self.rank,data
 						task=data		# just for clarity
 						if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to MPI for execution !"
 
@@ -807,13 +807,13 @@ class EMMpiClient():
 						cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
 						
 						self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
-						if verbose>2 : "rank %d: started my job:"%rank,self.taskfile
+						if verbose>2 : "rank %d: started my job:"%self.rank,self.taskfile
 					
 				# Now see if the running job has terminated
 				elif self.job!=None :
 					self.job.poll()
 					if self.job.returncode!=None:
-						if verbose : print "Process done :",self.job.pid
+						if verbose : print "rank %d: Process done :"%self.rank,self.job.pid
 						r=self.mpi_send_com(0,"DONE",load(file(self.taskout,"r")))
 						if r!="OK" : print "Warning, sent results to rank 0 and got ",r
 						self.job=None
@@ -821,11 +821,11 @@ class EMMpiClient():
 						os.unlink(self.taskfile)
 					else: 
 						time.sleep(1)
-						if verbose>2 : "rank %d: running but not done"%rank
+						if verbose>2 : "rank %d: running but not done"%self.rank
 #						if self.job!=None : print "sleep, ",self.job.pid,self.job.poll()
 				else: 
 					time.sleep(1)
-					if verbose>2 : "rank %d: waiting"%rank
+					if verbose>2 : "rank %d: waiting"%self.rank
 #					print "sleep -"
 
 		mpi_finalize()
