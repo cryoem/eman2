@@ -663,7 +663,9 @@ class EMMpiClient():
 							else : data[i]=100							# if we get here, must be complete or we would have crashed
 				
 						dump(data,self.tocon,-1)
-						
+					else : print "Unknown command from client '%s'"%com
+					continue
+					
 				# Now look for any requests from existing running jobs
 				info=mpi_iprobe(-1,-1)
 				if info != None:
@@ -676,6 +678,7 @@ class EMMpiClient():
 						self.completed.add(taskid)
 						self.rankjobs[src]=-1
 					
+					continue
 				
 				# Finally, see if we have any jobs that need to be executed
 				if self.nextjob<=self.maxjob :
@@ -725,7 +728,9 @@ class EMMpiClient():
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
 						self.nextjob+=1
+						continue
 				
+				time.sleep(2)
 				
 		# all other ranks handle executing jobs
 		else :
