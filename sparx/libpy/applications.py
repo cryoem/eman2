@@ -6648,14 +6648,14 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Translational stepx                        : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("min radius for helical search (in pix)    : %5.2f\n"%(rmin))
-		print_msg("max radius for helical search (in pix)    : %5.2f\n"%(rmax))
-		print_msg("fraction of volume used for helical search: %5.2f\n"%(fract))
-		print_msg("initial symmetry - angle                  : %5.2f\n"%(dphi))
-		print_msg("initial symmetry - axial rise             : %5.2f\n"%(dp))
+		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
+		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
+		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
+		print_msg("initial symmetry - angle                  : %5.4f\n"%(dphi))
+		print_msg("initial symmetry - axial rise             : %5.4f\n"%(dp))
 		print_msg("Maximum iteration                         : %i\n"%(max_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
-		print_msg("Signal-to-Noise Ratio                     : %5.2f\n"%(snr))
+		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
 		print_msg("symmetry output doc file                  : %s\n"%(datasym))
 		print_msg("number of times initial symmetry is imposed: %i\n"%(nise))
 		print_msg("npad                                      : %i\n"%(npad))
@@ -6725,7 +6725,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		yrng[i]=dp/(2*pixel_size)
 		
 	if myid == main_node:
-		print_msg("Pixel size in Angstroms                   : %5.2f\n\n"%(pixel_size))
+		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
 		
 
@@ -6759,7 +6759,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f,stepx = %5.2f, yrange = %5.2f,  stepy = %5.2f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange = %5.4f,stepx = %5.4f, yrange = %5.4f,  stepy = %5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
 			if( xysize == -1 ):
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
