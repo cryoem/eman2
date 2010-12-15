@@ -821,13 +821,17 @@ class EMMpiClient():
 							task.data[i]=list(task.data[i])
 							task.data[i][1]=self.pathtocache(task.data[i][1])
 							
+						try: os.makedirs("/".join(self.taskfile.split("/")[:-1]))       # this should not be required ?
+						except: pass
+						
 						# Run the job
 						dump(task,file(self.taskfile,"w"),-1)		# write the task to disk
 
+ 
 						cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
 						
 						self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
-						if verbose>2 : print "rank %d: started my job:"%self.rank,self.taskfile
+						if verbose>2 : print "rank %d: started my job:"%self.rank,cmd
 					
 				# Now see if the running job has terminated
 				elif self.job!=None :
