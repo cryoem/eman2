@@ -742,7 +742,7 @@ class EMMpiClient():
 						break
 
 					if com=="EXEC":
-						if verbose>1 : print "rank %d: I just got a task to execute:"%self.rank,data
+						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
 						task=data		# just for clarity
 						if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to MPI for execution !"
 
