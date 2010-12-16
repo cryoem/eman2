@@ -451,6 +451,7 @@ class EMSimTaskDC(EMTask):
 		for ptcl_idx,ptcl in ptcls.items():
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
+			
 			if self.data.has_key("partial") :
 				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx],progress_callback,i,n)
 			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,progress_callback,i,n)
