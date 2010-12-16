@@ -454,7 +454,7 @@ class EMSimTaskDC(EMTask):
 			
 			if self.data.has_key("partial") :
 				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx],progress_callback,i,n)
-			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,progress_callback,i,n)
+			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,None,progress_callback,i,n)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
 		
