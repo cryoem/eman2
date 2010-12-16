@@ -397,12 +397,15 @@ class EMSimTaskDC(EMTask):
 			ptcls[idx] = image
 		return refs,ptcls,shrink,mask
 			
-	def __cmp_one_to_many(self,ptcl,refs,mask,partial=None):
+	def __cmp_one_to_many(self,ptcl,refs,mask,partial=None,progress_callback=None,cbi=0,cbn=1):
 	
 		options = self.options
 		
 		data = {}
+		cbli=0
 		for ref_idx,ref in refs.items():
+			if not progress_callback(int(100*(cbi+cbli/float(len(refs)))/cbn)) : break
+			cbli+=1
 			if partial!=None :
 				for i in partial:
 					if ref_idx>=i[1] and ref_idx<=i[2] : break	# this ref is in the list, go ahead and compute
@@ -432,7 +435,10 @@ class EMSimTaskDC(EMTask):
 			
 		return data
 	
-	def execute(self,progress_callback):
+	def dummycb(self,prog): return True
+	
+	def execute(self,progress_callback=None):
+		if progress_callback==None: progress_callback=self.dummycb
 		if not progress_callback(0) : return None
 		refs,ptcls,shrink,mask = self.__init_memory(self.options)
 		
@@ -446,8 +452,8 @@ class EMSimTaskDC(EMTask):
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx 
 			if self.data.has_key("partial") :
-				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx])
-			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask)
+				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx],progress_callback,i,n)
+			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,progress_callback,i,n)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
 		

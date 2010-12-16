@@ -567,18 +567,8 @@ class EMMpiClient():
 		try: os.makedirs(self.cachedir)
 		except: pass
 		
-		self.job=None		# running subprocess on all ranks but 0
+		self.lastupdate=0		# last time we sent an update to rank 0
 
-	def __del__(self):
-		if self.job!=None :		#shouldn't really happen, we should have gotten a clean 'EXIT' command
-			self.job.terminate()			# Try to kill the job nicely
-			
-			# we give the job 3 seconds to die
-			for i in range(3):
-				time.sleep(1)
-				if self.job.poll() : break
-			else : self.job.kill()			# before we kill it
-			self.job=None
 
 	def test(self,verbose):
 		"""This routine will test MPI communications by broadcasting HELO to all of the cpus,
@@ -638,7 +628,7 @@ class EMMpiClient():
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
-			self.completed=set()
+			self.status={}						# status of each job
 			
 			while 1:
 				# Look for a command from our controlling process
@@ -658,9 +648,8 @@ class EMMpiClient():
 						
 					elif com=="CHEK" :
 						for i in xrange(len(data)):
-							if data[i]>=self.nextjob : data[i]=-1		# not started yet
-							elif data[i] in self.rankjobs : data[i]=0		# running now (status not handled yet
-							else : data[i]=100							# if we get here, must be complete or we would have crashed
+							if data[i] not in self.status : data[i]=-1
+							else: data[i]=self.status[data[i]]
 				
 						dump(data,self.tocon,-1)
 					else : print "Unknown command from client '%s'"%com
@@ -675,9 +664,15 @@ class EMMpiClient():
 						mpi_send("OK",src,2)
 						taskid=self.rankjobs[src]
 						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"w"),-1)
-						self.completed.add(taskid)
+						self.status[taskid]=100
 						self.rankjobs[src]=-1
-					
+					elif com=="PROG" :
+						mpi_send("OK",src,2)
+						if data[1]<0 or data[1]>99 :
+							print "Warning: Invalid progress report :",data
+						else : 
+							try : self.status[data[0]]=data[1]
+							except: print "Warning: Invalid progress report :",data
 					continue
 				
 				# Finally, see if we have any jobs that need to be executed
@@ -744,16 +739,7 @@ class EMMpiClient():
 						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
 						mpi_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
 						
-						if self.job!=None :
-							self.job.terminate()			# Try to kill the job nicely
-							
-							# we give the job 10 seconds to die
-							for i in range(5):
-								time.sleep(1)
-								if self.job.poll() : break
-							else : self.job.kill()			# before we kill it
-							self.job=None
-							break
+						break
 
 					if com=="EXEC":
 						if verbose>1 : print "rank %d: I just got a task to execute:"%self.rank,data
@@ -821,30 +807,31 @@ class EMMpiClient():
 							task.data[i]=list(task.data[i])
 							task.data[i][1]=self.pathtocache(task.data[i][1])
 							
-						try: os.makedirs("/".join(self.taskfile.split("/")[:-1]))       # this should not be required ?
-						except: pass
-						
-						# Run the job
-						dump(task,file(self.taskfile,"w"),-1)		# write the task to disk
+						# Execute the task
+						self.task=task	# for the callback
+						try: ret=task.execute(self.progress_callback)
+						except:
+							print "ERROR in executing task"
+							traceback.print_exc()
+							break
+
+						# return results to rank 0
+						if verbose : print "rank %d: Process done :"%self.rank,self.task.taskid
+						r=self.mpi_send_com(0,"DONE",ret)
+						if r!="OK" : print "Warning, sent results to rank 0 and got ",r
+
+						######## OpenMPI wasn't so hot on the idea of a process that fork()ed, even if it wasn't doing MPI directly
+						## Run the job
+						#try: os.makedirs("/".join(self.taskfile.split("/")[:-1]))       # this should not be required ?
+						#except: pass
+						#dump(task,file(self.taskfile,"w"),-1)		# write the task to disk
 
  
-						cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
+						#cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
 						
-						self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
-						if verbose>2 : print "rank %d: started my job:"%self.rank,cmd
+						#self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
+						#if verbose>2 : print "rank %d: started my job:"%self.rank,cmd
 					
-				# Now see if the running job has terminated
-				elif self.job!=None :
-					self.job.poll()
-					if self.job.returncode!=None:
-						if verbose : print "rank %d: Process done :"%self.rank,self.job.pid
-						r=self.mpi_send_com(0,"DONE",load(file(self.taskout,"r")))
-						if r!="OK" : print "Warning, sent results to rank 0 and got ",r
-						self.job=None
-						os.unlink(self.taskout)
-						os.unlink(self.taskfile)
-					else: 
-						time.sleep(1)
 #						if verbose>2 : print "rank %d: running but not done"%self.rank
 				else: 
 					time.sleep(1)
@@ -852,6 +839,28 @@ class EMMpiClient():
 
 		mpi_finalize()
 	
+	def progress_callback(self,prog):
+		""" This gets progress callbacks from the task. We need to make sure we haven't been asked
+		to exit if we get this, and we want to update the progress on rank 0 """
+		r=mpi_iprobe(0,-1)		# listen for a message from rank 0
+		if r!=None :
+			com,data=mpi_recv(r[1],r[2])[0]
+			
+			if com=="EXIT":
+				if verbose>1 : print "rank %d: I was just told to exit during processing"%self.rank
+				mpi_send("OK",0,2)
+				mpi_finalize()
+				sys.exit(0)
+			else:
+				print "ERROR: Got mysterious command during processing: ",com,data
+				mpi_finalize()
+				sys.exit(1)
+				
+		if time.time()-self.lastupdate>120 :
+			ret=self.mpi_send_com(0,"PROG",(self.task.taskid,prog))
+			if ret!="OK" : print "Warning: got '%s' instead of OK from my progress report"%str(ret)
+			self.lastupdate=time.time()
+		return True
 
 	def pathtocache(self,path):
 		"""This will convert a remote filename to a local (unique) cache-file name"""
@@ -916,7 +925,7 @@ class EMMpiTaskHandler():
 		try : os.mkfifo("%s/fmmpi"%self.scratchdir)
 		except : pass
 
-		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2"%(ncpus,self.scratchdir)
+		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2 </dev/null"%(ncpus,self.scratchdir)
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 

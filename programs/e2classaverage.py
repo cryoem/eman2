@@ -460,7 +460,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	# This is really niter+1 1/2 iterations. It gets terminated 1/2 way through the final loop
 	for it in range(niter+2):
 		if verbose : print "Starting iteration %d"%it
-		if callback!=None : callback(it*100/(niter+2))
+		if callback!=None : callback(int(it*100/(niter+2)))
 		
 		# Evaluate quality from last iteration, and set a threshold for keeping particles
 		if it>0:
@@ -508,6 +508,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		# Now align and average
 		avgr=Averagers.get(averager[0], averager[1])
 		for i in range(nimg):
+			if callback!=None and nimg%10==9 : callback(int((it+i/float(nimg))*100/(niter+2.0)))
 			ptcl=get_image(images,i,normproc)					# get the particle to align 
 			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
