@@ -568,7 +568,13 @@ class EMMpiClient():
 		except: pass
 		
 		self.lastupdate=0		# last time we sent an update to rank 0
+		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","a")
+		else: self.logfile=None
 
+	def log(self,s):
+		if self.logfile!=None:
+			self.logfile.write("%s\t%s\n"%(time.ctime(),s))
+			self.logfile.flush()
 
 	def test(self,verbose):
 		"""This routine will test MPI communications by broadcasting HELO to all of the cpus,
@@ -586,7 +592,8 @@ class EMMpiClient():
 				if len(allsrc)==0 : break
 				l,src,tag = mpi_probe(-1,-1)
 				b=mpi_recv(src,tag)[0]
-				if b!="OK" :
+				self.log("Rank %d = %s"%(src,str(b)[3:]))
+				if b[:2]!="OK" :
 					print "MPI: Failed receive from node=%d"%src
 					mpi_finalize()
 					sys.exit(1)
@@ -599,7 +606,7 @@ class EMMpiClient():
 				print "MPI: Failed receive on node=%d"%self.rank
 				mpi_finalize()
 				sys.exit(1)
-			mpi_send("OK",0,0)
+			mpi_send("OK "+socket.gethostname(),0,0)
 
 	def mpi_send_com(self,target,com,data=None):
 		"""Syncronously sends a command to a specified target rank as a tuple, and waits for a
@@ -613,6 +620,7 @@ class EMMpiClient():
 		# rank 0 is responsible for communications and i/o, and otherwise does no real work
 		if self.rank==0:
 			if verbose: print "MPI running on %d processors"%self.nrank
+			self.log("MPI on %d processors"%self.nrank)
 			
 			# FIFOs to talk to the controlling process, order is important !
 			self.fmcon=file("%s/tompi"%self.scratchdir,"rb",0)
@@ -624,7 +632,7 @@ class EMMpiClient():
 				sys.exit(1)
 			self.tocon.write("HELO")
 
-			self.rankjobs=[-1]*self.nrank		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
+			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
@@ -636,6 +644,7 @@ class EMMpiClient():
 					com,data=load(self.fmcon)
 					if com=="EXIT" :
 						dump("OK",self.tocon,-1)
+						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
 							if r!="OK" : print "Error: Unexpected reply when shutting down from rank %d"%i
@@ -644,6 +653,7 @@ class EMMpiClient():
 					elif com=="NEWJ" :
 						dump("OK",self.tocon,-1)
 						if verbose>1 : print "New job %d from customer"%data
+						self.log("New job %d from customer"%data)
 						self.maxjob=data	# this is the highest number job currently assigned
 						
 					elif com=="CHEK" :
@@ -666,6 +676,7 @@ class EMMpiClient():
 						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"w"),-1)
 						self.status[taskid]=100
 						self.rankjobs[src]=-1
+						self.log('Task %s complete on rank %d'%(taskid,src))
 					elif com=="PROG" :
 						mpi_send("OK",src,2)
 						if data[1]<0 or data[1]>99 :
@@ -681,6 +692,7 @@ class EMMpiClient():
 					if -1 in self.rankjobs :
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d"%(self.nextjob,rank)
+						self.log("Sending task %d to rank %d"%(self.nextjob,rank))
 						
 						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"r"))
 						r=self.mpi_send_com(rank,"EXEC",task)
@@ -968,6 +980,7 @@ class EMMpiTaskHandler():
 			except: pass
 			else :
 				task.modtimes[i[1]]=e2filemodtime(i[1])
+		task.taskid=self.maxid
 		
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"w"),-1)
 		ret=self.maxid
