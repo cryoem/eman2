@@ -3,7 +3,7 @@
 # All lines starting with "#PBS" are PBS commands
 #
 #
-#PBS -l nodes=4:ppn=8
+#PBS -l nodes=31:ppn=8
 #PBS -l walltime=24:00:00
 
 cd $PBS_O_WORKDIR

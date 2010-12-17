@@ -2,12 +2,12 @@
 
 from EMAN2 import *
 from mpi_eman import *
+import socket
 import os
 
 proc,nproc=mpi_init()
 
-print "%d\t"%(proc),
-os.system('hostname')
+print "%d\t%s"%(proc,socket.gethostname())
 
 mpi_finalize()
 
