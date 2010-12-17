@@ -1,11 +1,25 @@
 #!/bin/bash
 #
-# All lines starting with "#PBS" are PBS commands
+# This is an example PBS/Torque script for testing your EMAN2 MPI installation. Clearly you should
+# modify the number of nodes and ppn (processors per node) before running it on a cluster.
 #
-#
-#PBS -l nodes=31:ppn=8
+#PBS -l nodes=30:ppn=8
 #PBS -l walltime=24:00:00
 
 cd $PBS_O_WORKDIR
 
 mpirun python mpi_test_basic.py 
+
+# NOTE : if you want to run an EMAN2 refinement or somesuch using PBS, you do NOT call mpirun directly
+# as in the above statment. Instead, you use the native --parallel option, and EMAN2 will call
+# mpirun itself. The number of processors you specify to the --parallel option MUST match the
+# number of processors (nodes * ppn) you specify above in the PBS lines. Note the --parallel option
+# in the e2refine.py command below. This is otherwise a normal EMAN2 command.
+
+# This is just a commented out example. NOTE: the 'e2bdb.py -c' command at the end of the script. THIS IS CRITICAL !
+# You MUST also run 'e2bdb.py -c' manually on the head-node before issuing the 'qsub' command, and should not work
+# on any files in the project directory from the head node while the job is running. See the Wiki for more.
+
+# e2refine.py --parallel=mpi:240:/scratch/stevel --input=bdb:sets#set-all_phase_flipped-hp --mass=800.0 --apix=2.12 --automask3d=0.7,18,7,7,18 --iter=1 --sym=d7 --model=bdb:refine_04#threed_filt_05 --path=refine_08 --orientgen=eman:delta=2.1427:inc_mirror=0 --projector=standard --simcmp=sqeuclidean:zeromask=1:normto=1 --simalign=rotate_translate_flip --simaligncmp=sqeuclidean:zeromask=1:normto=1 --simralign=refine --simraligncmp=sqeuclidean:zeromask=1:normto=1 --twostage=2 --classcmp=sqeuclidean:zeromask=1:normto=1 --classalign=rotate_translate_flip --classaligncmp=sqeuclidean:zeromask=1:normto=1 --classralign=refine --classraligncmp=sqeuclidean:zeromask=1:normto=1 --classiter=0 --classkeep=0.8 --classnormproc=normalize.edgemean --classaverager=ctfw.auto --sep=3 --m3diter=3 --m3dkeep=0.5 --recon=fourier --m3dpreprocess=normalize.edgemean --m3dpostprocess=filter.lowpass.gauss:cutoff_freq=.1131 --pad=192 --classkeepsig --m3dkeepsig --m3dsetsf
+
+# e2bdb.py -c

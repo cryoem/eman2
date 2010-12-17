@@ -1,3 +1,6 @@
+# This is an example makefile for slightly older linux distributions often used on clusters
+# (where slightly older means 'more stable'
+
 mpi_eman_c.so: mpi_eman_c.o
 mpi_eman_c.o: mpi_eman.c
 	mpicc -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -I/usr/include/python2.6 -c mpi_eman.c -o mpi_eman_c.o

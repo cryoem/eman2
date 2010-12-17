@@ -1,0 +1,36 @@
+While this document does contain information about this directory. The definitive version is in the
+Wiki at :
+
+http://blake.bcm.edu/emanwiki/EMAN2/Parallel
+
+This directory contains a Python module which will enable MPI support for EMAN2. It must be installed
+using the already installed and configured MPI on whatever cluster you are using. There are a variety
+of different MPI distributions out there, including OpenMPI, MPICH, LAM, etc. On some clusters the
+specific MPI version in use is a commercial product that enables specific hardware features on the
+cluster, and if a different MPI is used, it will perform poorly. For this reason, you MUST read
+about the MPI installation on your cluster and find out how things are configured. In some cases
+it may be possible for you to install your own MPI installation in your home directory if there
+is some problem with the existing MPI on your cluster, but this is generally frowned upon, and
+you should probably communicate with your cluster administrators before going this route.
+
+Mac:
+The Mac binary release already includes the necessary driver. NO FURTHER ACTION IS NECESSARY TO USE
+MPI. If you are compiling from source on the Mac, the provided Mac makefile should work. Simply:
+
+make -f Makefile.osx install
+
+Windows:
+MPI parallelism under Windows is not supported at the moment. Under windows you will need to 
+use one of the other 2 parallelism methods. 
+
+Linux:
+This is the tricky one, since there are so many different variants of linux and so many different
+MPI implementations. We have provided a couple of sample makefiles for different linux distributions.
+Hopefully one of these will work for you. If not, you may need to make small modifications to
+this makefile, perhaps in consultation with your cluster administrator. In general, try:
+
+make -f Makefile.linux install
+
+If you get an error, try one of the others. There may also be more advice on the Wiki page
+referenced above.
+
