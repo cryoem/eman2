@@ -8607,7 +8607,7 @@ def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, g
 		mask = get_image( maskfile )
 	else:
 		data = EMData()
-		data.read_image( input_stack, 0, True)
+		data.read_image( input_stacks[0], 0, True)
 		mask = model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
 	pca = pcanalyzer(mask, sdir, nvec, MPI)
