@@ -43,7 +43,7 @@ def main():
 
 		from utilities import get_im
 		global_def.BATCH = True
-		if( get_im( stacks[0]).get_zsize() == 1 ):
+		if( get_im( stacks[0]).get_zsize() == 1 and get_im( eigvol).get_zsize() > 1):
 			from applications import factcoords_prj
 			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)
 		else:
