@@ -3328,7 +3328,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	return ret;
 }
 
-EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input) {
+EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input, bool wrap) {
 
 	if (scale_input == 0.0f) scale_input = 1.0f;
 	float  scale = 0.5f*scale_input;
@@ -3346,9 +3346,11 @@ EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float d
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	delz = restrict2(delz, nz);
+	if(wrap){
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		delz = restrict2(delz, nz);
+	}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -3396,10 +3398,13 @@ EMData* EMData::rot_scale_conv_new_3D(float phi, float theta, float psi, float d
 			float yco3 = zco3+a23*y;
 			for (int ix = 0; ix < nxn; ix++) {
 				float x = (float(ix) - shiftxc)/scale;
-				float xold = yco1+a11*x-ixs; //have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
+				float xold = yco1+a11*x-ixs; //have to add the fraction on account of odd-sized images for which Fourier zero-padding changes the center location
 				float yold = yco2+a12*x-iys;
 				float zold = yco3+a13*x-izs;
-				(*ret)(ix,iy,iz) = Util::get_pixel_conv_new(nx, ny, nz, xold, yold, zold, data, kb);
+				if(!wrap && (xold<0.0 || xold>nx-1 || yold<0.0 || yold>ny-1 || zold<0.0 || zold>nz-1))
+					(*ret)(ix,iy,iz) = 0.0;
+				else
+					(*ret)(ix,iy,iz) = Util::get_pixel_conv_new(nx, ny, nz, xold, yold, zold, data, kb);
 			}
 		}
 	}
@@ -3471,7 +3476,7 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	return ret;
 }
 
-EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input) {
+EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input, bool wrap) {
 
 	if (scale_input == 0.0f) scale_input = 1.0f;
 	float  scale = 0.5f*scale_input;
@@ -3489,9 +3494,11 @@ EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float p
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32
 	//ret->to_zero();  //we will leave margins zeroed.
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	delz = restrict2(delz, nz);
+	if (wrap){
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		delz = restrict2(delz, nz);
+	}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -3542,7 +3549,10 @@ EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float p
 				float xold = yco1+a11*x-ixs; //have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
 				float yold = yco2+a12*x-iys;
 				float zold = yco3+a13*x-izs;
-				(*ret)(ix,iy,iz) = Util::get_pixel_conv_new_background(nx, ny, nz, xold, yold, zold, data, kb, ix, iy);
+				if(!wrap && (xold<0.0 || xold>nx-1 || yold<0.0 || yold>ny-1 || zold<0.0 || zold>nz-1))
+					(*ret)(ix,iy,iz) = 0.0;
+				else
+					(*ret)(ix,iy,iz) = Util::get_pixel_conv_new_background(nx, ny, nz, xold, yold, zold, data, kb, ix, iy);
 			}
 		}
 	}
