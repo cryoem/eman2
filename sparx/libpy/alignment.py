@@ -1428,8 +1428,9 @@ def ali_vol_func_grid(params, data):
 	# data[2], data[3]: mask-related info
 	# data[4]: similarity measure
 	# data[1]: target volume, into which data[0] is being fitted
+	# data[6]: wraparound option
 
-	x = rot_shift3D_grid(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0, data[5], "background")
+	x = rot_shift3D_grid(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0, data[5], "background", data[6])
 
 	if (data[3] == None):
 		mask = data[2]

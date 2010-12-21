@@ -7790,7 +7790,7 @@ def ali_vol_n(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="ccc",
 	else:
 		return e
 
-def ali_vol_grid(vol, params, refv, ang_scale, shift_scale, radius=None, discrepancy="dot", kb=None):
+def ali_vol_grid(vol, params, refv, ang_scale, shift_scale, radius=None, discrepancy="dot", kb=None, wrap=False):
 	"""
 		Name
 			sxali_vol_grid - align a 3D structure with respect of a 3D reference structure.
@@ -7813,6 +7813,8 @@ def ali_vol_grid(vol, params, refv, ang_scale, shift_scale, radius=None, discrep
 			discrepancy (or similarity) measure
 		kb
 			if given, then (vol,kb) must be the output from prepi3D. If not given, then prepi3D is called here.
+		wrap
+			if True, use wraparound pixels during translations
 	"""
 
 
@@ -7833,9 +7835,9 @@ def ali_vol_grid(vol, params, refv, ang_scale, shift_scale, radius=None, discrep
 	
 	if kb==None:
 		ee, kb = prepi3D(e)
-		data = [ee, ref, mask, None, discrepancy, kb]
+		data = [ee, ref, mask, None, discrepancy, kb, wrap]
 	else:
-		data = [e, ref, mask, None, discrepancy, kb]
+		data = [e, ref, mask, None, discrepancy, kb, wrap]
 	
 	new_params = amoeba(params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_grid, 1.e-5, 1.e-4, 500, data)
 

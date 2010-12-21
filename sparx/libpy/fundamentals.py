@@ -927,7 +927,7 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 	else: return image.rot_scale_trans_background(T)
 
 
-def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background"):
+def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False):
 	"""
 		rotate/shift/scale image using the gridding method.
 		if kb = None, the image is prepared in this function before the rot/shift operation.
@@ -935,6 +935,7 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		'mode' specifies what will be put in corners, should they stick out:
 			background - leave original values
 			cyclic - use pixels from the image using wrap-around transformation
+		'wrap': option for using wraparound pixels during translations
 	"""
 
 	if scale == 0.0 :  ERROR("scale=0 not allowed","rot_shift3D_grid", 1)
@@ -946,7 +947,7 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		else:
 			o = img.copy()
 		# gridding rotation/shift:
-		o = o.rot_scale_conv_new_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale)
+		o = o.rot_scale_conv_new_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale, wrap)
 		#if  mirror: o.process_inplace("mirror", {"axis":'x'})
 		return o
 	elif(mode == "background"):
@@ -956,7 +957,7 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		else:
 			o = img.copy()
 		# gridding rotation
-		o = o.rot_scale_conv_new_background_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale)
+		o = o.rot_scale_conv_new_background_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale, wrap)
 		#if  mirror: o.process_inplace("mirror", {"axis":'x'})
 		return o	
 	else: ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
