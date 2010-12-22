@@ -34,7 +34,7 @@ from EMAN2 import *
 from PyQt4 import QtCore
 from emfoldhunterstat import *
 from emapplication import get_application
-from empdbvaltool import EMPDBValTool
+from empdbvaltool import EMPDBValWidget
 from emplot3d import *
 import os
 
@@ -53,7 +53,7 @@ class E2ValidateMed():
 
 	def __init_em_val(self): #formally creates the empdbvaltool module, waits for a signal to validate or close
 		if self.em_val == None: 
-			self.em_val = EMPDBValTool()
+			self.em_val = EMPDBValWidget()
 			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("run_validate"),self.on_em_validate_requested)
 			QtCore.QObject.connect(self.em_val, QtCore.SIGNAL("module_closed"),self.on_em_val_closed)
 	

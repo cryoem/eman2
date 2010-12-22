@@ -39,6 +39,8 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import Qt
 import sys
 import weakref
+from emimageutil import EMTransformPanel
+
 
 
 class AlaRenderer:
@@ -697,6 +699,7 @@ class EMPDBModel(EM3DModel):
 		self.colors = get_default_gl_colors()
 		self.vdtools = EMViewportDepthTools(self)
 		self.cam = Camera2(self)
+		self.cam.basicmapping = True #new by Ross
 		
 		self.side_chain_renderer = {}
 		self.side_chain_renderer["ALA"] = AlaRenderer()
@@ -980,6 +983,8 @@ class EMPDBInspector(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.target = weakref.ref(target)
 
+		self.rotation_sliders = EMTransformPanel(target,self)
+		
 		self.text = QtGui.QLineEdit()
 		text_value = self.target().current_text()
 		if text_value:
@@ -995,6 +1000,8 @@ class EMPDBInspector(QtGui.QWidget):
 		vbl.setSpacing(6)
 		vbl.addLayout(hbl1)
 		
+		self.rotation_sliders.addWidgets(vbl)
+
 		self.setLayout(vbl)
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textEdited(const QString&)"), self.on_text_change)
@@ -1010,6 +1017,18 @@ class EMPDBInspector(QtGui.QWidget):
 		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
 		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates	
 		self.target().updateGL()
+	
+	def update_rotations(self,t3d):
+		self.rotation_sliders.update_rotations(t3d)
+	
+	def set_scale(self,val):
+		self.rotation_sliders.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		self.rotation_sliders.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)
 
 if __name__ == '__main__':
 	from emapplication import EMApp
