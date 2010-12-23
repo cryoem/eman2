@@ -51,8 +51,10 @@ def main():
 	parser.add_option("--CTF", action="store_true", default=False, help=" Consider CTF correction during multiple reference assignment")
 	parser.add_option("--CUDA", action="store_true", default=False, help=" whether to use CUDA")
 	parser.add_option("--GPUID", type="string", default="0 1 2 3",  help=" the IDs of GPU to use")
-	parser.add_option("--SA",   action="store_true", default=False,  help=" whether ti use simulated annealing")
+	parser.add_option("--SA",   action="store_true", default=False,  help=" whether to use simulated annealing")
 	parser.add_option("--T",   type="float",  default=0.001,  help=" the temperature of simulated annealing")
+	parser.add_option("--F",   type="float",  default=0.995,  help=" the temperature cooling rate")
+	parser.add_option("--heads_up",   action="store_true", default=False,  help=" whether to give a heads up")
 	parser.add_option("--MPI", action="store_true", default=False, help="  whether to use MPI version ")
 
 	(options, args) = parser.parse_args()
@@ -75,7 +77,7 @@ def main():
 	from development import multi_assign
 	global_def.BATCH = True
 	multi_assign(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts,  
-			options.CTF, options.CUDA, options.GPUID, options.SA, options.T, options.MPI)
+			options.CTF, options.CUDA, options.GPUID, options.SA, options.T, options.F, options.heads_up, options.MPI)
 	global_def.BATCH = False
 	
 	if options.MPI:
