@@ -869,7 +869,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
-						EMUtil::EMDataType dt, bool)
+						EMUtil::EMDataType, bool)
 {
 #ifdef DEBUGHDF
 	printf("write_head %d\n",image_index);

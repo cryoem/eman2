@@ -213,7 +213,7 @@ namespace EMAN
 
 			/** Get the main image pointer, probably redundant (not used)
 			 */
-			const EMData* const get_emdata() { return image; }
+			const EMData* get_emdata() { return image; }
 		protected:
 			//These EMData pointers will most probably be allocated in setup() and released in finish()
 			/// Inheriting class allocates this, probably in setup().

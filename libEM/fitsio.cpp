@@ -151,8 +151,7 @@ int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int FitsIO::write_header(const Dict & , int image_index, const Region*,
-						EMUtil::EMDataType, bool)
+int FitsIO::write_header(const Dict &, int, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 //	check_write_access(rw_mode, image_index, 1);
@@ -180,12 +179,12 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 	switch (dtype) {
 	case 8:
 		fread(cdata,nx,ny*nz,fitsfile);
-		for (i=size-1; i>=0; i--) rdata[i]=cdata[i];
+		for (i=size-1; i<size; i--) rdata[i]=cdata[i];
 		break;
 	case 16:
 		fread(cdata,nx,ny*nz*2,fitsfile);
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((short*) sdata, size);
-		for (i=size-1; i>=0; i--) rdata[i]=sdata[i];
+		for (i=size-1; i<size; i--) rdata[i]=sdata[i];
 		break;
 	case 32:
 		fread(cdata,nx,ny*nz*4,fitsfile);

@@ -387,7 +387,7 @@ void FourierInserter3DMode8::init()
 	W = Util::getBaldwinGridWeights(mFreqCutoff, (float)P, r,mDFreq,0.5f,0.2f);
 
 }
-bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const std::complex<float> fq,const float& weight)
+bool FourierInserter3DMode8::insert_pixel(const float&, const float&, const float&, const std::complex<float>, const float&)
 {
 //	int x0 = (int) floor(qx);
 //	int y0 = (int) floor(qy);

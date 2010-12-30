@@ -390,7 +390,7 @@ namespace EMAN
 
 		template<typename type>
 		ostream& write(ostream& os, const type& T) {
-			os.write( (char*)(&T), sizeof(type) );
+			os.write( (const char*)(&T), sizeof(type) );
 			return os;
 		}
 

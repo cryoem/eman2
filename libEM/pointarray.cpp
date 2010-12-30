@@ -412,7 +412,7 @@ bool PointArray::read_from_pdb(const char *file)
 	stat(file, &filestat);
 	set_number_points(( int)(filestat.st_size / 80 + 1));
 #ifdef DEBUG
-	printf("PointArray::read_from_pdb(): try %4d atoms first\n", get_number_points());
+	printf("PointArray::read_from_pdb(): try %4lu atoms first\n", get_number_points());
 #endif
 
 	FILE *fp = fopen(file, "r");
@@ -487,7 +487,7 @@ bool PointArray::read_from_pdb(const char *file)
 		if (count + 1 > get_number_points())
 			set_number_points(2 * (count + 1));    //makes sure point array is big enough
 #ifdef DEBUG
-		printf("Atom %4d: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
+		printf("Atom %4lu: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
 #endif
 		points[4 * count] = x;
 		points[4 * count + 1] = y;
@@ -635,7 +635,7 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 			double alt = acos(z / sqrt(x * x + y * y + z * z));
 			if (alt < alt_max && alt >= alt0) {
 #ifdef DEBUG
-				printf("Point %3d: x,y,z = %8g,%8g,%8g\taz = %8g\talt = %8g\n",i/4,x,y,z,az*180.0/M_PI, alt*180.0/M_PI);
+				printf("Point %3lu: x,y,z = %8g,%8g,%8g\taz = %8g\talt = %8g\n",i/4,x,y,z,az*180.0/M_PI, alt*180.0/M_PI);
 #endif
 				points[count * 4] = x;
 				points[count * 4 + 1] = y;
@@ -849,7 +849,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 				z = ( int) Util::get_frand(0, nz - 1);
 				v = pd[z * nx * ny + y * nx + x];
 #ifdef DEBUG
-				printf("Trying Point %d: val = %g\tat  %d, %d, %d\tfrom map (%d,%d,%d)\n", i, v, x,
+				printf("Trying Point %lu: val = %g\tat  %d, %d, %d\tfrom map (%d,%d,%d)\n", i, v, x,
 					   y, z, nx, ny, nz);
 #endif
 			} while (v <= thresh);
@@ -858,7 +858,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			points[4 * i + 2] = (double) z;
 			points[4 * i + 3] = (double) v;
 #ifdef DEBUG
-			printf("Point %d: val = %g\tat  %g, %g, %g\n", i, points[4 * i + 3], points[4 * i],
+			printf("Point %lu: val = %g\tat  %g, %g, %g\n", i, points[4 * i + 3], points[4 * i],
 				   points[4 * i + 1], points[4 * i + 2]);
 #endif
 		}
@@ -910,7 +910,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 					tmp_points[4 * s + 1] /= tmp_points[4 * s + 3];
 					tmp_points[4 * s + 2] /= tmp_points[4 * s + 3];
 #ifdef DEBUG
-					printf("Iteration %3d, Point %3d at %8g, %8g, %8g -> %8g, %8g, %8g\n", iter, s,
+					printf("Iteration %3d, Point %3lu at %8g, %8g, %8g -> %8g, %8g, %8g\n", iter, s,
 						   points[4 * s], points[4 * s + 1], points[4 * s + 2], tmp_points[4 * s],
 						   tmp_points[4 * s + 1], tmp_points[4 * s + 2]);
 #endif
@@ -930,7 +930,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 					tmp_points[4 * s + 3] = (double) v;
 #ifdef DEBUG
 					printf
-						("Iteration %3d, Point %3d reseeded from %8g, %8g, %8g -> %8g, %8g, %8g\n",
+						("Iteration %3d, Point %3lu reseeded from %8g, %8g, %8g -> %8g, %8g, %8g\n",
 						 iter, s, points[4 * s], points[4 * s + 1], points[4 * s + 2],
 						 tmp_points[4 * s], tmp_points[4 * s + 1], tmp_points[4 * s + 2]);
 #endif
@@ -987,7 +987,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	float *pd = map->get_data();
 	for ( size_t i = 0; i < get_number_points(); ++i) {
 #ifdef DEBUG
-		printf("Point %4d: x,y,z,v = %8g,%8g,%8g,%8g",i, points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
+		printf("Point %4lu: x,y,z,v = %8g,%8g,%8g,%8g",i, points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
 #endif
 		points[4 * i + 3] =
 			pd[(int) points[4 * i + 2] * nx * ny + (int) points[4 * i + 1] * nx +
@@ -1021,7 +1021,7 @@ void PointArray::sort_by_axis(int axis)
 EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 {
 #ifdef DEBUG
-	printf("PointArray::pdb2mrc_by_summation(): %d points\tmapsize = %4d\tapix = %g\tres = %g\n",get_number_points(),map_size, apix, res);
+	printf("PointArray::pdb2mrc_by_summation(): %lu points\tmapsize = %4d\tapix = %g\tres = %g\n",get_number_points(),map_size, apix, res);
 #endif
 	double gauss_real_width = res / (M_PI);	// in Angstrom, res is in Angstrom
 	//if ( gauss_real_width < apix) LOGERR("PointArray::projection_by_summation(): apix(%g) is too large for resolution (%g Angstrom in Fourier space) with %g pixels of 1/e half width", apix, res, gauss_real_width);

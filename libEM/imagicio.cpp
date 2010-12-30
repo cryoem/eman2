@@ -592,7 +592,7 @@ Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 	return ctf_;
 }
 
-void ImagicIO::write_ctf(const Ctf * const ctf, int image_index)
+void ImagicIO::write_ctf(const Ctf * const ctf, int)
 {
 	ENTERFUNC;
 	init();

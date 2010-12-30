@@ -5086,7 +5086,7 @@ using namespace wustl_mm::SkeletonMaker;
 		}
 
 		// Compute minimal skeleton
-		void Volume::skeleton( float thr, int off )
+		void Volume::skeleton( float thr, int )
 		{
 			int i, j, k ;
 			// First, threshold the volume

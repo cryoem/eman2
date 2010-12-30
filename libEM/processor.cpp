@@ -762,7 +762,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 
 }
 
-void DistanceSegmentProcessor::process_inplace(EMData *image)
+void DistanceSegmentProcessor::process_inplace(EMData *)
 {
 	printf("Process inplace not implemented. Please use process.\n");
 	return;
@@ -984,7 +984,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	return result;
 }
 
-void KmeansSegmentProcessor::process_inplace(EMData *image)
+void KmeansSegmentProcessor::process_inplace(EMData *)
 {
 	printf("Process inplace not implemented. Please use process.\n");
 	return;
@@ -1133,7 +1133,7 @@ void HighpassAutoPeakProcessor::preprocess(EMData * image)
 	}
 }
 
-void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask, EMData *image) const
+void HighpassAutoPeakProcessor::create_radial_func(vector < float >&radial_mask, EMData *) const
 {
 	unsigned int c;
 
@@ -1367,7 +1367,7 @@ vector<Vec3i > WatershedProcessor::find_region(EMData* mask,const vector<Vec3i >
 	return ret;
 }
 
-vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& coordinate, const int mask_value)
+vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const float&, const Vec3i& coordinate, const int mask_value)
 {
 	static vector<Vec3i> two_six_connected;
 	if (two_six_connected.size() == 0) {
@@ -8415,7 +8415,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 }
 
 
-void IntTranslateProcessor::assert_valid_aspect(const vector<int>& translation, const EMData* const image) const {
+void IntTranslateProcessor::assert_valid_aspect(const vector<int>& translation, const EMData* const) const {
 	if (translation.size() == 0 ) throw InvalidParameterException("You must specify the trans argument");
 }
 

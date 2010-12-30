@@ -287,7 +287,7 @@ bool OrientationGenerator::add_orientation(vector<Transform>& v, const float& az
 	return true;
 }
 
-float EmanOrientationGenerator::get_az_delta(const float& delta,const float& altitude, const int maxcsym) const
+float EmanOrientationGenerator::get_az_delta(const float& delta,const float& altitude, const int) const
 {
 	// convert altitude into radians
 	float tmp = (float)(EMConsts::deg2rad * altitude);
@@ -1522,7 +1522,7 @@ bool HSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	return false;
 }
 
-vector<vector<Vec3f> > HSym::get_asym_unit_triangles(bool inc_mirror) const{
+vector<vector<Vec3f> > HSym::get_asym_unit_triangles(bool ) const{
 
 	vector<vector<Vec3f> > ret;
 	return ret;

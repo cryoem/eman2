@@ -118,7 +118,7 @@ void FourierReconstructorSimple2D::setup()
 	tmp_data->set_size(nx/2, nx);
 }
 
-int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform & euler, const float weight)
+int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform & euler, const float)
 {
 
 	// Are these exceptions really necessary? (d.woolford)
@@ -235,7 +235,7 @@ int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const 
 
 }
 
-EMData *FourierReconstructorSimple2D::finish(bool doift)
+EMData *FourierReconstructorSimple2D::finish(bool)
 {
 	normalize_threed();
 
@@ -929,7 +929,7 @@ void WienerFourierReconstructor::do_insert_slice_work(const EMData* const input_
 				if (rn>=.5) continue;		// no SNR in the corners, and we're going to mask them later anyway
 				rn*=snr.size()*2.0f;
 				int rni=(int)floor(rn);
-				if (rni>=snr.size()-1) weight=snr[snr.size()-1]*sub;
+				if ((unsigned int)rni>=snr.size()-1) weight=snr[snr.size()-1]*sub;
 				else {
 					rn-=rni;
 					weight=Util::linear_interpolate(snr[rni],snr[rni+1],rn);
@@ -1761,7 +1761,7 @@ EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice,
 	return return_slice;
 }
 
-int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform &t, const float sliceweight)
+int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform &t, const float)
 {
 	if (!input) {
 		LOGERR("try to insert NULL slice");
@@ -1811,7 +1811,7 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 	return 0;
 }
 
-EMData *BackProjectionReconstructor::finish(bool doift)
+EMData *BackProjectionReconstructor::finish(bool)
 {
 
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
@@ -2044,7 +2044,7 @@ void printImage( const EMData* line )
 
 
 
-int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2194,7 +2194,7 @@ void circumf( EMData* win , int npad)
 }
 
 
-EMData* nn4Reconstructor::finish(bool doift)
+EMData* nn4Reconstructor::finish(bool)
 {
         if( m_ndim==3 ) {
 		m_volume->symplane0(m_wptr);
@@ -2444,7 +2444,7 @@ void nn4_rectReconstructor::buildNormVolume() {
 
 
 
-int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
+int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
 	// sanity checks
 
 
@@ -2553,7 +2553,7 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 
 int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, int mult )
 {
-	Assert( padfft != NULL );
+	Assert( padded != NULL );
 	
 
 	for( int isym=0; isym < m_nsym; isym++) {
@@ -2647,7 +2647,7 @@ void circumf_rect( EMData* win , int npad)
 
 
 
-EMData* nn4_rectReconstructor::finish(bool doift)
+EMData* nn4_rectReconstructor::finish(bool)
 {
 	
         if( m_ndim==3 ) {
@@ -2874,7 +2874,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2916,7 +2916,7 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nnSSNR_Reconstructor::finish(bool doift)
+EMData* nnSSNR_Reconstructor::finish(bool)
 {
 /*
   I changed the code on 05/15 so it only returns variance.
@@ -3192,7 +3192,7 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float)
 {
 	// sanity checks
 	if (!slice) {
@@ -3272,7 +3272,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nn4_ctfReconstructor::finish(bool doift)
+EMData* nn4_ctfReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3513,7 +3513,7 @@ void nn4_ctf_rectReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
+int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float)
 {
 	// sanity checks
 	if (!slice) {
@@ -3592,7 +3592,7 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nn4_ctf_rectReconstructor::finish(bool doift)
+EMData* nn4_ctf_rectReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3839,7 +3839,7 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->set_array_offsets(0,1,1);
 }
 
-int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float weight) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -3878,7 +3878,7 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nnSSNR_ctfReconstructor::finish(bool doift)
+EMData* nnSSNR_ctfReconstructor::finish(bool)
 {
 /*
   I changed the code on 05/15 so it only returns variance.

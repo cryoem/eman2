@@ -2307,7 +2307,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 	return out;
 }
 
-float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
 {
 /*
 c  purpose: linear interpolation
@@ -4808,7 +4808,7 @@ vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
 
 }
 
-vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_prj, int n_lines) {
+vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int, int n_lines) {
     vector<int> com(2*n_lines);
     int a=0, b, c, l;
     int n1=0, n2=0, mem=-1;
@@ -4857,7 +4857,7 @@ vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int n_
 
 }
 
-vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int nprj, int nlines){
+vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int, int nlines){
     // seq is the pairwise index ij: 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
     vector<double> cml(2*nlines); // [phi, theta] / line
     float ph1, th1;
@@ -20727,7 +20727,7 @@ bool jiafunc(int i, int j){
 // Branch on subsequent ones only if its infeasible with ALL the ones which we have previously decided to branch on.
 // The other option is to use LIM - so we branch on a match if its infeasible with at least LIM matches which we have previously decoded to branch on.
 // For now, LIM is defaulted to -1, which means we branch on a match only if it is infeasible to ALL matches we have previously decided to branch on.
-int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int LIM){
+int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nParts, int, int max_branching, int LIM){
 	
 	int ntot=0;
 	for (int jit=0; jit < J; jit++){
@@ -20815,7 +20815,7 @@ int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nPart
 
 
 // similar to branch_factor_2 except we branch on a match if it is infeasible with all other matches in matchlist (not just the ones we branch on). LIM plays similar role here.
-int Util::branch_factor_3(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int K, int LIM){
+int Util::branch_factor_3(int* costlist, int* matchlist, int J, int T, int nParts, int, int max_branching, int, int LIM){
 	
 	int ntot=0;
 	for (int jit=0; jit < J; jit++){
@@ -20908,7 +20908,7 @@ int Util::branch_factor_3(int* costlist, int* matchlist, int J, int T, int nPart
 // match. Otherwise, we branch on similar weighted matches.
 // As before we always branch on the match with the largest cost so worst case we'll get greedy.
 // We compute standard dev of the J costs, and then if the difference between the cost of a match and the largest cost is within stmult*standard dev, then we branch on it.
-int Util::branch_factor_4(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, float stmult){
+int Util::branch_factor_4(int* costlist, int* matchlist, int J, int T, int nParts, int, int max_branching, float stmult){
 	int sum=0;
 	float average =0;
 	int ntot=0;

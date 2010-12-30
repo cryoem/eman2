@@ -75,7 +75,7 @@ inline float *get_data() const { return rdata; }
 /** Get the image pixel density data in a 1D float array - const version of get_data
  * @return The image pixel density data.
  */
-inline const float * const get_const_data() const { return get_data(); }
+inline const float * get_const_data() const { return get_data(); }
 
 /**  Set the data explicitly
 * data pointer must be allocated using malloc!

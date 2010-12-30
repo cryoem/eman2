@@ -145,7 +145,7 @@ const float MAP_ERR_VAL = 100.0f;
 		// **************************** End: added by Ross ****************************************
 
 
-		Volume * VolumeSkeletonizer::PerformPureJuSkeletonization(Volume * imageVol, string outputPath, double threshold, int minCurveWidth, int minSurfaceWidth) {
+		Volume * VolumeSkeletonizer::PerformPureJuSkeletonization(Volume * imageVol, string, double threshold, int minCurveWidth, int minSurfaceWidth) {
 			imageVol->pad(MAX_GAUSSIAN_FILTER_RADIUS, 0);
 			Volume * preservedVol = new Volume(imageVol->getSizeX(), imageVol->getSizeY(), imageVol->getSizeZ());
 			Volume * surfaceVol;

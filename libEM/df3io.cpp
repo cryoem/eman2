@@ -97,8 +97,7 @@ int Df3IO::read_header(Dict & dict, int, const Region *, bool )
 	return 0;
 }
 
-int Df3IO::write_header(const Dict & dict, int, const Region*,
-						EMUtil::EMDataType filestoragetype, bool)
+int Df3IO::write_header(const Dict & dict, int, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	init();
@@ -261,7 +260,7 @@ bool Df3IO::is_complex_mode()
 	return false;	//DF3 only support real image
 }
 
-bool Df3IO::is_valid(const void *first_block, off_t file_size)
+bool Df3IO::is_valid(const void *first_block, off_t)
 {
 	ENTERFUNC;
 

@@ -63,21 +63,21 @@ using std::endl;
 
 namespace EMAN {
 
-    python::numeric::array make_numeric_array(float * data, vector<npy_intp> dims);
-    python::numeric::array make_numeric_complex_array(std::complex<float> * data,
+    python::numeric::array make_numeric_array(const float *const data, vector<npy_intp> dims);
+    python::numeric::array make_numeric_complex_array(const std::complex<float> *const data,
                                                       vector<npy_intp> dims);
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
 		 * The array and EMData image share the same memory block.
 		 */
-		static python::numeric::array em2numpy(EMData *image);
+		static python::numeric::array em2numpy(const EMData *const image);
 
 		/** Create an EMData image from a numeric numpy array.
 		 * returned EMData object will take the ownership of the numpy array data.
 		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
-		static EMData* numpy2em(python::numeric::array& array);
+		static EMData* numpy2em(const python::numeric::array& array);
     };
 
 
@@ -178,7 +178,7 @@ namespace EMAN {
                 dims.push_back(shape[i]);
             }
 
-            float * data = (float*)marray.data();
+            const float * data = (const float*)marray.data();
             python::numeric::array numarray = make_numeric_array(data, dims);
 
             return python::incref(numarray.ptr());
@@ -200,7 +200,7 @@ namespace EMAN {
                 dims.push_back(shape[i]);
             }
 
-            std::complex<float> * data = (std::complex<float>*)mcarray.data();
+            const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
             python::numeric::array numarray = make_numeric_complex_array(data, dims);
 
             return python::incref(numarray.ptr());
@@ -833,7 +833,7 @@ namespace EMAN {
 			}
 		}
 
-		static void construct(PyObject* obj_ptr,
+		static void construct(PyObject*,
 							  python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =

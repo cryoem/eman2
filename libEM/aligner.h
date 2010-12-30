@@ -141,10 +141,11 @@ namespace EMAN
 		 * @param cmp_params the params of the comparator - may be unused
 		 * @return an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys "score" (i.e. correlation score) and "xform.align3d" (Transform containing the alignment)
 		 */
-		virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
-			vector<Dict> solns;
-			return solns;
-		}
+		virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+//		{
+//			vector<Dict> solns;
+//			return solns;
+//		}
 
 	  protected:
 		mutable Dict params;

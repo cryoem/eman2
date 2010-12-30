@@ -354,7 +354,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		  virtual void preprocess(EMData * image) {}
+		  virtual void preprocess(EMData *) {}
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
@@ -386,7 +386,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		  virtual void preprocess(EMData * image) {}
+		  virtual void preprocess(EMData *) {}
 		  virtual void create_radial_func(vector < float >&radial_mask,EMData *image) const = 0;
 	};
 
@@ -5282,7 +5282,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		/**
 		 * @exception InvalidCallException raised if this function is called
 		 */
-		virtual void process_inplace(EMData* image ) {
+		virtual void process_inplace(EMData*) {
 			throw InvalidCallException("The directional sum processor does not work inplace");
 		}
 

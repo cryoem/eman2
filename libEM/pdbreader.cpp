@@ -183,7 +183,7 @@ bool PDBReader::read_from_pdb(const char *file)
 	stat(file, &filestat);
 	set_number_points(( int)(filestat.st_size / 80 + 1)); //80 bytes per line
 #ifdef DEBUG
-	printf("PDBReader::read_pdb(): try %4d atoms first\n", get_number_points());
+	printf("PDBReader::read_pdb(): try %4lu atoms first\n", get_number_points());
 #endif
 
 	FILE *fp = fopen(file, "r");

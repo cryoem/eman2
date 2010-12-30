@@ -288,7 +288,7 @@ namespace EMAN
 		 */
 		inline void transform(const Transform& t) {
 			ENTERFUNC;
-			process_inplace("xform",Dict("transform",(Transform*)(&t)));
+			process_inplace("xform",Dict("transform",(const Transform*)(&t)));
 			//update(); no need, process_inplace did it
 			EXITFUNC;
 		}

@@ -3628,7 +3628,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 }
 
 
-float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb) {
+float  EMData::get_pixel_filtered(float delx, float dely, float, Util::sincBlackman& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 	int K     = kb.get_sB_size();

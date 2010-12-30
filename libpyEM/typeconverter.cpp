@@ -43,7 +43,7 @@
 using namespace EMAN;
 
 
-python::numeric::array EMAN::make_numeric_array(float * data, vector<npy_intp> dims)
+python::numeric::array EMAN::make_numeric_array(const float *const data, vector<npy_intp> dims)
 {
 	size_t total = 1;
 	vector<npy_intp>::iterator iter = dims.begin();
@@ -58,7 +58,7 @@ python::numeric::array EMAN::make_numeric_array(float * data, vector<npy_intp> d
 	return python::extract<python::numeric::array>(obj);
 }
 
-python::numeric::array EMAN::make_numeric_complex_array(std::complex<float> * data,
+python::numeric::array EMAN::make_numeric_complex_array(const std::complex<float> *const data,
                                                         vector<npy_intp> dims)
 {
 	size_t total = 1;
@@ -74,7 +74,7 @@ python::numeric::array EMAN::make_numeric_complex_array(std::complex<float> * da
 	return python::extract<python::numeric::array>(obj);
 }
 
-python::numeric::array EMNumPy::em2numpy(EMData *image)
+python::numeric::array EMNumPy::em2numpy(const EMData *const image)
 {
 	float * data = image->get_data();
 	int nx = image->get_xsize();
@@ -96,7 +96,7 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
 	return make_numeric_array(data, dims);
 }
 
-EMData* EMNumPy::numpy2em(python::numeric::array& array)
+EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 {
 	if (!PyArray_Check(array.ptr())) {
 		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");

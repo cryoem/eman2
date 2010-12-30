@@ -694,6 +694,6 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		for (int i = 0; i < nx*ny*nz; i++) orig[i] = work[i];
 		fimage->update();
 	}
-	return fp;
 	EXITFUNC;
+	return fp;
 }
