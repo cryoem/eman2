@@ -371,7 +371,13 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		return image_type;
 	}
 
-	if (MrcIO::is_valid(first_block, file_size)) {
+	if (SpiderIO::is_valid(first_block)) {
+		image_type = IMAGE_SPIDER;
+	}
+	else if (SingleSpiderIO::is_valid(first_block)) {
+		image_type = IMAGE_SINGLE_SPIDER;
+	}
+	else if (MrcIO::is_valid(first_block, file_size)) {
 		image_type = IMAGE_MRC;
 	}
 	else if (DM3IO::is_valid(first_block)) {
@@ -393,12 +399,6 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		image_type = IMAGE_TIFF;
 	}
 #endif
-	else if (SpiderIO::is_valid(first_block)) {
-		image_type = IMAGE_SPIDER;
-	}
-	else if (SingleSpiderIO::is_valid(first_block)) {
-		image_type = IMAGE_SINGLE_SPIDER;
-	}
 	else if (PifIO::is_valid(first_block)) {
 		image_type = IMAGE_PIF;
 	}
