@@ -95,6 +95,7 @@ class E2FoldHunterStat:
 			transforms_func.append(finalRot)
 		return transforms_func
 
+	# turns a z-score into a percentile rank
 	def get_percentile (self, val):
 		percentile = 0.0
 		if val>=2.5: percentile = 99
@@ -120,10 +121,10 @@ class E2FoldHunterStat:
 	
 		return percentile
 
-	#Given a mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
+	#Given an mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
-		zz = time.time()
+		curTime = time.time()
 		target = EMData(mrc_file_name)
 
 
@@ -153,8 +154,9 @@ class E2FoldHunterStat:
 
 		atomNumber=[]
 		atomCount = 0
-		pixelValues =[]
+		pixelValues =[]    
 
+		#reads the pdb file to store all the information
 		for item in pdb_lines:
 			itemS = str(item[0:6].strip())
 			if (itemS == "ENDMDL" and len(pixelValues)>0): 		
@@ -176,74 +178,39 @@ class E2FoldHunterStat:
 
 		##############################################################
 
-		'''
-		######################## write accurately into pdb file
 
-		f_pdb = open (pdb_file_name, "r")
-		entries = f_pdb.readlines()
-		lastEntry = list(entries)
-		f_pdb.close()
-
-		for i in range (0, len(entries)):
-			tempEntry = entries[i]
-			entries[i] = tempEntry[0:61]
-			tempLast = lastEntry[i]
-			lastEntry[i] = tempLast[66:80]
-
-		f = open (pdb_file_name, "w")
-		for i in range (0, len(entries)):
-			f.write(entries[i])
-			if (i < len(pixelValues)):
-				tempPixel = str(pixelValues[i])
-				tempPixel = tempPixel[0:5]
-				f.write(tempPixel + lastEntry[i]+ '\n')
-			else: f.write('\n')
-
-		f.close()
-		'''
 		################################################################
 
+		#translation amounts
 		xTrans = (.25*xMax)
 		yTrans = (.25*yMax)
 		zTrans = (.25*zMax)
 
-		'''
-		######### Generate random transformations
-		all_rots=[]
-		s = Symmetries.get("c1")
-		all_rots = s.gen_orientations("rand", {"n":transNum, "phitoo":1})
-		for i in all_rots:
-			i.set_trans(random.randint(-xTrans, xTrans),random.randint(-yTrans, yTrans),random.randint(-zTrans, zTrans))
-	
-		all_rots[0].set_params({"type":"eman", "alt":0, "az":0, "phi":0, 'ty':0.0, "tz":0.0, "tx":0.0})
-		all_rots[0].set_trans(0,0,0)
-		rotList = all_rots
-		#################################################################
-		'''
+
 		first_rot = Transform({"type":"eman", "alt":0, "az":0, "phi":0, "ty":0.0, "tz":0.0, "tx":0.0})
 		rotList = []
 		rotList.append(first_rot)
-		rotList.extend(self.__init__spherical_surface_gauss_dist(first_rot, 5, transNum-1, xTrans, yTrans, zTrans))
+		rotList.extend(self.__init__spherical_surface_gauss_dist(first_rot, 5, transNum-1, xTrans, yTrans, zTrans))  
 
 		score1 =[]  
-		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
-		s1_mean,s2_mean,s3_mean=0.0,0.0,0.0
 		score2 =[]
 		score3 =[]
+		s1_sdv,s2_sdv,s3_sdv=0.0,0.0,0.0
+		s1_mean,s2_mean,s3_mean=0.0,0.0,0.0
 
-		a = PDBReader()
-		a.read_from_pdb(pdb_file_name)
+		firstReader = PDBReader()
+		firstReader.read_from_pdb(pdb_file_name)
 
-		###############apply each random transformation and calculate scores
+		############### apply each random transformation and calculate scores
 		for i in range(0,len(rotList)): 
 
 			t = Transform(rotList[i].get_params("eman"))
-			b = a.copy()
+			secondReader = firstReader.copy()
 			
-			b.right_transform(t)  
-			points = b.get_points()
+			secondReader.right_transform(t)  #applies the transform
+			points = secondReader.get_points()   #gets the new coordinates
 
-			p = 0
+			p = 0  # counter 
 			t_pixelValues = []
 
 
@@ -257,19 +224,19 @@ class E2FoldHunterStat:
 				if (tempX_t<0): tempX_t = 0
 				if (tempY_t<0): tempY_t = 0
 				if (tempZ_t<0): tempZ_t = 0
-				tempValue2 = target.get(tempX_t, tempY_t, tempZ_t)
+				tempValue2 = target.get(tempX_t, tempY_t, tempZ_t)   #gets teh new pixel value based on the transformed coordinates
 				t_pixelValues.append(tempValue2)	
 				p = p + 3
 
 	
-			###### score 1 
+			###### score 1 - real space correlation
 			sumValues = 0.0
 			for x in t_pixelValues:
 				sumValues = sumValues + x
 			sumValues = (sumValues/atomCount)
 			####################################
 
-			###### score 2 
+			###### score 2 - atom inclusion percentage
 			includeValue = 0.0
 			cutOff = (1/(s2iso*10.))
 			isoValue = s2iso
@@ -278,9 +245,9 @@ class E2FoldHunterStat:
 			percentAbove = (includeValue/atomCount)
 			####################################
 
-			###### score 3  	
-			pA = b.makePointArray(b)	
-			probe_MRC = pA.pdb2mrc_by_summation(xMax,apix_x,4.0)
+			###### score 3 - volume inclusion percentage
+			pArray = secondReader.makePointArray(secondReader)	
+			probe_MRC = pArray.pdb2mrc_by_summation(xMax,apix_x,4.0)
 			#probe_MRC.process_inplace("normalize.toimage",{"noisy":target,"keepzero":1})
 			probe_MRC.process_inplace("normalize.toimage",{"to":target,"ignore_zero":True}) #TODO: check whether this fixes things correctly (changed by Ross)
 
@@ -288,10 +255,10 @@ class E2FoldHunterStat:
 
 			target_binary = target.process("threshold.binary",{"value":s2iso})
 
-			c = (target_binary - probe_MRC)
-			c.process_inplace("threshold.binary",{"value":0.01}) 
+			net_volume = (target_binary - probe_MRC)
+			net_volume.process_inplace("threshold.binary",{"value":0.01}) 
 
-			remainder_volume = c["mean"]*(xMax*yMax*zMax)
+			remainder_volume = net_volume["mean"]*(xMax*yMax*zMax)
 			MRC_volume = target_binary["mean"]*(xMax*yMax*zMax)
 			if(remainder_volume==0): excludePercent = 0.0
 			elif (MRC_volume==0): 
@@ -319,15 +286,6 @@ class E2FoldHunterStat:
 			
 		#########################################################
 
-		'''
-		print '\n'
-		print score1
-		print '\n'
-		print score2
-		print '\n'
-		print score3
-		print '\n'
-		'''
 		#########  Calculate standard deviations 
 		calc1 = []  #calc holds only the good transform raw scores, only these are used to calculate mean and std
 		calc2 = []
@@ -440,22 +398,6 @@ class E2FoldHunterStat:
 		for i in range(0,len(s1)):
 			blank.append(0)
 
-		'''
-		mpl1 =[] #holds standard deviation scores for only good transforms
-		mpl2 =[]
-		mpl3 =[]
-		mpl4 = []
-		mplDist=[]
-		for t in range (0, len(s1)):
-			if (score1[t] != "none"):
-				mpl1.append(s1[t])
-				mpl2.append(s2[t])
-				mpl3.append(s3[t])
-				mpl4.append(s1[t]+s2[t]+s3[t])
-				d = (vals['tx'][t])**2 + (vals['ty'][t])**2 + (vals['tz'][t])**2
-				d = (d)**.5
-				mplDist.append(d)
-		'''
 		
 		############ emplot 3d
 		data = []
@@ -482,13 +424,13 @@ class E2FoldHunterStat:
 		rotData.append(s4)
 		rotData.append(dist)
 
-		b = a.copy()
-		zz = time.time() - zz
-		print zz
-		return vals, rotList, b, data, initPoint
+		secondReader = firstReader.copy()
+		curTime = time.time() - curTime
+		print curTime
+		return vals, rotList, secondReader, data, initPoint
 		#vals is a dictionary of all transformation information and score values
 		#rotlist is a list of all the random transformations
-		#b is the original PDBReader object
+		#secondReader is the original PDBReader object
 		#data is one form of data which contains the three scores (return "rotData and initPoint2" instead of "data and initPoint" to plot the alt, az, phi angles)
 		#initPoint contains just the data for the original value
 
