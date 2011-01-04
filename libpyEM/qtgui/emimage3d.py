@@ -46,7 +46,6 @@ from emimage3dvol import EMVolumeModel
 from emimageutil import EMTransformPanel
 from emlights import EMLightsInspectorBase, EMLightsDrawer
 from math import *
-from weakref import WeakKeyDictionary
 import weakref
 
 
@@ -59,12 +58,20 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
-	allim=WeakKeyDictionary()
+	allim=weakref.WeakKeyDictionary()
 	def add_model(self,model,num=0):
 		
 		model.set_gl_widget(self)
 		model.set_dont_delete_parent() # stops a RunTimeError
 		model.under_qt_control = True
+		
+		if self.viewables: 
+			#TODO: find a better way to work with cameras
+			model.cam.scale = self.viewables[0].cam.scale #Make the new model have the same scale as the first "viewable"
+			model.cam.t3d_stack = self.viewables[0].cam.t3d_stack[:] #Make the new model have the same orientation and position as the first "viewable"
+			model.get_inspector().update_rotations(model.cam.t3d_stack[-1])
+			model.get_inspector().set_xyz_trans(model.cam.cam_x,model.cam.cam_y,model.cam.cam_z)
+			model.get_inspector().set_scale(model.cam.scale)
 		
 		self.viewables.append(model)
 		name = model.get_type()+" " + str(num)
@@ -154,7 +161,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		# the difference between the EMEulerExplorer and the EM3DSymModel
 		# is only that the EMEulerExplorer will look in the current directory for refinement directories and
 		# display related information. Simply change from one to the other if you don't like it
-		model = EMEulerExplorer(None,True,False)
+		model = EMEulerExplorer(self,True,False)
 		#model = EM3DSymModel(self)
 		model.set_radius(self.radius)
 		self.num_sym += 1
