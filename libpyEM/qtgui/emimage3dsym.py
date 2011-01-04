@@ -1009,7 +1009,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		(this object uses GLU picking and needs access to the viewport matrix) 
 		'''
 		self.vdtools = EMViewportDepthTools2(gl_widget)
-		EM3DModel.set_gl_widget(gl_widget)
+		EM3DModel.set_gl_widget(self, gl_widget)
 
 	def render(self):
 		self.init_basic_shapes()
