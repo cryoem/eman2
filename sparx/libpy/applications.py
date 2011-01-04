@@ -10740,7 +10740,7 @@ def HAC_averages(stack, dendoname, avename, K):
 
 	list_k = Dendo.keys()
 	if K not in list_k:
-		print 'Dendogram not contain the draw for K=%d' % K
+		print 'Dendogram does not contain the draw for K=%d' % K
 		sys.exit()
 
 	IM = EMData.read_images(stack)
