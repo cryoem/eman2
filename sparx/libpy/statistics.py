@@ -765,21 +765,23 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 		1. mode="a" for alignment
 		2. mode=else for normal summation
 	"""
-	from utilities    import model_blank, get_params2D
+	from utilities    import get_im, model_blank, get_params2D
 	from fundamentals import rot_shift2D
-	if (i2==0): i2 = EMUtil.get_image_count(stack)-1
-	nima = i2 - i1 +1
-	ima = EMData()
-	ima.read_image(stack, i1)
+
+	if i2 == 0:
+		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
+		else:  i2 = len(stack)-1
+	nima = i2-i1+1
+
+	ima = get_im(stack, i1)
 	nx  = ima.get_xsize()
 	ny  = ima.get_ysize()
 	ave = model_blank(nx,ny)
 	var = model_blank(nx,ny)
 	for i in xrange(i1, i2 + 1):
-		if (i > i1):
-			ima = EMData()
-			ima.read_image(stack, i)
-		if (mode=="a"):
+		if i > i1:
+			ima = get_im(stack, i)
+		if mode=="a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			out = rot_shift2D(ima, alpha, sx, sy, mirror)
 			Util.add_img(ave, out)
