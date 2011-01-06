@@ -1193,7 +1193,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 	
 	// insert rectangular fft from my nn4_rect code
 
-	Vec2f coordinate_2d_sqaure;
+	Vec2f coordinate_2d_square;
 	Vec3f coordinate_3dnew;
 	Vec3f axis_newx;
 	Vec3f axis_newy;
@@ -1235,18 +1235,18 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 			if(r2_at_point<=r2 ) {
 				
 				
-				coordinate_2d_sqaure[0] = xscale*float(i);
-				coordinate_2d_sqaure[1] = yscale*float(j);
-				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
-				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
-				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_2d_square[0] = xscale*float(i);
+				coordinate_2d_square[1] = yscale*float(j);
+				float xnew = coordinate_2d_square[0]*trans[0][0] + coordinate_2d_square[1]*trans[1][0];
+				float ynew = coordinate_2d_square[0]*trans[0][1] + coordinate_2d_square[1]*trans[1][1];
+				float znew = coordinate_2d_square[0]*trans[0][2] + coordinate_2d_square[1]*trans[1][2];
 				coordinate_3dnew[0] =xnew*xratio;
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew;
 				
 				//binlinear interpolation
-				float xp = coordinate_2d_sqaure[0];
-				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				float xp = coordinate_2d_square[0];
+				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
 				int xlow=int(xp),xhigh=int(xp)+1;
 				int ylow=int(yp),yhigh=int(yp)+1;
@@ -1824,7 +1824,7 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 	
 	// insert rectangular fft from my nn4_rect code
 
-	Vec2f coordinate_2d_sqaure;
+	Vec2f coordinate_2d_square;
 	Vec3f coordinate_3dnew;
 	Vec3f axis_newx;
 	Vec3f axis_newy;
@@ -1870,18 +1870,18 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 			if(r2_at_point<=r2 && ! ((0==i) && (j<0))) {
 				
 				float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-				coordinate_2d_sqaure[0] = xscale*float(i);
-				coordinate_2d_sqaure[1] = yscale*float(j);
-				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
-				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
-				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_2d_square[0] = xscale*float(i);
+				coordinate_2d_square[1] = yscale*float(j);
+				float xnew = coordinate_2d_square[0]*trans[0][0] + coordinate_2d_square[1]*trans[1][0];
+				float ynew = coordinate_2d_square[0]*trans[0][1] + coordinate_2d_square[1]*trans[1][1];
+				float znew = coordinate_2d_square[0]*trans[0][2] + coordinate_2d_square[1]*trans[1][2];
 				coordinate_3dnew[0] =xnew*xratio;
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew;
 				
 				//binlinear interpolation
-				float xp = coordinate_2d_sqaure[0];
-				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				float xp = coordinate_2d_square[0];
+				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
 				int xlow=int(xp),xhigh=int(xp)+1;
 				int ylow=int(yp),yhigh=int(yp)+1;
@@ -1961,7 +1961,7 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 	
 	// insert rectangular fft from my nn4_rect code
 
-	Vec2f coordinate_2d_sqaure;
+	Vec2f coordinate_2d_square;
 	Vec3f coordinate_3dnew;
 	Vec3f axis_newx;
 	Vec3f axis_newy;
@@ -2007,18 +2007,18 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 			if(r2_at_point<=r2 && ! ((0==i) && (j<0))) {
 				
 				float ctf_value = ctf_store_new::get_ctf( r2_at_point );
-				coordinate_2d_sqaure[0] = xscale*float(i);
-				coordinate_2d_sqaure[1] = yscale*float(j);
-				float xnew = coordinate_2d_sqaure[0]*trans[0][0] + coordinate_2d_sqaure[1]*trans[1][0];
-				float ynew = coordinate_2d_sqaure[0]*trans[0][1] + coordinate_2d_sqaure[1]*trans[1][1];
-				float znew = coordinate_2d_sqaure[0]*trans[0][2] + coordinate_2d_sqaure[1]*trans[1][2];
+				coordinate_2d_square[0] = xscale*float(i);
+				coordinate_2d_square[1] = yscale*float(j);
+				float xnew = coordinate_2d_square[0]*trans[0][0] + coordinate_2d_square[1]*trans[1][0];
+				float ynew = coordinate_2d_square[0]*trans[0][1] + coordinate_2d_square[1]*trans[1][1];
+				float znew = coordinate_2d_square[0]*trans[0][2] + coordinate_2d_square[1]*trans[1][2];
 				coordinate_3dnew[0] =xnew*xratio;
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew;
 				
 				//binlinear interpolation
-				float xp = coordinate_2d_sqaure[0];
-				float yp = ( coordinate_2d_sqaure[1] >= 0) ? coordinate_2d_sqaure[1]+1 : nz+coordinate_2d_sqaure[1]+1;
+				float xp = coordinate_2d_square[0];
+				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
 				int xlow=int(xp),xhigh=int(xp)+1;
 				int ylow=int(yp),yhigh=int(yp)+1;
