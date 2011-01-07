@@ -43,8 +43,6 @@ from emshape import EMShape
 from emimagemx import EMImageMXModule
 from emimage2d import EMImage2DModule
 from emimagerotor import EMImageRotorModule
-from emimagemxrotor import EMImageMXRotorModule
-from emrotor import EMRotorModule
 from valslider import *
 from math import *
 from time import *
@@ -66,7 +64,7 @@ from time import time,sleep
 from sys import getrefcount
 
 from emglobjects import EMOpenGLFlagsAndTools
-from emapplication import EMApp,EMQtWidgetModule
+from emapplication import EMApp
 import weakref
 
 
@@ -1500,14 +1498,7 @@ class EMBoxerModule(QtCore.QObject):
 		emftgl_supported = True
 		try: a = EMFTGL()
 		except: emftgl_supported = False
-		#if not glflags.npt_textures_unsupported() and emftgl_supported:
-			#self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
-			#self.guimx.disable_mx_zoom()
-			##self.guimx.allow_camera_rotations(False)
-			##self.guimx.disable_mx_translate()
-			##self.fancy_mode = EMBoxerModule.FANCY_MODE
-			
-		#else:
+
 		self.guimx=EMImageMXModule(application=get_application())
 		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE

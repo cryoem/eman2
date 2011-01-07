@@ -1066,7 +1066,6 @@ class EMFormWidget(QtGui.QWidget):
 	'''
 	def __init__(self,params=None,disable_ok_cancel=False):
 		QtGui.QWidget.__init__(self,None)
-#		self.parent = weakref.ref(parent) #From when its parent was an EMQtWidgetModule -- line of code should be removed after debugging
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.resize_event_handlers = [] # used to keep resize event handlers in memory
@@ -1308,7 +1307,6 @@ class EMFormWidget(QtGui.QWidget):
 
 
 	def update_texture(self):
-#		self.parent().force_texture_update() #Called a function from EMQtWidgetModule... line of code should be removed after debugging
 		pass
 
 
