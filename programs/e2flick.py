@@ -35,7 +35,8 @@
 #from EMAN2 import *
 #from emimage import EMImage
 #from emimageutil import EMParentWin
-#import sys
+import sys
+import os
 #from optparse import OptionParser
 #from PyQt4 import QtCore, QtGui, QtOpenGL
 #from PyQt4.QtCore import Qt
@@ -44,6 +45,7 @@
 #from emimagemxrotor import * #emimagemxrotor was deprecated and removed from CVS
 from emapplication import EMStandAloneApplication
 from optparse import OptionParser
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image file> ...
