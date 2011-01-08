@@ -41,7 +41,7 @@
 #from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 
-from emimagemxrotor import *
+#from emimagemxrotor import * #emimagemxrotor was deprecated and removed from CVS
 from emapplication import EMStandAloneApplication
 from optparse import OptionParser
 def main():
