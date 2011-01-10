@@ -280,9 +280,9 @@ def prep_vol(vol):
 	npad  = 2
 	if(Mx==Mz&My==Mz):
 		M     = vol.get_xsize()
-	# padd two times
+		# padd two times
 		N     = M*npad
-	# support of the window
+		# support of the window
 		kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
 		volft = vol.copy()
 		volft.divkbsinh(kb)

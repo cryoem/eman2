@@ -772,7 +772,6 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 			Util.BPCQ(B, CUBE, DM)
 
 	return CUBE
-      
 
 def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
 	"""
