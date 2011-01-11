@@ -42,7 +42,6 @@ from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMXModule
 from emimage2d import EMImage2DModule
-from emimagerotor import EMImageRotorModule
 from valslider import *
 from math import *
 from time import *
@@ -1479,15 +1478,8 @@ class EMBoxerModule(QtCore.QObject):
 		self.__gen_image_thumbnails_widget()
 
 		if self.guimxit != None:
-			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxit.optimally_resize()
-				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("image_selected"),self.image_selected)
-			else:
 				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("mx_mouseup"),self.image_selected)
 				QtCore.QObject.connect(self.guimxit,QtCore.SIGNAL("module_closed"),self.guimxit_closed)
-		
-			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 
 	def guimxit_closed(self):
 		self.guimxit = None
@@ -1628,8 +1620,6 @@ class EMBoxerModule(QtCore.QObject):
 			self.current_image_idx = im
 			
 			self.__update_guiim_states()
-			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			
 			self.box_display_update()
@@ -2324,17 +2314,6 @@ class EMBoxerModule(QtCore.QObject):
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-		
-		if isinstance(self.guimxit,EMImageRotorModule):
-			self.guimxit.set_extra_hud_data([len(self.ptcl)])
-	
-		if isinstance(self.guimxit,EMImageRotorModule):
-			othershapes = {}
-			for shape in ns:
-				s = ns[shape].getShape()
-				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
-	
-			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 
 		self.update_all_image_displays()
 		
@@ -2403,17 +2382,6 @@ class EMBoxerModule(QtCore.QObject):
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-		if isinstance(self.guimxit,EMImageRotorModule):
-			self.guimxit.set_extra_hud_data([len(self.ptcl)])
-			
-		if isinstance(self.guimxit,EMImageRotorModule):
-			othershapes = {}
-			for shape in ns:
-				s = ns[shape].getShape()
-				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
-	
-			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
-
 
 		#if self.guimxitp !=None:
 			#othershapes = {}
@@ -2421,7 +2389,6 @@ class EMBoxerModule(QtCore.QObject):
 				#s = ns[shape].getShape()
 				#othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			#if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 		self.update_all_image_displays()
 
 	def force_autobox(self,bool):
@@ -2699,7 +2666,6 @@ class EMBoxerModule(QtCore.QObject):
 	
 		self.guiim.set_frozen(self.boxable.is_frozen())
 		
-		if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -2711,7 +2677,6 @@ class EMBoxerModule(QtCore.QObject):
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.set_excluded(True)
 			self.guiim.set_frozen(False)
-			if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_frozen(False,self.current_image_idx)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.set_excluded(False):
