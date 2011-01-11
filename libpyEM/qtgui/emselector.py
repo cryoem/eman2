@@ -54,7 +54,6 @@ import math
 import os
 import re
 import weakref
-import warnings
 
 read_header_only = True
 EMAN2DB = "EMAN2DB"

@@ -38,7 +38,6 @@ from emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory
 import EMAN2db
 import weakref
-import warnings
 
 try: from PyQt4 import QtWebKit
 except: pass
