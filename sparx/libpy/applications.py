@@ -6776,22 +6776,26 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
-					#Jeanmod: wrap y-shifts back into box within rise of one helical unit by changing phi
-					dpp = (float(dp)/pixel_size)
-					dyi = (float(syi)/dpp)-int(syi/dpp)
-					#jdelta = 0.75/dpp # jdelta could be adjustable input parameter
+					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
 					jdelta=0.0
-						
-					if(abs(syi)<=(0.5+jdelta)*dpp):
-						synew  = syi
-						phinew = phihi
-					else:
-						if dyi < -0.5-jdelta:  eyi = dyi+1.0
-						elif dyi > 0.5+jdelta:  eyi = dyi-1.0
-						else:                   eyi = dyi
-	       					synew  = eyi*dpp
-	        				phinew = phihi+dphi*float(synew-syi)/dpp
-						phinew = phinew%360
+					dpp = (float(dp)/pixel_size)
+					
+					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+					tp.set_trans( Vec2f( -sxi, -syi ) )
+					trans1 = tp.get_pre_trans()
+					dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
+
+					if dyi < -0.5-jdelta:  eyi = dyi+1.0
+					elif dyi > 0.5+jdelta:  eyi = dyi-1.0
+					else:                   eyi = dyi
+	       	
+					nperiod = float(eyi*dpp-trans1[2])/dpp
+					th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
+					tfinal = tp*th
+					ddd = tfinal.get_params("spider")
+					sxnew = - ddd["tx"]
+					synew = - ddd["ty"]
+					phinew  = ddd["phi"]
 
 					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
 					t2.set_trans(Vec2f(-sxi, -synew))
