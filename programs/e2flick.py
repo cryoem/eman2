@@ -43,7 +43,7 @@ import os
 #from OpenGL import GL,GLU,GLUT
 
 #from emimagemxrotor import * #emimagemxrotor was deprecated and removed from CVS
-from emapplication import EMStandAloneApplication
+#from emapplication import EMStandAloneApplication #EMStandAloneApplication was deprecated and removed from CVS
 from optparse import OptionParser
 
 def main():
