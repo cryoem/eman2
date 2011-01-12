@@ -6798,7 +6798,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					phinew  = ddd["phi"]
 
 					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
-					t2.set_trans(Vec2f(-sxi, -synew))
+					t2.set_trans(Vec2f(-sxnew, -synew))
 					data[im].set_attr("xform.projection", t2)
 					pixer[im]  = max_3D_pixel_error(t1, t2, numr[-3])
 					modphi[im] = phinew
