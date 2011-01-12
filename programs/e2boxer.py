@@ -1074,7 +1074,7 @@ class SwarmBoxer:
 	def view_template_clicked(self):
 		'''
 		The SwarmPanel calls this function.
-		Loads an EMImageMXModule for viewing (if it doesn't already exist)
+		Loads an EMImageMXWidget for viewing (if it doesn't already exist)
 		Brings the template viewer to the foreground
 		'''
 		if self.template_viewer == None:
