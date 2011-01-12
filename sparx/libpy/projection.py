@@ -273,8 +273,8 @@ def prep_vol(vol):
 			vol: input volume for which projections will be calculated using prgs
 		Output
 			volft: volume prepared for gridding projections using prgs
-			kb: interpolants (tabulated Kaiser-Bessel function). If the volume is cubic, kb is the only interpolant. Otherwise, kb is used for caculating weigthing along z direction.
-			kbx,kby: if the volume is rectangular. The program will also return kbx and kby which will be used to calculae weighting along x and y direction. 
+			kb: interpolants (tabulated Kaiser-Bessel function) when the volume is cubic.
+			kbx,kby: interpolants along x, y and z direction (tabulated Kaiser-Bessel function) when the volume is rectangular 
 	"""
 	# prepare the volume
 	Mx=vol.get_xsize()
