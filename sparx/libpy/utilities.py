@@ -1984,7 +1984,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 
 def rotate_3D_shift(data, shift3d):
 
-	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0.0,"scale":1.0})
+	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
 
 	for i in xrange(len(data)):
 		d = data[i].get_attr('xform.projection')
