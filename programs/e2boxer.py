@@ -1078,8 +1078,8 @@ class SwarmBoxer:
 		Brings the template viewer to the foreground
 		'''
 		if self.template_viewer == None:
-			from emimagemx import EMImageMXModule
-			self.template_viewer = EMImageMXModule()
+			from emimagemx import EMImageMXWidget
+			self.template_viewer = EMImageMXWidget()
 #			self.template_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
 				
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
