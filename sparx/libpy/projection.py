@@ -116,7 +116,11 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 		Name
 			prg - calculate 2-D projection of a 3-D volume
 		Input
-			vol: input volume, all dimensions have to be the same (nx=ny=nz)
+			vol: input volume, the volume can be either cubic or rectangular
+			kb: interpolants generated using prep_vol (tabulated Kaiser-Bessel function). If the volume is cubic, kb is the only interpolant.
+			    Otherwise, kb is the for caculating weigthing along z direction.
+			kbx,kby: interpolants generated using prep_vol used to calculae weighting aling x and y directin. Default is none when the volume is cubic. 
+				 If the volume is rectangular, kbx and kby must be given.
 			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
 		Output
 			proj: generated 2-D projection
@@ -269,7 +273,8 @@ def prep_vol(vol):
 			vol: input volume for which projections will be calculated using prgs
 		Output
 			volft: volume prepared for gridding projections using prgs
-			kb: interpolants (tabulated Kaiser-Bessel function)
+			kb: interpolants (tabulated Kaiser-Bessel function). If the volume is cubic, kb is the only interpolant. Otherwise, kb is used for caculating weigthing along z direction.
+			kbx,kby: if the volume is rectangular. The program will also return kbx and kby which will be used to calculae weighting along x and y direction. 
 	"""
 	# prepare the volume
 	Mx=vol.get_xsize()
