@@ -219,6 +219,28 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 	}
 }
 
+EMData *EMData::copy_empty_head() const
+{
+	ENTERFUNC;
+	EMData *ret = new EMData();
+	ret->attr_dict = attr_dict;
+	ret->flags = flags;
+	ret->all_translation = all_translation;
+	ret->path = path;
+	ret->pathnum = pathnum;
+
+// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
+// 	ret->xoff = xoff;
+// 	ret->yoff = yoff;
+// 	ret->zoff = zoff;
+// 	ret->changecount = changecount;
+
+	ret->update();
+
+	EXITFUNC;
+	return ret;
+}
+
 
 EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 {

@@ -5244,7 +5244,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	/* ============================== */
 
-	EMData* wind = img->copy_head();
+	EMData* wind = img->copy_empty_head();
 	wind->set_size(new_nx, new_ny, new_nz);
 	float *outp=wind->get_data();
 	float *inp=img->get_data();

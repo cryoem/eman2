@@ -43,8 +43,12 @@ public:
  * @param OverSamplekB is a parameter controlling the fineness of the Fourier sampling
  * @return the Fourier Harmonic image
  */
+ 
 EMData *real2FH(float OverSamplekB);
-
+/**
+  copy header but not set size for the image 
+ */
+EMData *copy_empty_head() const; 
 /** returns the fourier version of the image
  * from the FH version. The current image is not changed. The result is in
  * real/imaginary format. The FH switch is set off.
