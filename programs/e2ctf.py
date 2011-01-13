@@ -217,12 +217,12 @@ def init_sfcurve(opt):
 	sfcurve=XYData()
 	for i,j in enumerate(cv):
 		sfcurve.set_x(i,i/200.0+.002)
-		sfcurve.set_y(i,cv[i])
+		sfcurve.set_y(i,pow(10.0,cv[i]))
 
 	if sfcurve2==None:
 		print "No  structure factor found, using default internal structure factor. If fitting results are poor, consider rerunning --autofit once structure factor has been computed."
 		sfcurve2=sfcurve
-
+		
 def get_gui_arg_img_sets(filenames):
 	'''
 	returns the img_sets list required to intialized the GUI correctly
