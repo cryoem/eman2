@@ -112,6 +112,117 @@ class E2ValidateMed():
 		self.plot3d.plot_model.set_Probe(b)
 		self.plot3d.plot_model.set_data(data,"Results for Fit Validation")
 		self.plot3d.plot_model.set_data(initPoint, "Original Probe",shape="Cube") #note: original probe is displayed with a cube
+		
+		self.plot2d(vals["score_1"], vals["score_2"], vals["score_3"], rotList)
+
+	def plot2d(self, s1, s2, s3, rotList):
+		'''
+		@s1: an array of all the transformations for the first scoring function (real space correlation)
+		@s2: an array of the scores of every transformation in the second function (atom inclusion)
+		@s3: an array of scores from the third function  (volume inclusion)
+		@rotList: a list of all the random transformations
+		In all the graphs, it graphs all the random transformations as green dots, and the target probe as a red dot, so the user knows how 
+		the target probe fares relative to the random transformations. 
+		'''
+		from pylab import scatter, subplot, show, figure, colorbar
+		########  Graphing 1  - graph of 2 of the 3 scoring functiosn plotted against each other
+		
+		g1 = figure(1)
+		g1 = subplot(311)
+		g1.scatter(s1,s2, marker ="o", color ="green")
+		g1.scatter(s1[:1],s2[:1],color="red")
+		g1.set_xlabel("Real space correlation")
+		g1.set_ylabel("Atom Inclusion Percentage")
+		
+		g1 = subplot(312)
+		g1.scatter(s3,s2, marker = "o", color="green")
+		g1.scatter(s3[:1],s2[:1],color="red")
+		g1.set_xlabel("Volume Overlap")
+		g1.set_ylabel("Atom Inclusion Percentage")
+		g1=subplot(313)
+		
+		g1.scatter(s3,s1, marker = "o", color="green")
+		g1.scatter(s3[:1],s1[:1],color="red")
+		g1.set_xlabel("Volume Overlap")
+		g1.set_ylabel("Real space correlation")
+#		show()
+		####################################################
+		
+		######### Graphing 2 - individual line grpahs for each scoring function
+		
+		g2 = figure(2)
+		g2 = subplot(311)
+		blank = []
+		for i in range(0,len(s1)):
+			blank.append(0)
+		g2.scatter(s1,blank, marker ="o", color ="green")
+		g2.scatter(s1[:1],blank[:1],color="red")
+		g2.set_xlabel("Real space correlation")
+		g2.set_ylabel(" ")
+		
+		g2 = subplot(312)
+		g2.scatter(s2,blank, marker = "o", color="green")
+		g2.scatter(s2[:1],blank[:1],color="red")
+		g2.set_xlabel("Atom Inclusion Percentage")
+		g2.set_ylabel(" ")
+		
+		g2=subplot(313)
+		g2.scatter(s3,blank, marker = "o", color="green")
+		g2.scatter(s3[:1],blank[:1],color="red")
+		g2.set_xlabel("Volume Overlap")
+		g2.set_ylabel(" ")
+#		show()
+		
+		###################################################
+		
+		########## Graphing 3 - line graph for cumulative z-score
+		
+		g3 = figure(3)
+		g3 = subplot(111)
+		
+		blank = []
+		s4 =[]
+		for i in range(0,len(s1)):
+			blank.append(0)
+			te = s1[i] + s2[i] + s3[i]
+			s4.append(te)
+		
+		s4_s=0
+		val = 0
+		for i in range(0, len(s4)):
+			if (s4[i]>s4_s): 
+				s4_s = s4[i]
+				val = i
+		valT = Transform(rotList[val].get_params("eman"))
+		
+		g3.scatter(s4,blank, marker ="o", color ="green")
+		g3.scatter(s4[:1],blank[:1],color="red")
+		g3.set_xlabel("Total z score")
+		g3.set_ylabel(" ")
+#		show()
+		
+		##################################################
+		
+		
+		######## Graphimg 4 - histogram for each scoring function
+		
+		g4 = figure(4)
+		g4 = subplot(311)
+		g4.hist(s1,50, histtype='bar')
+		g4.scatter(s1[:1],blank[:1],color="red")
+		g4.set_xlabel("Real space correlation")
+		
+		g4 = subplot(312)
+		g4.hist(s2,50, histtype='bar')
+		g4.scatter(s2[:1], blank[:1],color="red")
+		g4.set_xlabel("Atom Inclusion Percentage")
+		
+		g4 = subplot(313)
+		g4.hist(s3,50, histtype='bar')
+		g4.scatter(s3[:1], blank[:1],color="red")
+		g4.set_xlabel("Volume inclusion")
+		show()
+		#################################################
 
 if __name__ == '__main__':
 	from emapplication import EMApp
