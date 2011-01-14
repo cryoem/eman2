@@ -608,7 +608,8 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 					if m == None or max[axes[i]] >  m: maxs[i] = max[axes[i]]
 				vis_keys.append(key)
 				
-	
+		if None in mins or None in maxs: #Ross: not ready to draw the cube
+			return
 		
 		minx,miny,minz = mins[0],mins[1],mins[2]
 		maxx,maxy,maxz = maxs[0],maxs[1],maxs[2]
