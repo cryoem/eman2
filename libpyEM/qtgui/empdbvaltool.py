@@ -89,6 +89,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 		transformations_label = QtGui.QLabel(self.tr("&Number of Transformations"))
 		self.transformations_spinbox = QtGui.QSpinBox()
+		self.transformations_spinbox.setMaximum(9999)
 		self.transformations_spinbox.setValue(20)
 		transformations_label.setBuddy(self.transformations_spinbox)
 		transformations_layout = QtGui.QHBoxLayout()
