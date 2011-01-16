@@ -211,7 +211,8 @@ def print_to_std_out(all):
 			for i in range(n):
 				try: h=db.history[i+1]
 				except: print "Entry ",i," missing"
-				ah.setdefault(h["path"],[]).append(h)
+				try : ah.setdefault(h["path"],[]).append(h)
+				except: continue
 			for k in ah.keys():
 				print "---------- ",k
 				for i in ah[k]:
