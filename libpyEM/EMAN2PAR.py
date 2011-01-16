@@ -1002,6 +1002,19 @@ class EMMpiTaskHandler():
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
+<<<<<<< EMAN2PAR.py
+		
+		try :
+			task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
+			results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+		except :
+			print "Warning: asked for results on incomplete job"
+			return None
+	
+		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
+		os.unlink("%s/%07d"%(self.scratchdir,taskid))
+		self.completed.remove(taskid)
+=======
 
 		# This double checks that the task really did finish and the customer checked to make
 		# sure that it had finished
@@ -1013,11 +1026,15 @@ class EMMpiTaskHandler():
 		os.unlink("%s/%07d.out"%(self.queuedir,taskid))
 		os.unlink("%s/%07d"%(self.queuedir,taskid))
 		del self.completed[taskid]
+>>>>>>> 1.164
 		
 		return (task,results)
+<<<<<<< EMAN2PAR.py
+=======
 		
 
 
+>>>>>>> 1.164
 
 #######################
 #  Here we define the classes for publish and subscribe parallelism

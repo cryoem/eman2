@@ -241,6 +241,20 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 			a = self.mediator.get_box_image(lc[0])
 			d = a.get_attr_dict()
 			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
+				
+				# With shift-click we try to show rotated/translated images
+				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
+					curim=[a["source_path"],a["source_n"]]		# this is the class-average
+					if "EMAN2DB" in curim[0] : curim[0]="bdb:"+curim[0].replace("/EMAN2DB","")
+					if curim[0][-10:-3]=="classes" : 
+						mxpath=curim[0][:-11]+"#classmx_"+curim[0][-2:]
+						try: mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
+						except:
+							mxpath=curim[0][:-11]+"#classify_"+curim[0][-2:]
+							mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
+					else: mx=None
+				else: mx=None
+				
 				data = []
 				idxs = d["class_ptcl_idxs"]
 				name = d["class_ptcl_src"]
@@ -251,6 +265,9 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 				i = 0
 				for idx in idxs:
 					data.append(EMData(name,idx))
+					if mx!=None:
+						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						data[-1].transform(xfm)
 					i+=1
 					progress.setValue(i)
  					get_application().processEvents()
