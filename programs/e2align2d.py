@@ -62,7 +62,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
-	if options.output==None : options.output=options.input
+	if options.output==None : options.output=args[0]
 	if options.ref==None : 
 		print "Must specify reference image"
 		sys.exit(1)
