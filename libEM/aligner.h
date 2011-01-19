@@ -786,6 +786,7 @@ namespace EMAN
 			d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04.");
 			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+			d.put("stepscale", EMObject::FLOAT, "If set to any non-zero value, scale will be included in the alignment, and this will be the initial step. Images should be edgenormalized.");
 			return d;
 		}
 		

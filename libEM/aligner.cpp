@@ -1153,8 +1153,10 @@ static double refalifn(const gsl_vector * v, void *params)
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
+	if (v->size>3) t.set_scale((float)gsl_vector_get(v, 3));
 	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
+//	printf("GSL %f %f %f %d %f\n",x,y,a,mirror,(float)gsl_vector_get(v, 3));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 
@@ -1216,6 +1218,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	float saz = 0.0;
 	float sdx = 0.0;
 	float sdy = 0.0;
+	float sscale = 1.0;
 	bool mirror = false;
 	Transform* t;
 	if (params.has_key("xform.align2d") ) {
@@ -1225,7 +1228,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		sdx = params["tx"];
 		sdy = params["ty"];
 		mirror = params["mirror"];
-
+		sscale = params["scale"];
 	} else {
 		t = new Transform(); // is the identity
 	}
@@ -1237,33 +1240,36 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		delete t;
 		return result;
 	}
+	
+	float stepx = params.set_default("stepx",1.0f);
+	float stepy = params.set_default("stepy",1.0f);
+	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
+	float stepaz = params.set_default("stepaz",5.0f);
+	float stepscale = params.set_default("stepscale",0.0f);
 
 	int np = 3;
+	if (stepscale!=0.0) np++;
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
 
-
-
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
-	float stepx = params.set_default("stepx",1.0f);
-	float stepy = params.set_default("stepy",1.0f);
-	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	float stepaz = params.set_default("stepaz",5.0f);
 
 	gsl_vector_set(ss, 0, stepx);
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepaz);
-
+	if (stepscale!=0.0) gsl_vector_set(ss,3,stepscale);
+	
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
 	gsl_vector_set(x, 2, saz);
-
+	if (stepscale!=0.0) gsl_vector_set(x,3,1.0);
+	
 	Cmp *c = 0;
 
 	gsl_multimin_function minex_func;
@@ -1313,6 +1319,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 		tsoln.set_mirror(mirror);
 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+		if (stepscale!=0.0) tsoln.set_scale((float)gsl_vector_get(s->x, 3));
 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align2d",&tsoln);
 	} else { // The refine aligner failed - this shift went beyond the max shift
