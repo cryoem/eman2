@@ -390,7 +390,10 @@ class EMSimTaskDC(EMTask):
 			
 		ptcls = {}
 		for idx in ptcl_indices:
-			image = EMData(ptcl_data_name,idx)
+			try: image = EMData(ptcl_data_name,idx)
+			except:
+				print "Failed to read %s in %s from range %s"%(str(idx),ptcl_data_name,str(ptcl_indices))
+				raise Exception,"Couldn't read data in init_memory"
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 				if mask!=None : image.mult(mask)

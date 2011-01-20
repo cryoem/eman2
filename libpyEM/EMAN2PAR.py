@@ -692,9 +692,9 @@ class EMMpiClient():
 					if -1 in self.rankjobs :
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d"%(self.nextjob,rank)
-						self.log("Sending task %d to rank %d"%(self.nextjob,rank))
 						
 						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"r"))
+						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
 						r=self.mpi_send_com(rank,"EXEC",task)
 						
 						if r=="OK" : pass
