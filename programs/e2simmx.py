@@ -157,7 +157,7 @@ class EMParallelSimMX:
 		e.set_attr(PROJ_FILE_ATTR,self.args[0])
 		e.set_attr(PART_FILE_ATTR,self.args[1])
 		n = 1
-		if self.options.saveali: n = 5 # the total number of images written to disk
+		if self.options.saveali: n = 6 # the total number of images written to disk
 		if not options.fillzero : e.write_image(output,0)
 		for i in range(1,n):
 			e.write_image(output,i)
@@ -167,7 +167,7 @@ class EMParallelSimMX:
 		Gets the blocks that will be processed in parallel, these are essentially ranges
 		'''
 		
-		steve_factor = 5 # increase number of jobs a bit for better distribution
+		steve_factor = 3 # increase number of jobs a bit for better distribution
 		total_jobs = steve_factor*self.num_cpus
 		
 		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
@@ -464,7 +464,7 @@ class EMSimTaskDC(EMTask):
 #		d["sim_data"] = sim_data
 		result_data = []
 		if self.options.has_key("align") and self.options["align"] != None:
-			for i in range(0,5):
+			for i in range(0,6):
 				e = EMData(len(refs),len(ptcls))
 				e.to_zero()
 				result_data.append(e)
@@ -491,6 +491,7 @@ class EMSimTaskDC(EMTask):
 						result_data[2].set(rc,rr,0)
 						result_data[3].set(rc,rr,0)
 						result_data[4].set(rc,rr,0)					
+						result_data[5].set(rc,rr,0)					
 					else :
 						params = tran.get_params("2d")
 						scale_correction = 1.0
@@ -499,6 +500,7 @@ class EMSimTaskDC(EMTask):
 						result_data[2].set(rc,rr,scale_correction*params["ty"])
 						result_data[3].set(rc,rr,params["alpha"])
 						result_data[4].set(rc,rr,params["mirror"])
+						result_data[5].set(rc,rr,params["scale"])
 					
 		for r in result_data: r.update()
 		
@@ -607,7 +609,7 @@ def main():
 		a.to_zero()
 		a.write_image(args[2],0)
 		if options.saveali:
-			for i in range(1,5): a.write_image(args[2],i)
+			for i in range(1,6): a.write_image(args[2],i)
 		E2end(E2n)
 		sys.exit(0)
 	
@@ -701,11 +703,13 @@ def main():
 					mxout[2].set_value_at(c,r,0,0)
 					mxout[3].set_value_at(c,r,0,0)
 					mxout[4].set_value_at(c,r,0,0)
+					mxout[5].set_value_at(c,r,0,0)
 				else :
 					mxout[1].set_value_at(c,r,0,v[1])
 					mxout[2].set_value_at(c,r,0,v[2])
 					mxout[3].set_value_at(c,r,0,v[3])
 					mxout[4].set_value_at(c,r,0,v[4])
+					mxout[5].set_value_at(c,r,0,v[5])
 	
 	if options.verbose>0 : print"\nSimilarity computation complete"
 	

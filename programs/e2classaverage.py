@@ -204,7 +204,8 @@ def main():
 								classmx[3][x,y]=xform["ty"]				# dy
 								classmx[4][x,y]=xform["alpha"]			# da
 								classmx[5][x,y]=xform["mirror"]			# flip
-					
+								try: classmx[6][x,y]=xform["scale"]
+								except: pass
 					# failed average
 					elif options.storebad :
 						blk=EMData(options.ref,0)
@@ -253,6 +254,8 @@ def main():
 						classmx[3][x,y]=xform["ty"]				# dy
 						classmx[4][x,y]=xform["alpha"]			# da
 						classmx[5][x,y]=xform["mirror"]			# flip
+						try: classmx[6][x,y]=xform["scale"]
+						except: pass
 						
 			# Failed average
 			elif options.storebad :
@@ -264,7 +267,7 @@ def main():
 				
 	if options.resultmx!=None:
 		if options.verbose : print "Writing results matrix"
-		for i in range(6) : classmx[i].write_image(options.resultmx,i)
+		for i,j in enumerate(classmx) : j.write_image(options.resultmx,i)
 
 	E2end(logger)
 

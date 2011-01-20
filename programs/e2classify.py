@@ -96,7 +96,7 @@ def main():
 			remove_file(args[1])
 
 	num_sim =  EMUtil.get_image_count(args[0])
-	if (num_sim != 5):
+	if (num_sim < 5):
 		print "Warning, similarity matrix did not contain alignments, neither will the classification matrix"
 
 	tmp=EMData(args[0],0,True)
@@ -104,40 +104,47 @@ def main():
 	nref=tmp["nx"]
 	if num_sim==5:
 		clsmx=(EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl))
+	elif num_sim==6:
+		clsmx=(EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl))		
 	else :
 		clsmx=(EMData(options.sep,nptcl),EMData(options.sep,nptcl))
 		
-	simmx=(EMData(),EMData(),EMData(),EMData(),EMData())
+	#hmmm, this code is pretty silly, but harmless, I suppose...
+	simmx=(EMData(),EMData(),EMData(),EMData(),EMData(),EMData())
 	for iptcl in xrange(nptcl):
 		simmx[0].read_image(args[0],0,False,Region(0,iptcl,nref,1))
-		if num_sim==5 :
+		if num_sim>=5 :
 			simmx[1].read_image(args[0],1,False,Region(0,iptcl,nref,1))		#tx
 			simmx[2].read_image(args[0],2,False,Region(0,iptcl,nref,1))		#ty
 			simmx[3].read_image(args[0],3,False,Region(0,iptcl,nref,1))		#dalpha
 			simmx[4].read_image(args[0],4,False,Region(0,iptcl,nref,1))		#mirror
-		
+			try:
+				simmx[5].read_image(args[0],5,False,Region(0,iptcl,nref,1))		#scale
+			except: pass
 		maximum=simmx[0]["maximum"]
 		
 		for ic in xrange(options.sep):
 			cls=simmx[0].calc_min_index()
 			clsmx[0][ic,iptcl]=cls
 			clsmx[1][ic,iptcl]=1.0		# weight
-			if num_sim==5:
+			if num_sim>=5:
 				clsmx[2][ic,iptcl]=simmx[1][cls]
 				clsmx[3][ic,iptcl]=simmx[2][cls]
 				clsmx[4][ic,iptcl]=simmx[3][cls]
 				clsmx[5][ic,iptcl]=simmx[4][cls]
+				if num_sim>5 : clsmx[6][ic,iptcl]=simmx[5][cls]
 			simmx[0][cls]=maximum		# this is so the next minimum search gets the next highest value
 			
 		E2end(E2n)
 
 	clsmx[0].write_image(args[1],0)
 	clsmx[1].write_image(args[1],1)
-	if num_sim==5 :
+	if num_sim>=5 :
 		clsmx[2].write_image(args[1],2)
 		clsmx[3].write_image(args[1],3)
 		clsmx[4].write_image(args[1],4)
 		clsmx[5].write_image(args[1],5)
+		if num_sim>5 : clsmx[6].write_image(args[1],6)
 		
 	
 
@@ -164,7 +171,7 @@ def check(options,verbose):
 			error = True
 		else:
 			num_sim =  EMUtil.get_image_count(options.simmxfile)
-			if (num_sim != 5):
+			if (num_sim<5):
 				if verbose>0:
 					print "Error, the similarity matrix did not contain 5 images - be sure to use the --saveali argument when running e2simmx.py"
 				error = True
