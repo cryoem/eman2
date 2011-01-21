@@ -742,7 +742,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		if (matrix[2][2] * scale < 0)
 			alt = 180.0f-alt;
 		
-		phi = (double)EMConsts::rad2deg * atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
+		phi = (double)EMConsts::rad2deg * atan2(x_mirror_scale*(double)matrix[0][2], (double)matrix[1][2]);
 
 	} // ends separate cases: alt close to 0, 180, or neither
 
@@ -1792,9 +1792,9 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	Vec3f preT   = get_pretrans( ) ;
 
 
-	double azp  = fmod(az,360.0f)*M_PI/180.0;
+	double azp  = fmod(az,360.0)*M_PI/180.0;
 	double altp  = alt*M_PI/180.0;
-	double phip = fmod(phi,360.0f)*M_PI/180.0;
+	double phip = fmod(phi,360.0)*M_PI/180.0;
 
 	if (!is_quaternion && !is_matrix) {
 		matrix[0][0] =  (float)(cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip));
@@ -1950,8 +1950,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		az  = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[2][0], -matrix[2][1]);
 		phi = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[0][2], matrix[1][2]);
 	}
-	az =fmod(az+180.0f,360.0f)-180.0;
-	phi=fmod(phi+180.0f,360.0f)-180.0;
+	az =fmod(az+180.0,360.0)-180.0;
+	phi=fmod(phi+180.0,360.0)-180.0;
 
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
@@ -1962,8 +1962,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		phiS = az   - 90.0;
 		psiS = phi  + 90.0;
 	}
-	phiS = fmod((phiS   + 360.0f ), 360.0f) ;
-	psiS = fmod((psiS   + 360.0f ), 360.0f) ;
+	phiS = fmod((phiS   + 360.0 ), 360.0) ;
+	psiS = fmod((psiS   + 360.0 ), 360.0) ;
 
 //   do some quaternionic stuff here
 
@@ -2016,8 +2016,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	        ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
 	        ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
 
-		xtilt=fmod(xtilt*180/M_PI+540.0f,360.0f) -180.0;
-		ztilt=fmod(ztilt*180/M_PI+540.0f,360.0f) -180.0;
+		xtilt=fmod(xtilt*180/M_PI+540.0,360.0) -180.0;
+		ztilt=fmod(ztilt*180/M_PI+540.0,360.0) -180.0;
 
 		result["xtilt"]  = xtilt;
 		result["ytilt"]  = ytilt*180/M_PI;
