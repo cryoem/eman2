@@ -2895,7 +2895,8 @@ def enable_bdb_cache():
 # return the global phi rotation and z shifts between the two sets
 # returen the 3D_error between the two sets after the global difference is componsentated
 
-def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_step =1):
+def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_step =1):
+	#  specify units of parameters
 	"""
 	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
 	  The two sets have to be of the same length and it is assume that k'th element on the first
@@ -2916,6 +2917,10 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 
 		#flip the transformation if psi difference is big then 2*psi_max
 		#psi_max is the parameters used in ihrsr for psi angle search
+		
+		#  this is not right.  It is theta that defines mirror.  Please look at angular relations between mirror pairs of projections,
+		#  it is in the ppt I once gave you and in documentation somewhere
+		#  Seocnd, what you do here makes no sense,  You cannot flip individual projections.  The question is whether p1 is a mirrored version of p2.
 		if ( abs (p2[2][j] -p1[2][j]) > 2*abs (psi_max) ):
 			tflip = Transform({"type":"spider","theta":180.0})
 			t2_flip = t2*tflip
@@ -2930,8 +2935,9 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 	p_temp = [0.0]*n
 	phi_error = []
 	from pixel_error import angle_error
-	for i in xrange(0,360,phi_step): 
+	for i in xrange(0,360,phi_step):
 		delta_phi = float(i)
+		#  you cannot have any printouts in functions
 		if (delta_phi%10 == 0):
 			print "searching delta_phi == ", delta_phi
 		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
@@ -2942,8 +2948,7 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 	
 			t1 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
 			t1.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-			
-			
+	
 			th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
 			t2 = t1*th1
 			trans1 = t2.get_pre_trans()
@@ -2954,25 +2959,26 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 			if dyi < -0.5:  eyi = dyi+1.0
 			elif dyi > 0.5:  eyi = dyi-1.0
 			else:                   eyi = dyi
-	       	
+
 			nperiod = float(eyi*dpp-trans1[2])/dpp
 			th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
 			t3 = t2*th2
 
-	
 			d = t3.get_params("spider")
-			#p_temp[j] is the phi angel afer adding delt_phi+n(j)*dphi
+			#p_temp[j] is the phi angle after adding delt_phi+n(j)*dphi
 			p_temp[j] = d["phi"]
 			
-	
+		#  You have to find the best solution within the loop, do not create additional list,, this is wasteful.
 		phi_error.append( angle_error(p_temp, p1[0], 0.0) )
 	# find the delta_phi which produced maximum angel_error
 	from itertools import count, izip
 	maxvalue, delta_phi = max(izip( phi_error, count()))
 	delta_z = ( dpp*delta_phi/dphi )%dpp
+	#  No printouts!!
 	print "delta_phi==", delta_phi, "delta_z==", delta_z
 	#solution is delta_phi, delta_z
 	#now apply the solution to adjust p2
+	#  Note this is the same look you had above, replace by a function.
 	for j in xrange ( n ):
 	
 		t1 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
@@ -3007,6 +3013,7 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 	
 	error = []
 	from pixel_error import max_3D_pixel_error
+	#  This should be the same error as in angle_error, not max_3D
 	for j in xrange( n ):
 		#I set transition to be zero since I only want to check the phi angel adjustment.
 		t1 = Transform({"type":"spider","phi":p1[0][j],"theta":p1[1][j],"psi":p1[2][j]})
@@ -3018,9 +3025,10 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 		#t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
 		t2.set_trans( Vec2f( 0.0, 0.0 ) )
 		
-		error.append( max_3D_pixel_error( t1, t2 , rmax) )	
+		error.append( max_3D_pixel_error( t1, t2 , rmax) )
 
 			
+	# You also want to return the transformation you found.
 	return p2, error
 
 # according two lists of orientation or marker (phi, theta, psi for each one)

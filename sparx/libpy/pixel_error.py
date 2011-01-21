@@ -127,9 +127,9 @@ def angle_error(ang1,ang2, delta_ang):
 		p1_x = cos(p1)
 		p1_y = sin(p1)
 
-		erra +=  p2_x*p1_x+p2_y*p1_y
-		errb = errb  +p2_y*p1_x-p2_x*p1_y
-	err = erra*cos(delta_ang) + errb*sin(delta_ang)	
+		erra += p2_x*p1_x+p2_y*p1_y
+		errb += p2_y*p1_x-p2_x*p1_y
+	err = erra*cos(delta_ang) + errb*sin(delta_ang)
 	return err
 
 
