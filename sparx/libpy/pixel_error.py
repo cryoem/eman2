@@ -106,6 +106,31 @@ def angle_diff(angle1, angle2):
 		else: alphai = 270.0
 
 	return alphai%360.0
+	
+def angle_error(ang1,ang2, delta_ang):
+	'''
+	This function calculate the error (variance) between two sets of angle after delta_ang (angle difference ) is added to the
+	first sets. When the angle difference (delta_ang) is the true difference, this function will return maximum error.
+	'''
+	from math import cos, sin
+	dg_to_rg =pi/180.0
+	
+	erra = 0.0
+	errb = 0.0
+	err = 0.0
+	delta_ang = delta_ang* dg_to_rg
+	for i in xrange( len(ang1) ):
+		p2 = ang2[i]*dg_to_rg
+		p2_x = cos(p2)
+		p2_y = sin(p2)
+		p1 = ang1[i]*dg_to_rg
+		p1_x = cos(p1)
+		p1_y = sin(p1)
+
+		erra +=  p2_x*p1_x+p2_y*p1_y
+		errb = errb  +p2_y*p1_x-p2_x*p1_y
+	err = erra*cos(delta_ang) + errb*sin(delta_ang)	
+	return err
 
 
 def align_diff_params(ali_params1, ali_params2):
