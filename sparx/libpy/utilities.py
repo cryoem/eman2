@@ -2895,7 +2895,7 @@ def enable_bdb_cache():
 # return the global phi rotation and z shifts between the two sets
 # returen the 3D_error between the two sets after the global difference is componsentated
 
-def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_step =1.0):
+def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_step =1):
 	"""
 	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
 	  The two sets have to be of the same length and it is assume that k'th element on the first
@@ -2930,7 +2930,8 @@ def consistency_between_helical_prjs(p2, p1, dp, pixel_size, dphi, psi_max, rmax
 	p_temp = [0.0]*n
 	phi_error = []
 	from pixel_error import angle_error
-	for delta_phi in xrange(0,360,phi_step): 
+	for i in xrange(0,360,phi_step): 
+		delta_phi = float(i)
 		if (delta_phi%10 == 0):
 			print "searching delta_phi == ", delta_phi
 		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
