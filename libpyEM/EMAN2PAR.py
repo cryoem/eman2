@@ -859,7 +859,7 @@ class EMMpiClient():
 			com,data=mpi_recv(r[1],r[2])[0]
 			
 			if com=="EXIT":
-				if verbose>1 : print "rank %d: I was just told to exit during processing"%self.rank
+				print "rank %d: I was just told to exit during processing"%self.rank
 				mpi_send("OK",0,2)
 				mpi_finalize()
 				sys.exit(0)
@@ -922,7 +922,9 @@ class EMMpiTaskHandler():
 		self.queuedir=self.scratchdir+"/queue"
 		self.cachedir=self.scratchdir+"/cache"
 		try: os.makedirs(self.queuedir)
-		except: pass
+		except: 
+			print "mkdir queue failed ",self.queuedir
+			pass
 
 		self.maxid=1			# Current task counter, points to the next open number
 		self.completed={}		# set of completed tasks, key is task id, value is completion status
@@ -1004,15 +1006,16 @@ class EMMpiTaskHandler():
 #		print "Retrieve ",taskid
 		
 		try :
-			task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
-			results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+			task=load(file("%s/%07d"%(self.queuedir,taskid),"r"))
+			results=load(file("%s/%07d.out"%(self.queuedir,taskid),"r"))
+			os.unlink("%s/%07d.out"%(self.queuedir,taskid))
+			os.unlink("%s/%07d"%(self.queuedir,taskid))
+			del self.completed[taskid]
 		except :
-			print "Warning: asked for results on incomplete job"
+			traceback.print_exc()
+			print "Error: asked for results on incomplete job"
 			return None
 	
-		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
-		os.unlink("%s/%07d"%(self.scratchdir,taskid))
-		self.completed.remove(taskid)
 		
 		return (task,results)
 

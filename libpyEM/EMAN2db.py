@@ -751,11 +751,13 @@ class EMAN2DB:
 		if(sys.platform != 'win32'):
 			if (not BDB_CACHE_DISABLE):
 				if(not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK)):
-					os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+					try: os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+					except: pass
 		else:
 			if (not BDB_CACHE_DISABLE):
 				if(not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK)):
-					os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
+					try: os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
+					except: pass
 
 		if BDB_CACHE_DISABLE:
 			self.dbenv=None
@@ -776,6 +778,7 @@ class EMAN2DB:
 				else:
 					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 			except:
+				print "/tmp/eman2db-%s"%os.getenv("USER","anyone")
 				traceback.print_exc()
 				print """
 ========
