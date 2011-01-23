@@ -639,6 +639,7 @@ def main():
 		mxout.append(mxout[0].copy()) # dy
 		mxout.append(mxout[0].copy()) # alpha (angle)
 		mxout.append(mxout[0].copy()) # mirror
+		mxout.append(mxout[0].copy()) # scale
 	if options.verbose>0: print "Computing Similarities"
 
 	# Read all c images, then read and compare one r image at a time
@@ -757,11 +758,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			
 			scale_correction = 1.0
 			if shrink != None: scale_correction = float(shrink)
-			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"])
+			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 #			ta.write_image("dbug.hdf",-1)
 			
 		else :
-			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
+			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,1.0,False)
 		
 	return ret
 

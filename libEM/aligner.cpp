@@ -1313,7 +1313,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		maxshift = this_img->get_xsize() / 4;
 	}
 	float fmaxshift = static_cast<float>(maxshift);
-	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1))  )
+	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1)) && (stepscale==0 || (((float)gsl_vector_get(s->x, 3))<1.3 && ((float)gsl_vector_get(s->x, 3))<0.7))  )
 	{
 //		printf(" Refine good %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
