@@ -319,13 +319,13 @@ inline void set_rotation(float az, float alt, float phi)
 
 
 /** Define the 3D orientation of this particle Orientation
- * information is extracted from a Transform3D object and
+ * information is extracted from a Transform object and
  * stored internally in EMAN (az,alt,phi) format
- * @param t3d a Transform3D object containing the particle orientation
+ * @param t3d a Transform object containing the particle orientation
  */
-inline void set_rotation(const Transform3D& t3d)
+inline void set_rotation(const Transform& t3d)
 {
-	Dict d = t3d.get_rotation(Transform3D::EMAN);
+	Dict d = t3d.get_rotation("eman");
 	attr_dict["orientation_convention"] = "EMAN";
 	attr_dict["euler_alt"] = (float) d["alt"];
 	attr_dict["euler_az"] = (float) d["az"];

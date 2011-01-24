@@ -48,7 +48,7 @@ void XYZReconstructor::setup()
 	
 }
 
-int XYZReconstructor::insert_slice(const EMData * const, const Transform3D &,float weight)
+int XYZReconstructor::insert_slice(const EMData * const, const Transform &,float weight)
 {
 	return 0;
 }

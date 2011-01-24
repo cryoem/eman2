@@ -131,7 +131,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param n2 Number of complex elements.
 		 * @param wptr Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 */
 		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf);
 
@@ -212,7 +212,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param n2 Number of complex elements.
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
 		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult);
@@ -222,7 +222,7 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 * @param w Normalization data.
 		 * @param myfft FFT data.
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
 		void nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult);
@@ -252,7 +252,7 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 * @param w Normalization data.
 		 * @param myfft FFT data.
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
 		void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult );
@@ -313,7 +313,7 @@ EMData* mult_radial(EMData* radial);
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
 		 *
-		 *  @param[in] RA Transform3D object
+		 *  @param[in] RA Transform object
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
@@ -327,7 +327,7 @@ EMData* mult_radial(EMData* radial);
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
 		 *
-		 *  @param[in] RA Transform3D object
+		 *  @param[in] RA Transform object
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
