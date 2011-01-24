@@ -142,15 +142,14 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			if single_mode and len(self.display_modules) != 0:
 				old_module = self.display_modules[-1]
 				data = getattr(item,self.get_data_attr)()
-				for funct in self.data_functors: funct(data)
+				for funct in self.data_functors: 
+					funct(data)
 				if self.module_type == EMPlot2DWidget: # aka template specialization
 					old_module.set_data(data,item.get_url())
-				elif self.module_type == EMImage3DWidget:
-					old_module.set_data(data)
-					old_module.get_inspector().add_isosurface()
 				elif self.module_type == EM3DSymModel:
 					old_module.model.set_data(data)
-				else: old_module.set_data(data)
+				else: 
+					old_module.set_data(data)
 				old_module.setWindowTitle(item.get_url())
 				old_module.show()
 				old_module.updateGL()
@@ -177,9 +176,6 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				widget.model.set_data(data)
 			elif self.module_type == EMPlot2DWidget:
 				widget.set_data(data,item.get_url())
-			elif self.module_type == EMImage3DWidget:
-				widget.set_data(data)
-				widget.get_inspector().add_isosurface()
 			else:
 				widget.set_data(data)
 			

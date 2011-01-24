@@ -801,7 +801,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = test_image_3d(1,size=(64,64,64))
 		widget.set_data(data)
-		widget.get_inspector().add_isosurface()
 		name = "3D Image Viewer"
 		self.emit(QtCore.SIGNAL("launching_module"), name, widget)
 		get_application().show_specific(widget)

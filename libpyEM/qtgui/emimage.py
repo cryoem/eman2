@@ -127,7 +127,6 @@ class EMImageWidget(object):
 					return old
 			widget = EMImage3DWidget(application=app)
 			widget.set_data(data,filename,replace)
-			widget.get_inspector().add_isosurface()
 			return widget
 		elif isinstance(data,list) and isinstance(data[0],EMData):
 			from emimagemx import EMImageMXWidget
@@ -223,7 +222,6 @@ class EMWidgetFromFile(object):
 				if isinstance(old,EMImage3DWidget): widget = old
 				else: widget = EMImage3DWidget(application=application)
 				widget.set_data(data,filename)
-				widget.get_inspector().add_isosurface()
 				return widget
 			elif data == None or isinstance(data,list):
 				from emimagemx import EMImageMXWidget

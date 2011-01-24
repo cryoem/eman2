@@ -485,6 +485,13 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.cam.cam_z = -1.25*data.get_xsize()
 	def set_data(self,data,file_name="",replace=True):
 		was_previous_data = bool(self.data)
+		previous_size = None
+		previous_cam_t3d = None
+		previous_scale = None
+		if was_previous_data and self.viewables:
+			previous_size = (self.data["nx"], self.data["ny"], self.data["nz"])
+			previous_cam_t3d = self.viewables[0].cam.t3d_stack[:]
+			previous_scale = self.viewables[0].cam.scale
 		
 		self.file_name = file_name # fixme fix this later
 		if self.qt_parent != None:
@@ -521,7 +528,10 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		
 		if replace:
 			self.inspector.delete_all()
-#		self.inspector.add_isosurface()
+			self.inspector.add_isosurface()
+			if (nx,ny,nz) == previous_size and previous_cam_t3d:
+				self.viewables[0].cam.t3d_stack = previous_cam_t3d
+				self.viewables[0].cam.scale = previous_scale
 		
 		self.set_camera_defaults(data)
 	def set_file_name(self,name):
@@ -812,7 +822,6 @@ if __name__ == '__main__':
 	else :
 		a=EMData(sys.argv[1])
 		window.set_data(a,sys.argv[1])
-	window.get_inspector().add_isosurface()
 
 	em_app.show()
 	em_app.execute()
