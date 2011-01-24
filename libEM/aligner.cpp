@@ -1153,7 +1153,11 @@ static double refalifn(const gsl_vector * v, void *params)
 //	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
-	if (v->size>3) t.set_scale((float)gsl_vector_get(v, 3));
+	if (v->size>3) {
+		float sca=(float)gsl_vector_get(v, 3);
+		if (sca<.7 || sca>1.3) return 1.0e20;
+		t.set_scale((float)gsl_vector_get(v, 3));
+	}
 	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
 //	printf("GSL %f %f %f %d %f\n",x,y,a,mirror,(float)gsl_vector_get(v, 3));
