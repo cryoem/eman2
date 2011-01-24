@@ -84,6 +84,7 @@ map to the center of the volume."""
 	except : parser.error("Cannot open input file")
 	
 	aavg=[0,0,0]	# calculate atomic center
+	asig=[0,0,0]	# to compute radius of gyration
 	natm=0
 	atoms=[]		# we store a list of atoms to process to avoid multiple passes
 	nelec=0
@@ -122,6 +123,7 @@ map to the center of the volume."""
 				print "PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
 					line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54])
 				print a,aseq,res,x,y,z
+
 			try:
 				nelec += atomdefs[a.upper()][0]
 				mass  += atomdefs[a.upper()][1]
@@ -129,21 +131,32 @@ map to the center of the volume."""
 				print("Unknown atom %s ignored at %d"%(a,aseq))
 
 			atoms.append([a,x,y,z])
+			natm += 1
 
 			if(options.center == "a"):
 				aavg[0] += x*atomdefs[a.upper()][1]
 				aavg[1] += y*atomdefs[a.upper()][1]
 				aavg[2] += z*atomdefs[a.upper()][1]
+				asig[0] += x**2*atomdefs[a.upper()][1]
+				asig[1] += y**2*atomdefs[a.upper()][1]
+				asig[2] += z**2*atomdefs[a.upper()][1]
 			else:
 				aavg[0] += x
 				aavg[1] += y
 				aavg[2] += z
-			natm += 1
+				asig[0] += x**2
+				asig[1] += y**2
+				asig[2] += z**2
 			
 	infile.close()
-	
+
+	if(options.center == "a"):
+		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/mass-(aavg[0]/mass)**2-(aavg[1]/mass)**2-(aavg[2]/mass)**2)
+	else:
+		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/natm-(aavg[0]/natm)**2-(aavg[1]/natm)**2-(aavg[2]/natm)**2)
+
 	if not options.quiet:
-		print "%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000)
+		print "%d atoms; total charge = %d e-; mol mass = %.2f kDa; radius of gyration = %.2f A"%(natm,nelec,mass/1000.0,rad_gyr)
 
 	# center PDB according to option:
 	if(options.center == "a"):
