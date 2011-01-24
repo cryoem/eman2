@@ -488,10 +488,13 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		previous_size = None
 		previous_cam_t3d = None
 		previous_scale = None
+		previous_normalized_threshold = None #will be (threshold - mean)/(standard deviation)
 		if was_previous_data and self.viewables:
 			previous_size = (self.data["nx"], self.data["ny"], self.data["nz"])
 			previous_cam_t3d = self.viewables[0].cam.t3d_stack[:]
 			previous_scale = self.viewables[0].cam.scale
+			previous_normalized_threshold = (self.viewables[0].isothr - self.data["mean"])/self.data["sigma"]
+			print previous_normalized_threshold
 		
 		self.file_name = file_name # fixme fix this later
 		if self.qt_parent != None:
@@ -532,6 +535,8 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			if (nx,ny,nz) == previous_size and previous_cam_t3d:
 				self.viewables[0].cam.t3d_stack = previous_cam_t3d
 				self.viewables[0].cam.scale = previous_scale
+				new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
+				self.viewables[0].get_inspector().thr.setValue(new_threshold)
 		
 		self.set_camera_defaults(data)
 	def set_file_name(self,name):
