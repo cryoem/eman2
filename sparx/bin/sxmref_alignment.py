@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment --center=center_type"
+	usage = progname + " out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment --center=center_type"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",       type="int",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--xr",       type="string",       default="4 2",      help="range for translation search in x direction, search is +/xr ")
@@ -51,6 +51,7 @@ def main():
 	parser.add_option("--Fourvar",  action="store_true", default=False,          help="compute Fourier variance")
 	parser.add_option("--function", type="string",       default="ref_ali2d",    help="name of the reference preparation function")
 	parser.add_option('--Ng',	type='int',		default=-1,		help='Ng')
+	parser.add_option('--K',	type='int',		default=-1,		help='K')
 	parser.add_option("--dst",	type="float", 		default=0.0,		help="")
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--CUDA",     action="store_true", default=False,          help=" whether to use CUDA ")
@@ -58,7 +59,7 @@ def main():
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 
 	(options, args) = parser.parse_args()
-	if len(args) != 4:
+	if len(args) != 2:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -72,8 +73,8 @@ def main():
 
 		global_def.BATCH = True
 		from development import mref_alignment
-		mref_alignment(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, 
-				options.snr, options.CTF, options.Fourvar, options.Ng, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+		mref_alignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, 
+				options.Fourvar, options.Ng, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
