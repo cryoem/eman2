@@ -2948,7 +2948,6 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 		
 			tflip = Transform({"type":"spider","theta":180.0})
 			t2_flip = t2*tflip                         #                 WHY THIS LINE IS TWICE??
-			t2_flip = t2*tflip
 			d = t2_flip.get_params("spider")
 			p2[0][j] = d["phi"]
 			p2[1][j] = d["theta"]
@@ -3003,7 +3002,7 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 
 			
 	# You also want to return the transformation you found.  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	return p2, error
+	return p2, error, delta_phi, delta_z
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
 # return the global rotation (dphi, dtheta, dpsi) between the two systems
