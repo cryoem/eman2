@@ -2889,6 +2889,33 @@ def enable_bdb_cache():
 
 	import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = False
+	
+def helical_consistency_wrap(p, dpp, dphi, delta_phi, delta_z):
+	# apply delta_phi and delta_z to the individual projection
+	# if pre_trans of z beyond range of [-dpp/2, dpp/2], apply helical wrapping.
+	# return the new transformation of projection with p2.
+		
+	t1 = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
+	t1.set_trans( Vec2f( -p[3], -p[4] ) )
+	
+	th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
+	t2 = t1*th1
+	trans1 = t2.get_pre_trans()
+			#do helical wrapping based on the value of z shift from trans1
+	
+	dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
+
+	if dyi < -0.5:  eyi = dyi+1.0
+	elif dyi > 0.5:  eyi = dyi-1.0
+	else:                   eyi = dyi
+
+	nperiod = float(eyi*dpp-trans1[2])/dpp
+	th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
+	t3 = t2*th2
+	return t3
+		
+
+
 
 #consistency_between_helical_prjs under development
 #according two lists of projection parameters for helical structure
@@ -2909,19 +2936,20 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	dpp = dp/pixel_size
 	dphi = dphi%360
 	n =len(p1[0])
-	for j in xrange( n ):
-
-		t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-		t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-
-
-		#flip the transformation if psi difference is big then 2*psi_max
-		#psi_max is the parameters used in ihrsr for psi angle search
+	# if angle diff is nearly to 180 with cerntain range, fip the projections of p2 along z
+	from pixel_error import angle_diff
+	
+	if( abs( angle_diff(p2[2], p1[2]) -180)  < abs(  psi_max) ): 
+		for j in xrange( n ):
 		
-		#  this is not right.  It is theta that defines mirror.  Please look at angular relations between mirror pairs of projections,
-		#  it is in the ppt I once gave you and in documentation somewhere
-		#  Seocnd, what you do here makes no sense,  You cannot flip individual projections.  The question is whether p1 is a mirrored version of p2.
-		if ( abs (p2[2][j] -p1[2][j]) > 2*abs (psi_max) ):
+
+			t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
+			t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
+
+			#  this is not right.  It is theta that defines mirror.  Please look at angular relations between mirror pairs of projections,
+			#  it is in the ppt I once gave you and in documentation somewhere
+			#  Seocnd, what you do here makes no sense,  You cannot flip individual projections.  The question is whether p1 is a mirrored version of p2.
+		
 			tflip = Transform({"type":"spider","theta":180.0})
 			t2_flip = t2*tflip
 			t2_flip = t2*tflip
@@ -2931,77 +2959,37 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 			p2[2][j] = d["psi"]
 			p2[3][j] = -d["tx"]
 			p2[4][j] = -d["ty"]
+			
 	#loop over all possilbe delta_phi
 	p_temp = [0.0]*n
 	phi_error = []
 	from pixel_error import angle_error
 	for i in xrange(0,360,phi_step):
 		delta_phi = float(i)
-		#  you cannot have any printouts in functions
-		if (delta_phi%10 == 0):
-			print "searching delta_phi == ", delta_phi
 		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
 		#thus phi2_new(j) = phi2(j) + delta_phi + n(j)*dphi after helical wrapping, n(j) can be 0,+1,-1
 		delta_z = ( dpp*delta_phi/dphi )%dpp
 		
 		for j in xrange ( n ):
 	
-			t1 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-			t1.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-	
-			th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
-			t2 = t1*th1
-			trans1 = t2.get_pre_trans()
-			#do helical wrapping based on the value of z shift from trans1
-	
-			dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
-
-			if dyi < -0.5:  eyi = dyi+1.0
-			elif dyi > 0.5:  eyi = dyi-1.0
-			else:                   eyi = dyi
-
-			nperiod = float(eyi*dpp-trans1[2])/dpp
-			th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
-			t3 = t2*th2
-
+			t3 = helical_consistency_wrap([ p2[0][j], p2[1][j], p2[2][j], p2[3][j], p2[4][j] ], dpp, dphi, delta_phi, delta_z)
 			d = t3.get_params("spider")
-			#p_temp[j] is the phi angle after adding delt_phi+n(j)*dphi
 			p_temp[j] = d["phi"]
 			
 		#  You have to find the best solution within the loop, do not create additional list,, this is wasteful.
+		# I have to keep origianl p2, so I don't see how to avoid this.
 		phi_error.append( angle_error(p_temp, p1[0], 0.0) )
 	# find the delta_phi which produced maximum angel_error
 	from itertools import count, izip
 	maxvalue, delta_phi = max(izip( phi_error, count()))
 	delta_z = ( dpp*delta_phi/dphi )%dpp
-	#  No printouts!!
-	print "delta_phi==", delta_phi, "delta_z==", delta_z
+	
 	#solution is delta_phi, delta_z
 	#now apply the solution to adjust p2
 	#  Note this is the same look you had above, replace by a function.
 	for j in xrange ( n ):
 	
-		t1 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-		t1.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-			
-		#apply delta_phi, delt_z to the projection of p2
-		#thus phi2_new(j) = phi2(j) + delta_phi + n(j)*dphi after helical wrapping
-		th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
-		t2 = t1*th1
-		trans1 = t2.get_pre_trans()
-		#do helical wrapping based on the value of z shift from trans1
-	
-		dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
-
-		if dyi < -0.5:  eyi = dyi+1.0
-		elif dyi > 0.5:  eyi = dyi-1.0
-		else:                   eyi = dyi
-	       	
-		nperiod = float(eyi*dpp-trans1[2])/dpp
-		th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
-		t3 = t2*th2
-
-	
+		t3 = helical_consistency_wrap([ p2[0][j], p2[1][j], p2[2][j], p2[3][j], p2[4][j] ], dpp, dphi, delta_phi, delta_z)	
 		d = t3.get_params("spider")
 		p2[0][j] = d["phi"]
 		p2[1][j] = d["theta"]
@@ -3015,7 +3003,7 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	from pixel_error import max_3D_pixel_error
 	#  This should be the same error as in angle_error, not max_3D
 	for j in xrange( n ):
-		#I set transition to be zero since I only want to check the phi angel adjustment.
+		'''#I set transition to be zero since I only want to check the phi angel adjustment.
 		t1 = Transform({"type":"spider","phi":p1[0][j],"theta":p1[1][j],"psi":p1[2][j]})
 		#t1.set_trans( Vec2f( -p1[3][j], -p1[4][j] ) )
 		t1.set_trans( Vec2f( 0.0, 0.0 ) )
@@ -3025,7 +3013,8 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 		#t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
 		t2.set_trans( Vec2f( 0.0, 0.0 ) )
 		
-		error.append( max_3D_pixel_error( t1, t2 , rmax) )
+		error.append( max_3D_pixel_error( t1, t2 , rmax) )'''
+		error.append( angle_error( [ p2[0][j] ], [ p1[0][j] ], 0.0))
 
 			
 	# You also want to return the transformation you found.
