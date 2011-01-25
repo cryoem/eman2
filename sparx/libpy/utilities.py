@@ -2901,7 +2901,7 @@ def helical_consistency_wrap(p, dpp, dphi, delta_phi, delta_z):
 	th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
 	t2 = t1*th1
 	trans1 = t2.get_pre_trans()
-			#do helical wrapping based on the value of z shift from trans1
+	#do helical wrapping based on the value of z shift from trans1
 	
 	dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
 
@@ -2913,9 +2913,6 @@ def helical_consistency_wrap(p, dpp, dphi, delta_phi, delta_z):
 	th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
 	t3 = t2*th2
 	return t3
-		
-
-
 
 #consistency_between_helical_prjs under development
 #according two lists of projection parameters for helical structure
@@ -2934,14 +2931,13 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	  Note: all angles have to be in spider convention.
 	  """
 	dpp = dp/pixel_size
-	dphi = dphi%360
+	dphi = dphi%360.0
 	n =len(p1[0])
 	# if angle diff is nearly to 180 with cerntain range, fip the projections of p2 along z
 	from pixel_error import angle_diff
 	
-	if( abs( angle_diff(p2[2], p1[2]) -180)  < abs(  psi_max) ): 
+	if( abs( angle_diff(p2[2], p1[2]) -180.0)  < abs(  psi_max) ): 
 		for j in xrange( n ):
-		
 
 			t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
 			t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
@@ -2951,7 +2947,7 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 			#  Seocnd, what you do here makes no sense,  You cannot flip individual projections.  The question is whether p1 is a mirrored version of p2.
 		
 			tflip = Transform({"type":"spider","theta":180.0})
-			t2_flip = t2*tflip
+			t2_flip = t2*tflip                         #                 WHY THIS LINE IS TWICE??
 			t2_flip = t2*tflip
 			d = t2_flip.get_params("spider")
 			p2[0][j] = d["phi"]
@@ -2959,26 +2955,26 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 			p2[2][j] = d["psi"]
 			p2[3][j] = -d["tx"]
 			p2[4][j] = -d["ty"]
-			
+
 	#loop over all possilbe delta_phi
 	p_temp = [0.0]*n
-	phi_error = []
+	phi_error = [0.0]*n
 	from pixel_error import angle_error
 	for i in xrange(0,360,phi_step):
 		delta_phi = float(i)
 		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
 		#thus phi2_new(j) = phi2(j) + delta_phi + n(j)*dphi after helical wrapping, n(j) can be 0,+1,-1
 		delta_z = ( dpp*delta_phi/dphi )%dpp
-		
+
 		for j in xrange ( n ):
-	
+
 			t3 = helical_consistency_wrap([ p2[0][j], p2[1][j], p2[2][j], p2[3][j], p2[4][j] ], dpp, dphi, delta_phi, delta_z)
 			d = t3.get_params("spider")
 			p_temp[j] = d["phi"]
 			
 		#  You have to find the best solution within the loop, do not create additional list,, this is wasteful.
 		# I have to keep origianl p2, so I don't see how to avoid this.
-		phi_error.append( angle_error(p_temp, p1[0], 0.0) )
+		phi_error[i] = angle_error(p_temp, p1[0])
 	# find the delta_phi which produced maximum angel_error
 	from itertools import count, izip
 	maxvalue, delta_phi = max(izip( phi_error, count()))
@@ -2999,25 +2995,14 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	
 	#calucalte max_3D_error
 	
-	error = []
+	error = [0.0]*n
 	from pixel_error import max_3D_pixel_error
 	#  This should be the same error as in angle_error, not max_3D
 	for j in xrange( n ):
-		'''#I set transition to be zero since I only want to check the phi angel adjustment.
-		t1 = Transform({"type":"spider","phi":p1[0][j],"theta":p1[1][j],"psi":p1[2][j]})
-		#t1.set_trans( Vec2f( -p1[3][j], -p1[4][j] ) )
-		t1.set_trans( Vec2f( 0.0, 0.0 ) )
-		Trans1 = t1.get_pre_trans()
-	
-		t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-		#t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-		t2.set_trans( Vec2f( 0.0, 0.0 ) )
-		
-		error.append( max_3D_pixel_error( t1, t2 , rmax) )'''
-		error.append( angle_error( [ p2[0][j] ], [ p1[0][j] ], 0.0))
+		error[j] = angle_error( [ p2[0][j] ], [ p1[0][j] ])
 
 			
-	# You also want to return the transformation you found.
+	# You also want to return the transformation you found.  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	return p2, error
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
