@@ -108,9 +108,9 @@ namespace EMAN
 		*
 		* @param to Another PointArray to align to
 		* @param max_dist
-		* @return a Transform3D to map 'this' to 'to'
+		* @return a Transform to map 'this' to 'to'
 		*/
-		Transform3D *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
+		Transform *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
 
 		/** Translationally aligns one PointArray to another in 2 dimensions
 		*
@@ -124,7 +124,7 @@ namespace EMAN
 
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
-		void transform(const Transform3D& transform);
+		void transform(const Transform& transform);
 
 		/** Does Transform*v as opposed to v*Transform (as in the transform function)
 		 * @param transform an EMAN2 Transform object
@@ -132,8 +132,8 @@ namespace EMAN
 		void right_transform(const Transform& transform);
 
 		void set_from(vector<float>);
-		void set_from(PointArray * source, const string & sym = "", Transform3D *transform=0);
-		void set_from(double *source, int num, const string & sym = "", Transform3D *transform=0);
+		void set_from(PointArray * source, const string & sym = "", Transform *transform=0);
+		void set_from(double *source, int num, const string & sym = "", Transform *transform=0);
 		void set_from_density_map(EMData * map, int num, float thresh, float apix,
 								  Density2PointsArrayAlgorithm mode = PEAKS_DIV);
 		void sort_by_axis(int axis = 1);	// x,y,z axes = 0, 1, 2

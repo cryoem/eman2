@@ -249,9 +249,9 @@ return ret;
 
 // uses bilinear least-squares to generate a transformation
 // matrix for pairs of points
-Transform3D *PointArray::align_2d(PointArray *to,float max_dist) {
+Transform *PointArray::align_2d(PointArray *to,float max_dist) {
 vector<int> match=match_points(to,max_dist);
-Transform3D *ret=new Transform3D();
+Transform *ret=new Transform();
 
 // we use bilinear least squares to get 3/6 matrix components
 unsigned int i,j;
@@ -280,8 +280,19 @@ for (i=j=0; i<match.size(); i++) {
 Vec3f vy=Util::calc_bilinear_least_square(pts);
 
 //ret->set_rotation(vx[1],vx[2],0.0,vy[1],vy[2],0.0,0.0,0.0,1.0);
-ret->set_rotation(vx[1],vy[1],0.0,vx[2],vy[2],0.0,0.0,0.0,1.0);
-ret->set_pretrans(Vec3f(-vx[0],-vy[0],0));
+//ret->set_rotation(vx[1],vy[1],0.0,vx[2],vy[2],0.0,0.0,0.0,1.0);
+//ret->set_pretrans(Vec3f(-vx[0],-vy[0],0));
+
+ret->set(0, 0, vx[1]);
+ret->set(0, 1, vy[1]);
+ret->set(0, 2, 0.0f);
+ret->set(1, 0, vx[2]);
+ret->set(1, 1, vy[2]);
+ret->set(1, 2, 0.0f);
+ret->set(2, 0, 0.0f);
+ret->set(2, 1, 0.0f);
+ret->set(2, 2, 1.0f);
+ret->set_pre_trans(Vec3f(-vx[0],-vy[0],0));
 
 return ret;
 }
@@ -664,7 +675,7 @@ for (unsigned int i=0; i<n; i++) {
 return ret;
 }
 
-void PointArray::transform(const Transform3D& xf) {
+void PointArray::transform(const Transform& xf) {
 
 	for ( unsigned int i = 0; i < 4 * n; i += 4) {
 		Vec3f v((float)points[i],(float)points[i+1],(float)points[i+2]);
@@ -687,13 +698,13 @@ void PointArray::right_transform(const Transform& transform) {
 	}
 
 }
-void PointArray::set_from(PointArray * source, const string & sym, Transform3D *transform)
+void PointArray::set_from(PointArray * source, const string & sym, Transform *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src,  int num, const string & sym, Transform3D *xform)
+void PointArray::set_from(double *src,  int num, const string & sym, Transform *xform)
 {
 	 int nsym = xform->get_nsym(sym);
 
@@ -1591,7 +1602,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 {
 	int i;
 	PointArray pa;
-	Transform3D xform;
+	Transform xform;
 	int size=optdata[0]->get_xsize();
 	fx=0;
 
