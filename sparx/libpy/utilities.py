@@ -2884,43 +2884,12 @@ def disable_bdb_cache():
 
 	EMAN2db.BDB_CACHE_DISABLE = True
 
-
 def enable_bdb_cache():
 
 	import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = False
-	
-def helical_consistency_wrap(p, dpp, dphi, delta_phi, delta_z):
-	# apply delta_phi and delta_z to the individual projection
-	# if pre_trans of z beyond range of [-dpp/2, dpp/2], apply helical wrapping.
-	# return the new transformation of projection with p2.
-		
-	t1 = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
-	t1.set_trans( Vec2f( -p[3], -p[4] ) )
-	
-	th1 = Transform({"type":"spider","phi": delta_phi, "tz": -delta_z})
-	t2 = t1*th1
-	trans1 = t2.get_pre_trans()
-	#do helical wrapping based on the value of z shift from trans1
-	
-	dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
 
-	if dyi < -0.5:  eyi = dyi+1.0
-	elif dyi > 0.5:  eyi = dyi-1.0
-	else:                   eyi = dyi
-
-	nperiod = float(eyi*dpp-trans1[2])/dpp
-	th2 = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
-	t3 = t2*th2
-	return t3
-
-#consistency_between_helical_prjs under development
-#according two lists of projection parameters for helical structure
-# return the global phi rotation and z shifts between the two sets
-# returen the 3D_error between the two sets after the global difference is componsentated
-
-def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_step =1):
-	#  specify units of parameters
+def helical_consistency(p2i, p1):
 	"""
 	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
 	  The two sets have to be of the same length and it is assume that k'th element on the first
@@ -2930,90 +2899,87 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	  Output: overall rotation detal_phi, delt_z, the change p2, 3D_error between thos two sets after adjustment 
 	  Note: all angles have to be in spider convention.
 	  """
-	dpp = dp/pixel_size
-	dphi = dphi%360.0
-	n =len(p1[0])
-	# if angle diff is nearly to 180 with cerntain range, fip the projections of p2 along z
 	from pixel_error import angle_diff
-	
-	if( abs( angle_diff(p2[2], p1[2]) -180.0)  < abs(  psi_max) ): 
-		for j in xrange( n ):
-
-			t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-			t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-
-			#  this is not right.  It is theta that defines mirror.  Please look at angular relations between mirror pairs of projections,
-			#  it is in the ppt I once gave you and in documentation somewhere
-			#  Seocnd, what you do here makes no sense,  You cannot flip individual projections.  The question is whether p1 is a mirrored version of p2.
-		
+	from math import cos,pi
+	from utilities import getvec
+	from pixel_error import angle_error
+	n =len(p1[0])
+	print n
+	qtm = -1.0e10
+	for lf in xrange(0,181,180):
+		p2 = []
+		p2.extend(p2i)
+		if( lf == 180):
 			tflip = Transform({"type":"spider","theta":180.0})
-			t2_flip = t2*tflip                         #                 WHY THIS LINE IS TWICE??
-			d = t2_flip.get_params("spider")
-			p2[0][j] = d["phi"]
-			p2[1][j] = d["theta"]
-			p2[2][j] = d["psi"]
-			p2[3][j] = -d["tx"]
-			p2[4][j] = -d["ty"]
+			for j in xrange(n):
+				t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
+				t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
+				t2 = t2*tflip
+				d = t2.get_params("spider")
+				p2[0][j] = d["phi"]
+				p2[1][j] = d["theta"]
+				p2[2][j] = d["psi"]
+				p2[3][j] = -d["tx"]
+				p2[4][j] = -d["ty"]
+		tt1 = [0.0]*n
+		tt2 = [0.0]*n
+		mirror = [False]*n
+		ln = 0
+		for j in xrange( n ):
+			t1 = getvec(p1[0][j],p1[1][j])
+			t2 = getvec(p2[0][j],p2[1][j])
+			tm = getvec(180.0+p2[0][j],180.0-p2[1][j])
+			tt1[j] = t1[0]*t2[0]+t1[1]*t2[1]+t1[2]*t2[2]
+			tt2[j] = t1[0]*tm[0]+t1[1]*tm[1]+t1[2]*tm[2]
+			if(abs(tt1[j])<1.0e-7): tt1[j] = 0.0
+			if(abs(tt2[j])<1.0e-7): tt2[j] = 0.0
+			if(tt1[j]>tt2[j]):
+				mirror[j] = True
+				ln+=1
+		print  " FLIP  ",lf
+		if(ln < n//2):
+			print "mirror  ",ln
+			for j in xrange( n ):
+				p2[0][j] += 180.0
+				p2[1][j]  = 180.0-p2[1][j]
+				p2[2][j]  = -p2[2][j]
+				p2[4][j]  = -p2[4][j]
+				mirror[j] = not(mirror[j])
+		else:
+			print " straight", ln
+		phi1 = []
+		phi2 = []
+		for j in xrange(n):
+			if(mirror[j]):
+				phi1.append(p1[0][j])
+				phi2.append(p2[0][j])
+		print  len(phi1)
+		delta_phi = angle_diff( phi2, phi1 )
+		print "close form diff===", delta_phi
 
-	#loop over all possilbe delta_phi
-	closed_diff = angle_diff( p2[0], p1[0] )
-	print "close form diff===", closed_diff
-	delta_phi = closed_diff
-	delta_z = 0.0
-	
-	for j in xrange( len( p1[0]) ):
-		p2[0][j] = (p2[0][j] + closed_diff)%360 
-	'''
-	p_temp = [0.0]*n
-	phi_error = [0.0]*n
-	from pixel_error import angle_error
-	for i in xrange(0,360,phi_step):
-		delta_phi = float(i)
-		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
-		#thus phi2_new(j) = phi2(j) + delta_phi + n(j)*dphi after helical wrapping, n(j) can be 0,+1,-1
-		delta_z = ( dpp*delta_phi/dphi )%dpp
-		delta_z = 0.0
-
-		for j in xrange ( n ):
-
-			t3 = helical_consistency_wrap([ p2[0][j], p2[1][j], p2[2][j], p2[3][j], p2[4][j] ], dpp, dphi, delta_phi, delta_z)
-			d = t3.get_params("spider")
-			p_temp[j] = d["phi"]
-			
-		#  You have to find the best solution within the loop, do not create additional list,, this is wasteful.
-		# I have to keep origianl p2, so I don't see how to avoid this.
-		phi_error[i] = angle_error(p_temp, p1[0])
-	# find the delta_phi which produced maximum angel_error
-	from itertools import count, izip
-	maxvalue, delta_phi = max(izip( phi_error, count()))
-	delta_z = ( dpp*delta_phi/dphi )%dpp
-	delta_z = 0.0
-	
-	#solution is delta_phi, delta_z
-	#now apply the solution to adjust p2
-	#  Note this is the same look you had above, replace by a function.
-	for j in xrange ( n ):
-	
-		t3 = helical_consistency_wrap([ p2[0][j], p2[1][j], p2[2][j], p2[3][j], p2[4][j] ], dpp, dphi, delta_phi, delta_z)	
-		d = t3.get_params("spider")
-		p2[0][j] = d["phi"]
-		p2[1][j] = d["theta"]
-		p2[2][j] = d["psi"]
-		p2[3][j] = -d["tx"]
-		p2[4][j] = -d["ty"]
-	
-	#calucalte max_3D_error
-	'''
-	from pixel_error import angle_error
-	error = [0.0]*n
-	from pixel_error import max_3D_pixel_error
-	#  This should be the same error as in angle_error, not max_3D
-	for j in xrange( n ):
-		error[j] = angle_error( [ p2[0][j] ], [ p1[0][j] ])
-
-			
-	# You also want to return the transformation you found.  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	return p2, error, delta_phi, delta_z
+		phi1 = []
+		phi2 = []
+		errorm = []
+		for j in xrange( len( p1[0]) ):
+			p2[0][j] = (p2[0][j] + delta_phi + 360)%360.0
+			if(mirror[j]):
+				phi1.append(p1[0][j])
+				phi2.append(p2[0][j])
+				errorm.append(angle_error( [ p2[0][j] ], [ p1[0][j] ]))
+		qt = sum(errorm)/len(errorm)
+		print  len(errorm),qt
+		if(qt > qtm):
+			qtm = qt
+			p2o = []
+			p2o.extend(p2)
+			errormo = []
+			phi1o = []
+			phi2o = []
+			errormo.extend(errorm)
+			phi1o.extend(phi1)
+			phi2o.extend(phi2)
+		
+	return p2o, errormo, delta_phi, phi1o,phi2o
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
 # return the global rotation (dphi, dtheta, dpsi) between the two systems
