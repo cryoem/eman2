@@ -2956,6 +2956,14 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 			p2[4][j] = -d["ty"]
 
 	#loop over all possilbe delta_phi
+	closed_diff = angle_diff( p2[0], p1[0] )
+	print "close form diff===", closed_diff
+	delta_phi = closed_diff
+	delta_z = 0.0
+	
+	for j in xrange( len( p1[0]) ):
+		p2[0][j] = (p2[0][j] + closed_diff)%360 
+	'''
 	p_temp = [0.0]*n
 	phi_error = [0.0]*n
 	from pixel_error import angle_error
@@ -2964,6 +2972,7 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 		#get delta_z, then apply delta_phi, delt_z to the projection of p2 
 		#thus phi2_new(j) = phi2(j) + delta_phi + n(j)*dphi after helical wrapping, n(j) can be 0,+1,-1
 		delta_z = ( dpp*delta_phi/dphi )%dpp
+		delta_z = 0.0
 
 		for j in xrange ( n ):
 
@@ -2978,6 +2987,7 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 	from itertools import count, izip
 	maxvalue, delta_phi = max(izip( phi_error, count()))
 	delta_z = ( dpp*delta_phi/dphi )%dpp
+	delta_z = 0.0
 	
 	#solution is delta_phi, delta_z
 	#now apply the solution to adjust p2
@@ -2993,7 +3003,8 @@ def helical_consistency(p2, p1, dp, pixel_size, dphi, psi_max, rmax =10.0, phi_s
 		p2[4][j] = -d["ty"]
 	
 	#calucalte max_3D_error
-	
+	'''
+	from pixel_error import angle_error
 	error = [0.0]*n
 	from pixel_error import max_3D_pixel_error
 	#  This should be the same error as in angle_error, not max_3D
