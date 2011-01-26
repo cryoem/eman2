@@ -44,9 +44,9 @@ using std::endl;
 
 #include "util.h"
 
-#ifdef CUDA_FFT
+#ifdef EMAN2_USING_CUDA
 #include "cuda/cuda_emfft.h"
-#endif //CUDA_FFT
+#endif 
 
 #ifdef DJBFFT
 extern "C" {

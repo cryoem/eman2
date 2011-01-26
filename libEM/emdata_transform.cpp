@@ -304,7 +304,7 @@ EMData *EMData::do_ift_inplace_cuda()
 	} else if (ndim == 3) {
 		cuda_dd_fft_complex_to_real_nd(cudarwdata,cudarwdata, nz,ny,nx-offset,1);
 	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-#if defined	FFTW2 || defined FFTW3 || defined CUDA_FFT //native fft and ACML already done normalization
+#if defined	FFTW2 || defined FFTW3 //native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / (nxo * ny * nz);
@@ -365,7 +365,7 @@ EMData *EMData::do_ift()
 	}
 
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
-#if defined	FFTW2 || defined FFTW3	|| defined CUDA_FFT //native fft and ACML already done normalization
+#if defined	FFTW2 || defined FFTW3 //native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);

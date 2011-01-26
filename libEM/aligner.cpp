@@ -1705,6 +1705,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		tofft = to->do_fft();
 	}
 	
+#ifdef EMAN2_USING_CUDA // I am still BenchMarking
+	//this_img->copy_to_cudaro();
+	if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+	//to->copy_to_cudaro();
+#endif
+
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
