@@ -633,7 +633,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 #			rot[self.alt.getLabel()] = self.alt.getValue()
 #			rot[self.phi.getLabel()] = self.phi.getValue()
 #		
-#		return Transform3D(self.current_src, rot)
+#		return Transform(self.current_src, rot)
 
 	def setColors(self,colors,current_color):
 		a = 0

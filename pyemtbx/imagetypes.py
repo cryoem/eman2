@@ -56,18 +56,18 @@ IMAGE_V4L = EMUtil.ImageType.IMAGE_V4L
 IMAGE_UNKNOWN = EMUtil.ImageType.IMAGE_UNKNOWN
 
 
-EULER_EMAN = Transform3D.EulerType.EMAN
-EULER_IMAGIC = Transform3D.EulerType.IMAGIC
-EULER_SPIN = Transform3D.EulerType.SPIN
-EULER_QUATERNION = Transform3D.EulerType.QUATERNION
-EULER_SGIROT = Transform3D.EulerType.SGIROT
-EULER_SPIDER = Transform3D.EulerType.SPIDER
-EULER_MRC = Transform3D.EulerType.MRC
-EULER_XYZ = Transform3D.EulerType.XYZ
-EULER = { "mrc":Transform3D.EulerType.MRC, "eman":Transform3D.EulerType.EMAN,
- "imagic":Transform3D.EulerType.IMAGIC,"spin":Transform3D.EulerType.SPIN,
- "quaternion":Transform3D.EulerType.QUATERNION,"sgirot":Transform3D.EulerType.SGIROT,
- "spider":Transform3D.EulerType.SPIDER,"xyz":Transform3D.EulerType.XYZ }
+#EULER_EMAN = Transform3D.EulerType.EMAN
+#EULER_IMAGIC = Transform3D.EulerType.IMAGIC
+#EULER_SPIN = Transform3D.EulerType.SPIN
+#EULER_QUATERNION = Transform3D.EulerType.QUATERNION
+#EULER_SGIROT = Transform3D.EulerType.SGIROT
+#EULER_SPIDER = Transform3D.EulerType.SPIDER
+#EULER_MRC = Transform3D.EulerType.MRC
+#EULER_XYZ = Transform3D.EulerType.XYZ
+#EULER = { "mrc":Transform3D.EulerType.MRC, "eman":Transform3D.EulerType.EMAN,
+# "imagic":Transform3D.EulerType.IMAGIC,"spin":Transform3D.EulerType.SPIN,
+# "quaternion":Transform3D.EulerType.QUATERNION,"sgirot":Transform3D.EulerType.SGIROT,
+# "spider":Transform3D.EulerType.SPIDER,"xyz":Transform3D.EulerType.XYZ }
 
 EM_UNKNOWN = EMUtil.EMDataType.EM_UNKNOWN
 EM_CHAR = EMUtil.EMDataType.EM_CHAR

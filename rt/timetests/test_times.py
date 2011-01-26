@@ -75,8 +75,8 @@ def precision_test():
 		for dx in range(-n/4+1,n/4-1):
 			for dy in range(-n/4+1,n/4-1):
 				for az in range(0,181,5):
-					t3d = Transform3D(EULER_EMAN,az,0,0)
-					t3d.set_posttrans(dx,dy)
+					t3d = Transform({'type':'eman', 'az':az, 'alt':alt, 'phi':phi})
+					t3d.set_trans(dx,dy)
 					e3 = EMData()
 					e3.set_size(n+i,n+i,1)
 					e3.process_inplace('testimage.squarecube', {'axis':'x', 'edge_length':1, 'fill':1} )
@@ -85,7 +85,7 @@ def precision_test():
 					
 					e4 = e3.copy()
 					
-					e3.rotate_translate(t3d)
+					e3.transform(t3d)
 					
 					e5 = e4.align('rotate_translate', e3, {'maxshift':n/2})
 					

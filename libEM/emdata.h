@@ -68,7 +68,6 @@ namespace EMAN
 	class ImageIO;
 	class Ctf;
 	class XYData;
-	class Transform3D;
 	class Transform;
 	class GLUtil;
 
@@ -261,10 +260,10 @@ namespace EMAN
 
 
 		/** Rotate this image.
-		 * DEPRECATED USE EMData::Transform
+		 * DEPRECATED USE EMData::transform()
 		 * @param t Transformation rotation.
 		 */
-		void rotate(const Transform3D & t);
+		void rotate(const Transform & t);
 
 		float max_3D_pixel_error(const Transform &t1, const Transform &t2, float r);
 
@@ -281,7 +280,7 @@ namespace EMAN
 		 * DEPRECATED USE EMData::Transform
 		 * @param t The rotation and translation transformation to be done.
 		 */
-		void rotate_translate(const Transform3D & t);
+//		void rotate_translate(const Transform3D & t);
 
 		/**  Transform the image
 		 * @param t the transform object that describes the transformation to be applied to the image.

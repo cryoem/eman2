@@ -387,7 +387,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 
 	def update_rotations(self,t3d):
 		convention = str( self.src.currentText() )
-		#FIXME: Transform3D.get_rotation() wants a string sometimes and a EulerType other times
+		#FIXME: Transform.get_rotation() wants a string sometimes and a EulerType other times
 		try:
 			rot = t3d.get_rotation(str(self.src_map[convention]))
 		except StandardError, e: #doing a quick fix
@@ -430,7 +430,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			rot[self.alt.getLabel()] = self.alt.getValue()
 			rot[self.phi.getLabel()] = self.phi.getValue()
 		
-		return Transform3D(self.current_src, rot)
+		return Transform(self.current_src, rot)
 	
 	def set_src(self, val):
 		t3d = self.get_current_rotation()

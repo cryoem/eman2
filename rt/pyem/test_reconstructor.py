@@ -68,7 +68,7 @@ class TestReconstructor(unittest.TestCase):
 				for alt in range(0,90,5):
 					recon=Reconstructors.get(recon_name, params)
 					recon.setup()
-					transform = Transform3D(EULER_EMAN,az,alt,0)
+					transform = Transform({'type':'eman', 'az':az, 'alt':alt, 'phi':0.0})
 					p = {}
 					p["weight"] = 1.0
 					recon.insert_params(p)
@@ -168,9 +168,9 @@ class TestReconstructor(unittest.TestCase):
 		Log.logger().set_level(-1)    #no log message printed out
 		r = Reconstructors.get('nn4', {'size':32, 'npad':1, 'symmetry':'CSYM'})
 		r.setup()
-		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
+		r.insert_slice(e1, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
+		r.insert_slice(e2, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
+		r.insert_slice(e3, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
 		result = r.finish()
 	
 	def no_test_ReverseGriddingReconstructor(self):
@@ -187,9 +187,9 @@ class TestReconstructor(unittest.TestCase):
 		
 		r = Reconstructors.get('reverse_gridding', {'size':32, 'weight':0.8, 'npad':1})
 		r.setup()
-		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
+		r.insert_slice(e1, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
+		r.insert_slice(e2, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
+		r.insert_slice(e3, Transform({'type':'eman', 'az':0.0, 'alt':0.0, 'phi':0.0}))
 		result = r.finish()
 
 def test_main():

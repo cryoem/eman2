@@ -60,7 +60,7 @@ from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_di
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
 # Who is using this? Transform3D is deprecated use the Transform insteand
-Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
+#Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 GUIMode=0
 app = 0
@@ -1615,7 +1615,7 @@ The following classes are defined: \n\
  \n\
   Quaternion - implements mathematical quaternion. \n\
   Region - defines a rectangular 2D/3D region. \n\
-  Transform3D - defines a transformation including rotation, translation, and different Euler angles. \n\
+  Transform - defines a transformation including rotation, translation, and different Euler angles. \n\
   Vec3i - a 3-element integer vector. \n\
   Vec3f - a 3-element floating number vector. \n\
 \n\

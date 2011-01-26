@@ -59,7 +59,7 @@ using std::pair;
 namespace EMAN
 {
 
-	class Transform3D;
+	class Transform;
 	class EMData;
 
 	/** Reconstructor class defines a way to do 3D recontruction.
@@ -100,7 +100,7 @@ namespace EMAN
      *    (Please replace 'XYZ' with your own class name).
 	 @code
      *        void setup();
-     *        int insert_slice(const EMData* const slice, const Transform3D & t);
+     *        int insert_slice(const EMData* const slice, const Transform & t);
      *        EMData * finish();
      *        string get_name() const { return "xyz"; }
      *        static Reconstructor *NEW() { return new XYZReconstructor(); }
@@ -492,14 +492,14 @@ namespace EMAN
 
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform3D storing the slice euler angle
+		 * @param euler a transform storing the slice euler angle
 		 * @param weight weighting factor for this slice (usually number of particles in a class-average)
 		 */
 		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
 
 		/** A function to perform the nuts and bolts of comparing an image slice
 		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform3D storing the slice euler angle
+		 * @param euler a transform storing the slice euler angle
 		 */
 		virtual void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
 
@@ -616,7 +616,7 @@ namespace EMAN
 
 		/** A function to perform the nuts and bolts of comparing an image slice
 		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform3D storing the slice euler angle
+		 * @param euler a transform storing the slice euler angle
 		 */
 		virtual void do_compare_slice_work(EMData* input_slice, const Transform & euler,float weight);
 

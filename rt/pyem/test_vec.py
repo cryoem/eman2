@@ -76,7 +76,7 @@ class TestVec(unittest.TestCase):
 
     def test_vec_transform_op(self):
         """test vector transform operation .................."""
-        m1 = Transform3D()
+        m1 = Transform()
         v1 = Vec3f(1.5, 2.5, 3.5)
         v2 = v1 * m1
         self.assertEqual(v2, v1)

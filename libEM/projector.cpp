@@ -767,7 +767,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 		nangles = anglelist.size() / 3;
 	} else {*/
 
-		if ( rotation == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		if ( rotation == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
 		/*
 		Dict p = t3d->get_rotation("spider");
 
@@ -1775,7 +1775,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 		nangles = anglelist.size() / 3;
 	} else {
 		Transform* t3d = params["transform"];
-		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		if ( t3d == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
 		// This part was modified by David Woolford -
 		// Before this the code worked only for SPIDER and EMAN angles,
 		// but the framework of the Transform3D allows for a generic implementation
@@ -2008,7 +2008,7 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
 		nangles = anglelist.size() / 3;
 	} else {
 		Transform* t3d = params["transform"];
-		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		if ( t3d == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
 		// This part was modified by David Woolford -
 		// Before this the code worked only for SPIDER and EMAN angles,
 		// but the framework of the Transform3D allows for a generic implementation

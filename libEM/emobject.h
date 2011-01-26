@@ -176,7 +176,7 @@ namespace EMAN
 		EMObject(const EMObject& that);
 
 		/** Assigment operator
-		 * copies pointer locations (emdata, xydata, transform3d) - does not take ownership
+		 * copies pointer locations (emdata, xydata, transform) - does not take ownership
 		 * deep copies all non pointer objects
 		 */
 		EMObject& operator=(const EMObject& that);

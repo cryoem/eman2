@@ -479,13 +479,13 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			Dict rr = d->get_transform().get_rotation(Transform3D::EMAN);
+			Dict rr = d->get_transform().get_rotation("eman");
 			//int nimg = d->get_nimg();
 
 			if (scale < 1.0) {
-				Transform3D t;
+				Transform t;
 				t.set_scale(scale);
-				d->rotate_translate(t);
+				d->transform(t);
 			}
 
 			if (clipx > 0) {
@@ -501,9 +501,9 @@ int main(int argc, char *argv[])
 			}
 
 			if (scale > 1.0) {
-				Transform3D t;
+				Transform t;
 				t.set_scale(scale);
-				d->rotate_translate(t);
+				d->transform(t);
 			}
 
 			d->set_rotation((float)rr["alt"], (float)rr["az"], (float)rr["phi"]);

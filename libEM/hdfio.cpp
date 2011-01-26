@@ -1096,28 +1096,28 @@ void HdfIO::create_enum_types()
 
 	if (!enum_types_created) {
 #if 0
-        Transform3D::EulerType e;
-		euler_type = H5Tcreate(H5T_ENUM, sizeof(Transform3D::EulerType));
-
-		H5Tenum_insert(euler_type, "EMAN", (e = Transform3D::EMAN, &e));
-		H5Tenum_insert(euler_type, "IMAGIC", (e = Transform3D::IMAGIC, &e));
-		H5Tenum_insert(euler_type, "SPIN", (e = Transform3D::SPIN, &e));
-		H5Tenum_insert(euler_type, "QUATERNION", (e = Transform3D::QUATERNION, &e));
-		H5Tenum_insert(euler_type, "SGIROT", (e = Transform3D::SGIROT, &e));
-		H5Tenum_insert(euler_type, "SPIDER", (e = Transform3D::SPIDER, &e));
-		H5Tenum_insert(euler_type, "MRC", (e = Transform3D::MRC, &e));
-
-		MapInfoType m;
-		mapinfo_type = H5Tcreate(H5T_ENUM, sizeof(MapInfoType));
-
-		H5Tenum_insert(mapinfo_type, "NORMAL", (m = NORMAL, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS2F_FIRST_OCTANT", (m = ICOS2F_FIRST_OCTANT, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS2F_FULL", (m = ICOS2F_FULL, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS2F_HALF", (m = ICOS2F_HALF, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS3F_HALF", (m = ICOS3F_HALF, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS3F_FULL", (m = ICOS3F_FULL, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS5F_HALF", (m = ICOS5F_HALF, &m));
-		H5Tenum_insert(mapinfo_type, "ICOS5F_FULL", (m = ICOS5F_FULL, &m));
+//        Transform3D::EulerType e;
+//		euler_type = H5Tcreate(H5T_ENUM, sizeof(Transform3D::EulerType));
+//
+//		H5Tenum_insert(euler_type, "EMAN", (e = Transform3D::EMAN, &e));
+//		H5Tenum_insert(euler_type, "IMAGIC", (e = Transform3D::IMAGIC, &e));
+//		H5Tenum_insert(euler_type, "SPIN", (e = Transform3D::SPIN, &e));
+//		H5Tenum_insert(euler_type, "QUATERNION", (e = Transform3D::QUATERNION, &e));
+//		H5Tenum_insert(euler_type, "SGIROT", (e = Transform3D::SGIROT, &e));
+//		H5Tenum_insert(euler_type, "SPIDER", (e = Transform3D::SPIDER, &e));
+//		H5Tenum_insert(euler_type, "MRC", (e = Transform3D::MRC, &e));
+//
+//		MapInfoType m;
+//		mapinfo_type = H5Tcreate(H5T_ENUM, sizeof(MapInfoType));
+//
+//		H5Tenum_insert(mapinfo_type, "NORMAL", (m = NORMAL, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS2F_FIRST_OCTANT", (m = ICOS2F_FIRST_OCTANT, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS2F_FULL", (m = ICOS2F_FULL, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS2F_HALF", (m = ICOS2F_HALF, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS3F_HALF", (m = ICOS3F_HALF, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS3F_FULL", (m = ICOS3F_FULL, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS5F_HALF", (m = ICOS5F_HALF, &m));
+//		H5Tenum_insert(mapinfo_type, "ICOS5F_FULL", (m = ICOS5F_FULL, &m));
 #endif
 		enum_types_created = 1;
 	}

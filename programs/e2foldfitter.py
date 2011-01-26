@@ -56,7 +56,13 @@ def compare(vec):
 	
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
-	a=cmp_target.get_rotated_clip(Transform3D((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),vec[0],vec[1],vec[2],(0,0,0)),pdim,1.0)
+	t = Transform()
+	t.set_pre_trans((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2))
+	t.set_rotation({'type':'eman', 'az':vec[0], 'alt':vec[1], 'phi':vec[2]})
+	t.set_trans((0,0,0))
+	a=cmp_target.get_rotated_clip(t,pdim,1.0)
+#	a=cmp_target.get_rotated_clip(Transform3D((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),vec[0],vec[1],vec[2],(0,0,0)),pdim,1.0)
+	
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
 	ncmp+=1
@@ -67,7 +73,12 @@ def compares(vec):
 	of the probe to the map"""
 	global cmp_probe,cmp_target,sfac
 	
-	a=cmp_target.get_rotated_clip(Transform3D((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),vec[0],vec[1],vec[2],(0,0,0)),pdim2,1.0)
+	t = Transform()
+	t.set_pre_trans((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2))
+	t.set_rotation({'type':'eman', 'az':vec[0], 'alt':vec[1], 'phi':vec[2]})
+	t.set_trans((0,0,0))
+	a=cmp_target.get_rotated_clip(t,pdim2,1.0)
+#	a=cmp_target.get_rotated_clip(Transform3D((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),vec[0],vec[1],vec[2],(0,0,0)),pdim2,1.0)
 	print -cmp_probe.cmp("dot",a,{}),vec
 	return -cmp_probe.cmp("dot",a,{})
 
@@ -245,7 +256,13 @@ both box sizes should be multiples of 8."""
 		b=j[1]
 		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,j[0],b[0],b[1],b[2],b[3],b[4],b[5])
 		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,j[0],b[0],b[1],b[2],b[3],b[4],b[5]))
-		a=cmp_target.get_rotated_clip(Transform3D((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0)),pdim,1.0)
+		
+		t=Transform()
+		t.set_pre_trans((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0))
+		t.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
+		t.set_trans((0,0,0))
+		a=cmp_target.get_rotated_clip(t,pdim,1.0)
+#		a=cmp_target.get_rotated_clip(Transform3D((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0)),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 		print pc

@@ -130,11 +130,11 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 	PyObject* py_self;
 };
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0_1, get_rotation, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0_1, get_pretrans, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_0_1, get_posttrans, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0_1, get_rotation, 0, 1)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0_1, get_pretrans, 0, 1)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_0_1, get_posttrans, 0, 1)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_get_rotation_overloads_0_1, get_rotation, 0, 1)
@@ -410,113 +410,113 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def( self /= other< float >() )
     ;
 
-	scope* EMAN_Transform3D_scope = new scope(
-	class_< EMAN::Transform3D >("Transform3D",
-			"These are  a collection of transformation tools: rotation, translation,\n"
-			"and construction of symmetric objects\n"
-			"Transform defines a transformation, which can be rotation,\n"
-			"translation, scale, and their combinations.\n\n"
-			"Internally a transformation is stored in a 4x4 matrix.\n"
-			"        a b c d\n"
-			"        e f g h           R        v\n"
-			" M=     j k m n    =      vpre     1    , where R is 3by3, v is 3by1\n"
-			"        p q r 1\n"
-			"The standard computer graphics convention is identical to ours after setting vpre to\n"
-			"zero and can be found in many references including Frackowiak et al; Human Brain Function\n\n"
-			"The left-top 3x3 submatrix\n\n"
-			"       a b c\n"
-			"  R =  e f g\n"
-			"       j k m\n\n"
-			"provides rotation, scaling and skewing (not yet implimented).\n\n"
-			"The cumulative translation is stored in (d, h, n).\n"
-			"We put the post-translation into (p, q, r), since it is convenient\n"
-			"to carry along at times. When matrices are multiplied or printed, these\n"
-			"are hidden to the user. They can only be found by applying the post_translation\n"
-			"method, and these elements are non-zero. Otherwise the post-translation method returns\n"
-			"the cumulative translationmlb\n\n"
-			"If rotations need to be found\n"
-			"around alternate origins, then brief calculations need to be performed\n"
-			"Pre and Post Translations should be kept as separate vectors\n\n"
-			"a matrix  R is called orthogonal if\n"
-			"          R * transpose(R) = 1.\n"
-			"All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant"
-			"therefore equal to  \"\\pm 1\"",
-			init<  >())
-		.def(init< const EMAN::Transform3D& >())
-		.def(init< const float&, const float&, const float& >())
-// 		.def(init< const EMAN::Dict&, const string&, optional<const EMAN::Transform3D::EulerType> >())
-		.def(init< const float&, const float&, const float&, const EMAN::Vec3f& >())
-		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float& >())
-		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float&, const float&>())
-		.def(init< EMAN::Transform3D::EulerType, const EMAN::Dict& >())
-		.def(init< const EMAN::Vec3f&, const float&, const float&, const float&, const EMAN::Vec3f& >())
-		.def(init< const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float& >())
-		.add_static_property("ERR_LIMIT", make_getter(EMAN::Transform3D::ERR_LIMIT))
-		.def("set_posttrans", (void (EMAN::Transform3D::*)(const float&, const float&, const float&) )&EMAN::Transform3D::set_posttrans,EMAN_Transform3D_set_posttrans_overloads_2_3())
-		.def("set_posttrans", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&) )&EMAN::Transform3D::set_posttrans)
-		.def("set_posttrans", (void (EMAN::Transform3D::*)(const EMAN::Vec2f&) )&EMAN::Transform3D::set_posttrans)
-		.def("apply_scale", &EMAN::Transform3D::apply_scale)
-		.def("set_scale", &EMAN::Transform3D::set_scale)
-		.def("orthogonalize", &EMAN::Transform3D::orthogonalize)
-		.def("transpose", &EMAN::Transform3D::transpose)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const EMAN::Dict&) )&EMAN::Transform3D::set_rotation)
-		.def("set_rotation", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&) )&EMAN::Transform3D::set_rotation)
-		.def("get_post_x_mirror",&EMAN::Transform3D::get_post_x_mirror)
-		.def("set_post_x_mirror",&EMAN::Transform3D::set_post_x_mirror)
-		.def("get_mag", &EMAN::Transform3D::get_mag)
-		.def("get_finger", &EMAN::Transform3D::get_finger)
-		.def("get_pretrans", &EMAN::Transform3D::get_pretrans, EMAN_Transform3D_get_pretrans_overloads_0_1())
-		.def("get_posttrans", &EMAN::Transform3D::get_posttrans, EMAN_Transform3D_get_posttrans_overloads_0_1())
-		.def("get_total_posttrans", &EMAN::Transform3D::get_total_posttrans)
-		.def("get_total_pretrans", &EMAN::Transform3D::get_total_pretrans)
-		.def("get_center", &EMAN::Transform3D::get_center)
-		.def("get_matrix3_col", &EMAN::Transform3D::get_matrix3_col)
-		.def("get_matrix3_row", &EMAN::Transform3D::get_matrix3_row)
-		.def("transform", &EMAN::Transform3D::transform)
-		.def("rotate", &EMAN::Transform3D::rotate)
-		.def("inverse", &EMAN::Transform3D::inverse)
-		.def("inverseUsingAngs", &EMAN::Transform3D::inverseUsingAngs)
-		.def("get_rotation", &EMAN::Transform3D::get_rotation, EMAN_Transform3D_get_rotation_overloads_0_1())
-		.def("printme", &EMAN::Transform3D::printme)
-		.def("at", &EMAN::Transform3D::at)
-		.def("get_nsym", &EMAN::Transform3D::get_nsym)
-		.def("get_sym", &EMAN::Transform3D::get_sym)
-		.def("set_center", &EMAN::Transform3D::set_center)
-		.def("set_pretrans", (void (EMAN::Transform3D::*)(const float&,const float&,const float&))&EMAN::Transform3D::set_pretrans, EMAN_Transform3D_set_pretrans_overloads_2_3())
-		.def("set_pretrans", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&))&EMAN::Transform3D::set_pretrans)
-		.def("set_pretrans", (void (EMAN::Transform3D::*)(const EMAN::Vec2f&))&EMAN::Transform3D::set_pretrans)
-		.def("get_scale", &EMAN::Transform3D::get_scale)
-		.def("to_identity", &EMAN::Transform3D::to_identity)
-		.def("is_identity", &EMAN::Transform3D::is_identity)
-		.def("angles2tfvec", &EMAN::Transform3D::angles2tfvec)
-		.staticmethod("angles2tfvec")
-		.staticmethod("get_nsym")
-		.def( other< EMAN::Vec3f >() * self )
-		.def( self * self )
-		.def( self * other< EMAN::Vec3f >() )
-		.def( self * other< EMAN::Vec2f >() )
-// 		.def( self + self )
-// 		.def( self - self )
-    );
-
-    enum_< EMAN::Transform3D::EulerType >("EulerType")
-        .value("MATRIX", EMAN::Transform3D::MATRIX)
-        .value("UNKNOWN", EMAN::Transform3D::UNKNOWN)
-        .value("XYZ", EMAN::Transform3D::XYZ)
-        .value("IMAGIC", EMAN::Transform3D::IMAGIC)
-        .value("SPIDER", EMAN::Transform3D::SPIDER)
-        .value("QUATERNION", EMAN::Transform3D::QUATERNION)
-        .value("SGIROT", EMAN::Transform3D::SGIROT)
-        .value("MRC", EMAN::Transform3D::MRC)
-        .value("SPIN", EMAN::Transform3D::SPIN)
-        .value("EMAN", EMAN::Transform3D::EMAN)
-    ;
-
-	delete EMAN_Transform3D_scope;
+//	scope* EMAN_Transform3D_scope = new scope(
+//	class_< EMAN::Transform3D >("Transform3D",
+//			"These are  a collection of transformation tools: rotation, translation,\n"
+//			"and construction of symmetric objects\n"
+//			"Transform defines a transformation, which can be rotation,\n"
+//			"translation, scale, and their combinations.\n\n"
+//			"Internally a transformation is stored in a 4x4 matrix.\n"
+//			"        a b c d\n"
+//			"        e f g h           R        v\n"
+//			" M=     j k m n    =      vpre     1    , where R is 3by3, v is 3by1\n"
+//			"        p q r 1\n"
+//			"The standard computer graphics convention is identical to ours after setting vpre to\n"
+//			"zero and can be found in many references including Frackowiak et al; Human Brain Function\n\n"
+//			"The left-top 3x3 submatrix\n\n"
+//			"       a b c\n"
+//			"  R =  e f g\n"
+//			"       j k m\n\n"
+//			"provides rotation, scaling and skewing (not yet implimented).\n\n"
+//			"The cumulative translation is stored in (d, h, n).\n"
+//			"We put the post-translation into (p, q, r), since it is convenient\n"
+//			"to carry along at times. When matrices are multiplied or printed, these\n"
+//			"are hidden to the user. They can only be found by applying the post_translation\n"
+//			"method, and these elements are non-zero. Otherwise the post-translation method returns\n"
+//			"the cumulative translationmlb\n\n"
+//			"If rotations need to be found\n"
+//			"around alternate origins, then brief calculations need to be performed\n"
+//			"Pre and Post Translations should be kept as separate vectors\n\n"
+//			"a matrix  R is called orthogonal if\n"
+//			"          R * transpose(R) = 1.\n"
+//			"All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant"
+//			"therefore equal to  \"\\pm 1\"",
+//			init<  >())
+//		.def(init< const EMAN::Transform3D& >())
+//		.def(init< const float&, const float&, const float& >())
+//// 		.def(init< const EMAN::Dict&, const string&, optional<const EMAN::Transform3D::EulerType> >())
+//		.def(init< const float&, const float&, const float&, const EMAN::Vec3f& >())
+//		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float& >())
+//		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float&, const float&>())
+//		.def(init< EMAN::Transform3D::EulerType, const EMAN::Dict& >())
+//		.def(init< const EMAN::Vec3f&, const float&, const float&, const float&, const EMAN::Vec3f& >())
+//		.def(init< const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float& >())
+//		.add_static_property("ERR_LIMIT", make_getter(EMAN::Transform3D::ERR_LIMIT))
+//		.def("set_posttrans", (void (EMAN::Transform3D::*)(const float&, const float&, const float&) )&EMAN::Transform3D::set_posttrans,EMAN_Transform3D_set_posttrans_overloads_2_3())
+//		.def("set_posttrans", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&) )&EMAN::Transform3D::set_posttrans)
+//		.def("set_posttrans", (void (EMAN::Transform3D::*)(const EMAN::Vec2f&) )&EMAN::Transform3D::set_posttrans)
+//		.def("apply_scale", &EMAN::Transform3D::apply_scale)
+//		.def("set_scale", &EMAN::Transform3D::set_scale)
+//		.def("orthogonalize", &EMAN::Transform3D::orthogonalize)
+//		.def("transpose", &EMAN::Transform3D::transpose)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const EMAN::Dict&) )&EMAN::Transform3D::set_rotation)
+//		.def("set_rotation", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&) )&EMAN::Transform3D::set_rotation)
+//		.def("get_post_x_mirror",&EMAN::Transform3D::get_post_x_mirror)
+//		.def("set_post_x_mirror",&EMAN::Transform3D::set_post_x_mirror)
+//		.def("get_mag", &EMAN::Transform3D::get_mag)
+//		.def("get_finger", &EMAN::Transform3D::get_finger)
+//		.def("get_pretrans", &EMAN::Transform3D::get_pretrans, EMAN_Transform3D_get_pretrans_overloads_0_1())
+//		.def("get_posttrans", &EMAN::Transform3D::get_posttrans, EMAN_Transform3D_get_posttrans_overloads_0_1())
+//		.def("get_total_posttrans", &EMAN::Transform3D::get_total_posttrans)
+//		.def("get_total_pretrans", &EMAN::Transform3D::get_total_pretrans)
+//		.def("get_center", &EMAN::Transform3D::get_center)
+//		.def("get_matrix3_col", &EMAN::Transform3D::get_matrix3_col)
+//		.def("get_matrix3_row", &EMAN::Transform3D::get_matrix3_row)
+//		.def("transform", &EMAN::Transform3D::transform)
+//		.def("rotate", &EMAN::Transform3D::rotate)
+//		.def("inverse", &EMAN::Transform3D::inverse)
+//		.def("inverseUsingAngs", &EMAN::Transform3D::inverseUsingAngs)
+//		.def("get_rotation", &EMAN::Transform3D::get_rotation, EMAN_Transform3D_get_rotation_overloads_0_1())
+//		.def("printme", &EMAN::Transform3D::printme)
+//		.def("at", &EMAN::Transform3D::at)
+//		.def("get_nsym", &EMAN::Transform3D::get_nsym)
+//		.def("get_sym", &EMAN::Transform3D::get_sym)
+//		.def("set_center", &EMAN::Transform3D::set_center)
+//		.def("set_pretrans", (void (EMAN::Transform3D::*)(const float&,const float&,const float&))&EMAN::Transform3D::set_pretrans, EMAN_Transform3D_set_pretrans_overloads_2_3())
+//		.def("set_pretrans", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&))&EMAN::Transform3D::set_pretrans)
+//		.def("set_pretrans", (void (EMAN::Transform3D::*)(const EMAN::Vec2f&))&EMAN::Transform3D::set_pretrans)
+//		.def("get_scale", &EMAN::Transform3D::get_scale)
+//		.def("to_identity", &EMAN::Transform3D::to_identity)
+//		.def("is_identity", &EMAN::Transform3D::is_identity)
+//		.def("angles2tfvec", &EMAN::Transform3D::angles2tfvec)
+//		.staticmethod("angles2tfvec")
+//		.staticmethod("get_nsym")
+//		.def( other< EMAN::Vec3f >() * self )
+//		.def( self * self )
+//		.def( self * other< EMAN::Vec3f >() )
+//		.def( self * other< EMAN::Vec2f >() )
+//// 		.def( self + self )
+//// 		.def( self - self )
+//    );
+//
+//    enum_< EMAN::Transform3D::EulerType >("EulerType")
+//        .value("MATRIX", EMAN::Transform3D::MATRIX)
+//        .value("UNKNOWN", EMAN::Transform3D::UNKNOWN)
+//        .value("XYZ", EMAN::Transform3D::XYZ)
+//        .value("IMAGIC", EMAN::Transform3D::IMAGIC)
+//        .value("SPIDER", EMAN::Transform3D::SPIDER)
+//        .value("QUATERNION", EMAN::Transform3D::QUATERNION)
+//        .value("SGIROT", EMAN::Transform3D::SGIROT)
+//        .value("MRC", EMAN::Transform3D::MRC)
+//        .value("SPIN", EMAN::Transform3D::SPIN)
+//        .value("EMAN", EMAN::Transform3D::EMAN)
+//    ;
+//
+//	delete EMAN_Transform3D_scope;
 
 	class_< EMAN::Transform >("Transform",
 			"A Transform object is a somewhat specialized object designed specifically for EMAN2/Sparx storage of\n"

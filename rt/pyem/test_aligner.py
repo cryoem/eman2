@@ -252,6 +252,7 @@ class TestAligner(unittest.TestCase):
 					if result > 180 and result < 360:
 						result = 360-result
 					if result > 360: result = result-360
+					print 'result = ', result
 					self.failIf( result > 3 ) # 3 seems accurate enough
 					self.failIf( t1.get_mirror() != mirror)
 					

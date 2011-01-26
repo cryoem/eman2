@@ -277,7 +277,7 @@ namespace EMAN {
 		 * Rotational symmetry operations for C symmetry are always about the z-axis (in the EMAN convention), and
 		 * therefore the only non zero return angle is azimuth. Specifically, it is n*360/nsym degrees.
 		 * @param n the rotational symmetry operation number. If n is greater than nsym we take n modulo nsym
-		 * @return a transform3d containing the correct rotational symmetric operation.
+		 * @return a transform containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
 		virtual Transform get_sym(const int n) const;
@@ -385,7 +385,7 @@ namespace EMAN {
 		 * is non zero. The second half of the symmetry operations are replicas of the first half, except that they
 		 * have an additional 180 degree rotation about x (in EMAN terms, the altitude angle is 180).
 		 * @param n the rotational symmetry operation number. If n is greater than nsym we take n modulo nsym
-		 * @return a transform3d containing the correct rotational symmetric operation.
+		 * @return a transform containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
 		virtual Transform get_sym(const int n) const;
@@ -506,7 +506,7 @@ namespace EMAN {
 		 * azimuth of n times the "d_az" (as specified in the parameters of this class), and has a post
 		 * translation of "tz" in the z direction.
 		 * @param n the helical symmetry operation number.
-		 * @return a transform3d containing the correct rotational and translational symmetry operation.
+		 * @return a transform containing the correct rotational and translational symmetry operation.
 			 */
 		virtual Transform get_sym(const int n) const;
 
@@ -718,7 +718,7 @@ namespace EMAN {
 		 *  1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
 		 *  at most one A is necessary"
 		 * @param n the symmetric operation number
-		 * @return a transform3d containing the correct rotational symmetry operation.
+		 * @return a transform containing the correct rotational symmetry operation.
 		 */
 		virtual Transform get_sym(const int n) const;
 
@@ -826,7 +826,7 @@ namespace EMAN {
 		 *  Note A BBB A BBB A  reduces to BBABB
 		 *  and B A BBB A is the same as A BBB A BBB etc."
 		 * @param n the symmetric operation number.
-		 * @return a transform3d containing the correct rotational symmetry operation.
+		 * @return a transform containing the correct rotational symmetry operation.
 		 */
 		virtual Transform get_sym(const int n) const;
 
@@ -891,7 +891,7 @@ namespace EMAN {
 		 * We have placed the icosahedral symmetry group with a face along the z-axis. In all, there are
 		 * 60 (accessed by get_nysm) unique rotational symmetric operations for the icosahedron.
 		 * @param n the symmetric operation number.
-		 * @return a transform3d containing the correct rotational symmetry operation.
+		 * @return a transform containing the correct rotational symmetry operation.
 		 */
 		virtual Transform get_sym(const int n) const;
 
