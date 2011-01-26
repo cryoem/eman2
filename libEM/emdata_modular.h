@@ -132,8 +132,8 @@ EMData *project(const string & projector_name, const Transform & t3d);
  */
 EMData *backproject(const string & projector_name, const Dict & params = Dict());
 
-#ifdef EMAN2_USING_CUDA
-vector<EMData*> cuda_project(const vector<Transform> transforms);
-#endif // EMAN2_USING_CUDA
+//#ifdef EMAN2_USING_CUDA
+//vector<EMData*> cuda_project(const vector<Transform> transforms);
+//#endif // EMAN2_USING_CUDA
 
 #endif	//emdata__modular_h__

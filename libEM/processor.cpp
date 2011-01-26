@@ -51,7 +51,7 @@
 #include <ctime>
 
 #ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_util.h"
+//#include "cuda/cuda_util.h"
 #include "cuda/cuda_processor.h"
 #endif // EMAN2_USING_CUDA
 
@@ -236,10 +236,10 @@ const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
 const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
 
-#ifdef EMAN2_USING_CUDA
-const string CudaMultProcessor::NAME = "cuda.math.mult";
-const string CudaCorrelationProcessor::NAME = "cuda.correlate";
-#endif //EMAN2_USING_CUDA
+//#ifdef EMAN2_USING_CUDA
+//const string CudaMultProcessor::NAME = "cuda.math.mult";
+//const string CudaCorrelationProcessor::NAME = "cuda.correlate";
+//#endif //EMAN2_USING_CUDA
 
 #if 0
 //const string XYZProcessor::NAME = "XYZ";
@@ -459,10 +459,10 @@ template <> Factory < Processor >::Factory()
 	force_add<ApplyPolynomialProfileToHelix>();
 	force_add<BinarySkeletonizerProcessor>();
 
-#ifdef EMAN2_USING_CUDA
-	force_add<CudaMultProcessor>();
-	force_add<CudaCorrelationProcessor>();
-#endif // EMAN2_USING_CUDA
+//#ifdef EMAN2_USING_CUDA
+//	force_add<CudaMultProcessor>();
+//	force_add<CudaCorrelationProcessor>();
+//#endif // EMAN2_USING_CUDA
 
 //	force_add<XYZProcessor>();
 }
@@ -3762,16 +3762,16 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	image->ri2ap(); //  works for cuda
 
 // This is rubbish!!! Needs fixing as does not do the same thing as below....
-#ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred()) {
-		EMDataForCuda tmp = image->get_data_struct_for_cuda();
-		binarize_fourier_amp_processor(&tmp,threshold);
-		image->set_ri(true); // So it can be used for fourier multiplaction, for example
-		image->gpu_update();
-		EXITFUNC;
-		return;
-	}
-#endif
+//#ifdef EMAN2_USING_CUDA
+//	if (image->gpu_operation_preferred()) {
+//		EMDataForCuda tmp = image->get_data_struct_for_cuda();
+//		binarize_fourier_amp_processor(&tmp,threshold);
+//		image->set_ri(true); // So it can be used for fourier multiplaction, for example
+//		image->gpu_update();
+//		EXITFUNC;
+//		return;
+//	}
+//#endif
         //compete rubbish!! doesn't work I need to fix this....
 	float* d = image->get_data();
 	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
@@ -4219,8 +4219,10 @@ void FlipProcessor::process_inplace(EMData * image)
 		return;
 	}
 	string axis = (const char*)params["axis"];
+	
 #ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred()) {
+	if (image->cudarwdata) {
+		//cout << "flip processor" << endl;
 		float array[12] = {1.0, 0.0, 0.0, 0.0,
 						   0.0, 1.0, 0.0, 0.0,
 		 				   0.0, 0.0, 1.0, 0.0};
@@ -4235,6 +4237,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		Transform t(array);
 		Dict params("transform",(Transform*)&t);
 		image->process_inplace("xform",params);
+
 		EXITFUNC;
 		return;
 	}
@@ -4866,6 +4869,14 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 {
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
+#ifdef EMAN2_USING_CUDA
+	if (image->cudarwdata && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+		//cout << "CUDA tocorner" << endl;
+		emdata_phaseorigin_to_corner(image->cudarwdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		return;
+	}
+#endif // EMAN2_USING_CUDA
+
 	if (image->is_complex()) {
 		fourier_phaseshift180(image);
 		return;
@@ -5005,21 +5016,14 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 void PhaseToCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
-	bool proceed = true;
 
 #ifdef EMAN2_USING_CUDA
-	bool cpu = image->cpu_rw_is_current();
-	bool gpu = image->gpu_rw_is_current();
-	if ( !cpu && !gpu )
-		throw UnexpectedBehaviorException("Both the CPU and GPU data are not current");
-	if (gpu && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
-		EMDataForCuda tmp = image->get_data_struct_for_cuda();
-		emdata_phaseorigin_to_center(&tmp);
-		proceed = false;
-		image->gpu_update();
+	if (image->cudarwdata && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+		//cout << "CUDA tocenter" << endl;
+		emdata_phaseorigin_to_center(image->cudarwdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		return;
 	}
 #endif // EMAN2_USING_CUDA
-	if (!proceed) return; // GPU processing occurred
 
 	if (image->is_complex()) {
 		fourier_phaseshift180(image);
@@ -8329,33 +8333,20 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	Transform* t = params["transform"];
 
 	EMData* p  = 0;
-	
 #ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred()) {
-	
- 	        //cout << "using CUDA" << endl;
+	if(image->isrodataongpu()){	
+	        //cout << "using CUDA xform" << endl;
+		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize()); 
 		float * m = new float[12];
 		Transform inv = t->inverse();
 		inv.copy_matrix_into_array(m);
-		image->bind_cuda_texture();
-		EMDataForCuda* tmp = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
-		//printf("CUDA ptr = %d\n", tmp->data);
-		//size_t num_bytes = tmp->nx*tmp->ny*tmp->nz*sizeof(float);
-		//float * rdata;
-		//rdata = (float*) malloc(num_bytes);
-		//cudaError_t error = cudaMemcpy(rdata,tmp->data,num_bytes,cudaMemcpyDeviceToHost);
-		//if (error != cudaSuccess ){cout << "CUDA FAILED!!! " << error << endl;}
-		//cout << error << endl;
-		image->unbind_cuda_texture();
+		image->bindcudaarrayA(false);
+		p->cudarwdata = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		image->unbindcudaarryA();
 		delete [] m;
-		if (tmp == 0) throw;
-
-		p = new EMData();
-	
-		p->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-		free(tmp);
 	}
 #endif
+
 	if ( p == 0 ) {
 		float* des_data = transform(image,*t);
 		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
@@ -8383,19 +8374,17 @@ void TransformProcessor::process_inplace(EMData* image) {
 
 	// 	all_translation += transform.get_trans();
 	bool use_cpu = true;
+	
 #ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred()) {
-		use_cpu = false;
+	if(image->isrodataongpu()){
+		image->bindcudaarrayA(false);	
 		float * m = new float[12];
 		Transform inv = t->inverse();
-		inv.copy_matrix_into_array(m);
-		image->bind_cuda_texture();
-		EMDataForCuda* tmp = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
-		image->unbind_cuda_texture();
+		inv.copy_matrix_into_array(m);	
+		image->runcuda(emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize()));
+		image->unbindcudaarryA();
 		delete [] m;
-		if (tmp == 0) throw;
-		image->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-		free(tmp);
+		use_cpu = false;
 	}
 #endif
 	if ( use_cpu ) {
@@ -8594,10 +8583,8 @@ void Rotate180Processor::process_inplace(EMData* image) {
 	}
 
 #ifdef EMAN2_USING_CUDA
-	if (image->gpu_operation_preferred() ) {
-		EMDataForCuda tmp = image->get_data_struct_for_cuda();
-		emdata_rotate_180(&tmp);
-		image->gpu_update();
+	if (image->cudarwdata ) {
+		emdata_rotate_180(image->cudarwdata, image->get_xsize(), image->get_ysize());
 		EXITFUNC;
 		return;
 	}
@@ -9440,340 +9427,6 @@ void ZGradientProcessor::process_inplace( EMData* image )
 
 	delete e;
 }
-
-
-#ifdef EMAN2_USING_CUDA
-
-/* CLASS MPICUDA_kmeans processor
- *
- */
-#include "sparx/cuda/cuda_mpi_kmeans.h"
-MPICUDA_kmeans::MPICUDA_kmeans() {
-    h_IM = NULL;
-    h_AVE = NULL;
-    h_ASG = NULL;
-    h_dist = NULL;
-    h_AVE2 = NULL;
-    h_im2 = NULL;
-    h_NC = NULL;
-    params = NULL;
-    d_im = NULL;
-    d_AVE = NULL;
-    d_dist = NULL;
-}
-
-MPICUDA_kmeans::~MPICUDA_kmeans() {
-    if (h_IM) delete h_IM;
-    if (h_ASG) delete h_ASG;
-    if (h_AVE) delete h_AVE;
-    if (h_dist) delete h_dist;
-    if (h_AVE2) delete h_AVE2;
-    if (h_im2) delete h_im2;
-    if (h_NC) delete h_NC;
-    if (params) delete params;
-}
-
-#include "sparx/cuda/cuda_mpi_kmeans.h"
-int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extn_start) {
-    m = extm;				// number of pixels per image
-    N = extN;				// Total number of images
-    n = extn;                           // Number of images used locally
-    K = extK;				// number of classes
-    n_start = extn_start;               // Starting point to local images
-    size_IM = m * N;                    // nb elements in IM
-    size_im = m * n;                    // nb elements in im
-    size_AVE = m * K;                   // nb elements in ave
-    size_dist = n * K;                  // nb elements in dist
-    ite = 0;                            // init nb of iterations
-    BLOCK_SIZE = 512;
-    NB = size_dist / BLOCK_SIZE;
-    ins_BLOCK = NB * BLOCK_SIZE;
-    // Host memory allocation for images
-    h_IM = (float*)malloc(size_IM * sizeof(float));
-    if (h_IM == 0) return 1;
-    h_im = &h_IM[n_start * m]; // for local images
-    // Host memory allocation for the averages
-    h_AVE = (float*)malloc(size_AVE * sizeof(float));
-    if (h_AVE == 0) return 1;
-    // Host memory allocation for all assignment
-    h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
-    if (h_ASG == 0) return 1;
-    h_asg = &h_ASG[n_start]; // for local assignment
-    // allocate the memory for the sum squared of averages
-    h_AVE2 = (float*)malloc(K * sizeof(float));
-    if (h_AVE2 == 0) return 1;
-    // allocate the memory for the sum squared of images
-    h_im2 = (float*)malloc(n * sizeof(float));
-    if (h_im2 == 0) return 1;
-    // allocate the memory for the distances
-    h_dist = (float*)malloc(size_dist * sizeof(float));
-    if (h_dist == 0) return 1;
-    // allocate the memory for the number of images per class
-    h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
-    if (h_NC == 0) return 1;
-    // allocate the memory to parameters
-    params = (int*)malloc(8 * sizeof(int));
-    if (params == 0) return 1;
-    params[0] = n;
-    params[1] = m;
-    params[2] = K;
-    params[3] = 0;          // Reserve for flag_stop_iteration
-    params[4] = 0;          // Reserve for ct_im_mv (debug)
-    params[5] = BLOCK_SIZE; // Size of threads block (512)
-    params[6] = NB;         // Number of blocks which fit with BLOCK_SIZE
-    params[7] = ins_BLOCK;  // Number of blocks remaining
-
-    return 0;
-}
-
-// add image pre-process by Util.compress_image_mask
-void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
-    for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
-}
-
-// cuda init mem device, cublas (get device ptr)
-int MPICUDA_kmeans::init_mem(int numdev) {
-    int stat = 1;
-    float** hd_AVE = NULL;
-    float** hd_im = NULL;
-    float** hd_dist = NULL;
-    hd_AVE = &d_AVE;
-    hd_im = &d_im;
-    hd_dist = &d_dist;
-    stat = cuda_mpi_init(h_im, hd_im, hd_AVE, hd_dist, size_im, size_AVE, size_dist, numdev);
-    //printf("C++ get this pointer for d_AVE: %p\n", d_AVE);
-    //printf("C++ get this pointer for d_im: %p\n", d_im);
-    //printf("C++ get this pointer for d_dist: %p\n", d_dist);
-    return stat;
-}
-
-// precalculate im2
-void MPICUDA_kmeans::compute_im2() {
-    for (int i = 0; i < n; i++) {
-	h_im2[i] = 0.0f;
-	for (int j = 0; j < m; j++) h_im2[i] += (h_im[i * m + j] * h_im[i * m + j]);
-    }
-}
-
-// init randomly the first assignment
-int MPICUDA_kmeans::random_ASG(long int rnd) {
-    srand(rnd);
-    int ret = 20;
-    int flag = 0;
-    int i, k;
-    for (k = 0; k < K; k++) h_NC[k] = 0;
-    while (ret > 0) {
-	ret--;
-	for (i = 0; i < N; i++) {
-	    h_ASG[i] = rand() % K;
-	    h_NC[h_ASG[i]]++;
-	}
-	flag = 1;
-	k = K;
-	while (k > 0 && flag) {
-	    k--;
-	    if (h_NC[k] <= 1) {
-		flag = 0;
-		if (ret == 0) {
-		    //printf("Erreur randomize assignment\n");
-		    return -1;
-		}
-		for (k = 0; k < K; k++) h_NC[k] = 0;
-	    }
-	if (flag == 1) ret = 0;
-	}
-    }
-    return 0;
-}
-
-// get back the assignment
-vector <int> MPICUDA_kmeans::get_ASG() {
-    vector <int> ASG(h_ASG, &h_ASG[N]);
-    return ASG;
-}
-
-// get back the global assignment
-vector <int> MPICUDA_kmeans::get_asg() {
-    vector <int> asg(h_asg, &h_asg[n]);
-    return asg;
-}
-
-// compute NC from ASG
-void MPICUDA_kmeans::compute_NC() {
-    for (int i = 0; i < K; ++i) h_NC[i] = 0;
-    for (int i = 0; i < N; ++i) h_NC[h_ASG[i]]++;
-}
-
-// get NC
-vector <int> MPICUDA_kmeans::get_NC() {
-    vector <int> NC(h_NC, &h_NC[K]);
-    return NC;
-}
-
-// set a new global assignment
-void MPICUDA_kmeans::set_ASG(const vector <int>& ASG) {
-    for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];
-}
-
-// set number of objects per group
-void MPICUDA_kmeans::set_NC(const vector <int>& NC) {
-    for (int i = 0; i < K; ++i) h_NC[i] = NC[i];
-}
-
-// get back some information (ite and T0)
-int MPICUDA_kmeans::get_ct_im_mv() {
-    return params[4]; // ct_im_mov
-}
-
-// set the value of T
-void MPICUDA_kmeans::set_T(float extT) {
-    T = extT;
-}
-
-// get the T value
-float MPICUDA_kmeans::get_T() {
-    return T;
-}
-
-// compute ave and ave2
-void MPICUDA_kmeans::compute_AVE() {
-    float buf = 0.0f;
-    int i, j, c, d, ind;
-    // compute the averages according ASG
-    for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;                          // set averages to zero
-    for (i = 0; i < N; ++i) {
-	c = h_ASG[i] * m;
-	d = i * m;
-	for (j = 0; j < m; ++j) h_AVE[c + j] += h_IM[d + j];                 // accumulate images
-    }
-    for (i = 0; i < K; i++) {
-	buf = 0.0f;
-	for (j = 0 ; j < m; j++) {
-	    ind = i * m + j;
-	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average
-	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
-	}
-	h_AVE2[i] = buf;
-    }
-}
-
-// set averages
-void MPICUDA_kmeans::set_AVE(EMData* im, int pos) {
-    for (int i = 0; i < m ; ++i) h_AVE[pos * m + i] = (*im)(i);
-}
-
-// get back the averages
-vector<EMData*> MPICUDA_kmeans::get_AVE() {
-    vector<EMData*> ave(K);
-    for (int k = 0; k < K; ++k) {
-	EMData* im = new EMData();
-	im->set_size(m, 1, 1);
-	float *ptr = im->get_data();
-	for (int i = 0; i < m; ++i) {ptr[i] =  h_AVE[k * m + i];}
-	ave[k] = im->copy();
-	delete im;
-    }
-    return ave;
-}
-
-// k-means one iteration
-int MPICUDA_kmeans::one_iter() {
-    int status = cuda_mpi_kmeans(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
-    ite++;
-    return status;
-}
-
-// k-means SA one iteration
-int MPICUDA_kmeans::one_iter_SA() {
-    int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, T, params);
-    ite++;
-    return status;
-}
-
-// compute ji
-vector <float> MPICUDA_kmeans::compute_ji() {
-    int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
-    vector <float> ji(K);
-    int i;
-    if (status != 0) {
-	for (i = 0; i < K; ++i) ji[i] = -1.0;
-	return ji;
-    }
-    for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
-    return ji;
-}
-
-//
-vector <float> MPICUDA_kmeans::compute_criterion(const vector <float>& Ji) {
-    float buf = 0.0f;
-    float Je = 0.0f;
-    float Tr_AVE = 0.0f;
-    float v_max = 0.0f;
-    float* S_AVE2 = (float*)calloc(m, sizeof(float));
-    float* S_AVE = (float*)calloc(m, sizeof(float));
-    vector <float> crit(4);
-    int i, j, k;
-    // Je
-    for (i = 0; i < K; ++i) Je += (Ji[i] / float(m));
-    crit[0] = Je;
-    // trace ave
-    for (i = 0; i < K; ++i) {
-	for (j = 0; j < m; ++j) {
-	    S_AVE[j] += h_AVE[i * m + j];
-	    S_AVE2[j] += (h_AVE[i * m + j] * h_AVE[i * m +j]);
-	}
-    }
-    buf = 1 / (float)K;
-    for (i = 0; i < m; ++i) Tr_AVE += (buf * (S_AVE2[i] - buf * S_AVE[i] * S_AVE[i]));
-    // Coleman
-    crit[1] = Tr_AVE * Je;
-    // Harabasz
-    crit[2] = (Tr_AVE * (float)(N - K)) / (Je * (float)(K - 1));
-    // Davies-Bouldin
-    for (i = 0; i < K; ++i) {
-	v_max = 0.0f;
-	for (j = 0; j < K; ++j) {
-	    if (j != i) {
-		buf = 0.0f;
-		for (k = 0; k < m; ++k) buf += ((h_AVE[j * m + k] - h_AVE[i * m + k]) * (h_AVE[j * m + k] - h_AVE[i * m + k]));
-		buf = (Ji[i] / (float)h_NC[i] + Ji[j] / (float)h_NC[j]) * ((float)m / buf);
-	    }
-	    if (buf > v_max) v_max = buf;
-	}
-	crit[3] += v_max;
-    }
-    crit[3] /= (float)K;
-    free(S_AVE);
-    free(S_AVE2);
-    return crit;
-}
-
-// shutdown cublas and release device mem
-int MPICUDA_kmeans::shutdown() {
-    return cuda_mpi_shutdown(d_im, d_AVE, d_dist);
-}
-//// END OF CUDA KMEANS /////////////////////////
-
-void CudaMultProcessor::process_inplace(EMData* image) {
-	float val = params.set_default("scale",(float) 1.0);
-	EMDataForCuda tmp = image->get_data_struct_for_cuda();
-	emdata_processor_mult(&tmp,val);
-	image->gpu_update();
-}
-
-
-void CudaCorrelationProcessor::process_inplace(EMData* image) {
-	EMData* with = params.set_default("with",(EMData*)0);
-	if (with == 0) throw InvalidParameterException("You must supply the with parameter, and it must be valid. It is NULL.");
-
-	EMDataForCuda left = image->get_data_struct_for_cuda();
-	with->bind_cuda_texture(false);
-	emdata_processor_correlation_texture(&left,1);
-	image->gpu_update();
-
-}
-
-#endif //EMAN2_USING_CUDA
 
 void EMAN::dump_processors()
 {

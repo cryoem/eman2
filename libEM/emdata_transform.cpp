@@ -48,118 +48,17 @@
 #include <cmath>
 #include "util.h"
 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_processor.h"
-#endif
+//#ifdef EMAN2_USING_CUDA
+//#include "cuda/cuda_processor.h"
+//#endif
 
 using namespace EMAN;
 using namespace std;
 typedef vector< pair<float,int> > vp;
 
-#ifdef EMAN2_USING_CUDA
-
-#include "cuda/cuda_emfft.h"
-
-EMData *EMData::do_fft_cuda() const
-{
-	ENTERFUNC;
-
-	if ( is_complex() ) {
-		LOGERR("real image expected. Input image is complex image.");
-		throw ImageFormatException("real image expected. Input image is complex image.");
-	}
-// 	int nxreal = nx;
-	int offset;
-	int ndim = get_ndim();
-	EMData* dat = new EMData();
-
-	offset = 2 - nx%2;
-	dat->set_size_cuda(nx+offset,ny, nz);
-	float *d = dat->get_cuda_data();
-	if ( ndim == 1 ) {
-		cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nx, 1,1);
-	} else if (ndim == 2) {
-		cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, ny, nx, 1);
-	} else if (ndim == 3) {
-		cuda_dd_fft_real_to_complex_nd(get_cuda_data(), d, nz, ny, nx);
-	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-
-	if (offset == 1) dat->set_fftodd(true);
-	else             dat->set_fftodd(false);
-
-	dat->set_fftpad(true);
-	dat->set_complex(true);
-	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
-	dat->set_ri(true);
-	dat->gpu_update();
-
-	EXITFUNC;
-	return dat;
-}
-
-EMData *EMData::do_ift_cuda(bool preserve_input) const
-{
-	ENTERFUNC;
-
-	if (!is_complex()) {
-		LOGERR("complex image expected. Input image is real image.");
-		throw ImageFormatException("complex image expected. Input image is real image.");
-	}
-
-	if (!is_ri()) {
-		throw ImageFormatException("complex ri expected. Got amplitude/phase.");
-	}
-
-	int offset = is_fftodd() ? 1 : 2;
-	EMData* dat = new EMData();
-	int ndim = get_ndim();
-	dat->set_size_cuda(nx-offset, ny, nz);
-	float *d = dat->get_cuda_data();
-	float *this_d;
-	EMData* tmp = 0;
-	if (preserve_input){
-		tmp = new EMData(*this);
-		this_d = tmp->get_cuda_data();
-	} else {
-		this_d = get_cuda_data();
-	}
-	if ( ndim == 1 ) {
-		cuda_dd_fft_complex_to_real_nd(this_d,d, nx-offset,1,1);
-	} else if (ndim == 2) {
-		cuda_dd_fft_complex_to_real_nd(this_d,d, ny,nx-offset,1);
-	} else if (ndim == 3) {
-		cuda_dd_fft_complex_to_real_nd(this_d,d, nz,ny,nx-offset);
-	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
-
-	if (tmp != 0) delete tmp;
-
-	// SCALE the inverse FFT
-	float scale = 1.0f/static_cast<float>((dat->get_size()));
-	dat->mult(scale); // Use of GPU should be automatic
-
-	dat->set_fftpad(false);
-	dat->set_fftodd(false);
-	dat->set_complex(false);
-	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
-	dat->set_ri(false);
-	dat->gpu_update();
-
-	EXITFUNC;
-	return dat;
-}
-
-#endif //EMAN2_USING_CUDA
-
 EMData *EMData::do_fft() const
 {
 	ENTERFUNC;
-
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EXITFUNC;
-		return do_fft_cuda();
-	}
-#endif
 
 	if (is_complex() ) { // ming add 08/17/2010
 #ifdef NATIVE_FFT
@@ -259,16 +158,175 @@ EMData *EMData::do_fft_inplace()
 	return this;
 }
 
-EMData *EMData::do_ift()
+#ifdef EMAN2_USING_CUDA
+
+#include "cuda/cuda_emfft.h"
+
+EMData *EMData::do_fft_cuda()
 {
 	ENTERFUNC;
 
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EXITFUNC;
-		return do_ift_cuda();
+	if ( is_complex() ) {
+		LOGERR("real image expected. Input image is complex image.");
+		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
-#endif
+
+	int offset = 2 - nx%2;
+	EMData* dat = new EMData(0,0,nx+offset,ny,nz,attr_dict);
+	if(!int(dat->rw_alloc())) throw ImageFormatException("Couldn't allocate memory.");;
+	//cout << "Doing CUDA FFT " << cudarwdata << endl;
+	if(cudarwdata == 0){copy_to_cuda();}
+	cuda_dd_fft_real_to_complex_nd(cudarwdata, dat->cudarwdata, nx, ny,nz, 1);
+
+	if (offset == 1) dat->set_fftodd(true);
+	else             dat->set_fftodd(false);
+
+	dat->set_fftpad(true);
+	dat->set_complex(true);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
+	dat->set_ri(true);
+//	dat->gpu_update();
+
+	EXITFUNC;
+	return dat;
+}
+
+EMData *EMData::do_fft_inplace_cuda()
+{
+	ENTERFUNC;
+
+	if ( is_complex() ) {
+		LOGERR("real image expected. Input image is complex image.");
+		throw ImageFormatException("real image expected. Input image is complex image.");
+	}
+
+	int offset = 2 - nx%2;
+	float* tempcudadata = 0;
+	cudaError_t error = cudaMalloc((void**)&tempcudadata,(nx + offset)*ny*nz*sizeof(float));
+	if( error != cudaSuccess) throw ImageFormatException("Couldn't allocate memory.");
+	
+	//cout << "Doing CUDA FFT inplace" << cudarwdata << endl;
+	if(cudarwdata == 0){copy_to_cuda();}
+	cuda_dd_fft_real_to_complex_nd(cudarwdata, tempcudadata, nx, ny,nz, 1);
+	// this section is a bit slight of hand it actually does the FFT out of place but this avoids and EMData object creation and detruction...
+	cudaError_t ferror = cudaFree(cudarwdata);
+	if ( ferror != cudaSuccess) throw UnexpectedBehaviorException( "CudaFree failed:" + string(cudaGetErrorString(error)));
+	cudarwdata = tempcudadata;
+	num_bytes = (nx + offset)*ny*nz*sizeof(float);
+
+	if (offset == 1) set_fftodd(true);
+	else             set_fftodd(false);
+
+	nx = nx + offset; // don't want to call set_size b/c that will delete my cudadata, remember what I am doing is a bit slignt of hand....
+	set_fftpad(true);
+	set_complex(true);
+	if(get_ysize()==1 && get_zsize()==1) set_complex_x(true);
+	set_ri(true);
+//	dat->gpu_update();
+	//perhaps is should call update() ????
+
+	EXITFUNC;
+	return this;
+}
+
+EMData *EMData::do_ift_cuda()
+{
+	ENTERFUNC;
+
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is real image.");
+	}
+
+	if (!is_ri()) {
+		throw ImageFormatException("complex ri expected. Got amplitude/phase.");
+	}
+
+	int offset = is_fftodd() ? 1 : 2;
+	EMData* dat = new EMData(0,0,nx-offset,ny,nz);
+	dat->rw_alloc();
+	
+	if(cudarwdata == 0){copy_to_cuda();}
+
+	
+	int ndim = get_ndim();
+	if ( ndim == 1 ) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,dat->cudarwdata, nx-offset,1,1,1);
+	} else if (ndim == 2) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,dat->cudarwdata, ny,nx-offset,1,1);
+	} else if (ndim == 3) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,dat->cudarwdata, nz,ny,nx-offset,1);
+	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
+	
+	// SCALE the inverse FFT
+	float scale = 1.0f/static_cast<float>((dat->get_size()));
+	dat->mult(scale); 
+
+	dat->set_fftpad(false);
+	dat->set_fftodd(false);
+	dat->set_complex(false);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
+	dat->set_ri(false);
+//	dat->gpu_update();
+//	dat->update(); // this is a hack to make diaplay work(will fix in future)
+	
+	EXITFUNC;
+	return dat;
+}
+
+/*
+   FFT in place does not depad, hence this routine is of limited use b/c mem operations on the device are quite SLOW, JFF
+   use
+*/
+
+EMData *EMData::do_ift_inplace_cuda()
+{
+	ENTERFUNC;
+
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is real image.");
+	}
+
+	if (!is_ri()) {
+		LOGWARN("run IFT on AP data, only RI should be used. ");
+	}
+
+	int offset = is_fftodd() ? 1 : 2;
+	
+	if(cudarwdata == 0){copy_to_cuda();}
+	
+	int ndim = get_ndim();
+	if ( ndim == 1 ) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,cudarwdata, nx-offset,1,1,1);
+	} else if (ndim == 2) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,cudarwdata, ny,nx-offset,1,1);
+	} else if (ndim == 3) {
+		cuda_dd_fft_complex_to_real_nd(cudarwdata,cudarwdata, nz,ny,nx-offset,1);
+	} else throw ImageDimensionException("No cuda FFT support of images with dimensions exceeding 3");
+#if defined	FFTW2 || defined FFTW3 || defined CUDA_FFT //native fft and ACML already done normalization
+	// SCALE the inverse FFT
+	int nxo = nx - offset;
+	float scale = 1.0f / (nxo * ny * nz);
+	mult(scale); //if we are just doing a CCF, this is a waste!
+#endif //FFTW2 || FFTW3
+
+	set_fftpad(true);
+	set_complex(false);
+
+	if(ny==1 && nz==1) set_complex_x(false);
+	set_ri(false);
+	//update();
+	
+	EXITFUNC;
+	return this;
+}
+
+#endif //EMAN2_USING_CUDA
+
+EMData *EMData::do_ift()
+{
+	ENTERFUNC;
 
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
@@ -299,12 +357,11 @@ EMData *EMData::do_ift()
 	} else {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
-#ifndef CUDA_FFT
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
 			memmove((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
-#endif
+
 	}
 
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
@@ -326,7 +383,7 @@ EMData *EMData::do_ift()
 }
 
 /*
-   FFT in place does not depad, return real x-extended image
+   FFT in place does not depad, return real x-extended image (needs to be depadded before use as PAP does in CCF routines)
    use
 */
 EMData *EMData::do_ift_inplace()
@@ -347,23 +404,18 @@ EMData *EMData::do_ift_inplace()
 	float* data = get_data();
 	EMfft::complex_to_real_nd(data, data, nx - offset, ny, nz);
 
-#if defined	FFTW2 || defined FFTW3 || defined CUDA_FFT	//native fft and ACML already done normalization
+#if defined	FFTW2 || defined FFTW3 	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / (nxo * ny * nz);
 	mult(scale);
 #endif //FFTW2 || FFTW3
 
-#ifndef CUDA_FFT
 	set_fftpad(true);
-#else
-	set_size(nx - offset, ny, nz);
-#endif
 	set_complex(false);
 	if(ny==1 && nz==1) set_complex_x(false);
 	set_ri(false);
 	update();
-
 
 	EXITFUNC;
 	return this;
@@ -911,16 +963,16 @@ void EMData::ap2ri()
 		return;
 	}
 
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EMDataForCuda tmp = get_data_struct_for_cuda();
-		emdata_ap2ri(&tmp);
-		set_ri(true);
-		gpu_update();
-		EXITFUNC;
-		return;
-	}
-#endif
+//#ifdef EMAN2_USING_CUDA
+//	if (gpu_operation_preferred()) {
+//		EMDataForCuda tmp = get_data_struct_for_cuda();
+//		emdata_ap2ri(&tmp);
+//		set_ri(true);
+//		gpu_update();
+//		EXITFUNC;
+//		return;
+//	}
+//#endif
 
 	Util::ap2ri(get_data(), nx * ny * nz);
 	set_ri(true);
@@ -935,16 +987,16 @@ void EMData::ri2inten()
 	if (!is_complex()) return;
 	if (!is_ri()) ap2ri();
 
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EMDataForCuda tmp = get_data_struct_for_cuda();
-		emdata_ri2inten(&tmp);
-		set_attr("is_intensity", int(1));
-		gpu_update();
-		EXITFUNC;
-		return;
-	}
-#endif
+//#ifdef EMAN2_USING_CUDA
+//	if (gpu_operation_preferred()) {
+//		EMDataForCuda tmp = get_data_struct_for_cuda();
+//		emdata_ri2inten(&tmp);
+//		set_attr("is_intensity", int(1));
+//		gpu_update();
+//		EXITFUNC;
+//		return;
+//	}
+//#endif
 
 	float * data = get_data();
 	size_t size = nx * ny * nz;
@@ -966,16 +1018,16 @@ void EMData::ri2ap()
 	if (!is_complex() || !is_ri()) {
 		return;
 	}
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EMDataForCuda tmp = get_data_struct_for_cuda();
-		emdata_ri2ap(&tmp);
-		set_ri(false);
-		gpu_update();
-		EXITFUNC;
-		return;
-	}
-#endif
+//#ifdef EMAN2_USING_CUDA
+//	if (gpu_operation_preferred()) {
+//		EMDataForCuda tmp = get_data_struct_for_cuda();
+//		emdata_ri2ap(&tmp);
+//		set_ri(false);
+//		gpu_update();
+//		EXITFUNC;
+//		return;
+//	}
+//#endif
 
 	float * data = get_data();
 
@@ -1728,6 +1780,7 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 
 	Region area(origin[0], origin[1], origin[2],nx1, ny1, nz1);
 
+	//make sure the block fits in EMData 
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
@@ -1759,57 +1812,33 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	int src_secsize =  nx1 * ny1;
 	int dst_secsize = nx * ny;
 
+	int src_gap = src_secsize - (y1-y0) * nx1;
+	int dst_gap = dst_secsize - (y1-y0) * nx;
+
+/*
 #ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-//		cudaMemcpy3DParms copyParams = {0};
-//		copyParams.srcPtr   = make_cudaPitchedPtr((void*)get_cuda_data(), nx*sizeof(float), nx, ny);
-//		cout << "Src pos is " << x0 << " " << y0 << " " << z0 << endl;
-//		copyParams.srcPos  = make_cudaPos(x0,y0,z0);
-//		cout << "Extent is " << x1-x0 << " " << y1-y0 << " " << z1-z0 << endl;
-//		cudaExtent extent = make_cudaExtent(x1-x0,y1-y0,z1-z0);
-//		int rnx = result->get_xsize();
-//		int rny = result->get_ysize();
-//		copyParams.dstPtr = make_cudaPitchedPtr((void*)result->get_cuda_data(),rnx*sizeof(float),rnx,rny );
-//		cout << "Dest pos is " << xd0 << " " << yd0 << " " << zd0 << endl;
-//		copyParams.dstPos  = make_cudaPos(xd0,yd0,zd0);
-//		copyParams.extent   = extent;
-//		copyParams.kind     = cudaMemcpyDeviceToDevice;
-//		cudaError_t error =  cudaMemcpy3D(&copyParams);
-//		if ( error != cudaSuccess) {
-//			string e = cudaGetErrorString(error);
-//			throw UnexpectedBehaviorException("CudaMemcpy3D failed with error: " + e);
-//		}
-		get_cuda_data();
-		CudaDataLock lock(this);
-		block->get_cuda_data();
-		CudaDataLock lock2(block);
-		for (int i = 0; i < (z1-z0); i++) {
-			float* ldst = get_cuda_data() + (z0+i) * dst_secsize + y0 * nx + x0;
-			float* lsrc = block->get_cuda_data() + (zd0+i) * src_secsize + yd0 * nx1 + xd0;
-
-
-// 			float* ldst = result->get_cuda_data() + (zd0+i) * dst_secsize + yd0 * (int)area.size[0] + xd0;
-// 			float* lsrc = get_cuda_data() + (z0+i) * src_secsize + y0 * nx + x0;
-			cudaError_t error =  cudaMemcpy2D( ldst, (nx)*sizeof(float), lsrc,nx1*sizeof(float), clipped_row_size, (y1-y0), cudaMemcpyDeviceToDevice );
-			if ( error != cudaSuccess) {
-				string e = cudaGetErrorString(error);
-				throw UnexpectedBehaviorException("cudaMemcpy2D failed in get_clip with error: " + e);
+	if(block->cudarwdata){
+		// this is VERY slow.....
+		float *cudasrc = block->cudarwdata + zd0 * src_secsize + yd0 * nx1 + xd0;
+		if(!cudarwdata) rw_alloc();
+		float *cudadst = cudarwdata + z0 * dst_secsize + y0 * nx + x0;
+		for (int i = z0; i < z1; i++) {
+			for (int j = y0; j < y1; j++) {
+				//printf("%x %x %d\n", cudadst, cudasrc, clipped_row_size);
+				cudaMemcpy(cudadst,cudasrc,clipped_row_size,cudaMemcpyDeviceToDevice);
+				cudasrc += nx1;
+				cudadst += nx;
 			}
+			cudasrc += src_gap;
+			cudadst += dst_gap;
 		}
-		gpu_update();
-		EXITFUNC;
 		return;
 	}
 #endif
+*/
 	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
 	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
-
-// 		float *src = get_data() + z0 * src_secsize + y0 * nx + x0;
-// 		float *dst = result->get_data();
-// 		dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
-
-	int src_gap = src_secsize - (y1-y0) * nx1;
-	int dst_gap = dst_secsize - (y1-y0) * nx;
+	
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 			EMUtil::em_memcpy(dst, src, clipped_row_size);
@@ -1819,6 +1848,12 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 		src += src_gap;
 		dst += dst_gap;
 	}
+	
+#ifdef EMAN2_USING_CUDA	
+	if(block->cudarwdata){
+		copy_to_cuda(); // copy back to device as padding is faster on the host
+	}
+#endif
 
 	update();
 	EXITFUNC;

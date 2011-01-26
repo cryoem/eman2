@@ -43,6 +43,7 @@
 #include "plugins/aligner_template.h"
 
 #ifdef EMAN2_USING_CUDA
+	#include "cuda/cuda_processor.h"
 	#include <sparx/cuda/cuda_ccf.h>
 #endif
 
@@ -120,19 +121,23 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	int masked = params.set_default("masked",0);
 	int useflcf = params.set_default("useflcf",0);
 	bool use_cpu = true;
-//#ifdef EMAN2_USING_CUDA
-//	if (this_img->gpu_operation_preferred() ) {
-// 		cout << "Translate on GPU" << endl;
-//		use_cpu = false;
-//		cf = this_img->calc_ccf_cuda(to,false,false);
-//	}
-//#endif // EMAN2_USING_CUDA
+
+#ifdef EMAN2_USING_CUDA
+	if(this_img->cudarwdata && to->cudarwdata){
+		if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
+		if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
+ 		//cout << "Translate on GPU" << endl;
+		use_cpu = false;
+		cf = this_img->calc_ccf(to);
+	}
+#endif // EMAN2_USING_CUDA
+	
 	if (use_cpu) {
 		if (useflcf) cf = this_img->calc_flcf(to);
 		else cf = this_img->calc_ccf(to);
 	}
-
-	// This is too expensive
+	//return cf;
+	// This is too expensive, esp for CUDA(we we can fix later
 	if (masked) {
 		EMData *msk=this_img->process("threshold.notzero");
 		EMData *sqr=to->process("math.squared");
@@ -148,8 +153,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		delete sqr;
 		delete cfn;
 	}
-
-//
 
 	int maxshiftx = params.set_default("maxshift",-1);
 	int maxshifty = params["maxshift"];
@@ -174,20 +177,22 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (nozero) {
 		cf->zero_corner_circulant(1);
 	}
-
+	
 	IntPoint peak;
-//#ifdef EMAN2_USING_CUDA
-//	if (!use_cpu) {
-//		EMDataForCuda tmp = cf->get_data_struct_for_cuda();
-//		int* p = calc_max_location_wrap_cuda(&tmp,maxshiftx, maxshifty, maxshiftz);
-//		peak = IntPoint(p[0],p[1],p[2]);
-//		free(p);
-//	}
-//#endif // EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA
+	if (!use_cpu) {
+		if (nozero) throw UnexpectedBehaviorException("Nozero is not yet supported in CUDA");
+		CudaPeakInfo* data = calc_max_location_wrap_cuda(cf->cudarwdata, cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), maxshiftx, maxshifty, maxshiftz);
+		peak = IntPoint(data->px,data->py,data->pz);
+		free(data);
+	}
+#endif // EMAN2_USING_CUDA
+	
 	if (use_cpu) {
 		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
 	}
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
+	//cout << peak[0] << " " << peak[1] << endl;
 
 	if (!to) {
 		cur_trans /= 2.0f; // If aligning theimage to itself then only go half way -
@@ -203,10 +208,21 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		delete cf;
 		cf = 0;
 	}
+	
 	Dict params("trans",static_cast< vector<int> >(cur_trans));
-	cf=this_img->process("math.translate.int",params);
+	if (use_cpu){
+		cf=this_img->process("math.translate.int",params);
+	}
 	Transform t;
 	t.set_trans(cur_trans);
+	
+#ifdef EMAN2_USING_CUDA
+	if (!use_cpu) {
+		//this will work just fine....
+		cf = this_img->process("xform",Dict("transform",&t));
+	}
+#endif // EMAN2_USING_CUDA
+
 	if ( nz != 1 ) {
 //		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
 //		t->set_trans(cur_trans);
@@ -241,13 +257,14 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 
 	// Do row-wise correlation, returning a sum.
 	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize());
-
+	
 	// Delete them, they're no longer needed
 	delete this_img_rfp; this_img_rfp = 0;
 	delete to_rfp; to_rfp = 0;
 
 	// Now solve the rotational alignment by finding the max in the column sum
 	float *data = cf->get_data();
+	
 	float peak = 0;
 	int peak_index = 0;
 	Util::find_max(data, this_img_rfp_nx, &peak, &peak_index);
@@ -514,7 +531,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	// Get the non flipped rotational, tranlsationally aligned image
 	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0),"useflcf",params.set_default("useflcf",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
-
+	
 	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
 	bool delete_flag = false;
@@ -1833,8 +1850,16 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		tofft = to->do_fft();
 	}
 	
+#ifdef EMAN2_USING_CUDA // I am still BenchMarking
+	//this_img->copy_to_cudaro();
+	if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+	//to->copy_to_cudaro();
+#endif
+
+
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
+		Transform t(params);
 		if (verbose) {
 			float alt = params["alt"];
 			float az = params["az"];
@@ -1847,25 +1872,27 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		for( float phi = lphi; phi <= uphi; phi += dphi ) { 
 			
 			params["phi"] = phi;
-			Transform t(params);
+			t.set_rotation(params);
 			EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score;
 			if (cmp_name == "ccc.tomo") {
 				best_score = transformed->cmp(cmp_name,tofft,altered_cmp_params);
+				transformed->clearupdate();
 				t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
 			} else {	
 			        if(dotrans){
 					EMData* ccf = transformed->calc_ccf(tofft);
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+					delete transformed; // this is to stop a mem leak
 					transformed = this_img->process("xform",Dict("transform",&t));
 				        delete ccf; ccf =0;
 				}
-				best_score = transformed->cmp(cmp_name,to,cmp_params);
+				best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
 			}
-                        delete transformed; transformed =0;
+                       delete transformed; transformed =0;
 
 			unsigned int j = 0;
 			//cout << "alt " <<float(t.get_rotation("eman").get("alt")) << " az " << float(t.get_rotation("eman").get("az")) << " phi " << float(t.get_rotation("eman").get("phi")) << endl;

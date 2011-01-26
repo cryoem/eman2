@@ -57,14 +57,28 @@ EMData *do_fft() const;
  * real/imaginary format and exists only on the GPU
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
  */
-EMData *do_fft_cuda() const;
+EMData *do_fft_cuda(); // I am not using const b/c this function does modify cuda specific EMData members...
+
+/** return the inplace fast fourier transform (FFT) image of the current
+ * image. the current image is not changed. The result is in
+ * real/imaginary format and exists only on the GPU
+ * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ */
+EMData *do_fft_inplace_cuda();
 
 /**  return the inverse fourier transform (IFT) image of the current
  * image. The result exists only on the GPU
  * @param preserve_input whether or not this EMData object should be preserved. If this is unecessary than we can avoid a copy and run faster
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
  */
-EMData *do_ift_cuda(bool preserve_input = true) const;
+EMData *do_ift_cuda();
+
+/**  return the inverse fourier transform (IFT) image of the current
+ * image inplace. The result exists only on the GPU
+ * @param preserve_input whether or not this EMData object should be preserved. If this is unecessary than we can avoid a copy and run faster
+ * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ */
+EMData *do_ift_inplace_cuda();
 #endif //EMAN2_USING_CUDA
 
 

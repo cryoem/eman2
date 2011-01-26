@@ -59,8 +59,9 @@
 #define EMDATA_EMAN2_DEBUG 0
 
 #ifdef EMAN2_USING_CUDA
-#include <driver_functions.h>
+//#include <driver_functions.h>
 #include "cuda/cuda_processor.h"
+#include "cuda/cuda_emfft.h"
 #endif // EMAN2_USING_CUDA
 
 using namespace EMAN;
@@ -71,7 +72,7 @@ int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
 EMData::EMData() :
 #ifdef EMAN2_USING_CUDA
-		cuda_cache_handle(-1),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), 
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0),
 		zoff(0), all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -98,7 +99,7 @@ EMData::EMData() :
 
 EMData::EMData(const string& filename, int image_index) :
 #ifdef EMAN2_USING_CUDA
-		cuda_cache_handle(-1),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(filename), pathnum(image_index), rot_fp(0)
@@ -125,14 +126,14 @@ EMData::EMData(const string& filename, int image_index) :
 
 EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
-		cuda_cache_handle(-1),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(that.changecount), nx(that.nx), ny(that.ny), nz(that.nz),
 		nxy(that.nx*that.ny), nxyz(that.nx*that.ny*that.nz), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
 	ENTERFUNC;
-
+	
 	float* data = that.rdata;
 	size_t num_bytes = nx*ny*nz*sizeof(float);
 	if (data && num_bytes != 0)
@@ -141,18 +142,14 @@ EMData::EMData(const EMData& that) :
 		EMUtil::em_memcpy(rdata, data, num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
-		float * cuda_data = that.get_cuda_data();
-		CudaDataLock lock2(&that);
-		set_size_cuda(nx,ny,nz);
-		float *cd = get_cuda_data();
-		CudaDataLock lock1(this);
-		cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
+	if (num_bytes != 0 && that.cudarwdata != 0) {
+		//cout << "That copy constructor" << endl;
+		rw_alloc();
+		cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
-	// This is a bit of hack
-	flags |= EMDATA_GPU_RO_NEEDS_UPDATE;
 #endif //EMAN2_USING_CUDA
+
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
 	EMData::totalalloc++;
@@ -191,19 +188,13 @@ EMData& EMData::operator=(const EMData& that)
 		zoff = that.zoff;
 
 #ifdef EMAN2_USING_CUDA
-		free_cuda_memory();
-		// There should also be the case where we deal with ro data...
-		if (num_bytes != 0 && that.cuda_cache_handle != -1 && that.gpu_rw_is_current()) {
-			float * cuda_data = that.get_cuda_data();
-			CudaDataLock lock1(&that);
-			set_size_cuda(that.nx, that.ny, that.nz);
-			float *cd = get_cuda_data();
-			CudaDataLock lock2(this);
-			cudaError_t error = cudaMemcpy(cd,cuda_data,num_bytes,cudaMemcpyDeviceToDevice);
-			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in operator= with error: " + string(cudaGetErrorString(error)));
+		cout << "That copy constructor #2" << endl;
+		if (num_bytes != 0 && that.cudarwdata != 0) {
+			rw_alloc();
+			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
+			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
+			
 		}
-		// This is a bit of hack
-		flags &= EMDATA_GPU_RO_NEEDS_UPDATE;
 #endif //EMAN2_USING_CUDA
 
 		changecount = that.changecount;
@@ -217,7 +208,7 @@ EMData& EMData::operator=(const EMData& that)
 
 EMData::EMData(int nx, int ny, int nz, bool is_real) :
 #ifdef EMAN2_USING_CUDA
-		cuda_cache_handle(-1),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -266,8 +257,27 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 
 EMData::EMData(float* data, const int x, const int y, const int z, const Dict& attr_dict) :
 #ifdef EMAN2_USING_CUDA
-		cuda_cache_handle(-1),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
+		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz(x*y*z), xoff(0),
+		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
+{
+	ENTERFUNC;
+	// used to replace cube 'pixel'
+	attr_dict["apix_x"] = 1.0f;
+	attr_dict["apix_y"] = 1.0f;
+	attr_dict["apix_z"] = 1.0f;
+
+	EMData::totalalloc++;
+
+	update();
+	EXITFUNC;
+}
+
+#ifdef EMAN2_USING_CUDA
+
+EMData::EMData(float* data, float* cudadata, const int x, const int y, const int z, const Dict& attr_dict) :
+		cudarwdata(cudadata), cudarodata(0), num_bytes(x*y*z*sizeof(float)), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz(x*y*z), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
 {
@@ -284,6 +294,8 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 	EXITFUNC;
 }
 
+#endif //EMAN2_USING_CUDA
+
 //debug
 using std::cout;
 using std::endl;
@@ -291,9 +303,11 @@ EMData::~EMData()
 {
 	ENTERFUNC;
 	free_memory();
+	
 #ifdef EMAN2_USING_CUDA
-// 	cout << "Death comes to " << cuda_cache_handle << " " << this << endl;
-	free_cuda_memory();
+	if(cudarwdata){rw_free();}
+	if(cudarodata){ro_free();}
+	removefromlist();
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
 #ifdef MEMDEBUG
@@ -569,24 +583,24 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 		throw ImageDimensionException("New image dimensions are negative - this is not supported in the the get_clip operation");
 	}
 
-#ifdef EMAN2_USING_CUDA
+//#ifdef EMAN2_USING_CUDA
 	// Strategy is always to prefer using the GPU if possible
-	bool use_gpu = false;
-	if ( gpu_operation_preferred() ) {
-		result->set_size_cuda((int)area.size[0], ysize, zsize);
+//	bool use_gpu = false;
+//	if ( gpu_operation_preferred() ) {
+//		result->set_size_cuda((int)area.size[0], ysize, zsize);
 		//CudaDataLock lock(this); // Just so we never have to recopy this data to and from the GPU
-		result->get_cuda_data(); // Force the allocation - set_size_cuda is lazy
+//		result->get_cuda_data(); // Force the allocation - set_size_cuda is lazy
 		// Setting the value is necessary seeing as cuda data is not automatically zeroed
-		result->to_value(fill); // This will automatically use the GPU.
-		use_gpu = true;
-	} else { // cpu == True
-		result->set_size((int)area.size[0], ysize, zsize);
-		if (fill != 0.0) { result->to_value(fill); };
-	}
-#else
+//		result->to_value(fill); // This will automatically use the GPU.
+//		use_gpu = true;
+//	} else { // cpu == True
+//		result->set_size((int)area.size[0], ysize, zsize);
+//		if (fill != 0.0) { result->to_value(fill); };
+//	}
+//#else
 	result->set_size((int)area.size[0], ysize, zsize);
 	if (fill != 0.0) { result->to_value(fill); };
-#endif //EMAN2_USING_CUDA
+//#endif //EMAN2_USING_CUDA
 
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
@@ -631,12 +645,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 		}
 	}
 
-#ifdef EMAN2_USING_CUDA
-	if (use_gpu) result->gpu_update();
-	else result->update();
-#else
+//#ifdef EMAN2_USING_CUDA
+//	if (use_gpu) result->gpu_update();
+//	else result->update();
+//#else
 	result->update();
-#endif // EMAN2_USING_CUDA
+//#endif // EMAN2_USING_CUDA
 
 
 	result->set_path(path);
@@ -1445,17 +1459,51 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 	}
 	else {
 
-#ifdef EMAN2_USING_CUDA
-		if (gpu_operation_preferred()) {
-			EXITFUNC;
-			return calc_ccf_cuda(with,false,center);
+#ifdef EMAN2_USING_CUDA //CUDA 
+		// assume always get rw data (makes life a lot easier!!! 
+		// also assume that both images are the same size. When using CUDA we are only interested in speed, not flexibility!!
+		// P.S. (I feel like I am pounding square pegs into a round holes with CUDA)
+		if(cudarwdata && with->cudarwdata) {
+			//cout << "using CUDA for ccf" << endl;
+			EMData* afft = 0;
+			EMData* bfft = 0;
+			bool delafft = false, delbfft = false;
+			int offset = 0;
+			
+			//do ffts if not alreay done
+			if(!is_complex()){
+				afft = do_fft_cuda();
+				delafft = true;
+				offset = 2 - nx%2;
+				//cout << "Do cuda FFT A" << endl;
+			}else{
+				afft = this;
+			}
+			if(!with->is_complex()){
+				bfft = with->do_fft_cuda();
+				//cout << "Do cuda FFT B" << endl;
+				delbfft = true;
+			}else{
+				bfft = with;
+			}
+
+			calc_ccf_cuda(afft->cudarwdata,bfft->cudarwdata,nx + offset, ny, nz); //this is the business end, results go in afft
+			
+			if(delbfft) delete bfft;
+			
+			EMData * corr = afft->do_ift_cuda();
+			if(delafft) delete afft;
+			//cor->do_ift_inplace_cuda();//a bit faster, but I'll alos need to rearrnage the mem structure for it to work, BUT this is very SLOW.
+			
+			return corr;
 		}
 #endif
-
+		
 		// If the argument EMData pointer is not the same size we automatically resize it
 		bool undoresize = false;
-		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize();
-		if ( wnx != nx || wny != ny || wnz != nz ) {
+		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize(); // obviously is one image is complex and the other real they won't be the same size and we DONT! want to clip JFF
+		if (!(is_complex() ^ with->is_complex()) && (wnx != nx || wny != ny || wnz != nz)) {
+			cout << "Warning!!! resizing image before CCF calculation" << endl;
 			Region r((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
 			with->clip_inplace(r);
 			undoresize = true;
@@ -1477,13 +1525,6 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 {
 	ENTERFUNC;
-
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred() ) {
-		EXITFUNC;
-		return calc_ccfx_cuda(with,y0,y1,no_sum);
-	}
-#endif
 
 	if (!with) {
 		LOGERR("NULL 'with' image. ");
@@ -1533,6 +1574,28 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		nx_fft = width;
 		ny_fft = height;
 	}
+
+#ifdef EMAN2_USING_CUDA
+	if (cudarwdata && with->cudarwdata) {
+		//cout << "calc_ccfx CUDA" << endl;
+		if(!f1.cudarwdata) f1.rw_alloc();
+		if(!f2.cudarwdata) f2.rw_alloc();
+		if(!rslt.cudarwdata) rslt.rw_alloc();
+		cuda_dd_fft_real_to_complex_nd(cudarwdata, f1.cudarwdata, nx, 1, 1, height);
+		cuda_dd_fft_real_to_complex_nd(with->cudarwdata, f2.cudarwdata, nx, 1, 1, height);
+		calc_ccf_cuda(f1.cudarwdata, f2.cudarwdata, nx, ny, nz);
+		cuda_dd_fft_complex_to_real_nd(f1.cudarwdata, rslt.cudarwdata, nx, 1, 1, height);
+		if(no_sum){
+			EMData* result = new EMData(rslt);
+			return result;
+		}
+		EMData* cf = new EMData(0,0,nx,1,1); //cuda constructor
+		cf->cudarwdata = emdata_column_sum(rslt.cudarwdata, nx, ny);
+
+		EXITFUNC;
+		return cf;
+	}
+#endif
 
 	float *d1 = get_data();
 	float *d2 = with->get_data();
@@ -1672,12 +1735,6 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 {
 	ENTERFUNC;
-#ifdef EMAN2_USING_CUDA
-	if (gpu_operation_preferred()) {
-		EXITFUNC;
-		return make_rotational_footprint_cuda(unwrap);
-	}
-#endif
 
 	update_stat();
 	// Note that rotational_footprint caching saves a large amount of time
@@ -1716,6 +1773,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	// It is important to set all newly established pixels around the boundaries to the mean
 	// If this is not done then the associated rotational alignment routine breaks, in fact
 	// everythin just goes foo.
+
 	big_clip.to_value(get_edge_mean());
 
 	if (nz != 1) {
@@ -1723,8 +1781,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	} else  {
 		big_clip.insert_clip(this,IntPoint(cs,cs,0));
 	}
-
-
+	
 	// The filter object is nothing more than a cached high pass filter
 	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
 	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication
@@ -1732,9 +1789,22 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (filt->get_xsize() != big_clip.get_xsize() +2-(big_clip.get_xsize()%2) || filt->get_ysize() != big_clip.get_ysize() ||
 		   filt->get_zsize() != big_clip.get_zsize()) {
 		filt->set_size(big_clip.get_xsize() + 2-(big_clip.get_xsize()%2), big_clip.get_ysize(), big_clip.get_zsize());
-	filt->to_one();
-	filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+		filt->to_one();
+		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+#ifdef EMAN2_USING_CUDA
+		if(big_clip.cudarwdata)
+		{
+			filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
+		}
+#endif
 	}
+#ifdef EMAN2_USING_CUDA
+	if(big_clip.cudarwdata && !filt->cudarwdata)
+	{
+		filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
+	}
+#endif
+	
 	EMData *mc = big_clip.calc_mutual_correlation(&big_clip, true,filt);
  	mc->sub(mc->get_edge_mean());
 
@@ -1753,12 +1823,15 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	} else {
 		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));
 	}
-
+		
 	delete mc; mc = 0;
 	EMData * result = NULL;
-
+	
 	if (nz == 1) {
 		if (!unwrap) {
+#ifdef EMAN2_USING_CUDA
+			if(sml_clip.cudarwdata) throw UnexpectedBehaviorException("shap masking is not yet supported by CUDA");
+#endif
 			result = sml_clip.process("mask.sharp", Dict("outer_radius", -1, "value", 0));
 
 		}
@@ -1772,7 +1845,10 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 // 		result = clipped_mc;
 		result = new EMData(sml_clip);
 	}
-
+	
+#ifdef EMAN2_USING_CUDA
+	sml_clip.roneedsanupdate(); //If we didn't do this then unwrap would use data from the previous call of this function, happens b/c sml_clip is static
+#endif
 	EXITFUNC;
 	if ( unwrap == true)
 	{ // this if statement reflects a strict policy of caching in only one scenario see comments at beginning of function block
@@ -1985,6 +2061,56 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 		throw ImageFormatException( "images not same size");
 	}
 
+#ifdef EMAN2_USING_CUDA
+	if(cudarwdata && with->cudarwdata)
+	{	
+
+		EMData* this_fft = do_fft_cuda();
+
+		EMData *cf = 0;
+		if (with && with != this) {
+			cf = with->do_fft_cuda();
+		}else{
+			cf = this_fft->copy();
+		}
+		
+		if (filter) {
+			if (!EMUtil::is_same_size(filter, cf)) {
+				LOGERR("improperly sized filter");
+				throw ImageFormatException("improperly sized filter");
+			}
+			mult_complex_efficient_cuda(cf->cudarwdata, filter->cudarwdata, cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), 7);
+			mult_complex_efficient_cuda(this_fft->cudarwdata, filter->cudarwdata, this_fft->get_xsize(), this_fft->get_ysize(), this_fft->get_zsize(), 7);
+		}
+		
+		mcf_cuda(this_fft->cudarwdata, cf->cudarwdata, this_fft->get_xsize(), this_fft->get_ysize(), this_fft->get_zsize());
+		
+		EMData *f2 = cf->do_ift_cuda();
+
+		if (tocenter) {
+			f2->process_inplace("xform.phaseorigin.tocenter");
+		}
+
+		if( cf )
+		{
+			delete cf;
+			cf = 0;
+		}
+
+		if( this_fft )
+		{
+			delete this_fft;
+			this_fft = 0;
+		}
+
+		f2->set_attr("label", "MCF");
+		f2->set_path("/tmp/eman.mcf");
+
+		EXITFUNC;
+		return f2;
+	}
+#endif
+
 	EMData *this_fft = 0;
 	this_fft = do_fft();
 
@@ -1994,7 +2120,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 		throw NullPointerException("FFT returns NULL image");
 	}
 
-	this_fft->ap2ri();
+	this_fft->ap2ri(); //this is not needed!
 	EMData *cf = 0;
 
 	if (with && with != this) {
@@ -2003,20 +2129,19 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
-		cf->ap2ri();
+		cf->ap2ri(); //nor is this!
 	}
 	else {
 		cf = this_fft->copy();
 	}
-
+	
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
 			LOGERR("improperly sized filter");
 			throw ImageFormatException("improperly sized filter");
 		}
-
-		cf->mult_complex_efficient(*filter,true);
-		this_fft->mult(*filter,true);
+		cf->mult_complex_efficient(*filter,7); // takes advantage of the fact that the filter is 1 everywhere but the origin
+		this_fft->mult_complex_efficient(*filter,7);
 		/*cf->mult_complex_efficient(*filter,5);
 		this_fft->mult_complex_efficient(*filter,5);*/
 	}
@@ -2039,19 +2164,17 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 			rdata2[i] = (rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1]);
 			rdata2[i + 1] = (rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1]);
 		}
-
-		this_fft->update();
-		cf->update();
-		rdata1 = cf->get_data();
-
+		
+		//This seems like a bug, but it probably is never used....
 		for (size_t i = 0; i < this_fft_size; i += 2) {
-			float t = Util::square(rdata1[i]) + Util::square(rdata1[i + 1]);
+			float t = Util::square(rdata2[i]) + Util::square(rdata2[i + 1]);
 			if (t != 0) {
-				t = pow(t, (float) 0.25);
-				rdata1[i] /= t;
-				rdata1[i + 1] /= t;
+				t = pow(t, 0.25f);
+				rdata2[i] /= t;
+				rdata2[i + 1] /= t;
 			}
 		}
+		this_fft->update();
 		cf->update();
 	}
 
@@ -2328,19 +2451,14 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	if ( (r2-r1) < 0 ) throw UnexpectedBehaviorException("The combination of function the arguments and the image dimensions causes unexpected behavior internally. Use a larger image, or a smaller value of r1, or a combination of both");
 
 #ifdef EMAN2_USING_CUDA
-	if ( gpu_operation_preferred() ) {
-// 		cout << "Binding " << cuda_cache_handle << endl;
-		bind_cuda_texture();
-		EMData* rslt = new EMData();
-		rslt->set_size_cuda(xs,r2-r1,1);
-		EMDataForCuda r = rslt->get_data_struct_for_cuda();
-// 		CudaDataLock lock1(rslt);
-		/*EMDataForCuda* tmp = */emdata_unwrap(&r,r1,r2,xs,p,dx,dy,weight_radial,nx,ny);
-		unbind_cuda_texture();
-// 		EMData* e = new EMData();
-// 		e->set_gpu_rw_data(tmp->data,tmp->nx,tmp->ny,tmp->nz);
-// 		free(tmp);
-		return  rslt;
+	if (isrodataongpu()){
+		//cout << " CUDA unwrap" << endl;
+		EMData* result = new EMData(0,0,xs,(r2-r1),1);
+		result->rw_alloc();
+		bindcudaarrayA(true);
+		emdata_unwrap(result->cudarwdata, r1, r2, xs, p, dx, dy, weight_radial, nx, ny);
+		unbindcudaarryA();
+		return result;
 	}
 #endif
 
@@ -2684,6 +2802,17 @@ void EMData::cconj() {
 	EXITFUNC;
 }
 
+//#ifdef EMAN2_USING_CUDA
+//void EMData::update_stat_cuda() const
+//{
+//	float* stats = update_stats_cuda(cudarwdata);
+	
+//	attr_dict["mean"] = stats[0];
+//	attr_dict["sigma"] = stats[1];
+	
+//	free(stats);
+//}
+//#endif
 
 void EMData::update_stat() const
 {
@@ -2709,9 +2838,6 @@ void EMData::update_stat() const
 
 	int n_nonzero = 0;
 
-	//cout << "point 1" << endl;
-	//cout << "size is " << nx << " " << ny << " " << nz << endl;
-
 	size_t size = nx*ny*nz;
 	for (size_t i = 0; i < size; i += step) {
 		float v = data[i];
@@ -2726,7 +2852,7 @@ void EMData::update_stat() const
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
-	//cout << "Point 2" << endl;
+
 	size_t n = size / step;
 	double mean = sum / n;
 
@@ -3836,35 +3962,35 @@ EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR va
 
 
 
-#ifdef EMAN2_USING_CUDA
-EMData* EMData::cut_slice_cuda(const Transform& transform)
-{
-	ENTERFUNC;
+//#ifdef EMAN2_USING_CUDA
+//EMData* EMData::cut_slice_cuda(const Transform& transform)
+//{
+//	ENTERFUNC;
 //
 	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
-	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
+//	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
 	// Now check for complex images - this is really just being thorough
-	if ( is_complex() ) throw ImageFormatException("Can not call cut slice an image that is complex");
+//	if ( is_complex() ) throw ImageFormatException("Can not call cut slice an image that is complex");
 //
 
-	EMData* ret = new EMData();
-	ret->set_size_cuda(nx,ny,1);
+//	EMData* ret = new EMData();
+//	ret->set_size_cuda(nx,ny,1);
 
-	float * m = new float[12];
-	transform.copy_matrix_into_array(m);
+//	float * m = new float[12];
+//	transform.copy_matrix_into_array(m);
 
-	EMDataForCuda tmp = ret->get_data_struct_for_cuda();
-	bind_cuda_texture(); // Binds this image to the global texture
-	cut_slice_cuda_(&tmp,m);
+//	EMDataForCuda tmp = ret->get_data_struct_for_cuda();
+//	bind_cuda_texture(); // Binds this image to the global texture
+//	cut_slice_cuda_(&tmp,m);
 
-	ret->gpu_update();
-	delete [] m;
+//	ret->gpu_update();
+//	delete [] m;
 
-	EXITFUNC;
-	return ret;
-}
+//	EXITFUNC;
+//	return ret;
+//}
 
-#endif // EMAN2_USING_CUDA
+//#endif // EMAN2_USING_CUDA
 
 
 void EMData::uncut_slice(EMData * const map, const Transform& transform) const

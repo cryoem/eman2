@@ -13,13 +13,9 @@
 ##############################################################################
 # Build a shared library
 CUDA_ADD_LIBRARY(EM2Cuda
-  cuda_projector.cu
   cuda_util.cu
   cuda_emfft.cu
-  cuda_processor.cu
-  cuda_cmp.cu
  )
-
 
 # Specify the dependency.
 TARGET_LINK_LIBRARIES(EM2Cuda

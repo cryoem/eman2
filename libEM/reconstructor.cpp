@@ -47,6 +47,10 @@
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_reconstructor.h"
+#endif
+
 using namespace EMAN;
 using std::complex;
 
@@ -524,7 +528,16 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 
 //	printf("@@@ %d\n",(int)return_slice->get_attr("nx"));
 	// Fourier transform the slice
+	
+#ifdef EMAN2_USING_CUDA
+	if(slice->cudarwdata){
+		return_slice->do_fft_inplace_cuda(); //a CUDA FFT inplace is quite slow as there is a lot of mem copying.
+	}else{
+		return_slice->do_fft_inplace();
+	}
+#else
 	return_slice->do_fft_inplace();
+#endif
 
 //	printf("%d\n",(int)return_slice->get_attr("nx"));
 
@@ -562,8 +575,9 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	rotation->set_trans(0,0,0);
 
 	// Finally to the pixel wise slice insertion
+	//slice->copy_to_cuda();
 	do_insert_slice_work(slice, *rotation, weight);
-
+	
 	delete rotation; rotation=0;
 	delete slice;
 
@@ -588,6 +602,23 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
 	float iny=(float)(input_slice->get_ysize());
 
+#ifdef EMAN2_USING_CUDA
+	if(input_slice->cudarwdata && !image->cudarwdata){
+		image->copy_to_cuda();
+		tmp_data->copy_to_cuda();
+	}
+	if(image->cudarwdata && input_slice->cudarwdata){
+		float * m = new float[12];
+		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+			Transform t3d = arg*(*it);
+			t3d.copy_matrix_into_array(m);
+			//cout << "using CUDA " << image->cudarwdata << endl;
+			insert_slice_cuda(m,input_slice->cudarwdata,image->cudarwdata,tmp_data->cudarwdata,inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
+		}
+		delete m;
+		return;
+	}
+#endif
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
@@ -609,7 +640,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 // 				if (x==10 && y==0) printf("10,0 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f) %1.0f %d\n",
 // 					xx,yy,zz,t3d.at(0,0),t3d.at(0,1),t3d.at(0,2),t3d.at(1,0),t3d.at(1,1),t3d.at(1,2),t3d.at(2,0),t3d.at(2,1),t3d.at(2,2),inx,nx);
-// 				if (x==0 && y==10) printf("0,10 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f)\n",
+// 				if (x==0 && y==10 FourierReconstructor:) printf("0,10 -> %1.2f,%1.2f,%1.2f\t(%5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f   %5.2f %5.2f %5.2f)\n",
 // 					xx,yy,zz,t3d.at(0,0),t3d.at(0,1),t3d.at(0,2),t3d.at(1,0),t3d.at(1,1),t3d.at(1,2),t3d.at(2,0),t3d.at(2,1),t3d.at(2,2));
 
 				//printf("%3.1f %3.1f %3.1f\t %1.4f %1.4f\t%1.4f\n",xx,yy,zz,input_slice->get_complex_at(x,y).real(),input_slice->get_complex_at(x,y).imag(),weight);
@@ -639,10 +670,9 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 	rotation->set_scale(1.0);
 	rotation->set_mirror(false);
 	rotation->set_trans(0,0,0);
-
-	// Remove the current slice first (not threadsafe, but otherwise performance would be awful)
 	if (sub) do_insert_slice_work(slice, *rotation, -weight);
-
+	// Remove the current slice first (not threadsafe, but otherwise performance would be awful)
+	
 	// Compare
 	do_compare_slice_work(slice, *rotation,weight);
 
@@ -653,7 +683,6 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 
 	// Now put the slice back
 	if (sub) do_insert_slice_work(slice, *rotation, weight);
-
 
 	delete rotation;
 	delete slice;
@@ -678,49 +707,70 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	double vweight=0;		// sum of weights
 	double power=0;		// sum of inten*weight from volume
 	double power2=0;		// sum of inten*weight from image
-	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
-		Transform t3d = arg*(*it);
-		for (int y = -iny/2; y < iny/2; y++) {
-			for (int x = 0; x <=  inx/2; x++) {
-				if (x==0 && y==0) continue;		// We don't want to use the Fourier origin
-
-				float rx = (float) x/(inx-2);	// coords relative to Nyquist=.5
-				float ry = (float) y/iny;
-
-// 				if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
-// 					continue;
-
-				Vec3f coord(rx,ry,0);
-				coord = coord*t3d; // transpose multiplication
-				float xx = coord[0]; // transformed coordinates in terms of Nyquist
-				float yy = coord[1];
-				float zz = coord[2];
-
-
-				if (fabs(xx)>0.5 || fabs(yy)>=0.5 || fabs(zz)>=0.5) continue;
-
-				// Map back to actual pixel coordinates in output volume
-				xx=xx*(nx-2);
-				yy=yy*ny;
-				zz=zz*nz;
-
-
-				int idx = (int)(x * 2 + inx*(y<0?iny+y:y));
-				dt2[0] = dat[idx];
-				dt2[1] = dat[idx+1];
-
-				// value returned indirectly in dt
-				if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
-
-//				printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
-				dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
-				vweight+=dt[2];
-				power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
-				power2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
-			}
+	bool use_cpu = true;
+	
+#ifdef EMAN2_USING_CUDA
+	if(input_slice->cudarwdata && !image->cudarwdata){
+		image->copy_to_cuda();
+		tmp_data->copy_to_cuda();
+	}
+	if(image->cudarwdata && input_slice->cudarwdata){
+		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+			Transform t3d = arg*(*it);
+			float * m = new float[12];
+			t3d.copy_matrix_into_array(m);
+			float4 stats = determine_slice_agreement_cuda(m,input_slice->cudarwdata,image->cudarwdata,tmp_data->cudarwdata,inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
+			//cout << "CUDA stats " << stats.x << " " << stats.y << " " << stats.z << " " << stats.w << endl;
+			use_cpu = false;
 		}
 	}
+#endif
+	if(use_cpu) {
+		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+			Transform t3d = arg*(*it);
+			for (int y = -iny/2; y < iny/2; y++) {
+				for (int x = 0; x <=  inx/2; x++) {
+					if (x==0 && y==0) continue;		// We don't want to use the Fourier origin
 
+					float rx = (float) x/(inx-2);	// coords relative to Nyquist=.5
+					float ry = (float) y/iny;
+
+// 					if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
+// 					continue;
+
+					Vec3f coord(rx,ry,0);
+					coord = coord*t3d; // transpose multiplication
+					float xx = coord[0]; // transformed coordinates in terms of Nyquist
+					float yy = coord[1];
+					float zz = coord[2];
+
+
+					if (fabs(xx)>0.5 || fabs(yy)>=0.5 || fabs(zz)>=0.5) continue;
+
+					// Map back to actual pixel coordinates in output volume
+					xx=xx*(nx-2);
+					yy=yy*ny;
+					zz=zz*nz;
+
+
+					int idx = (int)(x * 2 + inx*(y<0?iny+y:y));
+					dt2[0] = dat[idx];
+					dt2[1] = dat[idx+1];
+
+					// value returned indirectly in dt
+					if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
+
+//					printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
+					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
+					vweight+=dt[2];
+					power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
+					power2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
+				}
+			}
+			//cout << dot << " " << vweight << " " << power << " " << power2 << endl;
+		}
+	}
+	
 	dot/=sqrt(power*power2);		// normalize the dot product
 //	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
 	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
@@ -810,10 +860,17 @@ EMData *FourierReconstructor::finish(bool doift)
 {
 // 	float *norm = tmp_data->get_data();
 // 	float *rdata = image->get_data();
-
+#ifdef EMAN2_USING_CUDA
+	if(image->cudarwdata){
+		cout << "copy back from CUDA" << endl;
+		image->copy_from_device();
+		tmp_data->copy_from_device();
+	}
+#endif
+	
 	bool sqrtnorm=params.set_default("sqrtnorm",false);
 	normalize_threed(sqrtnorm);
-
+	
 // 	tmp_data->write_image("density.mrc");
 
 	// we may as well delete the tmp data now... it saves memory and the calling program might
