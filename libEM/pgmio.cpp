@@ -162,8 +162,8 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 
-	dict["max_gray"] = maxval;
-	dict["min_gray"] = minval;
+	dict["PGM.max_gray"] = maxval;
+	dict["PGM.min_gray"] = minval;
 
 	EXITFUNC;
 	return 0;

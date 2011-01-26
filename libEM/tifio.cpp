@@ -209,9 +209,9 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 		dict["datatype"] = EMUtil::EM_FLOAT;
 	}
 
-	dict["bitspersample"] = bitspersample;
-	dict["resolution_x"] = resolution_x;
-	dict["resolution_y"] = resolution_y;
+	dict["TIFF.bitspersample"] = bitspersample;
+	dict["TIFF.resolution_x"] = resolution_x;
+	dict["TIFF.resolution_y"] = resolution_y;
 	EXITFUNC;
 	return 0;
 }

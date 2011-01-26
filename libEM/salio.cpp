@@ -179,7 +179,7 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 	dict["datatype"] = EMUtil::EM_SHORT;
-	dict["pixel"] = pixel;
+	dict["SAL.pixel"] = pixel;
 
 	EXITFUNC;
 	return 0;

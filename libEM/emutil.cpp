@@ -285,11 +285,6 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_PGM;
 		}
 		break;
-	case IMAGE_EMIM:
-		if (EmimIO::is_valid(first_block)) {
-			return IMAGE_EMIM;
-		}
-		break;
 	case IMAGE_ICOS:
 		if (IcosIO::is_valid(first_block)) {
 			return IMAGE_ICOS;
@@ -412,9 +407,6 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else if (PgmIO::is_valid(first_block)) {
 		image_type = IMAGE_PGM;
-	}
-	else if (EmimIO::is_valid(first_block)) {
-		image_type = IMAGE_EMIM;
 	}
 	else if (IcosIO::is_valid(first_block)) {
 		image_type = IMAGE_ICOS;
@@ -558,9 +550,6 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		imageio = new JpegIO(filename,rw_mode);
 		break;
 #endif
-	case IMAGE_EMIM:
-		imageio = new EmimIO(filename, rw_mode);
-		break;
 	case IMAGE_ICOS:
 		imageio = new IcosIO(filename, rw_mode);
 		break;

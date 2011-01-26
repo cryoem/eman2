@@ -40,7 +40,6 @@ cd
 "CMakeFiles/EM2.dir/spiderio.o"
 "CMakeFiles/EM2.dir/sspiderio.o"
 "CMakeFiles/EM2.dir/pgmio.o"
-"CMakeFiles/EM2.dir/emimio.o"
 "CMakeFiles/EM2.dir/icosio.o"
 "CMakeFiles/EM2.dir/lstio.o"
 "CMakeFiles/EM2.dir/pngio.o"
@@ -188,7 +187,6 @@ lib_em2_sources = [
     "spiderio.cpp", 
     "sspiderio.cpp", 
     "pgmio.cpp", 
-    "emimio.cpp", 
     "icosio.cpp", 
     "lstio.cpp", 
     "pngio.cpp", 

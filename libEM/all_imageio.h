@@ -58,7 +58,6 @@
 #include "vtkio.h"
 #include "sspiderio.h"
 #include "pgmio.h"
-#include "emimio.h"
 #include "icosio.h"
 #include "lstio.h"
 #include "lstfastio.h"
