@@ -56,7 +56,7 @@ using namespace EMAN;
 #include <ostream>
 using std::ostream_iterator;
 
-const float Transform3D::ERR_LIMIT = 0.000001f;
+//const float Transform3D::ERR_LIMIT = 0.000001f;
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
@@ -1196,357 +1196,357 @@ int Transform::get_nsym(const string & sym_name)
 	return nsym;
 }
 
-
-Transform3D::Transform3D()  //    C1
-{
-	init();
-}
-
-Transform3D::Transform3D( const Transform3D& rhs )
-{
-    for( int i=0; i < 4; ++i )
-    {
-        for( int j=0; j < 4; ++j )
-	{
-	    matrix[i][j] = rhs.matrix[i][j];
-	}
-    }
-}
-
-// C2
-Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
-{
-	init();
-	set_rotation(az,alt,phi);
-}
-
-
-//  C3  Usual Constructor: Post Trans, after appying Rot
-Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
-{
-	init(); // This is called in set_rotation
-	set_rotation(az,alt,phi);
-	set_posttrans(posttrans);
-}
-
-Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
-						 const float& m21, const float& m22, const float& m23,
-						 const float& m31, const float& m32, const float& m33)
-{
-	init();
-	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
-}
-
-// C4
-Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3)
-{
- 	init();
-	set_rotation(euler_type,a1,a2,a3);
-}
-
-Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
-{
- 	init();
-	set_rotation(euler_type,a1,a2,a3,a4);
-}
-
-
-// C5
-Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
-{
-	init();
-	set_rotation(euler_type,rotation);
-}
-
-
-// C6   First apply pretrans: Then rotation: Then posttrans
-
-Transform3D::Transform3D(  const Vec3f& pretrans,  const float& az, const float& alt, const float& phi, const Vec3f& posttrans )  //YYY  by default EMAN
-{
-	init();
-	set_pretrans(pretrans);
-	set_rotation(az,alt,phi);
-	set_posttrans(posttrans);
-}
-
-
-
-
-Transform3D::~Transform3D()
-{
-}
-
-
-
-void Transform3D::to_identity()
-{
-//	for (int i = 0; i < 3; i++) {
-//		matrix[i][i] = 1;
+//
+//Transform3D::Transform3D()  //    C1
+//{
+//	init();
+//}
+//
+//Transform3D::Transform3D( const Transform3D& rhs )
+//{
+//    for( int i=0; i < 4; ++i )
+//    {
+//        for( int j=0; j < 4; ++j )
+//	{
+//	    matrix[i][j] = rhs.matrix[i][j];
 //	}
-
-	for(int i=0; i<4; ++i) {
-		for(int j=0; j<4; ++j) {
-			if(i==j) {
-				matrix[i][j] = 1;
-			}
-			else {
-				matrix[i][j] = 0;
-			}
-		}
-	}
-	post_x_mirror = false;
-	set_center(Vec3f(0,0,0));
-}
-
-
-
-bool Transform3D::is_identity()  // YYY
-{
-	for (int i=0; i<4; i++) {
-		for (int j=0; j<4; j++) {
-			if (i==j && matrix[i][j]!=1.0) return 0;
-			if (i!=j && matrix[i][j]!=0.0) return 0;
-		}
-	}
-	return 1;
-}
-
-
-void Transform3D::set_center(const Vec3f & center) //YYN
-{
-	set_pretrans( Vec3f(0,0,0)-center);
-	for (int i = 0; i < 3; i++) {
-		matrix[i][3]=center[i];
-	}
-}
-
-//            METHODS
-//   Note Transform3Ds are initialized as identities
-void Transform3D::init()  // M1
-{
-	to_identity();
-}
-
-//      Set Methods
-
-void Transform3D::set_pretrans(const float& dx, const float& dy, const float& dz) // YYY
-{    set_pretrans( Vec3f(dx,dy,dz)); }
-
-
-void Transform3D::set_pretrans(const float& dx, const float& dy) // YYY
-{    set_pretrans( Vec3f(dx,dy,0)); }
-
-void Transform3D::set_pretrans(const Vec2f& pretrans) // YYY
-{    set_pretrans( Vec3f(pretrans[0],pretrans[1],0)); }
-
-void Transform3D::set_pretrans(const Vec3f & preT)  // flag=1 means keep the old value of total trans
-{
-		int flag=0;
-
-//     transFinal = transPost +  Rotation * transPre;
-//    This will keep the old value of transPost and change the value of pretrans and the total matrix
-    if (flag==0){
-		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
-		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
-		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
-	}
-//    This will keep the old value of total translation and change the value of posttrans
-    if (flag==1){
-		matrix[3][0] = matrix[0][3] - (matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2])  ;
-		matrix[3][1] = matrix[1][3] - (matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2])  ;
-		matrix[3][2] = matrix[2][3] - (matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2])  ;
-	}
-}
-
-
-void Transform3D::set_posttrans(const float& dx, const float& dy, const float& dz) // YYY
-{    set_posttrans( Vec3f(dx,dy,dz)); }
-
-
-void Transform3D::set_posttrans(const float& dx, const float& dy) // YYY
-{    set_posttrans( Vec3f(dx,dy,0)); }
-
-void Transform3D::set_posttrans(const Vec2f& posttrans) // YYY
-{    set_pretrans( Vec3f(posttrans[0],posttrans[1],0)); }
-
-void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep the old value of total trans
-{
-	int flag=0;
-    Vec3f preT   = get_pretrans(0) ;
-	for (int i = 0; i < 3; i++) {
-		matrix[3][i] = posttrans[i];
-	}
-//     transFinal = transPost +  Rotation * transPre;
-//   This will keep the old value of pretrans and change the value of posttrans and the total matrix
-	if (flag==0) {
-		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
-		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
-		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
-	}
-//   This will keep the old value of the total matrix, and c
-	if (flag==1) { // Don't do anything
-	}
-}
-
-
-
-
-void Transform3D::apply_scale(const float& scale)    // YYY
-{
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 4; j++) {
-			matrix[i][j] *= scale;
-		}
-	}
-	for (int j = 0; j < 3; j++) {
-		matrix[3][j] *= scale;
-	}
-}
-
-void Transform3D::orthogonalize()  // YYY
-{
-	//EulerType EMAN;
-	float scale = get_scale() ;
-	float inverseScale= 1/scale ;
-	apply_scale(inverseScale);
-//	Dict angs = get_rotation(EMAN);
-//	set_Rotation(EMAN,angs);
-}
-
-
-void Transform3D::transpose()  // YYY
-{
-	float tempij;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < i; j++) {
-			tempij= matrix[i][j];
-			matrix[i][j] = matrix[j][i];
-			matrix[j][i] = tempij;
-		}
-	}
-}
-
-void Transform3D::set_scale(const float& scale)    // YYY
-{
-	float OldScale= get_scale();
-	float Scale2Apply = scale/OldScale;
-	apply_scale(Scale2Apply);
-}
-
-float Transform3D::get_mag() const //
-{
-	EulerType eulertype= SPIN ;
-	Dict AA= get_rotation(eulertype);
-	return AA["Omega"];
-}
-
-Vec3f Transform3D::get_finger() const //
-{
-	EulerType eulertype= SPIN ;
-	Dict AA= get_rotation(eulertype);
-	return Vec3f(AA["n1"],AA["n2"],AA["n3"]);
-}
-
-Vec3f Transform3D::get_posttrans(int flag) const    //
-{
-	if (flag==0){
-		return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
-	}
-	// otherwise as if all the translation was post
-	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
-}
-
-Vec3f Transform3D::get_total_posttrans() const {
-	return get_posttrans(1);
-}
-
-Vec3f Transform3D::get_total_pretrans() const {
-	return get_pretrans(1);
-}
-
-
-Vec3f Transform3D::get_pretrans(int flag) const    // Fix Me
-{
-//	The expression is R^T(v_total - v_post);
-
-	Vec3f pretrans;
-	Vec3f posttrans(matrix[3][0], matrix[3][1], matrix[3][2]);
-	Vec3f tottrans(matrix[0][3], matrix[1][3], matrix[2][3]);
-	Vec3f totminuspost;
-
-	totminuspost = tottrans;
-	if (flag==0) {
-		totminuspost = tottrans-posttrans;
-	}
-
-	Transform3D Rinv = inverse();
-	for (int i=0; i<3; i++) {
-                float ptnow=0;
-		for (int j=0; j<3; j++) {
-			ptnow +=   Rinv.matrix[i][j]* totminuspost[j] ;
-		}
-		pretrans.set_value_at(i,ptnow) ;  //
-	}
-	return pretrans;
-}
-
-
- Vec3f Transform3D::get_center() const  // YYY
- {
- 	return Vec3f();
- }
-
-
-
-Vec3f Transform3D::get_matrix3_col(int i) const     // YYY
-{
-	return Vec3f(matrix[0][i], matrix[1][i], matrix[2][i]);
-}
-
-
-Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
-{
-	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
-}
-
-Vec3f Transform3D::transform(const Vec3f & v3f) const     // YYY
-{
-//      This is the transformation of a vector, v by a matrix M
-	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
-	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
-	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
-	return Vec3f(x, y, z);
-}
-
-
-Vec3f Transform3D::rotate(const Vec3f & v3f) const     // YYY
-{
-//      This is the rotation of a vector, v by a matrix M
-	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2]  ;
-	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2]  ;
-	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2]  ;
-	return Vec3f(x, y, z);
-}
-
-
-Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     // YYY
-{
-//       This is the  left multiplication of a matrix M1 by a matrix M2; that is M2*M1
-//       It returns a new matrix
-	Transform3D resultant;
-	for (int i=0; i<3; i++) {
-		for (int j=0; j<4; j++) {
-			resultant[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j] + M2[i][2] * M1[2][j];
-		}
-		resultant[i][3] += M2[i][3];  // add on the new translation (not included above)
-	}
-
-	for (int j=0; j<3; j++) {
-		resultant[3][j] = M2[3][j];
-	}
-
-	return resultant; // This will have the post_trans of M2
-}
+//    }
+//}
+//
+//// C2
+//Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
+//{
+//	init();
+//	set_rotation(az,alt,phi);
+//}
+//
+//
+////  C3  Usual Constructor: Post Trans, after appying Rot
+//Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
+//{
+//	init(); // This is called in set_rotation
+//	set_rotation(az,alt,phi);
+//	set_posttrans(posttrans);
+//}
+//
+//Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
+//						 const float& m21, const float& m22, const float& m23,
+//						 const float& m31, const float& m32, const float& m33)
+//{
+//	init();
+//	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
+//}
+//
+//// C4
+//Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3)
+//{
+// 	init();
+//	set_rotation(euler_type,a1,a2,a3);
+//}
+//
+//Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
+//{
+// 	init();
+//	set_rotation(euler_type,a1,a2,a3,a4);
+//}
+//
+//
+//// C5
+//Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
+//{
+//	init();
+//	set_rotation(euler_type,rotation);
+//}
+//
+//
+//// C6   First apply pretrans: Then rotation: Then posttrans
+//
+//Transform3D::Transform3D(  const Vec3f& pretrans,  const float& az, const float& alt, const float& phi, const Vec3f& posttrans )  //YYY  by default EMAN
+//{
+//	init();
+//	set_pretrans(pretrans);
+//	set_rotation(az,alt,phi);
+//	set_posttrans(posttrans);
+//}
+//
+//
+//
+//
+//Transform3D::~Transform3D()
+//{
+//}
+//
+//
+//
+//void Transform3D::to_identity()
+//{
+////	for (int i = 0; i < 3; i++) {
+////		matrix[i][i] = 1;
+////	}
+//
+//	for(int i=0; i<4; ++i) {
+//		for(int j=0; j<4; ++j) {
+//			if(i==j) {
+//				matrix[i][j] = 1;
+//			}
+//			else {
+//				matrix[i][j] = 0;
+//			}
+//		}
+//	}
+//	post_x_mirror = false;
+//	set_center(Vec3f(0,0,0));
+//}
+//
+//
+//
+//bool Transform3D::is_identity()  // YYY
+//{
+//	for (int i=0; i<4; i++) {
+//		for (int j=0; j<4; j++) {
+//			if (i==j && matrix[i][j]!=1.0) return 0;
+//			if (i!=j && matrix[i][j]!=0.0) return 0;
+//		}
+//	}
+//	return 1;
+//}
+//
+//
+//void Transform3D::set_center(const Vec3f & center) //YYN
+//{
+//	set_pretrans( Vec3f(0,0,0)-center);
+//	for (int i = 0; i < 3; i++) {
+//		matrix[i][3]=center[i];
+//	}
+//}
+//
+////            METHODS
+////   Note Transform3Ds are initialized as identities
+//void Transform3D::init()  // M1
+//{
+//	to_identity();
+//}
+//
+////      Set Methods
+//
+//void Transform3D::set_pretrans(const float& dx, const float& dy, const float& dz) // YYY
+//{    set_pretrans( Vec3f(dx,dy,dz)); }
+//
+//
+//void Transform3D::set_pretrans(const float& dx, const float& dy) // YYY
+//{    set_pretrans( Vec3f(dx,dy,0)); }
+//
+//void Transform3D::set_pretrans(const Vec2f& pretrans) // YYY
+//{    set_pretrans( Vec3f(pretrans[0],pretrans[1],0)); }
+//
+//void Transform3D::set_pretrans(const Vec3f & preT)  // flag=1 means keep the old value of total trans
+//{
+//		int flag=0;
+//
+////     transFinal = transPost +  Rotation * transPre;
+////    This will keep the old value of transPost and change the value of pretrans and the total matrix
+//    if (flag==0){
+//		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+//		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+//		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
+//	}
+////    This will keep the old value of total translation and change the value of posttrans
+//    if (flag==1){
+//		matrix[3][0] = matrix[0][3] - (matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2])  ;
+//		matrix[3][1] = matrix[1][3] - (matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2])  ;
+//		matrix[3][2] = matrix[2][3] - (matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2])  ;
+//	}
+//}
+//
+//
+//void Transform3D::set_posttrans(const float& dx, const float& dy, const float& dz) // YYY
+//{    set_posttrans( Vec3f(dx,dy,dz)); }
+//
+//
+//void Transform3D::set_posttrans(const float& dx, const float& dy) // YYY
+//{    set_posttrans( Vec3f(dx,dy,0)); }
+//
+//void Transform3D::set_posttrans(const Vec2f& posttrans) // YYY
+//{    set_pretrans( Vec3f(posttrans[0],posttrans[1],0)); }
+//
+//void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep the old value of total trans
+//{
+//	int flag=0;
+//    Vec3f preT   = get_pretrans(0) ;
+//	for (int i = 0; i < 3; i++) {
+//		matrix[3][i] = posttrans[i];
+//	}
+////     transFinal = transPost +  Rotation * transPre;
+////   This will keep the old value of pretrans and change the value of posttrans and the total matrix
+//	if (flag==0) {
+//		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+//		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+//		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
+//	}
+////   This will keep the old value of the total matrix, and c
+//	if (flag==1) { // Don't do anything
+//	}
+//}
+//
+//
+//
+//
+//void Transform3D::apply_scale(const float& scale)    // YYY
+//{
+//	for (int i = 0; i < 3; i++) {
+//		for (int j = 0; j < 4; j++) {
+//			matrix[i][j] *= scale;
+//		}
+//	}
+//	for (int j = 0; j < 3; j++) {
+//		matrix[3][j] *= scale;
+//	}
+//}
+//
+//void Transform3D::orthogonalize()  // YYY
+//{
+//	//EulerType EMAN;
+//	float scale = get_scale() ;
+//	float inverseScale= 1/scale ;
+//	apply_scale(inverseScale);
+////	Dict angs = get_rotation(EMAN);
+////	set_Rotation(EMAN,angs);
+//}
+//
+//
+//void Transform3D::transpose()  // YYY
+//{
+//	float tempij;
+//	for (int i = 0; i < 3; i++) {
+//		for (int j = 0; j < i; j++) {
+//			tempij= matrix[i][j];
+//			matrix[i][j] = matrix[j][i];
+//			matrix[j][i] = tempij;
+//		}
+//	}
+//}
+//
+//void Transform3D::set_scale(const float& scale)    // YYY
+//{
+//	float OldScale= get_scale();
+//	float Scale2Apply = scale/OldScale;
+//	apply_scale(Scale2Apply);
+//}
+//
+//float Transform3D::get_mag() const //
+//{
+//	EulerType eulertype= SPIN ;
+//	Dict AA= get_rotation(eulertype);
+//	return AA["Omega"];
+//}
+//
+//Vec3f Transform3D::get_finger() const //
+//{
+//	EulerType eulertype= SPIN ;
+//	Dict AA= get_rotation(eulertype);
+//	return Vec3f(AA["n1"],AA["n2"],AA["n3"]);
+//}
+//
+//Vec3f Transform3D::get_posttrans(int flag) const    //
+//{
+//	if (flag==0){
+//		return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
+//	}
+//	// otherwise as if all the translation was post
+//	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
+//}
+//
+//Vec3f Transform3D::get_total_posttrans() const {
+//	return get_posttrans(1);
+//}
+//
+//Vec3f Transform3D::get_total_pretrans() const {
+//	return get_pretrans(1);
+//}
+//
+//
+//Vec3f Transform3D::get_pretrans(int flag) const    // Fix Me
+//{
+////	The expression is R^T(v_total - v_post);
+//
+//	Vec3f pretrans;
+//	Vec3f posttrans(matrix[3][0], matrix[3][1], matrix[3][2]);
+//	Vec3f tottrans(matrix[0][3], matrix[1][3], matrix[2][3]);
+//	Vec3f totminuspost;
+//
+//	totminuspost = tottrans;
+//	if (flag==0) {
+//		totminuspost = tottrans-posttrans;
+//	}
+//
+//	Transform3D Rinv = inverse();
+//	for (int i=0; i<3; i++) {
+//                float ptnow=0;
+//		for (int j=0; j<3; j++) {
+//			ptnow +=   Rinv.matrix[i][j]* totminuspost[j] ;
+//		}
+//		pretrans.set_value_at(i,ptnow) ;  //
+//	}
+//	return pretrans;
+//}
+//
+//
+// Vec3f Transform3D::get_center() const  // YYY
+// {
+// 	return Vec3f();
+// }
+//
+//
+//
+//Vec3f Transform3D::get_matrix3_col(int i) const     // YYY
+//{
+//	return Vec3f(matrix[0][i], matrix[1][i], matrix[2][i]);
+//}
+//
+//
+//Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
+//{
+//	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
+//}
+//
+//Vec3f Transform3D::transform(const Vec3f & v3f) const     // YYY
+//{
+////      This is the transformation of a vector, v by a matrix M
+//	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
+//	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
+//	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
+//	return Vec3f(x, y, z);
+//}
+//
+//
+//Vec3f Transform3D::rotate(const Vec3f & v3f) const     // YYY
+//{
+////      This is the rotation of a vector, v by a matrix M
+//	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2]  ;
+//	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2]  ;
+//	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2]  ;
+//	return Vec3f(x, y, z);
+//}
+//
+//
+//Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     // YYY
+//{
+////       This is the  left multiplication of a matrix M1 by a matrix M2; that is M2*M1
+////       It returns a new matrix
+//	Transform3D resultant;
+//	for (int i=0; i<3; i++) {
+//		for (int j=0; j<4; j++) {
+//			resultant[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j] + M2[i][2] * M1[2][j];
+//		}
+//		resultant[i][3] += M2[i][3];  // add on the new translation (not included above)
+//	}
+//
+//	for (int j=0; j<3; j++) {
+//		resultant[3][j] = M2[3][j];
+//	}
+//
+//	return resultant; // This will have the post_trans of M2
+//}
 
 /*             Here starts the pure rotation stuff */
 
@@ -1619,753 +1619,753 @@ The update of rotations for quaternions is very easy.
 
 
 */
-
-void Transform3D::set_rotation(const float& az, const float& alt, const float& phi )
-{
-	EulerType euler_type=EMAN;
-	Dict rot;
-	rot["az"]  = az;
-	rot["alt"] = alt;
-	rot["phi"] = phi;
-	set_rotation(euler_type, rot);
-}
-
-// This is where it all happens;
-void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
-{
-	init();
-	Dict rot;
-	switch(euler_type) {
-		case EMAN:
-			rot["az"]  = a1;
-			rot["alt"] = a2;
-			rot["phi"] = a3;
-			break;
-		case SPIDER:
-			rot["phi"]   = a1;
-			rot["theta"] = a2;
-			rot["psi"]   = a3;
-			break;
-		case IMAGIC:
-			rot["alpha"]   = a1;
-			rot["beta"] = a2;
-			rot["gamma"]   = a3;
-			break;
-		case MRC:
-			rot["phi"]   = a1;
-			rot["theta"] = a2;
-			rot["omega"]   = a3;
-			break;
-		case XYZ:
-			rot["xtilt"]   = a1;
-			rot["ytilt"] = a2;
-			rot["ztilt"]   = a3;
-			break;
-		default:
-		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-  	}  // ends switch euler_type
-	set_rotation(euler_type, rot);
-}
-
-// This is where it all happens;
-void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
-{
-	init();
-	Dict rot;
-	switch(euler_type) {
-		case QUATERNION:
-			rot["e0"]  = a1;
-			rot["e1"] = a2;
-			rot["e2"] = a3;
-			rot["e3"] = a4;
-			break;
-		case SGIROT:
-			rot["q"]  = a1;
-			rot["n1"] = a2;
-			rot["n2"] = a3;
-			rot["n3"] = a4;
-		case SPIN:
-			rot["Omega"]  = a1;
-			rot["n1"] = a2;
-			rot["n2"] = a3;
-			rot["n3"] = a4;
-			break;
-		default:
-			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-	}  // ends switch euler_type
-	set_rotation(euler_type, rot);
-}
-
-void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
-{
-	double e0  = 0; double e1=0; double e2=0; double e3=0;
-	double Omega=0;
-	double az  = 0;
-	double alt = 0;
-	double phi = 0;
-	double cxtilt = 0;
-	double sxtilt = 0;
-	double cytilt = 0;
-	double sytilt = 0;
-	bool is_quaternion = 0;
-	bool is_matrix = 0;
-
-	switch(euler_type) {
-	case EMAN:
-		az  = (double)rotation["az"] ;
-		alt = (double)rotation["alt"]  ;
-		phi = (double)rotation["phi"] ;
-		break;
-	case IMAGIC:
-		az  = (double)rotation["alpha"] ;
-		alt = (double)rotation["beta"]  ;
-		phi = (double)rotation["gamma"] ;
-		break;
-
-	case SPIDER:
-		az =  (double)rotation["phi"]    + 90.0;
-		alt = (double)rotation["theta"] ;
-		phi = (double)rotation["psi"]    - 90.0;
-		break;
-
-	case XYZ:
-		cxtilt = cos( (M_PI/180.0f)*(double)rotation["xtilt"]);
-		sxtilt = sin( (M_PI/180.0f)*(double)rotation["xtilt"]);
-		cytilt = cos( (M_PI/180.0f)*(double)rotation["ytilt"]);
-		sytilt = sin( (M_PI/180.0f)*(double)rotation["ytilt"]);
-		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
-		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
-		phi = (double)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
-		break;
-
-	case MRC:
-		az  = (double)rotation["phi"]   + 90.0f ;
-		alt = (double)rotation["theta"] ;
-		phi = (double)rotation["omega"] - 90.0f ;
-		break;
-
-	case QUATERNION:
-		is_quaternion = 1;
-		e0 = (double)rotation["e0"];
-		e1 = (double)rotation["e1"];
-		e2 = (double)rotation["e2"];
-		e3 = (double)rotation["e3"];
-		break;
-
-	case SPIN:
-		is_quaternion = 1;
-		Omega = (double)rotation["Omega"];
-		e0 = cos(Omega*M_PI/360.0f);
-		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
-		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
-		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
-		break;
-
-	case SGIROT:
-		is_quaternion = 1;
-		Omega = (double)rotation["q"]  ;
-		e0 = cos(Omega*M_PI/360.0f);
-		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
-		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
-		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
-		break;
-
-	case MATRIX:
-		is_matrix = 1;
-		matrix[0][0] = (float)rotation["m11"]  ;
-		matrix[0][1] = (float)rotation["m12"]  ;
-		matrix[0][2] = (float)rotation["m13"]  ;
-		matrix[1][0] = (float)rotation["m21"]  ;
-		matrix[1][1] = (float)rotation["m22"]  ;
-		matrix[1][2] = (float)rotation["m23"]  ;
-		matrix[2][0] = (float)rotation["m31"]  ;
-		matrix[2][1] = (float)rotation["m32"]  ;
-		matrix[2][2] = (float)rotation["m33"]  ;
-		break;
-
-	default:
-		throw InvalidValueException(euler_type, "unknown Euler Type");
-	}  // ends switch euler_type
-
-
-	Vec3f postT  = get_posttrans( ) ;
-	Vec3f preT   = get_pretrans( ) ;
-
-
-	double azp  = fmod(az,360.0)*M_PI/180.0;
-	double altp  = alt*M_PI/180.0;
-	double phip = fmod(phi,360.0)*M_PI/180.0;
-
-	if (!is_quaternion && !is_matrix) {
-		matrix[0][0] =  (float)(cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip));
-		matrix[0][1] =  (float)(cos(phip)*sin(azp) + cos(altp)*cos(azp)*sin(phip));
-		matrix[0][2] =  (float)(sin(altp)*sin(phip));
-		matrix[1][0] =  (float)(-sin(phip)*cos(azp) - cos(altp)*sin(azp)*cos(phip));
-		matrix[1][1] =  (float)(-sin(phip)*sin(azp) + cos(altp)*cos(azp)*cos(phip));
-		matrix[1][2] =  (float)(sin(altp)*cos(phip));
-		matrix[2][0] =  (float)(sin(altp)*sin(azp));
-		matrix[2][1] =  (float)(-sin(altp)*cos(azp));
-		matrix[2][2] =  (float)cos(altp);
-	}
-	if (is_quaternion){
-		matrix[0][0] = (float)(e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3);
-		matrix[0][1] = (float)(2.0f * (e1 * e2 + e0 * e3));
-		matrix[0][2] = (float)(2.0f * (e1 * e3 - e0 * e2));
-		matrix[1][0] = (float)(2.0f * (e2 * e1 - e0 * e3));
-		matrix[1][1] = (float)(e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3);
-		matrix[1][2] = (float)(2.0f * (e2 * e3 + e0 * e1));
-		matrix[2][0] = (float)(2.0f * (e3 * e1 + e0 * e2));
-		matrix[2][1] = (float)(2.0f * (e3 * e2 - e0 * e1));
-		matrix[2][2] = (float)(e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3);
-		// keep in mind matrix[0][2] is M13 gives an e0 e2 piece, etc
-	}
-	// Now do post and pretrans: vfinal = vpost + R vpre;
-
-	matrix[0][3] = postT[0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
-	matrix[1][3] = postT[1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
-	matrix[2][3] = postT[2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
-}
-
-
-void Transform3D::set_rotation(const float& m11, const float& m12, const float& m13,
-							   const float& m21, const float& m22, const float& m23,
-		  const float& m31, const float& m32, const float& m33)
-{
-	EulerType euler_type = MATRIX;
-	Dict rot;
-	rot["m11"]  = m11;
-	rot["m12"]  = m12;
-	rot["m13"]  = m13;
-	rot["m21"]  = m21;
-	rot["m22"]  = m22;
-	rot["m23"]  = m23;
-	rot["m31"]  = m31;
-	rot["m32"]  = m32;
-	rot["m33"]  = m33;
-	set_rotation(euler_type, rot);  // Or should it be &rot ?
-}
-
-void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
-                                    const Vec3f & eAhat, const Vec3f & eBhat)
-{// this rotation rotates unit vectors a,b into A,B;
-//    The program assumes a dot b must equal A dot B
-	Vec3f eahatcp(eahat);
-	Vec3f ebhatcp(ebhat);
-	Vec3f eAhatcp(eAhat);
-	Vec3f eBhatcp(eBhat);
-
-	eahatcp.normalize();
-	ebhatcp.normalize();
-	eAhatcp.normalize();
-	eBhatcp.normalize();
-
-	Vec3f aMinusA(eahatcp);
-	aMinusA  -= eAhatcp;
-	Vec3f bMinusB(ebhatcp);
-	bMinusB  -= eBhatcp;
-
-
-	Vec3f  nhat;
-	float aAlength = aMinusA.length();
-	float bBlength = bMinusB.length();
-	if (aAlength==0){
-		nhat=eahatcp;
-	}else if (bBlength==0){
-		nhat=ebhatcp;
-	}else{
-		nhat= aMinusA.cross(bMinusB);
-		nhat.normalize();
-	}
-
-//		printf("nhat=%f,%f,%f \n",nhat[0],nhat[1],nhat[2]);
-
-	Vec3f neahat  = eahatcp.cross(nhat);
-	Vec3f nebhat  = ebhatcp.cross(nhat);
-	Vec3f neAhat  = eAhatcp.cross(nhat);
-	Vec3f neBhat  = eBhatcp.cross(nhat);
-
-	double cosOmegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
-//	float cosOmegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
-	double sinOmegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
-//	printf("cosOmegaA=%f \n",cosOmegaA); 	printf("sinOmegaA=%f \n",sinOmegaA);
-
-	double OmegaA = atan2(sinOmegaA,cosOmegaA);
-//	printf("OmegaA=%f \n",OmegaA*180/M_PI);
-
-	EulerType euler_type=SPIN;
-	Dict rotation;
-	rotation["n1"]= nhat[0];
-	rotation["n2"]= nhat[1];
-	rotation["n3"]= nhat[2];
-	rotation["Omega"] = (float)(OmegaA*180.0/M_PI);
-	set_rotation(euler_type,  rotation);
-}
-
-
-float Transform3D::get_scale() const     // YYY
-{
-	// Assumes uniform scaling, calculation uses Z only.
-	float scale =0;
-	for (int i=0; i<3; i++) {
-		for (int j=0; j<3; j++) {
-			scale = scale + matrix[i][j]*matrix[i][j];
-		}
-	}
-
-	return sqrt(scale/3);
-}
-
-
-
-Dict Transform3D::get_rotation(EulerType euler_type) const
-{
-	Dict result;
-
-	double max = 1 - ERR_LIMIT;
-	double sca=get_scale();
-	double cosalt=matrix[2][2]/sca;
-
-
-	double az=0;
-	double alt = 0;
-	double phi=0;
-	double phiS = 0; // like az	(but in SPIDER ZXZ)
-	double psiS =0;  // like phi  (but in SPIDER ZYZ)
-
-
-// get alt, az, phi;  EMAN
-
-	if (cosalt > max) {  // that is, alt close to 0
-		alt = 0;
-		az=0;
-		phi = (double)EMConsts::rad2deg * atan2(matrix[0][1], matrix[0][0]);
-	}
-	else if (cosalt < -max) { // alt close to pi
-		alt = 180;
-		az=0;
-		phi=360.0f-(double)EMConsts::rad2deg * atan2(matrix[0][1], matrix[0][0]);
-	}
-	else {
-		alt = (double)EMConsts::rad2deg * acos(cosalt);
-		az  = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[2][0], -matrix[2][1]);
-		phi = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[0][2], matrix[1][2]);
-	}
-	az =fmod(az+180.0,360.0)-180.0;
-	phi=fmod(phi+180.0,360.0)-180.0;
-
-//   get phiS, psiS ; SPIDER
-	if (fabs(cosalt) > max) {  // that is, alt close to 0
-		phiS=0;
-		psiS = az+phi;
-	}
-	else {
-		phiS = az   - 90.0;
-		psiS = phi  + 90.0;
-	}
-	phiS = fmod((phiS   + 360.0 ), 360.0) ;
-	psiS = fmod((psiS   + 360.0 ), 360.0) ;
-
-//   do some quaternionic stuff here
-
-	double nphi = (az-phi)/2.0;
-    // The next is also e0
-	double cosOover2 = (cos((az+phi)*M_PI/360) * cos(alt*M_PI/360)) ;
-	double sinOover2 = sqrt(1 -cosOover2*cosOover2);
-	double cosnTheta = sin((az+phi)*M_PI/360) * cos(alt*M_PI/360) / sqrt(1-cosOover2*cosOover2) ;
-	double sinnTheta = sqrt(1-cosnTheta*cosnTheta);
-	double n1 = sinnTheta*cos(nphi*M_PI/180);
-	double n2 = sinnTheta*sin(nphi*M_PI/180);
-	double n3 = cosnTheta;
-	double xtilt = 0;
-	double ytilt = 0;
-	double ztilt = 0;
-
-
-	if (cosOover2<0) {
-		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
-	}
-
-
-	switch (euler_type) {
-	case EMAN:
-		result["az"]  = az;
-		result["alt"] = alt;
-		result["phi"] = phi;
-		break;
-
-	case IMAGIC:
-		result["alpha"] = az;
-		result["beta"] = alt;
-		result["gamma"] = phi;
-		break;
-
-	case SPIDER:
-		result["phi"]   = phiS;  // The first Euler like az
-		result["theta"] = alt;
-		result["psi"]   = psiS;
-		break;
-
-	case MRC:
-		result["phi"]   = phiS;
-		result["theta"] = alt;
-		result["omega"] = psiS;
-		break;
-
-	case XYZ:
-	        xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
-	        ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
-	        ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
-
-		xtilt=fmod(xtilt*180/M_PI+540.0,360.0) -180.0;
-		ztilt=fmod(ztilt*180/M_PI+540.0,360.0) -180.0;
-
-		result["xtilt"]  = xtilt;
-		result["ytilt"]  = ytilt*180/M_PI;
-		result["ztilt"]  = ztilt;
-		break;
-
-	case QUATERNION:
-		result["e0"] = cosOover2 ;
-		result["e1"] = sinOover2 * n1 ;
-		result["e2"] = sinOover2 * n2;
-		result["e3"] = sinOover2 * n3;
-		break;
-
-	case SPIN:
-		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
-		result["n1"] = n1;
-		result["n2"] = n2;
-		result["n3"] = n3;
-		break;
-
-	case SGIROT:
-		result["q"] = 360.0f*acos(cosOover2)/M_PI ;
-		result["n1"] = n1;
-		result["n2"] = n2;
-		result["n3"] = n3;
-		break;
-
-	case MATRIX:
-		result["m11"] = matrix[0][0] ;
-		result["m12"] = matrix[0][1] ;
-		result["m13"] = matrix[0][2] ;
-		result["m21"] = matrix[1][0] ;
-		result["m22"] = matrix[1][1] ;
-		result["m23"] = matrix[1][2] ;
-		result["m31"] = matrix[2][0] ;
-		result["m32"] = matrix[2][1] ;
-		result["m33"] = matrix[2][2] ;
-		break;
-
-	default:
-		throw InvalidValueException(euler_type, "unknown Euler Type");
-	}
-
-	return result;
-}
-
-Transform3D Transform3D::inverseUsingAngs() const    //   YYN need to test it for sure
-{
-	// First Find the scale
-	EulerType eE=EMAN;
-
-
-	float scale   = get_scale();
-	Vec3f preT   = get_pretrans( ) ;
-	Vec3f postT   = get_posttrans( ) ;
-	Dict angs     = get_rotation(eE);
-	Dict invAngs  ;
-
-	invAngs["phi"]   = 180.0f - (float) angs["az"] ;
-	invAngs["az"]    = 180.0f - (float) angs["phi"] ;
-	invAngs["alt"]   = angs["alt"] ;
-
-//    The inverse result
 //
-//           Z_phi   X_alt     Z_az
-//                 is
-//       Z_{pi-az}   X_alt  Z_{pi-phi}
-//      The reason for the extra pi's, is because one would like to keep alt positive
-
-	float inverseScale= 1/scale ;
-
-	Transform3D invM;
-
-	invM.set_rotation(EMAN, invAngs);
-	invM.apply_scale(inverseScale);
-	invM.set_pretrans(-postT );
-	invM.set_posttrans(-preT );
-
-
-	return invM;
-
-}
-
-Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
-{
-	// This assumes the matrix is 4 by 4 and the last row reads [0 0 0 1]
-
-	double m00 = matrix[0][0]; double m01=matrix[0][1]; double m02=matrix[0][2];
-	double m10 = matrix[1][0]; double m11=matrix[1][1]; double m12=matrix[1][2];
-	double m20 = matrix[2][0]; double m21=matrix[2][1]; double m22=matrix[2][2];
-	double v0  = matrix[0][3]; double v1 =matrix[1][3]; double v2 =matrix[2][3];
-
-    double cof00 = m11*m22-m12*m21;
-    double cof11 = m22*m00-m20*m02;
-    double cof22 = m00*m11-m01*m10;
-    double cof01 = m10*m22-m20*m12;
-    double cof02 = m10*m21-m20*m11;
-    double cof12 = m00*m21-m01*m20;
-    double cof10 = m01*m22-m02*m21;
-    double cof20 = m01*m12-m02*m11;
-    double cof21 = m00*m12-m10*m02;
-
-    double Det = m00* cof00 + m02* cof02 -m01*cof01;
-
-    Transform3D invM;
-
-    invM.matrix[0][0] =  (float)(cof00/Det);
-    invM.matrix[0][1] =  (float)(-cof10/Det);
-    invM.matrix[0][2] =  (float)(cof20/Det);
-    invM.matrix[1][0] =  (float)(-cof01/Det);
-    invM.matrix[1][1] =  (float)(cof11/Det);
-    invM.matrix[1][2] =  (float)(-cof21/Det);
-    invM.matrix[2][0] =  (float)(cof02/Det);
-    invM.matrix[2][1] =  (float)(-cof12/Det);
-    invM.matrix[2][2] =  (float)(cof22/Det);
-
-    invM.matrix[0][3] =  (float)((-cof00*v0 + cof10*v1 - cof20*v2)/Det);
-    invM.matrix[1][3] =  (float)(( cof01*v0 - cof11*v1 + cof21*v2)/Det);
-    invM.matrix[2][3] =  (float)((-cof02*v0 + cof12*v1 - cof22*v2)/Det);
-
-	Vec3f postT   = get_posttrans( ) ;
-	Vec3f invMpre   = - postT;
-	Vec3f invMpost   ;
-	for ( int i = 0; i < 3; i++) {
-		invMpost[i] = invM.matrix[i][3];
-		for ( int j = 0; j < 3; j++) {
-			invMpost[i] += - invM.matrix[i][j]*invMpre[j];
-		}
-		invM.matrix[3][i] = invMpost[i];
-	}
-
-	return invM;
-}
-
-
-
-// Symmetry Stuff
-
-Transform3D Transform3D::get_sym(const string & symname, int n) const
-{
-	int nsym = get_nsym(symname);
-
-// 	Transform3D invalid;
-// 	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
-
-	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
-	// By default we will put largest symmetry along z-axis.
-
-	// Each Platonic Solid has 2E symmetry elements.
-
-
-	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
-	// It is composed of 20 triangles. E=3*20/2;
-
-
-	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
-	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
-
-
-
-    // The ICOS symmetry group has the face along z-axis
-
-	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
-	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
-	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
-	float lvl3=180.f;                           // there is one pentagon on the bottom
-             // Notice that 63.439 is the angle between two faces of the dual object
-
-	static double ICOS[180] = { // This is with a pentagon normal to z
-		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
-		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
-		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
-		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
-		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
-		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
-		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
-		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
-		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
-		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
-		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
-   		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
-	};
-
-
-	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
-	// It is composed of 6 squares.
-
-
-	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
-	// It is composed of 8 triangles.
-
-    // We have placed the OCT symmetry group with a face along the z-axis
-        lvl0=0;
-	lvl1=90;
-	lvl2=180;
-
-	static float OCT[72] = {// This is with a face of a cube along z
-		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
-		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
-		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
-		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
-		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
-		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
-	};
-	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
-	//   20 words with at most a single A
-    //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB
-    //                        BBBABB BBABBB BBBABBB
-     // also     ABBBA is distinct yields 4 more words
-     //    ABBBA   BABBBA BBABBBA BBBABBBA
-     // for a total of 24 words
-     // Note A BBB A BBB A  reduces to BBABB
-     //  and  B A BBB A is the same as A BBB A BBB etc.
-
-    // The TET symmetry group has a face along the z-axis
-    // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
-        lvl0=0;         // There is a face along z
-	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
-
-	static float TET[36] = {// This is with the face along z
-	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
-	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
-	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
-	};
-	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
-	//   12 words with at most a single A
-    //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
-    // at most one A is necessary
-
-	Transform3D ret;
-	SymType type = get_sym_type(symname);
-
-	switch (type) {
-	case CSYM:
-		ret.set_rotation( n * 360.0f / nsym, 0, 0);
-		break;
-	case DSYM:
-		if (n >= nsym / 2) {
-			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
-		}
-		else {
-			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
-		}
-		break;
-	case ICOS_SYM:
-		ret.set_rotation((float)ICOS[n * 3 ],
-				 (float)ICOS[n * 3 + 1],
-				 (float)ICOS[n * 3 + 2] );
-		break;
-	case OCT_SYM:
-		ret.set_rotation((float)OCT[n * 3],
-				 (float)OCT[n * 3 + 1],
-				 (float)OCT[n * 3 + 2] );
-		break;
-	case TET_SYM:
-		ret.set_rotation((float)TET[n * 3 ],
-				 (float)TET[n * 3 + 1] ,
-				 (float)TET[n * 3 + 2] );
-		break;
-	case ISYM:
-		ret.set_rotation(0, 0, 0);
-		break;
-	default:
-		throw InvalidValueException(type, symname);
-	}
-
-	ret = (*this) * ret;
-
-	return ret;
-}
-
-int Transform3D::get_nsym(const string & name)
-{
-	string symname = name;
-
-	for (size_t i = 0; i < name.size(); i++) {
-		if (isalpha(name[i])) {
-			symname[i] = (char)tolower(name[i]);
-		}
-	}
-
-	SymType type = get_sym_type(symname);
-	int nsym = 0;
-
-	switch (type) {
-	case CSYM:
-		nsym = atoi(symname.c_str() + 1);
-		break;
-	case DSYM:
-		nsym = atoi(symname.c_str() + 1) * 2;
-		break;
-	case ICOS_SYM:
-		nsym = 60;
-		break;
-	case OCT_SYM:
-		nsym = 24;
-		break;
-	case TET_SYM:
-		nsym = 12;
-		break;
-	case ISYM:
-		nsym = 1;
-		break;
-	case UNKNOWN_SYM:
-	default:
-		throw InvalidValueException(type, name);
-	}
-	return nsym;
-}
-
-
-
-Transform3D::SymType Transform3D::get_sym_type(const string & name)
-{
-	SymType t = UNKNOWN_SYM;
-
-	if (name[0] == 'c') {
-		t = CSYM;
-	}
-	else if (name[0] == 'd') {
-		t = DSYM;
-	}
-	else if (name == "icos") {
-		t = ICOS_SYM;
-	}
-	else if (name == "oct") {
-		t = OCT_SYM;
-	}
-	else if (name == "tet") {
-		t = TET_SYM;
-	}
-	else if (name == "i" || name == "") {
-		t = ISYM;
-	}
-	return t;
-}
-
-vector<Transform3D*>
-Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
-	int nangles = ang.size() / 3;
-	vector<Transform3D*> tfvec;
-	for (int i = 0; i < nangles; i++) {
-		tfvec.push_back(new Transform3D(eulertype,ang[3*i],ang[3*i+1],ang[3*i+2]));
-	}
-	return tfvec;
-}
-
+//void Transform3D::set_rotation(const float& az, const float& alt, const float& phi )
+//{
+//	EulerType euler_type=EMAN;
+//	Dict rot;
+//	rot["az"]  = az;
+//	rot["alt"] = alt;
+//	rot["phi"] = phi;
+//	set_rotation(euler_type, rot);
+//}
+//
+//// This is where it all happens;
+//void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
+//{
+//	init();
+//	Dict rot;
+//	switch(euler_type) {
+//		case EMAN:
+//			rot["az"]  = a1;
+//			rot["alt"] = a2;
+//			rot["phi"] = a3;
+//			break;
+//		case SPIDER:
+//			rot["phi"]   = a1;
+//			rot["theta"] = a2;
+//			rot["psi"]   = a3;
+//			break;
+//		case IMAGIC:
+//			rot["alpha"]   = a1;
+//			rot["beta"] = a2;
+//			rot["gamma"]   = a3;
+//			break;
+//		case MRC:
+//			rot["phi"]   = a1;
+//			rot["theta"] = a2;
+//			rot["omega"]   = a3;
+//			break;
+//		case XYZ:
+//			rot["xtilt"]   = a1;
+//			rot["ytilt"] = a2;
+//			rot["ztilt"]   = a3;
+//			break;
+//		default:
+//		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+//  	}  // ends switch euler_type
+//	set_rotation(euler_type, rot);
+//}
+//
+//// This is where it all happens;
+//void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
+//{
+//	init();
+//	Dict rot;
+//	switch(euler_type) {
+//		case QUATERNION:
+//			rot["e0"]  = a1;
+//			rot["e1"] = a2;
+//			rot["e2"] = a3;
+//			rot["e3"] = a4;
+//			break;
+//		case SGIROT:
+//			rot["q"]  = a1;
+//			rot["n1"] = a2;
+//			rot["n2"] = a3;
+//			rot["n3"] = a4;
+//		case SPIN:
+//			rot["Omega"]  = a1;
+//			rot["n1"] = a2;
+//			rot["n2"] = a3;
+//			rot["n3"] = a4;
+//			break;
+//		default:
+//			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+//	}  // ends switch euler_type
+//	set_rotation(euler_type, rot);
+//}
+//
+//void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
+//{
+//	double e0  = 0; double e1=0; double e2=0; double e3=0;
+//	double Omega=0;
+//	double az  = 0;
+//	double alt = 0;
+//	double phi = 0;
+//	double cxtilt = 0;
+//	double sxtilt = 0;
+//	double cytilt = 0;
+//	double sytilt = 0;
+//	bool is_quaternion = 0;
+//	bool is_matrix = 0;
+//
+//	switch(euler_type) {
+//	case EMAN:
+//		az  = (double)rotation["az"] ;
+//		alt = (double)rotation["alt"]  ;
+//		phi = (double)rotation["phi"] ;
+//		break;
+//	case IMAGIC:
+//		az  = (double)rotation["alpha"] ;
+//		alt = (double)rotation["beta"]  ;
+//		phi = (double)rotation["gamma"] ;
+//		break;
+//
+//	case SPIDER:
+//		az =  (double)rotation["phi"]    + 90.0;
+//		alt = (double)rotation["theta"] ;
+//		phi = (double)rotation["psi"]    - 90.0;
+//		break;
+//
+//	case XYZ:
+//		cxtilt = cos( (M_PI/180.0f)*(double)rotation["xtilt"]);
+//		sxtilt = sin( (M_PI/180.0f)*(double)rotation["xtilt"]);
+//		cytilt = cos( (M_PI/180.0f)*(double)rotation["ytilt"]);
+//		sytilt = sin( (M_PI/180.0f)*(double)rotation["ytilt"]);
+//		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
+//		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
+//		phi = (double)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
+//		break;
+//
+//	case MRC:
+//		az  = (double)rotation["phi"]   + 90.0f ;
+//		alt = (double)rotation["theta"] ;
+//		phi = (double)rotation["omega"] - 90.0f ;
+//		break;
+//
+//	case QUATERNION:
+//		is_quaternion = 1;
+//		e0 = (double)rotation["e0"];
+//		e1 = (double)rotation["e1"];
+//		e2 = (double)rotation["e2"];
+//		e3 = (double)rotation["e3"];
+//		break;
+//
+//	case SPIN:
+//		is_quaternion = 1;
+//		Omega = (double)rotation["Omega"];
+//		e0 = cos(Omega*M_PI/360.0f);
+//		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
+//		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
+//		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
+//		break;
+//
+//	case SGIROT:
+//		is_quaternion = 1;
+//		Omega = (double)rotation["q"]  ;
+//		e0 = cos(Omega*M_PI/360.0f);
+//		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
+//		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
+//		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
+//		break;
+//
+//	case MATRIX:
+//		is_matrix = 1;
+//		matrix[0][0] = (float)rotation["m11"]  ;
+//		matrix[0][1] = (float)rotation["m12"]  ;
+//		matrix[0][2] = (float)rotation["m13"]  ;
+//		matrix[1][0] = (float)rotation["m21"]  ;
+//		matrix[1][1] = (float)rotation["m22"]  ;
+//		matrix[1][2] = (float)rotation["m23"]  ;
+//		matrix[2][0] = (float)rotation["m31"]  ;
+//		matrix[2][1] = (float)rotation["m32"]  ;
+//		matrix[2][2] = (float)rotation["m33"]  ;
+//		break;
+//
+//	default:
+//		throw InvalidValueException(euler_type, "unknown Euler Type");
+//	}  // ends switch euler_type
+//
+//
+//	Vec3f postT  = get_posttrans( ) ;
+//	Vec3f preT   = get_pretrans( ) ;
+//
+//
+//	double azp  = fmod(az,360.0)*M_PI/180.0;
+//	double altp  = alt*M_PI/180.0;
+//	double phip = fmod(phi,360.0)*M_PI/180.0;
+//
+//	if (!is_quaternion && !is_matrix) {
+//		matrix[0][0] =  (float)(cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip));
+//		matrix[0][1] =  (float)(cos(phip)*sin(azp) + cos(altp)*cos(azp)*sin(phip));
+//		matrix[0][2] =  (float)(sin(altp)*sin(phip));
+//		matrix[1][0] =  (float)(-sin(phip)*cos(azp) - cos(altp)*sin(azp)*cos(phip));
+//		matrix[1][1] =  (float)(-sin(phip)*sin(azp) + cos(altp)*cos(azp)*cos(phip));
+//		matrix[1][2] =  (float)(sin(altp)*cos(phip));
+//		matrix[2][0] =  (float)(sin(altp)*sin(azp));
+//		matrix[2][1] =  (float)(-sin(altp)*cos(azp));
+//		matrix[2][2] =  (float)cos(altp);
+//	}
+//	if (is_quaternion){
+//		matrix[0][0] = (float)(e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3);
+//		matrix[0][1] = (float)(2.0f * (e1 * e2 + e0 * e3));
+//		matrix[0][2] = (float)(2.0f * (e1 * e3 - e0 * e2));
+//		matrix[1][0] = (float)(2.0f * (e2 * e1 - e0 * e3));
+//		matrix[1][1] = (float)(e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3);
+//		matrix[1][2] = (float)(2.0f * (e2 * e3 + e0 * e1));
+//		matrix[2][0] = (float)(2.0f * (e3 * e1 + e0 * e2));
+//		matrix[2][1] = (float)(2.0f * (e3 * e2 - e0 * e1));
+//		matrix[2][2] = (float)(e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3);
+//		// keep in mind matrix[0][2] is M13 gives an e0 e2 piece, etc
+//	}
+//	// Now do post and pretrans: vfinal = vpost + R vpre;
+//
+//	matrix[0][3] = postT[0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+//	matrix[1][3] = postT[1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+//	matrix[2][3] = postT[2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
+//}
+//
+//
+//void Transform3D::set_rotation(const float& m11, const float& m12, const float& m13,
+//							   const float& m21, const float& m22, const float& m23,
+//		  const float& m31, const float& m32, const float& m33)
+//{
+//	EulerType euler_type = MATRIX;
+//	Dict rot;
+//	rot["m11"]  = m11;
+//	rot["m12"]  = m12;
+//	rot["m13"]  = m13;
+//	rot["m21"]  = m21;
+//	rot["m22"]  = m22;
+//	rot["m23"]  = m23;
+//	rot["m31"]  = m31;
+//	rot["m32"]  = m32;
+//	rot["m33"]  = m33;
+//	set_rotation(euler_type, rot);  // Or should it be &rot ?
+//}
+//
+//void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
+//                                    const Vec3f & eAhat, const Vec3f & eBhat)
+//{// this rotation rotates unit vectors a,b into A,B;
+////    The program assumes a dot b must equal A dot B
+//	Vec3f eahatcp(eahat);
+//	Vec3f ebhatcp(ebhat);
+//	Vec3f eAhatcp(eAhat);
+//	Vec3f eBhatcp(eBhat);
+//
+//	eahatcp.normalize();
+//	ebhatcp.normalize();
+//	eAhatcp.normalize();
+//	eBhatcp.normalize();
+//
+//	Vec3f aMinusA(eahatcp);
+//	aMinusA  -= eAhatcp;
+//	Vec3f bMinusB(ebhatcp);
+//	bMinusB  -= eBhatcp;
+//
+//
+//	Vec3f  nhat;
+//	float aAlength = aMinusA.length();
+//	float bBlength = bMinusB.length();
+//	if (aAlength==0){
+//		nhat=eahatcp;
+//	}else if (bBlength==0){
+//		nhat=ebhatcp;
+//	}else{
+//		nhat= aMinusA.cross(bMinusB);
+//		nhat.normalize();
+//	}
+//
+////		printf("nhat=%f,%f,%f \n",nhat[0],nhat[1],nhat[2]);
+//
+//	Vec3f neahat  = eahatcp.cross(nhat);
+//	Vec3f nebhat  = ebhatcp.cross(nhat);
+//	Vec3f neAhat  = eAhatcp.cross(nhat);
+//	Vec3f neBhat  = eBhatcp.cross(nhat);
+//
+//	double cosOmegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
+////	float cosOmegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
+//	double sinOmegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
+////	printf("cosOmegaA=%f \n",cosOmegaA); 	printf("sinOmegaA=%f \n",sinOmegaA);
+//
+//	double OmegaA = atan2(sinOmegaA,cosOmegaA);
+////	printf("OmegaA=%f \n",OmegaA*180/M_PI);
+//
+//	EulerType euler_type=SPIN;
+//	Dict rotation;
+//	rotation["n1"]= nhat[0];
+//	rotation["n2"]= nhat[1];
+//	rotation["n3"]= nhat[2];
+//	rotation["Omega"] = (float)(OmegaA*180.0/M_PI);
+//	set_rotation(euler_type,  rotation);
+//}
+//
+//
+//float Transform3D::get_scale() const     // YYY
+//{
+//	// Assumes uniform scaling, calculation uses Z only.
+//	float scale =0;
+//	for (int i=0; i<3; i++) {
+//		for (int j=0; j<3; j++) {
+//			scale = scale + matrix[i][j]*matrix[i][j];
+//		}
+//	}
+//
+//	return sqrt(scale/3);
+//}
+//
+//
+//
+//Dict Transform3D::get_rotation(EulerType euler_type) const
+//{
+//	Dict result;
+//
+//	double max = 1 - ERR_LIMIT;
+//	double sca=get_scale();
+//	double cosalt=matrix[2][2]/sca;
+//
+//
+//	double az=0;
+//	double alt = 0;
+//	double phi=0;
+//	double phiS = 0; // like az	(but in SPIDER ZXZ)
+//	double psiS =0;  // like phi  (but in SPIDER ZYZ)
+//
+//
+//// get alt, az, phi;  EMAN
+//
+//	if (cosalt > max) {  // that is, alt close to 0
+//		alt = 0;
+//		az=0;
+//		phi = (double)EMConsts::rad2deg * atan2(matrix[0][1], matrix[0][0]);
+//	}
+//	else if (cosalt < -max) { // alt close to pi
+//		alt = 180;
+//		az=0;
+//		phi=360.0f-(double)EMConsts::rad2deg * atan2(matrix[0][1], matrix[0][0]);
+//	}
+//	else {
+//		alt = (double)EMConsts::rad2deg * acos(cosalt);
+//		az  = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[2][0], -matrix[2][1]);
+//		phi = 360.0f+(double)EMConsts::rad2deg * atan2(matrix[0][2], matrix[1][2]);
+//	}
+//	az =fmod(az+180.0,360.0)-180.0;
+//	phi=fmod(phi+180.0,360.0)-180.0;
+//
+////   get phiS, psiS ; SPIDER
+//	if (fabs(cosalt) > max) {  // that is, alt close to 0
+//		phiS=0;
+//		psiS = az+phi;
+//	}
+//	else {
+//		phiS = az   - 90.0;
+//		psiS = phi  + 90.0;
+//	}
+//	phiS = fmod((phiS   + 360.0 ), 360.0) ;
+//	psiS = fmod((psiS   + 360.0 ), 360.0) ;
+//
+////   do some quaternionic stuff here
+//
+//	double nphi = (az-phi)/2.0;
+//    // The next is also e0
+//	double cosOover2 = (cos((az+phi)*M_PI/360) * cos(alt*M_PI/360)) ;
+//	double sinOover2 = sqrt(1 -cosOover2*cosOover2);
+//	double cosnTheta = sin((az+phi)*M_PI/360) * cos(alt*M_PI/360) / sqrt(1-cosOover2*cosOover2) ;
+//	double sinnTheta = sqrt(1-cosnTheta*cosnTheta);
+//	double n1 = sinnTheta*cos(nphi*M_PI/180);
+//	double n2 = sinnTheta*sin(nphi*M_PI/180);
+//	double n3 = cosnTheta;
+//	double xtilt = 0;
+//	double ytilt = 0;
+//	double ztilt = 0;
+//
+//
+//	if (cosOover2<0) {
+//		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
+//	}
+//
+//
+//	switch (euler_type) {
+//	case EMAN:
+//		result["az"]  = az;
+//		result["alt"] = alt;
+//		result["phi"] = phi;
+//		break;
+//
+//	case IMAGIC:
+//		result["alpha"] = az;
+//		result["beta"] = alt;
+//		result["gamma"] = phi;
+//		break;
+//
+//	case SPIDER:
+//		result["phi"]   = phiS;  // The first Euler like az
+//		result["theta"] = alt;
+//		result["psi"]   = psiS;
+//		break;
+//
+//	case MRC:
+//		result["phi"]   = phiS;
+//		result["theta"] = alt;
+//		result["omega"] = psiS;
+//		break;
+//
+//	case XYZ:
+//	        xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
+//	        ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
+//	        ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
+//
+//		xtilt=fmod(xtilt*180/M_PI+540.0,360.0) -180.0;
+//		ztilt=fmod(ztilt*180/M_PI+540.0,360.0) -180.0;
+//
+//		result["xtilt"]  = xtilt;
+//		result["ytilt"]  = ytilt*180/M_PI;
+//		result["ztilt"]  = ztilt;
+//		break;
+//
+//	case QUATERNION:
+//		result["e0"] = cosOover2 ;
+//		result["e1"] = sinOover2 * n1 ;
+//		result["e2"] = sinOover2 * n2;
+//		result["e3"] = sinOover2 * n3;
+//		break;
+//
+//	case SPIN:
+//		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
+//		result["n1"] = n1;
+//		result["n2"] = n2;
+//		result["n3"] = n3;
+//		break;
+//
+//	case SGIROT:
+//		result["q"] = 360.0f*acos(cosOover2)/M_PI ;
+//		result["n1"] = n1;
+//		result["n2"] = n2;
+//		result["n3"] = n3;
+//		break;
+//
+//	case MATRIX:
+//		result["m11"] = matrix[0][0] ;
+//		result["m12"] = matrix[0][1] ;
+//		result["m13"] = matrix[0][2] ;
+//		result["m21"] = matrix[1][0] ;
+//		result["m22"] = matrix[1][1] ;
+//		result["m23"] = matrix[1][2] ;
+//		result["m31"] = matrix[2][0] ;
+//		result["m32"] = matrix[2][1] ;
+//		result["m33"] = matrix[2][2] ;
+//		break;
+//
+//	default:
+//		throw InvalidValueException(euler_type, "unknown Euler Type");
+//	}
+//
+//	return result;
+//}
+//
+//Transform3D Transform3D::inverseUsingAngs() const    //   YYN need to test it for sure
+//{
+//	// First Find the scale
+//	EulerType eE=EMAN;
+//
+//
+//	float scale   = get_scale();
+//	Vec3f preT   = get_pretrans( ) ;
+//	Vec3f postT   = get_posttrans( ) ;
+//	Dict angs     = get_rotation(eE);
+//	Dict invAngs  ;
+//
+//	invAngs["phi"]   = 180.0f - (float) angs["az"] ;
+//	invAngs["az"]    = 180.0f - (float) angs["phi"] ;
+//	invAngs["alt"]   = angs["alt"] ;
+//
+////    The inverse result
+////
+////           Z_phi   X_alt     Z_az
+////                 is
+////       Z_{pi-az}   X_alt  Z_{pi-phi}
+////      The reason for the extra pi's, is because one would like to keep alt positive
+//
+//	float inverseScale= 1/scale ;
+//
+//	Transform3D invM;
+//
+//	invM.set_rotation(EMAN, invAngs);
+//	invM.apply_scale(inverseScale);
+//	invM.set_pretrans(-postT );
+//	invM.set_posttrans(-preT );
+//
+//
+//	return invM;
+//
+//}
+//
+//Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
+//{
+//	// This assumes the matrix is 4 by 4 and the last row reads [0 0 0 1]
+//
+//	double m00 = matrix[0][0]; double m01=matrix[0][1]; double m02=matrix[0][2];
+//	double m10 = matrix[1][0]; double m11=matrix[1][1]; double m12=matrix[1][2];
+//	double m20 = matrix[2][0]; double m21=matrix[2][1]; double m22=matrix[2][2];
+//	double v0  = matrix[0][3]; double v1 =matrix[1][3]; double v2 =matrix[2][3];
+//
+//    double cof00 = m11*m22-m12*m21;
+//    double cof11 = m22*m00-m20*m02;
+//    double cof22 = m00*m11-m01*m10;
+//    double cof01 = m10*m22-m20*m12;
+//    double cof02 = m10*m21-m20*m11;
+//    double cof12 = m00*m21-m01*m20;
+//    double cof10 = m01*m22-m02*m21;
+//    double cof20 = m01*m12-m02*m11;
+//    double cof21 = m00*m12-m10*m02;
+//
+//    double Det = m00* cof00 + m02* cof02 -m01*cof01;
+//
+//    Transform3D invM;
+//
+//    invM.matrix[0][0] =  (float)(cof00/Det);
+//    invM.matrix[0][1] =  (float)(-cof10/Det);
+//    invM.matrix[0][2] =  (float)(cof20/Det);
+//    invM.matrix[1][0] =  (float)(-cof01/Det);
+//    invM.matrix[1][1] =  (float)(cof11/Det);
+//    invM.matrix[1][2] =  (float)(-cof21/Det);
+//    invM.matrix[2][0] =  (float)(cof02/Det);
+//    invM.matrix[2][1] =  (float)(-cof12/Det);
+//    invM.matrix[2][2] =  (float)(cof22/Det);
+//
+//    invM.matrix[0][3] =  (float)((-cof00*v0 + cof10*v1 - cof20*v2)/Det);
+//    invM.matrix[1][3] =  (float)(( cof01*v0 - cof11*v1 + cof21*v2)/Det);
+//    invM.matrix[2][3] =  (float)((-cof02*v0 + cof12*v1 - cof22*v2)/Det);
+//
+//	Vec3f postT   = get_posttrans( ) ;
+//	Vec3f invMpre   = - postT;
+//	Vec3f invMpost   ;
+//	for ( int i = 0; i < 3; i++) {
+//		invMpost[i] = invM.matrix[i][3];
+//		for ( int j = 0; j < 3; j++) {
+//			invMpost[i] += - invM.matrix[i][j]*invMpre[j];
+//		}
+//		invM.matrix[3][i] = invMpost[i];
+//	}
+//
+//	return invM;
+//}
+//
+//
+//
+//// Symmetry Stuff
+//
+//Transform3D Transform3D::get_sym(const string & symname, int n) const
+//{
+//	int nsym = get_nsym(symname);
+//
+//// 	Transform3D invalid;
+//// 	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
+//
+//	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
+//	// By default we will put largest symmetry along z-axis.
+//
+//	// Each Platonic Solid has 2E symmetry elements.
+//
+//
+//	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
+//	// It is composed of 20 triangles. E=3*20/2;
+//
+//
+//	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
+//	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
+//
+//
+//
+//    // The ICOS symmetry group has the face along z-axis
+//
+//	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
+//	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+//	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+//	float lvl3=180.f;                           // there is one pentagon on the bottom
+//             // Notice that 63.439 is the angle between two faces of the dual object
+//
+//	static double ICOS[180] = { // This is with a pentagon normal to z
+//		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
+//		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+//		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+//		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+//		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+//		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+//		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+//		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+//		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+//		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+//		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+//   		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+//	};
+//
+//
+//	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
+//	// It is composed of 6 squares.
+//
+//
+//	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
+//	// It is composed of 8 triangles.
+//
+//    // We have placed the OCT symmetry group with a face along the z-axis
+//        lvl0=0;
+//	lvl1=90;
+//	lvl2=180;
+//
+//	static float OCT[72] = {// This is with a face of a cube along z
+//		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
+//		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+//		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+//		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+//		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+//		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+//	};
+//	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
+//	//   20 words with at most a single A
+//    //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB
+//    //                        BBBABB BBABBB BBBABBB
+//     // also     ABBBA is distinct yields 4 more words
+//     //    ABBBA   BABBBA BBABBBA BBBABBBA
+//     // for a total of 24 words
+//     // Note A BBB A BBB A  reduces to BBABB
+//     //  and  B A BBB A is the same as A BBB A BBB etc.
+//
+//    // The TET symmetry group has a face along the z-axis
+//    // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
+//        lvl0=0;         // There is a face along z
+//	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+//
+//	static float TET[36] = {// This is with the face along z
+//	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+//	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+//	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+//	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+//	};
+//	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
+//	//   12 words with at most a single A
+//    //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
+//    // at most one A is necessary
+//
+//	Transform3D ret;
+//	SymType type = get_sym_type(symname);
+//
+//	switch (type) {
+//	case CSYM:
+//		ret.set_rotation( n * 360.0f / nsym, 0, 0);
+//		break;
+//	case DSYM:
+//		if (n >= nsym / 2) {
+//			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+//		}
+//		else {
+//			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
+//		}
+//		break;
+//	case ICOS_SYM:
+//		ret.set_rotation((float)ICOS[n * 3 ],
+//				 (float)ICOS[n * 3 + 1],
+//				 (float)ICOS[n * 3 + 2] );
+//		break;
+//	case OCT_SYM:
+//		ret.set_rotation((float)OCT[n * 3],
+//				 (float)OCT[n * 3 + 1],
+//				 (float)OCT[n * 3 + 2] );
+//		break;
+//	case TET_SYM:
+//		ret.set_rotation((float)TET[n * 3 ],
+//				 (float)TET[n * 3 + 1] ,
+//				 (float)TET[n * 3 + 2] );
+//		break;
+//	case ISYM:
+//		ret.set_rotation(0, 0, 0);
+//		break;
+//	default:
+//		throw InvalidValueException(type, symname);
+//	}
+//
+//	ret = (*this) * ret;
+//
+//	return ret;
+//}
+//
+//int Transform3D::get_nsym(const string & name)
+//{
+//	string symname = name;
+//
+//	for (size_t i = 0; i < name.size(); i++) {
+//		if (isalpha(name[i])) {
+//			symname[i] = (char)tolower(name[i]);
+//		}
+//	}
+//
+//	SymType type = get_sym_type(symname);
+//	int nsym = 0;
+//
+//	switch (type) {
+//	case CSYM:
+//		nsym = atoi(symname.c_str() + 1);
+//		break;
+//	case DSYM:
+//		nsym = atoi(symname.c_str() + 1) * 2;
+//		break;
+//	case ICOS_SYM:
+//		nsym = 60;
+//		break;
+//	case OCT_SYM:
+//		nsym = 24;
+//		break;
+//	case TET_SYM:
+//		nsym = 12;
+//		break;
+//	case ISYM:
+//		nsym = 1;
+//		break;
+//	case UNKNOWN_SYM:
+//	default:
+//		throw InvalidValueException(type, name);
+//	}
+//	return nsym;
+//}
+//
+//
+//
+//Transform3D::SymType Transform3D::get_sym_type(const string & name)
+//{
+//	SymType t = UNKNOWN_SYM;
+//
+//	if (name[0] == 'c') {
+//		t = CSYM;
+//	}
+//	else if (name[0] == 'd') {
+//		t = DSYM;
+//	}
+//	else if (name == "icos") {
+//		t = ICOS_SYM;
+//	}
+//	else if (name == "oct") {
+//		t = OCT_SYM;
+//	}
+//	else if (name == "tet") {
+//		t = TET_SYM;
+//	}
+//	else if (name == "i" || name == "") {
+//		t = ISYM;
+//	}
+//	return t;
+//}
+//
+//vector<Transform3D*>
+//Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
+//	int nangles = ang.size() / 3;
+//	vector<Transform3D*> tfvec;
+//	for (int i = 0; i < nangles; i++) {
+//		tfvec.push_back(new Transform3D(eulertype,ang[3*i],ang[3*i+1],ang[3*i+2]));
+//	}
+//	return tfvec;
+//}
+//
 
 
 
