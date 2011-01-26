@@ -37,6 +37,7 @@ using namespace EMAN;
 
 int main(int   argc, char *argv[])
 {
+#ifdef EMAN2_USING_CUDA
 	EMData *a = new EMData();
 	EMData *b = new EMData();
 	time_t start,end;
@@ -106,6 +107,6 @@ int main(int   argc, char *argv[])
 	//	delete a;
 	//	a = 0;
 	//}
-
+#endif
 	return 0;
 }
