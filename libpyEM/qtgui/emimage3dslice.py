@@ -476,7 +476,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		
 		self.n3_showing = False
 		
-		self.current_src = EULER_EMAN
+#		self.current_src = EULER_EMAN
 		
 		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.set_slice)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
