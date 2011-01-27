@@ -1086,36 +1086,36 @@ float Transform::get_determinant() const
 
 void Transform::invert() {
 
-	float m00 = matrix[0][0]; float m01=matrix[0][1]; float m02=matrix[0][2];
-	float m10 = matrix[1][0]; float m11=matrix[1][1]; float m12=matrix[1][2];
-	float m20 = matrix[2][0]; float m21=matrix[2][1]; float m22=matrix[2][2];
-	float v0  = matrix[0][3]; float v1 =matrix[1][3]; float v2 =matrix[2][3];
+	double m00 = matrix[0][0]; double m01=matrix[0][1]; double m02=matrix[0][2];
+	double m10 = matrix[1][0]; double m11=matrix[1][1]; double m12=matrix[1][2];
+	double m20 = matrix[2][0]; double m21=matrix[2][1]; double m22=matrix[2][2];
+	double v0  = matrix[0][3]; double v1 =matrix[1][3]; double v2 =matrix[2][3];
 
-	float cof00 = m11*m22-m12*m21;
-	float cof11 = m22*m00-m20*m02;
-	float cof22 = m00*m11-m01*m10;
-	float cof01 = m10*m22-m20*m12;
-	float cof02 = m10*m21-m20*m11;
-	float cof12 = m00*m21-m01*m20;
-	float cof10 = m01*m22-m02*m21;
-	float cof20 = m01*m12-m02*m11;
-	float cof21 = m00*m12-m10*m02;
+	double cof00 = m11*m22-m12*m21;
+	double cof11 = m22*m00-m20*m02;
+	double cof22 = m00*m11-m01*m10;
+	double cof01 = m10*m22-m20*m12;
+	double cof02 = m10*m21-m20*m11;
+	double cof12 = m00*m21-m01*m20;
+	double cof10 = m01*m22-m02*m21;
+	double cof20 = m01*m12-m02*m11;
+	double cof21 = m00*m12-m10*m02;
 
-	float det = m00* cof00 + m02* cof02 -m01*cof01;
+	double det = m00* cof00 + m02* cof02 -m01*cof01;
 
-	matrix[0][0] =   cof00/det;
-	matrix[0][1] = - cof10/det;
-	matrix[0][2] =   cof20/det;
-	matrix[1][0] = - cof01/det;
-	matrix[1][1] =   cof11/det;
-	matrix[1][2] = - cof21/det;
-	matrix[2][0] =   cof02/det;
-	matrix[2][1] = - cof12/det;
-	matrix[2][2] =   cof22/det;
+	matrix[0][0] =   (float)(cof00/det);
+	matrix[0][1] = - (float)(cof10/det);
+	matrix[0][2] =   (float)(cof20/det);
+	matrix[1][0] = - (float)(cof01/det);
+	matrix[1][1] =   (float)(cof11/det);
+	matrix[1][2] = - (float)(cof21/det);
+	matrix[2][0] =   (float)(cof02/det);
+	matrix[2][1] = - (float)(cof12/det);
+	matrix[2][2] =   (float)(cof22/det);
 
-	matrix[0][3] =  (- cof00*v0 + cof10*v1 - cof20*v2 )/det;
-	matrix[1][3] =  (  cof01*v0 - cof11*v1 + cof21*v2 )/det;
-	matrix[2][3] =  (- cof02*v0 + cof12*v1 - cof22*v2 )/det;
+	matrix[0][3] =  (float)((- cof00*v0 + cof10*v1 - cof20*v2)/det);
+	matrix[1][3] =  (float)((  cof01*v0 - cof11*v1 + cof21*v2)/det);
+	matrix[2][3] =  (float)((- cof02*v0 + cof12*v1 - cof22*v2)/det);
 }
 
 Transform Transform::inverse() const {
