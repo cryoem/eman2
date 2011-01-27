@@ -125,6 +125,7 @@ class TestAligner(unittest.TestCase):
 					g = ref.align("rotational",e,{},"dot",{})
 					t =  g.get_attr("xform.align2d")
 					params = t.get_params("2d")
+					#print params["alpha"], az, x ,y
 					result = fabs(params["alpha"] - az)
 					#print g.get_attr("align.az"), az
 					if result > 180 and result < 360:
@@ -247,12 +248,12 @@ class TestAligner(unittest.TestCase):
 					params = t1.get_params("2d")
 					#(t1*t).printme()
 					#print params
-					#print az,mirror
+					#print params["alpha"], az, mirror
 					result = fabs(params["alpha"]+ az)
 					if result > 180 and result < 360:
 						result = 360-result
 					if result > 360: result = result-360
-					print 'result = ', result
+					#print 'result = ', result
 					self.failIf( result > 3 ) # 3 seems accurate enough
 					self.failIf( t1.get_mirror() != mirror)
 					

@@ -2140,8 +2140,11 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 			LOGERR("improperly sized filter");
 			throw ImageFormatException("improperly sized filter");
 		}
-		cf->mult_complex_efficient(*filter,7); // takes advantage of the fact that the filter is 1 everywhere but the origin
-		this_fft->mult_complex_efficient(*filter,7);
+		
+		cf->mult_complex_efficient(*filter,true); //insanely this is required....
+		this_fft->mult(*filter,true);
+		//cf->mult_complex_efficient(*filter,7); // takes advantage of the fact that the filter is 1 everywhere but the origin
+		//this_fft->mult_complex_efficient(*filter,7);
 		/*cf->mult_complex_efficient(*filter,5);
 		this_fft->mult_complex_efficient(*filter,5);*/
 	}

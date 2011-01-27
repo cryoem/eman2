@@ -1812,9 +1812,6 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	int src_secsize =  nx1 * ny1;
 	int dst_secsize = nx * ny;
 
-	int src_gap = src_secsize - (y1-y0) * nx1;
-	int dst_gap = dst_secsize - (y1-y0) * nx;
-
 /*
 #ifdef EMAN2_USING_CUDA
 	if(block->cudarwdata){
@@ -1838,6 +1835,9 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 */
 	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
 	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
+	
+	int src_gap = src_secsize - (y1-y0) * nx1;
+	int dst_gap = dst_secsize - (y1-y0) * nx;
 	
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
