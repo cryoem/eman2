@@ -485,16 +485,17 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.cam.cam_z = -1.25*data.get_xsize()
 	def set_data(self,data,file_name="",replace=True):
 		was_previous_data = bool(self.data)
+		
+		###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
 		previous_size = None
-		previous_cam_t3d = None
-		previous_scale = None
+		previous_cam_data = {}
 		previous_normalized_threshold = None #will be (threshold - mean)/(standard deviation)
 		if was_previous_data and self.viewables:
 			previous_size = (self.data["nx"], self.data["ny"], self.data["nz"])
-			previous_cam_t3d = self.viewables[0].cam.t3d_stack[:]
-			previous_scale = self.viewables[0].cam.scale
 			previous_normalized_threshold = (self.viewables[0].isothr - self.data["mean"])/self.data["sigma"]
-			print previous_normalized_threshold
+			old_cam = self.viewables[0].cam
+			previous_cam_data = {"rot": old_cam.t3d_stack[-1], "pos":(old_cam.cam_x, old_cam.cam_y, old_cam.cam_z), "scale":old_cam.scale}
+		#############
 		
 		self.file_name = file_name # fixme fix this later
 		if self.qt_parent != None:
@@ -532,11 +533,18 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		if replace:
 			self.inspector.delete_all()
 			self.inspector.add_isosurface()
-			if (nx,ny,nz) == previous_size and previous_cam_t3d:
-				self.viewables[0].cam.t3d_stack = previous_cam_t3d
-				self.viewables[0].cam.scale = previous_scale
+			
+			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
+			if previous_cam_data:
+				new = self.viewables[0].get_inspector()
+				new.update_rotations( previous_cam_data["rot"] )
+				new.rotation_sliders.slider_rotate()
+				new.set_xyz_trans(*previous_cam_data["pos"])
 				new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
-				self.viewables[0].get_inspector().thr.setValue(new_threshold)
+				new.thr.setValue(new_threshold)				
+				if (nx,ny,nz) == previous_size:
+					new.rotation_sliders.set_scale(previous_cam_data["scale"])
+			#############
 		
 		self.set_camera_defaults(data)
 	def set_file_name(self,name):
