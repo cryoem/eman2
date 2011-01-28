@@ -330,11 +330,11 @@ namespace EMAN
 #endif	//EM_HDF5
 
 		static bool cuda_available() {
-//#ifdef EMAN2_USING_CUDA
-//			return true;
-//#else
+#ifdef EMAN2_USING_CUDA
+			return true;
+#else
 			return false;
-//#endif
+#endif
 		}
 
 		inline static void* em_malloc(const size_t size) {

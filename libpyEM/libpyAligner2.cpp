@@ -395,27 +395,27 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("get_param_types", pure_virtual(&EMAN::Aligner::get_param_types))
     ;
 
-//#ifdef EMAN2_USING_CUDA
-//    class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
-//    	.def("finish", &EMAN::CUDA_Aligner::finish)
-//        .def("setup", &EMAN::CUDA_Aligner::setup)
-//        .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
-//	.def("filter_stack", &EMAN::CUDA_Aligner::filter_stack)
-//	.def("sum_oe", &EMAN::CUDA_Aligner::sum_oe)
-//        .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
-//        .def("ali2d_single_iter", &EMAN::CUDA_Aligner::ali2d_single_iter)
-//    ;
+#ifdef EMAN2_USING_CUDA
+    class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
+    	.def("finish", &EMAN::CUDA_Aligner::finish)
+        .def("setup", &EMAN::CUDA_Aligner::setup)
+        .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
+	.def("filter_stack", &EMAN::CUDA_Aligner::filter_stack)
+	.def("sum_oe", &EMAN::CUDA_Aligner::sum_oe)
+        .def("alignment_2d", &EMAN::CUDA_Aligner::alignment_2d)
+        .def("ali2d_single_iter", &EMAN::CUDA_Aligner::ali2d_single_iter)
+    ;
 
-//    class_< EMAN::CUDA_multiref_aligner, boost::noncopyable>("CUDA_multiref_aligner", init<>())
-//    	.def("finish", &EMAN::CUDA_multiref_aligner::finish)
-//        .def("setup", &EMAN::CUDA_multiref_aligner::setup)
-//	.def("setup_params", &EMAN::CUDA_multiref_aligner::setup_params)
-//        .def("insert_image", &EMAN::CUDA_multiref_aligner::insert_image)
-//        .def("insert_ref_image", &EMAN::CUDA_multiref_aligner::insert_ref_image)
-//	.def("multiref_ali2d", &EMAN::CUDA_multiref_aligner::multiref_ali2d)
-//    ;
+    class_< EMAN::CUDA_multiref_aligner, boost::noncopyable>("CUDA_multiref_aligner", init<>())
+    	.def("finish", &EMAN::CUDA_multiref_aligner::finish)
+        .def("setup", &EMAN::CUDA_multiref_aligner::setup)
+	.def("setup_params", &EMAN::CUDA_multiref_aligner::setup_params)
+        .def("insert_image", &EMAN::CUDA_multiref_aligner::insert_image)
+        .def("insert_ref_image", &EMAN::CUDA_multiref_aligner::insert_ref_image)
+	.def("multiref_ali2d", &EMAN::CUDA_multiref_aligner::multiref_ali2d)
+    ;
 
-//#endif
+#endif
 
 
     class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("Aligners", no_init)

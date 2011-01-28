@@ -79,16 +79,6 @@ void EMData::free_memory()
 	EXITFUNC;
 }
 
-void EMData::free_rdata()
-{
-	ENTERFUNC;
-	if (rdata) {
-		EMUtil::em_free(rdata);
-		rdata = 0;
-	}
-	EXITFUNC;
-}
-
 EMData * EMData::copy() const
 {
 	ENTERFUNC;
@@ -277,15 +267,15 @@ void EMData::add(float f,int keepzero)
 		if (f != 0) {
 
 
-//#ifdef EMAN2_USING_CUDA
-//			if ( gpu_operation_preferred () && !keepzero ) {
-//				EMDataForCuda tmp = get_data_struct_for_cuda();
-//				emdata_processor_add(&tmp,f);
-//				gpu_update();
-//				EXITFUNC;
-//				return;
-//			}
-//#endif // EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA
+			if ( gpu_operation_preferred () && !keepzero ) {
+				EMDataForCuda tmp = get_data_struct_for_cuda();
+				emdata_processor_add(&tmp,f);
+				gpu_update();
+				EXITFUNC;
+				return;
+			}
+#endif // EMAN2_USING_CUDA
 			size_t size = nxyz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
@@ -410,21 +400,20 @@ void EMData::subsquare(const EMData & image)
 void EMData::sub(float f)
 {
 	ENTERFUNC;
-	
-#ifdef EMAN2_USING_CUDA
-		if (cudarwdata) {
-			if(f != 0){
-				subtract_cuda(cudarwdata, f, nx, ny, nz);
-			}
-			EXITFUNC;
-			return;
-		}
-#endif // EMAN2_USING_CUDA
 
 	float* data = get_data();
 	if( is_real() )
 	{
 		if (f != 0) {
+#ifdef EMAN2_USING_CUDA
+		if ( gpu_operation_preferred () ) {
+			EMDataForCuda tmp = get_data_struct_for_cuda();
+			emdata_processor_add(&tmp,-f);
+			gpu_update();
+			EXITFUNC;
+			return;
+		}
+#endif // EMAN2_USING_CUDA
 			size_t size = nxyz;
 			for (size_t i = 0; i < size; i++) {
 				data[i] -= f;
@@ -483,15 +472,16 @@ void EMData::mult(float f)
 {
 	ENTERFUNC;
 
-// this will cause a crash if CUDA is used(no rdata) and a complex map is given.....
+
 	if (is_complex()) {
 		ap2ri();
 	}
 	if (f != 1.0) {
 #ifdef EMAN2_USING_CUDA
-		if (cudarwdata) { //doesn't make any sense to use RO, esp on compute devices >= 2.0
-			//cout << "CUDA mult" << endl;
-			emdata_processor_mult(cudarwdata,f,nx,ny,nz);
+		if ( gpu_operation_preferred () ) {
+			EMDataForCuda tmp = get_data_struct_for_cuda();
+			emdata_processor_mult(&tmp,f);
+			gpu_update();
 			EXITFUNC;
 			return;
 		}
@@ -1377,8 +1367,11 @@ void EMData::to_value(const float& value)
 	ENTERFUNC;
 
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata){
-		to_value_cuda(cudarwdata, value, nx, ny, nz);
+	if ( gpu_operation_preferred() ) {
+		EMDataForCuda tmp = get_data_struct_for_cuda();
+		emdata_processor_to_value(&tmp,value);
+		gpu_update();
+		EXITFUNC;
 		return;
 	}
 #endif // EMAN2_USING_CUDA

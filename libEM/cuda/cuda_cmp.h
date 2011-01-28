@@ -1,17 +1,10 @@
 
-#ifndef cuda_cmp_h__
-#define cuda_cmp_h__ 1
+#ifndef cuda_processor_h__
+#define cuda_processor_h__ 1
 
-float ccc_cmp_cuda(const float* data1, const float* data2, const float* dm, const int &nx, const int &ny, const int &nz);
 
-float dot_cmp_cuda(float* data1, float* data2, const float* dm, const int &nx, const int &ny, const int &nz);
+void calc_phase_weights_cuda(EMDataForCuda* data,float np);
 
-float2 get_stats_cuda(const float * data, const int nx, const int ny, const int nz);
-
-void normalize_cuda(float * data, float mean, float var, const int nx, const int ny, const int nz);
-
-float getvalueat_cuda(float * data, int tx, int ty, int tz, int nx, int ny, int nz);
-
-float* calc_fourier_shell_correlation_cuda(const int nx, const int ny, const int nz, const int d);
-
+void mean_phase_error_cuda(EMDataForCuda* left, EMDataForCuda* right,EMDataForCuda* wt, EMDataForCuda* hist, EMDataForCuda* norm,int num_hist);
+		
 #endif //cuda_processor_h__

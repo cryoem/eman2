@@ -336,7 +336,6 @@ namespace EMAN
 			TypeDict d;
 			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized (should be for normalized images). Default is true.");
 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
-			d.put("normalize", EMObject::EMDATA,"Return the negative value (which is EMAN2 convention), Defalut is true(1)");
 			d.put("searchx", EMObject::INT, "The maximum range of the peak location in the x direction. Default is sizex/4");
 			d.put("searchy", EMObject::INT, "The maximum range of the peak location in the y direction. Default is sizey/4");
 			d.put("searchz", EMObject::INT, "The maximum range of the peak location in the z direction. Default is sizez/4");
@@ -492,9 +491,9 @@ namespace EMAN
 		
 		static const string NAME;
 
-//#ifdef EMAN2_USING_CUDA
-//		 float cuda_cmp(EMData * image, EMData *with) const;
-//#endif //EMAN2_USING_CUDA
+#ifdef EMAN2_USING_CUDA
+		 float cuda_cmp(EMData * image, EMData *with) const;
+#endif //EMAN2_USING_CUDA
 	};
 
 	/** FRCCmp returns a quality factor based on FRC between images.

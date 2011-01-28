@@ -24,6 +24,7 @@ OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
 OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
 OPTION(ENABLE_FFTW3 "enable fftw 3 support" ON)
+OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
@@ -282,6 +283,7 @@ ENDMACRO(CHECK_PYTHON)
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
     OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF) 
+    OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
@@ -308,6 +310,7 @@ ENDIF(ENABLE_FFTW2)
 IF(ENABLE_FFTW3)
     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
     OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+    OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
     
@@ -411,6 +414,15 @@ IF (ENABLE_CUDA)
 	subdirs(libEM/sparx/cuda)
 ENDIF (ENABLE_CUDA)
 
+IF (ENABLE_CUDA_FFT)
+	OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
+	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
+	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
+	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+	OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
+	ADD_DEFINITIONS(-DCUDA_FFT)
+ENDIF(ENABLE_CUDA_FFT)
+
 INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} 
 					${EMAN_SOURCE_DIR}/libEM 
 					${GL_INCLUDE_PATH}
@@ -456,9 +468,9 @@ ENDIF(ENABLE_PNG)
 IF(ENABLE_PYTHON)
 	
     IF(WIN32)
-		CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
+		CHECK_PYTHON($ENV{PYTHON_VERSION} 26 25 24 23 22)
     ELSE(WIN32)
-		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2)
+		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.6 2.5 2.4 2.3 2.2)
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)

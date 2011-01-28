@@ -67,14 +67,7 @@ EMData *get_fft_phase();
  * @return The image pixel density data.
  */
 #ifdef EMAN2_USING_CUDA
-inline float *get_data() const
-{
-	if(rdata == 0){
-		rdata = (float*)malloc(num_bytes);
-		cudaMemcpy(rdata,cudarwdata,num_bytes,cudaMemcpyDeviceToHost);
-	}
-	return rdata;
-}
+float *get_data() const;
 #else
 inline float *get_data() const { return rdata; }
 #endif
@@ -93,9 +86,9 @@ inline const float * get_const_data() const { return get_data(); }
 */
 inline void set_data(float* data, const int x, const int y, const int z) {
 	if (rdata) { EMUtil::em_free(rdata); rdata = 0; }
-//#ifdef EMAN2_USING_CUDA
-//	free_cuda_memory();
-//#endif
+#ifdef EMAN2_USING_CUDA
+	free_cuda_memory();
+#endif
 	rdata = data;
 	nx = x; ny = y; nz = z;
 	nxy = nx*ny;
@@ -134,16 +127,10 @@ void read_data(string fsp,size_t loc,const Region* area=0,const int file_nx=0, c
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
 inline void update()
 {
-	flags |= EMDATA_NEEDUPD;
+	flags |= EMDATA_NEEDUPD | EMDATA_GPU_NEEDS_UPDATE | EMDATA_GPU_RO_NEEDS_UPDATE;
 	changecount++;
 }
 
-/** turn off updates. Useful to avoid wasteful recacling stats */
-inline void clearupdate()
-{
-	flags &= ~EMDATA_NEEDUPD;
-	changecount--;
-}
 
 /** check whether the image physical file has the CTF info or not.
  * @return True if it has the CTF information. Otherwise, false.
@@ -360,7 +347,7 @@ void set_size(int nx, int ny=1, int nz=1);
  *
  * @param nx  x size of this image.
  * @param ny  y size of this image.
- * @param nz  z size of this image./
+ * @param nz  z size of this image.
  $ @exception BadAllocException if memory allocation returns a null pointer
  */
 void set_size_cuda(int nx, int ny=1, int nz=1);
@@ -562,14 +549,6 @@ inline bool has_attr(const string& key) const {
  */
 Dict get_attr_dict() const;
 
-#ifdef EMAN2_USING_CUDA
-/** get_attr_dict can be expensive. Sometimes we just need attr_dict
- * for use in constructing new EMData object in the cuda context
- * @return The image attribute dictionary containing all
- * attribute names and values.
- */
-inline Dict get_attr_dict_cuda() const {return attr_dict;}
-#endif
 
 /** Merge the new values with the existing dictionary.
  *

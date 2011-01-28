@@ -47,9 +47,9 @@
 	#include <sys/param.h>
 #endif	//WIN32
 
-//#ifdef EMAN2_USING_CUDA_MALLOC
-//#include "cuda/cuda_util.h"
-//#endif
+#ifdef EMAN2_USING_CUDA_MALLOC
+#include "cuda/cuda_util.h"
+#endif
 
 using namespace EMAN;
 

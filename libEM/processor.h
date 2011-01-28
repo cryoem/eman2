@@ -6775,6 +6775,152 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
+#ifdef EMAN2_USING_CUDA
+	/** Cuda based constant multiplication processor
+	 * @author David Woolford
+	 * @date Feb 24 2009
+	 * @param scale The amount to multiply each pixel by
+	*/
+	class CudaMultProcessor: public Processor
+	{
+		public:
+
+			virtual void process_inplace(EMData * image);
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			static Processor *NEW()
+			{
+				return new CudaMultProcessor();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("scale", EMObject::FLOAT, "The amount to multiply each pixel by");
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Multiplies each pixel by a constant value";
+			}
+
+			static const string NAME;
+
+		protected:
+	};
+
+	/** Cuda based auto correlation processor
+	 * @author David Woolford
+	 * @date Feb 24 2009
+	 * @param with That which to perform the cross correlation with.
+	 */
+	class CudaCorrelationProcessor: public Processor
+	{
+		public:
+
+			virtual void process_inplace(EMData * image);
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			static Processor *NEW()
+			{
+				return new CudaCorrelationProcessor();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("with", EMObject::EMDATA, "That which to perform the cross correlation with.");
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Performs Fourier based cross correlation on the GPU";
+			}
+
+			static const string NAME;
+
+		protected:
+	};
+
+	/* class MPI CUDA kmeans processor
+	 * 2009-02-13 17:34:45 JB first version
+	 * 2009-09-02 11:19:10 JB for MPI version
+	 * python wrap for GPU cluster
+	 */
+	class MPICUDA_kmeans {
+	public:
+		MPICUDA_kmeans();
+		~MPICUDA_kmeans();
+		int setup(int extm, int extN, int extn, int extK, int extn_start);
+		void append_flat_image(EMData* im, int pos);
+		int init_mem(int numdev);
+		void compute_im2();
+		int random_ASG(long int rnd);
+		vector<int> get_ASG();
+		vector<int> get_asg();
+		void compute_NC();
+		vector<int> get_NC();
+		void set_ASG(const vector <int>& ASG);
+		void set_NC(const vector <int>& NC);
+		int get_ct_im_mv();
+		void set_T(float extT);
+		float get_T();
+		void compute_AVE();
+		void set_AVE(EMData* im, int pos);
+		vector<EMData*> get_AVE();
+		int one_iter();
+		int one_iter_SA();
+		vector<float> compute_ji();
+		vector<float> compute_criterion(const vector <float>& Ji);
+		int shutdown();
+	private:
+		// params
+		int m;
+		int N;
+		int n;
+		int K;
+		int nb_part;
+		int n_start;
+		int size_im;
+		int size_IM;
+		int size_AVE;
+		int size_dist;
+		int BLOCK_SIZE;
+		int NB;
+		int ins_BLOCK;
+		int ite;
+		float T;
+		// debug
+		int ct_im_mv;
+		// host memory
+		float* h_IM;
+		float* h_im;
+		float* h_AVE;
+		float* h_dist;
+		float* h_AVE2;
+		float* h_im2;
+		unsigned short int* h_ASG;
+		unsigned short int* h_asg;
+		unsigned int* h_NC;
+		int* params;
+		// device memory
+		float* d_im;
+		float* d_AVE;
+		float* d_dist;
+	};
+
+#endif //EMAN2_USING_CUDA
+
 #if 0
 
 	class XYZProcessor:public Processor

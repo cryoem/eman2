@@ -44,11 +44,9 @@ using std::stringstream;
 
 #include <iomanip>
 using std::setprecision;
-using namespace EMAN;
 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_processor.h"
-#endif // EMAN2_USING_CUDA
+
+using namespace EMAN;
 
 EMData* EMData::get_fft_amplitude2D()
 {
@@ -199,6 +197,29 @@ EMData* EMData::get_fft_phase()
 	EXITFUNC;
 	return dat;
 }
+#ifdef EMAN2_USING_CUDA
+#include <cuda_runtime_api.h>
+
+float* EMData::get_data() const
+{
+	
+	size_t num_bytes = nx*ny*nz*sizeof(float);
+	if ( num_bytes > 0 && gpu_rw_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cout << get_cuda_data() << endl;
+		cout << rdata << endl;
+		cudaError_t error = cudaMemcpy(rdata,get_cuda_data(),num_bytes,cudaMemcpyDeviceToHost);
+		if (error != cudaSuccess ) throw UnexpectedBehaviorException("The device to host cudaMemcpy failed : " + string(cudaGetErrorString(error)));
+	} else if ( gpu_ro_is_current()  && (EMDATA_CPU_NEEDS_UPDATE & flags)) {
+		cout << "Copy ro to cpu" << endl;
+		copy_gpu_ro_to_cpu();
+	}
+	flags &= ~EMDATA_CPU_NEEDS_UPDATE;
+
+	return rdata;
+
+}
+#endif
+
 
 #include <sys/stat.h>
 
@@ -411,21 +432,6 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 	float max_value = -FLT_MAX;
 
 	IntPoint peak(0,0,0);
-	
-#ifdef EMAN2_USING_CUDA //CUDA
-	if(cudarwdata){
-	
-		CudaPeakInfo* soln = calc_max_location_wrap_cuda(cudarwdata, nx, ny, nz, maxdx, maxdy, maxdz);
-		
-		peak[0] = soln->px;
-		peak[1] = soln->py;
-		peak[2] = soln->pz;
-		free(soln);
-		
-//		cout << "x " << peak[0] << " y " << peak[1] << " z " << peak[2] << endl;
-		return peak;
-	}
-#endif
 	for (int k = -maxshiftz; k <= maxshiftz; k++) {
 		for (int j = -maxshifty; j <= maxshifty; j++) {
 			for (int i = -maxshiftx; i <= maxshiftx; i++) {
@@ -588,13 +594,7 @@ vector<Pixel> EMData::find_pixels_with_value(float val)
 float EMData::get_edge_mean() const
 {
 	ENTERFUNC;
-#ifdef EMAN2_USING_CUDA
-	if(cudarwdata){
-		
-			return get_edgemean_cuda(cudarwdata, nx, ny, nz);
-			
-	}
-#endif
+
 	int di = 0;
 	double edge_sum = 0;
 	float edge_mean = 0;
@@ -746,23 +746,16 @@ void EMData::set_size(int x, int y, int z)
 		throw BadAllocException(message);
 	}
 
+#ifdef EMAN2_USING_CUDA
+	// This is important
+ 	free_cuda_memory();
+#endif // EMAN2_USING_CUDA
+
 	nx = x;
 	ny = y;
 	nz = z;
 	nxy = nx*ny;
 	nxyz = nx*ny*nz;
-
-// once the object is resized, the CUDA need to be updated
-#ifdef EMAN2_USING_CUDA
-	if(cudarwdata) {
-		rw_free();
-		rw_alloc();
-	}
-	if(cudarodata) {
-		ro_free();
-		ro_alloc();
-	}
-#endif // EMAN2_USING_CUDA
 
 	if (old_nx == 0) {
 		EMUtil::em_memset(get_data(),0,size);
@@ -779,6 +772,9 @@ void EMData::set_size(int x, int y, int z)
 
 #ifdef EMAN2_USING_CUDA
 
+#include <cuda_runtime_api.h>
+#include "cuda/cuda_util.h"
+
 void EMData::set_size_cuda(int x, int y, int z)
 {
 	ENTERFUNC;
@@ -793,14 +789,23 @@ void EMData::set_size_cuda(int x, int y, int z)
 		throw InvalidValueException(z, "z size <= 0");
 	}
 
+	if (cuda_cache_handle!=-1) {
+		cuda_cache.clear_item(cuda_cache_handle);
+		cuda_cache_handle = -1;
+	}
 	nx = x;
 	ny = y;
 	nz = z;
 
 	nxy = nx*ny;
-	nxyz = nx*ny*nz;
 
-//	gpu_update();
+	get_cuda_data();
+
+// 	cuda_cache_handle = cuda_rw_cache.cache_data(this,rdata,nx,ny,nz); Let's be lazy
+	// This is important
+	free_memory(); // Now release CPU memory, seeing as a GPU resize invalidates it - Actually let's be lazy about it instead
+
+	gpu_update();
 
 	EXITFUNC;
 }
@@ -926,10 +931,11 @@ int greaterthan( const void* p1, const void* p2 )
 EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
+
+	size_t size = nx * ny * nz;
+	if ((flags & EMDATA_NEEDUPD) && (key != "is_fftpad")){update_stat();} //this gives a spped up of 7.3% according to e2speedtest
+        //update_stat();
 	
-	if ((flags & EMDATA_NEEDUPD) && (key != "is_fftpad") && (key != "xform.align2d")){update_stat();} //this gives a spped up of 7.3% according to e2speedtest
-		
-	size_t size = nx * ny * nz;    	
 	if (key == "kurtosis") {
 		float mean = attr_dict["mean"];
 		float sigma = attr_dict["sigma"];

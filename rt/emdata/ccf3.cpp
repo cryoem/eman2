@@ -37,56 +37,13 @@ using namespace EMAN;
 
 int main(int   argc, char *argv[])
 {
-#ifdef EMAN2_USING_CUDA
 	EMData *a = new EMData();
-	EMData *b = new EMData();
-	time_t start,end;
-	
 	a->read_image(argv[1]);
-	b->read_image(argv[2]);
-	
-	//EMData *sa = a->process("xform.scale", Dict("scale",2.90909090909090909090909));
-	//EMData *sb = b->process("xform.scale", Dict("scale",2.90909090909090909090909));
-
-	//sa->copy_to_cudaro();
-	//sb->copy_to_cudaro();
-	//sb->copy_to_cuda();
-
-	//EMData *sc = sa->align("rt.3d.sphere", sb, Dict("delta",10,"dphi",10), "ccc.tomo");
-	
-	//time (&start);
-	//for(int i = 0; i < 100000; i++)
-	//{
-	//	EMData* fft = a->do_fft();
-	//	delete fft;
-		//a->elementaccessed();
-	//}
-	//time (&end);
-	//float diff = difftime (end,start);
-	//printf ("EMAN used %f seconds\n", diff);
-	
-	a->copy_to_cuda();
-	b->copy_to_cuda();
-	//int size = (a->get_xsize() + 2)*a->get_ysize()*sizeof(float);
-	//EMData::usemempool(size);
-	
-	//time (&start);
-	for(int i = 0; i < 1000; i++)
-	{
-		EMData* ra = a->align("rotate_translate_flip", b, Dict(), "dot");
-		//delete ra;
-		//a->elementaccessed();
-		
-	}
-	//time (&end);
-	//diff = difftime (end,start);
-	//printf ("CUDA used %f seconds\n", diff);
-
 	//cout << argv[1] << endl;
 	//EMData *b = new EMData();]
-        //Transform t(Dict("type","2d","alpha",45));
-        //EMData *b = a->process("xform",Dict("transform",(Transform*)&t));
-	
+        Transform t(Dict("type","2d","alpha",45));
+        EMData *b = a->process("xform",Dict("transform",(Transform*)&t));
+
 	//EMData *c = a->calc_ccf(b);
 	//if( b )
 	//{
@@ -107,6 +64,6 @@ int main(int   argc, char *argv[])
 	//	delete a;
 	//	a = 0;
 	//}
-#endif
+
 	return 0;
 }
