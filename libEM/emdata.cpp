@@ -2079,8 +2079,8 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 				LOGERR("improperly sized filter");
 				throw ImageFormatException("improperly sized filter");
 			}
-			mult_complex_efficient_cuda(cf->cudarwdata, filter->cudarwdata, cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), 7);
-			mult_complex_efficient_cuda(this_fft->cudarwdata, filter->cudarwdata, this_fft->get_xsize(), this_fft->get_ysize(), this_fft->get_zsize(), 7);
+			mult_complex_efficient_cuda(cf->cudarwdata, filter->cudarwdata, cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), 1);
+			mult_complex_efficient_cuda(this_fft->cudarwdata, filter->cudarwdata, this_fft->get_xsize(), this_fft->get_ysize(), this_fft->get_zsize(), 1);
 		}
 		
 		mcf_cuda(this_fft->cudarwdata, cf->cudarwdata, this_fft->get_xsize(), this_fft->get_ysize(), this_fft->get_zsize());
@@ -2143,7 +2143,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 		
 		cf->mult_complex_efficient(*filter,true); //insanely this is required....
 		this_fft->mult(*filter,true);
-		//cf->mult_complex_efficient(*filter,7); // takes advantage of the fact that the filter is 1 everywhere but the origin
+		//cf->mult_complex_efficient(*filter,7); // takes advantage of the fact that the filter is 1 everywhere but near the origin
 		//this_fft->mult_complex_efficient(*filter,7);
 		/*cf->mult_complex_efficient(*filter,5);
 		this_fft->mult_complex_efficient(*filter,5);*/

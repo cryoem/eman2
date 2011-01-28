@@ -876,29 +876,30 @@ EMData *StandardProjector::project3d(EMData * image) const
 // 	Dict p = t3d->get_rotation();
 	if ( image->get_ndim() == 3 )
 	{
-		
+
 #ifdef EMAN2_USING_CUDA
-	if(image->isrodataongpu()){
-		//cout << "CUDA PROJ" << endl;
-		Transform* t3d = params["transform"];
-		if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
-		float * m = new float[12];
-		t3d->copy_matrix_into_array(m);
-		image->bindcudaarrayA(true);
-		EMData* e = new EMData(0,0,image->get_xsize(),image->get_ysize(),1);
-		//EMData *e = new EMData();
-		//e->set_size(image->get_xsize(), image->get_ysize(), 1);
-		e->rw_alloc();
-		standard_project(m,e->cudarwdata, e->get_xsize(), e->get_ysize());
-		image->unbindcudaarryA();
-		delete [] m;
+		if(EMData::usecuda == 1) {
+			if(!image->isrodataongpu()) image->copy_to_cudaro();
+			//cout << "CUDA PROJ" << endl;
+			Transform* t3d = params["transform"];
+			if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
+			float * m = new float[12];
+			t3d->copy_matrix_into_array(m);
+			image->bindcudaarrayA(true);
+			EMData* e = new EMData(0,0,image->get_xsize(),image->get_ysize(),1);
+			//EMData *e = new EMData();
+			//e->set_size(image->get_xsize(), image->get_ysize(), 1);
+			e->rw_alloc();
+			standard_project(m,e->cudarwdata, e->get_xsize(), e->get_ysize());
+			image->unbindcudaarryA();
+			delete [] m;
 		
-		e->update();
-		e->set_attr("xform.projection",t3d);
-		//e_>copy_from_device();
-		if(t3d) {delete t3d; t3d=0;}
-		return e;
-	}
+			e->update();
+			e->set_attr("xform.projection",t3d);
+			//e_>copy_from_device();
+			if(t3d) {delete t3d; t3d=0;}
+			return e;
+		}
 #endif
 		int nx = image->get_xsize();
 		int ny = image->get_ysize();

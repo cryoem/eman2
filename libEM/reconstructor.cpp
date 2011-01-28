@@ -248,7 +248,7 @@ EMData *FourierReconstructorSimple2D::finish(bool)
 	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 
-	return  	image;
+	return  image;
 }
 
 void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool wiener)
@@ -524,13 +524,19 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 	if (tmp.is_identity()) return_slice=slice->copy();
 	else return_slice = slice->process("xform",Dict("transform",&tmp));
 
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!return_slice->cudarwdata) return_slice->copy_to_cuda();
+	}
+#endif
+
 	return_slice->process_inplace("xform.phaseorigin.tocorner");
 
 //	printf("@@@ %d\n",(int)return_slice->get_attr("nx"));
 	// Fourier transform the slice
 	
 #ifdef EMAN2_USING_CUDA
-	if(slice->cudarwdata){
+	if(return_slice->cudarwdata) {
 		return_slice->do_fft_inplace_cuda(); //a CUDA FFT inplace is quite slow as there is a lot of mem copying.
 	}else{
 		return_slice->do_fft_inplace();
@@ -603,11 +609,12 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	float iny=(float)(input_slice->get_ysize());
 
 #ifdef EMAN2_USING_CUDA
-	if(input_slice->cudarwdata && !image->cudarwdata){
-		image->copy_to_cuda();
-		tmp_data->copy_to_cuda();
-	}
-	if(image->cudarwdata && input_slice->cudarwdata){
+	if(EMData::usecuda == 1) {
+//		if(!input_slice->cudarwdata) input_slice->copy_to_cuda();
+		if(!image->cudarwdata){
+			image->copy_to_cuda();
+			tmp_data->copy_to_cuda();
+		}
 		float * m = new float[12];
 		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 			Transform t3d = arg*(*it);
@@ -710,11 +717,12 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	bool use_cpu = true;
 	
 #ifdef EMAN2_USING_CUDA
-	if(input_slice->cudarwdata && !image->cudarwdata){
-		image->copy_to_cuda();
-		tmp_data->copy_to_cuda();
-	}
-	if(image->cudarwdata && input_slice->cudarwdata){
+	if(EMData::usecuda == 1) {
+		if(!input_slice->cudarwdata) input_slice->copy_to_cuda();
+		if(!image->cudarwdata){
+			image->copy_to_cuda();
+			tmp_data->copy_to_cuda();
+		}
 		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 			Transform t3d = arg*(*it);
 			float * m = new float[12];

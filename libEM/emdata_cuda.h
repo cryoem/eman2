@@ -123,6 +123,10 @@ inline	void roneedsanupdate()
 	*/
 	bool freeup_devicemem(const int& num_bytes) const;
 	
+	static void switchoncuda();
+	
+	static void switchoffcuda();
+	
 	//pointers to cuda data
 	mutable float* cudarwdata;	//we can still change GPU data on a cost object
 	mutable cudaArray* cudarodata;	//we can still change GPU data on a cost object
@@ -139,6 +143,7 @@ inline	void roneedsanupdate()
 	static int fudgemem;
 	static EMData* firstinlist;
 	static EMData* lastinlist;
+	static bool usecuda;
 	
 	// mempool stuff
 	static float* mempool[MEMPOOL_SIZE];

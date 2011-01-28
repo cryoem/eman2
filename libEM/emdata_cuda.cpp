@@ -50,11 +50,11 @@ int EMData::fudgemem = 1.024E7; //let's leave 10 MB of 'fudge' memory on the dev
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
+bool EMData::usecuda = atoi(getenv("USECUDA"));
 float* EMData::mempool[] = {0};
 
 bool EMData::copy_to_cuda()
 {
-	
 	//cout << "copying from host to device RW" << " " << num_bytes << endl;
 	if(rw_alloc()) {
 		memused += num_bytes;	
@@ -256,12 +256,15 @@ void EMData::ro_free()
 
 bool EMData::isrodataongpu() const
 {
-	if(cudarodata != 0 && !roneedsupdate){return 1;}
+	if(cudarodata != 0 && !roneedsupdate){return true;}
 	if(cudarwdata != 0){
-		copy_rw_to_ro();
-		return 1;
+		if(copy_rw_to_ro()){;
+			return true;
+		} else {
+			return false;
+		}
 	}else{
-		return 0;
+		return false;
 	}
 	
 }
@@ -364,5 +367,15 @@ void EMData::freemempool()
 			cudaFree(mempool[i]);
 		}
 	}
+}
+
+void EMData::switchoncuda()
+{
+	EMData::usecuda = 1;	
+}
+
+void EMData::switchoffcuda()
+{
+	EMData::usecuda = 0;	
 }
 #endif //EMAN2_USING_CUDA

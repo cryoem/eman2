@@ -123,7 +123,9 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	bool use_cpu = true;
 
 #ifdef EMAN2_USING_CUDA
-	if(this_img->cudarwdata && to->cudarwdata){
+	if(EMData::usecuda == 1) {
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!to->cudarwdata) to->copy_to_cuda();
 		if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
 		if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
  		//cout << "Translate on GPU" << endl;
@@ -289,6 +291,13 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
 	if (!to) throw InvalidParameterException("Can not rotational align - the image to align to is NULL");
+	
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!to->cudarwdata) to->copy_to_cuda();
+	}
+#endif
 
 	// Perform 180 ambiguous alignment
 	int rfp_mode = params.set_default("rfp_mode",0);
@@ -462,6 +471,14 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
+	
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!to->cudarwdata) to->copy_to_cuda();
+	}
+#endif
+
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int rfp_mode = params.set_default("rfp_mode",0);
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
@@ -1591,7 +1608,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 		//float delta = (float)gsl_vector_get(s->x, 4);
 		//float phi = (float)gsl_vector_get(s->x, 5);
 
-		//Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);
+		//Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);stand
 
 		//result = this_img->process("xform",Dict("transform",&tsoln));
 		//result->set_attr("xform.align3d",&tsoln);
@@ -1706,9 +1723,11 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	
 #ifdef EMAN2_USING_CUDA // I am still BenchMarking
-	//this_img->copy_to_cudaro();
-	if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
-	//to->copy_to_cudaro();
+	if(EMData::usecuda == 1) {
+		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
+		if(!to->isrodataongpu()) to->copy_to_cudaro();
+		if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+	}
 #endif
 
 	Dict d;
@@ -1857,9 +1876,11 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	
 #ifdef EMAN2_USING_CUDA // I am still BenchMarking
-	//this_img->copy_to_cudaro();
-	if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
-	//to->copy_to_cudaro();
+	if(EMData::usecuda == 1) {
+		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
+		if(!to->isrodataongpu()) to->copy_to_cudaro();
+		if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+	}
 #endif
 
 
