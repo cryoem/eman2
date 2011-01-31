@@ -27,7 +27,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
-#
 
 #  This file contains fuctions that perform project-dependent tasks in various
 #   alignment programs, for example preparation of the reference during 2D and 3D alignment
@@ -35,7 +34,7 @@
 #   of ref_ali2d) and add the name to the factory.  Once it is done, the function can be called
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
-from EMAN2_cppwrap import *
+
 from global_def import *
 
 
