@@ -44,6 +44,9 @@
 
 #ifdef EMAN2_USING_CUDA
 	#include "cuda/cuda_processor.h"
+#endif
+
+#ifdef SPARX_USING_CUDA
 	#include <sparx/cuda/cuda_ccf.h>
 #endif
 
@@ -2296,7 +2299,8 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 	}
 }
 
-#ifdef EMAN2_USING_CUDA
+#ifdef SPARX_USING_CUDA
+
 CUDA_Aligner::CUDA_Aligner() {
 	image_stack = NULL;
 	image_stack_filtered = NULL;

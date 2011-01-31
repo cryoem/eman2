@@ -1,5 +1,5 @@
 #include "cuda_util.h"
-#include <sm_11_atomic_functions.h>
+//#include <sm_11_atomic_functions.h>
 
 // these mean, mean square kernals work by sweeping over the first array dim
 __global__ void mean_kernal(const float * data, float * device_stats, const int size, const int num_calcs, const int num_threads, const int offset)
@@ -85,7 +85,7 @@ __global__ void dot_cmp_kernal(const float* data1, const float* data2, float* de
 	device_soln[idx] = dot/size;	
 	
 }
-
+/*
 __global__ void dot_cmp_kernal_atomic(const float* data1, const float* data2, float* device_soln, const int num_threads, const int offset)
 {
 
@@ -101,7 +101,7 @@ __global__ void dot_cmp_kernal_atomic(const float* data1, const float* data2, fl
 	atomicAdd(device_soln, dot); //VERY SLOW!!!!!
 
 }
-
+*/
 __shared__ float sdata[MAX_THREADS];
 __global__ void dot_cmp_kernal_reduce(float *g_idata1, float *g_idata2, float *g_odata) 
 {
