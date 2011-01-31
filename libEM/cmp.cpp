@@ -38,6 +38,11 @@
 #include "ctf.h"
 #include "plugins/cmp_template.h"
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_processor.h"
+#include "cuda/cuda_cmp.h"
+#endif // EMAN2_USING_CUDA
+
 using namespace EMAN;
 
 const string CccCmp::NAME = "ccc";
@@ -66,6 +71,13 @@ template <> Factory < Cmp >::Factory()
 
 void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 {
+	
+#ifdef EMAN2_USING_CUDA  
+	if (image->cudarwdata && with->cudarwdata) {
+		//no need for futher checking, which will induce an expensive copy from device to host
+		return;
+	}
+#endif
 	if (!image) {
 		throw NullPointerException("compared image");
 	}
@@ -113,6 +125,19 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 		if(mask!=0) {has_mask=true;}
 	}
 
+#ifdef EMAN2_USING_CUDA
+	if (image->cudarwdata && with->cudarwdata) {
+		float* maskdata = 0;
+		if(has_mask && !mask->cudarwdata){
+			mask->copy_to_cuda();
+			maskdata = mask->cudarwdata;
+		}
+		float ccc = ccc_cmp_cuda(image->cudarwdata, with->cudarwdata, maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		ccc *= negative;
+		//cout << "CUDA CCC is: " << ccc << endl;
+		return ccc;
+	}
+#endif
 	if (has_mask) {
 		const float *const dm = mask->get_const_data();
 		for (size_t i = 0; i < totsize; ++i) {
@@ -381,15 +406,42 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 float DotCmp::cmp(EMData* image, EMData* with) const
 {
 	ENTERFUNC;
+	
 	validate_input_args(image, with);
-
-	const float *const x_data = image->get_const_data();
-	const float *const y_data = with->get_const_data();
 
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
-
 	if (negative) negative=-1.0; else negative=1.0;
+#ifdef EMAN2_USING_CUDA // SO far only works for real images I put CUDA first to avoid running non CUDA overhead (calls to getdata are expensive!!!!)
+	if(image->is_complex() && with->is_complex()) {
+	} else {
+		if (image->cudarwdata && with->cudarwdata) {
+			//image->copy_from_device();
+			//with->copy_from_device();
+			
+			float* maskdata = 0;
+			bool has_mask = false;
+			EMData* mask = 0;
+			if (params.has_key("mask")) {
+				mask = params["mask"];
+				if(mask!=0) {has_mask=true;}
+			}
+			if(has_mask && !mask->cudarwdata){
+				mask->copy_to_cuda();
+				maskdata = mask->cudarwdata;
+			}
+
+			float result = dot_cmp_cuda(image->cudarwdata, with->cudarwdata, maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+			result *= negative;
+
+			return result;
+			
+		}
+	}
+#endif
+	const float *const x_data = image->get_const_data();
+	const float *const y_data = with->get_const_data();
+
 	double result = 0.;
 	long n = 0;
 	if(image->is_complex() && with->is_complex()) {
@@ -532,6 +584,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		} else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz/2);
 		}
 	} else {
+		
 		size_t totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 		double square_sum1 = 0., square_sum2 = 0.;
@@ -584,26 +637,71 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	EMData* ccf = params.set_default("ccf",(EMData*) NULL);
 	bool ccf_ownership = false;
+	bool norm = params.set_default("norm",true);
+	bool zeroori = params.set_default("zeroori",false);
+	float negative = (float)params.set_default("negative", 1);
+	if (negative) negative=-1.0; else negative=1.0;
+	int searchx, searchy, searchz;
+	
+	if (zeroori) {
+		searchx = params.set_default("searchx",-1); 
+	        searchy = params.set_default("searchy",-1); 
+	        searchz = params.set_default("searchz",-1);
+	}else{
+		searchx = 0;
+		searchy = 0;
+		searchz = 0;
+	}
+	
+#ifdef EMAN2_USING_CUDA	
+	if(image->cudarwdata && with->cudarwdata){
+		if (!ccf) {
+			ccf = image->calc_ccf(with);
+			ccf_ownership = true;
+		}
+		//cout << "using CUDA" << endl;
+		float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		//cout << "mean " << stats.x << " var " << stats.y << endl;
+		
+		float best_score;
+		int tx = 0; int ty = 0;; int tz = 0;
+		if (!zeroori) {
+			CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+			tx = data->px;
+			ty = data->py;
+			tz = data->pz;
+			best_score = data->peak;
+			free(data);
+		}else{
+			best_score = getvalueat_cuda(ccf->cudarwdata, tx, ty, tz, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		}
+		
+		image->set_attr("tx", tx);
+		image->set_attr("ty", ty);
+		image->set_attr("tz", tz);
+
+		best_score = negative*(best_score - stats.x)/sqrt(stats.y);
+		
+		if (ccf_ownership) delete ccf; ccf = 0;
+		
+		return best_score;
+		
+	}
+#endif
+
 	if (!ccf) {
 		ccf = image->calc_ccf(with);
 		ccf_ownership = true;
 	}
-	bool norm = params.set_default("norm",true);
-	bool zeroori = params.set_default("zeroori",false);
-	
 	if (norm) ccf->process_inplace("normalize");
 
 	IntPoint point;
 	if (zeroori) {
-	        point[0] = 0; point[1] = 0; point[2] = 0;
+	        point[0] = searchx; point[1] = searchy; point[2] = searchz;
 	} else {
-	  	int searchx = params.set_default("searchx",-1); 
-	        int searchy = params.set_default("searchy",-1); 
-	        int searchz = params.set_default("searchz",-1);
 	        point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 	}
-	
-	//this is to prevent us from doing a ccf twice
+	//this is to prevent us from doing a ccf twice (as was absurdly done before)
 	float tx = (float)point[0]; float ty = (float)point[1]; float tz = (float)point[2];
 	image->set_attr("tx", tx);
 	image->set_attr("ty", ty);
@@ -612,7 +710,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	float best_score = ccf->get_value_at_wrap(tx,ty,tz);
         if (ccf_ownership) delete ccf; ccf = 0;
         
-	return -best_score;
+	return negative*best_score;
 
 }
 
@@ -875,13 +973,13 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
 
-#ifdef EMAN2_USING_CUDA
- 	if (image->gpu_operation_preferred()) {
+//#ifdef EMAN2_USING_CUDA
+// 	if (image->gpu_operation_preferred()) {
 // 		cout << "Cuda cmp" << endl;
- 		EXITFUNC;
- 		return cuda_cmp(image,with);
- 	}
-#endif
+// 		EXITFUNC;
+// 		return cuda_cmp(image,with);
+// 	}
+//#endif
 
 	EMData *image_fft = NULL;
 	EMData *with_fft = NULL;
@@ -1059,116 +1157,6 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	return (float)(sum / norm);
 }
 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_cmp.h"
-float PhaseCmp::cuda_cmp(EMData * image, EMData *with) const
-{
-	ENTERFUNC;
-	validate_input_args(image, with);
-
-	typedef vector<EMData*> EMDatas;
-	static EMDatas hist_pyramid;
-	static EMDatas norm_pyramid;
-	static EMData weighting;
-	static int image_size = 0;
-
-	int size;
-	EMData::CudaDataLock imagelock(image);
-	EMData::CudaDataLock withlock(with);
-
-	if (image->is_complex()) {
-		size = image->get_xsize();
-	} else {
-		int nx = image->get_xsize()+2;
-		nx -= nx%2;
-		size = nx*image->get_ysize()*image->get_zsize();
-	}
-	if (size != image_size) {
-		for(unsigned int i =0; i < hist_pyramid.size(); ++i) {
-			delete hist_pyramid[i];
-			delete norm_pyramid[i];
-		}
-		hist_pyramid.clear();
-		norm_pyramid.clear();
-		int s = size;
-		if (s < 1) throw UnexpectedBehaviorException("The image is 0 size");
-		int p2 = 1;
-		while ( s != 1 ) {
-			s /= 2;
-			p2 *= 2;
-		}
-		if ( p2 != size ) {
-			p2 *= 2;
-			s = p2;
-		}
-		if (s != 1) s /= 2;
-		while (true) {
-			EMData* h = new EMData();
-			h->set_size_cuda(s); h->to_value(0.0);
-			hist_pyramid.push_back(h);
-			EMData* n = new EMData();
-			n->set_size_cuda(s); n->to_value(0.0);
-			norm_pyramid.push_back(n);
-			if ( s == 1) break;
-			s /= 2;
-		}
-		int nx = image->get_xsize()+2;
-		nx -= nx%2; // for Fourier stuff
-		int ny = image->get_ysize();
-		int nz = image->get_zsize();
-		weighting.set_size_cuda(nx,ny,nz);
-		// Size of weighting need only be half this, but does that translate into faster code?
-		weighting.set_size_cuda(nx/2,ny,nz);
-		float np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
-		EMDataForCuda tmp = weighting.get_data_struct_for_cuda();
-		calc_phase_weights_cuda(&tmp,np);
-		//weighting.write_image("phase_wieghts.hdf");
-		image_size = size;
-	}
-
-	EMDataForCuda hist[hist_pyramid.size()];
-	EMDataForCuda norm[hist_pyramid.size()];
-
-	EMDataForCuda wt = weighting.get_data_struct_for_cuda();
-	EMData::CudaDataLock lock1(&weighting);
-	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
-		hist[i] = hist_pyramid[i]->get_data_struct_for_cuda();
-		hist_pyramid[i]->cuda_lock();
-		norm[i] = norm_pyramid[i]->get_data_struct_for_cuda();
-		norm_pyramid[i]->cuda_lock();
-	}
-
-	EMData *image_fft = image->do_fft_cuda();
-	EMDataForCuda left = image_fft->get_data_struct_for_cuda();
-	EMData::CudaDataLock lock2(image_fft);
-	EMData *with_fft = with->do_fft_cuda();
-	EMDataForCuda right = with_fft->get_data_struct_for_cuda();
-	EMData::CudaDataLock lock3(image_fft);
-
-	mean_phase_error_cuda(&left,&right,&wt,hist,norm,hist_pyramid.size());
-	float result;
-	float* gpu_result = hist_pyramid[hist_pyramid.size()-1]->get_cuda_data();
-	cudaError_t error = cudaMemcpy(&result,gpu_result,sizeof(float),cudaMemcpyDeviceToHost);
-	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (host to device) in the phase comparator failed:" + string(cudaGetErrorString(error)));
-
-	delete image_fft; image_fft=0;
-	delete with_fft; with_fft=0;
-
-	for(unsigned int i = 0; i < hist_pyramid.size(); ++i ) {
-// 		hist_pyramid[i]->write_image("hist.hdf",-1); // debug
-// 		norm_pyramid[i]->write_image("norm.hdf",-1); // debug
-		hist_pyramid[i]->cuda_unlock();
-		norm_pyramid[i]->cuda_unlock();
-	}
-
-	EXITFUNC;
-	return result;
-
-}
-
-#endif // EMAN2_USING_CUDA
-
-
 float FRCCmp::cmp(EMData * image, EMData * with) const
 {
 	ENTERFUNC;
@@ -1182,51 +1170,70 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	float minres = params.set_default("minres",500.0f);
 	float maxres = params.set_default("maxres",2.0f);
 
-	if (zeromask) {
-		image=image->copy();
-		with=with->copy();
-		
-		int sz=image->get_xsize()*image->get_ysize()*image->get_zsize();
-		float *d1=image->get_data();
-		float *d2=with->get_data();
-		
-		for (int i=0; i<sz; i++) {
-			if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+	vector < float >fsc;
+	bool use_cpu = true;
+#ifdef EMAN2_USING_CUDA
+	if(image->cudarwdata && with->cudarwdata) {
+		UnexpectedBehaviorException("CUDA FRC cmp under construction....");
+		/*
+		if (zeromask) throw UnexpectedBehaviorException("ZeroMask is not yet supported in CUDA"); 
+			
+		if (!image->is_complex()) {
+			image=image->do_fft_cuda(); 
+			image->set_attr("free_me",1); 
 		}
+		if (!with->is_complex()) { 
+			with=with->do_fft_cuda(); 
+			with->set_attr("free_me",1); 
+		}
+		image->copy_rw_to_ro();
+		image->bindcudaarrayA(true);
+		with->copy_rw_to_ro();
+		with->bindcudaarrayB(true);
 		
-		image->update();
-		with->update();
-		image->do_fft_inplace();
-		with->do_fft_inplace();
-		image->set_attr("free_me",1); 
-		with->set_attr("free_me",1); 
+		float* fscarr = calc_fourier_shell_correlation_cuda(image->get_xsize(), image->get_ysize(), image->get_zsize(), 1);
+		
+		use_cpu = false;
+		*/
 	}
+	
+#endif
+	if (use_cpu) {
+		if (zeromask) {
+			image=image->copy();
+			with=with->copy();
+		
+			int sz=image->get_xsize()*image->get_ysize()*image->get_zsize();
+			float *d1=image->get_data();
+			float *d2=with->get_data();
+		
+			for (int i=0; i<sz; i++) {
+				if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+			}
+		
+			image->update();
+			with->update();
+			image->do_fft_inplace();
+			with->do_fft_inplace();
+			image->set_attr("free_me",1); 
+			with->set_attr("free_me",1); 
+		}
 
 
-	if (!image->is_complex()) {
-		image=image->do_fft(); 
-		image->set_attr("free_me",1); 
+		if (!image->is_complex()) {
+			image=image->do_fft(); 
+			image->set_attr("free_me",1); 
+		}
+		if (!with->is_complex()) { 
+			with=with->do_fft(); 
+			with->set_attr("free_me",1); 
+		}
+
+		fsc = image->calc_fourier_shell_correlation(with,1);
 	}
-	if (!with->is_complex()) { 
-		with=with->do_fft(); 
-		with->set_attr("free_me",1); 
-	}
-
-	static vector < float >default_snr;
-
-// 	if (image->get_zsize() > 1) {
-// 		throw ImageDimensionException("2D only");
-// 	}
-
-//	int nx = image->get_xsize();
+	
 	int ny = image->get_ysize();
 	int ny2=ny/2+1;
-
-	vector < float >fsc;
-
-		
-
-	fsc = image->calc_fourier_shell_correlation(with,1);
 
 	// The fast hypot here was supposed to speed things up. Little effect
 // 	if (image->get_zsize()>1) fsc = image->calc_fourier_shell_correlation(with,1);

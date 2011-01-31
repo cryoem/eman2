@@ -1,17 +1,5 @@
 // Currently an empty file
 
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <cuda.h>
-#include "cuda_defs.h"
-#include "cuda_util.h"
-
-// Global texture
-extern texture<float, 3, cudaReadModeElementType> tex3d;
-
 typedef unsigned int uint;
 __global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx,float3 mxy, float3 mxz)
 {
@@ -35,21 +23,21 @@ __global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx
 		tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+size_on_two+0.5;
 		ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+size_on_two+0.5;
 		tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+size_on_two+0.5;
-		sum += tex3D(tex3d, tx,ty,tz);
+		sum += tex3D(texA, tx,ty,tz);
 	}
 
 	out[x+y*(int)size]=sum;
 }
 
-void standard_project(const float* const matrix,const EMDataForCuda* const data) 
+void standard_project(const float* const matrix, float* data, const int nx, const int ny) 
 {
 	//device_init();
 	
 	//int idx = stored_cuda_array(rdata,nx,ny,nz);
 	//bind_cuda_texture(idx);
 	
-	const dim3 blockSize(data->ny,1, 1);
-	const dim3 gridSize(data->nx,1,1);
+	const dim3 blockSize(ny,1, 1);
+	const dim3 gridSize(nx,1,1);
 	
 	float3 mxx,mxy,mxz;
 	
@@ -63,7 +51,7 @@ void standard_project(const float* const matrix,const EMDataForCuda* const data)
 	mxz.y=matrix[6];
 	mxz.z=matrix[10];
 		
-	proj_kernel<<<blockSize,gridSize>>>(data->data,(float)data->nx,(float)data->nx/2,mxx,mxy,mxz);
+	proj_kernel<<<blockSize,gridSize>>>(data,(float)nx,(float)nx/2,mxx,mxy,mxz);
 	//CUDA_SAFE_CALL(cuCtxSynchronize());
 	cudaThreadSynchronize();
 }

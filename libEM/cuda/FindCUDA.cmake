@@ -756,7 +756,7 @@ macro(CUDA_WRAP_SRCS cuda_target format generated_files)
   set(generated_extension ${CMAKE_${CUDA_C_OR_CXX}_OUTPUT_EXTENSION})
 
   if(CUDA_64_BIT_DEVICE_CODE)
-    set(nvcc_flags ${nvcc_flags} -m64)
+    set(nvcc_flags ${nvcc_flags} -m64 -arch=sm_20)
   else()
     set(nvcc_flags ${nvcc_flags} -m32)
   endif()

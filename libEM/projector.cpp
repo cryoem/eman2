@@ -43,6 +43,11 @@
 	#define M_PI 3.14159265358979323846f
 #endif	//WIN32
 
+#ifdef EMAN2_USING_CUDA
+#include "cuda/cuda_util.h"
+#include "cuda/cuda_projector.h"
+#endif
+
 using namespace std;
 using namespace EMAN;
 
@@ -52,10 +57,6 @@ const string PawelProjector::NAME = "pawel";
 const string StandardProjector::NAME = "standard";
 const string ChaoProjector::NAME = "chao";
 
-#ifdef EMAN2_USING_CUDA
-const string CudaStandardProjector::NAME = "cuda_standard";
-#endif // EMAN2_USING_CUDA
-
 template <> Factory < Projector >::Factory()
 {
 	force_add<GaussFFTProjector>();
@@ -63,9 +64,6 @@ template <> Factory < Projector >::Factory()
 	force_add<StandardProjector>();
 	force_add<FourierGriddingProjector>();
 	force_add<ChaoProjector>();
-#ifdef EMAN2_USING_CUDA
-	force_add<CudaStandardProjector>();
-#endif // EMAN2_USING_CUDA
 	
 //	force_add<XYZProjector>();
 }
@@ -878,10 +876,31 @@ EMData *StandardProjector::project3d(EMData * image) const
 // 	Dict p = t3d->get_rotation();
 	if ( image->get_ndim() == 3 )
 	{
-// 		float alt = p["alt"];
-// 		float az = p["az"];
-// 		float phi = p["phi"];
 
+#ifdef EMAN2_USING_CUDA
+		if(EMData::usecuda == 1) {
+			if(!image->isrodataongpu()) image->copy_to_cudaro();
+			//cout << "CUDA PROJ" << endl;
+			Transform* t3d = params["transform"];
+			if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
+			float * m = new float[12];
+			t3d->copy_matrix_into_array(m);
+			image->bindcudaarrayA(true);
+			EMData* e = new EMData(0,0,image->get_xsize(),image->get_ysize(),1);
+			//EMData *e = new EMData();
+			//e->set_size(image->get_xsize(), image->get_ysize(), 1);
+			e->rw_alloc();
+			standard_project(m,e->cudarwdata, e->get_xsize(), e->get_ysize());
+			image->unbindcudaarryA();
+			delete [] m;
+		
+			e->update();
+			e->set_attr("xform.projection",t3d);
+			//e_>copy_from_device();
+			if(t3d) {delete t3d; t3d=0;}
+			return e;
+		}
+#endif
 		int nx = image->get_xsize();
 		int ny = image->get_ysize();
 		int nz = image->get_zsize();
@@ -925,7 +944,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 					float v = z2 - z;
 
 					size_t ii = (size_t) ((size_t)x + (size_t)y * nx + (size_t)z * xy);
-
+// 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
 					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;
 
@@ -1026,28 +1045,6 @@ EMData *StandardProjector::project3d(EMData * image) const
 	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
 }
 
-#ifdef EMAN2_USING_CUDA
-#include "cuda/cuda_projector.h"
-#include "cuda/cuda_util.h"
-EMData *CudaStandardProjector::project3d(EMData * image) const
-{
-
-	device_init();
-	Transform* t3d = params["transform"];
-	if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
-	float * m = new float[12];
-	t3d->copy_matrix_into_array(m);
-	image->bind_cuda_texture();
-	EMData* e = new EMData(image->get_xsize(),image->get_ysize());
-	EMDataForCuda tmp = e->get_data_struct_for_cuda();
-	standard_project(m,&tmp);
-	delete [] m;
-	e->set_attr("xform.projection",t3d);
-	if(t3d) {delete t3d; t3d=0;}
-	e->gpu_update();
-	return e;
-}
-#endif // EMAN2_USING_CUDA
 // EMData *FourierGriddingProjector::project3d(EMData * image) const
 // {
 // 	if (!image) {
@@ -2086,15 +2083,6 @@ EMData *StandardProjector::backproject3d(EMData * ) const
    EMData *ret = new EMData();
    return ret;
 }
-
-#ifdef EMAN2_USING_CUDA
-EMData *CudaStandardProjector::backproject3d(EMData * ) const
-{
-   // no implementation yet
-   EMData *ret = new EMData();
-   return ret;
-}
-#endif //EMAN2_USING_CUDA
 
 EMData *FourierGriddingProjector::backproject3d(EMData * ) const
 {

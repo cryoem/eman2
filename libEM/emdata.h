@@ -110,7 +110,6 @@ namespace EMAN
 		#include "emdata_cuda.h"
 #endif // EMAN2_USING_CUDA
 
-	static int totalalloc;
 	public:
 		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
@@ -142,6 +141,19 @@ namespace EMAN
 		 *@param attr_dict attribute dictionary for this image
 		 */
 		EMData(float* data, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
+		
+		/** Construction from a data pointer for usage in cuda, dimensions must be supplied.
+		 * Takes possession of the pointer.
+		 * data pointer must be allocated using malloc!
+		 *@param data a pointer to the pixel data which is stored in memory. Takes possession
+		 *@param cudadata a pointer to the pixel data which is stored in cudamemory. Takes possession
+		 *@param nx the number of pixels in the x direction
+		 *@param ny the number of pixels in the y direction
+		 *@param nz the number of pixels in the z direction
+		 *@param attr_dict attribute dictionary for this image
+		 */
+		EMData(float* data, float* cudadata, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
+		//I do not wish to use a default dict if none is provided. Copying Dicts arround is really expensive in CUDA.
 
 		/** Construct from an EMData (copy constructor).
 		 * Performs a deep copy
@@ -714,18 +726,18 @@ namespace EMAN
 		 */
 		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
 
-#ifdef EMAN2_USING_CUDA
+//#ifdef EMAN2_USING_CUDA
 
-		/** cuda equivalent of get_cut_slice
-		 * @ingroup CUDA_ENABLED
-		 * @param tr orientation of the slice as encapsulated in a Transform object
-		 * @exception ImageDimensionException If this image is not 3D.
-		 * @exception ImageFormatException If this image is complex
-		 * @author David Woolford (adapted from an original version by Steve Ludtke)
-		 * @date Feb 20009
-		 */
-		EMData* cut_slice_cuda(const Transform& tr);
-#endif // EMAN2_USING_CUDA
+//		/** cuda equivalent of get_cut_slice
+//		 * @ingroup CUDA_ENABLED
+//		 * @param tr orientation of the slice as encapsulated in a Transform object
+//		 * @exception ImageDimensionException If this image is not 3D.
+//		 * @exception ImageFormatException If this image is complex
+//		 * @author David Woolford (adapted from an original version by Steve Ludtke)
+//		 * @date Feb 20009
+//		 */
+//		EMData* cut_slice_cuda(const Transform& tr);
+//#endif // EMAN2_USING_CUDA
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
 		 * the nearest neighbor.
@@ -774,6 +786,8 @@ namespace EMAN
 		 * @param origin_z  the z origin
 		 * */
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
+		
+		static int totalalloc;
 	private:
 		/** This EMDataFlags is deprecated. For anything which is currently handled by setting a
 		 * bit in 'flags', instead, set or read an appropriately named attribute

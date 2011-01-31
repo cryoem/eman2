@@ -594,6 +594,11 @@ inline void set_value_at_fast(int x, float v)
  */
 void free_memory();
 
+/** Free rdata memory associated with this EMData
+ * Called in CUDA
+ */
+void free_rdata();
+
 EMData & operator+=(float n);
 EMData & operator-=(float n);
 EMData & operator*=(float n);

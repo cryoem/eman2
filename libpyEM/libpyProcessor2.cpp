@@ -175,34 +175,34 @@ BOOST_PYTHON_MODULE(libpyProcessor2)
         .staticmethod("get")
     ;
 
-#ifdef EMAN2_USING_CUDA	
+//#ifdef EMAN2_USING_CUDA	
     // Class to wrap MPI CUDA kmeans code
-    class_< EMAN::MPICUDA_kmeans, boost::noncopyable >("MPICUDA_kmeans", init<>())
-      .def("setup", &EMAN::MPICUDA_kmeans::setup)
-      .def("append_flat_image", &EMAN::MPICUDA_kmeans::append_flat_image)
-      .def("init_mem", &EMAN::MPICUDA_kmeans::init_mem)
-      .def("compute_im2", &EMAN::MPICUDA_kmeans::compute_im2)
-      .def("random_ASG", &EMAN::MPICUDA_kmeans::random_ASG)
-      .def("get_ASG", &EMAN::MPICUDA_kmeans::get_ASG)
-      .def("get_asg", &EMAN::MPICUDA_kmeans::get_asg)
-      .def("compute_NC", &EMAN::MPICUDA_kmeans::compute_NC)
-      .def("get_NC", &EMAN::MPICUDA_kmeans::get_NC)
-      .def("set_ASG", &EMAN::MPICUDA_kmeans::set_ASG)
-      .def("set_NC", &EMAN::MPICUDA_kmeans::set_NC)
-      .def("compute_AVE", &EMAN::MPICUDA_kmeans::compute_AVE)
-      .def("get_AVE", &EMAN::MPICUDA_kmeans::get_AVE)
-      .def("set_AVE", &EMAN::MPICUDA_kmeans::set_AVE)
-      .def("get_ct_im_mv", &EMAN::MPICUDA_kmeans::get_ct_im_mv)
-      .def("set_T", &EMAN::MPICUDA_kmeans::set_T)
-      .def("get_T", &EMAN::MPICUDA_kmeans::get_T)
-      .def("one_iter", &EMAN::MPICUDA_kmeans::one_iter)
-      .def("one_iter_SA", &EMAN::MPICUDA_kmeans::one_iter_SA)
-      .def("compute_ji", &EMAN::MPICUDA_kmeans::compute_ji)
-      .def("compute_criterion", &EMAN::MPICUDA_kmeans::compute_criterion)      
-      .def("shutdown", &EMAN::MPICUDA_kmeans::shutdown)
-    ;
+//    class_< EMAN::MPICUDA_kmeans, boost::noncopyable >("MPICUDA_kmeans", init<>())
+//      .def("setup", &EMAN::MPICUDA_kmeans::setup)
+//      .def("append_flat_image", &EMAN::MPICUDA_kmeans::append_flat_image)
+//      .def("init_mem", &EMAN::MPICUDA_kmeans::init_mem)
+//      .def("compute_im2", &EMAN::MPICUDA_kmeans::compute_im2)
+//      .def("random_ASG", &EMAN::MPICUDA_kmeans::random_ASG)
+//      .def("get_ASG", &EMAN::MPICUDA_kmeans::get_ASG)
+//      .def("get_asg", &EMAN::MPICUDA_kmeans::get_asg)
+//      .def("compute_NC", &EMAN::MPICUDA_kmeans::compute_NC)
+//      .def("get_NC", &EMAN::MPICUDA_kmeans::get_NC)
+//      .def("set_ASG", &EMAN::MPICUDA_kmeans::set_ASG)
+//      .def("set_NC", &EMAN::MPICUDA_kmeans::set_NC)
+//      .def("compute_AVE", &EMAN::MPICUDA_kmeans::compute_AVE)
+//      .def("get_AVE", &EMAN::MPICUDA_kmeans::get_AVE)
+//      .def("set_AVE", &EMAN::MPICUDA_kmeans::set_AVE)
+//      .def("get_ct_im_mv", &EMAN::MPICUDA_kmeans::get_ct_im_mv)
+//      .def("set_T", &EMAN::MPICUDA_kmeans::set_T)
+//      .def("get_T", &EMAN::MPICUDA_kmeans::get_T)
+//      .def("one_iter", &EMAN::MPICUDA_kmeans::one_iter)
+//      .def("one_iter_SA", &EMAN::MPICUDA_kmeans::one_iter_SA)
+//      .def("compute_ji", &EMAN::MPICUDA_kmeans::compute_ji)
+//      .def("compute_criterion", &EMAN::MPICUDA_kmeans::compute_criterion)      
+//      .def("shutdown", &EMAN::MPICUDA_kmeans::shutdown)
+//    ;
 
-#endif //EMAN2_USING_CUDA
+//#endif //EMAN2_USING_CUDA
 
 }
 
