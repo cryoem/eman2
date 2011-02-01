@@ -57,6 +57,7 @@ def main():
     parser.add_option("--ptcl-width", type="int", dest="ptcl_width", help="Particle width in pixels", default=-1)
     parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on micrograph. They are square with length max(ptcl_length, ptcl_width).")
     parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
+    parser.add_option("--gridding",      action="store_true", default=False,         help="using gridding method for rotation operation")
     (options, args) = parser.parse_args()
     
     if options.helix_width < 1:
@@ -106,7 +107,7 @@ def main():
             if options.ptcl_coords:
                 db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
             if options.ptcl_images:
-                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean)
+                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding)
             E2end(logid)
         elif len(args) == 0:
             print 'You must specify a micrograph file or use the "--gui" option.'
@@ -190,7 +191,7 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
     
     return ptcl_coords
 
-def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None ):
+def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, gridding = False ):
     """
     Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
     parallel to the helical axis. They are then rotated so the "lengths" are vertical.
@@ -230,7 +231,59 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
         tr.set_rotation({"type":"2d", "alpha":rot_angle})
 
         ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
-        ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+        # liner interpolation for rotation
+        if gridding == False:
+        
+		ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+        else:
+		nx = micrograph.get_xsize()
+		ny = micrograph.get_ysize()
+        	assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
+		
+		side1 = int(round(px_width))
+		
+		diff = 20
+		
+		if(  centroid[1] <= ( side1//2+diff//2) ):		 
+			side = side1
+		elif (centroid[1] >= ( ny-side1//2-diff//2)):
+			side = side1
+		else:
+			side = side1 + diff
+		
+		#from EMAN2_cppwrap import Util, Processor
+		from EMAN2 import Util, Processor
+		
+		ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] - nx/2)), int (round(centroid[1] - ny/2)), 0) 
+		nx_new = ptcl.get_xsize()
+		ny_new = ptcl.get_ysize()
+		#print side1, side
+		# do rotation using gridding method
+				
+		gr_M = ptcl.get_xsize()
+		gr_npad = 2
+		gr_N = gr_M*gr_npad
+		# support of the window
+		gr_K = 6
+		gr_alpha = 1.75
+		gr_r = gr_M/2
+		gr_v = gr_K/2.0/gr_N
+		gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
+		# first pad it with zeros in Fourier space
+		gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
+		params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
+		gr_q = Processor.EMFourierFilter(gr_q, params)
+		params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : 0.25, "dopad" : False}
+		gr_q = Processor.EMFourierFilter(gr_q, params)
+		gr_q2 = gr_q.do_ift()	
+		
+		ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
+		#cut it
+		
+		ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
+		        
         ptcl["ptcl_helix_coords"] = tuple(helix_coords)
         ptcl["ptcl_source_coord"] = tuple(centroid)
         ptcl["xform.align2d"] = tr
@@ -501,7 +554,7 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_over
     
     save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
     
-def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False):
+def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False ):
     micrograph_filename = os.path.basename(micrograph_filepath)
     micrograph_name = os.path.splitext( micrograph_filename )[0]
     if not ptcl_filepath:
@@ -513,7 +566,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
     for coords in helices_dict:
         helix = helices_dict[coords]
         if rotated:
-            particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width)
+            particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding)
         else:
             particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width)
         save_particles(particles, i, ptcl_filepath, do_edge_norm)
@@ -536,6 +589,7 @@ if ENABLE_GUI:
             self.ptcls_width_spinbox.setValue( width )
             self.ptcls_length_spinbox.setValue( width )
             self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
+	    
             
             micrograph_filepath = self.parentWidget().micrograph_filepath
             (micrograph_dir, micrograph_filename) = os.path.split(micrograph_filepath)
@@ -599,6 +653,8 @@ if ENABLE_GUI:
             self.ptcls_edgenorm_checkbox.setChecked(False)
             self.ptcls_unrotated_checkbox = QtGui.QCheckBox(self.tr("&Unrotated"))
             self.ptcls_unrotated_checkbox.setChecked(False)
+            self.ptcls_gridding_checkbox = QtGui.QCheckBox(self.tr("&Gridding"))
+            self.ptcls_gridding_checkbox.setChecked(False)
             ptcls_images_label = QtGui.QLabel(self.tr("Path:"))
             self.ptcls_images_line_edit = QtGui.QLineEdit()
             self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
@@ -651,6 +707,7 @@ if ENABLE_GUI:
             ptcls_images_layout = QtGui.QVBoxLayout()
             ptcls_images_layout.addWidget(self.ptcls_edgenorm_checkbox)
             ptcls_images_layout.addWidget(self.ptcls_unrotated_checkbox)
+            ptcls_images_layout.addWidget(self.ptcls_gridding_checkbox)
             ptcls_images_layout.addLayout(ptcls_images_path_layout)
             self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
             
@@ -751,7 +808,9 @@ if ENABLE_GUI:
                         if self.ptcls_unrotated_checkbox.isChecked():
                             particles = get_unrotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
                         else:
-                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
+			    gridding = self.ptcls_gridding_checkbox.isChecked()
+			    #need to prepare the fft volume for gridding at here
+			    particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding )
                         save_particles(particles, i, ptcl_filepath, do_edge_norm)
                         i += 1
                 if self.ptcls_coords_groupbox.isChecked():
