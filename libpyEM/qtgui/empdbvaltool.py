@@ -120,10 +120,12 @@ class EMPDBValWidget(QtGui.QWidget):
 
 	def __init_iso_model(self):
 		if self.iso_model == None:
-			self.iso_model = EMIsosurfaceModel(self.viewer_window, None, enable_file_browse=False)
-			self.viewer_window.add_model(self.iso_model)
-			self.viewer_window.get_inspector().update_selection()
-			self.__set_model_contexts(self.iso_model)
+			self.viewer_window.add_isosurface()
+			self.iso_model = self.viewer_window.viewables[-1]
+			#self.iso_model = EMIsosurfaceModel(self.viewer_window, None, enable_file_browse=False)
+			#self.viewer_window.add_model(self.iso_model)
+			#self.viewer_window.get_inspector().update_selection()
+			#self.__set_model_contexts(self.iso_model)
 
 	def __init_pdb_model(self):
 		if self.pdb_model == None:
@@ -151,10 +153,10 @@ class EMPDBValWidget(QtGui.QWidget):
 		QtGui.QWidget.closeEvent(self, event)
 		
 	def draw_objects(self):
-		if self.pdb_model == None:
-			self.__init_pdb_model()
 		if self.iso_model == None: 
 			self. __init_iso_model()
+		if self.pdb_model == None:
+			self.__init_pdb_model()
 		if self.pdb_model != None:
 			glPushMatrix()
 			self.pdb_model.draw_objects()
@@ -176,9 +178,10 @@ class EMPDBValWidget(QtGui.QWidget):
 		iso_file_path = str(self.volume_line_edit.text())
 		data = EMData(iso_file_path)
 		self.viewer_window.set_data(data, iso_file_path)
-		if self.iso_model == None: 
-			self. __init_iso_model()
-		self.iso_model.set_data(data)
+		self.iso_model = self.viewer_window.viewables[0]
+#		if self.iso_model == None: 
+#			self. __init_iso_model()
+#		self.iso_model.set_data(data)
 		self.viewer_window.updateGL()
 		
 #		self.iso_model.get_inspector().mrc_text.setText(file_name) #Use self.iso_model.data["source_path"] instead

@@ -490,11 +490,13 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		previous_size = None
 		previous_cam_data = {}
 		previous_normalized_threshold = None #will be (threshold - mean)/(standard deviation)
-		if was_previous_data and self.viewables:
+		if was_previous_data:
 			previous_size = (self.data["nx"], self.data["ny"], self.data["nz"])
-			previous_normalized_threshold = (self.viewables[0].isothr - self.data["mean"])/self.data["sigma"]
-			old_cam = self.viewables[0].cam
-			previous_cam_data = {"rot": old_cam.t3d_stack[-1], "pos":(old_cam.cam_x, old_cam.cam_y, old_cam.cam_z), "scale":old_cam.scale}
+			for model in self.viewables:
+				if model.get_type() == "Isosurface":
+					previous_normalized_threshold = (model.isothr - self.data["mean"])/self.data["sigma"]
+					previous_cam_data = {"rot": model.cam.t3d_stack[-1], "pos":(model.cam.cam_x, model.cam.cam_y, model.cam.cam_z), "scale":model.cam.scale}
+					break
 		#############
 		
 		self.file_name = file_name # fixme fix this later
@@ -536,14 +538,16 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			
 			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
 			if previous_cam_data:
-				new = self.viewables[0].get_inspector()
-				new.update_rotations( previous_cam_data["rot"] )
-				new.rotation_sliders.slider_rotate()
-				new.set_xyz_trans(*previous_cam_data["pos"])
-				new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
-				new.thr.setValue(new_threshold)				
-				if (nx,ny,nz) == previous_size:
-					new.rotation_sliders.set_scale(previous_cam_data["scale"])
+				for model in self.viewables:
+					inspector = model.get_inspector()
+					inspector.update_rotations( previous_cam_data["rot"] )
+					inspector.rotation_sliders.slider_rotate()
+					inspector.set_xyz_trans(*previous_cam_data["pos"])				
+					if (nx,ny,nz) == previous_size:
+						inspector.rotation_sliders.set_scale(previous_cam_data["scale"])
+					if model.get_type() == "Isosurface":
+						new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
+						inspector.thr.setValue(new_threshold)
 			#############
 		
 		self.set_camera_defaults(data)
