@@ -74,7 +74,7 @@ def main():
 		im2.process_inplace("xform.flip",{"axis":"x"})
 		ali=im2.align("rotate_translate_flip",im1,{},cmpopt[0],cmpopt[1])
 		a2=ali["xform.align2d"]
-		print a2
+		print a2.inverse()
 	
 	ali=im2.align("refine",im1,{"xform.align2d":a2},cmpopt[0],cmpopt[1])
 	a2=ali["xform.align2d"]
@@ -119,12 +119,12 @@ def main():
 			for i in range(-20,21):
 				im2a=im2.process("xform",{"transform":Transform({"type":"2d","tx":best[1]+i*0.1,"ty":best[2]+j*0.1,"alpha":best[3]+k*0.2}).inverse()})
 				val=-im1.cmp(cmpopt[0],im2a,cmpopt[1])
-				if val>best2[0] : best=(val,best2[1]+i*0.1,best2[2]+j*0.1,best2[3]+k*0.2)
+				if val>best2[0] : best2=(val,best[1]+i*0.1,best[2]+j*0.1,best[3]+k*0.2)
 				output[i+20,j+20,k+20]=val
 				
 				
 	output.write_image("o_"+args[4],0)
-	print "Best :",best
+	print "Best :",best2
 
 
 
