@@ -8341,7 +8341,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 		Transform inv = t->inverse();
 		inv.copy_matrix_into_array(m);
 		image->bindcudaarrayA(false);
-		p->cudarwdata = emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		p->runcuda(emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize()));
 		image->unbindcudaarryA();
 		delete [] m;
 	}

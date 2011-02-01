@@ -95,6 +95,7 @@ EMData::EMData() :
 	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 #endif
 
+	EXITFUNC;
 }
 
 EMData::EMData(const string& filename, int image_index) :
@@ -307,7 +308,6 @@ EMData::~EMData()
 #ifdef EMAN2_USING_CUDA
 	if(cudarwdata){rw_free();}
 	if(cudarodata){ro_free();}
-	removefromlist();
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
 #ifdef MEMDEBUG
@@ -1590,7 +1590,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 			return result;
 		}
 		EMData* cf = new EMData(0,0,nx,1,1); //cuda constructor
-		cf->cudarwdata = emdata_column_sum(rslt.cudarwdata, nx, ny);
+		cf->runcuda(emdata_column_sum(rslt.cudarwdata, nx, ny));
 
 		EXITFUNC;
 		return cf;

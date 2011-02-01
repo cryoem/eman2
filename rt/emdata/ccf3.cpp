@@ -39,7 +39,7 @@ int main(int   argc, char *argv[])
 #ifdef EMAN2_USING_CUDA
 	EMData *a = new EMData();
 	EMData *b = new EMData();
-	time_t start,end;
+	//time_t start,end;
 	
 	a->read_image(argv[1]);
 	b->read_image(argv[2]);
@@ -72,9 +72,11 @@ int main(int   argc, char *argv[])
 	//time (&start);
 	for(int i = 0; i < 1000; i++)
 	{
-		EMData* ra = a->align("rotate_translate_flip", b, Dict(), "dot");
+		cout << "i " << i << endl;
+
+		EMData* ra = a->align("rotational", b, Dict(), "dot");
 		//delete ra;
-		//a->elementaccessed();
+		a->elementaccessed();
 		
 	}
 	//time (&end);

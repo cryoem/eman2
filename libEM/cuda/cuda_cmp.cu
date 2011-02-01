@@ -1,5 +1,4 @@
 #include "cuda_util.h"
-//#include <sm_11_atomic_functions.h>
 
 // these mean, mean square kernals work by sweeping over the first array dim
 __global__ void mean_kernal(const float * data, float * device_stats, const int size, const int num_calcs, const int num_threads, const int offset)
@@ -85,23 +84,7 @@ __global__ void dot_cmp_kernal(const float* data1, const float* data2, float* de
 	device_soln[idx] = dot/size;	
 	
 }
-/*
-__global__ void dot_cmp_kernal_atomic(const float* data1, const float* data2, float* device_soln, const int num_threads, const int offset)
-{
 
-	float dot = 0.0f;
-	
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-	
-	int idx = x + y*num_threads + offset;
-	
-	dot = data1[idx]*data1[idx];
-	
-	atomicAdd(device_soln, dot); //VERY SLOW!!!!!
-
-}
-*/
 __shared__ float sdata[MAX_THREADS];
 __global__ void dot_cmp_kernal_reduce(float *g_idata1, float *g_idata2, float *g_odata) 
 {
@@ -177,28 +160,7 @@ float dot_cmp_cuda(float* data1, float* data2, const float* dm, const int &nx, c
 	
 	return dot;
 	*/
-	/* This method is absoutly terrible!!!!
-	float * device_results=0;
-	cudaMalloc((void **)&device_results, sizeof(float));
-	
-	int num_calcs = nx*ny*nz;
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
-	
-	const dim3 blockSize(MAX_THREADS,1,1);
-	const dim3 gridSize(grid_y,1,1);
-	dot_cmp_kernal_atomic<<<gridSize, blockSize>>>(data1, data2, device_results, MAX_THREADS, 0);
-	cudaThreadSynchronize();
-	
-	float * host_results = (float*) malloc(sizeof(float));
-	cudaMemcpy(host_results,device_results,sizeof(float),cudaMemcpyDeviceToHost);
-	cudaFree(device_results);
-	
-	float dot = host_results[0]/num_calcs;
-	free(host_results);
-	
-	return dot;
-	*/
+
 	/*
 	//This method is slower
 	//first calc the mean and store it there

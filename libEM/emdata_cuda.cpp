@@ -217,11 +217,17 @@ bool EMData::copy_rw_to_ro() const
 	
 }
 
+// The policy here is that when an EMData object is created, cudarwdata is set to 0. and no mem is allocated. It is
+//only when cudarwdata points to allocated data does the EMData object go on the list. cudarwdata should NEVER be set 
 void EMData::runcuda(float * results)
 {
 	
 	if(results == 0){throw UnexpectedBehaviorException( "Cuda failed!!!");}
-	if(cudarwdata != 0){rw_free();} //delete the old data
+	if(cudarwdata != 0){
+		//rw_free();} //delete the old data, why not jus overwrite!! (save a cudaFree)
+	} else {
+		addtolist(); // now that we are using memory add to the list
+	}
 	cudarwdata = results;
 	
 }
@@ -305,11 +311,10 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 
 void EMData::addtolist()
 {
-	
-	if(firstinlist == 0){ //if this is the first item in the list
+	if(firstinlist == 0){ //if this is the first item in the list (first object in list)
 		firstinlist = this;
 		lastinlist = this;
-		nextlistitem = 0;//	dat->copy_from_device(false); //temp function for debugging
+		nextlistitem = 0;
 		prevlistitem = 0;
 	}else{
 		//we add to top of list
@@ -323,7 +328,6 @@ void EMData::addtolist()
 
 void EMData::elementaccessed()
 {
-	
         removefromlist();
 	//now insert at top (there is no case where we call this function, but there is nothing in the list)
 	firstinlist->nextlistitem = this;
@@ -333,7 +337,6 @@ void EMData::elementaccessed()
 
 void EMData::removefromlist()
 {
-	
 	//remove from list
 	if(nextlistitem !=0){
 		nextlistitem->prevlistitem = prevlistitem;	//this object is not first in the list
