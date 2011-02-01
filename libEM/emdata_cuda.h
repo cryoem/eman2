@@ -39,10 +39,18 @@ public:
 	
 	/** Copy data from host to GPU device (RW)
 	*/
+	bool copy_to_cuda() const;
+	
+	/** Overloaded version of the above but does not use const data
+	The diff being that in the const version rdata is not freed. */
 	bool copy_to_cuda();
 	
 	/** Copy data from host to GPU device (RO)
 	*/
+	bool copy_to_cudaro() const;
+	
+	/** Overloaded version of the above but does not use const data
+	The diff being that in the const version rdata is not freed. */
 	bool copy_to_cudaro();
 	
 	/** Copy data from GPU device to host
@@ -55,7 +63,7 @@ public:
 	
 	/** move this EMData object to the topof accessed list
 	*/
-	void elementaccessed();
+	void elementaccessed() const;
 	
 	/** bind cudaarray to a texture A
 	*/
@@ -75,7 +83,7 @@ public:
 	
 	/** run a cuda function
 	*/
-	void runcuda(float * results);
+	void runcuda(float * results) const;
 	
 	/** check to see is there is any data on gpu ro
 	* if there is any on rw then copy from rw to ro
@@ -97,27 +105,27 @@ inline	void roneedsanupdate()
 //private:
 	/** allocate RW on GPU device
 	*/
-	bool rw_alloc();
+	bool rw_alloc() const;
 	
 	/** allocate RO on GPU device 
 	*/
-	bool ro_alloc();
+	bool ro_alloc() const;
 	
 	/** deallocate RW on GPU device
 	*/
-	void rw_free();
+	void rw_free() const;
 	
 	/** deallocate RO on GPU device
 	*/
-	void ro_free();
+	void ro_free() const;
 	
 	/** add this EMData object to a list
 	*/
-	void addtolist();
+	void addtolist() const;
 	
 	/** remove this EMData object from a list
 	*/
-	void removefromlist();
+	void removefromlist() const;
 	
 	/** free up device memory by removing last acessed items;
 	*/
@@ -131,18 +139,18 @@ inline	void roneedsanupdate()
 	mutable float* cudarwdata;	//we can still change GPU data on a cost object
 	mutable cudaArray* cudarodata;	//we can still change GPU data on a cost object
 	
-	size_t num_bytes;
+	mutable size_t num_bytes;
 	
 	//pointers used in doubly limked list
-	EMData* nextlistitem;
-	EMData* prevlistitem;
+	const mutable EMData* nextlistitem;
+	const mutable EMData* prevlistitem;
 	
 	mutable bool roneedsupdate;
 	
 	static int memused;
 	static int fudgemem;
-	static EMData* firstinlist;
-	static EMData* lastinlist;
+	const static EMData* firstinlist;
+	const static EMData* lastinlist;
 	static bool usecuda;
 	
 	// mempool stuff

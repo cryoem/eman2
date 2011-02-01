@@ -70,9 +70,9 @@ int main(int   argc, char *argv[])
 	//EMData::usemempool(size);
 	
 	//time (&start);
-	for(int i = 0; i < 1000; i++)
+	for(int i = 0; i < 25000; i++)
 	{
-		cout << "i " << i << endl;
+		//cout << "i " << i << endl;
 
 		EMData* ra = a->align("rotational", b, Dict(), "dot");
 		//delete ra;

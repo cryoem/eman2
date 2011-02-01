@@ -516,6 +516,11 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t )
 {
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!slice->cudarwdata) slice->copy_to_cuda(); //copy slice to cuda using the const version
+	}
+#endif
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
 	EMData* return_slice = 0;
 	Transform tmp(t);
@@ -523,12 +528,6 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 
 	if (tmp.is_identity()) return_slice=slice->copy();
 	else return_slice = slice->process("xform",Dict("transform",&tmp));
-
-#ifdef EMAN2_USING_CUDA
-	if(EMData::usecuda == 1) {
-		if(!return_slice->cudarwdata) return_slice->copy_to_cuda();
-	}
-#endif
 
 	return_slice->process_inplace("xform.phaseorigin.tocorner");
 
@@ -561,6 +560,12 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
+	
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!input_slice->cudarwdata) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
+	}
+#endif
 
 	Transform * rotation;
 /*	if ( input_slice->has_attr("xform.projection") ) {
@@ -663,6 +668,12 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
+
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(!input_slice->cudarwdata) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
+	}
+#endif
 
 	Transform * rotation;
 	rotation = new Transform(arg); // assignment operator

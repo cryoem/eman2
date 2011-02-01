@@ -43,8 +43,8 @@
 using namespace EMAN;
 
 // Static init
-EMData* EMData::firstinlist = 0;
-EMData* EMData::lastinlist = 0;
+const EMData* EMData::firstinlist = 0;
+const EMData* EMData::lastinlist = 0;
 int EMData::memused = 0;
 int EMData::fudgemem = 1.024E7; //let's leave 10 MB of 'fudge' memory on the device
 int EMData::mempoolused = -1;
@@ -52,6 +52,18 @@ int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
 bool EMData::usecuda = atoi(getenv("USECUDA"));
 float* EMData::mempool[] = {0};
+
+bool EMData::copy_to_cuda() const
+{
+	//cout << "copying from host to device RW" << " " << num_bytes << endl;
+	if(rw_alloc()) {
+		memused += num_bytes;	
+		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
+		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
+	}else{return false;}
+	
+	return true;
+}
 
 bool EMData::copy_to_cuda()
 {
@@ -62,6 +74,18 @@ bool EMData::copy_to_cuda()
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 	}else{return false;}
 	free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
+	
+	return true;
+}
+
+bool EMData::copy_to_cudaro() const
+{
+	
+	//cout << "copying from host to device RO" << " " << num_bytes << endl;
+	if(ro_alloc()) {
+		memused += num_bytes;
+		copy_to_array(rdata, cudarodata, nx, ny, nz, cudaMemcpyHostToDevice);
+	}else{return false;}
 	
 	return true;
 }
@@ -79,7 +103,7 @@ bool EMData::copy_to_cudaro()
 	return true;
 }
 
-bool EMData::rw_alloc()
+bool EMData::rw_alloc() const
 {
 	//cout << "rw_alloc" << endl;
 	num_bytes = nxyz*sizeof(float);
@@ -100,7 +124,7 @@ bool EMData::rw_alloc()
 	return true;
 }
 
-bool EMData::ro_alloc()
+bool EMData::ro_alloc() const
 {
 	//cout << "ro_alloc" << endl;
 	num_bytes = nxyz*sizeof(float);
@@ -219,7 +243,7 @@ bool EMData::copy_rw_to_ro() const
 
 // The policy here is that when an EMData object is created, cudarwdata is set to 0. and no mem is allocated. It is
 //only when cudarwdata points to allocated data does the EMData object go on the list. cudarwdata should NEVER be set 
-void EMData::runcuda(float * results)
+void EMData::runcuda(float * results) const
 {
 	
 	if(results == 0){throw UnexpectedBehaviorException( "Cuda failed!!!");}
@@ -232,7 +256,7 @@ void EMData::runcuda(float * results)
 	
 }
 
-void EMData::rw_free()
+void EMData::rw_free() const
 {
 	//cout << "rw_free " << " " << cudarwdata << endl;
 	if(usemempoolswitch && mempoolused < (MEMPOOL_SIZE-1) && mempoolarraysize >= int(num_bytes))
@@ -249,7 +273,7 @@ void EMData::rw_free()
 	
 }
 
-void EMData::ro_free()
+void EMData::ro_free() const
 {
 	//cout << "ro_free " << " " << cudarodata << endl;
 	cudaError_t error = cudaFreeArray(cudarodata);
@@ -287,11 +311,13 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 		while(lastinlist != 0){
 			if(lastinlist->cudarwdata){
 				cudaFree(lastinlist->cudarwdata);
+				lastinlist->cudarwdata = 0;
 				memused -= lastinlist->nxyz*sizeof(float);
 				cudaMemGetInfo(&freemem, &totalmem); //update free memory
 			}
 			if(lastinlist->cudarodata){
 				cudaFreeArray(lastinlist->cudarodata);
+				lastinlist->cudarodata = 0;
 				memused -= lastinlist->nxyz*sizeof(float);
 				cudaMemGetInfo(&freemem, &totalmem); //update free memory
 			}
@@ -309,7 +335,7 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 	return false;	//if we failed :(
 }
 
-void EMData::addtolist()
+void EMData::addtolist() const
 {
 	if(firstinlist == 0){ //if this is the first item in the list (first object in list)
 		firstinlist = this;
@@ -326,7 +352,7 @@ void EMData::addtolist()
 	
 }
 
-void EMData::elementaccessed()
+void EMData::elementaccessed() const
 {
         removefromlist();
 	//now insert at top (there is no case where we call this function, but there is nothing in the list)
@@ -335,7 +361,7 @@ void EMData::elementaccessed()
 	firstinlist = this;
 }
 
-void EMData::removefromlist()
+void EMData::removefromlist() const
 {
 	//remove from list
 	if(nextlistitem !=0){

@@ -474,7 +474,7 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!this_img->cudarwdata) this_img->copy_to_cuda();
