@@ -101,33 +101,21 @@ This function is called to log information about the current job to the local lo
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
 	if EMAN2db.BDB_CACHE_DISABLE :
-		print "Note: Running in MPI mode, history database disabled"
-		return
-
-	global HOMEDB
-	HOMEDB=EMAN2db.EMAN2DB.open_db()
-	HOMEDB.open_dict("history")
-	if HOMEDB != None:
-		if not HOMEDB.history.has_key("count") : HOMEDB.history["count"]=1
-		else : HOMEDB.history["count"]+=1
-		n=HOMEDB.history["count"]
-		HOMEDB.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv,"path":os.getcwd()}
-	else:
-		print "Warning: EMAN2 missing BDB support"
-		try:
-			sdb=shelve.open(".eman2log")
-		except:
-			return -1
+		print "Note: Running in MPI mode, history logging disabled"
+		return -1
 		
-		try:
-			n=sdb["count"]
-			sdb["count"]=n+1
-		except:
-			n=1
-			sdb["count"]=n
-		sdb[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv,"progress":0.0}
-		sdb.close()
-
+	# We go to the end of the file. Record the location, then write a fixed length string
+	try: 
+		hist=file(".eman2log.txt","r+")
+		hist.seek(0,os.SEEK_END)
+	except:
+		try: hist=file(".eman2log.txt","w")
+		except: return -1
+	n=hist.tell()
+	hist.write("%s\tincomplete         \t%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),socket.gethostname()," ".join(argv)))
+#	hist.flush()
+	hist.close()
+	
 	return n
 
 def E2progress(n,progress):
@@ -135,41 +123,30 @@ def E2progress(n,progress):
 set to indicate an error exit."""
 	if EMAN2db.BDB_CACHE_DISABLE : return
 
-	global HOMEDB
-	
-	if HOMEDB :
-		d=HOMEDB.history[n]
-		d["progress"]=progress
-		HOMEDB.history[n]=d
-	else :
-		db=shelve.open(".eman2log")
-		d=db[str(n)]
-		d["progress"]=progress
-		db[str(n)]=d
+	try: 
+		hist=file(".eman2log.txt","r+")
+		hist.seek(n+20)
+	except:
+		return -1
+	hist.write("%03d%%         "%(int(progress)))
+#	hist.flush()
+	hist.close()
 	
 	return n
-	
 
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
 	if EMAN2db.BDB_CACHE_DISABLE : return
 
-	global HOMEDB
-	
-	if HOMEDB :
-		d=HOMEDB.history[n]
-		d["end"]=time.time()
-		d["progress"]=1.0
-		HOMEDB.history[n]=d
-		HOMEDB.close_dict("history")
-	else :
-		db=shelve.open(".eman2log")
-		d=db[str(n)]
-		d["end"]=time.time()
-		d["progress"]=1.0
-		db[str(n)]=d
-		db.close()
+	try: 
+		hist=file(".eman2log.txt","r+")
+		hist.seek(n+20)
+	except:
+		return -1
+	hist.write("%s"%(local_datetime()))
+#	hist.flush()
+	hist.close()
 	
 	return n
 

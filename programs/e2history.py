@@ -239,5 +239,14 @@ def print_to_std_out(all):
 			print " ".join(db[str(i+1)]["args"])
 		print "done"
 		
+	try:
+		fin=file(".eman2log.txt","r")
+		print "----- .eman2log.txt"
+		for l in fin: print l
+		
+	except: pass
+	
+	print "NOTICE: While e2history.py continues to function, log files are now stored in plain text in .eman2log.txt in each directory, and can just be examined directly. e2history.py is primarily useful for looking at historical logfiles."
+		
 if __name__ == '__main__':
 	main()
