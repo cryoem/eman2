@@ -50,7 +50,7 @@ int EMData::fudgemem = 1.024E7; //let's leave 10 MB of 'fudge' memory on the dev
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
-#bool EMData::usecuda = atoi(getenv("USECUDA"));
+//bool EMData::usecuda = atoi(getenv("USECUDA"));
 bool EMData::usecuda = 1;
 float* EMData::mempool[] = {0};
 
