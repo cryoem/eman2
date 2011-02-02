@@ -52,6 +52,7 @@ def main():
 	parser.add_option("--function", type="string",       default="ref_ali2d",    help="name of the reference preparation function")
 	parser.add_option('--Ng',	type='int',		default=-1,		help='Ng')
 	parser.add_option('--num_ali',	type='int',		default=2,		help='number of alignments')
+	parser.add_option('--err_th',	type='float',		default=1.0,		help='')
 	parser.add_option('--K',        type='int',            default=100,             help='number of clusters')
 	parser.add_option('--dst',	type='float',		default=0.0,		help='')
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
@@ -74,7 +75,7 @@ def main():
 
 		global_def.BATCH = True
 		from development import realignment
-		realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+		realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
