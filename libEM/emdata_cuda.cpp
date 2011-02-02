@@ -50,7 +50,8 @@ int EMData::fudgemem = 1.024E7; //let's leave 10 MB of 'fudge' memory on the dev
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
-bool EMData::usecuda = atoi(getenv("USECUDA"));
+#bool EMData::usecuda = atoi(getenv("USECUDA"));
+bool EMData::usecuda = 1;
 float* EMData::mempool[] = {0};
 
 bool EMData::copy_to_cuda() const
@@ -69,7 +70,7 @@ bool EMData::copy_to_cuda()
 {
 	//cout << "copying from host to device RW" << " " << num_bytes << endl;
 	if(rw_alloc()) {
-		memused += num_bytes;	
+		memused += num_bytes;
 		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 	}else{return false;}
@@ -86,19 +87,6 @@ bool EMData::copy_to_cudaro() const
 		memused += num_bytes;
 		copy_to_array(rdata, cudarodata, nx, ny, nz, cudaMemcpyHostToDevice);
 	}else{return false;}
-	
-	return true;
-}
-
-bool EMData::copy_to_cudaro()
-{
-	
-	//cout << "copying from host to device RO" << " " << num_bytes << endl;
-	if(ro_alloc()) {
-		memused += num_bytes;
-		copy_to_array(rdata, cudarodata, nx, ny, nz, cudaMemcpyHostToDevice);
-	}else{return false;}
-	free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
 	
 	return true;
 }

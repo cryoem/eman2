@@ -615,7 +615,6 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-//		if(!input_slice->cudarwdata) input_slice->copy_to_cuda();
 		if(!image->cudarwdata){
 			image->copy_to_cuda();
 			tmp_data->copy_to_cuda();

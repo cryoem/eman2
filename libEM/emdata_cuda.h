@@ -49,10 +49,6 @@ public:
 	*/
 	bool copy_to_cudaro() const;
 	
-	/** Overloaded version of the above but does not use const data
-	The diff being that in the const version rdata is not freed. */
-	bool copy_to_cudaro();
-	
 	/** Copy data from GPU device to host
 	*/
 	bool copy_from_device(const bool rocpy = false);

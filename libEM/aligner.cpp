@@ -1380,10 +1380,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
-//This 'sexy way' of doing the alignment turned out to not work very well, hence I have gone back to the
-//'old fashioned' way John Flanagan 10/08/2010 (But I could write my own little function that uses quaternions)
-/*
-static Transform refalin3d_perturb(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
+static Transform refalin3d_perturbjiggle(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
 {
 	Dict orig_params = t->get_params("eman");
 	float orig_phi = orig_params["phi"];
@@ -1433,12 +1430,11 @@ static Transform refalin3d_perturb(const Transform*const t, const float& delta, 
 	Transform phi_rot(g);
 	Transform soln = t_no_phi*perturb*phi_rot;
 	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
-This is the increment applied to the inplane rotation
 	Dict params = soln.get_params("eman");
 	return soln;
 }
 
-static double refalifn3d(const gsl_vector * v, void *params)
+static double refalifn3djiggle(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
 
@@ -1454,7 +1450,7 @@ static double refalifn3d(const gsl_vector * v, void *params)
 
 	Transform* t = (*dict)["transform"];
 
-	Transform soln = refalin3d_perturb(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
+	Transform soln = refalin3d_perturbjiggle(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
 
 	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
@@ -1465,8 +1461,42 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	Dict yy = soln.get_params("eman");
  	cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << " " << xx[0]  << " " << xx[1] << " " << xx[2] << endl;
 	return result;
-}*/
+}
 
+static Transform refalin3d_perturbquat(const Transform*const t, const float& omega, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
+{
+	
+}
+
+static double refalifn3dquat(const gsl_vector * v, void *params)
+{
+	Dict *dict = (Dict *) params;
+
+	double x = gsl_vector_get(v, 0);
+	double y = gsl_vector_get(v, 1);
+	double z = gsl_vector_get(v, 2);
+	double omega = gsl_vector_get(v, 3);
+ 	double n0 = gsl_vector_get(v, 4);
+ 	double n1 = gsl_vector_get(v, 5);
+	double n2 = gsl_vector_get(v, 6);
+	EMData *this_img = (*dict)["this"];
+	EMData *with = (*dict)["with"];
+// 	bool mirror = (*dict)["mirror"];
+
+	Transform* t = (*dict)["transform"];
+
+	Transform soln = refalin3d_perturbquat(t,(float)omega,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
+
+	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
+	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	double result = c->cmp(tmp,with);
+	if ( tmp != 0 ) delete tmp;
+	delete t; t = 0;
+	Vec3f xx = soln.get_trans();
+	Dict yy = soln.get_params("eman");
+ 	cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << " " << xx[0]  << " " << xx[1] << " " << xx[2] << endl;
+	return result;
+}
 
 static double refalifn3d(const gsl_vector * v, void *params)
 {
@@ -1506,6 +1536,13 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
 
+#ifdef EMAN2_USING_CUDA 
+	if(EMData::usecuda == 1) {
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!to->cudarwdata) to->copy_to_cuda();
+	}
+#endif
+
 	float saz = 0.0;
 	float sphi = 0.0;
 	float salt = 0.0;
@@ -1539,13 +1576,16 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
+	string type = params.set_default("type","euler");
+	
 	float stepx = params.set_default("stepx",1.0f);
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	//float half_circle_step = 180.0f; // This shouldn't be altered
-	//float stepphi = params.set_default("stephi",5.0f);
-	//float stepdelta = params.set_default("stepdelta",5.0f);
+	//defaults for jiggle 
+	float half_circle_step = 180.0f; // This shouldn't be altered
+	float stepdelta = params.set_default("stepdelta",5.0f);
+	
 	float stepaz = params.set_default("stepaz",5.0f);
 	float stepalt = params.set_default("stepalt",5.0f);
 	float stepphi = params.set_default("stepphi",5.0f);
@@ -1553,13 +1593,16 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_set(ss, 0, stepx);
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepz);
-	//gsl_vector_set(ss, 3, half_circle_step);
-	//gsl_vector_set(ss, 4, stepdelta);
-	//gsl_vector_set(ss, 5, stepphi);
-	gsl_vector_set(ss, 3, stepaz);
-	gsl_vector_set(ss, 4, stepalt);
-	gsl_vector_set(ss, 5, stepphi);
-
+	if(type == "jiggle") {
+		gsl_vector_set(ss, 3, half_circle_step);
+		gsl_vector_set(ss, 4, stepdelta);
+		gsl_vector_set(ss, 5, stepphi);
+	} else {
+		gsl_vector_set(ss, 3, stepaz);
+		gsl_vector_set(ss, 4, stepalt);
+		gsl_vector_set(ss, 5, stepphi);
+	}
+	
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
@@ -1603,32 +1646,33 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	EMData *result;
 	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
 	{
+		if(type == "jiggle") {
+			float x = (float)gsl_vector_get(s->x, 0);
+			float y = (float)gsl_vector_get(s->x, 1);
+			float z = (float)gsl_vector_get(s->x, 2);
+			float arc = (float)gsl_vector_get(s->x, 3);
+			float delta = (float)gsl_vector_get(s->x, 4);
+			float phi = (float)gsl_vector_get(s->x, 5);
 
-		//float x = (float)gsl_vector_get(s->x, 0);
-		//float y = (float)gsl_vector_get(s->x, 1);
-		//float z = (float)gsl_vector_get(s->x, 2);
-		//float arc = (float)gsl_vector_get(s->x, 3);
-		//float delta = (float)gsl_vector_get(s->x, 4);
-		//float phi = (float)gsl_vector_get(s->x, 5);
+			Transform tsoln = refalin3d_perturbjiggle(t,delta,arc,phi,x,y,z);
 
-		//Transform tsoln = refalin3d_perturb(t,delta,arc,phi,x,y,z);stand
-
-		//result = this_img->process("xform",Dict("transform",&tsoln));
-		//result->set_attr("xform.align3d",&tsoln);
-		Dict parms;
-		parms["type"] = "eman";
-		parms["tx"] = (float)gsl_vector_get(s->x, 0);
-		parms["ty"] = (float)gsl_vector_get(s->x, 1);
-		parms["tz"] = (float)gsl_vector_get(s->x, 2);
-		parms["az"] = (float)gsl_vector_get(s->x, 3);
-		parms["alt"] = (float)gsl_vector_get(s->x, 4);
-		parms["phi"] = (float)gsl_vector_get(s->x, 5);
+			result = this_img->process("xform",Dict("transform",&tsoln));
+			result->set_attr("xform.align3d",&tsoln);
+		} else {
+			Dict parms;
+			parms["type"] = "eman";
+			parms["tx"] = (float)gsl_vector_get(s->x, 0);
+			parms["ty"] = (float)gsl_vector_get(s->x, 1);
+			parms["tz"] = (float)gsl_vector_get(s->x, 2);
+			parms["az"] = (float)gsl_vector_get(s->x, 3);
+			parms["alt"] = (float)gsl_vector_get(s->x, 4);
+			parms["phi"] = (float)gsl_vector_get(s->x, 5);
 		
-		Transform tsoln(parms);
-		result = this_img->process("xform",Dict("transform",&tsoln));
-		result->set_attr("xform.align3d",&tsoln);
-		result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
-
+			Transform tsoln(parms);
+			result = this_img->process("xform",Dict("transform",&tsoln));
+			result->set_attr("xform.align3d",&tsoln);
+			result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
+		}
 	} else { // The refine aligner failed - this shift went beyond the max shift
 		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);

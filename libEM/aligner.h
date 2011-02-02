@@ -793,7 +793,6 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	//No longer does this (doesn't work so well):
 	/*
 	   Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
 	 * a point on the sphere (POTS), manipulating them independently. The POTS is"jiggled" in a local circular
@@ -838,12 +837,14 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
+				d.put("type", EMObject::STRING, " Type of purturbation used for refinement (euler or jiggle). Default is euler");
 				d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
 				d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
 				d.put("stepz", EMObject::FLOAT, "The z increment used to create the starting simplex. Default is 1." );
 				d.put("stepaz", EMObject::FLOAT, "The az increment used to create the starting simplex. Default is 5." );
 				d.put("stepalt", EMObject::FLOAT, "The alt increment used to create the starting simplex. Default is 5." );
 				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to create the starting simplex. Default is 5." );
+				d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions(not used in Euler perturbations). Default is 5.");
 				d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04." );
 				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 60.");
 				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
