@@ -3333,7 +3333,6 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
-
 	for( int isym=0; isym < m_nsym; isym++) {
 		Transform tsym = t.get_sym( m_symmetry, isym );
 
