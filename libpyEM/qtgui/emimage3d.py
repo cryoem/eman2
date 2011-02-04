@@ -486,7 +486,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	def set_data(self,data,file_name="",replace=True):
 		was_previous_data = bool(self.data)
 		
-		###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
+		###########TODO: update this code once we start doing mouse rotations and translations on the Widget camera
 		previous_size = None
 		previous_cam_data = {}
 		previous_normalized_threshold = None #will be (threshold - mean)/(standard deviation)
@@ -535,9 +535,12 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		if replace:
 			self.inspector.delete_all()
 			self.inspector.add_isosurface()
-			
+			if not was_previous_data:
+				for model in self.viewables:
+					if model.get_type() == "Isosurface":
+						model.get_inspector().thr.setValue( data["mean"] + data["sigma"] )
 			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
-			if previous_cam_data:
+			elif previous_cam_data:
 				for model in self.viewables:
 					inspector = model.get_inspector()
 					inspector.update_rotations( previous_cam_data["rot"] )
