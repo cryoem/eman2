@@ -86,7 +86,7 @@ def resample_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None 
 		iwrite = nvol*niter + ivol
 
 		vol = rectors[ivol].finish(True)
-		# Here add multiplication by the number of projections
+		# Here add multiplication as per Kimmel-Penczek formula
 		Util.mul_scalar( vol, float(nprj) )          # ??????????
 		vol.write_image( volfile, iwrite )
 		if not(info is None):
@@ -198,18 +198,23 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 					best_i = i
 	        assignments[best_i].append(k)
 	am = len(assignments[0])
-	for i in xrange(1,len(assignments)):  am = min(am,len(assignments[i]))
+	mufur = 1.0/am
+	for i in xrange(1,len(assignments)):
+		ti = len(assignments[i])
+		am = min(am, ti)
+		if(ti>0):  mufur += 1.0/ti
+
 	del tetprj,tetref
 
 	dp = 1.0 - d  # keep that many in each direction
 	keep = int(am*dp +0.5)
+	mufur = keep*nrefa/(1.0 - mufur*keep/float(nrefa))
 	if myid == 0:
-		print " Number of projections ",nprj
-		print  " Minimum number of assignments ",am,"  Number of projections per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa
+		print  " Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur
+		print  " Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa
 		if am <2 or am == keep:
 			print "incorrect settings"
 			exit()  #                                         FIX
-
 
 	if(seedbase < 1):
 		seed()
@@ -250,9 +255,6 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 			'''
 
 		del mass
-
-		
-
 
 		rectors, fftvols, wgtvols = resample_prepare( prjfile, nbufvol, snr, CTF, npad )
 		resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, finfo )
