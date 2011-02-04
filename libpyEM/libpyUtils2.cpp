@@ -844,9 +844,11 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_image_ext_type")
         .staticmethod("process_ascii_region_io")
         .staticmethod("is_complex_type")
+#ifdef EM_HDF5
         .staticmethod("read_hdf_attribute")
         .staticmethod("write_hdf_attribute")
         .staticmethod("delete_hdf_attribute")
+#endif	//EM_HDF5
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
