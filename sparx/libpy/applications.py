@@ -9992,26 +9992,17 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default", pca=False, pcamask=None, pcanvec=None):
+def defvar(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask=None, pcanvec=None):
 	from utilities  import get_im, get_image, circumference, model_blank
 	from filter     import filt_tanl
-	from statistics import ccc
 	from math       import sqrt
 	import os
 	
 	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', " defvar", 1)
 	os.mkdir(outdir)
 
-	print " START "
-
-	finf = open( outdir + "/var_progress.txt", "w" )
-
-	avgfile = outdir + "/avg.hdf" 
-	varfile = outdir + "/var.hdf"
-	varfileE = outdir + "/varE.hdf"
-	avgfileE = outdir + "/avgE.hdf"
-	varfileO = outdir + "/varO.hdf"
-	avgfileO = outdir + "/avgO.hdf"
+	#finf = open( outdir + "/var_progress.txt", "w" )
+	print "  START "
 
 	img = get_image( files[0] )
 	nx = img.get_xsize()
@@ -10028,90 +10019,90 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 		else:   rota = get_im(frepa)
 
 	radcir = min(nx,ny,nz)//2 - 2
-	ndump = 100 # write out ccc after each 100 steps
+
 	if pca :
 		from statistics import pcanalyzer
 		pcamask = get_im( pcamask)
 		pcaer = pcanalyzer(pcamask, outdir, pcanvec, False)
 
+	avgfile  = os.path.join(outdir, "avg.hdf")
+	varfile  = os.path.join(outdir, "var.hdf")
+	varfileE = os.path.join(outdir, "varE.hdf")
+	avgfileE = os.path.join(outdir, "avgE.hdf")
+	varfileO = os.path.join(outdir, "varO.hdf")
+	avgfileO = os.path.join(outdir, "avgO.hdf")
+
+	if(radccc < 1):  radcir = min(nx,ny,nz)//2-2
+	else:            radcir = radccc
+
+        nfiles = len( files )
+
 	avg1 = model_blank(nx,ny,nz)
 	avg2 = model_blank(nx,ny,nz)
+
 	total_img = 0
 	mf = 0
 	for f in files:
 		nimg = EMUtil.get_image_count( f )
-		print f," A  ",nimg
-		if writestack: filtered = outdir + "/filtered%04i.hdf"%mf
+		#print f," A  ",nimg
 		mf += 1
 		for i in xrange(nimg):
 			img = get_im( f, i )
-			if(repair):  Util.div_img(img, rota)
-			if(repair and writelp):  img.write_image(f, i)
-			img = circumference( img, radcir )
 			if(fl > 0.0):
 				img = filt_tanl( img, fl, aa )
-				if writestack: img.write_image( filtered, total_img )
+			if(repair):
+				Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+				if pca:
+					pc   = Util.infomask(img, pcamask, True)
+					img -= pc[0]
+					img *= (refstat[1]/pc[1])
 			if(total_img%2 == 0):	Util.add_img(avg1, img)
 			else:			Util.add_img(avg2, img)
 			total_img += 1
 
 	avg = Util.addn_img(avg1, avg2)
 	Util.mul_scalar(avg, 1.0/float(total_img))
+	"""
 	Util.mul_scalar(avg1, 1.0/float(total_img//2+total_img%2 - 1 ))
 	avg1.write_image(avgfileE)
 	Util.mul_scalar(avg2, 1.0/float(total_img//2 - 1) )
 	avg2.write_image(avgfileO)
+	"""
 	avg.write_image( avgfile)
 
 	del avg1, avg2
 
 	from utilities import model_circle
-	cccmask = model_circle(radccc, nx, ny, nz)
+	#cccmask = model_circle(radccc, nx, ny, nz)
 	var1 = model_blank(nx,ny,nz)
 	var2 = model_blank(nx,ny,nz)
-	if(fl > 0.0 and writestack):
-		for f in files:
-			filtered = outdir + "/filtered%04i.hdf"%mf
-			nimg = EMUtil.get_image_count( filtered )
-			print f," V  ",nimg
-			for i in xrange(nimg):
-				img = get_im( filtered, i )
-				if pca: pcaer.insert(img)
-
-				Util.sub_img(img, avg)
-				if(i%2 == 0):  Util.add_img2(var1 , img)
-				else:	       Util.add_img2(var2 , img)
-				if(i%ndump == 0):
-					finf.write( 'ntot, ccc: %6d %10.8f\n' % (i, ccc(var1, var2, cccmask)) )
-					finf.flush()
-	else:
-		total_img = 0
-		for f in files:
-			nimg = EMUtil.get_image_count( f )
-			print f," V  ",nimg
-			for i in xrange(nimg):
-				img = get_im( f, i )
-				if(repair and not writelp):  Util.div_img(img, rota)
-				img = circumference( img, radcir )
-				if(fl > 0.0): img = filt_tanl( img, fl, aa )
-				if pca: pcaer.insert(img)
-				Util.sub_img(img, avg)
-				if(total_img%2 == 0): Util.add_img2(var1, img)
-				else:                 Util.add_img2(var2 , img)
-				total_img += 1
-				if(total_img%ndump == 0):
-					finf.write( 'ntot, ccc: %6d %10.8f\n' % (total_img, ccc(var1, var2, cccmask)) )
-					finf.flush()
+	for f in files:
+		nimg = EMUtil.get_image_count( f )
+		for i in xrange(nimg):
+			img = get_im( f, i )
+			#img = circumference( img, radcir )
+			if(fl > 0.0): img = filt_tanl( img, fl, aa)
+			if(repair):  Util.div_img(img, rota) #img = circumference(Util.divn_img(img, rota), radcir)
+			if pca:
+				pc = Util.infomask(img, pcamask, True)
+				img -= pc[0]
+				img *= (refstat[1]/pc[1])
+				#img += refstat[1]
+			if pca : pcaer.insert(img)
+			Util.sub_img(img, avg)
+			if(total_img%2 == 0): Util.add_img2(var1, img)
+			else:                 Util.add_img2(var2 , img)
 
 	var = Util.addn_img(var1, var2)
 	Util.mul_scalar(var, 1.0/float(total_img-1) )
+	"""
 	Util.mul_scalar(var1, 1.0/float(total_img//2+total_img%2 - 1 ))
 	var1.write_image(varfileE)
 	Util.mul_scalar(var2, 1.0/float(total_img//2 - 1) )
 	var2.write_image(varfileO)
-
-	var.write_image( varfile )
-	del var, var1, var2, cccmask
+	"""
+	circumference(var, radcir-1).write_image( varfile )
+	del var, var1, var2#, cccmask
 
 	if pca:
 		assert not(avg is None)
@@ -10119,7 +10110,7 @@ def defvar(files, outdir, fl, aa, radccc, writelp, writestack, frepa = "default"
 		pcaer.setavg( avg )
 
 		eigs = pcaer.analyze()
-		eigfile = outdir + "/eigvol.hdf"
+		eigfile = os.path.join(outdir, "eigvol.hdf")
 		for i in xrange( len(eigs) ):
 			eigs[i].write_image( eigfile, i )
 
@@ -10184,8 +10175,8 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 		refstat = mpi_bcast(refstat, 4, MPI_FLOAT, 0, MPI_COMM_WORLD)
 		refstat = map(float, refstat)
 
-	varfile  = os.path.join(outdir, "var.hdf")
 	avgfile  = os.path.join(outdir, "avg.hdf")
+	varfile  = os.path.join(outdir, "var.hdf")
 	varfileE = os.path.join(outdir, "varE.hdf")
 	avgfileE = os.path.join(outdir, "avgE.hdf")
 	varfileO = os.path.join(outdir, "varO.hdf")
