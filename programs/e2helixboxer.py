@@ -130,12 +130,12 @@ def counterGen():
 def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
     """
     Gets the rectangular helix of the image specified by the coordinates.
-    @micrograph: the EMData object which holds the micrograph from which helices and particles are chosen
-    @x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
-    @y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
-    @x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
-    @y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
-    @width: the width in pixels of the rectangle
+    @param micrograph: the EMData object which holds the micrograph from which helices and particles are chosen
+    @param x1: x-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @param y1: y-coordinate in pixels of the first end-point along the long axis of symmetry of the rectangle
+    @param x2: x-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @param y2: y-coordinate in pixels of the second end-point along the long axis of symmetry of the rectangle
+    @param width: the width in pixels of the rectangle
     @return: the rectangular EMData helix specified by the coordinates and width 
     """
     rot_angle = get_helix_rotation_angle(x1, y1, x2, y2, width)
@@ -168,10 +168,10 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
     """
     Finds the centroids for each particle in a helix.
-    @helix_coords: (x1, y1, x2, y2, width) -- the helix endpoints on the micrograph and width of the helix in pixels
-    @px_overlap: the overlap of consecutive particles in pixels, defaults to 90% of particle length
-    @px_length: the length in pixels of a particle along the axis of the helix
-    @px_width: the width in pixels of the particle
+    @param helix_coords: (x1, y1, x2, y2, width) -- the helix endpoints on the micrograph and width of the helix in pixels
+    @param px_overlap: the overlap of consecutive particles in pixels, defaults to 90% of particle length
+    @param px_length: the length in pixels of a particle along the axis of the helix
+    @param px_width: the width in pixels of the particle
     @return: a list of coordinates on the micrograph for each particle's centroid: [(x0,y0),(x1,y1),(x2,y2),...]
     """
     (x1,y1,x2,y2,w) = helix_coords
@@ -195,11 +195,12 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
     """
     Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
     parallel to the helical axis. They are then rotated so the "lengths" are vertical.
-    @micrograph: EMData object for the micrograph
-    @helix_coords: (x1,y1,x2,y2,width) tuple for a helix
-    @px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
-    @px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
-    @px_width: width of the particles in pixels, defaults to px_length
+    @param micrograph: EMData object for the micrograph
+    @param helix_coords: (x1,y1,x2,y2,width) tuple for a helix
+    @param px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
+    @param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
+    @param px_width: width of the particles in pixels, defaults to px_length
+    @param gridding: use gridding method for rotation operation
     @return: a list of EMData particles
     """
     (x1,y1,x2,y2,w) = helix_coords
@@ -234,56 +235,56 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
         # liner interpolation for rotation
         if gridding == False:
         
-		ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+                ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
         else:
-		nx = micrograph.get_xsize()
-		ny = micrograph.get_ysize()
-        	assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
-		
-		side1 = int(round(px_width))
-		
-		diff = 20
-		
-		if(  centroid[1] <= ( side1//2+diff//2) ):		 
-			side = side1
-		elif (centroid[1] >= ( ny-side1//2-diff//2)):
-			side = side1
-		else:
-			side = side1 + diff
-		
-		#from EMAN2_cppwrap import Util, Processor
-		from EMAN2 import Util, Processor
-		
-		ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] - nx/2)), int (round(centroid[1] - ny/2)), 0) 
-		nx_new = ptcl.get_xsize()
-		ny_new = ptcl.get_ysize()
-		#print side1, side
-		# do rotation using gridding method
-				
-		gr_M = ptcl.get_xsize()
-		gr_npad = 2
-		gr_N = gr_M*gr_npad
-		# support of the window
-		gr_K = 6
-		gr_alpha = 1.75
-		gr_r = gr_M/2
-		gr_v = gr_K/2.0/gr_N
-		gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
-		# first pad it with zeros in Fourier space
-		gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
-		params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
-	          "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
-		gr_q = Processor.EMFourierFilter(gr_q, params)
-		params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
-		"cutoff_abs" : 0.25, "dopad" : False}
-		gr_q = Processor.EMFourierFilter(gr_q, params)
-		gr_q2 = gr_q.do_ift()	
-		
-		ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
-		#cut it
-		
-		ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
-		        
+                nx = micrograph.get_xsize()
+                ny = micrograph.get_ysize()
+                assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
+                
+                side1 = int(round(px_width))
+                
+                diff = 20
+                
+                if(  centroid[1] <= ( side1//2+diff//2) ):                 
+                        side = side1
+                elif (centroid[1] >= ( ny-side1//2-diff//2)):
+                        side = side1
+                else:
+                        side = side1 + diff
+                
+                #from EMAN2_cppwrap import Util, Processor
+                from EMAN2 import Util, Processor
+                
+                ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] - nx/2)), int (round(centroid[1] - ny/2)), 0) 
+                nx_new = ptcl.get_xsize()
+                ny_new = ptcl.get_ysize()
+                #print side1, side
+                # do rotation using gridding method
+                                
+                gr_M = ptcl.get_xsize()
+                gr_npad = 2
+                gr_N = gr_M*gr_npad
+                # support of the window
+                gr_K = 6
+                gr_alpha = 1.75
+                gr_r = gr_M/2
+                gr_v = gr_K/2.0/gr_N
+                gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
+                # first pad it with zeros in Fourier space
+                gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
+                params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+                  "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
+                gr_q = Processor.EMFourierFilter(gr_q, params)
+                params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+                "cutoff_abs" : 0.25, "dopad" : False}
+                gr_q = Processor.EMFourierFilter(gr_q, params)
+                gr_q2 = gr_q.do_ift()        
+                
+                ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
+                #cut it
+                
+                ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
+                        
         ptcl["ptcl_helix_coords"] = tuple(helix_coords)
         ptcl["ptcl_source_coord"] = tuple(centroid)
         ptcl["xform.align2d"] = tr
@@ -295,11 +296,11 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None):
     """
     Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
-    @micrograph: EMData object that holds the image data for the helix
-    @helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
-    @px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
-    @px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
-    @px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
+    @param micrograph: EMData object that holds the image data for the helix
+    @param helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
+    @param px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
+    @param px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
+    @param px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
     @return: a list of EMData objects for each unrotated particle in the helix 
     """
     #Will be square
@@ -332,8 +333,8 @@ def load_helix_coords(coords_filepath, specified_width=None):
     Uses the EMAN1 *.box file format (r is half the width (w) of the boxes)
         x1-r    y1-r    w    w    -1
         x2-r    y2-r    w    w    -2
-    @coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
-    @specified_width: force all helix coordinates to have the specified width
+    @param coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
+    @param specified_width: force all helix coordinates to have the specified width
     @return a list of tuples [(x0, x1, y1, y2, width), ...] 
     """
     data = []
@@ -368,9 +369,9 @@ def save_helix_coords(coords_list, output_filepath, helix_width = None):
     Uses the EMAN1 *.box file format (r is half the width (w) of the boxes)
         x1-r    y1-r    w    w    -1
         x2-r    y2-r    w    w    -2
-    @coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a helix
-    @output_filepath: the directory and file name in which to save the coordinates
-    @helix_width: if specified, it replaces the widths in coords_list as the width for each helix
+    @param coords_list: a list of tuples (x1, y1, x2, y2, width), with each tuple corresponding to a helix
+    @param output_filepath: the directory and file name in which to save the coordinates
+    @param helix_width: if specified, it replaces the widths in coords_list as the width for each helix
     """
     out_file = open(output_filepath, "w")
     
@@ -393,9 +394,9 @@ def save_helix_coords(coords_list, output_filepath, helix_width = None):
 def save_helix(helix_emdata, helix_filepath, helix_num):
     """
     Saves a boxed helix to an image file.
-    @helix_emdata: the EMData object that holds the image data for the helix
-    @helix_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
-    @helix_num: the number that identifies this helix among those boxed from this micrograph
+    @param helix_emdata: the EMData object that holds the image data for the helix
+    @param helix_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
+    @param helix_num: the number that identifies this helix among those boxed from this micrograph
     """
     (path, ext) = os.path.splitext(helix_filepath)
     helix_filepath = "%s_%i%s" % (path, helix_num, ext)
@@ -406,11 +407,11 @@ def save_helix(helix_emdata, helix_filepath, helix_num):
 def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, ptcl_length, ptcl_width):
     """
     Saves the coordinates on the micrograph for the center of each particle, with comment lines identifying the micrograph and helices for the particles
-    @helix_particle_coords_dict: {(h0_x1,h0_y1,h0_x2,h0_y2,h0_w):[(x0,y0),(x1,y1),(x2,y2),...],(h1_x1,h1_y1,h1_x2,h1_y2,h1_w):[(x0,y0),(x1,y1),(x2,y2),...],...}
-    @output_filepath: the directory and file name in which to save the coordinates
-    @micrograph_filepath: the directory and file name of the micrograph
-    @ptcl_length: the length of each particle
-    @ptcl_width: the width of each particle    
+    @param helix_particle_coords_dict: {(h0_x1,h0_y1,h0_x2,h0_y2,h0_w):[(x0,y0),(x1,y1),(x2,y2),...],(h1_x1,h1_y1,h1_x2,h1_y2,h1_w):[(x0,y0),(x1,y1),(x2,y2),...],...}
+    @param output_filepath: the directory and file name in which to save the coordinates
+    @param micrograph_filepath: the directory and file name of the micrograph
+    @param ptcl_length: the length of each particle
+    @param ptcl_width: the width of each particle    
     """
     out_file = open(output_filepath, "w")
     out_file.write("#micrograph: " + micrograph_filepath + "\n")
@@ -426,10 +427,10 @@ def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph
 def save_particles(particles, helix_num, ptcl_filepath, do_edge_norm=False):
     """
     saves the particles in a helix to a stack file
-    @particles: a list of EMData particles
-    @helix_num: the number used to identify this helix among all those boxed in the micrograph
-    @ptcl_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
-    @do_edge_norm: Apply the processor "normalize.edgemean" to each particle before saving
+    @param particles: a list of EMData particles
+    @param helix_num: the number used to identify this helix among all those boxed in the micrograph
+    @param ptcl_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
+    @param do_edge_norm: Apply the processor "normalize.edgemean" to each particle before saving
     """
     (path, ext) = os.path.splitext(ptcl_filepath)
     ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
@@ -471,8 +472,8 @@ def db_set_item(micrograph_filepath, key, value):
 def db_get_helices_dict(micrograph_filepath, helix_width = None):
     """
     gets a dictionary of helices
-    @micrograph_filepath: the path to the image file for the micrograph
-    @helix_width: if specified, it replaces the widths in the database as the width for each helix
+    @param micrograph_filepath: the path to the image file for the micrograph
+    @param helix_width: if specified, it replaces the widths in the database as the width for each helix
     @return: a dictionary formed like {(x1, y1, x2, y2, width): particle_EMData_object, ...}
     """
     micrograph = EMData(micrograph_filepath)
@@ -490,10 +491,10 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
     return helices_dict
 def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxes = True, specified_width=None):
     """
-    @micrograph_filepath: the path to the image file for the micrograph
-    @coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
-    @keep_current_boxes: whether to add to or replace the helix coordinates currently in the database
-    @specified_width: force all helix coordinates to have the specified width
+    @param micrograph_filepath: the path to the image file for the micrograph
+    @param coords_filepath: file path to a tab-delimited text file specifying helix coordinates as in the EMAN1 *.box format
+    @param keep_current_boxes: whether to add to or replace the helix coordinates currently in the database
+    @param specified_width: force all helix coordinates to have the specified width
     """
     coords_list = load_helix_coords(coords_filepath, specified_width)
     if keep_current_boxes:
@@ -509,7 +510,7 @@ def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxe
 
 def db_save_helix_coords(micrograph_filepath, output_filepath=None, helix_width = None):
     """
-    @helix_width: if specified, it replaces the widths in coords_list as the width for each helix
+    @param helix_width: if specified, it replaces the widths in coords_list as the width for each helix
     """
     micrograph_filename = os.path.basename(micrograph_filepath)
     micrograph_name = os.path.splitext( micrograph_filename )[0]
@@ -521,7 +522,7 @@ def db_save_helix_coords(micrograph_filepath, output_filepath=None, helix_width 
 
 def db_save_helices(micrograph_filepath, helix_filepath=None, helix_width = None):
     """
-    @helix_width: if specified, it replaces the widths in coords_list as the width for each helix
+    @param helix_width: if specified, it replaces the widths in coords_list as the width for each helix
     """
     micrograph_filename = os.path.basename(micrograph_filepath)
     micrograph_name = os.path.splitext( micrograph_filename )[0]
@@ -589,7 +590,7 @@ if ENABLE_GUI:
             self.ptcls_width_spinbox.setValue( width )
             self.ptcls_length_spinbox.setValue( width )
             self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
-	    
+            
             
             micrograph_filepath = self.parentWidget().micrograph_filepath
             (micrograph_dir, micrograph_filename) = os.path.split(micrograph_filepath)
@@ -808,9 +809,9 @@ if ENABLE_GUI:
                         if self.ptcls_unrotated_checkbox.isChecked():
                             particles = get_unrotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
                         else:
-			    gridding = self.ptcls_gridding_checkbox.isChecked()
-			    #need to prepare the fft volume for gridding at here
-			    particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding )
+                            gridding = self.ptcls_gridding_checkbox.isChecked()
+                            #need to prepare the fft volume for gridding at here
+                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding )
                         save_particles(particles, i, ptcl_filepath, do_edge_norm)
                         i += 1
                 if self.ptcls_coords_groupbox.isChecked():
@@ -831,8 +832,8 @@ if ENABLE_GUI:
         """
         def __init__(self, micrograph_filepaths, app, box_width):
             """
-            @micrograph_filepath: the path to the image file for the micrograph
-            @app: the application to which this widget belongs
+            @param micrograph_filepath: the path to the image file for the micrograph
+            @param app: the application to which this widget belongs
             """
             QtGui.QWidget.__init__(self)
             self.app = app
@@ -942,7 +943,7 @@ if ENABLE_GUI:
         def display_helix(self, helix_emdata):
             """
             launches or updates an EMImage2DWidget to display helix_emdata
-            @helix_emdata: an EMData object that stores the image data for a helix
+            @param helix_emdata: an EMData object that stores the image data for a helix
             """
             self.color_boxes()
             if not self.helix_viewer:
@@ -1020,7 +1021,7 @@ if ENABLE_GUI:
             """
             This displays a micrograph in self.main_image, resetting member variables that refer to other micrographs.
             If self.main_image == None, a new EMImage2DWidget is instatiated.
-            @micrograph_emdata: the EMData object that holds the micrograph to display
+            @param micrograph_emdata: the EMData object that holds the micrograph to display
             """
             self.edit_mode = None #Values are in {None, "new", "move", "2nd_point", "1st_point", "delete"}
             self.current_boxkey = None
@@ -1245,8 +1246,8 @@ if ENABLE_GUI:
             Clicking on a point betwen 3/8 L and 5/8 L from the shorter axis of symmetry
             results in moving that end of the box while keeping the midpoint of the other end fixed.
             
-            @event: the mouse click event that causes a box to be added, removed, or modified
-            @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
+            @param event: the mouse click event that causes a box to be added, removed, or modified
+            @param click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
             """
     
             self.click_loc = click_loc
@@ -1312,8 +1313,8 @@ if ENABLE_GUI:
             """
             Boxes are deleted in mouse_down, and the decision of how to edit is made there.
             However, new boxes are made and existing boxes are edited here.
-            @event: the mouse click event that causes a box to be added, removed, or modified
-            @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
+            @param event: the mouse click event that causes a box to be added, removed, or modified
+            @param click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
             """
             
             if self.click_loc and self.edit_mode: #self.click_loc and self.edit_mode are set in mouse_down
@@ -1370,8 +1371,8 @@ if ENABLE_GUI:
             Once the mouse button comes back up, creating a new box, or editing
             an existing box is complete, so we need only clear variables relevant
             to creating or editing boxes, and get the image data from the boxed area.
-            @event: the mouse click event that causes a box to be added, removed, or modified
-            @click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
+            @param event: the mouse click event that causes a box to be added, removed, or modified
+            @param click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
             """
     
             if self.current_boxkey and self.edit_mode != "delete":
