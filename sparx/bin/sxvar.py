@@ -89,7 +89,7 @@ def main():
 		else:
 			from applications import defvar
 			global_def.BATCH = True
-			defvar(  files, outdir, options.fl, options.aa, options.radccc, False, False, options.repair, options.pca, options.pcamask, options.pcanvec)
+			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False
 
 
