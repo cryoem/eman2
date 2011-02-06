@@ -309,6 +309,9 @@ class ClassAvTask(EMTask):
 		try: ref_orient=avg["xform.projection"]
 		except: ref_orient=None
 
+		try: ref_model=avg["model_id"]
+		except: ref_model=0
+
 		# Final alignment to the reference (if there is one)
 		if ref!=None :
 			#ref.process_inplace("normalize.edgemean")
@@ -327,6 +330,7 @@ class ClassAvTask(EMTask):
 			
 		if ref_orient!=None: 
 			avg["xform.projection"]=ref_orient
+			avg["model_id"]=ref_model
 			try: avg["projection_image_idx"]=self.data["ref"][2]
 			except: pass
 		
@@ -452,7 +456,12 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		ref.process_inplace("xform.centerofmass",{"threshold":1.0})						# TODO: should probably check how well this works
 		ref_orient=None
 	else:
-		ref_orient=ref["xform.projection"]
+		try: ref_orient=ref["xform.projection"]
+		except: ref_orient=None
+		
+		try: ref_model=ref["model_id"]
+		except: ref_model=0
+		
 	if verbose>1 : print ""
 
 	init_ref=ref.copy()
@@ -540,7 +549,9 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		else :
 			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
 		
-	if ref_orient!=None : ref["xform.projection"]=ref_orient
+	if ref_orient!=None : 
+		ref["xform.projection"]=ref_orient
+		ref["model_id"]=ref_model
 	return [ref,ptcl_info]
 	
 def classmx_ptcls(classmx,n):

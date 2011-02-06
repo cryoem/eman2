@@ -49,7 +49,7 @@ NO_MIRROR = False
 
 
 class EMParallelProject3D:
-	def __init__(self,options,args,logger=None):
+	def __init__(self,options,fsp,sym,start,modeln=0,logger=None):
 		'''
 		@param options the options produced by (options, args) = parser.parse_args()
 		@param args the options produced by (options, args) = parser.parse_args()
@@ -57,12 +57,15 @@ class EMParallelProject3D:
 		assumes you have already called the check function.
 		'''
 		self.options = options
-		self.args = args
+		self.args = fsp
+		self.sym=sym
 		self.logger = logger
+		self.start=start
+		self.modeln=modeln
 		
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
-		etc.precache([args[0]])
+		etc.precache([fsp])
 		
 		self.num_cpus = etc.cpu_est()
 		if self.num_cpus > 32: # upper limit 
@@ -74,7 +77,7 @@ class EMParallelProject3D:
 		'''
 		
 		'''
-		sym_object = parsesym(options.sym)
+		sym_object = parsesym(self.sym)
 		[og_name,og_args] = parsemodopt(options.orientgen)
 		self.eulers = sym_object.gen_orientations(og_name, og_args)
 	
@@ -114,7 +117,7 @@ class EMParallelProject3D:
 				indices = range(first,last)
 				
 				data = {}
-				data["input"] = ("cache",self.args[0],0)
+				data["input"] = ("cache",self.args,0)
 				data["eulers"] = tmp_eulers
 				data["indices"] = indices
 				
@@ -140,6 +143,7 @@ class EMParallelProject3D:
 						tid = tids[i] 
 						
 						rslts = self.etc.get_results(tid)
+						
 						if not self.__write_output_data(rslts[1]):
 							print "There was a problem with the task of id",tid
 							
@@ -151,16 +155,19 @@ class EMParallelProject3D:
 								
 						print "Task",tids.pop(i),"completed"
 						print "These tasks are remaining:",tids
-						
+				
 				if len(tids) == 0: break
 				time.sleep(5)
+				
+			return len(self.eulers)
 		else:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
 				
 	def __write_output_data(self,rslts):
 		for idx,image in rslts.items():
 			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
-			image.write_image(self.options.outfile,idx)
+			image["model_id"]=self.modeln
+			image.write_image(self.options.outfile,idx+self.start)
 		
 		return True
 			
@@ -208,15 +215,15 @@ class EMProject3DTaskDC(EMTask):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog image [options] 
-	Generates 2-D projections of a 3-D object. Various options for specifiying distribution of orientations
+	usage = """%prog <imagefile> [<imagefile>] [imagefile] [options] 
+	Generates 2-D projections of a 3-D object or multiple 3-D objects. Various options for specifiying distribution of orientations
 	and other options.
 	
 	Typical usage:
 	e2project3d.py map.mrc --outfile=projections.hdf --orientgen=eman:delta=5 --sym=c3 --projector=standard --verbose=2"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. If multiple input models are specified, multiple comma-separated symmetries may also be specified.",default="c1")
 	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen. Example: --orientgen=eman:delta=3.0:inc_mirror=0:perturb=1")
 	parser.add_option("--outfile", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
 	# add --perturb
@@ -238,7 +245,16 @@ def main():
 	if len(args) < 1:
 		parser.error("Error: No input file given")
 	
-	options.model = args[0]
+	# the model is a list of models. We also make sure we have the same number of symmetry elements as models
+	options.model = args
+	options.sym=options.sym.split(",")
+	if len(options.sym)!=1:
+		if len(options.sym)!=len(args) :
+			print "sym must be either a single symmetry specifier or one specifier for each input."
+			sys.exit(1)
+	else:
+		options.sym*=len(args)
+	
 	error = check(options,True)
 	
 	if ( options.verbose>0 ):
@@ -262,26 +278,30 @@ def main():
 	
 		
 	if options.parallel:
-		job = EMParallelProject3D(options,args,logger)
-		job.execute()
+		n=0
+		for i,fsp in enumerate(args) :
+			job = EMParallelProject3D(options,fsp,options.sym[i],n,i,logger)
+			n+=job.execute()
+			if options.verbose : print "Job %d finished. %d total projections."%(i,n)
+		
 		E2end(logger)
 		exit(0)
 	
 	
 	eulers = []
 	
-	data = EMData()
-	data.read_image(args[0],0)
-	
-	sym_object = parsesym(options.sym)
-	[og_name,og_args] = parsemodopt(options.orientgen)
-	eulers = sym_object.gen_orientations(og_name, og_args)
+	for i,fsp in enumerate(args) :
+		data = EMData(fsp,0)
 		
-	# generate and save all the projections to disk - that's it, that main job is done
-	if ( options.verbose>0 ):
-		print "Generating and saving projections..."
-	generate_and_save_projections(options, data, eulers, options.smear)
-	
+		sym_object = parsesym(options.sym[i])
+		[og_name,og_args] = parsemodopt(options.orientgen)
+		eulers = sym_object.gen_orientations(og_name, og_args)
+			
+		# generate and save all the projections to disk - that's it, that main job is done
+		if ( options.verbose>0 ):
+			print "Generating and saving projections for ",fsp
+		generate_and_save_projections(options, data, eulers, options.smear,i)
+		
 	if ( options.verbose>0 ):
 		print "%s...done" %progname
 	
@@ -296,7 +316,7 @@ def main():
 
 #
 
-def generate_and_save_projections(options, data, eulers, smear=0):
+def generate_and_save_projections(options, data, eulers, smear=0,modeln=0):
 	for i,euler in enumerate(eulers):
 		p=data.project(options.projector,euler)
 		p.set_attr("xform.projection",euler)
@@ -320,6 +340,7 @@ def generate_and_save_projections(options, data, eulers, smear=0):
 				except:
 					print "warning - application of the post processor",p," failed. Continuing anyway"
 
+		p["model_id"]=modeln
 		try: 
 			p.write_image(options.outfile,-1)
 		except:
@@ -334,12 +355,8 @@ def check(options, verbose=0):
 	
 	error = False
 	
-	if ( not options.sym ):
-		if verbose>0:
-			print "Error: you must specify the sym argument"
-		error = True
-	else:
-		try: sym = parsesym(options.sym)
+	for s in options.sym:
+		try: sym = parsesym(s)
 		except Exception, inst:
 			if verbose>0:
 				print type(inst)     # the exception instance
@@ -356,10 +373,11 @@ def check(options, verbose=0):
 	if ( check_eman2_type(options.projector,Projectors,"Projector") == False ):
 		error = True
 
-	if not os.path.exists(options.model) and not db_check_dict(options.model):
-		if verbose>0:
-			print "Error: 3D image %s does not exist" %options.model
-		error = True
+	for f in options.model:
+		if not os.path.exists(f) and not db_check_dict(f):
+			if verbose>0:
+				print "Error: 3D image %s does not exist" %f
+			error = True
 	
 	if ( options.force and options.append):
 		if verbose>0:

@@ -88,6 +88,7 @@ def main():
 	parser=OptionParser(usage=get_usage())
 	parser.add_option("--output", default="threed.hdf", help="Output reconstructed volume file name.")
 	parser.add_option("--input", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
+	parser.add_option("--input_model", default=None, help="If the class-averages have the model_id parameter (produced by e2refinemulti.py), this will use only class-averages with the specified model_id for the reconstruction.")
 	parser.add_option("--tlt", help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention", type="string", default=None)
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 
@@ -96,8 +97,8 @@ def main():
 	parser.add_option("--outsize", metavar="x or x,y,z", default=None, type="string", help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
 
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier using mode 2.")
-	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores.")
-	parser.add_option("--keepsig",action="store_true",default=False, dest="keepsig", help="The standard deviation alternative to the --keep argument.")	
+	parser.add_option("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
+	parser.add_option("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")	
 	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_option("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
@@ -133,6 +134,7 @@ def main():
 	# Checking is disabled for now. ie - check will always pass
 	if options.check: exit(0)
 
+	if options.input_model!=None : options.input_model=int(options.input_model)
 
 	print "e2make3d.py"
 	logger=E2init(sys.argv)
@@ -181,7 +183,7 @@ def main():
 		print "Couldn't parse outsize option :",options.outsize
 		exit(1)
 
-	data=initialize_data(options.input,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
+	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
 	
 	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
@@ -283,7 +285,7 @@ def main():
 	
 	print "Exiting"
 
-def initialize_data(inputfile,tltfile,pad,no_weights,lowmem,preprocess):
+def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preprocess):
 	"""returned list will contain dictionaries containing metadata about each image, and optionally the image itself
 	xform - a Transform object
 	weight - a floating point weight
@@ -332,6 +334,9 @@ def initialize_data(inputfile,tltfile,pad,no_weights,lowmem,preprocess):
 			try: elem={"xform":tmp["xform.projection"]}
 			except : continue
 				#raise Exception,"Image %d doesn't have orientation information in its header"%i
+						
+			# skip any particles targeted at a different model
+			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
 			
 			if no_weights: elem["weight"]=1.0
 			else : 
@@ -351,6 +356,7 @@ def initialize_data(inputfile,tltfile,pad,no_weights,lowmem,preprocess):
 				
 			data.append(elem)
 
+		print "Using %d images"%len(data)
 	return data
 
 def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
