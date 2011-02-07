@@ -203,7 +203,7 @@ void set_col(const EMData * data, int col_index);
  */
 float get_value_at(int x, int y, int z) const
 {
-	return get_data()[x + y * nx + z * nxy];
+	return get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy];
 }
 
 /** Get the pixel density value at index i
@@ -478,7 +478,7 @@ inline void set_value_at(int x, int y, int z, float v)
 	}
 	else
 	{
-		get_data()[x + y * nx + z * nxy] = v;
+		get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy] = v;
 		flags |= EMDATA_NEEDUPD;
 		changecount++;
 	}
@@ -496,7 +496,7 @@ inline void set_value_at(int x, int y, int z, float v)
  */
 inline void set_value_at_fast(int x, int y, int z, float v)
 {
-	get_data()[x + y * nx + z * nxy] = v;
+	get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy] = v;
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
 }

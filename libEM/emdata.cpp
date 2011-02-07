@@ -674,7 +674,7 @@ EMData *EMData::get_top_half() const
 	half->set_size(nx, ny, nz / 2);
 
 	float *half_data = half->get_data();
-	EMUtil::em_memcpy(half_data, &(get_data()[nz / 2 * nx * ny]), sizeof(float) * nx * ny * nz / 2);
+	EMUtil::em_memcpy(half_data, &(get_data()[(size_t)nz / 2 * (size_t)nx * (size_t)ny]), sizeof(float) * (size_t)nx * (size_t)ny * (size_t)nz / 2lu);
 
 	float apix_z = attr_dict["apix_z"];
 	float origin_z = attr_dict["origin_z"];

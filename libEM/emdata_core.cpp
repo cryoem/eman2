@@ -763,14 +763,14 @@ float& EMData::get_value_at_wrap(int x, int y)
 
 float& EMData::get_value_at_wrap(int x, int y, int z)
 {
-	int lx = x;
-	int ly = y;
-	int lz = z;
+	size_t lx = x;
+	size_t ly = y;
+	size_t lz = z;
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
 
-	return get_data()[lx + ly * nx + lz * nxy];
+	return get_data()[lx + ly * (size_t)nx + lz * (size_t)nxy];
 }
 
 
@@ -790,14 +790,14 @@ float EMData::get_value_at_wrap(int x, int y) const
 
 float EMData::get_value_at_wrap(int x, int y, int z) const
 {
-	int lx = x;
-	int ly = y;
-	int lz = z;
+	size_t lx = x;
+	size_t ly = y;
+	size_t lz = z;
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
 
-	return get_data()[lx + ly * nx + lz * nxy];
+	return get_data()[lx + ly * (size_t)nx + lz * (size_t)nxy];
 }
 
 float EMData::sget_value_at(int x, int y, int z) const
@@ -805,7 +805,7 @@ float EMData::sget_value_at(int x, int y, int z) const
 	if (x < 0 || x >= nx || y < 0 || y >= ny || z < 0 || z >= nz) {
 		return 0;
 	}
-	return get_data()[x + y * nx + z * nxy];
+	return get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy];
 }
 
 
@@ -1383,8 +1383,12 @@ void EMData::to_value(const float& value)
 	}
 #endif // EMAN2_USING_CUDA
 	float* data = get_data();
-	if ( value != 0 ) std::fill(data,data+get_size(),value);
-	else EMUtil::em_memset(data, 0, nxyz * sizeof(float)); // This might be faster, I don't know
+
+	//the em_memset has segfault for >8GB image, use std::fill() instead, though may be slower
+//	if ( value != 0 ) std::fill(data,data+get_size(),value);
+//	else EMUtil::em_memset(data, 0, nxyz * sizeof(float)); // This might be faster, I don't know
+
+	std::fill(data,data+get_size(),value);
 
 	update();
 	EXITFUNC;
