@@ -10012,10 +10012,12 @@ def defvar(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask=
 	else:
 		repair = True
 		if(frepa == "default"):
-			from math import sqrt
-			from utilities import model_gauss
-			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
-			Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
+			#from math import sqrt
+			#from utilities import model_gauss
+			#rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+			#Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
+			from utilities import model_blank
+			rota = model_blank(nx, ny, nz, 1.0)
 		else:   rota = get_im(frepa)
 
 	radcir = min(nx,ny,nz)//2 - 2
@@ -10158,10 +10160,12 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 	else:
 		repair = True
 		if(frepa == "default"):
-			from math import sqrt
-			from utilities import model_gauss
-			rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
-			Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
+			#from math import sqrt
+			#from utilities import model_gauss
+			#rota = model_gauss(sqrt(2.0)*nx, nx,ny,nz)
+			#Util.mul_scalar( rota, 1.0/(rota.get_value_at(nx//2, ny//2, nz//2)) )
+			from utilities import model_blank
+			rota = model_blank(nx, ny, nz, 1.0)
 		else:   rota = get_im(frepa)
 
 	if pca:
