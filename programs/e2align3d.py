@@ -67,9 +67,9 @@ def main():
 	parser.add_option("--cmpparms",type="string",action="append",default=None,help="comparitor paramters")
 	parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
 	#options associated with  the simplex 3D refiner
-	parser.add_option("--stepalt",type="float",default=5.0,help="step size for alt angle, default=5.0")
-	parser.add_option("--stepaz",type="float",default=5.0,help="step size for az angle, default=5.0")
-	parser.add_option("--stepphi",type="float",default=5.0,help="step size for inplane phi angle, default=5.0")
+	parser.add_option("--stepn0",type="float",default=5.0,help="step size for quaternion vector component 0, default=1.0")
+	parser.add_option("--stepn1",type="float",default=5.0,help="step size for quaternion vector component 1, default=1.0")
+	parser.add_option("--stepn2",type="float",default=5.0,help="step size for quaternion vector component 2, default=1.0")
 	parser.add_option("--stepx",type="float",default=1.0,help="step size for th x direction, default=1.0")
 	parser.add_option("--stepy",type="float",default=1.0,help="step size for th y direction, default=1.0")
 	parser.add_option("--stepz",type="float",default=1.0,help="step size for th z direction, default=1.0")
@@ -184,14 +184,14 @@ def main():
 	galignedref = []
 
 	nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'lphi':options.lphi, 'uphi':options.uphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
-
+	
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
-		galigned = moving.process('xform',{'transform':n["xform.align3d"]})
-		galignedref.append(galigned.align('refine.3d', fixed, {'maxshift':options.maxshift, 'stepalt':options.stepalt,'stepaz':options.stepaz,'stepphi':options.stepphi,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		# Fix this so that the transform is passed rather than the transfomed object.....
+		galignedref.append(smoving.align('refine.3d.quat', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'maxiter':options.maxiter}, options.rcmp, rcmpparms))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
-			bestscore = score
+			#bestscore = score
 			bestmodel = i
 		if options.verbose > 0: print "Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score
 	
@@ -205,7 +205,7 @@ def main():
         
 	#apply the transform to the original model
 	moving.read_image(sys.argv[2])
-	ft = galignedref[bestmodel].get_attr("xform.align3d")*nbest[bestmodel]["xform.align3d"] #composition transform
+	ft = galignedref[bestmodel].get_attr("xform.align3d")
 	moving.process_inplace("xform",{"transform":ft})
         
 	#now write out the aligned model

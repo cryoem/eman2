@@ -802,8 +802,9 @@ namespace EMAN
 	*/
 	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
 	 * Target function for the simplex  algorithm is a transformation of the 3D model by az, alt, phi, tx, ty, tz
-	 * The simplex algorithm downs the function downhill in a ameboa like fasion, hence it may get stuck in a local 
-	 * minima if the two 3D models are already roughly aligned.
+	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
+	 * minima if the two 3D models are already roughly aligned. 
+	 * NOTE: Currently this algorith is not working!!!!!!
 	 * @author David Woolford and John Flanagan
 	 * @date June 23 2009 and Oct 8th 2010
 	 */
@@ -853,7 +854,73 @@ namespace EMAN
 			
 			static const string NAME;
 	};
+	
+	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
+	 * Target function for the simplex algorithm is a rotation along an arbitrary axis defined by a quaternion, whose
+	 * rotation magnitude is defined by the vector length (hence the simplex varies the vecotr component of the quaternion). 
+	 * In addition the simplex varies translation. Using quaternions avoids gimbal lock. 
+	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
+	 * minima if the two 3D models are already roughly aligned.
+	 * @param xform.align3d The Transform storing the starting guess. If unspecified the identity matrix is used
+	 * @param stepx The initial simplex step size in x
+	 * @param stepy The initial simplex step size in y
+	 * @param stepz The initial simplex step size in z
+	 * @param stepn0 The initial simplex step size in the first quaternion vecotr component
+	 * @param stepn1 The initial simplex step size in the second quaternion vecotr component
+	 * @param stepn2 The initial simplex step size in the third quaternion vecotr component
+	 * @param spin_coeff The multiplier appied to the spin (if it is too small or too large the simplex will not converge) 
+	 * @param precision The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations
+	 * @param maxiter The maximum number of iterations that can be performed by the Simplex minimizer
+	 * @param maxshift Maximum translation in pixels in any direction.
+	 * @author John Flanagan (with code recyled from David Woolford)
+	 * @date Feb 3rd 2011
+	 */
+	class Refine3DAlignerQuaternion:public Aligner
+	{
+		public:
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name="sqeuclidean", const Dict& cmp_params = Dict()) const;
 
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new Refine3DAlignerQuaternion();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
+				d.put("stepx", EMObject::FLOAT, "The initial simplex step size in x. Default is 1");
+				d.put("stepy", EMObject::FLOAT, "The initial simplex step size in y. Default is 1");
+				d.put("stepz", EMObject::FLOAT, "The initial simplex step size in z. Default is 1." );
+				d.put("stepn0", EMObject::FLOAT, "The initial simplex step size in the first quaternion vecotr component. Default is 1." );
+				d.put("stepn1", EMObject::FLOAT, "The initial simplex step size in the second quaternion vecotr component. Default is 1." );
+				d.put("stepn2", EMObject::FLOAT, "The initial simplex step size in the third quaternion vecotr component. Default is 1." );
+				d.put("spin_coeff", EMObject::FLOAT,"The multiplier appied to the spin (if it is too small or too large the simplex will not converge).  Default is 10.");
+				d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.01." );
+				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 100.");
+				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+				return d;
+			}
+			
+			static const string NAME;
+	};
+	
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
 	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
 	 * but very useful  if you want to search in a specific, small, local area.

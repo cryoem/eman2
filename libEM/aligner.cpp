@@ -69,6 +69,7 @@ const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
 const string Refine3DAligner::NAME = "refine.3d";
+const string Refine3DAlignerQuaternion::NAME = "refine.3d.quat";
 const string RT3DGridAligner::NAME = "rt.3d.grid";
 const string RT3DSphereAligner::NAME = "rt.3d.sphere";
 const string FRM2DAligner::NAME = "frm2d";
@@ -90,6 +91,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
 	force_add<Refine3DAligner>();
+	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
 	force_add<FRM2DAligner>();
@@ -1463,41 +1465,194 @@ static double refalifn3djiggle(const gsl_vector * v, void *params)
 	return result;
 }
 
-static Transform refalin3d_perturbquat(const Transform*const t, const float& omega, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
+static Transform refalin3d_perturbquat(const Transform*const t, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
 {
+	Vec3f normal(n0,n1,n2);
+	normal.normalize();
 	
+	float omega = 10*sqrt(n0*n0 + n1*n1 + n2*n2); // Here we compute the spin by the rotation axis vector length
+	Dict d;
+	d["type"] = "spin";
+	d["Omega"] = omega;
+	d["n1"] = normal[0];
+	d["n2"] = normal[1];
+	d["n3"] = normal[2];
+//	cout << omega << " " << normal[0] << " " << normal[1] << " " << normal[2] << " " << n0 << " " << n1 << " " << n2 << endl;
+	
+	Transform q(d);
+	q.set_trans((float)x,(float)y,(float)z);
+	
+	q = q*(*t); //compose transforms	
+	
+	return q;
 }
 
 static double refalifn3dquat(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
 
-	double x = gsl_vector_get(v, 0);
-	double y = gsl_vector_get(v, 1);
-	double z = gsl_vector_get(v, 2);
-	double omega = gsl_vector_get(v, 3);
- 	double n0 = gsl_vector_get(v, 4);
- 	double n1 = gsl_vector_get(v, 5);
-	double n2 = gsl_vector_get(v, 6);
+ 	double n0 = gsl_vector_get(v, 0);
+ 	double n1 = gsl_vector_get(v, 1);
+	double n2 = gsl_vector_get(v, 2);
+	double x = gsl_vector_get(v, 3);
+	double y = gsl_vector_get(v, 4);
+	double z = gsl_vector_get(v, 5);
+
 	EMData *this_img = (*dict)["this"];
 	EMData *with = (*dict)["with"];
 // 	bool mirror = (*dict)["mirror"];
 
 	Transform* t = (*dict)["transform"];
 
-	Transform soln = refalin3d_perturbquat(t,(float)omega,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
+	Transform soln = refalin3d_perturbquat(t,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
 
 	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
 	delete t; t = 0;
-	Vec3f xx = soln.get_trans();
-	Dict yy = soln.get_params("eman");
- 	cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << " " << xx[0]  << " " << xx[1] << " " << xx[2] << endl;
+	//cout << result << endl;
 	return result;
 }
 
+EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
+	const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	if (!to || !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
+
+	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
+
+#ifdef EMAN2_USING_CUDA 
+	if(EMData::usecuda == 1) {
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!to->cudarwdata) to->copy_to_cuda();
+	}
+#endif
+
+	float sdi = 0.0;
+	float sdj = 0.0;
+	float sdk = 0.0;
+	float sdx = 0.0;
+	float sdy = 0.0;
+	float sdz = 0.0;
+	bool mirror = false;
+	
+	Transform* t;
+	if (params.has_key("xform.align3d") ) {
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
+		// parameters to form the starting guess. Instead the Transform itself
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
+		// when you use orthogonally-based Euler angles
+		t = params["xform.align3d"];
+	}else {
+		t = new Transform(); // is the identity
+	}
+	
+	int np = 6; // the number of dimensions
+	Dict gsl_params;
+	gsl_params["this"] = this_img;
+	gsl_params["with"] = to;
+	gsl_params["snr"]  = params["snr"];
+	gsl_params["mirror"] = mirror;
+	gsl_params["transform"] = t;	
+	Dict altered_cmp_params(cmp_params);
+	if(cmp_name == "ccc.tomo"){
+	    altered_cmp_params["zeroori"] = true;
+	}
+	
+	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+	gsl_vector *ss = gsl_vector_alloc(np);
+	
+	float stepi = params.set_default("stepi",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepj = params.set_default("stepj",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepk = params.set_default("stepk",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepx = params.set_default("stepx",1.0f);
+	float stepy = params.set_default("stepy",1.0f);
+	float stepz = params.set_default("stepz",1.0f);
+	
+	//gsl_vector_set(ss, 0, stepw);
+	gsl_vector_set(ss, 0, stepi);
+	gsl_vector_set(ss, 1, stepj);
+	gsl_vector_set(ss, 2, stepk);
+	gsl_vector_set(ss, 3, stepx);
+	gsl_vector_set(ss, 4, stepy);
+	gsl_vector_set(ss, 5, stepz);
+	
+	gsl_vector *x = gsl_vector_alloc(np);
+	gsl_vector_set(x, 0, sdi);
+	gsl_vector_set(x, 1, sdj);
+	gsl_vector_set(x, 2, sdk);
+	gsl_vector_set(x, 3, sdx);
+	gsl_vector_set(x, 4, sdy);
+	gsl_vector_set(x, 5, sdz);
+	
+	gsl_multimin_function minex_func;
+	Cmp *c = Factory < Cmp >::get(cmp_name, altered_cmp_params);
+		
+	gsl_params["cmp"] = (void *) c;
+	minex_func.f = &refalifn3dquat;
+
+	minex_func.n = np;
+	minex_func.params = (void *) &gsl_params;
+	
+	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
+	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
+	
+	int rval = GSL_CONTINUE;
+	int status = GSL_SUCCESS;
+	int iter = 1;
+	
+	float precision = params.set_default("precision",0.01f);
+	int maxiter = params.set_default("maxiter",100);
+	while (rval == GSL_CONTINUE && iter < maxiter) {
+		iter++;
+		status = gsl_multimin_fminimizer_iterate(s);
+		if (status) {
+			break;
+		}
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
+	}
+
+	int maxshift = params.set_default("maxshift",-1);
+
+	if (maxshift <= 0) {
+		maxshift = this_img->get_xsize() / 4;
+	}
+	float fmaxshift = static_cast<float>(maxshift);
+	
+	EMData *result;
+	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
+	{
+		float n0 = (float)gsl_vector_get(s->x, 0);
+		float n1 = (float)gsl_vector_get(s->x, 1);
+		float n2 = (float)gsl_vector_get(s->x, 2);
+		float x = (float)gsl_vector_get(s->x, 3);
+		float y = (float)gsl_vector_get(s->x, 4);
+		float z = (float)gsl_vector_get(s->x, 5);
+		
+		Transform tsoln = refalin3d_perturbquat(t,n0,n1,n2,x,y,z);
+			
+		result = this_img->process("xform",Dict("transform",&tsoln));
+		result->set_attr("xform.align3d",&tsoln);
+		result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
+		
+	 //coda goes here
+	} else { // The refine aligner failed - this shift went beyond the max shift
+		result = this_img->process("xform",Dict("transform",t));
+		result->set_attr("xform.align3d",t);
+	}
+	
+	//EMData *result = this_img->process("xform",Dict("transform",t));
+	delete t;
+	t = 0;
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+
+	if ( c != 0 ) delete c;
+	return result;
+}
 static double refalifn3d(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
@@ -1517,6 +1672,9 @@ static double refalifn3d(const gsl_vector * v, void *params)
 	d["phi"] = static_cast<float>(phi);
 	Transform t(d);
 	t.set_trans((float)x,(float)y,(float)z);
+	Transform* orit = (*dict)["transform"];
+	t = t*(*orit);
+	
 	//t.set_mirror(mirror);
 	EMData *tmp = this_img->process("xform",Dict("transform",&t));
 
@@ -1627,7 +1785,7 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 	int iter = 1;
 
 	float precision = params.set_default("precision",0.04f);
-	int maxiter = params.set_default("maxiter",60);
+	int maxiter = params.set_default("maxiter",100);
 	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;
 		status = gsl_multimin_fminimizer_iterate(s);
@@ -1669,6 +1827,8 @@ EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
 			parms["phi"] = (float)gsl_vector_get(s->x, 5);
 		
 			Transform tsoln(parms);
+			tsoln  = tsoln*(*t);
+			
 			result = this_img->process("xform",Dict("transform",&tsoln));
 			result->set_attr("xform.align3d",&tsoln);
 			result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
