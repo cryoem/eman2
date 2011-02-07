@@ -1876,16 +1876,18 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 	        			IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
 	        			if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
 	        		except:
-	        			ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
-	        			sys.exit()
+	        			#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
+	        			#sys.exit()
+					pass
 	        	# 2D object
 	        	elif ny > 1:
 	        		try:
 	        			alpha, sx, sy, mirror, scale = get_params2D(IM[i])
 	        			IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
 	        		except: 
-	        			ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
-	        			sys.exit()
+	        			#ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
+	        			#sys.exit()
+					pass
 
 	        	# obtain ctf
 	        	if CTF:
