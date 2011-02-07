@@ -1465,12 +1465,12 @@ static double refalifn3djiggle(const gsl_vector * v, void *params)
 	return result;
 }
 
-static Transform refalin3d_perturbquat(const Transform*const t, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
+static Transform refalin3d_perturbquat(const Transform*const t, const float& spincoeff, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
 {
 	Vec3f normal(n0,n1,n2);
 	normal.normalize();
 	
-	float omega = 10*sqrt(n0*n0 + n1*n1 + n2*n2); // Here we compute the spin by the rotation axis vector length
+	float omega = spincoeff*sqrt(n0*n0 + n1*n1 + n2*n2); // Here we compute the spin by the rotation axis vector length
 	Dict d;
 	d["type"] = "spin";
 	d["Omega"] = omega;
@@ -1503,8 +1503,9 @@ static double refalifn3dquat(const gsl_vector * v, void *params)
 // 	bool mirror = (*dict)["mirror"];
 
 	Transform* t = (*dict)["transform"];
+	float spincoeff = (*dict)["spincoeff"];
 
-	Transform soln = refalin3d_perturbquat(t,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
+	Transform soln = refalin3d_perturbquat(t,spincoeff,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
 
 	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
@@ -1549,6 +1550,8 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 		t = new Transform(); // is the identity
 	}
 	
+	float spincoeff =  params.set_default("spin_coeff",10.0f); // spin coefficient, controls speed of convergence (sort of)
+	
 	int np = 6; // the number of dimensions
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
@@ -1556,6 +1559,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
 	gsl_params["transform"] = t;	
+	gsl_params["spincoeff"] = spincoeff;
 	Dict altered_cmp_params(cmp_params);
 	if(cmp_name == "ccc.tomo"){
 	    altered_cmp_params["zeroori"] = true;
@@ -1631,7 +1635,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 		float y = (float)gsl_vector_get(s->x, 4);
 		float z = (float)gsl_vector_get(s->x, 5);
 		
-		Transform tsoln = refalin3d_perturbquat(t,n0,n1,n2,x,y,z);
+		Transform tsoln = refalin3d_perturbquat(t,spincoeff,n0,n1,n2,x,y,z);
 			
 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
@@ -1929,11 +1933,11 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		tofft = to->do_fft();
 	}
 	
-#ifdef EMAN2_USING_CUDA // I am still BenchMarking
+#ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
-		if(!to->isrodataongpu()) to->copy_to_cudaro();
-		if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+		if(!to->cudarwdata) to->copy_to_cuda();
+		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
 	}
 #endif
 
@@ -2082,11 +2086,11 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		tofft = to->do_fft();
 	}
 	
-#ifdef EMAN2_USING_CUDA // I am still BenchMarking
+#ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
-		if(!to->isrodataongpu()) to->copy_to_cudaro();
-		if(to->cudarodata){if(tofft) tofft->copy_to_cuda();}
+		if(!to->cudarwdata) to->copy_to_cuda();
+		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
 	}
 #endif
 

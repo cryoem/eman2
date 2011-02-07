@@ -124,9 +124,9 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 		mask = params["mask"];
 		if(mask!=0) {has_mask=true;}
 	}
-
 #ifdef EMAN2_USING_CUDA
 	if (image->cudarwdata && with->cudarwdata) {
+		//cout << "CUDA ccc cmp" << endl;
 		float* maskdata = 0;
 		if(has_mask && !mask->cudarwdata){
 			mask->copy_to_cuda();
@@ -416,9 +416,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 	if(image->is_complex() && with->is_complex()) {
 	} else {
 		if (image->cudarwdata && with->cudarwdata) {
-			//image->copy_from_device();
-			//with->copy_from_device();
-			
+			//cout << "CUDA dot cmp" << endl;
 			float* maskdata = 0;
 			bool has_mask = false;
 			EMData* mask = 0;

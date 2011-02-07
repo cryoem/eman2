@@ -73,6 +73,7 @@ def main():
 	parser.add_option("--stepx",type="float",default=1.0,help="step size for th x direction, default=1.0")
 	parser.add_option("--stepy",type="float",default=1.0,help="step size for th y direction, default=1.0")
 	parser.add_option("--stepz",type="float",default=1.0,help="step size for th z direction, default=1.0")
+	parser.add_option("--spin_coeff",type="float",default=1.0,help="spin coefficient, governs the spin step size (if too small or too large, convergence may not be reached), default=10.0")
 	parser.add_option("--maxshift",type="int",default=-1.0,help="maximum shift, (-1 means dim/4), default=-1.0")
 	parser.add_option("--maxiter",type="int",default=100,help="maximum number of iterations(you'll need more for courser global searches), default=100")
 	parser.add_option("--rcmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
@@ -188,7 +189,7 @@ def main():
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
 		# Fix this so that the transform is passed rather than the transfomed object.....
-		galignedref.append(smoving.align('refine.3d.quat', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		galignedref.append(smoving.align('refine.3d.quat', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
 			#bestscore = score
