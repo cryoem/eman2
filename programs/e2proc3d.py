@@ -431,6 +431,7 @@ def parse_infile(infile, first, last):
 			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
 			data = []
 			for i in xrange(first, last+1):
+				d = EMData()
 				d.read_image(infile, i)
 				data.append(d)
 			return data
