@@ -3709,6 +3709,8 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	print_end_msg("mref_ali3d")
 
 
+"""
+# This is version with the same number of images per group.
 def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
@@ -4120,7 +4122,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					assignment[asi[iref][im]] = iref
 			del asi
 
-		"""
+		'''
 		if myid == main_node:
 			SA = False
 			maxasi = total_nima//numref
@@ -4180,7 +4182,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 		else:
 			assignment = []
-		"""
+		'''
 
 		assignment = mpi_scatterv(assignment, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
 		assignment = map(int, assignment)
@@ -4307,9 +4309,9 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid==main_node:
 		print_end_msg("mref_ali3d_MPI")
+"""
 
-'''
-def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, rs=1, 
+def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", npad = 4, debug = False, fourvar=False, termprec = 0.0):
@@ -4705,7 +4707,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, maxit=1, ir=1, ou=-1, 
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid==main_node:
 		print_end_msg("mref_ali3d_MPI")
-'''
+
 def get_refiparams(nx):
 	M = nx
 	npad = 2
