@@ -47,7 +47,7 @@ def main():
 	parser.add_option("--aa",             type="float",        default=0.0,       help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--radccc",         type="int",          default=-1,        help="radius for ccc calculation")
 	parser.add_option("--MPI",            action="store_true", default=False,     help="use MPI version" )
-	parser.add_option("--repair",         type="string",       default="default", help="repair original bootstrap volumes: None, default, or repair file name")
+	parser.add_option("--repair",         type="string",       default="default", help="repair original bootstrap volumes: None or repair file name")
 	parser.add_option("--pca",            action="store_true", default=False,     help="run pca" )
 	parser.add_option("--pcamask",        type="string",       default=None,      help="mask for pca" )
 	parser.add_option("--pcanvec",        type="int",          default=2,         help="number of eigvectors computed in PCA")

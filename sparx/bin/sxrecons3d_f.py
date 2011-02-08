@@ -52,7 +52,7 @@ def main():
 	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
 	parser.add_option("--group",   type="int",          default=-1,    help="perform reconstruction using images for a given group number (group is attribute in the header)" )
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
-	parser.add_option("--npad",    type="int",	    default=4,     help="number of times padding" )
+	parser.add_option("--npad",    type="int",	    default=4,     help="number of times padding (default 4, for large volumes use 2)" )
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
 	(options,args) = parser.parse_args(arglist[1:])     
 
