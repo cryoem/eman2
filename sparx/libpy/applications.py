@@ -4386,7 +4386,6 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
-		print_begin_msg("mref_ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Reference volumes           : %s\n"%(ref_vol))	
 		print_msg("Number of reference volumes : %i\n"%(numref))
