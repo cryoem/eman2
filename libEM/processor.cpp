@@ -7382,7 +7382,10 @@ void TestImageSquarecube::process_inplace(EMData * image)
 	float edge_length = params["edge_length"];
 	string axis = (const char*)params["axis"];
 	float odd_edge = params["odd_edge"];
-	int fill = (int)params["fill"];
+	int fill = 1;
+	if(params.has_key("fill")) {
+		int fill = (int)params["fill"];
+	}
 
 	float *dat = image->get_data();
 	float x2, y2, z2; //this coordinates of this pixel from center
