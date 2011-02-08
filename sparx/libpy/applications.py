@@ -10380,6 +10380,11 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 	nx = get_im( prj_stacks[0] ).get_xsize()
 	ny = nx
 
+	avgvol = get_im( avgvol_stack )
+	a = Util.infomask(avgvol, model_circle(int(rad), nx, nx, nx), False)
+	avgvol -= a[0]
+	avgvol,kb = prep_vol( avgvol )
+
 	if neigvol==-1:  neigvol = EMUtil.get_image_count( eigvol_stack )
 	# average volumes and eigen volumes.
 	eigvols = [None]*neigvol
@@ -10389,9 +10394,8 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 		eigvols[j] = get_im(eigvol_stack, j)
 		eigvals[j] = sqrt( eigvols[j].get_attr('eigval') )
 		eigvols[j], kb = prep_vol( eigvols[j] )
-	avgvol,kb = prep_vol( get_im( avgvol_stack ) )
 
-	m = model_circle( rad, nx, ny )
+	m = model_circle( int(rad), nx, ny )
 
 	files = file_set( prj_stacks )
 	nprj  = files.nimg()
@@ -10419,6 +10423,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 
 			ref_eigprj = prgs( eigvols[j], kb, [phi, theta, psi, -s2x, -s2y] )
 			if  CTF:  ref_eigprj = filt_ctf( ref_eigprj, ctf )
+			#ref_eigprj.write_image("eigen.hdf",ltot)
 
 			#d.append( diff.cmp( "dot", ref_eigprj, {"negative":0, "mask":m} )*eigvals[j]/nrmd )   CHANGED HERE
 			d.append( diff.cmp( "ccc", ref_eigprj, {"negative":0, "mask":m} ))#*eigvals[j] )
