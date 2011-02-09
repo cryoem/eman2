@@ -1089,7 +1089,7 @@ namespace EMAN
 	class CUDA_Aligner
 	{
 	  public:
-	  	CUDA_Aligner();
+	  	CUDA_Aligner(int id);
 
 		void finish();
 
@@ -1097,13 +1097,13 @@ namespace EMAN
 
 		void insert_image(EMData *image, int num);
 
-		void filter_stack(vector<float> ctf_params, int id);
+		void filter_stack(vector<float> ctf_params);
 		
-		void sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData* ave1, EMData *ave2, int id);
+		void sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData* ave1, EMData *ave2);
 
-		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int id, int silent);
+		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int silent);
 
-		vector<float> ali2d_single_iter(EMData *ref_image, vector<float> ali_params, float csx, float csy, int id, int silent, float delta);
+		vector<float> ali2d_single_iter(EMData *ref_image, vector<float> ali_params, float csx, float csy, int silent, float delta);
 
 	  private:
 	        float *image_stack, *image_stack_filtered;
@@ -1116,7 +1116,7 @@ namespace EMAN
 	class CUDA_multiref_aligner
 	{
 	  public:
-	  	CUDA_multiref_aligner();
+	  	CUDA_multiref_aligner(int id);
 
 		void finish();
 
@@ -1128,7 +1128,7 @@ namespace EMAN
 		
 		void insert_ref_image(EMData *image, int num);
 
-		vector<float> multiref_ali2d(int gpuid, int silent);
+		vector<float> multiref_ali2d(int silent);
 
 	  private:
 	        float *image_stack, *ref_image_stack, *ref_image_stack_filtered;

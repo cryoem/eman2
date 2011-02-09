@@ -396,7 +396,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
 #ifdef SPARX_USING_CUDA
-    class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<>())
+    class_< EMAN::CUDA_Aligner, boost::noncopyable>("CUDA_Aligner", init<int>())
     	.def("finish", &EMAN::CUDA_Aligner::finish)
         .def("setup", &EMAN::CUDA_Aligner::setup)
         .def("insert_image", &EMAN::CUDA_Aligner::insert_image)
@@ -406,7 +406,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("ali2d_single_iter", &EMAN::CUDA_Aligner::ali2d_single_iter)
     ;
 
-    class_< EMAN::CUDA_multiref_aligner, boost::noncopyable>("CUDA_multiref_aligner", init<>())
+    class_< EMAN::CUDA_multiref_aligner, boost::noncopyable>("CUDA_multiref_aligner", init<int>())
    	.def("finish", &EMAN::CUDA_multiref_aligner::finish)
         .def("setup", &EMAN::CUDA_multiref_aligner::setup)
 	.def("setup_params", &EMAN::CUDA_multiref_aligner::setup_params)

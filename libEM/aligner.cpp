@@ -2509,16 +2509,20 @@ EMData *FRM2DAligner::align(EMData * this_img, EMData * to,
 
 #ifdef SPARX_USING_CUDA
 
-CUDA_Aligner::CUDA_Aligner() {
+CUDA_Aligner::CUDA_Aligner(int id) {
 	image_stack = NULL;
 	image_stack_filtered = NULL;
 	ccf = NULL;
+	cudasetup(id);
 }
 
 void CUDA_Aligner::finish() {
 	if (image_stack) free(image_stack);
 	if (image_stack_filtered) free(image_stack_filtered);
 	if (ccf) free(ccf);
+	image_stack = NULL;
+	image_stack_filtered = NULL;
+	ccf = NULL;
 }
 
 void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
@@ -2548,7 +2552,7 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 			image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-void CUDA_Aligner::filter_stack(vector<float> ctf_params, int id) {
+void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
 	
 	float *params;
 	
@@ -2556,12 +2560,12 @@ void CUDA_Aligner::filter_stack(vector<float> ctf_params, int id) {
 	
 	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];
 
-	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params, id);
+	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params);
 
 	free(params);
 }
 
-void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2, int id) {
+void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2) {
 	
 	float *ctf_p, *ali_p, *av1, *av2;
 	
@@ -2576,13 +2580,13 @@ void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EM
 	av1 = ave1->get_data();
 	av2 = ave2->get_data();
 	
-	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2, id);
+	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2);
 	
 	free(ctf_p);
 	free(ali_p);
 }
 
-vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_list, vector<float> sy_list, int id, int silent) {
+vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_list, vector<float> sy_list, int silent) {
 
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
@@ -2602,9 +2606,9 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 	}
 	
 	if (CTF == 1) {
-		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	} else {
-		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	}
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
@@ -2652,7 +2656,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 }
 
 
-vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float> ali_params, float csx, float csy, int id, int silent, float delta) {
+vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float> ali_params, float csx, float csy, int silent, float delta) {
 
 	float *ref_image, max_ccf;
 	int base_address, ccf_offset;
@@ -2678,9 +2682,9 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 	}
 	
 	if (CTF == 1) {
-		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	} else {
-		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, id, silent);
+		calculate_ccf(image_stack, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	}
 
 	ccf_offset = NIMA*(RING_LENGTH+2)*(2*KX+1)*(2*KY+1);
@@ -2744,13 +2748,14 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 }
 
 
-CUDA_multiref_aligner::CUDA_multiref_aligner() {
+CUDA_multiref_aligner::CUDA_multiref_aligner(int id) {
 	image_stack = NULL;
 	ref_image_stack = NULL;
 	ref_image_stack_filtered = NULL;
 	ccf = NULL;
 	ctf_params = NULL;
 	ali_params = NULL;
+	cudasetup(id);
 }
 
 
@@ -2761,7 +2766,13 @@ void CUDA_multiref_aligner::finish() {
 	if (ccf) free(ccf);
 	if (ctf_params) free(ctf_params);
 	if (ali_params) free(ali_params);
-}
+	image_stack = NULL;
+	ref_image_stack = NULL;
+	ref_image_stack_filtered = NULL;
+	ccf = NULL;
+	ctf_params = NULL;
+	ali_params = NULL;
+}	
 
 void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
 
@@ -2814,7 +2825,7 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 			ref_image_stack[base_address+y*NX+x] = (*image)(x, y);
 }
 
-vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
+vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 
 	float *ctf_params_ref = (float *)malloc(NREF*6*sizeof(float));	
 	float *sx2 = (float *)malloc(NIMA*sizeof(float));
@@ -2860,12 +2871,12 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int gpuid, int silent) {
 			for (int p=0; p<NREF; p++)
 				for (int q=0; q<6; q++)
 					ctf_params_ref[p*6+q] = ctf_params[batch_begin[i]*6+q];
-			filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, ctf_params_ref, gpuid);
+			filter_image(ref_image_stack, ref_image_stack_filtered, NREF, NX, NY, ctf_params_ref);
 			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack_filtered, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
-				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
+				sx2+batch_begin[i], sy2+batch_begin[i], silent);
 		} else {
 			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
-				sx2+batch_begin[i], sy2+batch_begin[i], gpuid, silent);
+				sx2+batch_begin[i], sy2+batch_begin[i], silent);
 		}
 		
 		for (int j=0; j<batch_size[i]; j++) {

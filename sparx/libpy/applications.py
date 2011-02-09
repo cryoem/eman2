@@ -144,6 +144,7 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	if CUDA:
 		GPUID = get_input_from_string(GPUID)
 		GPUID = int(GPUID[0])
+		R = CUDA_Aligner(GPUID)
 		print_msg("GPU ID                      : %d\n"%(GPUID))
 
 	if maskfile:
@@ -225,10 +226,9 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	for N_step in xrange(len(xrng)):
 
 		if CUDA:
-			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, RING_LENGTH, NRING, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
-			if CTF:  R.filter_stack(all_ctf_params, GPUID)
+			if CTF:  R.filter_stack(all_ctf_params)
 
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
@@ -238,7 +238,7 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 			if CUDA:
 				ave1 = model_blank(nx, nx)
 				ave2 = model_blank(nx, nx)
-				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
 				# Comment by Zhengfan Yang on 02/01/10
 				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
 				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
@@ -308,7 +308,7 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 			if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
 			else: delta = dst
 			if CUDA:
-				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1, delta)
+				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 1, delta)
 				sx_sum = all_ali_params[-2]
 				sy_sum = all_ali_params[-1]
 				for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
@@ -512,6 +512,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	if CUDA:
 		nGPU = len(GPUID)
 		GPUID = GPUID[myid%nGPU]
+		R = CUDA_Aligner(GPUID)
 		all_ali_params = []
 		all_ctf_params = []
 
@@ -572,10 +573,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	for N_step in xrange(len(xrng)):
 
 		if CUDA:
-			R = CUDA_Aligner()
 			R.setup(len(data), nx, nx, RING_LENGTH, NRING, last_ring, step[N_step], int(xrng[N_step]/step[N_step]+0.5), int(yrng[N_step]/step[N_step]+0.5), CTF)
 			for im in xrange(len(data)):	R.insert_image(data[im], im)
-			if CTF:  R.filter_stack(all_ctf_params, GPUID)
+			if CTF:  R.filter_stack(all_ctf_params)
 
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
@@ -584,7 +584,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			if CUDA:
 				ave1 = model_blank(nx, nx)
 				ave2 = model_blank(nx, nx)
-				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2, GPUID)
+				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
 				# Comment by Zhengfan Yang on 02/01/10
 				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
 				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
@@ -676,7 +676,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				if Iter%3 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
 				else: delta = dst
 				if CUDA:
-					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], GPUID, 1, delta)
+					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 1, delta)
 					sx_sum = all_ali_params[-2]
 					sy_sum = all_ali_params[-1]
 					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])

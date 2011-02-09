@@ -62,7 +62,17 @@ texture<float, 1, cudaReadModeElementType> texim_ali_params;
 texture<float, 1, cudaReadModeElementType> texim_polar;
  
 /* Main */
-void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
+void cudasetup(int id) {
+	cudaSetDevice(id);
+	cudaError_t cudaError;
+	cudaError = cudaGetLastError();
+	if (cudaError != cudaSuccess) {
+		fprintf(stderr, "CUDA Runtime API Error reported: %s\n", cudaGetErrorString(cudaError));
+		exit(0);
+	}
+}
+
+void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int silent)
 {    
 	float *d_subject_image_polar, *d_ref_image_polar;
 	float *d_ccf;
@@ -96,9 +106,6 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	int IMAGE_PER_BATCH2 = 65535/POS_PER_IMAGE; // The maximum FFT per batch is 65535
 	int IMAGE_BATCH2 = NIMAGE/IMAGE_PER_BATCH2;
 	int IMAGE_LEFT_BATCH2 = NIMAGE%IMAGE_PER_BATCH2;
-
-	// Block this line if you have only one GPU
-	cudaSetDevice(id); 
 
 	cudaArray *ref_image_array, *subject_image_array[NROW], *subject_image_array_left;
 	dim3 GridSize1(NRING, NIMAGE_ROW);
@@ -319,7 +326,7 @@ void calculate_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAG
 	return;
 }
 
-void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NREF, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int id, int silent)
+void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, int NIMAGE, int NREF, int NX, int NY, int RING_LENGTH, int NRING, int OU, float STEP, int KX, int KY, float *sx, float *sy, int silent)
 {    
 	float *d_subject_image_polar, *d_ref_image_polar;
 	float *d_ccf;
@@ -360,9 +367,20 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 	int NREF_BATCH_IFFT = NREF/NIMAGE_PER_BATCH_IFFT;
 	int NREF_LEFT_BATCH_IFFT = NREF%NIMAGE_PER_BATCH_IFFT;
 
-	// Block this line if you have only one GPU
-	cudaSetDevice(id); 
-	
+/*	int device, device_count;
+	cudaGetDevice(&device);
+	cudaGetDeviceCount(&device_count);
+	cudaDeviceProp Prop;
+	cudaGetDeviceProperties(&Prop, device);
+	printf("In multi-ccf: device = %d    name = %s   device count = %d\n", device, Prop.name, device_count);
+
+	cudaError_t cudaError;
+	cudaError = cudaGetLastError();
+	if( cudaError != cudaSuccess ) {
+		fprintf(stderr, "CUDA Runtime API Error reported in multi-ccf: %s\n", cudaGetErrorString(cudaError));
+	}
+*/
+
 	cudaArray *subject_image_array[NROW], *subject_image_array_left, *ref_image_array[NROW_REF], *ref_image_array_left;
 	dim3 GridSize1(NRING, NIMAGE_ROW);
 	dim3 GridSize2(NRING, NIMAGE_LEFT);
@@ -635,13 +653,11 @@ void calculate_multiref_ccf(float *subject_image, float *ref_image, float *ccf, 
 }
 
 
-void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, float *params, int id) {
+void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, float *params) {
 	
 	float *image_padded, *d_image_padded;
 	int padded_size = (NX*2+2)*(NY*2);
-	
-	// Block this line if you have only one GPU
-	cudaSetDevice(id);
+	int im, iy;
 	
 	cufftHandle plan_R2C, plan_C2R;
 	cufftPlan2d(&plan_R2C, NX*2, NY*2, CUFFT_R2C);
@@ -653,13 +669,13 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 	cudaMalloc((void **)&d_image_padded, padded_size*NIMA*sizeof(float));
 	cudaMemset(d_image_padded, 0, padded_size*NIMA*sizeof(float));
 
-	for (int im=0; im<NIMA; im++) 
-		for (int iy=0; iy<NY; iy++)
+	for (im=0; im<NIMA; im++) 
+		for (iy=0; iy<NY; iy++)
 			memmove(image_padded+im*padded_size+(iy+NY/2)*(NX*2+2)+NX/2, image_in+im*NX*NY+iy*NX, NX*sizeof(float));
 
 	cudaMemcpy(d_image_padded, image_padded, padded_size*NIMA*sizeof(float), cudaMemcpyHostToDevice);
-	
-	for (int im=0; im<NIMA; im++) {
+
+	for (im=0; im<NIMA; im++) {
 		int base_address = im*padded_size;
 		cufftExecR2C(plan_R2C, (cufftReal *)(d_image_padded+base_address), (cufftComplex *)(d_image_padded+base_address));
 		mul_ctf<<<NX+1, NY*2>>>(d_image_padded+base_address, NX*2, NY*2, params[im*6], params[im*6+1], params[im*6+2], params[im*6+3], params[im*6+4], params[im*6+5]);
@@ -669,8 +685,8 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 	
 	cudaMemcpy(image_padded, d_image_padded, padded_size*NIMA*sizeof(float), cudaMemcpyDeviceToHost);
 
-	for (int im=0; im<NIMA; im++)
-		for (int iy=0; iy<NY; iy++)
+	for (im=0; im<NIMA; im++)
+		for (iy=0; iy<NY; iy++)
 			memmove(image_out+im*NX*NY+iy*NX, image_padded+im*padded_size+(iy+NY/2)*(NX*2+2)+NX/2, NX*sizeof(float));	
 		
 	cufftDestroy(plan_R2C);
@@ -682,19 +698,17 @@ void filter_image(float *image_in, float *image_out, int NIMA, int NX, int NY, f
 	return;
 }
 
-void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_params, float *ali_params, float *ave1, float *ave2, int id) {
+void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_params, float *ali_params, float *ave1, float *ave2) {
 
 	float *d_image_padded, *d_ave1, *d_ave2;
 	float *d_ali_params;
 	size_t* offset = (size_t *)malloc(sizeof(size_t));
 	int padded_size = (NX*2+2)*(NY*2);
+	int k, im;
 
 	int NIMAGE_ROW = 32768/NX;
 	int NROW = NIMA/NIMAGE_ROW;
 	int NIMAGE_LEFT = NIMA%NIMAGE_ROW;
-
-	// Block this line if you have only one GPU.
-	cudaSetDevice(id);
 
 	cufftHandle plan_R2C, plan_C2R;
 	cufftPlan2d(&plan_R2C, NX*2, NY*2, CUFFT_R2C);
@@ -712,7 +726,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	tex.addressMode[1] = cudaAddressModeWrap;
 
 	/* Allocate the matrix for all NIMA subject images on the video card */
-	for (int k=0; k<NROW; k++)
+	for (k=0; k<NROW; k++)
 		cudaMallocArray(&image_array[k], &channelDesc, NX, NY*NIMAGE_ROW);
 	if (NIMAGE_LEFT != 0)
 		cudaMallocArray(&image_array_left, &channelDesc, NX, NY*NIMAGE_LEFT);
@@ -723,7 +737,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	cudaMalloc((void **)&d_ave2, NX*NY*sizeof(float));
 
 	/* Copy the matrix for NIMAGE_ROW*NROW subject images to the video card */
-	for (int k=0; k<NROW; k++)  
+	for (k=0; k<NROW; k++)  
 		cudaMemcpyToArray(image_array[k], 0, 0, image+k*NIMAGE_ROW*NX*NY, NIMAGE_ROW*NX*NY*sizeof(float), cudaMemcpyHostToDevice);
 	/* Copy the matrix for NIMAGE_LEFT subject images to the video card */
 	if (NIMAGE_LEFT != 0)
@@ -734,7 +748,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 
 	cudaGetTextureReference(&texPtr, "texim_ali_params");
 
-	for (int k=0; k<NROW; k++) { 
+	for (k=0; k<NROW; k++) { 
 		cudaBindTextureToArray(tex, image_array[k], channelDesc);
 		cudaBindTexture(offset, texPtr, d_ali_params+4*NIMAGE_ROW*k, &channelDesc, NIMAGE_ROW*4*sizeof(float));
 
@@ -755,7 +769,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 
 	if (CTF == 1) {
 		/* Transform to Fourier space, multiple CTF, and transform back to real space */
-		for (int im=0; im<NIMA; im++) {
+		for (im=0; im<NIMA; im++) {
 			int base_address = im*padded_size;
 			cufftExecR2C(plan_R2C, (cufftReal *)(d_image_padded+base_address), (cufftComplex *)(d_image_padded+base_address));
 			mul_ctf<<<NX+1, NY*2>>>(d_image_padded+base_address, NX*2, NY*2, ctf_params[im*6], ctf_params[im*6+1], ctf_params[im*6+2], ctf_params[im*6+3], ctf_params[im*6+4], ctf_params[im*6+5]);
@@ -776,7 +790,7 @@ void rot_filt_sum(float *image, int NIMA, int NX, int NY, int CTF, float *ctf_pa
 	cudaFree(d_ave1);
 	cudaFree(d_ave2);
 	cudaFree(d_ali_params);
-	for (int k=0; k<NROW; k++)
+	for (k=0; k<NROW; k++)
 		cudaFreeArray(image_array[k]);
 	if (NIMAGE_LEFT != 0)
 		cudaFreeArray(image_array_left);
