@@ -1522,7 +1522,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 	}
 }
 
-EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
+EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, bool flip)
 {
 	ENTERFUNC;
 
@@ -1606,18 +1606,35 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum)
 		EMfft::real_to_complex_1d(d2 + j * nx, f2d+j*width, nx);
 	}
 
-	for (int j = 0; j < height; j++) {
-		float *f1a = f1d + j * width;
-		float *f2a = f2d + j * width;
+	if(flip == false) {
+		for (int j = 0; j < height; j++) {
+			float *f1a = f1d + j * width;
+			float *f2a = f2d + j * width;
 
-		for (int i = 0; i < width / 2; i++) {
-			float re1 = f1a[2*i];
-			float re2 = f2a[2*i];
-			float im1 = f1a[2*i+1];
-			float im2 = f2a[2*i+1];
+			for (int i = 0; i < width / 2; i++) {
+				float re1 = f1a[2*i];
+				float re2 = f2a[2*i];
+				float im1 = f1a[2*i+1];
+				float im2 = f2a[2*i+1];
 
-			f1d[j*width+i*2] = re1 * re2 + im1 * im2;
-			f1d[j*width+i*2+1] = im1 * re2 - re1 * im2;
+				f1d[j*width+i*2] = re1 * re2 + im1 * im2;
+				f1d[j*width+i*2+1] = im1 * re2 - re1 * im2;
+			}
+		}
+	} else {
+		for (int j = 0; j < height; j++) {
+			float *f1a = f1d + j * width;
+			float *f2a = f2d + j * width;
+
+			for (int i = 0; i < width / 2; i++) {
+				float re1 = f1a[2*i];
+				float re2 = f2a[2*i];
+				float im1 = f1a[2*i+1];
+				float im2 = f2a[2*i+1];
+
+				f1d[j*width+i*2] = re1 * re2 - im1 * im2;
+				f1d[j*width+i*2+1] = im1 * re2 + re1 * im2;
+			}
 		}
 	}
 

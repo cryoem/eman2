@@ -60,11 +60,13 @@ const string RotationalAlignerIterative::NAME = "rotational.iterative";
 const string RotatePrecenterAligner::NAME = "rotate_precenter";
 const string RotateTranslateAligner::NAME = "rotate_translate";
 const string RotateTranslateAlignerIterative::NAME = "rotate_translate.iterative";
+const string RotateTranslateAlignerPawel::NAME = "rotate_translate.resample";
 const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
 const string RotateFlipAligner::NAME = "rotate_flip";
 const string RotateFlipAlignerIterative::NAME = "rotate_flip.iterative";
 const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
 const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip.iterative";
+const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip.resample";
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
@@ -83,10 +85,12 @@ template <> Factory < Aligner >::Factory()
 	force_add<RotatePrecenterAligner>();
 	force_add<RotateTranslateAligner>();
 	force_add<RotateTranslateAlignerIterative>();
+	force_add<RotateTranslateAlignerPawel>();
 	force_add<RotateFlipAligner>();
 	force_add<RotateFlipAlignerIterative>();
 	force_add<RotateTranslateFlipAligner>();
 	force_add<RotateTranslateFlipAlignerIterative>();
+	force_add<RotateTranslateFlipAlignerPawel>();
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
@@ -430,7 +434,6 @@ EMData *RotationalAlignerIterative::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
 	int maxiter = params.set_default("maxiter", 3);
 	
 	Dict trans_params;
@@ -461,7 +464,7 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 		delete rottrans_align; rottrans_align = 0;
 		delete rt;
 		
-		//this minimizes interpolation errors (all images that are futher processed will be interpolated at most once)
+		//this minimizes interpolation errors (all images that are futher processed will be interpolated at most twice)
 		if(it > 0){delete moving_img;}
 		
 		moving_img = this_img->process("xform",Dict("transform",&t));  //iterate
@@ -471,6 +474,64 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 	moving_img->set_attr("xform.align2d", &t);
 	
 	return moving_img;
+}
+
+EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	if (cmp_name != "dot" && cmp_name != "ccc") throw InvalidParameterException("Resample aligner only works for dot and ccc");
+	
+	int maxtx = params.set_default("tx", 0);
+	int maxty = params.set_default("ty", 0);
+	int r1 = params.set_default("r1",-1);
+	int r2 = params.set_default("r2",-1);
+	
+	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)) throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
+	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)) throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
+	
+	float best_peak = -numeric_limits<float>::infinity();
+	int best_peak_index = 0;
+	int best_tx = 0;
+	int best_ty = 0;
+	int polarxsize = 0;
+		
+	for(int x = -maxtx; x <= maxtx; x++){
+		for(int y = -maxty; y <= maxty; y++){
+
+			EMData * to_polar = to->unwrap(r1,r2,-1,0,0,true);
+			EMData * this_img_polar = this_img->unwrap(r1,r2,-1,x,y,true);
+			EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize());
+			
+			polarxsize = this_img_polar->get_xsize();
+			
+			//take out the garbage
+			delete to_polar; to_polar = 0;
+			delete this_img_polar; this_img_polar = 0;
+	
+			float *data = cf->get_data();
+			float peak = 0;
+			int peak_index = 0;
+			Util::find_max(data, polarxsize, &peak, &peak_index);
+			delete cf; cf = 0;
+
+			if(peak > best_peak) {
+				best_peak = peak;
+				best_peak_index = peak_index;
+				best_tx = x;
+				best_ty = y;
+			}
+		}
+	}
+	
+	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
+				
+	//return the result
+	Transform tmp(Dict("type","2d","alpha",rot_angle,"tx",best_tx,"ty",best_ty));
+	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
+	rotimg->set_attr("xform.align2d",&tmp);
+	
+	return rotimg;
+	
 }
 
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
@@ -653,6 +714,81 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 	return result;
 }
 
+EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	if (cmp_name != "dot" && cmp_name != "ccc") throw InvalidParameterException("Resample aligner only works for dot and ccc");
+	
+	int maxtx = params.set_default("tx", 0);
+	int maxty = params.set_default("ty", 0);
+	int r1 = params.set_default("r1",-1);
+	int r2 = params.set_default("r2",-1);
+	
+	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)) throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
+	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)) throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
+	
+	float best_peak = -numeric_limits<float>::infinity();
+	int best_peak_index = 0;
+	int best_tx = 0;
+	int best_ty = 0;
+	int polarxsize = 0;
+	bool flip = false;
+	
+	for(int x = -maxtx; x <= maxtx; x++){
+		for(int y = -maxty; y <= maxty; y++){
+
+			EMData * to_polar = to->unwrap(r1,r2,-1,0,0,true);
+			EMData * this_img_polar = this_img->unwrap(r1,r2,-1,x,y,true);
+			EMData * cfflip = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize(), false, true);
+			EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize());
+			
+			polarxsize = this_img_polar->get_xsize();
+			
+			//take out the garbage
+			delete to_polar; to_polar = 0;
+			delete this_img_polar; this_img_polar = 0;
+	
+			float *data = cf->get_data();
+			float peak = 0;
+			int peak_index = 0;
+			Util::find_max(data, polarxsize, &peak, &peak_index);
+			delete cf; cf = 0;
+
+			if(peak > best_peak) {
+				best_peak = peak;
+				best_peak_index = peak_index;
+				best_tx = x;
+				best_ty = y;
+				flip = false;
+			}
+			
+			data = cfflip->get_data();
+			Util::find_max(data, polarxsize, &peak, &peak_index);
+			delete cfflip; cfflip = 0;
+
+			if(peak > best_peak) {
+				best_peak = peak;
+				best_peak_index = peak_index;
+				best_tx = x;
+				best_ty = y;
+				flip = true;
+			}
+		}
+	}
+	
+	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
+				
+	//return the result
+	Transform tmp(Dict("type","2d","alpha",rot_angle,"tx",best_tx,"ty",best_ty));
+	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
+	rotimg->set_attr("xform.align2d",&tmp);
+	if(flip == true) {
+		rotimg->process_inplace("xform.flip",Dict("axis", "x"));
+	}
+	
+	return rotimg;
+	
+}
 
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const

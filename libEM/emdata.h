@@ -125,6 +125,7 @@ namespace EMAN
 
 		/**# makes an image of the specified size, either real or complex.
 		 * For complex image, the user would specify the real-space dimensions.
+		 * @ingroup CUDA_ENABLED
 		 * @param nx size for x dimension
 		 * @param ny size for y dimension
 		 * @param nz size for z dimension, default 1
@@ -134,23 +135,23 @@ namespace EMAN
 		/** Construction from a data pointer, dimensions must be supplied.
 		 * Takes possession of the pointer.
 		 * data pointer must be allocated using malloc!
-		 *@param data a pointer to the pixel data which is stored in memory. Takes possession
-		 *@param nx the number of pixels in the x direction
-		 *@param ny the number of pixels in the y direction
-		 *@param nz the number of pixels in the z direction
-		 *@param attr_dict attribute dictionary for this image
+		 * @param data a pointer to the pixel data which is stored in memory. Takes possession
+		 * @param nx the number of pixels in the x direction
+		 * @param ny the number of pixels in the y direction
+		 * @param nz the number of pixels in the z direction
+		 * @param attr_dict attribute dictionary for this image
 		 */
 		EMData(float* data, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
 		
 		/** Construction from a data pointer for usage in cuda, dimensions must be supplied.
 		 * Takes possession of the pointer.
 		 * data pointer must be allocated using malloc!
-		 *@param data a pointer to the pixel data which is stored in memory. Takes possession
-		 *@param cudadata a pointer to the pixel data which is stored in cudamemory. Takes possession
-		 *@param nx the number of pixels in the x direction
-		 *@param ny the number of pixels in the y direction
-		 *@param nz the number of pixels in the z direction
-		 *@param attr_dict attribute dictionary for this image
+		 * @ingroup CUDA_ENABLED
+		 * @param data a pointer to the pixel data which is stored in memory. Takes possession
+		 * @param cudadata a pointer to the pixel data which is stored in cudamemory. Takes possession
+		 * @param nx the number of pixels in the x direction
+		 * @param ny the number of pixels in the y direction
+		 * @param nz the number of pixels in the z direction
 		 */
 		EMData(float* data, float* cudadata, const int nx, const int ny, const int nz, const Dict& attr_dict = Dict());
 		//I do not wish to use a default dict if none is provided. Copying Dicts arround is really expensive in CUDA.
@@ -172,7 +173,6 @@ namespace EMAN
 
 		/** Get an inclusive clip. Pads to fill if larger than this image.
 		 * .
-		 * @ingroup CUDA_ENABLED
 		 * @param area The clip area, can be 2D/3D
 		 * @param fill the value to assign new pixels outside the area of the original image
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
@@ -452,7 +452,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is 3D.
 		 * @return The result image containing the CCF.
 		 */
-		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false);
+		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false, bool flip = false);
 
 
 		/** Makes a 'rotational footprint', which is an 'unwound'
@@ -726,18 +726,6 @@ namespace EMAN
 		 */
 		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
 
-//#ifdef EMAN2_USING_CUDA
-
-//		/** cuda equivalent of get_cut_slice
-//		 * @ingroup CUDA_ENABLED
-//		 * @param tr orientation of the slice as encapsulated in a Transform object
-//		 * @exception ImageDimensionException If this image is not 3D.
-//		 * @exception ImageFormatException If this image is complex
-//		 * @author David Woolford (adapted from an original version by Steve Ludtke)
-//		 * @date Feb 20009
-//		 */
-//		EMData* cut_slice_cuda(const Transform& tr);
-//#endif // EMAN2_USING_CUDA
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
 		 * the nearest neighbor.

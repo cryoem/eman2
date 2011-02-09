@@ -212,9 +212,9 @@ namespace EMAN
 	};
 
 	/** rotational alignment using angular correlation
-	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding
-	 * @ingroup CUDA_ENABLED
-     */
+	* @ingroup CUDA_ENABLED
+	* @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding
+        */
 	class RotationalAligner:public Aligner
 	{
 	  public:
@@ -253,10 +253,12 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	/** rotational alignment using the iterative method
+	/** rotational alignment using the iterative method (in this case we only do one iteration b/c we are not doing a translation.
+	* The advantage of this over the 'regular' rotational alinger is that this is done in real space and does not use invariants.
 	 * @param r1 inner ring
 	 * @param r2 outer ring
-	 * @ingroup CUDA_ENABLED
+	 * @author John Flanagan
+	 * @date Oct 2010
 	*/
 	class RotationalAlignerIterative:public Aligner
 	{
@@ -333,11 +335,11 @@ namespace EMAN
 	};
 
 	/** rotational, translational alignment
+	 * @ingroup CUDA_ENABLED
 	 * @param maxshift Maximum translation in pixels
 	 * @param nozero Zero translation not permitted (useful for CCD images)
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
-	 * @ingroup CUDA_ENABLED
-     */
+        */
 	class RotateTranslateAligner:public Aligner
 	{
 	  public:
@@ -378,14 +380,16 @@ namespace EMAN
 		static const string NAME;
 	};
 	
-	/** rotational, translational alignment SPIDER style
+	/** Iterative rotational, translational alignment.  Basically, we find the best translation, and move to that pointer
+	* then we find the best rotation and rotate to that point. Next we iterate X times.
 	 * @param maxshift Maximum translation in pixels
 	 * @param r1 inner ring
 	 * @param r2 outer ring
 	 * @param maxiter maximum number of alignment iterations
 	 * @param nozero Zero translation not permitted (useful for CCD images)
-	 * @ingroup CUDA_ENABLED
-     */
+	 * @author John Flanagan
+	 * @date Oct 2010
+        */
 	class RotateTranslateAlignerIterative:public Aligner
 	{
 	  public:
@@ -422,6 +426,55 @@ namespace EMAN
 			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+
+	/** Rotational, translational alignment by resampling to polar coordinates.  
+	* translation if found by varing to origin using for polar coordinate resampling in real space
+	 * @param tx maximum transltion in x direction, must by less than (n/2 - 1 - r2)
+	 * @param tu maximum transltion in y direction, must by less than (n/2 - 1 - r2)
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @author John Flanagan
+	 * @date Feb 8th 2011
+        */
+	class RotateTranslateAlignerPawel:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and translation align by resampling to polar coordinates in real space.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateAlignerPawel();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			//d.put("usedot", EMObject::INT);
+			d.put("tx", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("ty", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
 		}
 		
@@ -470,9 +523,9 @@ namespace EMAN
 	};
 
 	/** rotational and flip alignment
+	 * @ingroup CUDA_ENABLED
 	 * @param imask
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
-	 * @ingroup CUDA_ENABLED
      */
 	class RotateFlipAligner:public Aligner
 	{
@@ -514,11 +567,11 @@ namespace EMAN
 		static const string NAME;
 	};
 
-		/** rotational and flip alignment, iterative style
-
-	 * @ingroup CUDA_ENABLED
+	/** rotational and flip alignment, iterative style
 	 * @param r1 inner ring
 	 * @param r2 outer ring
+	 * @author John Flanagan
+	 * @date Oct 2010
 	 */
 	class RotateFlipAlignerIterative:public Aligner
 	{
@@ -564,7 +617,6 @@ namespace EMAN
 	 * @param usedot
 	 * @param maxshift Maximum translation in pixels
 	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
-	 * @ingroup CUDA_ENABLED
 	*/
 	class RotateTranslateFlipAligner:public Aligner
 	{
@@ -616,7 +668,8 @@ namespace EMAN
 	 * @param r2 outer ring
 	 * @param maxiter maximum number of alignment iterations
 	 * @param maxshift Maximum translation in pixels
-	 * @ingroup CUDA_ENABLED
+	 * @author John Flanagan
+	 * @date Oct 2010
 	*/
 	class RotateTranslateFlipAlignerIterative:public Aligner
 	{
@@ -655,6 +708,55 @@ namespace EMAN
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
+	/** Rotational, translational alignment by resampling to polar coordinates.  
+	* translation if found by varing to origin using for polar coordinate resampling in real space
+	 * @param tx maximum transltion in x direction, must by less than (n/2 - 1 - r2)
+	 * @param tu maximum transltion in y direction, must by less than (n/2 - 1 - r2)
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @author John Flanagan
+	 * @date Feb 9th 2011
+        */
+	class RotateTranslateFlipAlignerPawel:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment, translation align, and flip by resampling to polar coordinates in real space.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateFlipAlignerPawel();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			//d.put("usedot", EMObject::INT);
+			d.put("tx", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("ty", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
 		}
 		
@@ -805,6 +907,7 @@ namespace EMAN
 	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
 	 * minima if the two 3D models are already roughly aligned. 
 	 * NOTE: Currently this algorith is not working!!!!!!
+	 * @ingroup CUDA_ENABLED
 	 * @author David Woolford and John Flanagan
 	 * @date June 23 2009 and Oct 8th 2010
 	 */
@@ -861,6 +964,7 @@ namespace EMAN
 	 * In addition the simplex varies translation. Using quaternions avoids gimbal lock. 
 	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
 	 * minima if the two 3D models are already roughly aligned.
+	 * @ingroup CUDA_ENABLED
 	 * @param xform.align3d The Transform storing the starting guess. If unspecified the identity matrix is used
 	 * @param stepx The initial simplex step size in x
 	 * @param stepy The initial simplex step size in y
@@ -924,7 +1028,23 @@ namespace EMAN
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
 	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
 	 * but very useful  if you want to search in a specific, small, local area.
-	 * @author David Woolford (ported from Mike Schmid's e2tomohuntThis is the increment applied to the inplane rotationer code - Mike Schmid is the intellectual author)
+	 * @ingroup CUDA_ENABLED
+	 * @param daz The angle increment in the azimuth direction
+	 * @param laz Lower bound for the azimuth direction
+	 * @param uaz Upper bound for the azimuth direction
+	 * @param dphi The angle increment in the phi direction
+	 * @param lphi Lower bound for the phi direction
+	 * @param uphi Upper bound for the phi direction
+	 * @param dalt The angle increment in the altitude direction
+	 * @param lalt Lower bound for the altitude direction
+	 * @param ualt Upper bound for the altitude direction
+	 * @param dotrans Do a translational search
+	 * @param search The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive
+	 * @param searchx The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author David Woolford and John Flanagan (ported from Mike Schmid's e2tomohuntThis is the increment applied to the inplane rotationer code - Mike Schmid is the intellectual author)
 	 * @date June 23 2009
 	 */
 	class RT3DGridAligner:public Aligner
@@ -987,8 +1107,22 @@ namespace EMAN
 
 	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
 	 * can also make use of different OrientationGenerators (random, for example)
-	 * 160-180% more efficient than the RT3DGridAligner
-	 * @author David Woolford
+	 * 160-180% more efficient than the RT3DGridAlignerv
+	 * @ingroup CUDA_ENABLED
+	 * @param sym The symmtery to use as the basis of the spherical sampling
+	 * @param orietgen Advanced. The orientation generation strategy
+	 * @param delta Angle the separates points on the sphere. This is exclusive of the 'n' paramater
+	 * @param n An alternative to the delta argument, this is the number of points you want generated on the sphere
+	 * @param dphi The angle increment in the phi direction
+	 * @param lphi Lower bound for the phi direction
+	 * @param uphi Upper bound for the phi direction
+	 * @param dotrans Do a translational search
+	 * @param search The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive
+	 * @param searchx The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author David Woolford and John Flanagan
 	 * @date June 23 2009
 	 */
 	class RT3DSphereAligner:public Aligner

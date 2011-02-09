@@ -338,6 +338,7 @@ namespace EMAN
 	 *
 	 *
 	 * - Fourier reconstructor usage
+	 * @ingroup CUDA_ENABLED
 	 *@code
 	 *	Reconstructor* r = Factory<Reconstructor>::get("fourier", params);
 	 *	r->setup();

@@ -46,7 +46,6 @@ public:
  * image. the current image is not changed. The result is in
  * real/imaginary format.
  * @return The FFT of the current image in real/imaginary format.
- * @ingroup CUDA_ENABLED
  */
 EMData *do_fft() const;
 
@@ -56,6 +55,7 @@ EMData *do_fft() const;
  * image. the current image is not changed. The result is in
  * real/imaginary format and exists only on the GPU
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_fft_cuda(); // I am not using const b/c this function does modify cuda specific EMData members...
 
@@ -63,6 +63,7 @@ EMData *do_fft_cuda(); // I am not using const b/c this function does modify cud
  * image. the current image is not changed. The result is in
  * real/imaginary format and exists only on the GPU
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_fft_inplace_cuda();
 
@@ -70,6 +71,7 @@ EMData *do_fft_inplace_cuda();
  * image. The result exists only on the GPU
  * @param preserve_input whether or not this EMData object should be preserved. If this is unecessary than we can avoid a copy and run faster
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_ift_cuda();
 
@@ -77,6 +79,7 @@ EMData *do_ift_cuda();
  * image inplace. The result exists only on the GPU
  * @param preserve_input whether or not this EMData object should be preserved. If this is unecessary than we can avoid a copy and run faster
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
+ * @ingroup CUDA_ENABLED
  */
 EMData *do_ift_inplace_cuda();
 #endif //EMAN2_USING_CUDA
@@ -96,7 +99,6 @@ EMData* do_fft_inplace();
  *
  * @exception ImageFormatException If the image is not a complex image.
  * @return The current image's inverse fourier transform image.
- * @ingroup CUDA_ENABLED
  */
 EMData *do_ift();
 
@@ -173,18 +175,15 @@ void render_amp24(int x, int y, int xsize, int ysize,
 
 
 /** convert the complex image from real/imaginary to amplitude/phase
- * @ingroup CUDA_ENABLED
 */
 void ri2ap();
 
 /** convert the complex image from amplitude/phase to real/imaginary
- * @ingroup CUDA_ENABLED
  * */
 void ap2ri();
 
 /** convert the complex image from real/imaginary to Intensity/0.
 This conversion cannot be reversed, and the image remains marked as R/I
- * @ingroup CUDA_ENABLED
 */
 void ri2inten();
 

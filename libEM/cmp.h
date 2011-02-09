@@ -148,6 +148,7 @@ namespace EMAN
 	 * the mask are included in the calculation of averages.
 	 *
 	 * For complex images, this routine currently bails.
+	 * @ingroup CUDA_ENABLED
 	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu)
 	 * @date 2005-10-03
 	 * @param negative Returns -1 * ccc, default true
@@ -262,6 +263,7 @@ namespace EMAN
 
 	/** Use dot product of 2 same-size images to do the comparison.  // Added mask option PAP 04/23/06
 	* For complex images, it does not check r/i vs a/p.
+	* @ingroup CUDA_ENABLED
 	* @author Steve Ludtke (sludtke@bcm.tmc.edu)
 	* @date 2005-07-13
 	* @param negative Returns -1 * dot product, default true
@@ -303,6 +305,7 @@ namespace EMAN
         * in an effort to remove the effects of the missing wedge. Somewhat of a heuristic solution, but it seems
         * to work. Basiaclly it relies on the observation that 'good' matchs will conentrate the correlation
         * signal in the peak, wheras 'bad' correlations will distribute the signal.
+	* @ingroup CUDA_ENABLED
 	* @author John Flanagan (a port of Mike Schmid's code - Mike Schmid is the intellectual author)
 	* @date 2010-10-18
 	* @param norm Normalize the ccf (you need to do this if a missing wedge is present)

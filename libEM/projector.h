@@ -298,8 +298,9 @@ namespace EMAN
 	};
 
 	/** Fast real-space 3D projection.
+	 * @ingroup CUDA_ENABLED
 	 * @param Transform object used for projection
-     */
+        */
 	class StandardProjector:public Projector
 	{
 	  public:

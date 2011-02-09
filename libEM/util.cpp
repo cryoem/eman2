@@ -828,7 +828,7 @@ void Util::find_max(const float *data, size_t nitems, float *max_val, int *max_i
 		}
 	}
 
-	*max_val = (float)m;
+	*max_val = (float)max;
 
 	if (max_index) {
 		*max_index = m;
