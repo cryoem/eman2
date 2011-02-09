@@ -226,65 +226,56 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
     
     centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
     particles = []
+    if gridding == True:
+        assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
+        gr_M = int(round(px_width)) + 20
+        gr_npad = 2
+        gr_N = gr_M*gr_npad
+        # support of the window
+        gr_K = 6
+        gr_alpha = 1.75
+        gr_r = gr_M/2
+        gr_v = gr_K/2.0/gr_N
+	from EMAN2 import Util
+        gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
+	nx = micrograph.get_xsize()
+	ny = micrograph.get_ysize()
+	micrograph = Util.pad(micrograph,nx +20 , ny +20, 1, 0, 0, 0,"circumference")
+	nx = nx + 20
+	ny = ny + 20
+        
     for centroid in centroids:
         tr = Transform()
         tr.set_trans(centroid)
         tr.set_rotation({"type":"2d", "alpha":rot_angle})
 
         ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
+	
+	    
         # liner interpolation for rotation
         if gridding == False:
         
-                ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+            ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
         else:
-                nx = micrograph.get_xsize()
-                ny = micrograph.get_ysize()
-                assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
-                
-                side1 = int(round(px_width))
-                
-                diff = 20
-                
-                if(  centroid[1] <= ( side1//2+diff//2) ):                 
-                        side = side1
-                elif (centroid[1] >= ( ny-side1//2-diff//2)):
-                        side = side1
-                else:
-                        side = side1 + diff
-                
-                #from EMAN2_cppwrap import Util, Processor
-                from EMAN2 import Util, Processor
-                
-                ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] - nx/2)), int (round(centroid[1] - ny/2)), 0) 
-                nx_new = ptcl.get_xsize()
-                ny_new = ptcl.get_ysize()
-                #print side1, side
-                # do rotation using gridding method
-                                
-                gr_M = ptcl.get_xsize()
-                gr_npad = 2
-                gr_N = gr_M*gr_npad
-                # support of the window
-                gr_K = 6
-                gr_alpha = 1.75
-                gr_r = gr_M/2
-                gr_v = gr_K/2.0/gr_N
-                gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
-                # first pad it with zeros in Fourier space
-                gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
-                params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
-                  "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
-                gr_q = Processor.EMFourierFilter(gr_q, params)
-                params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
-                "cutoff_abs" : 0.25, "dopad" : False}
-                gr_q = Processor.EMFourierFilter(gr_q, params)
-                gr_q2 = gr_q.do_ift()        
-                
-                ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
-                #cut it
-                
-                ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
-                        
+            side1 = int(round(px_width))
+	    side = side1 + 20
+            from EMAN2 import Util, Processor
+            ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] + 10 - nx/2)), int (round(centroid[1] +10 - ny/2)), 0) 
+            mean1 = ptcl.get_attr('mean')
+	    ptcl = ptcl - mean1
+		# first pad it with zeros in Fourier space
+            gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
+            params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	    "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
+            gr_q = Processor.EMFourierFilter(gr_q, params)
+            params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : 0.25, "dopad" : False}
+            gr_q = Processor.EMFourierFilter(gr_q, params)
+            gr_q2 = gr_q.do_ift()	
+            ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
+            #cut it
+	    ptcl = ptcl + mean1
+            ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
         ptcl["ptcl_helix_coords"] = tuple(helix_coords)
         ptcl["ptcl_source_coord"] = tuple(centroid)
         ptcl["xform.align2d"] = tr
