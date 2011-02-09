@@ -99,7 +99,7 @@ inline void set_data(float* data, const int x, const int y, const int z) {
 	rdata = data;
 	nx = x; ny = y; nz = z;
 	nxy = nx*ny;
-	nxyz = nx*ny*nz;
+	nxyz = (size_t)nx*ny*nz;
 	update();
 }
 

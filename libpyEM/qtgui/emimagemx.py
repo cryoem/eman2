@@ -2363,8 +2363,12 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.busy=0
 
 	def update_brightness_contrast(self):
-		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
+		try: 
+			b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
+			c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
+		except:
+			b=0
+			c=0.5
 		self.brts.setValue(-b,1)
 		self.conts.setValue(1.0-c,1)
 		

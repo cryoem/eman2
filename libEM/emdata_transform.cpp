@@ -407,7 +407,7 @@ EMData *EMData::do_ift_inplace()
 #if defined	FFTW2 || defined FFTW3 	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
-	float scale = 1.0f / (nxo * ny * nz);
+	float scale = 1.0f / ((size_t)nxo * ny * nz);
 	mult(scale);
 #endif //FFTW2 || FFTW3
 

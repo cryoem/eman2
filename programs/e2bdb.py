@@ -380,8 +380,19 @@ def db_cleanup(force=False):
 			return
 
 	# ok, properly close the cache and delete it
-	d=EMAN2DB()
-	d.close()		# Properly 'close' the environment before we delete it
+	try:
+		d=EMAN2DB()
+		d.close()		# Properly 'close' the environment before we delete it
+	except:
+		traceback.print_exc()
+		print """
+*******************
+
+A serious error occured in the database cache. This normally happens if you try to access a corrupt database file. Please follow the following steps to minimize the chance of data loss:
+1. run "db_recover -h %s"   (note, this may be called db4.8_recover or something similar if not using the EMAN2 binary distribution)
+2. run e2bdb.py -c again
+3. If you are aware which image file caused this error to occur in the first place, you can try accessing it again. If it triggers this same failure, repeat steps 1 and 2 then manually delete the offending image database inside the EMAN2DB directory"""%path
+		system.exit(1)
 	
 	if(sys.platform == 'win32'):
 		import shutil

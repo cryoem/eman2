@@ -32,6 +32,7 @@
 
 import sys
 from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
 
 def clamp(x0,val,x1):
 	return int(max(min(val,x1),x0))
@@ -41,12 +42,12 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent, range=None, label=None, value=0,labelwidth=30):
+	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
-		if range : self.range=list(range)
-		else : self.range=[0,1.0]
+		if rng : self.rng=list(rng)
+		else : self.rng=[0,1.0]
 		self.value=value
 		self.ignore=0
 		self.intonly=0
@@ -107,18 +108,18 @@ class ValSlider(QtGui.QWidget):
 
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
-		self.range=[float(minv),float(maxv)]
+		self.rng=[float(minv),float(maxv)]
 		self.updates()
-		#self.slider.setRange(*self.range)
+		#self.slider.setRange(*self.rng)
 		
-	def getRange(self): return self.range
+	def getRange(self): return self.rng
 
 	def setValue(self,val,quiet=0):
-		if val <= self.range[0]:
-			self.range[0] = val
+		if val <= self.rng[0]:
+			self.rng[0] = val
 			#self.updates()
-		if val >= self.range[1]:
-			self.range[1] = val
+		if val >= self.rng[1]:
+			self.rng[1] = val
 			#self.updates()
 		
 		if self.intonly : 
@@ -144,11 +145,11 @@ class ValSlider(QtGui.QWidget):
 		x=self.text.text()
 		if len(x)==0 : return
 		if x[0]=='<' : 
-			try: self.range[1]=float(x[1:])
+			try: self.rng[1]=float(x[1:])
 			except: pass
 			self.updateboth()
 		elif x[0]=='>' : 
-			try: self.range[0]=float(x[1:])
+			try: self.rng[0]=float(x[1:])
 			except: pass
 			self.updateboth()
 		else:
@@ -168,7 +169,7 @@ class ValSlider(QtGui.QWidget):
 	def sliderChange(self,x):
 		if self.ignore : return
 		ov=self.value
-		self.value=(self.slider.value()/4095.0)*(self.range[1]-self.range[0])+self.range[0]
+		self.value=(self.slider.value()/4095.0)*(self.rng[1]-self.rng[0])+self.rng[0]
 		if self.intonly : 
 			self.value=int(self.value+.5)
 			if self.value==ov : return
@@ -189,8 +190,8 @@ class ValSlider(QtGui.QWidget):
 		
 	def updates(self):
 		self.ignore=1
-#		print "updates: ",self.value,self.range
-		self.slider.setValue(clamp(0,(self.value-self.range[0])/float(self.range[1]-self.range[0])*4095.0,4095.0))
+#		print "updates: ",self.value,self.rng
+		self.slider.setValue(clamp(0,(self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0,4095.0))
 		self.ignore=0
 
 	def updatet(self):
@@ -206,12 +207,12 @@ class ValBox(QtGui.QWidget):
 	"""A ValSlider without the slider part. Everything is the same except that the slider doesn't exist,
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
-	def __init__(self, parent, range=None, label=None, value=0,labelwidth=30):
+	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
-		if range : self.range=list(range)
-		else : self.range=[0,1.0]
+		if rng : self.rng=list(rng)
+		else : self.rng=[0,1.0]
 		self.value=value
 		self.ignore=0
 		self.intonly=0
@@ -254,18 +255,18 @@ class ValBox(QtGui.QWidget):
 
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
-		self.range=[float(minv),float(maxv)]
+		self.rng=[float(minv),float(maxv)]
 		self.updates()
-		#self.slider.setRange(*self.range)
+		#self.slider.setRange(*self.rng)
 		
-	def getRange(self): return self.range
+	def getRange(self): return self.rng
 
 	def setValue(self,val,quiet=0):
-		if val <= self.range[0]:
-			self.range[0] = val
+		if val <= self.rng[0]:
+			self.rng[0] = val
 			#self.updates()
-		if val >= self.range[1]:
-			self.range[1] = val
+		if val >= self.rng[1]:
+			self.rng[1] = val
 			#self.updates()
 		
 		if self.intonly : 
@@ -291,11 +292,11 @@ class ValBox(QtGui.QWidget):
 		x=self.text.text()
 		if len(x)==0 : return
 		if x[0]=='<' : 
-			try: self.range[1]=float(x[1:])
+			try: self.rng[1]=float(x[1:])
 			except: pass
 			self.updateboth()
 		elif x[0]=='>' : 
-			try: self.range[0]=float(x[1:])
+			try: self.rng[0]=float(x[1:])
 			except: pass
 			self.updateboth()
 		else:
@@ -324,3 +325,144 @@ class ValBox(QtGui.QWidget):
 		
 	def updateboth(self):
 		self.updatet()
+		
+class RangeSlider(QtGui.QWidget):
+	"""This is an int slider with two values in a fixed range (v0,v1) in a fixed range (min,max). Each value
+	can be set individually or the pair can be moved up and down together. The values are displayed at
+	the top and bottom of the vertical slider.
+	"""
+	def __init__(self, parent=None, rng=(0,100), value=(25,75)):
+		#if not parent: raise Exception,"ValSliders must have parents"
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.rng=tuple(rng)
+		self.value=tuple(value)
+		self.mdownloc=None
+		if len(rng)!=2 or len(value)!=2 : raise Exception,"RangeSlider needs a valid range and value)"
+
+		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(7))
+		sizePolicy.setHorizontalStretch(0)
+		sizePolicy.setVerticalStretch(7)
+		sizePolicy.setHeightForWidth(False)
+		self.setSizePolicy(sizePolicy)
+#		self.setMinimumSize(QtCore.QSize(12,80))
+
+		#self.vboxlayout = QtGui.QVBoxLayout(self)
+		#self.vboxlayout.setMargin(0)
+		#self.vboxlayout.setSpacing(6)
+		#self.vboxlayout.setObjectName("vboxlayout")
+		
+		## Label on top
+		#self.toptxt = QtGui.QLabel(str(value[1]))
+		#self.vboxlayout.addWidget(self.toptxt)
+		
+		## canvas in the middle
+		#self.slider = QtGui.QWidget(self)	
+		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(7))
+		#sizePolicy.setHorizontalStretch(0)
+		#sizePolicy.setVerticalStretch(7)
+		#sizePolicy.setHeightForWidth(False)
+		#self.slider.setSizePolicy(sizePolicy)
+		#self.slider.setMinimumSize(QtCore.QSize(15,100))
+		#self.vboxlayout.addWidget(self.slider)
+		
+		## label on the bottom
+		#self.bottxt = QtGui.QLabel(str(value[0]))
+		#self.vboxlayout.addWidget(self.bottxt)
+		
+		#self.text = QtGui.QLineEdit(self)
+		
+		
+		
+		#QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
+		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
+		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderReleased()"), self.sliderReleased)
+		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderPressed()"), self.sliderPressed)
+		
+		#self.updateboth()
+
+	def sizeHint(self): return QtCore.QSize(15,100)
+
+	def paintEvent(self,event):
+		"""Redraws the widget"""
+		p=QtGui.QPainter(self)
+		p.setPen(Qt.gray)
+		p.drawRect(1,1,self.size().width()-2,self.size().height()-2)
+		p.setPen(Qt.black)
+		p.drawRect(0,0,self.size().width()-2,self.size().height()-2)
+		p.setPen(Qt.blue)
+		p.drawLine(3,self.vtoy(self.value[0]),self.size().width()-4,self.vtoy(self.value[0]))
+		p.drawLine(3,self.vtoy(self.value[1]),self.size().width()-4,self.vtoy(self.value[1]))
+		p.drawLine(self.size().width()/2,self.vtoy(self.value[0]),self.size().width()/2,self.vtoy(self.value[1]))
+		
+	def mousePressEvent(self,event):
+		y=event.y()
+		v0y=self.vtoy(self.value[0])
+		v1y=self.vtoy(self.value[1])
+		
+		print y,v0y,v1y
+		
+		# outside the current range, no effect
+		if y>v0y+3 : return
+		if y<v1y-3 : return
+		
+		# middle region, drag both v0 and v1
+		if (v0y-v1y<6 and y<v0y and y>v1y) or (y<v0y-3 and y>v1y+3) :
+			self.mdownloc=(3,event.x(),event.y(),self.value[0],self.value[1])
+		
+		# drag v0
+		elif (y>=v0y-3) :
+			self.mdownloc=(1,event.x(),event.y(),self.value[0],self.value[1])
+		
+		# drag v1
+		else :
+			self.mdownloc=(2,event.x(),event.y(),self.value[0],self.value[1])
+			
+	def mouseMoveEvent(self,event):
+		y=event.y()
+		if self.mdownloc!=None :
+			v0=self.mdownloc[3]
+			v1=self.mdownloc[4]
+			
+			if self.mdownloc[0]&1 :
+				v0=self.ytov(y-self.mdownloc[2]+self.vtoy(self.mdownloc[3]))
+
+			if self.mdownloc[0]&2 :
+				v1=self.ytov(y-self.mdownloc[2]+self.vtoy(self.mdownloc[4]))
+
+			if v0>=self.rng[0] and v1<=self.rng[1] : self.setValue(v0,v1)
+
+#			print self.value
+			
+	def mouseReleaseEvent(self,event):
+		self.mdownloc=None
+		
+	def vtoy(self,value):
+		"returns the y screen coordinate corresponding to value"
+		h=self.size().height()
+		return h-int((h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])+3)
+		
+	def ytov(self,y):
+		"returns the value corresponding to the y screen coordinate"
+		h=self.size().height()
+		return int((h-y+3)*(self.rng[1]-self.rng[0])/(h-4)+self.rng[0])
+
+
+	def setRange(self,minv,maxv,quiet=False):
+		if maxv<=minv : maxv=minv+.001
+		self.rng=(float(minv),float(maxv))
+		self.setValue(self.value[0],self.value[1],quiet)
+
+	def getRange(self): return self.rng
+
+	def setValue(self,v0,v1,quiet=False):
+		v0=clamp(self.rng[0],v0,self.rng[1])
+		v1=clamp(self.rng[0],v1,self.rng[1])
+		if v1<=v0 : v1=v0+1
+		self.value=(v0,v1)
+		self.update()
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"), self.value)
+
+	def getValue(self):
+		return self.value
+	

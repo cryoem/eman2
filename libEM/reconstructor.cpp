@@ -270,7 +270,7 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	float wfilt=0.0;
 	if (wiener) wfilt=1.0;		
 	
-	for (int i = 0; i < subnx * subny * subnz; i += 2) {
+	for (size_t i = 0; i < (size_t)subnx * subny * subnz; i += 2) {
 		float d = norm[i/2];
 		if (sqrt_damp) d*=sqrt(d);
 		if (d == 0) {
@@ -291,8 +291,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 			for (int y=1; y<=ny; y++) {
 				if (y==0 && z==0) continue;
 				// x=0
-				int i=(y%ny)*subnx+(z%nz)*subnx*subny;
-				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny;
+				size_t i=(size_t)(y%ny)*subnx+(z%nz)*subnx*subny;
+				size_t i2=(size_t)(ny-y)*subnx+((nz-z)%nz)*subnx*subny;
 				float ar=(rdata[i]+rdata[i2])/2.0f;
 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;
@@ -308,8 +308,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 			for (int y=1; y<=ny; y++) {
 				if (y==0 && z==0) continue;
 				// x=0
-				int i=(y%ny)*subnx+(z%nz)*subnx*subny+subnx-2;
-				int i2=(ny-y)*subnx+((nz-z)%nz)*subnx*subny+subnx-2;
+				size_t i=(size_t)(y%ny)*subnx+(z%nz)*subnx*subny+subnx-2;
+				size_t i2=(size_t)(ny-y)*subnx+((nz-z)%nz)*subnx*subny+subnx-2;
 				float ar=(rdata[i]+rdata[i2])/2.0f;
 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;
@@ -415,6 +415,7 @@ void FourierReconstructor::setup()
 	image->set_complex(true);
 	image->set_fftodd(is_fftodd);
 	image->set_ri(true);
+//	printf("%d %d %d\n\n",subnx,subny,subnz);
 	image->to_zero();
 
 	if (params.has_key("subvolume")) {
@@ -438,7 +439,7 @@ void FourierReconstructor::setup()
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
 		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
-		cout << "You will require approximately " << setprecision(3) << (subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+		printf ("You will require approximately %1.3g GB of memory to reconstruct this volume",((float)subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0);
 	}
 }
 

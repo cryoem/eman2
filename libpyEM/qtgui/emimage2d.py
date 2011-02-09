@@ -126,9 +126,15 @@ class EMImage2DWidget(EMGLWidget):
 		if data == None: data = self.fft
 		
 		if data != None and  data.get_xsize()<640 and data.get_ysize()<640: 
-			return (data.get_xsize()+12,data.get_ysize()+12)
+			try : return (data.get_xsize()+12,data.get_ysize()+12)
+			except : return (640,640)
 		else:
 			return (640,640)
+	
+	def sizeHint(self):
+		print self.get_parent_suggested_size()
+		if self.data==None : return QtCore.QSize(512,512)
+		return QtCore.QSize(*self.get_parent_suggested_size())
 	
 	allim=WeakKeyDictionary()
 	
@@ -145,7 +151,12 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
-		
+
+		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(7))
+		#sizePolicy.setHorizontalStretch(7)
+		#sizePolicy.setVerticalStretch(7)
+		#sizePolicy.setHeightForWidth(False)
+		#self.setSizePolicy(sizePolicy)
 		
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
@@ -234,7 +245,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 		
 		if image : self.set_data(image)
-		else:self.__load_display_settings_from_db()
+#		else:self.__load_display_settings_from_db()
 	
 	def qt_parent_destroyed(self,object):
 		self.under_qt_control = False
@@ -329,8 +340,8 @@ class EMImage2DWidget(EMGLWidget):
 			self.get_parent().setWindowTitle(f)
 		except:pass
 		
-		if load_cache_settings:
-			self.__load_display_settings_from_db()
+		#if load_cache_settings:
+			#self.__load_display_settings_from_db()
 		
 	def get_file_name(self):
 		return self.file_name
@@ -371,8 +382,8 @@ class EMImage2DWidget(EMGLWidget):
 	def set_data(self,incoming_data,file_name="",retain_current_settings=True):
 		"""You may pass a single 2D image or a list of images"""
 		from emimagemx import EMDataListCache,EMLightWeightParticleCache
-		if self.data != None and self.file_name != "":
-			self.__write_display_settings_to_db()
+		#if self.data != None and self.file_name != "":
+			#self.__write_display_settings_to_db()
 		
 		self.set_file_name(file_name,load_cache_settings=False)
 		if self.file_name != "": self.setWindowTitle(remove_directories_from_name(self.file_name))
@@ -438,11 +449,12 @@ class EMImage2DWidget(EMGLWidget):
 			
 		self.auto_contrast(inspector_update=False,display_update=False)
 
-		if not retain_current_settings:
-			self.__load_display_settings_from_db(inspector_update=False,display_update=False)
+		#if not retain_current_settings:
+			#self.__load_display_settings_from_db(inspector_update=False,display_update=False)
 		
 		self.inspector_update(use_fourier=fourier)
 		self.force_display_update()
+		self.updateGL()
 		
 		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache):
 			self.get_inspector().disable_image_range()

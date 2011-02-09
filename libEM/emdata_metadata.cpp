@@ -750,7 +750,7 @@ void EMData::set_size(int x, int y, int z)
 	ny = y;
 	nz = z;
 	nxy = nx*ny;
-	nxyz = nx*ny*nz;
+	nxyz = (size_t)nx*ny*nz;
 
 // once the object is resized, the CUDA need to be updated
 #ifdef EMAN2_USING_CUDA
@@ -798,7 +798,7 @@ void EMData::set_size_cuda(int x, int y, int z)
 	nz = z;
 
 	nxy = nx*ny;
-	nxyz = nx*ny*nz;
+	nxyz = (size_t)nx*ny*nz;
 
 //	gpu_update();
 
