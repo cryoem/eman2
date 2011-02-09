@@ -230,6 +230,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.curbox=-1
 		self.boxes=[]						# array of box info [(x,y,z), ]
+		self.xydown=None
 		
 		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.set_depth)
 		QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.set_nlayers)
@@ -315,6 +316,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		for x in range(x-self.nlayers()/2,x+(self.nlayers()+1)/2):
 			slc.read_image(self.datafile,0,0,Region(x,0,0,1,self.datasize[1],self.datasize[2]))
+			slc.set_size(self.datasize[1],self.datasize[2],1)
 			avgr.add_image(slc)
 			
 		self.zyview.set_data(avgr.finish())
@@ -324,9 +326,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		for y in range(y-self.nlayers()/2,y+(self.nlayers()+1)/2):
 			slc.read_image(self.datafile,0,0,Region(0,y,0,self.datasize[0],1,self.datasize[2]))
+			slc.set_size(self.datasize[0],self.datasize[2])
 			avgr.add_image(slc)
 			
-		self.xzview.set_data(avgr.finish())
+		av=avgr.finish()
+		av.process_inplace("xform.transpose")
+		self.xzview.set_data(av)
 
 
 	def update_xy(self):
@@ -363,32 +368,43 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def inside_box(self,n,x=-1,y=-1,z=-1):
 		"""Checks to see if a point in image coordinates is inside box number n. If any value is negative, it will not be checked."""
-		if x>=0 and (x<self.boxes[n][0]-self.boxsize()/2 or x>self.boxes[n][0]+self.boxsize()/2 : return False
-		if y>=0 and (y<self.boxes[n][1]-self.boxsize()/2 or y>self.boxes[n][1]+self.boxsize()/2 : return False
-		if z>=0 and (z<self.boxes[n][2]-self.boxsize()/2 or z>self.boxes[n][2]+self.boxsize()/2 : return False
+		if x>=0 and (x<self.boxes[n][0]-self.boxsize()/2 or x>self.boxes[n][0]+self.boxsize()/2) : return False
+		if y>=0 and (y<self.boxes[n][1]-self.boxsize()/2 or y>self.boxes[n][1]+self.boxsize()/2) : return False
+		if z>=0 and (z<self.boxes[n][2]-self.boxsize()/2 or z>self.boxes[n][2]+self.boxsize()/2) : return False
 		return True
 
-	def xy_down(self,me):
+	def update_box(self,n):
+		"""After adjusting a box, call this"""
+		self.curbox=n
+		self.update_sides()
+
+	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		self.xydown=None
 		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in self.boxes:
 			if self.inside_box(i,x,y) :
-				self.xydown=(i,x,y)
-		elif x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 :
-			self.boxes.append((x,y,self.depth()))
-			self.xydown(len(self.boxes)-1,x,y))
-		else: self.xydown=None
+				self.xydown=(i,x,y,self.boxes[i][0][0],self.boxes[i][0][1])
+				self.update_box(i)
+				break
+		else:
+			if x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 :
+				self.boxes.append(([x,y,self.depth()]))
+				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.xydown[0])
 		
-	def xy_drag(self,me):
+	def xy_drag(self,event):
 		if self.xydown==None : return
 		
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
-		self.update_pos((self.curpos[0]+dx,self.curpos[1]+dy,self.curpos[2]))
+		self.boxes[self.xydown[0]][0][0]+=dx
+		self.boxes[self.xydown[0]][0][1]+=dy
+		self.update_box(self.curbox)
 		
-	def xy_up  (self,me):
+	def xy_up  (self,event):
 		self.xydown=None
 		
 	def xz_down(self,me):
