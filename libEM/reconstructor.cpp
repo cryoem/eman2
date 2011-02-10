@@ -291,8 +291,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 			for (int y=1; y<=ny; y++) {
 				if (y==0 && z==0) continue;
 				// x=0
-				size_t i=(size_t)(y%ny)*subnx+(z%nz)*subnx*subny;
-				size_t i2=(size_t)(ny-y)*subnx+((nz-z)%nz)*subnx*subny;
+				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny;
+				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny;
 				float ar=(rdata[i]+rdata[i2])/2.0f;
 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;
@@ -308,8 +308,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 			for (int y=1; y<=ny; y++) {
 				if (y==0 && z==0) continue;
 				// x=0
-				size_t i=(size_t)(y%ny)*subnx+(z%nz)*subnx*subny+subnx-2;
-				size_t i2=(size_t)(ny-y)*subnx+((nz-z)%nz)*subnx*subny+subnx-2;
+				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny+subnx-2;
+				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny+subnx-2;
 				float ar=(rdata[i]+rdata[i2])/2.0f;
 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
 				rdata[i]=ar;

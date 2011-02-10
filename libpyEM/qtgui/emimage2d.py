@@ -184,7 +184,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"measure", 3:"draw", 4:"emit"}
-		self.mouse_mode = 1         # current mouse mode as selected by the inspector
+		self.mouse_mode = 0         # current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor

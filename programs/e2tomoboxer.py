@@ -55,7 +55,7 @@ def main():
 
 #	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
 #	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
-	parset.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
+	parser.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -248,7 +248,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
-		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
 
 		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
 		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
@@ -264,11 +265,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def set_datafile(self,datafile):
 		if datafile==None :
 			self.datafile=None
+			self.data=None
 			self.xyview.set_data(None)
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
 			return
 		
+		self.data=None
 		self.datafile=datafile
 		imgh=EMData(datafile,0,1)
 		self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
@@ -276,8 +279,63 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxes=[]
 		self.curbox=-1
 		
+		self.wdepth.setValue(self.datasize[2]/2)
 		self.update_all()
+
+	def set_data(self,data):
+		if data==None :
+			self.datafile=None
+			self.data=None
+			self.xyview.set_data(None)
+			self.xzview.set_data(None)
+			self.zyview.set_data(None)
+			return
 		
+		self.data=data
+		self.datafile=None
+		self.datasize=(data["nx"],data["ny"],data["nz"])
+		self.wdepth.setRange(0,self.datasize[2]-1)
+		self.boxes=[]
+		self.curbox=-1
+		
+		self.wdepth.setValue(self.datasize[2]/2)
+		self.update_all()
+
+	def get_slice(self,n,xyz):
+		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
+		if self.data!=None :
+			if xyz==0:
+				r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+				r.set_size(self.datasize[1],self.datasize[2],1)
+				return r
+			elif xyz==1:
+				r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+				r.set_size(self.datasize[0],self.datasize[2],1)
+				return r
+			else:
+				r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
+				return r
+
+		elif self.datafile!=None:
+			if xyz==0:
+				r=EMData()
+				r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+				r.set_size(self.datasize[1],self.datasize[2],1)
+				return r
+			elif xyz==1:
+				r=EMData()
+				r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+				r.set_size(self.datasize[0],self.datasize[2],1)
+				return r
+			else:
+				r=EMData()
+				r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
+				return r
+
+
+
+		else : return None
+
 	def set_boxsize(self):
 		pass
 	
@@ -312,7 +370,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_sides(self):
 		"""updates xz and yz views due to a new center location"""
 		
-		if self.datafile==None : return
+		if self.datafile==None and self.data==None : return
 		
 		if self.curbox==-1 :
 			x=self.datasize[0]/2
@@ -321,15 +379,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			x,y,z=self.boxes[self.curbox][:3]
 		
-		
-		slc=EMData()
+		self.cury=y
+		self.curx=x
 		
 		# yz
 		avgr=self.get_averager()
 
 		for x in range(x-self.nlayers()/2,x+(self.nlayers()+1)/2):
-			slc.read_image(self.datafile,0,0,Region(x,0,0,1,self.datasize[1],self.datasize[2]))
-			slc.set_size(self.datasize[1],self.datasize[2],1)
+			slc=self.get_slice(x,0)
 			avgr.add_image(slc)
 			
 		av=avgr.finish()
@@ -340,8 +397,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		avgr=self.get_averager()
 
 		for y in range(y-self.nlayers()/2,y+(self.nlayers()+1)/2):
-			slc.read_image(self.datafile,0,0,Region(0,y,0,self.datasize[0],1,self.datasize[2]))
-			slc.set_size(self.datasize[0],self.datasize[2],1)
+			slc=self.get_slice(y,1)
 			avgr.add_image(slc)
 			
 		self.xzview.set_data(avgr.finish())
@@ -350,21 +406,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_xy(self):
 		"""updates xy view due to a new slice range"""
 		
-		if self.datafile==None: return
+		if self.datafile==None and self.data==None: return
 		
 		if self.wmaxmean.isChecked() : avgr=Averagers.get("minmax",{"max":1})
 		else : avgr=Averagers.get("mean")
 
 		slc=EMData()
 		for z in range(self.wdepth.value()-self.nlayers()/2,self.wdepth.value()+(self.nlayers()+1)/2):
-			slc.read_image(self.datafile,0,0,Region(0,0,z,self.datasize[0],self.datasize[1],1))
+			slc=self.get_slice(z,2)
 			avgr.add_image(slc)
 			
 		self.xyview.set_data(avgr.finish())
 
 	def update_all(self):
 		"""redisplay of all widgets"""
-		if self.datafile==None: return
+		if self.datafile==None and self.data==None: return
 		
 		self.update_xy()
 		self.update_sides()
@@ -387,10 +443,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.curbox=n
 		box=self.boxes[n]
 		bs2=self.boxsize()/2
-		print self.boxes
+		
+		# Boxes may not extend outside the tomogram
+		if box[0]<bs2 : box[0]=bs2
+		if box[0]>self.datasize[0]-bs2 : box[0]=self.datasize[0]-bs2
+		if box[1]<bs2 : box[1]=bs2
+		if box[1]>self.datasize[1]-bs2 : box[1]=self.datasize[1]-bs2
+		if box[2]<bs2 : box[2]=bs2
+		if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
+#		print self.boxes
 		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,1)))
+		self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
+		self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
 		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,1)))
+		self.xzview.add_shape("zl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[2],1)))
 		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,1)))
+		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
+		
+		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
+		else : self.xyview.update()
 		self.update_sides()
 
 	def xy_down(self,event):
@@ -405,10 +476,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				self.update_box(i)
 				break
 		else:
-			if x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 :
-				self.boxes.append(([x,y,self.depth()]))
-				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
-				self.update_box(self.xydown[0])
+#			if x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 and self.depth()>self.boxsize()/2 and self.depth()<self.datasize[2]-self.boxsize()/2 :
+			self.boxes.append(([x,y,self.depth()]))
+			self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
+			self.update_box(self.xydown[0])
 		
 	def xy_drag(self,event):
 		if self.xydown==None : return
@@ -418,45 +489,81 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
-		self.boxes[self.xydown[0]][0]+=dx
-		self.boxes[self.xydown[0]][1]+=dy
+		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
+		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
 		self.update_box(self.curbox)
 		
 	def xy_up  (self,event):
 		self.xydown=None
-		
-	def xz_down(self,me):
-		x,y=self.parent.scr_to_img((event.x(),event.y()))
-		if me.x()>self.curpos[0]-self.boxsize/2 and me.x()<self.curpos[0]+self.boxsize/2 and me.y()>self.curpos[2]-self.boxsize/2 and me.y()<self.curpos[2]+self.boxsize/2:
-			self.xzdown=(me.x(),me.y())
-		else : self.xzdown=None
-		
-	def xz_drag(self,me):
-		x,y=self.parent.scr_to_img((event.x(),event.y()))
-		if self.xzdown==None : return
-		dx=me.x()-self.xzdown[0]
-		dy=me.y()-self.xzdown[1]
-		self.update_pos((self.curpos[0]+dx,self.curpos[1],self.curpos[2]+dy))
-		
-	def xz_up  (self,me):
+	
+	def xy_wheel (self,event):
+		if event.delta() > 0:
+			self.wdepth.setValue(self.wdepth.value()+4)
+		elif event.delta() < 0:
+			self.wdepth.setValue(self.wdepth.value()-4)
+	
+	def xz_down(self,event):
+		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=int(x),int(z)
 		self.xzdown=None
+		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 		
-	def zy_down(self,me):
-		x,y=self.parent.scr_to_img((event.x(),event.y()))
-		if me.x()>self.curpos[2]-self.boxsize/2 and me.x()<self.curpos[2]+self.boxsize/2 and me.y()>self.curpos[1]-self.boxsize/2 and me.y()<self.curpos[1]+self.boxsize/2:
-			self.zydown=(me.x(),me.y())
-		else : self.zydown=None
+		for i in range(len(self.boxes)):
+			if self.inside_box(i,x,-1,z) :
+				self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
+				self.update_box(i)
+				break
+		else:
+			self.boxes.append(([x,self.cury,z]))
+			self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
+			self.update_box(self.xzdown[0])
 		
-	def zy_drag(self,me):
-		x,y=self.parent.scr_to_img((event.x(),event.y()))
+	def xz_drag(self,event):
+		if self.xzdown==None : return
+		
+		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=int(x),int(z)
+		
+		dx=x-self.xydown[1]
+		dz=z-self.xydown[2]
+		self.boxes[self.xzdown[0]][0]=dx+self.xydown[3]
+		self.boxes[self.xzdown[0]][2]=dz+self.xydown[4]
+		self.update_box(self.curbox)
+		
+	def xz_up  (self,event):
+		self.xzdown=None
+
+	def zy_down(self,event):
+		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=int(z),int(y)
+		self.xydown=None
+		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
+		
+		for i in range(len(self.boxes)):
+			if self.inside_box(i,-1,y,z) :
+				self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
+				self.update_box(i)
+				break
+		else:
+			self.boxes.append(([self.curx,y,z]))
+			self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
+			self.update_box(self.zydown[0])
+		
+	def zy_drag(self,event):
 		if self.zydown==None : return
-		dx=me.x()-self.zydown[0]
-		dy=me.y()-self.zydown[1]
-		self.update_pos((self.curpos[0],self.curpos[1]+dy,self.curpos[2]+dx))
 		
-	def zy_up  (self,me):
+		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=int(z),int(y)
+		
+		dz=z-self.zydown[1]
+		dy=y-self.xydown[2]
+		self.boxes[self.zydown[0]][2]=dx+self.xydown[3]
+		self.boxes[self.zydown[0]][1]=dy+self.xydown[4]
+		self.update_box(self.curbox)
+		
+	def zy_up  (self,event):
 		self.zydown=None
-		
+
 		
 	#def closeEvent(self,event):
 		#self.target().done()
