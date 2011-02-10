@@ -132,7 +132,7 @@ class EMImage2DWidget(EMGLWidget):
 			return (640,640)
 	
 	def sizeHint(self):
-		print self.get_parent_suggested_size()
+#		print self.get_parent_suggested_size()
 		if self.data==None : return QtCore.QSize(512,512)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 	

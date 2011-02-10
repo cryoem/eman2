@@ -323,7 +323,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 
 	// Store the current dimension values
 	int prev_nx = nx, prev_ny = ny, prev_nz = nz;
-	int prev_size = (size_t)nx*ny*nz;
+	size_t prev_size = (size_t)nx*ny*nz;
 
 	// Get the zsize, ysize and xsize of the final area, these are the new dimension sizes of the pixel data
 	int new_nz = ( area.size[2]==0 ? 1 : (int)area.size[2]);
@@ -336,7 +336,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 		throw ImageDimensionException("New image dimensions are negative - this is not supported in the clip_inplace operation");
 	}
 
-	int new_size = new_nz*new_ny*new_nx;
+	size_t new_size = new_nz*new_ny*new_nx;
 
 	// Get the translation values, they are used to construct the ClipInplaceVariables object
 	int x0 = (int) area.origin[0];
@@ -372,13 +372,13 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	size_t clipped_row_size = (civ.x_iter) * sizeof(float);
 
 	// Get the new sector sizes to save multiplication later.
-	int new_sec_size = new_nx * new_ny;
-	int prev_sec_size = prev_nx * prev_ny;
+	size_t new_sec_size = new_nx * new_ny;
+	size_t prev_sec_size = prev_nx * prev_ny;
 
 	// Determine the memory locations of the source and destination pixels - at the point nearest
 	// to the beginning of the volume (rdata)
-	int src_it_begin = civ.prv_z_bottom*prev_sec_size + civ.prv_y_front*prev_nx + civ.prv_x_left;
-	int dst_it_begin = civ.new_z_bottom*new_sec_size + civ.new_y_front*new_nx + civ.new_x_left;
+	size_t src_it_begin = civ.prv_z_bottom*prev_sec_size + civ.prv_y_front*prev_nx + civ.prv_x_left;
+	size_t dst_it_begin = civ.new_z_bottom*new_sec_size + civ.new_y_front*new_nx + civ.new_x_left;
 
 	// This loop is in the forward direction (starting at points nearest to the beginning of the volume)
 	// it copies memory only when the destination pointer is less the source pointer - therefore
@@ -388,8 +388,8 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 
 			// Determine the memory increments as dependent on i and j
 			// This could be optimized so that not so many multiplications are occurring...
-			int dst_inc = dst_it_begin + j*new_nx + i*new_sec_size;
-			int src_inc = src_it_begin + j*prev_nx + i*prev_sec_size;
+			size_t dst_inc = dst_it_begin + j*new_nx + i*new_sec_size;
+			size_t src_inc = src_it_begin + j*prev_nx + i*prev_sec_size;
 			float* local_dst = rdata + dst_inc;
 			float* local_src = rdata + src_inc;
 
@@ -406,14 +406,15 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
+			for (int k=0; k<clipped_row_size; k++) local_dst[k]=local_src[k];
+//			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);			//problem with large data arrays !
 		}
 	}
 
 	// Determine the memory locations of the source and destination pixels - at the point nearest
 	// to the end of the volume (rdata+new_size)
-	int src_it_end = prev_size - civ.prv_z_top*prev_sec_size - civ.prv_y_back*prev_nx - prev_nx + civ.prv_x_left;
-	int dst_it_end = new_size - civ.new_z_top*new_sec_size - civ.new_y_back*new_nx - new_nx + civ.new_x_left;
+	size_t src_it_end = prev_size - civ.prv_z_top*prev_sec_size - civ.prv_y_back*prev_nx - prev_nx + civ.prv_x_left;
+	size_t dst_it_end = new_size - civ.new_z_top*new_sec_size - civ.new_y_back*new_nx - new_nx + civ.new_x_left;
 
 	// This loop is in the reverse direction (starting at points nearest to the end of the volume).
 	// It copies memory only when the destination pointer is greater than  the source pointer therefore
@@ -466,7 +467,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	if (  z0 < 0 )
 	{
 		//EMUtil::em_memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
-		int inc = (-z0)*new_sec_size;
+		size_t inc = (-z0)*new_sec_size;
 		std::fill(rdata,rdata+inc,fill_value);
 	}
 

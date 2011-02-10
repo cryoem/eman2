@@ -54,7 +54,8 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
-	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
+#	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
+	parset.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -68,7 +69,12 @@ def main():
 #	logid=E2init(sys.argv)
 	
 	app = EMApp()
-	boxer=EMTomoBoxer(args[0])
+	if options.inmemory : 
+		print "Reading tomogram. Please wait."
+		img=EMData(args[0],0)
+		print "Done !"
+		boxer=EMTomoBoxer(data=img)
+	else : boxer=EMTomoBoxer(datafile=args[0])
 	boxer.show()
 	app.execute()
 #	E2end(logid)
@@ -170,7 +176,7 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,datafile=None):
+	def __init__(self,data=None,datafile=None):
 		QtGui.QWidget.__init__(self)
 		
 		# Menu Bar
@@ -252,9 +258,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
 		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
 
-		self.set_data(datafile)		# This triggers a lot of things to happen, so we do it last
+		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
+		if data!=None : self.set_data(data)
 
-	def set_data(self,datafile):
+	def set_datafile(self,datafile):
 		if datafile==None :
 			self.datafile=None
 			self.xyview.set_data(None)
@@ -380,17 +387,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.curbox=n
 		box=self.boxes[n]
 		bs2=self.boxsize()/2
-		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2)))
-		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2)))
-		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2)))
+		print self.boxes
+		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,1)))
+		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,1)))
+		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,1)))
 		self.update_sides()
 
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=int(x),int(y)
 		self.xydown=None
 		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
-		for i in self.boxes:
+		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,y) :
 				self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
 				self.update_box(i)
@@ -405,6 +414,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.xydown==None : return
 		
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=int(x),int(y)
+		
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
 		self.boxes[self.xydown[0]][0]+=dx
