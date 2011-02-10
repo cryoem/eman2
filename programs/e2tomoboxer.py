@@ -251,13 +251,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
 
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
-		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
 
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
-		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
 
 		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 		if data!=None : self.set_data(data)
@@ -524,10 +524,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		x,z=self.xzview.scr_to_img((event.x(),event.y()))
 		x,z=int(x),int(z)
 		
-		dx=x-self.xydown[1]
-		dz=z-self.xydown[2]
-		self.boxes[self.xzdown[0]][0]=dx+self.xydown[3]
-		self.boxes[self.xzdown[0]][2]=dz+self.xydown[4]
+		dx=x-self.xzdown[1]
+		dz=z-self.xzdown[2]
+		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
+		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
 		self.update_box(self.curbox)
 		
 	def xz_up  (self,event):
