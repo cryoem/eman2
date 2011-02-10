@@ -2665,19 +2665,19 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# compute the minimum distance with centroids
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
-					
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+					else:
+						dJe[k] = 0	
 				# Simulate Annealing
 				if SA:
-					dJe = [0.0] * K
-					ni  = float(Cls['n'][assign[im]])
-					di  = res['dist'][assign[im]]
-					for k in xrange(K):
-						if k != assign[im]:
-							nj  = float(Cls['n'][k])
-							dj  = res['dist'][k]
-							dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
-						else:
-							dJe[k] = 0
+					
 					
 					# normalize and select
 					mindJe = min(dJe)
@@ -2688,6 +2688,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if select != res['pos']:
 						ct_pert    += 1
 						res['pos']  = select
+				else:
+					max_value = -1.e30
+					for i in xrange( len(dJe) ):
+						if( dJe[i] >= max_value) :
+							max_value = dJe[i]
+							res['pos'] = i
 			
 				# moving object and update iteratively
 				if res['pos'] != assign[im]:
@@ -3694,20 +3700,22 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
+				
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]											
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+					else:
+						dJe[k] = 0
+
 					
 				# [all] Simulate annealing
 				if SA:
-					dJe = [0.0] * K
-					ni  = float(Cls['n'][assign[im]])
-					di  = res['dist'][assign[im]]											
-					for k in xrange(K):
-						if k != assign[im]:
-							nj  = float(Cls['n'][k])
-							dj  = res['dist'][k]
-							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
-						else:
-							dJe[k] = 0
-
+				
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
@@ -3717,6 +3725,12 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if select != res['pos']:
 						ct_pert    += 1
 						res['pos']  = select
+				else:
+					max_value = -1.e30
+					for i in xrange( len(dJe) ):
+						if( dJe[i] >= max_value) :
+							max_value = dJe[i]
+							res['pos'] = i
 					
 				# [all] moving object
 				if res['pos'] != assign[im]:
