@@ -613,7 +613,7 @@ bool operator==(const EMData& that) const;
 
 /** Overload operator() for array indexing. */
 inline float& operator()(const int ix, const int iy, const int iz) const {
-	ptrdiff_t pos = (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx;
+	ptrdiff_t pos = (size_t)(ix-xoff) + ((iy-yoff) + (size_t)(iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz) {
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");

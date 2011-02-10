@@ -136,7 +136,7 @@ EMData::EMData(const EMData& that) :
 	ENTERFUNC;
 	
 	float* data = that.rdata;
-	size_t num_bytes = nx*ny*nz*sizeof(float);
+	size_t num_bytes = (size_t)nx*ny*nz*sizeof(float);
 	if (data && num_bytes != 0)
 	{
 		rdata = (float*)EMUtil::em_malloc(num_bytes);
@@ -323,7 +323,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 
 	// Store the current dimension values
 	int prev_nx = nx, prev_ny = ny, prev_nz = nz;
-	int prev_size = nx*ny*nz;
+	int prev_size = (size_t)nx*ny*nz;
 
 	// Get the zsize, ysize and xsize of the final area, these are the new dimension sizes of the pixel data
 	int new_nz = ( area.size[2]==0 ? 1 : (int)area.size[2]);
@@ -2858,7 +2858,7 @@ void EMData::update_stat() const
 
 	int n_nonzero = 0;
 
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	for (size_t i = 0; i < size; i += step) {
 		float v = data[i];
 	#ifdef _WIN32

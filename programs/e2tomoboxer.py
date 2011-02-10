@@ -193,10 +193,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl.addWidget(self.xyview,1,1)
 
 		self.xzview = EMImage2DWidget()
-		self.gbl.addWidget(self.xzview,1,0)
+		self.gbl.addWidget(self.xzview,0,1)
 
 		self.zyview = EMImage2DWidget()
-		self.gbl.addWidget(self.zyview,0,1)
+		self.gbl.addWidget(self.zyview,1,0)
 
 		# Select layers to integrate for x-y view. For xz and yz, boxsize is used.
 		self.wdepth = QtGui.QSlider()
@@ -229,7 +229,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		
 		self.curbox=-1
-		self.boxes=[]						# array of box info [(x,y,z), ]
+		self.boxes=[]						# array of box info, each is (x,y,z,...)
 		self.xydown=None
 		
 		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.set_depth)
@@ -285,8 +285,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.update_xy()
 		
 	def set_nlayers(self):
-		self.update_xy()
+		self.update_all()
+
+	def boxsize(self): return int(self.wboxsize.getValue())
 	
+	def nlayers(self): return int(self.wnlayers.value())
+	
+	def depth(self): return int(self.wdepth.value())
+
 	def menu_file_open(self,tog):
 		print("file open")
 
@@ -306,7 +312,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			y=self.datasize[1]/2
 			z=0
 		else:
-			x,y,z=self.boxes[self.curbox][0]
+			x,y,z=self.boxes[self.curbox][:3]
 		
 		
 		slc=EMData()
@@ -319,19 +325,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			slc.set_size(self.datasize[1],self.datasize[2],1)
 			avgr.add_image(slc)
 			
-		self.zyview.set_data(avgr.finish())
+		av=avgr.finish()
+		av.process_inplace("xform.transpose")
+		self.zyview.set_data(av)
 		
 		# xz
 		avgr=self.get_averager()
 
 		for y in range(y-self.nlayers()/2,y+(self.nlayers()+1)/2):
 			slc.read_image(self.datafile,0,0,Region(0,y,0,self.datasize[0],1,self.datasize[2]))
-			slc.set_size(self.datasize[0],self.datasize[2])
+			slc.set_size(self.datasize[0],self.datasize[2],1)
 			avgr.add_image(slc)
 			
-		av=avgr.finish()
-		av.process_inplace("xform.transpose")
-		self.xzview.set_data(av)
+		self.xzview.set_data(avgr.finish())
 
 
 	def update_xy(self):
@@ -360,22 +366,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.xzview.update()
 		#self.zyview.update()
 
-	def boxsize(self): return self.wboxsize.getValue()
-	
-	def nlayers(self): return self.wnlayers.value()
-	
-	def depth(self): return self.wdepth.value()
 
 	def inside_box(self,n,x=-1,y=-1,z=-1):
 		"""Checks to see if a point in image coordinates is inside box number n. If any value is negative, it will not be checked."""
-		if x>=0 and (x<self.boxes[n][0]-self.boxsize()/2 or x>self.boxes[n][0]+self.boxsize()/2) : return False
-		if y>=0 and (y<self.boxes[n][1]-self.boxsize()/2 or y>self.boxes[n][1]+self.boxsize()/2) : return False
-		if z>=0 and (z<self.boxes[n][2]-self.boxsize()/2 or z>self.boxes[n][2]+self.boxsize()/2) : return False
+		box=self.boxes[n]
+		if x>=0 and (x<box[0]-self.boxsize()/2 or x>box[0]+self.boxsize()/2) : return False
+		if y>=0 and (y<box[1]-self.boxsize()/2 or y>box[1]+self.boxsize()/2) : return False
+		if z>=0 and (z<box[2]-self.boxsize()/2 or z>box[2]+self.boxsize()/2) : return False
 		return True
 
 	def update_box(self,n):
 		"""After adjusting a box, call this"""
 		self.curbox=n
+		box=self.boxes[n]
+		bs2=self.boxsize()/2
+		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2)))
+		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2)))
+		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2)))
 		self.update_sides()
 
 	def xy_down(self,event):
@@ -385,7 +392,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in self.boxes:
 			if self.inside_box(i,x,y) :
-				self.xydown=(i,x,y,self.boxes[i][0][0],self.boxes[i][0][1])
+				self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
 				self.update_box(i)
 				break
 		else:
@@ -400,8 +407,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
-		self.boxes[self.xydown[0]][0][0]+=dx
-		self.boxes[self.xydown[0]][0][1]+=dy
+		self.boxes[self.xydown[0]][0]+=dx
+		self.boxes[self.xydown[0]][1]+=dy
 		self.update_box(self.curbox)
 		
 	def xy_up  (self,event):
