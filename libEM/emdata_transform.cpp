@@ -131,12 +131,11 @@ EMData *EMData::do_fft_inplace()
 		else             set_fftodd(false);
 		int nxnew = nx + offset;
 		set_size(nxnew, ny, nz);
-
 		for (int iz = nz-1; iz >= 0; iz--) {
 			for (int iy = ny-1; iy >= 0; iy--) {
 				for (int ix = nxreal-1; ix >= 0; ix--) {
-					size_t oldxpos = ix + (iy + iz*ny)*nxreal;
-					size_t newxpos = ix + (iy + iz*ny)*nxnew;
+					size_t oldxpos = ix + (iy + iz*ny)*(size_t)nxreal;
+					size_t newxpos = ix + (iy + iz*ny)*(size_t)nxnew;
 					(*this)(newxpos) = (*this)(oldxpos);
 				}
 			}

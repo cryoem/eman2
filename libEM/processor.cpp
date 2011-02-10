@@ -7680,7 +7680,7 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 	}
 
 	float *dat = image->get_data();
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	for (size_t i=0; i<size; ++i) {
 		dat[i] = r->get_frand();
 	}
@@ -7702,7 +7702,7 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	}
 
 	float *dat = image->get_data();
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	for (size_t i=0; i<size; ++i) {
 		dat[i] = r->get_gauss_rand(mean, sigma);
 	}

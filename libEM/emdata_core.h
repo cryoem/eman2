@@ -615,8 +615,8 @@ bool operator==(const EMData& that) const;
 inline float& operator()(const int ix, const int iy, const int iz) const {
 	ptrdiff_t pos = (size_t)(ix-xoff) + ((iy-yoff) + (size_t)(iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz) {
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	if (pos < 0 || pos >= (size_t)nx*ny*nz) {
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 	}
 #endif // BOUNDS_CHECKING
 	return *(get_data() + pos);
@@ -625,20 +625,20 @@ inline float& operator()(const int ix, const int iy, const int iz) const {
 inline float& operator()(const int ix, const int iy) const {
 	ptrdiff_t pos = (ix - xoff) + (iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz)
+	if (pos < 0 || pos >= (size_t)nx*ny*nz)
 	{
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 	}
 #endif // BOUNDS_CHECKING
 	return *(get_data() + pos);
 }
 
 
-inline float& operator()(const int ix) const {
+inline float& operator()(const size_t ix) const {
 	ptrdiff_t pos = ix - xoff;
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz)
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	if (pos < 0 || pos >= (size_t)nx*ny*nz)
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 	return *(get_data() + pos);
 }

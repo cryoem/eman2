@@ -553,7 +553,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("__call__", (float& (EMAN::EMData::*)(const int, const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
 #ifndef	_WIN32
 	.def("__call__", (float& (EMAN::EMData::*)(const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-	.def("__call__", (float& (EMAN::EMData::*)(const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+	.def("__call__", (float& (EMAN::EMData::*)(const size_t) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
 #endif	//_WIN32
 	);
 
