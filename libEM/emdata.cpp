@@ -406,8 +406,8 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-			for (size_t k=0; k<clipped_row_size; ++k) local_dst[k]=local_src[k];
-//			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);			//problem with large data arrays !
+//			for (int k=0; k<clipped_row_size; k++) local_dst[k]=local_src[k];
+			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);			//problem with large data arrays !
 		}
 	}
 
@@ -423,8 +423,8 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 		for (int j = 0; j < civ.y_iter; ++j) {
 
 			// Determine the memory increments as dependent on i and j
-			size_t dst_inc = dst_it_end - (size_t)j*new_nx - (size_t)i*new_sec_size;
-			size_t src_inc = src_it_end - (size_t)j*prev_nx - (size_t)i*prev_sec_size;
+			int dst_inc = dst_it_end - j*new_nx - i*new_sec_size;
+			int src_inc = src_it_end - j*prev_nx - i*prev_sec_size;
 			float* local_dst = rdata + dst_inc;
 			float* local_src = rdata + src_inc;
 
