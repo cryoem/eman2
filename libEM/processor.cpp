@@ -7384,7 +7384,7 @@ void TestImageSquarecube::process_inplace(EMData * image)
 	float odd_edge = params["odd_edge"];
 	int fill = 1;
 	if(params.has_key("fill")) {
-		int fill = (int)params["fill"];
+		fill = (int)params["fill"];
 	}
 
 	float *dat = image->get_data();
