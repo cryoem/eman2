@@ -336,7 +336,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 		throw ImageDimensionException("New image dimensions are negative - this is not supported in the clip_inplace operation");
 	}
 
-	size_t new_size = new_nz*new_ny*new_nx;
+	size_t new_size = (size_t)new_nz*new_ny*new_nx;
 
 	// Get the translation values, they are used to construct the ClipInplaceVariables object
 	int x0 = (int) area.origin[0];
@@ -357,7 +357,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 		set_size(new_nx, new_ny, new_nz);
 
 		// Set pixel memory to zero - the client should expect to see nothing
-		EMUtil::em_memset(rdata, 0, new_nx*new_ny*new_nz);
+		EMUtil::em_memset(rdata, 0, (size_t)new_nx*new_ny*new_nz);
 
 		return;
 	}
@@ -406,8 +406,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-//			for (int k=0; k<clipped_row_size; k++) local_dst[k]=local_src[k];
-			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);			//problem with large data arrays !
+			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
 		}
 	}
 
@@ -423,8 +422,8 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 		for (int j = 0; j < civ.y_iter; ++j) {
 
 			// Determine the memory increments as dependent on i and j
-			int dst_inc = dst_it_end - j*new_nx - i*new_sec_size;
-			int src_inc = src_it_end - j*prev_nx - i*prev_sec_size;
+			size_t dst_inc = dst_it_end - j*new_nx - i*new_sec_size;
+			size_t src_inc = src_it_end - j*prev_nx - i*prev_sec_size;
 			float* local_dst = rdata + dst_inc;
 			float* local_src = rdata + src_inc;
 
