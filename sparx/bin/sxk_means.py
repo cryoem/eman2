@@ -40,11 +40,11 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=10 --trials=2 --debug --opt_method='cla' --maxit=100 --rand_seed=10 --crit='all' --F=0.9 --T0=2.0 --init_method='rnd' --normalize --CTF --MPI --CUDA"
+	usage = progname + " stack outdir <maskfile> --K=10 --trials=2 --debug --maxit=100 --rand_seed=10 --crit='all' --F=0.9 --T0=2.0 --init_method='rnd' --normalize --CTF --MPI --CUDA"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help="Number of classes (default 2)")
 	parser.add_option("--trials",     type="int",          default=1,         help="Number of trials of K-means (default 1)")
-	parser.add_option("--opt_method", type='string',       default="cla",     help="K-means method: SSE (default), cla")
+	parser.add_option("--opt_method", type='string',       default="SSE",     help="K-means method: SSE (default), cla")
 	parser.add_option("--maxit",      type="int",          default=100,       help="Maximum number of iterations within K-means")
 	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--rand_seed",  type="int",          default=-1,        help="Random seed of initial (default random)" )
