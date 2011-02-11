@@ -406,7 +406,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-			for (int k=0; k<clipped_row_size; k++) local_dst[k]=local_src[k];
+			for (size_t k=0; k<clipped_row_size; ++k) local_dst[k]=local_src[k];
 //			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);			//problem with large data arrays !
 		}
 	}
