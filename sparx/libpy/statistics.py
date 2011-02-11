@@ -9055,13 +9055,90 @@ class pcanalyzebck:
 
 
 
-# PART is a list of arrays
-# Assumes all partitions have the SAME number of classes
-# output:
-# MATCH is a list of arrays, where each array is a match
-# STB_PART is a list of lists, each list in the list, i.e.STB_PART[0] is a stable set (i.e., the common intersection of a matching)
-# For consistency with k_means_stab_pwa, STB_PART will be initialized to be a list of K lists, and of course some will be empty
 def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+	
+	"""
+		
+		Input:
+			PART:   list of list of arrays. So PART[0] corresponds to the first partition, PART[1] the second partition and so on. 
+				Each partition is a list of arrays of distinct integers sorted in ascending order. The arrays corresponds
+				to classes, so PART[i][j] is the j-th class of the i-th partition. 
+				
+				Example of how to construct a partition:
+					K    = EMUtil.get_image_count(stack_name)
+					part0 = []
+					for k in xrange(K):
+						im  = get_im(stack_name, k)
+						lid = im.get_attr('members')
+						lid = array(lid, 'int32')
+						lid.sort()
+						part0.append(lid.copy())
+						
+			K:	Number of classes in the first partition.
+	
+			T:      An integer. It is the threshold such that the stable sets corresponding to the matches in the output have size larger than T. 
+				Specifically, if there are say four partitions, and the i-th match in the output, i.e., MATCH[i], is [2,12,1,5], then
+				the 2nd class of the first partition, 12th class of the second, first class of the third, and fifth class of the
+				fourth have at least T elements in common.
+			
+			nguesses: Not used anymore. I'm going to remove it.
+			
+			J:	An integer. In the branching matching algorithm we use, each step corresponds to choosing a match to add to the 
+				collection of matches we will eventually output. 
+				Since at each step there are many different possibilities and 
+				it is generally not feasible to branch on them all, we consider only J matches with the largest weights in choosing which matches to branch on.
+				See branchfunc below for more details.
+				Intuitively, a larger J should give better results. 
+				If J=1, the algorithm defaults to the greedy algorithm, i.e, at each step, we choose the match which has the largest cost and add it to the collection of matches to output.
+			        
+			
+			branchfunc: An integer. Determines which branching function should be used. 
+			
+				    Roughly speaking, the algorithm we use builds up the collection of matches iteratively. During each step, we determine
+				    the next match that should be added to the collection. Since there are many possibilities, the role of the branching function
+				    is to determine both how many and which possibilities to explore.
+				    
+				    The branching functions chooses the possibilities to explore from the 
+				    J matches with the largest weights.
+				    
+				    There are two possible choices for branchfunc: 2 or 4
+				    
+				    branchfunc = 2:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
+				    	             Always branches on the current match with the largest weight. 
+						     Branch on the match with the second largest weight only if it is infeasible with the match with the largest weight.
+				    	             Similarly, for each subsequent match, only branch on it if it is infeasible with at least LIM of the matches which have already been chosen to branch on.
+						    
+						    
+				    branchfunc = 4:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
+				    		     We branch based on distribution of the cost of the J largest matches. 
+				    		     Let stdev be the standard deviation of the weights of the J matches. 
+						     We always branch on the match with the largest weight.
+						     For the remaining J-1 matches, we branch on those which are within stmult*stdev of the weight of match with the largest weight.
+						     	 	
+				    	
+			LIM: 	An integer smaller than J. See explanation for branchfunc above.
+				  	
+			max_branching: This is an upper bound on the maximum number of branches to explore. See explanation for branchfunc above. This is to ensure we get a result in reasonable time. Intuitively, the larger max_branching is, the likelihood of getting a better result (i.e, a collection of matches with a large total weight) is increased.  
+	
+			stmult: An integer. See explanation for branchfunc above.
+	
+		Output: MATCH, STB_PART, CT_s, CT_t, ST, st
+			
+			MATCH: A list of arrays. Each array has len(PART) elements, and the i-th element corresponds to a class in the i-th partition. 
+			       So MATCH[0][0] is an index into PART[0], MATCH[0][1] is an index into PART[1], etc.
+			    
+			STB_PART: A list of lists. The stable set corresponding to the i-th MATCH, i.e., MATCH[i], is stored in STB_PART[MATCH[i][0]]. 
+			
+			CT_s:   A list of integers. The size of the stable set corresponding to  the i-th MATCH, i.e., MATCH[i], is stored in CT_s[MATCH[i][0]].
+				The quality of the output collection of matches, i.e., MATCH, can be determined by summing CT_s. The larger the better.
+			
+			CT_t:	A list of integers. The number of elements in the union of the classes in the i-th match is stored in CT_t[MATCH[i][0]].
+			
+			st:     st = 100.0 * sum(CT_s) / float(sum(CT_t)) 
+			
+			ST:	ST[k] = 100.0 * CT_s[k] / float(CT_t[k])	
+	
+	"""
 	
 	from copy import deepcopy
 	
