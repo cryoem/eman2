@@ -610,10 +610,13 @@ class EMImage2DWidget(EMGLWidget):
 		db = DB.image_2d_display_settings
 		db[self.file_name] = data
 
-	def set_origin(self,x,y):
+	def set_origin(self,x,y,quiet=False):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
+		if not quiet : self.emit(QtCore.SIGNAL("set_origin"),(x,y))
 		self.updateGL()
+	
+	def get_origin(self) : return self.origin
 	
 	def scroll_to(self,x,y):
 		"""center the point on the screen"""
@@ -632,13 +635,13 @@ class EMImage2DWidget(EMGLWidget):
 		self.qt_parent.register_animatable(animation)
 		return True
 
-	def set_scale(self,newscale):
+	def set_scale(self,newscale,quiet=False):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		try:
 			self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
 			self.scale=newscale
+			if not quiet : self.emit(QtCore.SIGNAL("set_scale"),newscale)
 			self.updateGL()
-			self.emit(QtCore.SIGNAL("set_scale"),newscale)
 		except: pass
 		
 	def set_invert(self,val):

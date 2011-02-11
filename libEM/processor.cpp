@@ -4697,8 +4697,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = 0; r < ny/2; ++r ) {
 				for ( int c = 0; c < nx/2; ++ c) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s+nz/2+zodd)*(size_t)nxy+(r+ny/2+yodd)*(size_t)nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4709,8 +4709,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = 0; r < ny/2; ++r ) {
 				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c-nx/2-xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s+nz/2+zodd)*(size_t)nxy+(r+ny/2+yodd)*(size_t)nx+c-nx/2-xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4721,8 +4721,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c-nx/2-xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s+nz/2+zodd)*(size_t)nxy+(r-ny/2-yodd)*(size_t)nx+c-nx/2-xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4733,8 +4733,8 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		for ( int s = 0; s < nz/2; ++s ) {
 			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = 0; c < nx/2; ++c) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s+nz/2+zodd)*(size_t)nxy+(r-ny/2-yodd)*(size_t)nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4796,8 +4796,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			size_t idx1, idx2;
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s+nz/2+zodd)*(size_t)nxy+(r+ny/2+yodd)*(size_t)nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4806,8 +4806,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s-nz/2-zodd)*nxy+(r+ny/2+yodd)*nx+c;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s-nz/2-zodd)*(size_t)nxy+(r+ny/2+yodd)*(size_t)nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4820,8 +4820,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			size_t idx1, idx2;
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 =(s+nz/2+zodd)*nxy+r*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 =(s+nz/2+zodd)*(size_t)nxy+(size_t)r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4830,8 +4830,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = (s-nz/2-zodd)*nxy+r*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (s-nz/2-zodd)*(size_t)nxy+(size_t)r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4844,8 +4844,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			size_t idx1, idx2;
 			for( int r = 0; r < ny/2; ++r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = s*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (size_t)s*nxy+(r+ny/2+yodd)*(size_t)nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -4854,8 +4854,8 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 			for( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
-					idx1 = s*nxy+r*nx+c;
-					idx2 = s*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
+					idx1 = (size_t)s*nxy+(size_t)r*nx+c;
+					idx2 = (size_t)s*nxy+(r-ny/2-yodd)*(size_t)nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;

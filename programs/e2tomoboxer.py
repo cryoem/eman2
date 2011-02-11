@@ -250,6 +250,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_scale"),self.xy_scale)
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_origin"),self.xy_origin)
 
 		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
 		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
@@ -502,6 +504,18 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		elif event.delta() < 0:
 			self.wdepth.setValue(self.wdepth.value()-4)
 	
+	def xy_scale(self,news):
+		"Image view has been rescaled"
+		self.xzview.set_scale(news,True)
+		self.zyview.set_scale(news,True)
+		
+	def xy_origin(self,newor):
+		xzo=self.xzview.get_origin()
+		xzo.set_origin(newor[0],xzo[1],True)
+		
+		zyo=self.zyview.get_origin()
+		zyo.set_origin(zyo[0],newor[1],True)
+	
 	def xz_down(self,event):
 		x,z=self.xzview.scr_to_img((event.x(),event.y()))
 		x,z=int(x),int(z)
@@ -537,7 +551,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		z,y=self.zyview.scr_to_img((event.x(),event.y()))
 		z,y=int(z),int(y)
 		self.xydown=None
-		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
+		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,-1,y,z) :
