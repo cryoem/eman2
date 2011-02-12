@@ -56,7 +56,7 @@ namespace EMAN {
             explicit EMArray(size_t xsize, size_t ysize=1, size_t zsize=1) 
                 : nx(xsize),ny(ysize),nz(zsize),
                   xoff(0),yoff(0),zoff(0) {
-                size = nx*ny*nz;
+                size = (size_t)nx*ny*nz;
                 array = new T[size];
             }
             /** Destructor */

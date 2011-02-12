@@ -691,7 +691,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// copy workspace data into the original image
 		float* orig = fimage->get_data();
 		float* work = fp->get_data();
-		for (int i = 0; i < nx*ny*nz; i++) orig[i] = work[i];
+		for (size_t i = 0; i < (size_t)nx*ny*nz; i++) orig[i] = work[i];
 		fimage->update();
 	}
 	EXITFUNC;

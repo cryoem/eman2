@@ -182,7 +182,7 @@ Output: 1-2-3D real image with the result
 */  
 	EMData* 
 	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, bool center) {
-		int normfact;
+		size_t normfact;
 		//std::complex<float> phase_mult;
 		// Not only does the value of "flag" determine how we handle
 		// periodicity, but it also determines whether or not we should
@@ -470,13 +470,13 @@ Output: 1-2-3D real image with the result
 		//vector<int> saved_offsets = fp->get_array_offsets();  I do not know what the meaning of it was, did not work anyway PAP
 		fp->set_array_offsets(1,1,1);
 
-		normfact = (nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
+		normfact = (size_t)(nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
 		if(normfact>1) {
 			for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
 		}
 		// Lag normalization
 		if(flag>4)  {
-			normfact = nx*ny*nz;  // Normalization factor
+			normfact = (size_t)nx*ny*nz;  // Normalization factor
 			int nxc=nx/2+1, nyc=ny/2+1, nzc=nz/2+1;
 			for (int iz = 1; iz <= nz; iz++) {
 				float lagz=float(normfact/(nz-abs(iz-nzc)));

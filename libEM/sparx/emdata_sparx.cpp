@@ -5996,7 +5996,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	float thr1 = get_attr("maximum");
 	float thr3 = get_attr("minimum");
 	float thr2 = (thr1-thr3)/2 + thr3;
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float x0 = thr1,x3 = thr3,x1,x2,THR=0;
 
 	#ifdef _WIN32
@@ -6014,7 +6014,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	}
 
 	int cnt1=0,cnt2=0;
-	for (int i=0;i<size;i++) {
+	for (size_t i=0;i<size;++i) {
 		if(rdata[i]>=x1)  cnt1++;
 		if(rdata[i]>=x2)  cnt2++;
 	}
@@ -6215,7 +6215,7 @@ EMData* EMData::get_pow(float n_pow)
 	EMData* buf_new = this->copy_head();
 	float *in  = this->get_data();
 	float *out = buf_new->get_data();
-	for(int i=0; i<nx*ny*nz; i++) out[i] = pow(in[i],n_pow);
+	for(size_t i=0; i<(size_t)nx*ny*nz; ++i) out[i] = pow(in[i],n_pow);
 	return buf_new;
 }
 
@@ -6225,7 +6225,7 @@ EMData* EMData::conjg()
 		EMData* buf_new = this->copy_head();
  		float *in  = this->get_data();
 		float *out = buf_new->get_data();
-		for(int i=0; i<nx*ny*nz; i+=2) {out[i] = in[i]; out[i+1] = -in[i+1];}
+		for(size_t i=0; i<(size_t)nx*ny*nz; i+=2) {out[i] = in[i]; out[i+1] = -in[i+1];}
 		return buf_new;
 	} else throw ImageFormatException("image has to be complex");
 }
@@ -6605,8 +6605,8 @@ float circumference( EMData* emdata, int npixel )
         // 3d cases;
 
         float sumf = 0.0;
-        int   sumn = 0;
-        int   id = 0;
+        size_t   sumn = 0;
+        size_t   id = 0;
         for( int iz=0; iz < nz; ++iz) {
         	for( int iy=0; iy < ny; ++iy) {
         		for( int ix=0; ix < nx; ++ix ) {
@@ -6620,8 +6620,8 @@ float circumference( EMData* emdata, int npixel )
         }
 
 
-        Assert( id==nx*ny*nz);
-        Assert( sumn==nx*ny*nz-(nx-2*npixel)*(ny-2*npixel)*(nz-2*npixel) );
+        Assert( id==(size_t)nx*ny*nz);
+        Assert( sumn==(size_t)nx*ny*nz-(size_t)(nx-2*npixel)*(ny-2*npixel)*(nz-2*npixel) );
         return sumf/sumn;
 }
 /*

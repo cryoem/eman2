@@ -111,7 +111,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	Volptr = Vol->get_data();
 	maskptr = mask->get_data();
 
-	for (size_t i = 0; i < nx*ny*nz; i++) {
+	for (size_t i = 0; i < (size_t)nx*ny*nz; ++i) {
 		if ((maskptr[i]>0.5f) == flip) {
 			Sum1 += Volptr[i];
 			Sum2 += Volptr[i]*double(Volptr[i]);
@@ -152,7 +152,7 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	size_t nx = V1->get_xsize();
 	size_t ny = V1->get_ysize();
 	size_t nz = V1->get_zsize();
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 
 	EMData *BD = new EMData();
  	BD->set_size(nx, ny, nz);
@@ -5442,7 +5442,7 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 			hmin = image->get_attr("minimum");
 		} else {
 			bool  First = true;
-			for (int i = 0;i < nx*ny*nz; i++) {
+			for (size_t i = 0;i < (size_t)nx*ny*nz; i++) {
 	      		if (maskptr[i]>=0.5f) {
 					if(First) {
 						hmax = imageptr[i];
@@ -5460,12 +5460,12 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 	float ff = (nbins-1)/hdiff;
 	for (int i = 0; i < nbins; i++) freq[nbins+i] = hmin + (float(i)+0.5f)/ff;
 	if(mask == NULL) {
-		for(int i = 0; i < nx*ny*nz; i++) {
+		for(size_t i = 0; i < (size_t)nx*ny*nz; i++) {
 			int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
 			if(jbin >= 1 && jbin <= nbins)  freq[jbin-1] += 1.0;
 		}
 	} else {
-		for(int i = 0; i < nx*ny*nz; i++) {
+		for(size_t i = 0; i < (size_t)nx*ny*nz; i++) {
 			if(maskptr[i] >= 0.5) {
 				int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
 				if(jbin >= 1 && jbin <= nbins)  freq[jbin-1] += 1.0;
@@ -6046,7 +6046,7 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 	if(nx != mask->get_xsize() || ny != mask->get_ysize() || nz != mask->get_zsize())
 		throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 
-	int i, size = nx*ny*nz;
+	size_t i, size = (size_t)nx*ny*nz;
 
 	float* img_ptr = image->get_data();
 	float* mask_ptr = mask->get_data();
@@ -6082,7 +6082,7 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 	**************/
 	int nx = mask->get_xsize(),ny = mask->get_ysize(),nz = mask->get_zsize();
 
-	int i,size = nx*ny*nz;			 /* loop counters */
+	size_t i,size = (size_t)nx*ny*nz;			 /* loop counters */
 	/* new image declaration */
 	EMData *new_image = new EMData();
 	new_image->set_size(nx,ny,nz); 		 /* set the size of new image */
@@ -17265,7 +17265,7 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	/* ============  output = scalar*input  ================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
@@ -17290,12 +17290,12 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 	/* ==============   output = img + scalar*img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i]*scalar;
+	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] + img1_ptr[i]*scalar;
 	img2->update();
 	if(img->is_complex()) {
 		img2->set_complex(true);
@@ -17316,12 +17316,12 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	/* ==============   output = img + img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i];
+	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] + img1_ptr[i];
 	img2->update();
 	if(img->is_complex()) {
 		img2->set_complex(true);
@@ -17342,12 +17342,12 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 	/* ==============   output = img - img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] - img1_ptr[i];
+	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] - img1_ptr[i];
 	img2->update();
 	if(img->is_complex()) {
 		img2->set_complex(true);
@@ -17368,20 +17368,20 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	/* ==============   output = img * img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			img2_ptr[i]   = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
 			img2_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
 		}
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
-		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
+		for (size_t i=0; i<size; ++i) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
 		img2->update();
 	}
 
@@ -17399,14 +17399,14 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 	/* ==============   output = img / img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		float  sq2;
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			sq2 = 1.0f/(img1_ptr[i] * img1_ptr[i]   + img1_ptr[i+1] * img1_ptr[i+1]);
 			img2_ptr[i]   = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]) ;
 			img2_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]) ;
@@ -17414,7 +17414,7 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
-		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] / img1_ptr[i];
+		for (size_t i=0; i<size; ++i) img2_ptr[i] = img_ptr[i] / img1_ptr[i];
 		img2->update();
 	}
 
@@ -17432,13 +17432,13 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	/* ========= img /= img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img1_ptr = img1->get_data();
 	float *img2_ptr = img2->get_data();
 	if(img->is_complex()) {
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			if(img1_ptr[i] > 1.e-10f) {
 			img2_ptr[i]   = img_ptr[i]  /img1_ptr[i];
 			img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[i];
@@ -17462,9 +17462,9 @@ void Util::mul_scalar(EMData* img, float scalar)
 	/* ============  output = scalar*input  ================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  =img->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] *= scalar;
+	for (size_t i=0;i<size;++i) img_ptr[i] *= scalar;
 	img->update();
 
 	EXITFUNC;
@@ -17499,10 +17499,10 @@ void Util::add_img(EMData* img, EMData* img1)
 	/* ========= img += img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i];
+	for (size_t i=0;i<size;++i) img_ptr[i] += img1_ptr[i];
 	img->update();
 
 	EXITFUNC;
@@ -17518,10 +17518,10 @@ void Util::add_img_abs(EMData* img, EMData* img1)
 	/* ========= img += img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] += abs(img1_ptr[i]);
+	for (size_t i=0;i<size;++i) img_ptr[i] += abs(img1_ptr[i]);
 	img->update();
 
 	EXITFUNC;
@@ -17560,10 +17560,10 @@ void Util::sub_img(EMData* img, EMData* img1)
 	/* ========= img -= img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] -= img1_ptr[i];
+	for (size_t i=0;i<size;++i) img_ptr[i] -= img1_ptr[i];
 	img->update();
 
 	EXITFUNC;
@@ -17607,19 +17607,19 @@ void Util::div_img(EMData* img, EMData* img1)
 	/* ========= img /= img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		float  sq2;
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			sq2 = 1.0f/(img1_ptr[i] * img1_ptr[i]   + img1_ptr[i+1] * img1_ptr[i+1]);
 			float tmp    = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]) ;
 			img_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]) ;
 			img_ptr[i]   = tmp;
 		}
 	} else {
-		for (int i=0; i<size; i++) img_ptr[i] /= img1_ptr[i];
+		for (size_t i=0; i<size; ++i) img_ptr[i] /= img1_ptr[i];
 	}
 	img->update();
 
@@ -17636,11 +17636,11 @@ void Util::div_filter(EMData* img, EMData* img1)
 	/* ========= img /= img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			if(img1_ptr[i] > 1.e-10f) {
 			img_ptr[i]   /= img1_ptr[i];
 			img_ptr[i+1] /= img1_ptr[i];
