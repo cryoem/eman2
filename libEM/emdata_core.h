@@ -667,10 +667,10 @@ vector<int> get_array_offsets() {
 
 /** Return reference to complex elements */
 std::complex<float>& cmplx(const int ix, const int iy, const int iz) {
-	ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nx;
+	ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*(size_t)nx;
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz)
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	if (pos < 0 || pos >= (size_t)nx*ny*nz)
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));
@@ -680,8 +680,8 @@ std::complex<float>& cmplx(const int ix, const int iy, const int iz) {
 std::complex<float>& cmplx(const int ix, const int iy) {
 	ptrdiff_t pos = 2*(ix-xoff)+(iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz)
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	if (pos < 0 || pos >= (size_t)nx*ny*nz)
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));
@@ -691,8 +691,8 @@ std::complex<float>& cmplx(const int ix, const int iy) {
 std::complex<float>& cmplx(const int ix) {
 	ptrdiff_t pos = 2*(ix-xoff);
 #ifdef BOUNDS_CHECKING
-	if (pos < 0 || pos >= nx*ny*nz)
-		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	if (pos < 0 || pos >= (size_t)nx*ny*nz)
+		throw OutofRangeException(0, (size_t)nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 	float* begin = get_data() + pos;
 	return *(reinterpret_cast<std::complex<float>* >(begin));

@@ -126,7 +126,7 @@ int Df3IO::read_data(float *rdata, int, const Region *, bool)
 {
 	ENTERFUNC;
 
-	size_t image_size = nx*ny*nz;
+	size_t image_size = (size_t)nx*ny*nz;
 
 	// obtain file size:
 	portable_fseek (df3file , 0 , SEEK_END);
@@ -172,7 +172,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 {
 	ENTERFUNC;
 
-	size_t img_size = nx*ny*nz;
+	size_t img_size = (size_t)nx*ny*nz;
 	unsigned int * uidata = 0;
 	unsigned short * usdata = 0;
 	unsigned char * ucdata = 0;

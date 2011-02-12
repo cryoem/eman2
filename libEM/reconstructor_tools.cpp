@@ -82,7 +82,7 @@ void FourierPixelInserter3D::init()
 	nx=data->get_xsize();
 	ny=data->get_ysize();
 	nz=data->get_zsize();
-	nxyz=nx*ny*nz;
+	nxyz=(size_t)nx*ny*nz;
 	nx2=nx/2-1;
 	ny2=ny/2;
 	nz2=nz/2;

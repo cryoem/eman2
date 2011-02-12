@@ -164,7 +164,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 {
 	ENTERFUNC;
 	size_t i;
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 
 	//single image format, index can only be zero
 	image_index = 0;

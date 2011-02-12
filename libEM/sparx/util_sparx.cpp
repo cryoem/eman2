@@ -17480,10 +17480,10 @@ void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	/* ==============   img += scalar*img1   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  =img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++)img_ptr[i] += img1_ptr[i]*scalar;
+	for (size_t i=0;i<size;++i)img_ptr[i] += img1_ptr[i]*scalar;
 	img1->update();
 
 	EXITFUNC;
@@ -17537,13 +17537,13 @@ void Util::add_img2(EMData* img, EMData* img1)
 	/* ========= img += img1**2 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
-		for (int i=0; i<size; i+=2) img_ptr[i] += img1_ptr[i] * img1_ptr[i] + img1_ptr[i+1] * img1_ptr[i+1] ;
+		for (size_t i=0; i<size; i+=2) img_ptr[i] += img1_ptr[i] * img1_ptr[i] + img1_ptr[i+1] * img1_ptr[i+1] ;
 	} else {
-		for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
+		for (size_t i=0;i<size;++i) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
 	}
 	img->update();
 
@@ -17579,18 +17579,18 @@ void Util::mul_img(EMData* img, EMData* img1)
 	/* ========= img *= img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
-		for (int i=0; i<size; i+=2) {
+		for (size_t i=0; i<size; i+=2) {
 			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
 			img_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
 			img_ptr[i]   = tmp;
 
 		}
 	} else {
-		for (int i=0;i<size;i++) img_ptr[i] *= img1_ptr[i];
+		for (size_t i=0;i<size;++i) img_ptr[i] *= img1_ptr[i];
 	}
 	img->update();
 

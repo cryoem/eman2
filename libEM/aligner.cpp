@@ -156,7 +156,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		cfn->process_inplace("math.sqrt");
 		float *d1=cf->get_data();
 		float *d2=cfn->get_data();
-		for (int i=0; i<nx*ny*nz; i++) {
+		for (size_t i=0; i<(size_t)nx*ny*nz; ++i) {
 			if (d2[i]!=0) d1[i]/=d2[i];
 		}
 		cf->update();

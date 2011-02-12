@@ -262,7 +262,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 {
 	ENTERFUNC;
 
-	size_t size = nx*ny*nz;
+	size_t size = (size_t)nx*ny*nz;
 	switch(dt) {
 	case EMUtil::EM_FLOAT:
 		fread(rdata,nx*nz,ny*sizeof(float),amira_file);
@@ -288,13 +288,13 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 		if( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
 			char *cdata=(char*)datashort;
-			for(size_t i=0;i<size;i++){
+			for(size_t i=0;i<size;++i){
 				//swap 0-1
 				tmpdata=cdata[2*i+1];
 				cdata[2*i+1]=cdata[2*i];
 				cdata[2*i] = tmpdata;
 			}
-			for(size_t i=0; i<size; i++) rdata[i] = float(datashort[i]);
+			for(size_t i=0; i<size; ++i) rdata[i] = float(datashort[i]);
 			free(datashort);
 		}
 	}
@@ -303,7 +303,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	{
 		char *databyte = (char*)malloc(sizeof(char)*nx*ny*nz);
 		fread(databyte,nx*nz,ny*sizeof(char),amira_file);
-		for(size_t i=0; i<size; i++) rdata[i] = float(databyte[i]);
+		for(size_t i=0; i<size; ++i) rdata[i] = float(databyte[i]);
 		free(databyte);
 	}
 		break;

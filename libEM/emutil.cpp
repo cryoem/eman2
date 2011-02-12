@@ -1500,7 +1500,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny, float& re
 #endif
 		float m=0.0f,s=0.0f;
 
-		size_t size = nx*ny*nz;
+		size_t size = (size_t)nx*ny*nz;
 		float min=data[0],max=data[0];
 
 		for (size_t i=0; i<size; ++i) { m+=data[i]; s+=data[i]*data[i]; min=data[i]<min?data[i]:min; max=data[i]>max?data[i]:max; }

@@ -670,8 +670,8 @@ float EMData::get_circle_mean()
 	double n = 0,s=0;
 	float *d = mask->get_data();
 	float * data = get_data();
-	size_t size = nx*ny*nz;
-	for (size_t i = 0; i < size; i++) {
+	size_t size = (size_t)nx*ny*nz;
+	for (size_t i = 0; i < size; ++i) {
 		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
 

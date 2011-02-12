@@ -305,7 +305,7 @@ void EMData::add(float f,int keepzero)
 		if( f!=0 )
 		{
 			update();
-			size_t size = nx*ny*nz; //size of data
+			size_t size = (size_t)nx*ny*nz; //size of data
 			if( keepzero )
 			{
 				for(size_t i=0; i<size; i+=2)
