@@ -130,7 +130,7 @@ EMData::EMData(const EMData& that) :
 		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(that.changecount), nx(that.nx), ny(that.ny), nz(that.nz),
-		nxy(that.nx*that.ny), nxyz(that.nx*that.ny*that.nz), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
+		nxy(that.nx*that.ny), nxyz((size_t)that.nx*that.ny*that.nz), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
 		pathnum(that.pathnum), rot_fp(0)
 {
 	ENTERFUNC;
@@ -260,7 +260,7 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 #ifdef EMAN2_USING_CUDA
 		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
 #endif //EMAN2_USING_CUDA
-		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz(x*y*z), xoff(0),
+		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz((size_t)x*y*z), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
 {
 	ENTERFUNC;
@@ -279,7 +279,7 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 
 EMData::EMData(float* data, float* cudadata, const int x, const int y, const int z, const Dict& attr_dict) :
 		cudarwdata(cudadata), cudarodata(0), num_bytes(x*y*z*sizeof(float)), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
-		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz(x*y*z), xoff(0),
+		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz((size_t)x*y*z), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
 {
 	ENTERFUNC;
@@ -2168,7 +2168,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 
 	float *rdata1 = this_fft->get_data();
 	float *rdata2 = cf->get_data();
-	size_t this_fft_size = this_fft->get_xsize() * this_fft->get_ysize() * this_fft->get_zsize();
+	size_t this_fft_size = (size_t)this_fft->get_xsize() * this_fft->get_ysize() * this_fft->get_zsize();
 
 	if (with == this) {
 		for (size_t i = 0; i < this_fft_size; i += 2) {
