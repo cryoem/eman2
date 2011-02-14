@@ -4066,14 +4066,14 @@ void EMData::fft_shuffle() {
 }
 
 void EMData::pad_corner(float *pad_image) {
-	int nbytes = nx*sizeof(float);
+	size_t nbytes = nx*sizeof(float);
 	for (int iy=0; iy<ny; iy++)
 		memcpy(&(*this)(0,iy), pad_image+3+(iy+3)*nx, nbytes);
 }
 
 void EMData::shuffle_pad_corner(float *pad_image) {
 	int nyhalf = ny/2;
-	int nbytes = nx*sizeof(float);
+	size_t nbytes = nx*sizeof(float);
 	for (int iy = 0; iy < nyhalf; iy++)
 		memcpy(&(*this)(0,iy), pad_image+6+(iy+nyhalf+3)*nx, nbytes);
 	for (int iy = nyhalf; iy < ny; iy++)
@@ -6543,7 +6543,7 @@ void EMData::depad_corner() {
 	int nyold = std::max<int>(ny/npad, 1);
 	int nzold = std::max<int>(nz/npad, 1);
 #endif  //_WIN32
-	int bytes = nxold*sizeof(float);
+	size_t bytes = nxold*sizeof(float);
 	float* dest = get_data();
 	for (int iz=0; iz < nzold; iz++) {
 		for (int iy = 0; iy < nyold; iy++) {

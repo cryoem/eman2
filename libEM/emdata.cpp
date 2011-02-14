@@ -3337,7 +3337,7 @@ EMData *EMData::convolute(EMData * with)
 
 	float *rdata1 = f1->get_data();
 	float *rdata2 = cf->get_data();
-	size_t cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
+	size_t cf_size = (size_t)cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
 
 	float re,im;
 
@@ -3867,7 +3867,7 @@ void EMData::cut_slice(const EMData *const map, const Transform& transform, bool
 					ddata[l] = 0;
 					continue;
 				}
-				int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
+				size_t k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * (size_t)map_nxy;
 				ddata[l] = sdata[k];
 			}
 
@@ -4067,7 +4067,7 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 			// These 0.5 offsets are here because the round function rounds to the nearest whole number.
 			if (xx < -0.5 || yy < -0.5 || zz < -0.5 || xx >= map_nx_round_limit || yy >= map_ny_round_limit || zz >= map_nz_round_limit) continue;
 
-			int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
+			size_t k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * (size_t)map_nxy;
 			int l = (x+nx/2) + (y+ny/2) * nx;
 			ddata[k] = sdata[l];
 		}

@@ -203,14 +203,14 @@ FloatPoint calc_center_of_mass(const float threshold=0);
  * all pixels are in a 1D array.
  * @return Index of the minimum-value pixel.
  */
-int calc_min_index() const;
+size_t calc_min_index() const;
 
 
 /** Calculates the index of maximum-value pixel when assuming
  * all pixels are in a 1D array.
  * @return Index of the maximum-value pixel.
  */
-int calc_max_index() const;
+size_t calc_max_index() const;
 
 
 /** Calculate and return a sorted list of pixels whose values

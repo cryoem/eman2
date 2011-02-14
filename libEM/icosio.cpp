@@ -218,7 +218,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 							  false, EMUtil::IMAGE_ICOS, sizeof(int), sizeof(int));
 
 #if 0
-	int float_size = sizeof(float);
+	size_t float_size = sizeof(float);
 	int nx = icosh.nx;
 	float *buf = new float[nx + 2];
 	buf[0] = (float)float_size * nx;

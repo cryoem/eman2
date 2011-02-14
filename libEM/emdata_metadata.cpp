@@ -116,9 +116,9 @@ EMData* EMData::get_fft_amplitude()
 		for (int k = 1; k < nz; ++k) {
 			for (int j = 1; j < ny; ++j) {
 				for (int i = 0; i < nx2/2; ++i) {
-					idx1 = k*nx2*ny+j*nx2+nx2/2+i;
-					idx2 = k*nx*ny+j*nx+2*i;
-					idx3 = (nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
+					idx1 = (size_t)k*nx2*ny+j*nx2+nx2/2+i;
+					idx2 = (size_t)k*nx*ny+j*nx+2*i;
+					idx3 = (size_t)(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
 					d[idx1] = data[idx2];
 					d[idx3] = data[idx2];
 				}
@@ -171,9 +171,9 @@ EMData* EMData::get_fft_phase()
 		for (int k = 1; k < nz; ++k) {
 			for (int j = 1; j < ny; ++j) {
 				for (int i = 0; i < nx2/2; ++i) {
-					idx1 = k*nx2*ny+j*nx2+nx2/2+i;
-					idx2 = k*nx*ny+j*nx+2*i+1;
-					idx3 = (nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
+					idx1 = (size_t)k*nx2*ny+j*nx2+nx2/2+i;
+					idx2 = (size_t)k*nx*ny+j*nx+2*i+1;
+					idx3 = (size_t)(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i;
 					d[idx1] = data[idx2];
 					d[idx3] = -data[idx2];
 				}
@@ -341,7 +341,7 @@ IntPoint EMData::calc_min_location() const
 	float * data = get_data();
 
 	for (int j = 0; j < nz; ++j) {
-		size_t cur_z = j * nxy;
+		size_t cur_z = (size_t)j * nxy;
 
 		for (int k = 0; k < ny; ++k) {
 			size_t cur_y = k * nx + cur_z;
@@ -379,7 +379,7 @@ IntPoint EMData::calc_max_location() const
 	float * data = get_data();
 
 	for (int j = 0; j < nz; ++j) {
-		size_t cur_z = j * nxy;
+		size_t cur_z = (size_t)j * nxy;
 
 		for (int k = 0; k < ny; ++k) {
 			size_t cur_y = k * nx + cur_z;
@@ -458,7 +458,7 @@ FloatPoint EMData::calc_center_of_mass(float threshold)
 		for (int j = 0; j < ny; ++j) {
 			int j2 = nx * j;
 			for (int k = 0; k < nz; ++k) {
-				size_t l = i + j2 + k * nxy;
+				size_t l = i + j2 + (size_t)k * nxy;
 				if (data[l] >= threshold) {		// threshold out noise (and negative density)
 					com[0] += i * data[l];
 					com[1] += j * data[l];
@@ -477,18 +477,18 @@ FloatPoint EMData::calc_center_of_mass(float threshold)
 }
 
 
-int EMData::calc_min_index() const
+size_t EMData::calc_min_index() const
 {
 	IntPoint min_location = calc_min_location();
-	int i = min_location[0] + min_location[1] * nx + min_location[2] * nx * ny;
+	size_t i = min_location[0] + min_location[1] * nx + (size_t)min_location[2] * nx * ny;
 	return i;
 }
 
 
-int EMData::calc_max_index() const
+size_t EMData::calc_max_index() const
 {
 	IntPoint max_location = calc_max_location();
-	int i = max_location[0] + max_location[1] * nx + max_location[2] * nx * ny;
+	size_t i = max_location[0] + max_location[1] * nx + (size_t)max_location[2] * nx * ny;
 	return i;
 }
 
@@ -508,7 +508,7 @@ vector<Pixel> EMData::calc_highest_locations(float threshold) const
 	float * data = get_data();
 
 	for (int j = 0; j < nz; ++j) {
-		size_t cur_z = j * nxy;
+		size_t cur_z = (size_t)j * nxy;
 
 		for (int k = 0; k < ny; ++k) {
 			size_t cur_y = k * nx + cur_z;
@@ -546,7 +546,7 @@ vector<Pixel> EMData::calc_n_highest_locations(int n)
 	int nxy = nx * ny;
 
 	for (int j = 0; j < nz; ++j) {
-		size_t cur_z = j * nxy;
+		size_t cur_z = (size_t)j * nxy;
 
 		for (int k = 0; k < ny; ++k) {
 			size_t cur_y = k * nx + cur_z;
@@ -727,7 +727,7 @@ void EMData::set_size(int x, int y, int z)
 
 	int old_nx = nx;
 
-	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
+	size_t size = x*y*z*sizeof(float);
 
 	if (rdata != 0) {
 		rdata = (float*)EMUtil::em_realloc(rdata,size);
