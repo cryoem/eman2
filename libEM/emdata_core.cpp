@@ -763,14 +763,14 @@ float& EMData::get_value_at_wrap(int x, int y)
 
 float& EMData::get_value_at_wrap(int x, int y, int z)
 {
-	size_t lx = x;
-	size_t ly = y;
-	size_t lz = z;
+	ptrdiff_t lx = x;
+	ptrdiff_t ly = y;
+	ptrdiff_t lz = z;
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
 
-	return get_data()[lx + ly * (size_t)nx + lz * (size_t)nxy];
+	return get_data()[lx + ly * nx + lz * nxy];
 }
 
 
@@ -790,14 +790,14 @@ float EMData::get_value_at_wrap(int x, int y) const
 
 float EMData::get_value_at_wrap(int x, int y, int z) const
 {
-	size_t lx = x;
-	size_t ly = y;
-	size_t lz = z;
+	ptrdiff_t lx = x;
+	ptrdiff_t ly = y;
+	ptrdiff_t lz = z;
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
 
-	return get_data()[lx + ly * (size_t)nx + lz * (size_t)nxy];
+	return get_data()[lx + ly * nx + lz * nxy];
 }
 
 float EMData::sget_value_at(int x, int y, int z) const
