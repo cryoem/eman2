@@ -1417,10 +1417,9 @@ vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const 
 
 void CircularMaskProcessor::calc_locals(EMData *)
 {
-	xc = nx / 2.0f + dx;
-	yc = ny / 2.0f + dy;
-	zc = nz / 2.0f + dz;
-
+	xc = Util::fast_floor(nx/2.0f) + dx;
+	yc = Util::fast_floor(ny/2.0f) + dy;
+	zc = Util::fast_floor(nz/2.0f) + dz;
 
 	if (outer_radius <= 0) {
 		outer_radius = nx / 2;
