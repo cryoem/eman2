@@ -1439,6 +1439,8 @@ The basic design of EMAN Processors: <br>\
 				return new SymAlignProcessor();
 			}
 
+			virtual void process_inplace(EMData* image);
+
 			virtual EMData* process(const EMData* const image);
 
 			virtual TypeDict get_param_types() const
