@@ -202,6 +202,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (use_cpu) {
 		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
 	}
+	//if(peak[2] != 0) cout << -peak[0] << " " << -peak[1] << " " << -peak[2] << endl;
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 	//cout << peak[0] << " " << peak[1] << endl;
 
@@ -1613,7 +1614,7 @@ static Transform refalin3d_perturbquat(const Transform*const t, const float& spi
 	d["n1"] = normal[0];
 	d["n2"] = normal[1];
 	d["n3"] = normal[2];
-//	cout << omega << " " << normal[0] << " " << normal[1] << " " << normal[2] << " " << n0 << " " << n1 << " " << n2 << endl;
+	//cout << omega << " " << normal[0] << " " << normal[1] << " " << normal[2] << " " << n0 << " " << n1 << " " << n2 << endl;
 	
 	Transform q(d);
 	q.set_trans((float)x,(float)y,(float)z);

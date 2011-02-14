@@ -165,6 +165,10 @@ namespace EMAN
 		 * @return The result 3D model.
 		 */
 		virtual EMData *finish(bool doift=true) { throw; }
+		
+		/** set the volume and tmp_volume data to zero, for use in Monte Carlo reconstructors
+		*/
+		virtual void clear() {throw; }
 
 		/** Print the current parameters to std::out
 		 */
@@ -436,6 +440,10 @@ namespace EMAN
 		* @return The real space reconstructed volume
 		*/
 		virtual EMData *finish(bool doift=true);
+		
+		/** clear the volume and tmp_data for use in Monte Carlo reconstructions
+		*/
+		virtual void clear();
 
 		/** Get the unique name of the reconstructor
 		*/

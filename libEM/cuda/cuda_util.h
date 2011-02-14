@@ -44,6 +44,8 @@ float get_edgemean_cuda(const float* data, const int nx, const int ny, const int
 
 void to_value_cuda(float* data, const float value, const int nx, const int ny, const int nz);
 
+void to_zero_cuda(float* data, const int nx, const int ny, const int nz);
+
 #endif // eman__cuda_util_h__
 
 

@@ -249,3 +249,8 @@ void to_value_cuda(float* data, const float value, const int nx, const int ny, c
 
 	return;
 }
+
+void to_zero_cuda(float* data, const int nx, const int ny, const int nz)
+{
+	to_value_cuda(data, 0.0, nx, ny, nz);
+}

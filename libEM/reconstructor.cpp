@@ -514,6 +514,28 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 	}
 }
 
+void FourierReconstructor::clear()
+{
+	bool zeroimage = true;
+	bool zerotmpimg = true;
+	
+#ifdef EMAN2_USING_CUDA
+	if(EMData::usecuda == 1) {
+		if(image->cudarwdata) {
+			to_zero_cuda(image->cudarwdata,image->get_xsize(),image->get_ysize(),image->get_zsize());
+			zeroimage = false;
+		}
+		if(tmp_data->cudarwdata) {
+			//to_zero_cuda(tmp_data->cudarwdata,image->get_xsize(),image->get_ysize(),image->get_zsize());
+			zerotmpimg = false;
+		}
+	}
+#endif
+
+	if(zeroimage) image->to_zero();
+	if(zerotmpimg) tmp_data->to_zero();
+	
+}
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t )
 {
@@ -561,7 +583,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
-	
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!input_slice->cudarwdata) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
@@ -739,6 +761,10 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 			float * m = new float[12];
 			t3d.copy_matrix_into_array(m);
 			float4 stats = determine_slice_agreement_cuda(m,input_slice->cudarwdata,image->cudarwdata,tmp_data->cudarwdata,inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
+			dot = stats.x;
+			vweight = stats.y;
+			power = stats.z;
+			power2 = stats.w;
 			//cout << "CUDA stats " << stats.x << " " << stats.y << " " << stats.z << " " << stats.w << endl;
 			use_cpu = false;
 		}
@@ -754,7 +780,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					float rx = (float) x/(inx-2);	// coords relative to Nyquist=.5
 					float ry = (float) y/iny;
 
-// 					if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
+// 					if ((rx * rx + Util::square(ry - max_input_dim "xform.projection"/ 2)) > rl)
 // 					continue;
 
 					Vec3f coord(rx,ry,0);

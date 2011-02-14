@@ -641,15 +641,15 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	if (negative) negative=-1.0; else negative=1.0;
 	int searchx, searchy, searchz;
 	
-	if (zeroori) {
+//	if (zeroori) {
 		searchx = params.set_default("searchx",-1); 
 	        searchy = params.set_default("searchy",-1); 
 	        searchz = params.set_default("searchz",-1);
-	}else{
-		searchx = 0;
-		searchy = 0;
-		searchz = 0;
-	}
+//	}else{
+//		searchx = 0;
+//		searchy = 0;
+//		searchz = 0;
+//	}
 	
 #ifdef EMAN2_USING_CUDA	
 	if(image->cudarwdata && with->cudarwdata){
@@ -695,7 +695,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 
 	IntPoint point;
 	if (zeroori) {
-	        point[0] = searchx; point[1] = searchy; point[2] = searchz;
+	        point[0] = 0; point[1] = 0; point[2] = 0;
 	} else {
 	        point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 	}

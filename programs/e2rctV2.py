@@ -95,7 +95,7 @@ def main():
 			preprocess = ("--preprocess=%s " % str(p)) + preprocess 
 		
 	# Now get azimuthal data
-	cadb = db_open_dict(options.classavg)
+	cadb = EMData.read_images(options.classavg)
 	tiltimgs = EMData.read_images(options.tiltdata)
 	
 	#initialize some stuff

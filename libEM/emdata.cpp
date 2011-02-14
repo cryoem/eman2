@@ -304,7 +304,7 @@ EMData::~EMData()
 {
 	ENTERFUNC;
 	free_memory();
-	
+
 #ifdef EMAN2_USING_CUDA
 	if(cudarwdata){rw_free();}
 	if(cudarodata){ro_free();}

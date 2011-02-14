@@ -763,9 +763,11 @@ float& EMData::get_value_at_wrap(int x, int y)
 
 float& EMData::get_value_at_wrap(int x, int y, int z)
 {
-	ptrdiff_t lx = x;
-	ptrdiff_t ly = y;
-	ptrdiff_t lz = z;
+
+	int lx = x;
+	int ly = y;
+	int lz = z;
+
 	if (lx < 0) lx = nx + lx;
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
