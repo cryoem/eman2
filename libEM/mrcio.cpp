@@ -574,7 +574,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	int nx = mrch.nx;
 	int ny = mrch.ny;
 	int nz = mrch.nz;
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 
 	if (is_complex_mode()) {
 		nx *= 2;

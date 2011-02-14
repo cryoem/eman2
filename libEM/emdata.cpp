@@ -2239,7 +2239,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,c
 
 	int p0 = 0;
 	int p1 = 0;
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	if (size < 300000) {
 		p0 = 0;
 		p1 = 0;
@@ -3120,7 +3120,7 @@ void EMData::add_incoherent(EMData * obj)
 
 	float *dest = get_data();
 	float *src = obj->get_data();
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	for (size_t j = 0; j < size; j += 2) {
 #ifdef	_WIN32
 		dest[j] = (float) _hypot(src[j], dest[j]);

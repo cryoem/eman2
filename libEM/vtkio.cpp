@@ -243,8 +243,8 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 			nx, ny, nz, originx, originy, originz, spacingx, spacingy, spacingz);
 
 
-	fprintf(vtk_file, "POINT_DATA %0d\nSCALARS density float 1\nLOOKUP_TABLE default\n",
-			nx * ny * nz);
+	fprintf(vtk_file, "POINT_DATA %0lu\nSCALARS density float 1\nLOOKUP_TABLE default\n",
+			(size_t)nx * ny * nz);
 	EXITFUNC;
 	return 0;
 }
@@ -307,7 +307,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 
 		if (!ByteOrder::is_host_big_endian()) {
-			ByteOrder::swap_bytes(data, nx * ny * nz);
+			ByteOrder::swap_bytes(data, (size_t)nx * ny * nz);
 		}
 	}
 
@@ -326,14 +326,14 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 
 	bool swapped = false;
 	if (!ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(data, nx * ny * nz);
+		ByteOrder::swap_bytes(data, (size_t)nx * ny * nz);
 		swapped = true;
 	}
 
 	fwrite(data, nx * nz, ny * sizeof(float), vtk_file);
 
 	if (swapped) {
-		ByteOrder::swap_bytes(data, nx * ny * nz);
+		ByteOrder::swap_bytes(data, (size_t)nx * ny * nz);
 	}
 	EXITFUNC;
 	return 0;

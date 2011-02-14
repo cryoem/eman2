@@ -105,7 +105,7 @@ void ImageAverager::add_image(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	size_t image_size = nx * ny * nz;
+	size_t image_size = (size_t)nx * ny * nz;
 
 	if (nimg == 1) {
 		result = new EMData();
@@ -129,7 +129,7 @@ void ImageAverager::add_image(EMData * image)
 	float * image_data = image->get_data();
 
 	if (!ignore0) {
-		for (size_t j = 0; j < image_size; j++) {
+		for (size_t j = 0; j < image_size; ++j) {
 			float f = image_data[j];
 			result_data[j] += f;
 			if (sigma_image_data) {
@@ -138,7 +138,7 @@ void ImageAverager::add_image(EMData * image)
 		}
 	}
 	else {
-		for (size_t j = 0; j < image_size; j++) {
+		for (size_t j = 0; j < image_size; ++j) {
 			float f = image_data[j];
 			if (f) {
 				result_data[j] += f;
@@ -220,7 +220,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 	int nx = image0->get_xsize();
 	int ny = image0->get_ysize();
 	int nz = image0->get_zsize();
-	size_t image_size = nx * ny * nz;
+	size_t image_size = (size_t)nx * ny * nz;
 
 	EMData *result = new EMData();
 	result->set_size(nx, ny, nz);
@@ -235,7 +235,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 
 	int c = 1;
 	if (ignore0) {
-		for (size_t j = 0; j < image_size; j++) {
+		for (size_t j = 0; j < image_size; ++j) {
 			int g = 0;
 			for (size_t i = 0; i < image_list.size(); i++) {
 				float f = image_list[i]->get_value_at(j);
@@ -286,13 +286,13 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 			}
 		}
 
-		for (size_t j = 0; j < image_size; j++) {
+		for (size_t j = 0; j < image_size; ++j) {
 			result_data[j] /= static_cast < float >(c);
 		}
 	}
 
 	if (sigma_image_data) {
-		for (size_t j = 0; j < image_size; j++) {
+		for (size_t j = 0; j < image_size; ++j) {
 			float f1 = sigma_image_data[j] / c;
 			float f2 = result_data[j];
 			sigma_image_data[j] = sqrt(f1 - f2 * f2);
@@ -385,7 +385,7 @@ void IterationAverager::add_image( EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	size_t image_size = nx * ny * nz;
+	size_t image_size = (size_t)nx * ny * nz;
 
 	if (nimg == 1) {
 		result = new EMData();
@@ -398,7 +398,7 @@ void IterationAverager::add_image( EMData * image)
 	float *result_data = result->get_data();
 	float *sigma_image_data = sigma_image->get_data();
 
-	for (size_t j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; ++j) {
 		float f = image_data[j];
 		result_data[j] += f;
 		sigma_image_data[j] += f * f;
@@ -416,12 +416,12 @@ EMData * IterationAverager::finish()
 	int nx = result->get_xsize();
 	int ny = result->get_ysize();
 	int nz = result->get_zsize();
-	size_t image_size = nx * ny * nz;
+	size_t image_size = (size_t)nx * ny * nz;
 
 	float *result_data = result->get_data();
 	float *sigma_image_data = sigma_image->get_data();
 
-	for (size_t j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; ++j) {
 		result_data[j] /= nimg;
 		float f1 = sigma_image_data[j] / nimg;
 		float f2 = result_data[j];
@@ -731,7 +731,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	int nx = image0->get_xsize();
 	int ny = image0->get_ysize();
 	int nz = image0->get_zsize();
-	size_t image_size = nx * ny * nz;
+	size_t image_size = (size_t)nx * ny * nz;
 
 	EMData *result = new EMData();
 	result->set_size(nx, ny, nz);
@@ -746,7 +746,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	memcpy(result_data, image0_data, image_size * sizeof(float));
 	memcpy(sigma_image_data, image0_data, image_size * sizeof(float));
 
-	for (size_t j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; ++j) {
 		sigma_image_data[j] *= sigma_image_data[j];
 	}
 
@@ -770,14 +770,14 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	}
 
 	float c = static_cast < float >(nc);
-	for (size_t j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; ++j) {
 		float f1 = sigma_image_data[j] / c;
 		float f2 = result_data[j] / c;
 		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt(c);
 	}
 
 
-	for (size_t j = 0; j < image_size; j++) {
+	for (size_t j = 0; j < image_size; ++j) {
 		result_data[j] /= c;
 	}
 

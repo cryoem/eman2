@@ -257,7 +257,7 @@ float EMData::calc_center_density()
 	float center = get_attr("mean");
 	float sigma = get_attr("sigma");
 	float ds = sigma / 2;
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	float *d = get_data();
 	float sigma1 = sigma / 20;
 	float sigma2 = sigma / 1000;
@@ -266,7 +266,7 @@ float EMData::calc_center_density()
 		double sum = 0;
 		int norm = 0;
 
-		for (size_t i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; ++i) {
 			if (fabs(d[i] - center) < ds) {
 				sum += d[i];
 				norm++;
@@ -300,9 +300,9 @@ float EMData::calc_sigma_diff()
 	int nup = 0;
 	int ndown = 0;
 
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 
-	for (size_t i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; ++i) {
 		if (d[i] > mean) {
 			sum_up += Util::square(d[i] - mean);
 			nup++;
@@ -929,7 +929,7 @@ EMObject EMData::get_attr(const string & key) const
 	
 	if ((flags & EMDATA_NEEDUPD) && (key != "is_fftpad") && (key != "xform.align2d")){update_stat();} //this gives a spped up of 7.3% according to e2speedtest
 		
-	size_t size = nx * ny * nz;    	
+	size_t size = (size_t)nx * ny * nz;
 	if (key == "kurtosis") {
 		float mean = attr_dict["mean"];
 		float sigma = attr_dict["sigma"];
@@ -937,7 +937,7 @@ EMObject EMData::get_attr(const string & key) const
 		float *data = get_data();
 		double kurtosis_sum = 0;
 
-		for (size_t k = 0; k < size; k++) {
+		for (size_t k = 0; k < size; ++k) {
 			float t = (data[k] - mean) / sigma;
 			float tt = t * t;
 			kurtosis_sum += tt * tt;
@@ -952,7 +952,7 @@ EMObject EMData::get_attr(const string & key) const
 
 		float *data = get_data();
 		double skewness_sum = 0;
-		for (size_t k = 0; k < size; k++) {
+		for (size_t k = 0; k < size; ++k) {
 			float t = (data[k] - mean) / sigma;
 			skewness_sum +=  t * t * t;
 		}
@@ -966,7 +966,8 @@ EMObject EMData::get_attr(const string & key) const
 		float* tmp = new float[n];
 		float* d = get_data();
 		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
-		for(size_t i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
+//		for(size_t i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
+		std::copy(d, d+n, tmp);
 		qsort(tmp, n, sizeof(float), &greaterthan);
 		float median;
 		if (n%2==1) median = tmp[n/2];

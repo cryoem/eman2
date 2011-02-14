@@ -3689,7 +3689,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 
 	float sum_x = 0;
 	float sum_y = 0;
@@ -5482,8 +5482,8 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	size_t size = nx * ny * nz;
-	for (size_t i = 0; i < size; i++) {
+	size_t size = (size_t)nx * ny * nz;
+	for (size_t i = 0; i < size; ++i) {
 		if (d[i]) {
 			d[i] = 1;
 		}
@@ -6336,8 +6336,8 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	size_t size = nx * ny * nz;
-	for (size_t i = 0; i < size; i++) {
+	size_t size = (size_t)nx * ny * nz;
+	for (size_t i = 0; i < size; ++i) {
 		if (dat2[i] == 2.0f) {
 			dat2[i] = 1.0f;
 		}
@@ -6501,7 +6501,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 	float *d2 = image2->get_data();
 
 	const int nxy = nx * ny;
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 
 	// TODO: THIS IS EXTREMELY INEFFICIENT
 	if (nz != 1) {
@@ -6537,7 +6537,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 		vec.push_back(exp(-pow(2.0f*i/(val2),2.0f)));
 //		printf("%f\n",exp(-pow(2.0*i/(val1-val2),2.0)));
 	}
-	for (size_t i = 0; i < size; i++) if (d[i]) d[i]=vec[(int)d[i]];
+	for (size_t i = 0; i < size; ++i) if (d[i]) d[i]=vec[(int)d[i]];
 
 	image->update();
 	delete image2;

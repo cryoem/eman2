@@ -739,7 +739,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		// find out how many voxels are useful voxels
 		int num_voxels = 0;
 		int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
-		size_t size = nx * ny * nz;
+		size_t size = (size_t)nx * ny * nz;
 		EMData *tmp_map = map->copy();
 		float *pd = tmp_map->get_data();
 		for (size_t i = 0; i < size; ++i) {

@@ -53,10 +53,10 @@ void flex2em(const scitbx::af::shared<float> & flex_array, Dict & header_dict, E
 	int nz = header_dict["nz"];
 	image.set_size(nx, ny, nz);
 
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	float * data = image.get_data();
 	
-	for(size_t i = 0; i < size; i++) {
+	for(size_t i = 0; i < size; ++i) {
 		data[i] = flex_array[i];
 	}
 

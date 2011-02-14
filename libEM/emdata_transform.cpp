@@ -973,7 +973,7 @@ void EMData::ap2ri()
 //	}
 //#endif
 
-	Util::ap2ri(get_data(), nx * ny * nz);
+	Util::ap2ri(get_data(), (size_t)nx * ny * nz);
 	set_ri(true);
 	update();
 	EXITFUNC;
@@ -998,7 +998,7 @@ void EMData::ri2inten()
 //#endif
 
 	float * data = get_data();
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	for (size_t i = 0; i < size; i += 2) {
 		data[i]=data[i]*data[i]+data[i+1]*data[i+1];
 		data[i+1]=0;
@@ -1030,7 +1030,7 @@ void EMData::ri2ap()
 
 	float * data = get_data();
 
-	size_t size = nx * ny * nz;
+	size_t size = (size_t)nx * ny * nz;
 	for (size_t i = 0; i < size; i += 2) {
 #ifdef	_WIN32
 		float f = (float)_hypot(data[i], data[i + 1]);
