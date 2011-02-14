@@ -1033,6 +1033,34 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = floor(x)
+	 */
+	class FloorValueProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FloorValueProcessor();
+		}
+
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *x) const
+		{
+			*x = floor(*x);
+		}
+
+		string get_desc() const
+		{
+			return "f(x) = floor(x)";
+		}
+	};
+
 
 	/**f(x) = 0 if x = 0; f(x) = 1 if x != 0
 	 */
@@ -1392,6 +1420,56 @@ The basic design of EMAN Processors: <br>\
 			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
 
+	/** Aligns a particle with the specified symmetry into the standard orientation for that
+	 * symmetry.
+	 *@author Steve Ludtke
+	 *@date February 2011
+	 *@param sym A string specifying the symmetry under which to do the alignment
+	 */
+	class SymAlignProcessor:public Processor
+	{
+		public:
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			static Processor *NEW()
+			{
+				return new SymAlignProcessor();
+			}
+
+			virtual EMData* process(const EMData* const image);
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment" );
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "The image is centered and rotated to the standard orientation for the specified symmetry";
+			}
+
+			static const string NAME;
+
+		private:
+			/** Check that the particular aspect is valid
+		 	* @exception ImageDimensionException if the image is not 1,2 or 3D
+			*/
+			void assert_valid_aspect(const vector<int>& translation, const EMData* const image) const;
+
+			/** Get the clip region that will achieve the desired translation
+			 * @exception ImageDimensionException if the image is not 1,2 or 3D
+			 * @param translation the amount by which to translate
+			 * @param image the image that will eventually used for the translation operation
+			 */
+			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
+	};
+
+	
 		/** Scale the image with control over the output dimensions
 		 *@author David Woolford
 		 *@date June 2009

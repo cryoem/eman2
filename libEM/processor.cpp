@@ -70,6 +70,7 @@ const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
+const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
@@ -82,6 +83,7 @@ const string Rotate180Processor::NAME = "math.rotate.180";
 const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "math.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
+const string SymAlignProcessor::NAME = "xform.symalign";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
@@ -258,6 +260,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
 	force_add<AbsoluateValueProcessor>();
+	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
 	force_add<DistanceSegmentProcessor>();
@@ -267,6 +270,7 @@ template <> Factory < Processor >::Factory()
 	force_add<Rotate180Processor>();
 	force_add<TransformProcessor>();
 	force_add<ScaleTransformProcessor>();
+//	force_add<SymAlignProcessor>();
 	force_add<IntTranslateProcessor>();
 	force_add<InvertCarefullyProcessor>();
 
@@ -866,6 +870,14 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	return result;
 }
 
+EMData *SymAlignProcessor::process(const EMData * const image)
+{
+printf("Not implemented yet\n");
+
+
+	
+	
+}
 
 EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
