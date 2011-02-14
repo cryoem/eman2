@@ -351,7 +351,7 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 				for ( int ix = 0; ix <= lsd2-1; ix++) {
 				// Skip Friedel related values
 				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						size_t ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
 						result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
 					}
 				}
@@ -360,7 +360,7 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0f;
 		}
 	} else {		// real space
-		size_t totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+		size_t totsize = (size_t)image->get_xsize()*image->get_ysize()*image->get_zsize();
 		if (params.has_key("mask")) {
 		  EMData* mask;
 		  mask = params["mask"];
@@ -553,7 +553,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
 					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						size_t ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
 						result += x_data[ii] * double(y_data[ii]);
 					}
 				}
@@ -571,7 +571,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
 					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-						size_t ii = ix + (iy  + iz * ny)* lsd2;
+						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
 						square_sum1 += x_data[ii] * double(x_data[ii]);
 						square_sum2 += y_data[ii] * double(y_data[ii]);
 					}
@@ -583,7 +583,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		}
 	} else {
 		
-		size_t totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
+		size_t totsize = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 		double square_sum1 = 0., square_sum2 = 0.;
 
@@ -774,7 +774,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	int radweight = params.set_default("radweight",0);
 	int dbug = params.set_default("debug",0);
 
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	size_t size = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 
 	EMData *with2=NULL;
@@ -833,7 +833,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	if (matchamp) {
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
-		size_t size2 = a->get_xsize() * a->get_ysize() * a->get_zsize();
+		size_t size2 = (size_t)a->get_xsize() * a->get_ysize() * a->get_zsize();
 
 		a->ri2ap();
 		b->ri2ap();

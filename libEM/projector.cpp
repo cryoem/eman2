@@ -285,7 +285,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x - 2.0f, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * 12 + k * 12 * ny;
+							idx = i + j * 12 + (size_t)k * 12 * ny;
 							data[0] += supp[idx] * g;
 							data[1] += supp[idx + 1] * g;
 						}
@@ -301,7 +301,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * nx + k * nx * ny;
+							idx = i + j * nx + (size_t)k * nx * ny;
 							data[0] += rdata[idx] * g;
 							data[1] += rdata[idx + 1] * g;
 						}
@@ -335,7 +335,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x - 2.0f, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * 12 + k * 12 * ny;
+							idx = i + j * 12 + (size_t)k * 12 * ny;
 							data[0] += supp[idx] * g;
 							data[1] += supp[idx + 1] * g;
 						}
@@ -351,7 +351,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * nx + k * nx * ny;
+							idx = i + j * nx + (size_t)k * nx * ny;
 							data[0] += rdata[idx] * g;
 							data[1] += rdata[idx + 1] * g;
 						}
@@ -392,7 +392,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 						for (int i = x0 - 4; i <= x0 + 4; i += 2, mmx += 39) {
 							g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 							n += g;
-							idx = i + j * 12 + k * 12 * ny;
+							idx = i + j * 12 + (size_t)k * 12 * ny;
 							data[0] += supp[idx] * g;
 							data[1] += supp[idx + 1] * g;
 						}
@@ -405,7 +405,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 2; k <= z0 + 2; k++, mmz += 39) {
 					for (int j = y0 - 2; j <= y0 + 2; j++, mmy += 39) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2, mmx += 39) {
-							ii = i + j * nx + k * nx * ny;
+							ii = i + j * nx + (size_t)k * nx * ny;
 							g = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 							n += g;
 							data[0] += rdata[ii] * g;
@@ -442,7 +442,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x - 2.0f, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * 12 + k * 12 * ny;
+							idx = i + j * 12 + (size_t)k * 12 * ny;
 							data[0] += supp[idx] * g;
 							data[1] += supp[idx + 1] * g;
 						}
@@ -458,7 +458,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = Util::hypot3sq(i / 2.0f - x, j - y, k - z);
 							g = exp(-r / gw);
 							n += g;
-							idx = i + j * nx + k * nx * ny;
+							idx = i + j * nx + (size_t)k * nx * ny;
 							data[0] += rdata[idx] * g;
 							data[1] += rdata[idx + 1] * g;
 						}
@@ -493,7 +493,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = sqrt(Util::hypot3sq(i / 2.0f - x - 2.0f, j - y, k - z));
 							g = Interp::hyperg(r);
 							n += g;
-							idx = i + j * 12 + k * 12 * ny;
+							idx = i + j * 12 + (size_t)k * 12 * ny;
 							data[0] += supp[idx] * g;
 							data[1] += supp[idx + 1] * g;
 						}
@@ -509,7 +509,7 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 							r = sqrt(Util::hypot3sq(i / 2.0f - x, j - y, k - z));
 							g = Interp::hyperg(r);
 							n += g;
-							idx = i + j * nx + k * nx * ny;
+							idx = i + j * nx + (size_t)k * nx * ny;
 							data[0] += rdata[idx] * g;
 							data[1] += rdata[idx + 1] * g;
 						}

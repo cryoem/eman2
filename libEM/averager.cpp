@@ -114,7 +114,7 @@ void ImageAverager::add_image(EMData * image)
 		ignore0 = params["ignore0"];
 
 		nimg_n0 = new int[image_size];
-		for (size_t i = 0; i < image_size; i++) {
+		for (size_t i = 0; i < image_size; ++i) {
 			nimg_n0[i] = 0;
 		}
 	}
@@ -154,18 +154,18 @@ void ImageAverager::add_image(EMData * image)
 EMData * ImageAverager::finish()
 {
 	if (result && nimg > 1) {
-		size_t image_size = result->get_xsize() * result->get_ysize() * result->get_zsize();
+		size_t image_size = (size_t)result->get_xsize() * result->get_ysize() * result->get_zsize();
 		float * result_data = result->get_data();
 
 		if (!ignore0) {
-			for (size_t j = 0; j < image_size; j++) {
+			for (size_t j = 0; j < image_size; ++j) {
 				result_data[j] /= nimg;
 			}
 
 			if (sigma_image) {
 				float * sigma_image_data = sigma_image->get_data();
 
-				for (size_t j = 0; j < image_size; j++) {
+				for (size_t j = 0; j < image_size; ++j) {
 					float f1 = sigma_image_data[j] / nimg;
 					float f2 = result_data[j];
 					sigma_image_data[j] = sqrt(f1 - f2 * f2);
@@ -175,13 +175,13 @@ EMData * ImageAverager::finish()
 			}
 		}
 		else {
-			for (size_t j = 0; j < image_size; j++) {
+			for (size_t j = 0; j < image_size; ++j) {
 				result_data[j] /= nimg_n0[j];
 			}
 			if (sigma_image) {
 				float * sigma_image_data = sigma_image->get_data();
 
-				for (size_t j = 0; j < image_size; j++) {
+				for (size_t j = 0; j < image_size; ++j) {
 					float f1 = sigma_image_data[j] / nimg_n0[j];
 					float f2 = result_data[j];
 					sigma_image_data[j] = sqrt(f1 - f2 * f2);
@@ -257,7 +257,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 		if (sigma_image_data) {
 			memcpy(sigma_image_data, image0_data, image_size * sizeof(float));
 
-			for (size_t j = 0; j < image_size; j++) {
+			for (size_t j = 0; j < image_size; ++j) {
 				sigma_image_data[j] *= sigma_image_data[j];
 			}
 		}
@@ -271,12 +271,12 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 			if (EMUtil::is_same_size(image, result)) {
 				float *image_data = image->get_data();
 
-				for (size_t j = 0; j < image_size; j++) {
+				for (size_t j = 0; j < image_size; ++j) {
 					result_data[j] += image_data[j];
 				}
 
 				if (sigma_image_data) {
-					for (size_t j = 0; j < image_size; j++) {
+					for (size_t j = 0; j < image_size; ++j) {
 						sigma_image_data[j] += image_data[j] * image_data[j];
 					}
 				}
