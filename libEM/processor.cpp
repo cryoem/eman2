@@ -2187,17 +2187,10 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 
 	float invnormfactor = 1.0f/(float)normalize_shrink_factor;
 
-<<<<<<< processor.cpp
 	for (size_t k = 0; k < shrunken_nz; k++) {
 		size_t k_min = k * shrink_factor;
 		size_t k_max = k * shrink_factor + z_shrink_factor;
 		size_t cur_k = k * shrunken_nxy;
-=======
-	for (int k = 0; k < shrunken_nz; k++) {
-		int k_min = k * shrink_factor;
-		int k_max = k * shrink_factor + z_shrink_factor;
-		size_t cur_k = (size_t)k * shrunken_nxy;
->>>>>>> 1.312
 
 		for (size_t j = 0; j < shrunken_ny; j++) {
 			size_t j_min = j * shrink_factor;
@@ -2209,13 +2202,8 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 				size_t i_max = i * shrink_factor + shrink_factor;
 
 				float sum = 0;
-<<<<<<< processor.cpp
 				for (size_t kk = k_min; kk < k_max; kk++) {
 					size_t cur_kk = kk * nxy;
-=======
-				for (int kk = k_min; kk < k_max; kk++) {
-					size_t cur_kk = (size_t)kk * nxy;
->>>>>>> 1.312
 
 					for (size_t jj = j_min; jj < j_max; jj++) {
 						size_t cur_jj = jj * nx + cur_kk;
