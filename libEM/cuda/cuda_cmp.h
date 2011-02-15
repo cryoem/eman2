@@ -10,7 +10,7 @@ float2 get_stats_cuda(const float * data, const int nx, const int ny, const int 
 
 void normalize_cuda(float * data, float mean, float var, const int nx, const int ny, const int nz);
 
-float getvalueat_cuda(float * data, int tx, int ty, int tz, int nx, int ny, int nz);
+float get_value_at_wrap_cuda(float * data, int tx, int ty, int tz, int nx, int ny, int nz);
 
 float* calc_fourier_shell_correlation_cuda(const int nx, const int ny, const int nz, const int d);
 

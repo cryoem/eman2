@@ -636,20 +636,14 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	EMData* ccf = params.set_default("ccf",(EMData*) NULL);
 	bool ccf_ownership = false;
 	bool norm = params.set_default("norm",true);
-	bool zeroori = params.set_default("zeroori",false);
 	float negative = (float)params.set_default("negative", 1);
 	if (negative) negative=-1.0; else negative=1.0;
 	int searchx, searchy, searchz;
 	
-//	if (zeroori) {
-		searchx = params.set_default("searchx",-1); 
-	        searchy = params.set_default("searchy",-1); 
-	        searchz = params.set_default("searchz",-1);
-//	}else{
-//		searchx = 0;
-//		searchy = 0;
-//		searchz = 0;
-//	}
+
+	searchx = params.set_default("searchx",-1); 
+	searchy = params.set_default("searchy",-1); 
+	searchz = params.set_default("searchz",-1);
 	
 #ifdef EMAN2_USING_CUDA	
 	if(image->cudarwdata && with->cudarwdata){
@@ -659,26 +653,12 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		}
 		//cout << "using CUDA" << endl;
 		float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
-		//cout << "mean " << stats.x << " var " << stats.y << endl;
-		
-		float best_score;
-		int tx = 0; int ty = 0;; int tz = 0;
-		if (!zeroori) {
-			CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-			tx = data->px;
-			ty = data->py;
-			tz = data->pz;
-			best_score = data->peak;
-			free(data);
-		}else{
-			best_score = getvalueat_cuda(ccf->cudarwdata, tx, ty, tz, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		float best_score = get_value_at_wrap_cuda(ccf->cudarwdata, 0, 0, 0, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		if(norm) {
+			best_score = negative*(best_score - stats.x)/sqrt(stats.y);
+		} else {
+			best_score = negative*best_score;
 		}
-		
-		image->set_attr("tx", tx);
-		image->set_attr("ty", ty);
-		image->set_attr("tz", tz);
-
-		best_score = negative*(best_score - stats.x)/sqrt(stats.y);
 		
 		if (ccf_ownership) delete ccf; ccf = 0;
 		
@@ -692,20 +672,8 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		ccf_ownership = true;
 	}
 	if (norm) ccf->process_inplace("normalize");
-
-	IntPoint point;
-	if (zeroori) {
-	        point[0] = 0; point[1] = 0; point[2] = 0;
-	} else {
-	        point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-	}
-	//this is to prevent us from doing a ccf twice (as was absurdly done before)
-	float tx = (float)point[0]; float ty = (float)point[1]; float tz = (float)point[2];
-	image->set_attr("tx", tx);
-	image->set_attr("ty", ty);
-	image->set_attr("tz", tz);
 	
-	float best_score = ccf->get_value_at_wrap(tx,ty,tz);
+	float best_score = ccf->get_value_at_wrap(0,0,0);
         if (ccf_ownership) delete ccf; ccf = 0;
         
 	return negative*best_score;

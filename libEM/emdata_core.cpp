@@ -49,6 +49,7 @@ using std::endl;
 
 #ifdef EMAN2_USING_CUDA
 #include "cuda/cuda_processor.h"
+#include "cuda/cuda_cmp.h"
 #endif // EMAN2_USING_CUDA
 
 void EMData::free_memory()
@@ -763,7 +764,13 @@ float& EMData::get_value_at_wrap(int x, int y)
 
 float& EMData::get_value_at_wrap(int x, int y, int z)
 {
-
+	
+#ifdef EMAN2_USING_CUDA 
+	if(cudarwdata){
+		float result = get_value_at_wrap_cuda(cudarwdata, x, y, z, nx, ny, nz); // this should work....
+		return result;
+	}
+#endif
 	int lx = x;
 	int ly = y;
 	int lz = z;

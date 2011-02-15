@@ -44,6 +44,7 @@
 
 #ifdef EMAN2_USING_CUDA
 	#include "cuda/cuda_processor.h"
+	#include "cuda/cuda_cmp.h"
 #endif
 
 #ifdef SPARX_USING_CUDA
@@ -56,24 +57,23 @@ using namespace EMAN;
 
 const string TranslationalAligner::NAME = "translational";
 const string RotationalAligner::NAME = "rotational";
-const string RotationalAlignerIterative::NAME = "rotational.iterative";
+const string RotationalAlignerIterative::NAME = "rotational_iterative";
 const string RotatePrecenterAligner::NAME = "rotate_precenter";
 const string RotateTranslateAligner::NAME = "rotate_translate";
-const string RotateTranslateAlignerIterative::NAME = "rotate_translate.iterative";
-const string RotateTranslateAlignerPawel::NAME = "rotate_translate.resample";
+const string RotateTranslateAlignerIterative::NAME = "rotate_translate_iterative";
+const string RotateTranslateAlignerPawel::NAME = "rotate_translate_resample";
 const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
 const string RotateFlipAligner::NAME = "rotate_flip";
 const string RotateFlipAlignerIterative::NAME = "rotate_flip.iterative";
 const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
-const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip.iterative";
-const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip.resample";
+const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip_iterative";
+const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resample";
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
-const string Refine3DAligner::NAME = "refine.3d";
-const string Refine3DAlignerQuaternion::NAME = "refine.3d.quat";
-const string RT3DGridAligner::NAME = "rt.3d.grid";
-const string RT3DSphereAligner::NAME = "rt.3d.sphere";
+const string Refine3DAlignerQuaternion::NAME = "refine_3d";
+const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
+const string RT3DSphereAligner::NAME = "rotate_translate_3d";
 const string FRM2DAligner::NAME = "frm2d";
 
 
@@ -94,7 +94,6 @@ template <> Factory < Aligner >::Factory()
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
-	force_add<Refine3DAligner>();
 	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
@@ -1519,89 +1518,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
-static Transform refalin3d_perturbjiggle(const Transform*const t, const float& delta, const float& arc, const float& phi, const float& x, const float& y, const float& z)
-{
-	Dict orig_params = t->get_params("eman");
-	float orig_phi = orig_params["phi"];
-	float orig_x = orig_params["tx"];
-	float orig_y = orig_params["ty"];
-	float orig_z = orig_params["tz"];
-	orig_params["phi"] = 0;
-	orig_params["tx"] = 0;
-	orig_params["ty"] = 0;
-	orig_params["tz"] = 0;
-	Transform t_no_phi(orig_params);
-
-	Vec3f zz(0,0,1);
-
-	Vec3f vv  = t_no_phi.transpose()*zz;
-	Vec3f normal = Vec3f(-vv[2],0,-vv[0]);
-
-	normal.normalize();
-
-	Dict d;
-	d["type"] = "spin";
-	d["Omega"] = arc;
-	d["n1"] = vv[0];
-	d["n2"] = vv[1];
-	d["n3"] = vv[2];
-
-	Transform q(d);
-
-	Vec3f  rot_vec = q*normal;
-	rot_vec.normalize();
-
-	Dict e;
-	e["type"] = "spin";
-	e["Omega"] = delta;
-	e["n1"] = rot_vec[0];
-	e["n2"] = rot_vec[1];
-	e["n3"] = rot_vec[2];
-
-	Transform perturb(e);
-
-	Dict g;
-	g["type"] = "eman";
-	g["alt"] = 0;
-	g["az"] = 0;
-	g["phi"] = 0*phi+orig_phi;
-
-	Transform phi_rot(g);
-	Transform soln = t_no_phi*perturb*phi_rot;
-	soln.set_trans(x+orig_x,y+orig_y,z+orig_z);
-	Dict params = soln.get_params("eman");
-	return soln;
-}
-
-static double refalifn3djiggle(const gsl_vector * v, void *params)
-{
-	Dict *dict = (Dict *) params;
-
-	double x = gsl_vector_get(v, 0);
-	double y = gsl_vector_get(v, 1);
-	double z = gsl_vector_get(v, 2);
-	double arc = gsl_vector_get(v, 3);
- 	double delta = gsl_vector_get(v, 4);
- 	double phi = gsl_vector_get(v, 5);
-	EMData *this_img = (*dict)["this"];
-	EMData *with = (*dict)["with"];
-// 	bool mirror = (*dict)["mirror"];
-
-	Transform* t = (*dict)["transform"];
-
-	Transform soln = refalin3d_perturbjiggle(t,(float)delta,(float)arc,(float)phi,(float)x,(float)y,(float)z);
-
-	EMData *tmp = this_img->process("xform",Dict("transform",&soln));
-	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
-	double result = c->cmp(tmp,with);
-	if ( tmp != 0 ) delete tmp;
-	delete t; t = 0;
-	Vec3f xx = soln.get_trans();
-	Dict yy = soln.get_params("eman");
- 	cout << result  << " " << (float)yy["az"] << " " << (float)yy["alt"] << " " << (float)yy["phi"] << " " << xx[0]  << " " << xx[1] << " " << xx[2] << endl;
-	return result;
-}
-
 static Transform refalin3d_perturbquat(const Transform*const t, const float& spincoeff, const float& n0, const float& n1, const float& n2, const float& x, const float& y, const float& z)
 {
 	Vec3f normal(n0,n1,n2);
@@ -1698,9 +1614,6 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_params["transform"] = t;	
 	gsl_params["spincoeff"] = spincoeff;
 	Dict altered_cmp_params(cmp_params);
-	if(cmp_name == "ccc.tomo"){
-	    altered_cmp_params["zeroori"] = true;
-	}
 	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
@@ -1794,201 +1707,6 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	if ( c != 0 ) delete c;
 	return result;
 }
-static double refalifn3d(const gsl_vector * v, void *params)
-{
-	Dict *dict = (Dict *) params;
-
-	double x = gsl_vector_get(v, 0);
-	double y = gsl_vector_get(v, 1);
-	double z = gsl_vector_get(v, 2);
-	double az = gsl_vector_get(v, 3);
-	double alt = gsl_vector_get(v, 4);
-	double phi = gsl_vector_get(v, 5);
-	EMData *this_img = (*dict)["this"];
-	EMData *with = (*dict)["with"];
-	//bool mirror = (*dict)["mirror"];
-
-	Dict d("type","eman","az",static_cast<float>(az));
-	d["alt"] = static_cast<float>(alt);
-	d["phi"] = static_cast<float>(phi);
-	Transform t(d);
-	t.set_trans((float)x,(float)y,(float)z);
-	Transform* orit = (*dict)["transform"];
-	t = t*(*orit);
-	
-	//t.set_mirror(mirror);
-	EMData *tmp = this_img->process("xform",Dict("transform",&t));
-
-	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
-	double result = c->cmp(tmp,with);
-	//cout << result << " x " << x << " y " << y << " z " << z << " az " << az << " alt " << alt << " phi " << phi << endl;
-	if ( tmp != 0 ) delete tmp;
-	
-	return result;
-}
-
-EMData* Refine3DAligner::align(EMData * this_img, EMData *to,
-	const string & cmp_name, const Dict& cmp_params) const
-{
-	
-	if (!to || !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
-
-	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
-
-#ifdef EMAN2_USING_CUDA 
-	if(EMData::usecuda == 1) {
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
-		if(!to->cudarwdata) to->copy_to_cuda();
-	}
-#endif
-
-	float saz = 0.0;
-	float sphi = 0.0;
-	float salt = 0.0;
-	float sdx = 0.0;
-	float sdy = 0.0;
-	float sdz = 0.0;
-	bool mirror = false;
-	Transform* t;
-	if (params.has_key("xform.align3d") ) {
-		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
-		// parameters to form the starting guess. Instead the Transform itself
-		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
-		// when you use orthogonally-based Euler angles
-		t = params["xform.align3d"];
-	}else {
-		t = new Transform(); // is the identity
-	}
-
-	int np = 6; // the number of dimensions
-	Dict gsl_params;
-	gsl_params["this"] = this_img;
-	gsl_params["with"] = to;
-	gsl_params["snr"]  = params["snr"];
-	gsl_params["mirror"] = mirror;
-	gsl_params["transform"] = t;	
-	Dict altered_cmp_params(cmp_params);
-	if(cmp_name == "ccc.tomo"){
-	    altered_cmp_params["zeroori"] = true;
-	}
-	
-	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-	gsl_vector *ss = gsl_vector_alloc(np);
-
-	string type = params.set_default("type","euler");
-	
-	float stepx = params.set_default("stepx",1.0f);
-	float stepy = params.set_default("stepy",1.0f);
-	float stepz = params.set_default("stepz",1.0f);
-	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	//defaults for jiggle 
-	float half_circle_step = 180.0f; // This shouldn't be altered
-	float stepdelta = params.set_default("stepdelta",5.0f);
-	
-	float stepaz = params.set_default("stepaz",5.0f);
-	float stepalt = params.set_default("stepalt",5.0f);
-	float stepphi = params.set_default("stepphi",5.0f);
-
-	gsl_vector_set(ss, 0, stepx);
-	gsl_vector_set(ss, 1, stepy);
-	gsl_vector_set(ss, 2, stepz);
-	if(type == "jiggle") {
-		gsl_vector_set(ss, 3, half_circle_step);
-		gsl_vector_set(ss, 4, stepdelta);
-		gsl_vector_set(ss, 5, stepphi);
-	} else {
-		gsl_vector_set(ss, 3, stepaz);
-		gsl_vector_set(ss, 4, stepalt);
-		gsl_vector_set(ss, 5, stepphi);
-	}
-	
-	gsl_vector *x = gsl_vector_alloc(np);
-	gsl_vector_set(x, 0, sdx);
-	gsl_vector_set(x, 1, sdy);
-	gsl_vector_set(x, 2, sdz);
-	gsl_vector_set(x, 3, saz);
-	gsl_vector_set(x, 4, salt);
-	gsl_vector_set(x, 5, sphi);
-
-	gsl_multimin_function minex_func;
-	Cmp *c = Factory < Cmp >::get(cmp_name, altered_cmp_params);
-	gsl_params["cmp"] = (void *) c;
-	minex_func.f = &refalifn3d;
-
-	minex_func.n = np;
-	minex_func.params = (void *) &gsl_params;
-
-	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
-	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
-
-	int rval = GSL_CONTINUE;
-	int status = GSL_SUCCESS;
-	int iter = 1;
-
-	float precision = params.set_default("precision",0.04f);
-	int maxiter = params.set_default("maxiter",100);
-	while (rval == GSL_CONTINUE && iter < maxiter) {
-		iter++;
-		status = gsl_multimin_fminimizer_iterate(s);
-		if (status) {
-			break;
-		}
-		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
-	}
-
-	int maxshift = params.set_default("maxshift",-1);
-
-	if (maxshift <= 0) {
-		maxshift = this_img->get_xsize() / 4;
-	}
-	float fmaxshift = static_cast<float>(maxshift);
-	EMData *result;
-	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
-	{
-		if(type == "jiggle") {
-			float x = (float)gsl_vector_get(s->x, 0);
-			float y = (float)gsl_vector_get(s->x, 1);
-			float z = (float)gsl_vector_get(s->x, 2);
-			float arc = (float)gsl_vector_get(s->x, 3);
-			float delta = (float)gsl_vector_get(s->x, 4);
-			float phi = (float)gsl_vector_get(s->x, 5);
-
-			Transform tsoln = refalin3d_perturbjiggle(t,delta,arc,phi,x,y,z);
-
-			result = this_img->process("xform",Dict("transform",&tsoln));
-			result->set_attr("xform.align3d",&tsoln);
-		} else {
-			Dict parms;
-			parms["type"] = "eman";
-			parms["tx"] = (float)gsl_vector_get(s->x, 0);
-			parms["ty"] = (float)gsl_vector_get(s->x, 1);
-			parms["tz"] = (float)gsl_vector_get(s->x, 2);
-			parms["az"] = (float)gsl_vector_get(s->x, 3);
-			parms["alt"] = (float)gsl_vector_get(s->x, 4);
-			parms["phi"] = (float)gsl_vector_get(s->x, 5);
-		
-			Transform tsoln(parms);
-			tsoln  = tsoln*(*t);
-			
-			result = this_img->process("xform",Dict("transform",&tsoln));
-			result->set_attr("xform.align3d",&tsoln);
-			result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
-		}
-	} else { // The refine aligner failed - this shift went beyond the max shift
-		result = this_img->process("xform",Dict("transform",t));
-		result->set_attr("xform.align3d",t);
-	}
-
-	delete t;
-	t = 0;
-
-	gsl_vector_free(x);
-	gsl_vector_free(ss);
-	gsl_multimin_fminimizer_free(s);
-
-	if ( c != 0 ) delete c;
-	return result;
-}
 
 EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
@@ -2065,8 +1783,9 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		solns.push_back(d);
 	}
 	
+	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
 	EMData * tofft = 0;
-	if(dotrans || cmp_name == "ccc.tomo"){
+	if(dotrans || tomography){
 		tofft = to->do_fft();
 	}
 	
@@ -2080,6 +1799,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
+	bool use_cpu = true;
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
@@ -2096,20 +1816,33 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				
 				//need to do things a bit diffrent if we want to compare two tomos
 				float best_score;
-				if (cmp_name == "ccc.tomo") {
-				        best_score = transformed->cmp(cmp_name,tofft,altered_cmp_params);
-					t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
-				} else {	
-					if(dotrans){
-						EMData* ccf = transformed->calc_ccf(tofft);
+				if(dotrans || tomography){
+					EMData* ccf = transformed->calc_ccf(tofft);
+#ifdef EMAN2_USING_CUDA	
+					if(this_img->cudarwdata){
+						use_cpu = false;
+						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						t.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
+					}
+#endif
+					if(use_cpu){
+						if(tomography) ccf->process_inplace("normalize");	
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						delete transformed; // this is to stop a mem leak
 						transformed = this_img->process("xform",Dict("transform",&t));
-						delete ccf; ccf =0;
-			                }
-					best_score = transformed->cmp(cmp_name,to,cmp_params);
+					}
+					delete ccf; ccf =0;
 				}
-                                delete transformed; transformed =0;
+
+				if(!tomography){
+					best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+				
+				}
+				delete transformed; transformed = 0;
 				
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
@@ -2217,21 +1950,24 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 
 	float verbose_alt = -1.0f;
+	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
+	
 	//precompute fixed FT, saves a LOT of time!!!
-	EMData * tofft = 0;
-	if(dotrans || cmp_name == "ccc.tomo"){
-		tofft = to->do_fft();
+	EMData * this_imgfft = 0;
+	if(dotrans || tomography){
+		this_imgfft = this_img->do_fft();
 	}
+	
 	
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
-		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
-		if(!to->cudarwdata) to->copy_to_cuda();
-		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
+		if(!to->isrodataongpu()) to->copy_to_cudaro();
+		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(this_imgfft) this_imgfft->copy_to_cuda();
 	}
 #endif
 
-
+	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
 		Transform t(params);
@@ -2248,26 +1984,37 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			
 			params["phi"] = phi;
 			t.set_rotation(params);
-			EMData* transformed = this_img->process("xform",Dict("transform",&t));
+			EMData* transformed = to->process("xform",Dict("transform",&t));
 			
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score;
-			if (cmp_name == "ccc.tomo") {
-				best_score = transformed->cmp(cmp_name,tofft,altered_cmp_params);
-				transformed->clearupdate();
-				t.set_trans(-(float)transformed->get_attr("tx"), -(float)transformed->get_attr("ty"), -(float)transformed->get_attr("tz"));
-			} else {	
-			        if(dotrans){
-					EMData* ccf = transformed->calc_ccf(tofft);
+			if(dotrans || tomography){
+				EMData* ccf = transformed->calc_ccf(this_imgfft);
+#ifdef EMAN2_USING_CUDA	
+				if(this_img->cudarwdata){
+					use_cpu = false;
+					float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+					t.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+					best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
+				}
+#endif
+				if(use_cpu){
+					if(tomography) ccf->process_inplace("normalize");
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+					best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 					delete transformed; // this is to stop a mem leak
-					transformed = this_img->process("xform",Dict("transform",&t));
-				        delete ccf; ccf =0;
+					transformed = to->process("xform",Dict("transform",&t));
 				}
-				best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+				delete ccf; ccf =0;
 			}
-                       delete transformed; transformed =0;
+
+			if(!tomography){
+				best_score = transformed->cmp(cmp_name,this_img,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+				
+			}
+                        delete transformed; transformed =0;
 
 			unsigned int j = 0;
 			//cout << "alt " <<float(t.get_rotation("eman").get("alt")) << " az " << float(t.get_rotation("eman").get("az")) << " phi " << float(t.get_rotation("eman").get("phi")) << endl;
@@ -2277,6 +2024,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					copy(rit+1,solns.rend()-j,rit);
 					Dict& d = (*it);
 					d["score"] = best_score;
+					t.invert();
 					d["xform.align3d"] = &t; // deep copy is going on here
 					break;
 				}
@@ -2285,7 +2033,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		}
 	}
 	delete sym; sym = 0;
-	if(tofft) {delete tofft; tofft = 0;}
+	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
 	return solns;
 
 }

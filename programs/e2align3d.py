@@ -184,12 +184,12 @@ def main():
 	bestmodel = 0
 	galignedref = []
 
-	nbest = smoving.xform_align_nbest('rt.3d.sphere', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'lphi':options.lphi, 'uphi':options.uphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
+	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'lphi':options.lphi, 'uphi':options.uphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
 	
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
 		# Fix this so that the transform is passed rather than the transfomed object.....
-		galignedref.append(smoving.align('refine.3d.quat', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
 			#bestscore = score

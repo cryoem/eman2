@@ -397,11 +397,20 @@ float2 get_stats_cuda(const float * data, const int nx, const int ny, const int 
 	
 }
 
-float getvalueat_cuda(float * data, int tx, int ty, int tz, int nx, int ny, int nz)
+float get_value_at_wrap_cuda(float * data, int tx, int ty, int tz, int nx, int ny, int nz)
 {
 	float * host_soln = 0;
+	int lx = tx;
+	int ly = ty;
+	int lz = tz;
+
+	if (lx < 0) lx = nx + lx;
+	if (ly < 0) ly = ny + ly;
+	if (lz < 0) lz = nz + lz;
+
+	int index = (lx + ly * nx + lz * nx * ny);
 	host_soln = (float*) malloc(sizeof(float));
-	cudaMemcpy(host_soln,data,sizeof(float),cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_soln,data+index,sizeof(float),cudaMemcpyDeviceToHost);
 	float peak = host_soln[0];
 	free(host_soln);
 	

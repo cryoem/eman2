@@ -894,69 +894,6 @@ namespace EMAN
 		
 		static const string NAME;
 	};
-
-	/*
-	   Uses quaternions extensively, separates the in plane (phi) rotation and the 2 rotations that define
-	 * a point on the sphere (POTS), manipulating them independently. The POTS is"jiggled" in a local circular
-	 * sub manifold of the sphere (of radius stepdelta). Phi is allowed to vary as a normal variable. The result
-	 * is combined into a single transform and then a similarity is computed, etc.
-	
-	*/
-	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
-	 * Target function for the simplex  algorithm is a transformation of the 3D model by az, alt, phi, tx, ty, tz
-	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
-	 * minima if the two 3D models are already roughly aligned. 
-	 * NOTE: Currently this algorith is not working!!!!!!
-	 * @ingroup CUDA_ENABLED
-	 * @author David Woolford and John Flanagan
-	 * @date June 23 2009 and Oct 8th 2010
-	 */
-	class Refine3DAligner:public Aligner
-	{
-		public:
-			virtual EMData * align(EMData * this_img, EMData * to_img,
-						   const string & cmp_name="sqeuclidean", const Dict& cmp_params = Dict()) const;
-
-			virtual EMData * align(EMData * this_img, EMData * to_img) const
-			{
-				return align(this_img, to_img, "sqeuclidean", Dict());
-			}
-
-			virtual string get_name() const
-			{
-				return NAME;
-			}
-
-			virtual string get_desc() const
-			{
-				return "Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.";
-			}
-
-			static Aligner *NEW()
-			{
-				return new Refine3DAligner();
-			}
-
-			virtual TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
-				d.put("type", EMObject::STRING, " Type of purturbation used for refinement (euler or jiggle). Default is euler");
-				d.put("stepx", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 1");
-				d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
-				d.put("stepz", EMObject::FLOAT, "The z increment used to create the starting simplex. Default is 1." );
-				d.put("stepaz", EMObject::FLOAT, "The az increment used to create the starting simplex. Default is 5." );
-				d.put("stepalt", EMObject::FLOAT, "The alt increment used to create the starting simplex. Default is 5." );
-				d.put("stepphi", EMObject::FLOAT, "The phi incremenent used to create the starting simplex. Default is 5." );
-				d.put("stepdelta", EMObject::FLOAT,"The angular increment which represents a good initial step along the sphere, thinking in terms of quaternions(not used in Euler perturbations). Default is 5.");
-				d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04." );
-				d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 60.");
-				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
-				return d;
-			}
-			
-			static const string NAME;
-	};
 	
 	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
 	 * Target function for the simplex algorithm is a rotation along an arbitrary axis defined by a quaternion, whose
@@ -1107,7 +1044,12 @@ namespace EMAN
 
 	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
 	 * can also make use of different OrientationGenerators (random, for example)
-	 * 160-180% more efficient than the RT3DGridAlignerv
+	 * 2X more efficient than the RT3DGridAligner
+	 * The aligner actually aligns the reference to the 'moving' and then takes the inverse of the resulting transform. This 
+	 * is necessary because, in the case of symmetry (i.e. not c1), the reference symmetry axis must be aligned to the EMAN2 
+	 * symmetry axis, restricting the search space to the asymmetrical points on a sphere. We note that if the reference 
+	 * symmetry axis is not aligned to the EMAN2 symmetry axis, the best thing is to do a full search (i.e. specify sym='c1')
+	 * unless you really know what you are doing!
 	 * @ingroup CUDA_ENABLED
 	 * @param sym The symmtery to use as the basis of the spherical sampling
 	 * @param orietgen Advanced. The orientation generation strategy
@@ -1122,8 +1064,8 @@ namespace EMAN
 	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param verbose Turn this on to have useful information printed to standard out
-	 * @author David Woolford and John Flanagan
-	 * @date June 23 2009
+	 * @author John Flanagan and  David Woolford
+	 * @date Feb 2010
 	 */
 	class RT3DSphereAligner:public Aligner
 	{

@@ -201,7 +201,7 @@ void set_col(const EMData * data, int col_index);
  * @param z The z cooridinate.
  * @return The pixel density value at coordinates (x,y,z).
  */
-float get_value_at(int x, int y, int z) const
+inline float get_value_at(int x, int y, int z) const
 {
 	return get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy];
 }
