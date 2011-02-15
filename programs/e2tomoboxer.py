@@ -36,6 +36,7 @@ from optparse import OptionParser
 import sys
 import os
 import weakref
+import threading
 
 from EMAN2 import *
 from emapplication import get_application, EMApp
@@ -81,6 +82,131 @@ def main():
 	boxer.show()
 	app.execute()
 #	E2end(logid)
+
+class EMAverageViewer(QtGui.QWidget):
+	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
+	
+	def __init__(self,parent):
+		QtGui.QWidget.__init__(self)
+		
+		self.parent=weakref.ref(parent)
+		
+		self.resize(300,500)
+		
+		self.gbl = QtGui.QGridLayout(self)
+		#self.xyview = EMImage2DWidget()
+		#self.gbl.addWidget(self.xyview,0,1)
+
+		#self.xzview = EMImage2DWidget()
+		#self.gbl.addWidget(self.xzview,1,1)
+
+		#self.zyview = EMImage2DWidget()
+		#self.gbl.addWidget(self.zyview,0,0)
+
+		self.d3view = EMImage3DWidget()
+		self.gbl.addWidget(self.d3view,0,0)
+		
+		self.gbl2 = QtGui.QGridLayout()
+		self.gbl.addLayout(self.gbl2,1,0)
+		
+		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
+		self.gbl2.addWidget(self.wfilt,2,0,1,2)
+
+		self.wmask = ValSlider(rng=(0,100),label="Mask:",value=0.0)
+		self.gbl2.addWidget(self.wmask,3,0,1,2)
+
+		self.wsymlbl=QtGui.QLabel("Symmetry:")
+		self.gbl2.addWidget(self.wsymlbl,4,0)
+		
+		self.wsym=QtGui.QLineEdit("C1")
+		self.gbl2.addWidget(self.wsym,4,1)
+		
+		self.wprog=QtGui.QProgressBar()
+		self.wprog.setRange(0,100)
+		self.gbl2.addWidget(self.wprog,5,0,1,2)
+		
+		self.wrestart=QtGui.QPushButton("Restart")
+		self.gbl2.addWidget(self.wrestart,6,1)
+		
+		self.needupd=0					# Set by the second thread when a display update is ready, 1 means progress update, 2 means volume update
+		self.threadrestart=False		# Set by the GUI thread when the second thread needs to restart from scratch
+		self.threadprog=0				# Thread progress (0-100)
+		self.threadprogstr=""			# String describing thread action
+		self.data=None
+		
+		# These are values from the widgets, stored so the thread can get at them without making GUI calls
+		self.sym="c1"
+		self.filt=0.0
+		self.mask=0.0
+		
+		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
+		QtCore.QObject.connect(self.wmask,QtCore.SIGNAL("valueChanged")  ,self.event_mask  )
+		QtCore.QObject.connect(self.wsym,QtCore.SIGNAL("editingFinished()")  ,self.event_symchange  )
+		QtCore.QObject.connect(self.wrestart,QtCore.SIGNAL("clicked(bool)")  ,self.event_restart  )
+		
+
+		# The timer event handles displaying the results processed by the other thread
+		self.timer=QtCore.QTimer(self)
+		QtCore.QObject.connect(self.timer,QtCore.SIGNAL("timeout")  ,self.event_timer  )
+		self.timer.start(500)
+
+		# The processing is all done in the background by the other thread
+		self.bgthread=threading.Thread(target=self.thread_process)
+		self.bgthread.daemon=True
+		self.bgthread.start()
+
+	def event_timer(self):
+		if self.needupd&1 :
+			self.wprog.setValue(self.threadprog)
+		if self.needupd&2 : self.update()
+		self.needupd=0
+
+	def event_symchange(self):
+		print "sym"
+		self.sym=self.wsym.text()
+		self.wrestart.setEnabled(True)
+
+	def event_filter(self,value):
+		print "filt"
+		self.filt=value
+		self.wrestart.setEnabled(True)
+		
+	def event_mask(self,value):
+		print "mask"
+		self.mask=value
+		self.wrestart.setEnabled(True)
+		
+	def event_restart(self):
+		print "restart"
+		self.threadrestart=True
+		self.wrestart.setEnabled(False)
+		
+	#def set_data(self,data):
+		#"""Sets the current volume to display"""
+		
+		#self.data=data
+		
+		#self.update()
+		#self.show()
+		
+	def update(self):
+		#if self.wfilt.getValue()!=0.0 :
+			#self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		
+		#xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
+		#xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
+		#zyd=self.fdata.process("misc.directional_sum",{"axis":"x"})
+		
+		#self.xyview.set_data(xyd)	
+		#self.xzview.set_data(xzd)
+		#self.zyview.set_data(zyd)
+		self.d3view.set_data(self.data)
+		
+	def thread_process(self):
+		
+		while 1:
+			time.sleep(5)
+			
 
 class EMBoxViewer(QtGui.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -274,6 +400,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.app().attach_child(self.boxesviewer)
 		self.boxesviewer.show()
 		self.boxesviewer.set_mouse_mode("App")
+		
+		# Average viewer shows results of background tomographic processing
+		self.averageviewer=EMAverageViewer(self)
+		self.averageviewer.show()
+		
 		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 		
 
@@ -780,6 +911,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		print "Exiting"
 		self.boxviewer.close()
 		self.boxesviewer.close()
+		self.averageviewer.close()
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop

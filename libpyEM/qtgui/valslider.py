@@ -49,6 +49,7 @@ class ValSlider(QtGui.QWidget):
 		if rng : self.rng=list(rng)
 		else : self.rng=[0,1.0]
 		self.value=value
+		self.oldvalue=value-1.0
 		self.ignore=0
 		self.intonly=0
 		
@@ -131,7 +132,8 @@ class ValSlider(QtGui.QWidget):
 
 #		if self.intonly : print self.value,val
 		self.updateboth()
-		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		if not quiet and self.value!=self.oldvalue: self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		self.oldvalue=self.value
 	
 	def getValue(self):
 		return self.value
@@ -161,8 +163,10 @@ class ValSlider(QtGui.QWidget):
 					self.value=float(x)
 #				print "new text ",self.value
 				self.updates()
-				self.emit(QtCore.SIGNAL("valueChanged"),self.value)
-				self.emit(QtCore.SIGNAL("textChanged"),self.value)
+				if self.value!=self.oldvalue:
+					self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+					self.emit(QtCore.SIGNAL("textChanged"),self.value)
+				self.oldvalue=self.value
 			except:
 				self.updateboth()
 				
@@ -174,7 +178,8 @@ class ValSlider(QtGui.QWidget):
 			self.value=int(self.value+.5)
 			if self.value==ov : return
 		self.updatet()
-		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		if self.value!=self.oldvalue: self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		self.oldvalue=self.value
 	
 	def sliderReleased(self):
 		self.emit(QtCore.SIGNAL("sliderReleased"),self.value)

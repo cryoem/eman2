@@ -268,7 +268,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	for (int i = 0; i < mrch.nlabels; i++) {
 		char label[32];
 		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = mrch.labels[i];
+		dict[string(label)] = string(mrch.labels[i],80);
 	}
 
 	EMAN1Ctf ctf_;
