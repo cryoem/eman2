@@ -5154,8 +5154,8 @@ int Util::k_means_cont_table_(int* group1, int* group2, int* stb, long int s1, l
 
 
 
-#define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*nx]
-#define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]
+#define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*(size_t)nx]
+#define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*(size_t)new_nx]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
 	/* Exception Handle */
@@ -5212,8 +5212,8 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #undef old_ptr
 #undef new_ptr
 
-#define inp(i,j,k)  inp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*ny))*nx]
-#define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
+#define inp(i,j,k)  inp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*ny))*(size_t)nx]
+#define outp(i,j,k) outp[i+(j+(k*new_ny))*(size_t)new_nx]
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
 	/* Exception Handle */
@@ -5259,8 +5259,8 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 #undef inp
 #undef outp
 
-#define inp(i,j,k) inp[i+(j+(k*ny))*nx]
-#define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*new_nx]
+#define inp(i,j,k) inp[i+(j+(k*ny))*(size_t)nx]
+#define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*(size_t)new_nx]
 EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset,char *params)
 {
 	/* Exception Handle */
@@ -5293,7 +5293,7 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 	if (strcmp(params,"average")==0) background = img->get_attr("mean");
 	else if (strcmp(params,"circumference")==0) {
 		float sum1=0.0f;
-		int cnt=0;
+		size_t cnt=0;
 		for(int i=0;i<nx;i++) {
 			sum1 += inp(i,0,0) + inp(i,ny-1,nz-1);
 			cnt+=2;
@@ -5391,7 +5391,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
 		for (int iz = 0; iz < nz; iz++)
 	               for (int iy = 0; iy < ny; iy++) {
 				// reverses for column iy
-	        		int offset = nx*iy + nx*ny*iz; // starting location for column iy in slice iz
+	        		size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
 				reverse(&data[offset],&data[offset+mx]);
 				reverse(&data[offset+mx],&data[offset+nx]);
 				reverse(&data[offset],&data[offset+nx]);
@@ -5400,16 +5400,16 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	// y-reverses
 	if (my != 0) {
 		for (int iz = 0; iz < nz; iz++) {
-	        	int offset = nx*ny*iz;
+	        	size_t offset = (size_t)nx*ny*iz;
 			colreverse(&data[offset], &data[offset + my*nx], nx);
 			colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
 			colreverse(&data[offset], &data[offset + ny*nx], nx);
 		}
 	}
 	if (mz != 0) {
-		slicereverse(&data[0], &data[mz*ny*nx], nx, ny);
-		slicereverse(&data[mz*ny*nx], &data[nz*ny*nx], nx, ny);
-		slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
+		slicereverse(&data[0], &data[(size_t)mz*ny*nx], nx, ny);
+		slicereverse(&data[mz*ny*nx], &data[(size_t)nz*ny*nx], nx, ny);
+		slicereverse(&data[0], &data[(size_t)nz*ny*nx], nx ,ny);
 	}
 	image->update();
 }
@@ -5487,8 +5487,8 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	/* ===================================================== */
 
 	/* Image size calculation */
-	int size_ref = ((ref->get_xsize())*(ref->get_ysize())*(ref->get_zsize()));
-	int size_img = ((img->get_xsize())*(img->get_ysize())*(img->get_zsize()));
+	size_t size_ref = ((size_t)(ref->get_xsize())*(ref->get_ysize())*(ref->get_zsize()));
+	size_t size_img = ((size_t)(img->get_xsize())*(img->get_ysize())*(img->get_zsize()));
 	/* ===================================================== */
 
 	/* The reference image attributes */
@@ -5508,7 +5508,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 
 	/* The image under mask -- size calculation */
 	int cnt=0;
-	for(int i=0;i<size_img;i++)
+	for(size_t i=0;i<size_img;++i)
 		if (mask_ptr[i]>0.5f)
 				cnt++;
 	/* ===================================================== */
@@ -5517,9 +5517,9 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	float ref_h_diff = ref_h_max - ref_h_min;
 
 	#ifdef _WIN32
-		int hist_len = _cpp_min((int)size_ref/16,_cpp_min((int)size_img/16,256));
+		int hist_len = _cpp_min((unsigned long)size_ref/16,_cpp_min((unsigned long)size_img/16,256lu));
 	#else
-		int hist_len = std::min((int)size_ref/16,std::min((int)size_img/16,256));
+		int hist_len = std::min((unsigned long)size_ref/16,std::min((unsigned long)size_img/16,256lu));
 	#endif	//_WIN32
 
 	float *ref_freq_bin = new float[3*hist_len];
@@ -5527,7 +5527,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	//initialize value in each bin to zero
 	for (int i = 0;i < (3*hist_len);i++) ref_freq_bin[i] = 0.f;
 
-	for (int i = 0;i < size_ref;i++) {
+	for (size_t i = 0;i < size_ref;++i) {
 		int L = static_cast<int>(((ref_ptr[i] - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
 		ref_freq_bin[L]++;
 	}
@@ -5559,7 +5559,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	parameter["scale"]= scale;
 	parameter["data"] = data;
 	parameter["ref_freq_bin"] = ref_freq_hist;
-	parameter["size_img"]=size_img;
+	parameter["size_img"]=(double)size_img;
 	parameter["hist_len"]=hist_len;
 	/* ===================================================== */
 
@@ -5567,14 +5567,14 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 }
 
 
-float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min)
+float Util::hist_comp_freq(float PA,float PB,size_t size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min)
 {
 	float *img_ptr = img->get_data();
 	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
 
 	int *img_freq_bin = new int[3*hist_len];
 	for(int i = 0;i < (3*hist_len);i++) img_freq_bin[i] = 0;
-	for(int i = 0;i < size_img;i++) {
+	for(size_t i = 0;i < size_img;++i) {
 		if(mask_ptr[i] > 0.5f) {
 			float img_xn = img_ptr[i]*PA + PB;
 			int L = static_cast<int>(((img_xn - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
@@ -5638,7 +5638,7 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 //-----------------------------------------------------------------------------------------------------------------------
 #define    DM(I)         		DM[I-1]
 #define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)]
-#define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*NX3D]
+#define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*(size_t)NX3D]
 
 void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 {
@@ -17269,7 +17269,7 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
-	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
+	for (size_t i=0;i<size;++i)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
 
 	if(img->is_complex()) {
@@ -17653,7 +17653,7 @@ void Util::div_filter(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
-#define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*nxo]
+#define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
 
 EMData* Util::pack_complex_to_real(EMData* img)
 {
@@ -17768,8 +17768,8 @@ void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
 
     float avg = av/nn;
     float sgm = sqrt( (sq-av*av/nn)/nn );
-    int n = ring->get_xsize() * ring->get_ysize() * ring->get_zsize();
-    for( int i=0; i < n; ++i )
+    size_t n = (size_t)ring->get_xsize() * ring->get_ysize() * ring->get_zsize();
+    for( size_t i=0; i < n; ++i )
     {
         data[i] -= avg;
         data[i] /= sgm;
@@ -19279,8 +19279,8 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
-#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*nx]
-#define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*nx]
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
+#define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
 EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 {
 	ENTERFUNC;
@@ -20036,7 +20036,7 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	} else {
 		for (int x=0; x<new_nx; x++)
 			for (int y=0; y<new_ny; y++)
-				slice_data[y*new_nx+x] = vol_data[(index*ny+y)*nx+x];
+				slice_data[y*new_nx+x] = vol_data[((size_t)index*ny+y)*nx+x];
 	}
 
 	return slice;

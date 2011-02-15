@@ -128,7 +128,7 @@ namespace {
 	}
 	
 	inline float median(EMData& f, int nxk, int nyk, int nzk, kernel_shape myshape, int iz, int iy, int ix) {
-		int index = 0;
+		size_t index = 0;
 		int dimension = 3;
 		float median_value = 0.f;
 		float *table = 0;

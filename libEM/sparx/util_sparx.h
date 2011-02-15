@@ -733,7 +733,7 @@ costlist, int* curbranch);
 
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
 
-	static float hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
+	static float hist_comp_freq(float PA,float PB,size_t size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
 
 
 	/* The unit in the ctf function: dz: Angstrom, cs: CM  Ps: Angstrom, Voltage: Kv,dza: Angstrom, azz: degree wgh: None unit. b_factor: Angstrom^2

@@ -650,7 +650,7 @@ EMData* EMData::rotavg_i() {
 	avg1D = rotavg();
 	float padded_value = 0.0, r;
 	int i, j, k, ir;
-	long int number_of_pixels = 0;
+	size_t number_of_pixels = 0;
 	for ( k = -nz/2; k < nz/2 + nz%2; k++) {
 		if (abs(k) > rmax) continue;
 		for ( j = -ny/2; j < ny/2 + ny%2; j++) {
@@ -717,7 +717,7 @@ EMData* EMData::mult_radial(EMData* radial) {
 	return result;
 }
 
-#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*(size_t)nx]
 #define square(x) ((x)*(x))
 vector<float> EMData::cog() {
 
@@ -1008,8 +1008,8 @@ EMData* EMData::symvol(string symString) {
 	return svol;
 }
 
-#define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*nx]
-#define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*nx]
+#define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
+#define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
 EMData* EMData::average_circ_sub() const
 {
 //  this is written as though dimensions could be different, but in fact they should be all equal nx=ny=nz,
@@ -2511,7 +2511,7 @@ EMData* EMData::rot_scale_trans2D_background(float angDeg, float delx, float del
 	}
 }
 
-#define in(i,j,k)          in[i+(j+(k*ny))*nx]
+#define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
 EMData*
 EMData::rot_scale_trans(const Transform &RA) {
 
@@ -2780,7 +2780,7 @@ EMData::rot_scale_trans(const Transform &RA) {
 #undef  in
 
 // new function added for background option
-#define in(i,j,k)          in[i+(j+(k*ny))*nx]
+#define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
 EMData*
 EMData::rot_scale_trans_background(const Transform &RA) {
 	EMData* ret = copy_head();
@@ -5837,7 +5837,7 @@ vector<float> EMData::peak_search(int ml, float invert) {
 	return res;
 }
 
-#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*(size_t)nx]
 #define X(i) X[i-1]
 #define Y(j) Y[j-1]
 #define Z(k) Z[k-1]
@@ -6793,8 +6793,8 @@ void EMData::center_origin_fft()
 }
 
 
-#define  fint(i,j,k)  fint[(i-1) + ((j-1) + (k-1)*ny)*lsd]
-#define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*lsdn]
+#define  fint(i,j,k)  fint[(i-1) + ((j-1) + (k-1)*ny)*(size_t)lsd]
+#define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*(size_t)lsdn]
 EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
@@ -7201,7 +7201,7 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/std::sqrt(2.0f);
 
-	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= 4;
+	for (size_t i = 0; i < (size_t)lsd*ny*nz; i++)  fint[i] *= 4;
 
 	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
 	for (j=1; j<=ny/4; j++)
@@ -7263,7 +7263,7 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 #undef fint
 #undef fout
 
-#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*nox]
+#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*(size_t)nox]
 EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 
 
@@ -7315,8 +7315,8 @@ EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 	return fp;
 }
 #undef   fint
-#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*nx]
-#define  fout(jx,jy,jz)  fout[jx + (jy + jz*ny)*nx]
+#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*(size_t)nx]
+#define  fout(jx,jy,jz)  fout[jx + (jy + jz*ny)*(size_t)nx]
 EMData *EMData::replace_amplitudes(EMData* image, bool RetReal) {
 
 
