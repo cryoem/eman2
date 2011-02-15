@@ -256,10 +256,6 @@ class EMImage2DWidget(EMGLWidget):
 #			self.qt_parent.deleteLater()
 #		self.core_object.deleteLater()
 		
-	def get_emit_signals_and_connections(self):
-		return {"set_scale":self.set_scale,"origin_update":self.origin_update, "increment_list_data":self.increment_list_data}
-		#return {}
-	
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
 		
@@ -612,15 +608,21 @@ class EMImage2DWidget(EMGLWidget):
 
 	def set_origin(self,x,y,quiet=False):
 		"""Set the display origin within the image"""
+		if self.origin==(x,y) : return
 		self.origin=(x,y)
-		if not quiet : self.emit(QtCore.SIGNAL("set_origin"),(x,y))
+		if not quiet : self.emit(QtCore.SIGNAL("origin_update"),(x,y))
 		self.updateGL()
 	
 	def get_origin(self) : return self.origin
 	
-	def scroll_to(self,x,y):
+	def scroll_to(self,x=None,y=None):
 		"""center the point on the screen"""
-		self.set_origin(x*self.scale-self.width()/2,y*self.scale-self.height()/2)
+		if x==None:
+			if y==None: return
+			self.set_origin(self.origin[0],y*self.scale-self.height()/2)
+		elif y==None:
+			self.set_origin(x*self.scale-self.width()/2,self.origin[1])
+		else: self.set_origin(x*self.scale-self.width()/2,y*self.scale-self.height()/2)
 
 	def set_shapes(self,shapes):
 		self.shapes = shapes
@@ -637,6 +639,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def set_scale(self,newscale,quiet=False):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
+		if self.scale==newscale: return
 		try:
 			self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
 			self.scale=newscale
@@ -1394,11 +1397,11 @@ class EMImage2DWidget(EMGLWidget):
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
-			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
+			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			self.emit(QtCore.SIGNAL("origin_update"),self.origin)
-			try: self.updateGL()
-			except: pass
+#			self.emit(QtCore.SIGNAL("origin_update"),self.origin)
+			#try: self.updateGL()
+			#except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
@@ -1456,9 +1459,6 @@ class EMImage2DWidget(EMGLWidget):
 					self.force_display_update()
 					self.updateGL()
 			
-	def origin_update(self,new_origin):
-		self.origin = new_origin
-	
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())

@@ -2165,16 +2165,16 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 	const float * const data = from->get_const_data();
 	float* rdata = to->get_data();
 
-	int nx = from->get_xsize();
-	int ny = from->get_ysize();
-	int nz = from->get_zsize();
-	int nxy = nx*ny;
+	size_t nx = from->get_xsize();
+	size_t ny = from->get_ysize();
+	size_t nz = from->get_zsize();
+	size_t nxy = nx*ny;
 
 
-	int shrunken_nx = nx / shrink_factor;
-	int shrunken_ny = ny / shrink_factor;
-	int shrunken_nz = 1;
-	int shrunken_nxy = shrunken_nx * shrunken_ny;
+	size_t shrunken_nx = nx / shrink_factor;
+	size_t shrunken_ny = ny / shrink_factor;
+	size_t shrunken_nz = 1;
+	size_t shrunken_nxy = shrunken_nx * shrunken_ny;
 
 	int normalize_shrink_factor = shrink_factor * shrink_factor;
 	int z_shrink_factor = 1;
@@ -2187,27 +2187,39 @@ void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const
 
 	float invnormfactor = 1.0f/(float)normalize_shrink_factor;
 
+<<<<<<< processor.cpp
+	for (size_t k = 0; k < shrunken_nz; k++) {
+		size_t k_min = k * shrink_factor;
+		size_t k_max = k * shrink_factor + z_shrink_factor;
+		size_t cur_k = k * shrunken_nxy;
+=======
 	for (int k = 0; k < shrunken_nz; k++) {
 		int k_min = k * shrink_factor;
 		int k_max = k * shrink_factor + z_shrink_factor;
 		size_t cur_k = (size_t)k * shrunken_nxy;
+>>>>>>> 1.312
 
-		for (int j = 0; j < shrunken_ny; j++) {
-			int j_min = j * shrink_factor;
-			int j_max = j * shrink_factor + shrink_factor;
+		for (size_t j = 0; j < shrunken_ny; j++) {
+			size_t j_min = j * shrink_factor;
+			size_t j_max = j * shrink_factor + shrink_factor;
 			size_t cur_j = j * shrunken_nx + cur_k;
 
-			for (int i = 0; i < shrunken_nx; i++) {
-				int i_min = i * shrink_factor;
-				int i_max = i * shrink_factor + shrink_factor;
+			for (size_t i = 0; i < shrunken_nx; i++) {
+				size_t i_min = i * shrink_factor;
+				size_t i_max = i * shrink_factor + shrink_factor;
 
 				float sum = 0;
+<<<<<<< processor.cpp
+				for (size_t kk = k_min; kk < k_max; kk++) {
+					size_t cur_kk = kk * nxy;
+=======
 				for (int kk = k_min; kk < k_max; kk++) {
 					size_t cur_kk = (size_t)kk * nxy;
+>>>>>>> 1.312
 
-					for (int jj = j_min; jj < j_max; jj++) {
+					for (size_t jj = j_min; jj < j_max; jj++) {
 						size_t cur_jj = jj * nx + cur_kk;
-						for (int ii = i_min; ii < i_max; ii++) {
+						for (size_t ii = i_min; ii < i_max; ii++) {
 							sum += data[ii + cur_jj];
 						}
 					}

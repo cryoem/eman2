@@ -538,7 +538,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			if not was_previous_data:
 				for model in self.viewables:
 					if model.get_type() == "Isosurface":
-						model.get_inspector().thr.setValue( data["mean"] + data["sigma"] )
+						model.get_inspector().thr.setValue( data["mean"] + 1.8*data["sigma"] )
 			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
 			elif previous_cam_data:
 				for model in self.viewables:

@@ -35,10 +35,12 @@ from PyQt4.QtCore import Qt
 from optparse import OptionParser
 import sys
 import os
+import weakref
 
 from EMAN2 import *
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
+from emimagemx import EMImageMXWidget
 from emimage3d import EMImage3DWidget
 from emshape import EMShape
 from valslider import *
@@ -56,6 +58,7 @@ def main():
 #	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
 #	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
+	parser.add_option("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -73,8 +76,8 @@ def main():
 		print "Reading tomogram. Please wait."
 		img=EMData(args[0],0)
 		print "Done !"
-		boxer=EMTomoBoxer(data=img)
-	else : boxer=EMTomoBoxer(datafile=args[0])
+		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort)
+	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort)
 	boxer.show()
 	app.execute()
 #	E2end(logid)
@@ -85,30 +88,37 @@ class EMBoxViewer(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		
+		self.resize(300,300)
+		
 		self.gbl = QtGui.QGridLayout(self)
-		self.xyview = EMImage2DWidget(noparent=True)
-		self.gbl.addWidget(self.xyview,1,0)
+		self.xyview = EMImage2DWidget()
+		self.gbl.addWidget(self.xyview,0,1)
 
-		self.xzview = EMImage2DWidget(noparent=True)
-		self.gbl.addWidget(self.xzview,0,0)
+		self.xzview = EMImage2DWidget()
+		self.gbl.addWidget(self.xzview,1,1)
 
-		self.zyview = EMImage2DWidget(noparent=True)
-		self.gbl.addWidget(self.zyview,1,1)
+		self.zyview = EMImage2DWidget()
+		self.gbl.addWidget(self.zyview,0,0)
 
-		self.d3view = EMImage3DWidget(noparent=True)
-		self.gbl.addWidget(self.d3view,0,1)
+		self.d3view = EMImage3DWidget()
+		self.gbl.addWidget(self.d3view,1,0)
+		
+		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
+		self.gbl.addWidget(self.wfilt,2,0,1,2)
+		
+		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
 
-		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
-		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
-		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
+		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
+		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
+		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
 
-		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
-		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
-		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
+		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
+		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
+		#QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
 
-		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
-		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
-		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
+		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
+		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
+		#QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
 
 #		self.setSizeGripEnabled(True)
 
@@ -117,103 +127,79 @@ class EMBoxViewer(QtGui.QWidget):
 #			self.gbl.addWidget(self.status,3,0,1,2)
 #			self.margin = 0
 				
-	def set_data(self,data,pos,sz):
-		"""Sets the current volume to display as well as the center position (x,y,z)  and a size (int) for a 'box' in that region"""
+	def set_data(self,data):
+		"""Sets the current volume to display"""
 		
-		self.boxsize=sz
 		self.data=data
-		self.update_pos(pos)
+		self.fdata=data
 		
+		self.update()
 		self.show()
 		
-	def update_pos(self,pos):
-		self.curpos=pos
+	def update(self):
+		if self.wfilt.getValue()!=0.0 :
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
 		
-		xyd=self.data.process("misc.directional_sum",{"axis":"z","first":max(self.curpos[2]-self.boxsize/2,0),"last":self.curpos[2]+self.boxsize/2})
-		xzd=self.data.process("misc.directional_sum",{"axis":"y","first":max(self.curpos[1]-self.boxsize/2,0),"last":self.curpos[1]+self.boxsize/2})
-		zyd=self.data.process("misc.directional_sum",{"axis":"x","first":max(self.curpos[0]-self.boxsize/2,0),"last":self.curpos[0]+self.boxsize/2})
-		d3d=self.data.get_clip(Region(pos[0]-self.boxsize/2,pos[1]-self.boxsize/2,pos[2]-self.boxsize/2,self.boxsize,self.boxsize,self.boxsize))
+		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
+		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
+		zyd=self.fdata.process("misc.directional_sum",{"axis":"x"})
 		
-		self.xyview.set_data(xyd)
-		self.xyview.add_shape("box",EMShape(("rect",.7,.7,.1,self.curpos[0]-self.boxsize/2,self.curpos[1]-self.boxsize/2,self.curpos[0]+self.boxsize/2,self.curpos[1]+self.boxsize/2,2)))
-		
+		self.xyview.set_data(xyd)	
 		self.xzview.set_data(xzd)
-		self.xzview.add_shape("box",EMShape(("rect",.7,.7,.1,self.curpos[0]-self.boxsize/2,self.curpos[2]-self.boxsize/2,self.curpos[0]+self.boxsize/2,self.curpos[2]+self.boxsize/2,2)))
-
 		self.zyview.set_data(zyd)
-		self.zyview.add_shape("box",EMShape(("rect",.7,.7,.1,self.curpos[2]-self.boxsize/2,self.curpos[1]-self.boxsize/2,self.curpos[2]+self.boxsize/2,self.curpos[1]+self.boxsize/2,2)))
-
-		self.d3view.set_data(d3d)
+		self.d3view.set_data(self.fdata)
 		
-	def xy_down(self,me):
-		pass
-	
-	def xy_drag(self,me):
-		pass
-		
-	def xy_up  (self,me):
-		pass
-		
-	def xz_down(self,me):
-		pass
-		
-	def xz_drag(self,me):
-		pass
-		
-	def xz_up  (self,me):
-		pass
-		
-	def zy_down(self,me):
-		pass
-		
-	def zy_drag(self,me):
-		pass
-		
-	def zy_up  (self,me):
-		pass
-		
+	def event_filter(self,value):
+		self.update()
 
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,data=None,datafile=None):
+	def __init__(self,application,data=None,datafile=None,yshort=False):
 		QtGui.QWidget.__init__(self)
+		
+		self.app=weakref.ref(application)
+		self.yshort=yshort
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
 		self.mfile_open=self.mfile.addAction("Open")
+		self.mfile_read_boxloc=self.mfile.addAction("Read Box Coord")
+		self.mfile_save_boxloc=self.mfile.addAction("Save Box Coord")
+		self.mfile_save_boxes=self.mfile.addAction("Save Boxed Data")
+		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
 		self.mfile_quit=self.mfile.addAction("Quit")
-		
+				
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
 		self.gbl.setColumnStretch(0,1)
-		self.gbl.setColumnStretch(1,5)
+		self.gbl.setColumnStretch(1,4)
 		self.gbl.setColumnStretch(2,0)
-		self.gbl.setRowStretch(0,1)
-		self.gbl.setRowStretch(1,5)
+		self.gbl.setRowStretch(1,1)
+		self.gbl.setRowStretch(0,4)
 		
 		# 3 orthogonal restricted projection views
 		self.xyview = EMImage2DWidget()
-		self.gbl.addWidget(self.xyview,1,1)
+		self.gbl.addWidget(self.xyview,0,1)
 
 		self.xzview = EMImage2DWidget()
-		self.gbl.addWidget(self.xzview,0,1)
+		self.gbl.addWidget(self.xzview,1,1)
 
 		self.zyview = EMImage2DWidget()
-		self.gbl.addWidget(self.zyview,1,0)
+		self.gbl.addWidget(self.zyview,0,0)
 
-		# Select layers to integrate for x-y view. For xz and yz, boxsize is used.
+		# Select Z for xy view
 		self.wdepth = QtGui.QSlider()
-		self.gbl.addWidget(self.wdepth,0,2)
+		self.gbl.addWidget(self.wdepth,1,2)
 		
 		### Control panel area in upper left corner
 		self.gbl2 = QtGui.QGridLayout()
-		self.gbl.addLayout(self.gbl2,0,0)
+		self.gbl.addLayout(self.gbl2,1,0)
 		
 		# box size
-		self.wboxsize=ValBox(label="Box Size:",value=64)
+		self.wboxsize=ValBox(label="Box Size:",value=100)
 		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
 		
 		# max or mean
@@ -229,40 +215,67 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wnlayers,1,1)
 		
 		# scale factor
-		self.wzoom=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		self.gbl2.addWidget(self.wzoom,2,0,1,2)
+		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
+		self.gbl2.addWidget(self.wscale,2,0,1,2)
+		
+		# 2-D filters
+		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
+		self.gbl2.addWidget(self.wfilt,3,0,1,2)
 		
 		
 		
 		self.curbox=-1
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
+		self.boxesimgs=[]					# z projection of each box
 		self.xydown=None
 		
-		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.set_depth)
-		QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.set_nlayers)
-		QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.set_boxsize)
-		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.set_projmode)
-		QtCore.QObject.connect(self.wzoom,QtCore.SIGNAL("valueChanged")  ,self.set_scale  )
+		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.event_depth)
+		QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.event_nlayers)
+		QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
+		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
+		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
+		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
+		
 		QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
-
+		QtCore.QObject.connect(self.mfile_read_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_read_boxloc  )
+		QtCore.QObject.connect(self.mfile_save_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxloc  )
+		QtCore.QObject.connect(self.mfile_save_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxes  )
+		QtCore.QObject.connect(self.mfile_save_boxes_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxes_stack)
+		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_scale"),self.xy_scale)
-		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_origin"),self.xy_origin)
+		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("origin_update"),self.xy_origin)
 
 		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
 		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
 		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("set_scale"),self.xz_scale)
+		QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("origin_update"),self.xz_origin)
 
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
+		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
 		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 		if data!=None : self.set_data(data)
+		
+		# Boxviewer subwidget (details of a single box)
+		self.boxviewer=EMBoxViewer()
+		#self.app().attach_child(self.boxviewer)
+		
+		# Boxes Viewer (z projections of all boxes)
+		self.boxesviewer=EMImageMXWidget()
+		#self.app().attach_child(self.boxesviewer)
+		self.boxesviewer.show()
+		self.boxesviewer.set_mouse_mode("App")
+		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
+		
 
 	def set_datafile(self,datafile):
 		if datafile==None :
@@ -276,7 +289,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.data=None
 		self.datafile=datafile
 		imgh=EMData(datafile,0,1)
-		self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
+		if self.yshort : self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
+		else: self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -295,7 +309,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.data=data
 		self.datafile=None
-		self.datasize=(data["nx"],data["ny"],data["nz"])
+		if self.yshort: self.datasize=(data["nx"],data["nz"],data["ny"])
+		else: self.datasize=(data["nx"],data["ny"],data["nz"])
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -303,8 +318,68 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.wdepth.setValue(self.datasize[2]/2)
 		self.update_all()
 
+	def get_cube(self,x,y,z):
+		"""Returns a box-sized cube at the given center location"""
+		if self.yshort:
+			bs=self.boxsize()
+			if self.data!=None:
+				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
+				r.process_inplace("normalize.edgemean")
+				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
+				r.process_inplace("xform.flip",{"axis":"z"})
+				return r
+			elif self.datafile!=None:
+				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
+				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
+				r.process_inplace("xform.flip",{"axis":"z"})
+				r.process_inplace("normalize.edgemean")
+				return r
+			return None
+
+		bs=self.boxsize()
+		if self.data!=None:
+			r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
+			r.process_inplace("normalize.edgemean")
+			return r
+		elif self.datafile!=None:
+			r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
+			r.process_inplace("normalize.edgemean")
+			return r
+		return None
+
 	def get_slice(self,n,xyz):
 		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
+		if self.yshort:
+			if self.data!=None :
+				if xyz==0:
+					r=self.data.get_clip(Region(n,0,0,1,self.datasize[2],self.datasize[1]))
+					r.set_size(self.datasize[2],self.datasize[1],1)
+					return r
+				elif xyz==2:
+					r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[1]))
+					r.set_size(self.datasize[0],self.datasize[1],1)
+					return r
+				else:
+					r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[2],1))
+					return r
+
+			elif self.datafile!=None:
+				if xyz==0:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
+					r.set_size(self.datasize[2],self.datasize[1],1)
+					return r
+				elif xyz==2:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
+					r.set_size(self.datasize[0],self.datasize[1],1)
+					return r
+				else:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
+					return r
+			
+		
 		if self.data!=None :
 			if xyz==0:
 				r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
@@ -338,20 +413,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		else : return None
 
-	def set_boxsize(self):
+	def event_boxsize(self):
 		pass
 	
-	def set_projmode(self,state):
+	def event_projmode(self,state):
 		"""Projection mode can be simple average (state=False) or maximum projection (state=True)"""
 		self.update_all()
 	
-	def set_scale(self):
-		pass
+	def event_scale(self,newscale):
+		self.xyview.set_scale(newscale)
+		self.xzview.set_scale(newscale)
+		self.zyview.set_scale(newscale)
 	
-	def set_depth(self):
+	def event_depth(self):
 		self.update_xy()
 		
-	def set_nlayers(self):
+	def event_nlayers(self):
+		self.update_all()
+
+	def event_filter(self):
 		self.update_all()
 
 	def boxsize(self): return int(self.wboxsize.getValue())
@@ -360,9 +440,61 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def depth(self): return int(self.wdepth.value())
 
-	def menu_file_open(self,tog):
-		print("file open")
+	def scale(self) : return self.wscale.getValue()
 
+	def menu_file_open(self,tog):
+		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
+
+	def menu_file_read_boxloc(self):
+		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
+		
+		f=file(fsp,"r")
+		for b in f:
+			b2=[int(float(i)) for i in b.split()[:3]]
+			self.boxes.append(b2)
+			self.update_box(len(self.boxes)-1)
+
+	def menu_file_save_boxloc(self):
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
+		
+		out=file(fsp,"w")
+		for b in self.boxes:
+			out.write("%d\t%d\t%d\n"%(b[0],b[1],b[2]))
+		out.close()
+		
+	def menu_file_save_boxes(self):
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)"))
+		
+		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		for i,b in enumerate(self.boxes):
+			img=self.get_cube(b[0],b[1],b[2])
+			if fsp[:4].lower()=="bdb:" : img.write_image("%s_%03d"%(fsp,i),0)
+			elif "." in fsp: img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+			else :
+				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+				return
+			
+			progress.setValue(i+1)
+			if progress.wasCanceled() : break
+		
+	def menu_file_save_boxes_stack(self):
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))
+		
+		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
+			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")
+			return
+		
+		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		for i,b in enumerate(self.boxes):
+			img=self.get_cube(b[0],b[1],b[2])
+			img.write_image(fsp,i)
+			
+			progress.setValue(i+1)
+			if progress.wasCanceled() : break
+		
+	def menu_file_quit(self):
+		self.close()
+		
 	def get_averager(self):
 		"""returns an averager of the appropriate type for generating projection views"""
 		if self.wmaxmean.isChecked() : return Averagers.get("minmax",{"max":1})
@@ -392,7 +524,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr.add_image(slc)
 			
 		av=avgr.finish()
-		av.process_inplace("xform.transpose")
+		if not self.yshort: av.process_inplace("xform.transpose")
+		
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
 		self.zyview.set_data(av)
 		
 		# xz
@@ -402,7 +536,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			slc=self.get_slice(y,1)
 			avgr.add_image(slc)
 			
-		self.xzview.set_data(avgr.finish())
+		av=avgr.finish()
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		self.xzview.set_data(av)
 
 
 	def update_xy(self):
@@ -417,8 +553,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		for z in range(self.wdepth.value()-self.nlayers()/2,self.wdepth.value()+(self.nlayers()+1)/2):
 			slc=self.get_slice(z,2)
 			avgr.add_image(slc)
-			
-		self.xyview.set_data(avgr.finish())
+		
+		av=avgr.finish()
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		self.xyview.set_data(av)
 
 	def update_all(self):
 		"""redisplay of all widgets"""
@@ -440,11 +578,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z>=0 and (z<box[2]-self.boxsize()/2 or z>box[2]+self.boxsize()/2) : return False
 		return True
 
-	def update_box(self,n):
+	def update_box(self,n,quiet=False):
 		"""After adjusting a box, call this"""
-		self.curbox=n
+		
 		box=self.boxes[n]
 		bs2=self.boxsize()/2
+
+		if self.curbox!=n :
+			self.xzview.scroll_to(None,box[2])
+			self.zyview.scroll_to(box[2],None)
+			
+		self.curbox=n
 		
 		# Boxes may not extend outside the tomogram
 		if box[0]<bs2 : box[0]=bs2
@@ -458,13 +602,33 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
 		self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
 		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,1)))
+		self.xzview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[2],self.datasize[0],box[2],1)))
 		self.xzview.add_shape("zl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[2],1)))
 		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,1)))
+		self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
 		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
 		
 		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
 		else : self.xyview.update()
 		self.update_sides()
+		
+		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
+		if not quiet:
+			# Get the cube from the original data (normalized)
+			cube=self.get_cube(*box)
+			self.boxviewer.set_data(cube)
+			
+			# Make a z projection and store it in the list of all boxes
+			proj=cube.process("misc.directional_sum",{"axis":"z"})
+			try: self.boxesimgs[n]=proj
+			except:
+				for i in range(len(self.boxesimgs),n+1): self.boxesimgs.append(None)
+				self.boxesimgs[n]=proj
+			self.boxesviewer.set_data(self.boxesimgs)
+			self.boxesviewer.update()
+
+	def img_selected(self,event,lc):
+		self.update_box(lc[0])
 
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
@@ -493,9 +657,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dy=y-self.xydown[2]
 		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
 		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
-		self.update_box(self.curbox)
+		self.update_box(self.curbox,True)
 		
 	def xy_up  (self,event):
+		if self.xydown!=None: self.update_box(self.curbox)
 		self.xydown=None
 	
 	def xy_wheel (self,event):
@@ -505,16 +670,18 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.wdepth.setValue(self.wdepth.value()-4)
 	
 	def xy_scale(self,news):
-		"Image view has been rescaled"
-		self.xzview.set_scale(news,True)
-		self.zyview.set_scale(news,True)
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xzview.set_scale(news,True)
+		#self.zyview.set_scale(news,True)
 		
 	def xy_origin(self,newor):
+		"xy origin change"
 		xzo=self.xzview.get_origin()
-		xzo.set_origin(newor[0],xzo[1],True)
+		self.xzview.set_origin(newor[0],xzo[1],True)
 		
 		zyo=self.zyview.get_origin()
-		zyo.set_origin(zyo[0],newor[1],True)
+		self.zyview.set_origin(zyo[0],newor[1],True)
 	
 	def xz_down(self,event):
 		x,z=self.xzview.scr_to_img((event.x(),event.y()))
@@ -542,10 +709,26 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dz=z-self.xzdown[2]
 		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
 		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
-		self.update_box(self.curbox)
+		self.update_box(self.curbox,True)
 		
 	def xz_up  (self,event):
+		if self.xzdown!=None: self.update_box(self.curbox)
 		self.xzdown=None
+
+	def xz_scale(self,news):
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xyview.set_scale(news,True)
+		#self.zyview.set_scale(news,True)
+		
+	def xz_origin(self,newor):
+		"xy origin change"
+		xyo=self.xyview.get_origin()
+		self.xyview.set_origin(newor[0],xyo[1],True)
+		
+		#zyo=self.zyview.get_origin()
+		#self.zyview.set_origin(zyo[0],newor[1],True)
+
 
 	def zy_down(self,event):
 		z,y=self.zyview.scr_to_img((event.x(),event.y()))
@@ -570,15 +753,37 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		z,y=int(z),int(y)
 		
 		dz=z-self.zydown[1]
-		dy=y-self.xydown[2]
-		self.boxes[self.zydown[0]][2]=dx+self.xydown[3]
-		self.boxes[self.zydown[0]][1]=dy+self.xydown[4]
-		self.update_box(self.curbox)
+		dy=y-self.zydown[2]
+		self.boxes[self.zydown[0]][2]=dz+self.zydown[3]
+		self.boxes[self.zydown[0]][1]=dy+self.zydown[4]
+		self.update_box(self.curbox,True)
 		
 	def zy_up  (self,event):
+		if self.zydown!=None : self.update_box(self.curbox)
 		self.zydown=None
 
+	def zy_scale(self,news):
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xyview.set_scale(news,True)
+		#self.xzview.set_scale(news,True)
 		
+	def zy_origin(self,newor):
+		"xy origin change"
+		xyo=self.xyview.get_origin()
+		self.xyview.set_origin(xyo[0],newor[1],True)
+		
+		#xzo=self.xzview.get_origin()
+		#self.xzview.set_origin(xzo[0],newor[1],True)
+
+	def closeEvent(self,event):
+		print "Exiting"
+		self.boxviewer.close()
+		self.boxesviewer.close()
+		event.accept()
+		#self.app().close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+
 	#def closeEvent(self,event):
 		#self.target().done()
 
