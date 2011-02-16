@@ -1756,7 +1756,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float lalt = params.set_default("lalt",0.0f);
 	float laz = params.set_default("laz",0.0f);
 	float lphi = params.set_default("lphi",0.0f);
-	float ualt = params.set_default("ualt",179.9f); // I am using 179.9 rather than 180 to avoid resampling
+	float ualt = params.set_default("ualt",180.0f); // I am using 179.9 rather than 180 to avoid resampling
 	float uphi = params.set_default("uphi",359.9f); // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
 	float uaz = params.set_default("uaz",359.9f);   // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
 	float dalt = params.set_default("dalt",10.f);
@@ -1803,10 +1803,10 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
-		if (verbose) {
-			cout << "Trying angle alt " << alt << " az " << laz << endl;
-		}
-		for ( float az = laz; az <= uaz; az += daz ){	
+		for ( float az = laz; az <= uaz; az += daz ){
+			if (verbose) {
+				cout << "Trying angle alt " << alt << " az " << az << endl;
+			}
 			for( float phi = lphi; phi <= uphi; phi += dphi ) {
 				d["alt"] = alt;
 				d["phi"] = phi; 
@@ -1819,7 +1819,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
 #ifdef EMAN2_USING_CUDA	
-					if(this_img->cudarwdata){
+					if(to->cudarwdata){
 						use_cpu = false;
 						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
