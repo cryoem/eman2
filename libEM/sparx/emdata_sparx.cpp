@@ -6031,7 +6031,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 			x2 = R*x1 + C*x3;
 			F1=F2;
 			int cnt=0;
-			for(int i=0;i<size;i++)
+			for(size_t i=0;i<size;++i)
 				if(rdata[i]>=x2)
 					cnt++;
 			LF2 = static_cast<float>( cnt - ILE );
@@ -6042,7 +6042,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 			x1=R*x2 + C*x0;
 			F2=F1;
 			int cnt=0;
-			for(int i=0;i<size;i++)
+			for(size_t i=0;i<size;++i)
 				if(rdata[i]>=x1)
 					cnt++;
 			LF1 = static_cast<float>( cnt - ILE );
