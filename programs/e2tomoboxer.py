@@ -89,6 +89,8 @@ class EMAverageViewer(QtGui.QWidget):
 	def __init__(self,parent):
 		QtGui.QWidget.__init__(self)
 		
+		self.setWindowTitle("Particle Average")
+		
 		self.parent=weakref.ref(parent)
 		
 		self.resize(300,500)
@@ -213,6 +215,7 @@ class EMBoxViewer(QtGui.QWidget):
 	
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
+		self.setWindowTitle("Single Particle View")
 		
 		self.resize(300,300)
 		
@@ -286,6 +289,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
+		self.setWindowTitle("e2tomoboxer.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -295,7 +299,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mfile_save_boxes=self.mfile.addAction("Save Boxed Data")
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
 		self.mfile_quit=self.mfile.addAction("Quit")
-				
+
+		self.mwin=self.menuBar().addMenu("Window")
+		self.mwin_boxes=self.mwin.addAction("Particles")
+		self.mwin_single=self.mwin.addAction("Single Particle")
+		self.mwin_average=self.mwin.addAction("Averaging")
+
+
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
 
@@ -355,13 +365,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxesimgs=[]					# z projection of each box
 		self.xydown=None
 		
-		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.event_depth)
-		QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.event_nlayers)
-		QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
-		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
-		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
-		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-		
+		# file menu
 		QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
 		QtCore.QObject.connect(self.mfile_read_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_read_boxloc  )
 		QtCore.QObject.connect(self.mfile_save_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxloc  )
@@ -369,6 +373,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.mfile_save_boxes_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxes_stack)
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
+		# window menu
+		QtCore.QObject.connect(self.mwin_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_boxes  )
+		QtCore.QObject.connect(self.mwin_single,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_single  )
+		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
+
+		# all other widgets
+		QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.event_depth)
+		QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.event_nlayers)
+		QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
+		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
+		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
+		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
+		
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
@@ -400,13 +417,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.app().attach_child(self.boxesviewer)
 		self.boxesviewer.show()
 		self.boxesviewer.set_mouse_mode("App")
-		
+		self.boxesviewer.setWindowTitle("Particle List")
+
 		# Average viewer shows results of background tomographic processing
 		self.averageviewer=EMAverageViewer(self)
-		self.averageviewer.show()
+		#self.averageviewer.show()
 		
 		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 		
+
+	def menu_win_boxes(self) : self.boxesviewer.show()
+	def menu_win_single(self) : self.boxviewer.show()
+	def menu_win_average(self) : self.averageviewer.show()
+
 
 	def set_datafile(self,datafile):
 		if datafile==None :

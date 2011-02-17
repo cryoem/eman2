@@ -558,7 +558,7 @@ def check(options,verbose=0):
 		
 		if (options.verbose>0):
 			print "%s contains %d images of dimensions %dx%d" %(options.input,EMUtil.get_image_count(options.input),xsize,ysize)
-			print "%s has dimensions %dx%dx%d" %(options.model,xsize3d,ysize3d,zsize3d)
+#			print "%s has dimensions %dx%dx%d" %(options.models,xsize3d,ysize3d,zsize3d)
 		
 		if ( xsize != ysize ):
 			if ( ysize == zsize3d and xsize == ysize3d and ysize3D == xsize3d ):
