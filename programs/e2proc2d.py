@@ -525,33 +525,26 @@ def main():
 				#elif options.mraprep:
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
-
-				if options.threed2threed or options.twod2threed:
+				
+				#write processed image to file
+				if options.threed2threed or options.twod2threed:    #output a single 3D image
 					if i==0:
 						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)		
 						
 					out3d_img.insert_clip(d, (0,0,i))
 					
-#					if i==n1:
-#						out3d_img.write_image(outfile)
-					
-					#can not do region writing to an no-existing image file
-					#d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, Region(0,0,i,d.get_xsize(), d.get_ysize(),1), EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-				
-				#write processed image to file
-				if 'mrc8bit' in optionlist:
-					if (options.threed2threed or options.twod2threed) and i==n1:
-						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-					else:
-					   d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-				elif 'mrc16bit' in optionlist:
-					if (options.threed2threed or options.twod2threed) and i==n1:
-						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-					else:
+					if i==n1:
+						if 'mrc8bit' in optionlist:
+							out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+						elif 'mrc16bit' in optionlist:
+							out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+						else:
+							out3d_img.write_image(outfile)
+				else:   #output a single 2D image or a 2D stack			
+					if 'mrc8bit' in optionlist:
+						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+					elif 'mrc16bit' in optionlist:
 						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-				else:
-					if (options.threed2threed or options.twod2threed) and i==n1:
-						out3d_img.write_image(outfile)
 					else:
 						if options.inplace:
 							d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
