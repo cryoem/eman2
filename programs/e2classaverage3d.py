@@ -77,7 +77,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is None, but should usuall be refine.3d", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparator used by the second stage aligner. Default is ccc.tomo",default="ccc.tomo")
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="mean")
-	parser.add_option("--cmp",type="string",dest="cmpr"help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
+	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--shrink", type="int",default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
