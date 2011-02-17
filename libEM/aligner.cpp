@@ -1961,6 +1961,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
+		cout << "Using CUDA for 3D alignment" << endl;
 		if(!to->isrodataongpu()) to->copy_to_cudaro();
 		if(!this_img->cudarwdata) this_img->copy_to_cuda();
 		if(this_imgfft) this_imgfft->copy_to_cuda();
