@@ -2517,7 +2517,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	# Simulate annealing use or not
 	if T0 != 0: SA = True
 	else:       SA = False
-
+	
 	if SA:
 		# for simulate annealing
 		from math   import exp
@@ -3451,6 +3451,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR
 	import time
 	import sys
+	
 	if CTF[0]:
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
@@ -9141,8 +9142,8 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	"""
 	
 	from copy import deepcopy
-	
-	
+
+
 	MATCH=[]
 	
 	# do MPI_init: compute pruned partitions and Njobs top matches and return

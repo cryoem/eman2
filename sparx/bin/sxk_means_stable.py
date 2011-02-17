@@ -40,7 +40,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --F=0.9 --T0=5.0 --th_nobj=10 --rand_seed=10 --opt_method=cla --match=pwa --maxit=1000 --normalize --CTF --CUDA --MPI"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --F=0.9 --T0=5.0 --th_nobj=10 --rand_seed=10 --opt_method=SSE --match=bbenum --maxit=1000 --normalize --CTF --CUDA --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for K-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
@@ -48,8 +48,8 @@ def main():
 	parser.add_option("--T0",             type="float",        default=0.0,       help="Simulated annealing first temperature")
 	parser.add_option("--th_nobj",        type="int",          default=1,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 1)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
-	parser.add_option("--opt_method",     type='string',       default='cla',     help="K-means method: SSE (default), cla")
-	parser.add_option("--match",          type='string',       default='pwa',     help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm')
+	parser.add_option("--opt_method",     type='string',       default='SSE',     help="K-means method: SSE (default), cla")
+	parser.add_option("--match",          type='string',       default='bbenum',     help='Algorithm to match partitions: pwa, pair-wise agreement (default), or hh, hierarchical Hungarian algorithm, or bbenum')
 	parser.add_option("--maxit",          type="int",          default=1e9,       help="Maximum number of iterations for k-means")
 	parser.add_option("--normalize",      action="store_true", default=False,     help="Normalize images under the mask")
 	parser.add_option("--CTF",            action="store_true", default=False,     help="Perform classification using CTF information")
