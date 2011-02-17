@@ -166,7 +166,9 @@ def main():
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_option("--treat3das2d", action="store_true", help="Process 3D image as a statck of 2D slice", default=False)	
+	parser.add_option("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
+	parser.add_option("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
+	parser.add_option("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -213,10 +215,10 @@ def main():
 	d = EMData()
 	threed_xsize = 0
 	threed_ysize = 0
-	if options.treat3das2d:
+	if options.threed2threed or options.threed2twod:
 		d.read_image(infile, 0, True)
 		if(d.get_zsize() == 1):
-			print 'Error: need 3D image to use --treat3das2d option'
+			print 'Error: need 3D image to use this option'
 			return
 		else:
 			print "Process 3D as a stack of %d 2D images" % d.get_zsize()
@@ -272,7 +274,7 @@ def main():
 			outfile = outfilename_no_ext + ".%02d." % (i % options.split) + outfilename_ext
 
 		if not isthreed:
-			if(options.treat3das2d):
+			if options.threed2threed or options.threed2twod:
 				d = EMData()
 				d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
 			else:
@@ -297,7 +299,7 @@ def main():
 		
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
-			if(options.treat3das2d):
+			if options.threed2threed or options.threed2twod:
 				pass
 			else:
 				print "Warning: sigma = 0 for image ",i
@@ -524,9 +526,9 @@ def main():
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
 
-				if options.treat3das2d:
+				if options.threed2threed or options.twod2threed:
 					if i==0:
-						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
+						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)		
 						
 					out3d_img.insert_clip(d, (0,0,i))
 					
@@ -538,17 +540,17 @@ def main():
 				
 				#write processed image to file
 				if 'mrc8bit' in optionlist:
-					if options.treat3das2d and i==n1:
+					if (options.threed2threed or options.twod2threed) and i==n1:
 						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 					else:
 					   d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 				elif 'mrc16bit' in optionlist:
-					if options.treat3das2d and i==n1:
+					if (options.threed2threed or options.twod2threed) and i==n1:
 						out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 					else:
 						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 				else:
-					if options.treat3das2d and i==n1:
+					if (options.threed2threed or options.twod2threed) and i==n1:
 						out3d_img.write_image(outfile)
 					else:
 						if options.inplace:
