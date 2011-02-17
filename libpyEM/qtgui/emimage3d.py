@@ -79,11 +79,11 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
-		
 	def __del__(self):
-		if not self.dont_delete_parent:
-			self.qt_parent.deleteLater()
-
+		#if not self.dont_delete_parent:
+			#self.qt_parent.deleteLater()
+		self.core_object.deleteLater()
+		
 	def __init__(self, parent=None, image=None,application=None,winid=None):
 		EMImage3DWidget.allim[self] = 0
 		EMGLWidget.__init__(self,parent)
@@ -97,7 +97,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		fmt.setSampleBuffers(True)
 		self.setFormat(fmt)
 		
-		self.dont_delete_parent = False
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.d = 0

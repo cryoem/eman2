@@ -60,6 +60,7 @@ def main():
 #	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
 	parser.add_option("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis")
+	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the tomogram header",default=0.0)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -78,7 +79,7 @@ def main():
 		img=EMData(args[0],0)
 		print "Done !"
 		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort)
-	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort)
+	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix)
 	boxer.show()
 	app.execute()
 #	E2end(logid)
@@ -284,11 +285,12 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
+		self.apix=apix
 		self.setWindowTitle("e2tomoboxer.py")
 		
 		# Menu Bar
@@ -474,32 +476,33 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def get_cube(self,x,y,z):
 		"""Returns a box-sized cube at the given center location"""
+		bs=self.boxsize()
+
 		if self.yshort:
-			bs=self.boxsize()
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				r.process_inplace("normalize.edgemean")
 				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 				r.process_inplace("xform.flip",{"axis":"z"})
-				return r
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
 				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 				r.process_inplace("xform.flip",{"axis":"z"})
-				r.process_inplace("normalize.edgemean")
-				return r
-			return None
+			else: return None
 
-		bs=self.boxsize()
-		if self.data!=None:
-			r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
-			r.process_inplace("normalize.edgemean")
-			return r
-		elif self.datafile!=None:
-			r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
-			r.process_inplace("normalize.edgemean")
-			return r
-		return None
+		else :
+			if self.data!=None:
+				r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
+			elif self.datafile!=None:
+				r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
+			else: return None
+		
+		if self.apix!=0 : 
+			r["apix_x"]=self.apix
+			r["apix_y"]=self.apix
+			r["apix_z"]=self.apix
+			
+		r.process_inplace("normalize.edgemean")
+		return r
 
 	def get_slice(self,n,xyz):
 		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
@@ -508,64 +511,57 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				if xyz==0:
 					r=self.data.get_clip(Region(n,0,0,1,self.datasize[2],self.datasize[1]))
 					r.set_size(self.datasize[2],self.datasize[1],1)
-					return r
 				elif xyz==2:
 					r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[1]))
 					r.set_size(self.datasize[0],self.datasize[1],1)
-					return r
 				else:
 					r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[2],1))
-					return r
 
 			elif self.datafile!=None:
 				if xyz==0:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
 					r.set_size(self.datasize[2],self.datasize[1],1)
-					return r
 				elif xyz==2:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
 					r.set_size(self.datasize[0],self.datasize[1],1)
-					return r
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
-					return r
+			else: return None
 			
-		
-		if self.data!=None :
-			if xyz==0:
-				r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
-				r.set_size(self.datasize[1],self.datasize[2],1)
-				return r
-			elif xyz==1:
-				r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
-				r.set_size(self.datasize[0],self.datasize[2],1)
-				return r
-			else:
-				r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
-				return r
+		else :
+			if self.data!=None :
+				if xyz==0:
+					r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+					r.set_size(self.datasize[1],self.datasize[2],1)
+				elif xyz==1:
+					r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+					r.set_size(self.datasize[0],self.datasize[2],1)
+				else:
+					r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
 
-		elif self.datafile!=None:
-			if xyz==0:
-				r=EMData()
-				r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
-				r.set_size(self.datasize[1],self.datasize[2],1)
-				return r
-			elif xyz==1:
-				r=EMData()
-				r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
-				r.set_size(self.datasize[0],self.datasize[2],1)
-				return r
-			else:
-				r=EMData()
-				r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
-				return r
+			elif self.datafile!=None:
+				if xyz==0:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+					r.set_size(self.datasize[1],self.datasize[2],1)
+				elif xyz==1:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+					r.set_size(self.datasize[0],self.datasize[2],1)
+				else:
+					r=EMData()
+					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
 
+			else : return None
 
-
-		else : return None
+		if self.apix!=0 : 
+			r["apix_x"]=self.apix
+			r["apix_y"]=self.apix
+			r["apix_z"]=self.apix
+		return r
 
 	def event_boxsize(self):
 		pass
@@ -752,13 +748,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if box[2]<bs2 : box[2]=bs2
 		if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
 #		print self.boxes
-		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,1)))
+		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2)))
 		self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
 		self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
-		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,1)))
+		self.xzview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,2)))
 		self.xzview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[2],self.datasize[0],box[2],1)))
 		self.xzview.add_shape("zl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[2],1)))
-		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,1)))
+		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,2)))
 		self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
 		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
 		
