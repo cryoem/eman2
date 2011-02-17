@@ -43,21 +43,21 @@ def main():
     parser = OptionParser(usage=usage,version=EMANVERSION)
     parser.add_option("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
     
-    parser.add_option("--helix-coords", "-X", type="string", help="Save coordinates for helices to the file specified, which will have the EMAN1 *.box format: x1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
+    parser.add_option("--helix-coords", "-X", type="string", help="Save coordinates for helices to the file specified, which will have the EMAN1 *.box format:\t\t\tx1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
     parser.add_option("--helix-images", "-x", type="string", help="Save images of the helices. The file name specified will have helix numbers added to it.")
     parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles to the specified formatted text file")
     parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
     
     parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-    parser.add_option("--db-set-hcoords", type="string", help="Set the helix coordinates in the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+    parser.add_option("--db-set-hcoords", type="string", help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
     
-    parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels", default=-1)
+    parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
     parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
     parser.add_option("--ptcl-length", type="int", dest="ptcl_length", help="Particle length in pixels", default=-1)
     parser.add_option("--ptcl-width", type="int", dest="ptcl_width", help="Particle width in pixels", default=-1)
     parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
     parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
-    parser.add_option("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations.")
+    parser.add_option("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
     (options, args) = parser.parse_args()
     
     if options.helix_width < 1:
