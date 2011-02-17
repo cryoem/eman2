@@ -267,6 +267,13 @@ class EMBoxViewer(QtGui.QWidget):
 		self.show()
 		
 	def update(self):
+		if self.data==None:
+			self.xyview.set_data(None)
+			self.xzview.set_data(None)
+			self.zyview.set_data(None)
+			self.d3view.set_data(None)
+			return
+		
 		if self.wfilt.getValue()!=0.0 :
 			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
 		
@@ -728,17 +735,48 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z>=0 and (z<box[2]-self.boxsize()/2 or z>box[2]+self.boxsize()/2) : return False
 		return True
 
+	def del_box(self,n):
+		"""Delete an existing box by replacing the deleted box with the last box. A bit funny, but otherwise
+		update after deletion is REALLY slow."""
+#		print "del ",n
+		if n<0 or n>=len(self.boxes): return
+		self.boxviewer.set_data(None)
+		self.curbox=-1
+		if n==len(self.boxes)-1 : 
+			self.boxes.pop()
+			self.boxesimgs.pop()
+			self.boxesviewer.set_data(self.boxesimgs)
+			self.boxesviewer.update()
+			self.xyview.del_shape(n)
+			self.xzview.del_shape(n)
+			self.zyview.del_shape(n)
+			self.curbox=-1
+			self.update()
+		else :
+			a=self.boxes.pop()
+			self.boxes[n]=a
+			a=self.boxesimgs.pop()
+			self.boxesimgs[n]=a
+			self.boxesviewer.set_data(self.boxesimgs)
+			self.boxesviewer.set_selected([],True)
+			self.boxesviewer.update()
+			self.xyview.del_shape(len(self.boxes))
+			self.xzview.del_shape(len(self.boxes))
+			self.zyview.del_shape(len(self.boxes))
+			self.update_box(n,True)
+#			self.update()
+
 	def update_box(self,n,quiet=False):
 		"""After adjusting a box, call this"""
+#		print "upd ",n,quiet
 		
 		box=self.boxes[n]
 		bs2=self.boxsize()/2
 
-		if self.curbox!=n :
-			self.xzview.scroll_to(None,box[2])
-			self.zyview.scroll_to(box[2],None)
+		#if self.curbox!=n :
+			#self.xzview.scroll_to(None,box[2])
+			#self.zyview.scroll_to(box[2],None)
 			
-		self.curbox=n
 		
 		# Boxes may not extend outside the tomogram
 		if box[0]<bs2 : box[0]=bs2
@@ -761,7 +799,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
 		else : self.xyview.update()
 		self.update_sides()
-		
+
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
 		if not quiet:
 			# Get the cube from the original data (normalized)
@@ -776,9 +814,22 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				self.boxesimgs[n]=proj
 			self.boxesviewer.set_data(self.boxesimgs)
 			self.boxesviewer.update()
+			
+		if n!=self.curbox:
+			self.boxesviewer.set_selected((n,),True)
+
+		self.curbox=n
+
 
 	def img_selected(self,event,lc):
-		self.update_box(lc[0])
+#		print "sel",lc[0]
+		if event.modifiers()&Qt.ShiftModifier: self.del_box(lc[0])
+		else : self.update_box(lc[0])
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(box[0],box[1])
+			self.xzview.scroll_to(None,box[2])
+			self.zyview.scroll_to(box[2],None)
 
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
@@ -788,14 +839,22 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,y) :
-				self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
-				self.update_box(i)
+				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				else:
+					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
+					self.update_box(i)
 				break
 		else:
 #			if x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 and self.depth()>self.boxsize()/2 and self.depth()<self.datasize[2]-self.boxsize()/2 :
-			self.boxes.append(([x,y,self.depth()]))
-			self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
-			self.update_box(self.xydown[0])
+			if not event.modifiers()&Qt.ShiftModifier:
+				self.boxes.append(([x,y,self.depth()]))
+				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.xydown[0])
+
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xzview.scroll_to(None,box[2])
+			self.zyview.scroll_to(box[2],None)
 		
 	def xy_drag(self,event):
 		if self.xydown==None : return
@@ -841,13 +900,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,-1,z) :
-				self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
-				self.update_box(i)
+				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				else :
+					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
+					self.update_box(i)
 				break
 		else:
-			self.boxes.append(([x,self.cury,z]))
-			self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
-			self.update_box(self.xzdown[0])
+			if not event.modifiers()&Qt.ShiftModifier:
+				self.boxes.append(([x,self.cury,z]))
+				self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.xzdown[0])
+				
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(None,box[1])
+			self.zyview.scroll_to(box[2],None)
 		
 	def xz_drag(self,event):
 		if self.xzdown==None : return
@@ -888,13 +955,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,-1,y,z) :
-				self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
-				self.update_box(i)
-				break
+				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				else :
+					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
+					self.update_box(i)
+					break
 		else:
-			self.boxes.append(([self.curx,y,z]))
-			self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
-			self.update_box(self.zydown[0])
+			if not event.modifiers()&Qt.ShiftModifier:
+				self.boxes.append(([self.curx,y,z]))
+				self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.zydown[0])
+				
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(box[0],None)
+			self.xzview.scroll_to(None,box[2])
 		
 	def zy_drag(self,event):
 		if self.zydown==None : return

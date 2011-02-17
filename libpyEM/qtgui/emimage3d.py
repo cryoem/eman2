@@ -79,10 +79,10 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
-	def __del__(self):
-		#if not self.dont_delete_parent:
-			#self.qt_parent.deleteLater()
-		self.core_object.deleteLater()
+	#def __del__(self):
+		##if not self.dont_delete_parent:
+			##self.qt_parent.deleteLater()
+		#self.core_object.deleteLater()
 		
 	def __init__(self, parent=None, image=None,application=None,winid=None):
 		EMImage3DWidget.allim[self] = 0

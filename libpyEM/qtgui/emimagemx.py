@@ -333,12 +333,15 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 		
-			if  not event.modifiers()&Qt.ShiftModifier:
-				self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
-			else:
-				if lc != None:
-					self.mediator.remove_particle_image(lc[0],event,True)
-					self.mediator.force_display_update()
+			self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
+			
+			# disabled by stevel 2/17/2011 for external application flexibility
+			#if  not event.modifiers()&Qt.ShiftModifier:
+				#self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
+			#else:
+				#if lc != None:
+					#self.mediator.remove_particle_image(lc[0],event,True)
+					#self.mediator.force_display_update()
 			
 class EMMatrixPanel:
 	'''
@@ -1569,16 +1572,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def set_selected(self,numlist,update_gl=True):
 		"""pass an integer or a list/tuple of integers which should be marked as 'selected' in the
 		display"""
-		real_numlist = []
-		for i in numlist:
-			t = i-self.get_img_num_offset()
-			if t != 0:
-				t %= len(self.data)
-			real_numlist.append(t)
+		if isinstance(numlist,int) : numlist=[numlist]
+		if isinstance(numlist,list) or isinstance(numlist,tuple) :
+			real_numlist = []
+			for i in numlist:
+				t = i-self.get_img_num_offset()
+				if t != 0:
+					t %= len(self.data)
+				real_numlist.append(t)
 
-		if isinstance(numlist,int) : numlist=[real_numlist]
-		if isinstance(numlist,list) or isinstance(real_numlist,tuple) : self.selected=real_numlist
+			self.selected=real_numlist
 		else : self.selected=[]
+		
 		self.force_display_update()
 		if update_gl: self.updateGL()
 	
