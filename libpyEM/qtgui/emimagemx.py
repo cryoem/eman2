@@ -664,7 +664,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		if self.under_qt_control:
 			self.deleteLater()
-		self.core_object.deleteLater()
+
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
 	

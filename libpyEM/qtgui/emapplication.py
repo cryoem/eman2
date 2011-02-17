@@ -112,7 +112,6 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,parent)
 		self.qt_parent = EMParentWin(self, enable_timer)
 		
-		self.core_object =  QtCore.QObject()
 		self.under_qt_control = True #TODO: figure out which value works better -- eventually eliminate this Qt control vs GL control was from 3D desktop days
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen

@@ -254,7 +254,6 @@ class EMImage2DWidget(EMGLWidget):
 #		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 #		if self.under_qt_control:
 #			self.qt_parent.deleteLater()
-#		self.core_object.deleteLater()
 		
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
