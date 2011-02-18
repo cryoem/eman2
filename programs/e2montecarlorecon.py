@@ -51,6 +51,7 @@ def main():
 	parser.add_option("--numtemps",type="float",default=10.0,help="The number of temp steps, default=10.0")
 	parser.add_option("--initemp",type="float",default=0.2,help="Initial temperature, default=0.2")
 	parser.add_option("--cooling",type="float",default=2.0,help="Cooling rate, default=2.0")
+	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the CAs, default=None")
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -58,6 +59,11 @@ def main():
 	(options, args) = parser.parse_args()
 
 	calist = EMData.read_images(options.classavg)	# Load the CAs
+	
+	# shrink the CAs if needed
+	if options.shrink:
+		for ca in calist:
+			ca.process_inplace('xform.scale',{'scale':options.shrink})
 	
 	trials = len(calist)*options.mccoeff		# How many MC trials? 
 	Util.set_randnum_seed(Util.get_randnum_seed())	# Initialize random num generator
@@ -103,6 +109,7 @@ def main():
 			besttlist = tlist
 	
 	refiner = SAsca("simulated annealing, single class average steps\n")
+	#refiner = SA("simulated annealing\n")
 	refiner.refinerecon(calist, besttlist, reconstructor)
 	
 	# Now do reconstruction
@@ -145,9 +152,9 @@ class SAsca(Refine):
 					rreconstructor.insert_slice(ca, blist[canum][0],-1)
 			
 					#step 2 change the Eulers at random
-					az = Util.get_frand(0,360) 					# theta
-					alt  = math.degrees(math.acos(2*Util.get_frand(0,1) - 1))	# phi
-					phi = Util.get_frand(0,360)					# kappa
+					az = Util.get_frand(0,360) 					# theta (az)
+					alt  = math.degrees(math.acos(2*Util.get_frand(0,1) - 1))	# phi (alt)
+					phi = Util.get_frand(0,360)					# kappa (phi)
 					t = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
 			
 					#step 3 determine its slice agreement
@@ -165,6 +172,63 @@ class SAsca(Refine):
 						rreconstructor.insert_slice(ca, blist[canum][0],1)
 				rreconstructor.clear() # we need to do this to avoid intepolation errors building up
 			temp=options.initemp*math.pow((1-tstep*options.numsasteps/K),options.cooling) # This annealing schedule comes from Numerical Recipes, second edition, pg 554
+	# should we make the change?
+	def pseudoboltzmann(self, de, temp):
+		return de < 0 or Util.get_frand(0,1) < math.exp(-de/temp)
+
+# This algorithm is a bit Rubbish!!!!
+class SA(Refine):
+	def refinerecon(self, calist, blist, reconstructor):
+		print "Running: "+self.name
+		
+		#first get the initial energy
+		inienergy = 0
+		for i, data in enumerate(blist):
+			inienergy += blist[i][1]
+		
+		#setup a reconstructor for use in refinement
+		rreconstructor=Reconstructors.get(reconstructor[0], reconstructor[1]) 	# lets make a new reconstrcutor
+		rreconstructor.setup()
+		
+		searchfract = 0.5
+		temp = options.initemp
+		for i in xrange(int(options.numsasteps)):
+			energy = 0
+			newt = []
+			for canum, ca in enumerate(calist):
+				#step 1 perturb the Eulers, and fill the recon
+				daz = Util.get_gauss_rand(0,360*searchfract) 					# deltatheta
+				dalt = Util.get_gauss_rand(0,1*searchfract)					# deltaphi
+				dphi = Util.get_gauss_rand(0,360*searchfract)					# deltakappa			
+				az = blist[canum][0].get_rotation("eman")["az"] + daz				# theta (az)
+				currentalt = blist[canum][0].get_rotation("eman")["alt"]			# get the current alt angle
+				v = (math.cos(currentalt) + 1)/2 + dalt						# back convert to uniform variate and add the perturbation
+				v =  math.acos(math.cos(v*math.pi))/math.pi					# this ensures that v E [-1, 1] and wraps around if v goes outside its range
+				alt = math.degrees(math.acos(2*v - 1))						# Finally compute phi (alt)
+				phi = blist[canum][0].get_rotation("eman")["phi"] + dphi			# kappa (phi)
+				#az = Util.get_frand(0,360) 					# theta
+				#alt  = math.degrees(math.acos(2*Util.get_frand(0,1) - 1))	# phi
+				#phi = Util.get_frand(0,360)					# kappa
+				t = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
+				newt.append([t,0])
+				
+				#step 2 fill the recon
+				rreconstructor.insert_slice(ca, t,1)
+			
+			for canum, ca in enumerate(calist):
+				#step 3 determine slice aggrement and sum
+				rreconstructor.determine_slice_agreement(ca,newt[canum][0],1,1)
+				newt[canum][1] = ca.get_attr("reconstruct_absqual")
+				energy += newt[canum][1]
+				
+		
+			rreconstructor.clear()
+			de = energy - inienergy
+			if self.pseudoboltzmann(-de, temp):
+				print "Found a better match"
+				blist[:] = newt[:] # deep copy going on here
+				inienergy = energy
+			#print inienergy, energy
 	# should we make the change?
 	def pseudoboltzmann(self, de, temp):
 		return de < 0 or Util.get_frand(0,1) < math.exp(-de/temp)
