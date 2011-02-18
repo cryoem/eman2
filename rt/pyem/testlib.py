@@ -65,19 +65,21 @@ def unlink_data_header_files(filename):
         
 
 def get_list(typename):
-	l = []
-	for i in range(3):
-		if typename == "int":
-			n = TestUtil.get_debug_int(i)
-		elif typename == "float":
-			n = TestUtil.get_debug_float(i)
-		elif typename == "long":
-			n1 = TestUtil.get_debug_int(i)
-			n = long(n1)
-		elif typename == "string":
-			n = TestUtil.get_debug_string(i)
-		l.append(n)
-	return l
+    l = []
+    for i in range(3):
+        if typename == "int":
+            n = TestUtil.get_debug_int(i)
+        elif typename == "float":
+            n = TestUtil.get_debug_float(i)
+        elif typename == "long":
+            n1 = TestUtil.get_debug_int(i)
+            n = long(n1)
+        elif typename == "string":
+            n = TestUtil.get_debug_string(i)
+        elif typename == "transformarray":
+            n = TestUtil.get_debug_transform(i)
+        l.append(n)
+    return l
 
 
 def get_dict(typename):

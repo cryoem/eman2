@@ -490,7 +490,8 @@ namespace EMAN {
 				result = EMObject();
 			}
 			else {
-				EMObject::ObjectType object_type;
+				EMObject::ObjectType object_type = EMObject::UNKNOWN;
+
 				if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
 					object_type = EMObject::INTARRAY;
 				}
@@ -500,6 +501,9 @@ namespace EMAN {
 				else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
 					object_type = EMObject::STRINGARRAY;
 				}
+				else if(string(first_obj->ob_type->tp_name) == "Transform") {
+					object_type = EMObject::TRANSFORMARRAY;
+				}
 				else {
 					object_type = EMObject::UNKNOWN;
 				}
@@ -508,6 +512,7 @@ namespace EMAN {
 				vector<int> iarray;
 				vector<float> farray;
 				vector<string> strarray;
+				vector<Transform> transformarray;
 
 				while(1) {
 					python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
@@ -532,6 +537,10 @@ namespace EMAN {
 						python::extract<string> elem_proxy2(py_elem_obj);
 						strarray.push_back(elem_proxy2());
 					}
+					else if (object_type == EMObject::TRANSFORMARRAY) {
+						python::extract<Transform> elem_proxy2(py_elem_obj);
+						transformarray.push_back(elem_proxy2());
+					}
 					else if (object_type == EMObject::UNKNOWN) {
 						LOGERR("Unknown array type ");
 					}
@@ -544,6 +553,9 @@ namespace EMAN {
 				}
 				else if (object_type == EMObject::STRINGARRAY) {
 					result = EMObject(strarray);
+				}
+				else if (object_type == EMObject::TRANSFORMARRAY) {
+					result = EMObject(transformarray);
 				}
 			}
 		}

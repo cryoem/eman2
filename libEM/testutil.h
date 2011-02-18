@@ -58,6 +58,7 @@ namespace EMAN
 		static int get_debug_int(int i);
 		static float get_debug_float(int i);
 		static string get_debug_string(int i);
+		static Transform get_debug_transform(int i);
 
 		static string get_debug_image(const string & imagename);
 		static string get_golden_image(const string & imagename);
@@ -74,6 +75,7 @@ namespace EMAN
 		static EMObject emobject_to_py(XYData * xydata);
 		static EMObject emobject_farray_to_py();
 		static EMObject emobject_strarray_to_py();
+		static EMObject emobject_transformarray_to_py();
 		static EMObject emobject_to_py(Transform * t);
 		static EMObject emobject_to_py(Ctf * ctf_);
 

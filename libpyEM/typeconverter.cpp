@@ -228,6 +228,16 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 		result = python::incref(python::list(flist).ptr());
 	}
+	else if (t == EMObject::TRANSFORMARRAY) {
+		vector<Transform> transformarray = emobj;
+		python::list tlist;
+
+		for (size_t i = 0; i < transformarray.size(); i++) {
+			tlist.append(transformarray[i]);
+		}
+
+		result = python::incref(python::list(tlist).ptr());
+	}
 	else if (t == EMObject::FLOAT_POINTER) {
 		float* fp = (float*) emobj;
 		result = python::incref(python::object(fp).ptr());

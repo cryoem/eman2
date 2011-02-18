@@ -106,12 +106,24 @@ Transform::Transform( const Transform& that )
 }
 
 Transform& Transform::operator=(const Transform& that ) {
-
 	if (this != &that ) {
 		memcpy(matrix,that.matrix,12*sizeof(float));
 // 		transform_type = that.transform_type;
 	}
 	return *this;
+}
+
+bool Transform::operator==(const Transform& rhs) const{
+	if (memcmp(this->matrix, rhs.matrix, 3*4*sizeof(float)) == 0) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool Transform::operator!=(const Transform& rhs) const{
+	return !(operator==(rhs));
 }
 
 Transform::Transform(const Dict& d)  {

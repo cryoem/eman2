@@ -103,6 +103,7 @@ map< EMObject::ObjectType, string> EMObject::init()
 		mymap[INT_POINTER] = "INT_POINTER";
 		mymap[UNKNOWN] = "UNKNOWN";
 		mymap[VOID_POINTER] = "VOID_POINTER";
+		mymap[TRANSFORMARRAY] = "TRANSFORMARRAY";
 		first_construction = false;
 	}
 	
@@ -297,8 +298,17 @@ EMObject::EMObject(const vector < float >&v) :
 #endif
 }
 
-EMObject:: EMObject(const vector <string>& sarray) :
+EMObject::EMObject(const vector <string>& sarray) :
 	strarray(sarray), type(STRINGARRAY)
+{
+#ifdef MEMDEBUG
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+#endif
+}
+
+EMObject::EMObject(const vector <Transform>& tarray) :
+	transformarray(tarray), type(TRANSFORMARRAY)
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
@@ -619,6 +629,18 @@ EMObject::operator vector<string> () const
 	return strarray;
 }
 
+EMObject::operator vector<Transform> () const
+{
+	if(type != TRANSFORMARRAY) {
+		if (type != UNKNOWN) {
+			throw TypeException("Cannot convert to vector<string> from this data type",
+								get_object_type_name(type));
+		}
+		return vector<Transform>();
+	}
+	return transformarray;
+}
+
 bool EMObject::is_null() const
 {
 	return (type == UNKNOWN);
@@ -679,7 +701,10 @@ string EMObject::to_str(ObjectType argtype) const
 			sprintf(tmp_str, "STRINGARRAY");
 		}
 		else if (argtype == TRANSFORM) {
-			sprintf(tmp_str, "TRANSFORMD");
+			sprintf(tmp_str, "TRANSFORM");
+		}
+		else if (argtype == TRANSFORMARRAY) {
+			sprintf(tmp_str, "TRANSFORMARRAY");
 		}
 		else if (argtype == CTF) {
 			sprintf(tmp_str, "CTF");
@@ -735,6 +760,9 @@ string EMObject::get_object_type_name(ObjectType t)
 	if ( t == TRANSFORM){
 		return "TRANSFORM";
 	}else
+	if ( t == TRANSFORMARRAY){
+		return "TRANSFORMARRAY";
+	}
 	if ( t == CTF){
 		return "CTF";
 	}else
@@ -844,6 +872,15 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			return false;
 		}
 	break;
+	case EMObject::TRANSFORMARRAY:
+		if (e1.transformarray.size() == e2.transformarray.size()) {
+			for (size_t i = 0; i < e1.transformarray.size(); i++) {
+				if (e1.transformarray[i] != e2.transformarray[i]) {
+					return false;
+				}
+			}
+		}
+	break;
 	case  EMObject::UNKNOWN:
 		// UNKNOWN really means "no type" and if two objects both have
 		// type UNKNOWN they really are the same
@@ -941,6 +978,9 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		case STRINGARRAY:
 			strarray = that.strarray;
+		break;
+		case TRANSFORMARRAY:
+			transformarray = that.transformarray;
 		break;
 		case UNKNOWN:
 			// This is possible, nothing should happen

@@ -142,7 +142,8 @@ namespace EMAN
 			CTF,
 			FLOAT_POINTER,
 			INT_POINTER,
-			VOID_POINTER
+			VOID_POINTER,
+			TRANSFORMARRAY
 		};
 
 
@@ -168,6 +169,7 @@ namespace EMAN
 		EMObject(const vector< int >& v );
 		EMObject(const vector < float >&v);
 		EMObject(const vector <string>& sarray);
+		EMObject(const vector <Transform>& tarray);
 
 		/** Copy constructor.
 		 * copies pointer locations - does not take ownership
@@ -203,6 +205,7 @@ namespace EMAN
 		operator vector < int > () const;
 		operator vector < float > () const;
 		operator vector<string> () const;
+		operator vector<Transform> () const;
 
 		/** Checks to see if the EMObject is interpretable
 		 * This basically equates to checking to see if the
@@ -265,9 +268,10 @@ namespace EMAN
 		};
 
 		string str;
-		vector < int > iarray;
-		vector < float >farray;
-		vector < string> strarray;
+		vector <int> iarray;
+		vector <float> farray;
+		vector <string> strarray;
+		vector <Transform> transformarray;
 		ObjectType type;
 
 		/** A debug function that prints as much information as possibe to cout

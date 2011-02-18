@@ -78,6 +78,17 @@ string TestUtil::get_debug_string(int i)
 	return string(a);
 }
 
+Transform TestUtil::get_debug_transform(int i)
+{
+	vector<Transform> v(3);
+	for (int j=0; j<3; j++) {
+		Transform t;
+		t.set_trans(j, j+1, j+2);
+		v[j] = t;
+	}
+	return v[i];
+}
+
 string TestUtil::get_debug_image(const string & imagename)
 {
 	char imgpath[MAXPATHLEN];
@@ -169,6 +180,15 @@ void TestUtil::to_emobject(const Dict& d)
 		for (size_t i = 0; i < array.size(); i++) {
 			Assert(array[i] == get_debug_string(i));
 			LOGDEBUG("stringarray[%d] = %s\n", i, array[i].c_str());
+		}
+	}
+
+	if (d.has_key("transformarray")) {
+		vector<Transform> array = d["transformarray"];
+		for (size_t i = 0; i < array.size(); i++) {
+			array[i].printme();
+			Assert(array[i] == get_debug_transform(i));
+//			LOGDEBUG("transformarray[%d] = %s\n", i, array[i].to_str());
 		}
 	}
 }
@@ -702,6 +722,17 @@ EMObject TestUtil::emobject_strarray_to_py()
 	vector<string> v(3);
 	for (int i = 0; i < 3; i++) {
 		v[i] = get_debug_string(i);
+	}
+	return EMObject(v);
+}
+
+EMObject TestUtil::emobject_transformarray_to_py()
+{
+	vector<Transform> v(3);
+	for (int i=0; i<3; i++) {
+		Transform t;
+		t.set_trans(i, i+1, i+2);
+		v[i] = t;
 	}
 	return EMObject(v);
 }

@@ -101,6 +101,18 @@ namespace EMAN
 			 */
 			Transform& operator=(const Transform& that);
 
+			/** Equality comparision operator
+			 * @param rhs the Transform object compared to
+			 * @return a boolean indicate if the pass in transform is equal this object
+			 * */
+			bool operator==(const Transform& rhs) const;
+
+			/** Unequality comparision operator
+			 * @param rhs the Transform object compared to
+			 * @return a boolean indicate if the pass in transform is not equal this object
+			 * */
+			bool operator!=(const Transform& rhs) const;
+
 			/** Construction using a dictionary
 			 * @param d the dictionary containing the parameters
 			 */

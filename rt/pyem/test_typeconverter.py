@@ -88,6 +88,22 @@ class TestTypeConverter(unittest.TestCase):
         strarray2 = testlib.get_list("string")
         self.assertEqual(strarray, strarray2)
 
+#strange error:
+#ERROR: test emobject to Python type .....................
+#----------------------------------------------------------------------
+#Traceback (most recent call last):
+#  File "./test_typeconverter.py", line 91, in test_emobject_to_py
+#    transformarray1 = TestUtil.emobject_transformarray_to_py()
+#ArgumentError: Python argument types in
+#    TestUtil.emobject_transformarray_to_py()
+#did not match C++ signature:
+#    emobject_transformarray_to_py(void)
+
+#        transformarray1 = TestUtil.emobject_transformarray_to_py()
+        transfromarray2 = TestUtil.get_debug_transform(2)
+#        print transfromarray2
+#        self.assertEqual(transformarray1, transformarray2)
+
         alt = 1.0329837512591338
         az = 3.7260642381912579
         phi = 5.7671541529246966
@@ -151,6 +167,10 @@ class TestTypeConverter(unittest.TestCase):
 
         strlist = get_list("string")
         TestUtil.to_emobject({"stringarray":strlist})
+        
+        transformlist = get_list('transformarray')
+        print transformlist
+        TestUtil.to_emobject({'transformarray':transformlist})
 
     def test_Dict(self):
         """test Dict class .................................."""
