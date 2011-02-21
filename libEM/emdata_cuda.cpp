@@ -39,6 +39,7 @@
 #include <driver_functions.h>
 #include <cuda.h>
 #include <cuda/cuda_util.h>
+#include <cuda/cuda_emfft.h>
 
 using namespace EMAN;
 
@@ -290,7 +291,7 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 	size_t freemem, totalmem;
 	cudaMemGetInfo(&freemem, &totalmem);
 	//cout  << "memusage" << " " << freemem << " " << totalmem << endl;
-	if ((int(freemem) - fudgemem) > num_bytes){
+	if ((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){
 		return true;
 	}else{
 		//if(num_bytes > memused){return false;} //it is not possible to free up enough memory!!	
@@ -315,7 +316,7 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 				firstinlist = 0;	// we have deleted everything on the list
 				lastinlist = 0;
 			}
-			if((int(freemem) - fudgemem) > num_bytes){return true;}	//this should break the loop....
+			if((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){return true;}	//this should break the loop....
 		}
 	}	
 	
@@ -393,5 +394,10 @@ void EMData::switchoncuda()
 void EMData::switchoffcuda()
 {
 	EMData::usecuda = 0;	
+}
+
+void cuda_fft_cache_destroy()
+{
+	do_cuda_fft_cache_destroy();
 }
 #endif //EMAN2_USING_CUDA

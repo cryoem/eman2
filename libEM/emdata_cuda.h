@@ -131,6 +131,8 @@ inline	void roneedsanupdate()
 	
 	static void switchoffcuda();
 	
+	static void cuda_fft_cache_destroy();
+	
 	//pointers to cuda data
 	mutable float* cudarwdata;	//we can still change GPU data on a cost object
 	mutable cudaArray* cudarodata;	//we can still change GPU data on a cost object

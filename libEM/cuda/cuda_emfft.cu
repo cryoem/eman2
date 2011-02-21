@@ -143,6 +143,14 @@ cufft_dd_plan_cache* get_cuda_fft_dd_plan_cache(const int rank_in, const int x, 
 	return c;
 }
 
+void do_cuda_fft_cache_destroy()
+{
+	for (int i = 0; i <= EMCUDA_FFT_DD_CACHE_NUM_PLANS; i++) {
+		cufftDestroy(CudaDDFftPlanCache[i]->handle);
+		delete CudaDDFftPlanCache[i];
+	}
+}
+
 int cuda_dd_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz, int batch)
 {
 	//device_init(); //this breaks CUDA FFT!!!! (caused by setCudaDevice)

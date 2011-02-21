@@ -80,6 +80,10 @@ cachesize=80000000
 
 
 def DB_cleanup(signum=None,stack=None):
+	try:	# will fail if cuda is not installed
+		EMData.cuda_fft_cache_destroy()
+	except:
+		pass
 	if signum in (2,15) :
 		if len(DBDict.alldicts)>0 : 
 			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,len(DBDict.alldicts),os.getpid())
