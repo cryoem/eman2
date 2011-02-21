@@ -34,7 +34,7 @@
 from emsprworkflow import *
 from emform import *
 from emsave import EMFileTypeValidator
-
+from emapplication import error, EMErrorMessageDisplay
 
 class EMProjectListCleanup:
 	'''

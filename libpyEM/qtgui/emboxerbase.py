@@ -2152,7 +2152,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 
 
-from emsprworkflow import WorkFlowTask,error
+from emsprworkflow import WorkFlowTask
+from emapplication import error
 class EMBoxerWriteOutputTask(WorkFlowTask):	
 	"""Use this form for writing boxed particles and/or coordinate files to disk."""
 	def __init__(self,file_names=[],output_formats=["hdf","spi","img","bdb"],dfl_boxsize=128):

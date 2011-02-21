@@ -1308,11 +1308,11 @@ class EMBoxerModule(QtCore.QObject):
 		
 		
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
-			from emsprworkflow import error
+			from emapplication import error
 			error("Please select the files you want to process","")
 			return
 		elif len(options.filenames) > 1:
-			from emsprworkflow import error
+			from emapplication import error
 			error("Can only open one micrograph at a time","")
 			return
 		elif options.running_mode == "gui":

@@ -38,12 +38,11 @@ from OpenGL.GLU import *
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from emanimationutil import OrientationListAnimation,Animator
-from emapplication import EMApp, get_application
+from emapplication import EMApp, get_application, error
 from emglobjects import EM3DModel
 from emimage2d import EMImage2DWidget
 from emimage3dsym import EM3DSymModel, EMSymInspector, EMSymViewerWidget
 from emimagemx import EMImageMXWidget, EMLightWeightParticleCache
-from emsprworkflow import error
 from optparse import OptionParser
 import os
 import sys

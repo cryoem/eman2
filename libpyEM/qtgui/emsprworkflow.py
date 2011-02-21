@@ -38,7 +38,7 @@ from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_
 from EMAN2 import *
 import os
 import copy
-from emapplication import EMProgressDialog,get_application
+from emapplication import EMProgressDialog, get_application, EMErrorMessageDisplay, error
 from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
 import weakref
@@ -90,41 +90,6 @@ class EmptyObject:
 	'''
 	def __init__(self):
 		pass
-
-def error(msg,title="Almost"):
-	EMErrorMessageDisplay.run(msg,title)
-	
-class EMErrorMessageDisplay:
-	'''
-	Has a static error display function which is very useful
-	'''
-	def __init__(self): pass
-	def run(error_message,title="Almost"):
-		'''
-		error_message is a list of error messages
-		'''
-		msg = QtGui.QMessageBox()
-		msg.setWindowTitle(title)
-		msg.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-		mes = ""
-		if isinstance(error_message,tuple): error_message=list(error_message)
-		if isinstance(error_message,list):
-			for error in error_message:
-				mes += error
-				
-				if len(error) > 0 and error[-1] != '.':
-					# correct my own inconsistencies....AWESOME
-					mes += '.'
-				if error != error_message[-1]: mes += "\n"
-		else:
-			mes = error_message
-			if len(error_message) > 0 and error_message[-1] != '.':
-				# correct my own inconsistencies....AWESOME
-				mes += '.'
-		msg.setText(mes)
-		msg.exec_()
-	
-	run = staticmethod(run)
 
 class WorkFlowTask:
 	def __init__(self):

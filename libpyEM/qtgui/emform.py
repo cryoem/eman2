@@ -300,7 +300,7 @@ class EMFileTable(QtGui.QTableWidget):
 						self.animated_columns[key] = i
 						break
 				else:
-					from emsprworkflow import EMErrorMessageDisplay
+					from emapplication import EMErrorMessageDisplay
 					EMErrorMessageDisplay.run(["Can't animate %s" %key] )
 					self.animated_columns.pop(key)
 					self.busy = 0

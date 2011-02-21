@@ -1994,7 +1994,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 			try:
 				db.has_key("maxrec")
 			except:
-#					from emsprworkflow import EMErrorMessageDisplay
+#					from emapplication import EMErrorMessageDisplay
 #					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
 					
 				return None
