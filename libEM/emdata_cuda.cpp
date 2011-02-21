@@ -400,4 +400,9 @@ void EMData::cuda_fft_cache_destroy()
 {
 	do_cuda_fft_cache_destroy();
 }
+
+void EMData::cuda_initialize()
+{
+	device_init();
+}
 #endif //EMAN2_USING_CUDA

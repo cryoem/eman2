@@ -1583,6 +1583,12 @@ def set_emdata_array(img, array):
 	new_img.set_attr_dict(dict)
 	return new_img
 
+# Initialize CUDA upon EMAN2 import
+try:
+	EMData.cuda_initialize()
+except:
+	pass
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\

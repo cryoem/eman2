@@ -141,9 +141,12 @@ void device_init() {
 		cudaGetDeviceProperties(&deviceProp, 0);
 		if (deviceProp.major < 1) exit(2);
 		
-//		cudaSetDevice(0);  (NEEDS to BE FIXED!!! CAUSES PBs with CUFFT
-//		init_cuda_fft_hh_plan_cache(); // should only be performed if the host is using Cuda ffts, which is unlikey. Will do after development has progressed.
-//		init_cuda_fft_dd_plan_cache();
+		int device = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) == 0) ? 0 : atoi(getenv("EMANUSECUDA")) - 1;	
+		cudaError_t cudareturn = cudaSetDevice(device); 
+		if(cudareturn != cudaSuccess) {
+			printf("\nERROR in cudaSetDevice.... %s\n", cudaGetErrorString(cudareturn));
+			exit(2);
+		}
 		init = false; //Force init everytime
 	}
 }
