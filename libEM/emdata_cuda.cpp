@@ -396,7 +396,7 @@ void EMData::switchoffcuda()
 	EMData::usecuda = 0;	
 }
 
-void cuda_fft_cache_destroy()
+void EMData::cuda_fft_cache_destroy()
 {
 	do_cuda_fft_cache_destroy();
 }
