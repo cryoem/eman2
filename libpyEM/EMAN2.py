@@ -101,7 +101,7 @@ This function is called to log information about the current job to the local lo
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
 	if EMAN2db.BDB_CACHE_DISABLE :
-		print "Note: Running in MPI mode, history logging disabled"
+		print "Note: Cache disabled, history logging disabled"
 		return -1
 		
 	# We go to the end of the file. Record the location, then write a fixed length string
