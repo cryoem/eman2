@@ -257,8 +257,11 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 				
 				data = []
 				idxs = d["class_ptcl_idxs"]
+				#try: 
+				idxse = d["exc_class_ptcl_idxs"]
+				#except: idxse = []
 				name = d["class_ptcl_src"]
-				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs),None)
+				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs)+len(idxse),None)
 				progress.show()
 				get_application().setOverrideCursor(Qt.BusyCursor)
 				
@@ -276,7 +279,24 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 		 				progress.close()
 		 				get_application().setOverrideCursor(Qt.ArrowCursor)
 			 			return
-		
+
+				idxseim = []
+				for idx in idxse:
+					data.append(EMData(name,idx))
+					if mx!=None:
+						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						data[-1].transform(xfm)
+					idxseim.append(i)
+					i+=1
+					progress.setValue(i)
+ 					get_application().processEvents()
+ 				
+		 			if progress.wasCanceled():
+		 				progress.close()
+		 				get_application().setOverrideCursor(Qt.ArrowCursor)
+			 			return
+
+
 				progress.close()
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 	
@@ -287,6 +307,8 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 					resize_necessary = True
 				
 				self.class_window.set_data(data,"Class Particles")
+				
+				self.class_window.enable_set("excluded",idxseim)
 				
 				if resize_necessary:
 					get_application().show_specific(self.class_window)

@@ -96,8 +96,8 @@ def main():
 				print d," missing refinement log"
 				continue
 			try:
-				p=[d,parms["iter"],parms.get("shrink",1),parms["sep"],parms.get("twostage",0),parms["simcmp"],parms["simralign"][:1],parms["simraligncmp"],parms["classiter"],
-					parms["classcmp"],parms["classralign"][:1],parms["classraligncmp"],parms["classrefsf"][-2:-1],parms["m3dsetsf"],parms["m3dpostprocess"],parms["model"],parms["sym"]]
+				p=[d,parms["iter"],parms.get("shrink",1),parms["sep"],parms.get("twostage",0),parms["simcmp"],str(parms["simralign"])[:1],parms["simraligncmp"],parms["classiter"],
+					parms["classcmp"],str(parms["classralign"])[:1],parms["classraligncmp"],parms["classrefsf"][-2:-1],parms["m3dsetsf"],parms["m3dpostprocess"],parms["model"],parms["sym"]]
 			except:
 				print d, "incomplete parameters"
 				continue

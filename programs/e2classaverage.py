@@ -319,7 +319,10 @@ class ClassAvTask(EMTask):
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print "Final realign:",fxf
+#			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
+#			avg.write_image("bdb:xf",-1)
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,options["averager"],options["normproc"],options["verbose"])
+#			avg.write_image("bdb:xf",-1)
 
 			#self.data["ref"].write_image("tst.hdf",-1)
 			#avg1.write_image("tst.hdf",-1)
