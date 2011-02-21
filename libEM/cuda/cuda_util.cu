@@ -146,7 +146,12 @@ void device_init() {
 		if(cudareturn != cudaSuccess) {
 			printf("\nERROR in cudaSetDevice.... %s\n", cudaGetErrorString(cudareturn));
 			exit(2);
+		} else {
+			int curdev;
+			cudaGetDevice(&curdev);
+			printf("Using CUDA device %d\n", curdev);
 		}
+
 		init = false; //Force init everytime
 	}
 }
