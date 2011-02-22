@@ -138,13 +138,13 @@ def ref_ali2d_m( ref_data ):
 	ref_ali2d_counter += 1
 	print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
 	fl = 0.4
-	aa = 0.1
+	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	tavg = filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
-	tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 	if(ref_data[1] > 0):
+		tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1])
 		msg = "Center x = %10.3f, y = %10.3f\n"%(cs[0], cs[1])
 		print_msg(msg)
 	return  tavg, cs
