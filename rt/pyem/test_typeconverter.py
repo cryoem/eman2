@@ -169,7 +169,6 @@ class TestTypeConverter(unittest.TestCase):
         TestUtil.to_emobject({"stringarray":strlist})
         
         transformlist = get_list('transformarray')
-        print transformlist
         TestUtil.to_emobject({'transformarray':transformlist})
 
     def test_Dict(self):
