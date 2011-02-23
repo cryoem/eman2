@@ -6298,46 +6298,68 @@ def isc_read_conf(conf_file):
 	cfgclu  = dict(config.items('clustering'))
 	cfgrali = dict(config.items('realignment'))
 	# convert data if need
+
 	#   clustering
-	cfgclu['f']          = float(cfgclu['f'])
+	try:      cfgclu['f']          = float(cfgclu['f'])
+	except:    cfgclu['f']          = 0.9
 	cfgclu['th_nobj']    = int(cfgclu['th_nobj'])
-	cfgclu['t0']         = float(cfgclu['t0'])
+	try:      cfgclu['t0']         = float(cfgclu['t0'])
+	except:    cfgclu['t0']         = 2.0
 	cfgclu['ctf']        = eval(cfgclu['ctf'])
 	cfgclu['maxit']      = int(cfgclu['maxit'])
 	cfgclu['rand_seed']  = int(cfgclu['rand_seed'])
 	cfgclu['im_per_grp'] = int(cfgclu['im_per_grp'])
 	cfgclu['nb_part']    = int(cfgclu['nb_part'])
 	cfgclu['nb_cpu']     = int(cfgclu['nb_cpu'])
-	cfgclu['cuda']       = eval(cfgclu['cuda'])
+	try:	cfgclu['cuda']	= eval(cfgclu['cuda'])
+	except:	cfgclu['cuda']	= False
+
 	#   realignment
 	cfgrali['fourvar']   = eval(cfgrali['fourvar'])
 	cfgrali['maxit']     = int(cfgrali['maxit'])
 	cfgrali['ctf']       = eval(cfgrali['ctf'])
-	cfgrali['snr']       = float(cfgrali['snr'])
+	try:    cfgrali['snr']       = float(cfgrali['snr'])
+	except:  cfgrali['snr']       = 1.0
 	cfgrali['ou']        = int(cfgrali['ou'])
 	cfgrali['nb_cpu']    = int(cfgrali['nb_cpu'])
-	cfgrali['cuda']	     = eval(cfgrali['cuda'])
-	cfgrali['ng']	     = int(cfgrali['ng'])
-	cfgrali['num_ali']   = int(cfgrali['num_ali'])
-	cfgrali['th_mir']    = float(cfgrali['th_mir'])
-	cfgrali['th_err']    = float(cfgrali['th_err'])
-	cfgrali['center']    = int(cfgrali['center'])
-	cfgrali['dst']       = float(cfgrali['dst'])
+	try:	cfgrali['cuda']	     = eval(cfgrali['cuda'])
+	except:	cfgrali['cuda']	     = False
+	try:	cfgrali['ng']	     = int(cfgrali['ng'])
+	except:	cfgrali['ng']	     = -1
+	try:	cfgrali['num_ali']   = int(cfgrali['num_ali'])
+	except:	cfgrali['num_ali']   = 4
+	try:	cfgrali['th_mir']    = float(cfgrali['th_mir'])
+	except:	cfgrali['th_mir']    = 0.5
+	try:	cfgrali['th_err']    = float(cfgrali['th_err'])
+	except:	cfgrali['th_err']    = 0.5
+	try:	cfgrali['center']    = int(cfgrali['center'])
+	except:	cfgrali['center']    = -1
+	try:	cfgrali['dst']       = float(cfgrali['dst'])
+	except:	cfgrali['dst']       = 1.0
+
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
+
 	#   alignment
 	cfgali['n_ite']      = int(cfgali['n_ite'])
-	cfgali['fourvar']    = eval(cfgali['fourvar'])
+	try:	cfgali['fourvar']    = eval(cfgali['fourvar'])
+	except:	cfgali['fourvar']    = False
 	cfgali['maxit']      = int(cfgali['maxit'])
-	cfgali['ctf']        = eval(cfgali['ctf'])
+	cfgali['maxit']      = int(cfgali['maxit'])
+	try:	cfgali['ctf']        = eval(cfgali['ctf'])
+	except:	cfgali['ctf']        = False
 	cfgali['snr']        = float(cfgali['snr'])
 	cfgali['ou']         = int(cfgali['ou'])
 	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
-	cfgali['cuda']       = eval(cfgali['cuda'])
-	cfgali['ng'] 	     = int(cfgali['ng'])
-	cfgali['dst']	     = eval(cfgali['dst'])	
-	cfgali['center']     = int(cfgali['center'])
+	try:       cfgali['cuda']       = eval(cfgali['cuda'])
+	except:     cfgali['cuda']       = False
+	try:       cfgali['ng'] 	     = int(cfgali['ng'])
+	except:   cfgali['ng'] 	     = -1
+	try:	cfgali['dst']	     = eval(cfgali['dst'])	
+	except:	cfgali['dst']	     = 1.0	
+	try:	cfgali['center']     = int(cfgali['center'])
+	except:	cfgali['center']     = -1
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
