@@ -258,12 +258,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 	
 	
-	def enable_set(self,name,lst=[],display=True,update=True):
+	def enable_set(self,name,lst=[],display=True,update=True, force=False):
 		'''
 		Called from e2eulerxplor
 		'''
 		self.get_inspector()
-		self.sets_manager.associate_set(name,lst,display)
+		self.sets_manager.associate_set(name,lst,display,force)
 		self.force_display_update()
 		if update: self.updateGL()
 		
@@ -1590,7 +1590,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 				self.class_window.set_data(data,"Class Particles")
 				
-				self.class_window.enable_set("excluded",idxseim)
+				self.class_window.enable_set("excluded",idxseim, display=True, force=True)
 				
 				if resize_necessary:
 					get_application().show_specific(self.class_window)
