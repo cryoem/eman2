@@ -579,12 +579,14 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	plot((x,y))
 	return (x,y)
 
-def plot(data,show=1,size=(800,600),path="plot.png"):
+def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	if GUIMode:
 		from emplot2d import EMPlot2DWidget
 		plotw=EMPlot2DWidget(application=app)
 		plotw.set_data(data,"interactive")
+		if data2!=None : plotw.set_data(data2,"interactive2")
+		if data3!=None : plotw.set_data(data3,"interactive3")
 		plotw.setWindowTitle("2D Plot")
 		app.show_specific(plotw)
 		return plotw
@@ -596,15 +598,29 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 		if isinstance(data,EMData) :
 			a=[]
 			for i in range(data.get_xsize()): 
-				a.append(data.get_value_at(i,0,0))
+				a.append(data[i])
 			pylab.plot(a)
+			if data2!=None:
+				a=[]
+				for i in range(data2.get_xsize()): 
+					a.append(data2[i])
+				pylab.plot(a)
+			if data3!=None:
+				a=[]
+				for i in range(data.get_xsize()): 
+					a.append(data3[i])
+				pylab.plot(a)
 		elif isinstance(data,list) or isinstance(data,tuple):
 			if isinstance(data[0],list) or isinstance(data[0],tuple) :
 				pylab.plot(data[0],data[1])
+				if data2!=None: pylab.plot(data2[0],data2[1])
+				if data3!=None: pylab.plot(data3[0],data3[1])
 			else:
 				try:
 					a=float(data[0])
 					pylab.plot(data)
+					if data2!=None: pylab.plot(data2)
+					if data3!=None: pylab.plot(data3)
 				except:
 					print "List, but data isn't floats"
 					return

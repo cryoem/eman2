@@ -228,6 +228,7 @@ def get_gui_arg_img_sets(filenames):
 	returns the img_sets list required to intialized the GUI correctly
 	'''
 	
+	# This is a REAL mess. Extremely non-transparent !
 	img_sets = []
 	if db_check_dict("bdb:e2ctf.parms"):
 		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
@@ -246,6 +247,7 @@ def get_gui_arg_img_sets(filenames):
 		img_set[0]=ctf
 		img_set.insert(-1,db_im2d[name])
 		img_set.insert(-1,db_bg2d[name])
+		img_set.append(low_bg_curve(img_set[2],ctf.dsbg))
 		img_sets.append([fsp]+img_set)
 		
 	return img_sets
@@ -410,7 +412,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if debug : print "Processing ",filename
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix)
+		im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 		if options.fixnegbg : 
@@ -422,7 +424,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if debug : print "Fit CTF"
 		if options.dfmax != None : dfhint=(.15,options.dfmax)
 		else: dfhint=None
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint)
+		ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
@@ -432,7 +434,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
-		img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,5])
+		img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,5,bg_1d_low])
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	project_db = db_open_dict("bdb:project")
@@ -726,7 +728,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
 	will only read particles with ptcl_source_image set to the specified value.
 	
-	returns a 4-tuple with spectra for (1d particle,1d background,2d particle,2d background)
+	returns a 5-tuple with spectra for (1d particle,1d background,2d particle,2d background,1d background non-convex)
 	"""
 	
 	global masks
@@ -738,6 +740,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	if radius<=0 : radius=ys2/2.6
 	n=EMUtil.get_image_count(stackfile)
 	nn=0
+	ds=1.0/(apix*ys)	# oversampled ds
 	
 	# set up the inner and outer Gaussian masks
 	try:
@@ -813,7 +816,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	db_close_dict(stackfile)	# safe for non-bdb files
 	
-	return (av1_1d,av2_1d,av1,av2)
+	return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
 
 
 def bgedge2d(stackfile,width):
@@ -915,7 +918,23 @@ def sfact(s):
 	## this curve should be pretty valid on the range 0.004 - 0.2934, we limit it a bit more to prevent distractions from the sharp peak
 	#return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None):
+def low_bg_curve(bg_1d,ds):
+	"Computes a 1-D curve that follows the minima of a background function as best possible, focusing on the lower resolution range"
+	
+	ret=bg_1d[:]
+	
+	# force the curve to be non-convex, after a point
+	cont=True
+	while cont:
+		cont=False
+		for i in range(3,len(ret)-1):
+			if ret[i]*2.0>ret[i-1]+ret[i+1] : 
+				ret[i]=(ret[i-1]+ret[i+1])/2.0
+				cont=True
+	
+	return ret
+
+def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -936,12 +955,26 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	sf = [sfact(i*ds) for i in range(ys)]
 
 	bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
+	bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background 
 
 	s1=min(int(.167/ds),ys/3-4)
 
-	s0=int(.04/ds)
-	while bgsub[s0]>bgsub[s0+1] : s0+=1	# look for a minimum in the data curve
-	print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
+#	plot(bglowsub)
+	# We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
+	maxsub=max(bglowsub[4:])
+	for i in range(len(bglowsub)-1,0,-1):
+		if bglowsub[i]>maxsub/5.0 : break
+	s0=max(int(.005/ds),i)
+	while bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0+1]>maxsub/50.0: s0+=1	# look for a minimum in the data curve
+	if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
+	
+	# we now have a range from the first minimia to ~6 A. Adjust it to include a bit of data closer to the origin
+	for i in range(s0,s0*2/3,-1):
+		if bglowsub[i]>bglowsub[i-1] : break
+	s0m=s0									# save for a defocus estimate
+	s0=i
+	
+	if verbose: print "s0 adjusted to 1/%1.1f 1/A"%(1.0/(s0*ds))
 
 	if s1<=s0 :
 		print "Error: couldn't fit this data set due to inability to locate appropriate minima"
@@ -957,10 +990,13 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	if isinstance(dfhint,float) :
 		dfhint=int(dfhint*20.0)
 		rng=range(dfhint-3,dfhint+4)
+		if verbose: print "Using defocus hint %1.2f (%1.2f - %1.2f)"%(dfhint/20.0,rng[0]/20.0,rng[-1]/20.0)
 	elif isinstance(dfhint,tuple) :
 		rng=(int(dfhint[0]*20.0),int(dfhint[1]*20.0))
+		if verbose: print "Using limited defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
 	else:
 		rng=range(3,128)
+		if verbose: print "Using full defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
 
 
 	# This loop tries to find the best few possible defocuses
@@ -978,7 +1014,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 		for s in range(s0,s1):
 			# This is basicaly a dot product of the reference curve vs the simulation
 			a=(cc[s]**2)				# ctf curve ^2
-			b=bgsub[s]					# bg subtracted intensity
+			b=bglowsub[s]					# bg subtracted intensity
 			tot+=a*b
 			tota+=a*a
 			totb+=b*b
@@ -1008,7 +1044,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	dfbest1a.sort()
 	dfbest1a=dfbest1a[-5:]		# keep at most the best 5 peaks
 	
-	print "Initial defocus possibilities: ",
+	if verbose: print "Initial defocus possibilities: ",
 	for i in dfbest1a: print i[1],
 	print
 
@@ -1022,7 +1058,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 			parm=[b1a[1],500.0]
 
 	#		print "Initial guess : ",parm
-			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bgsub,s0,s1,ds,parm[0]))
+			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0]))
 			oparm=sim.minimize(epsilon=.0000001,monitor=0)
 	#		print "Optimized : ",oparm
 			best.append((oparm[1],oparm[0]))			
@@ -1030,7 +1066,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 
 		# best now contains quality,(df,bfac) for each optimized answer
 		best.sort()
-		print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 
 	ctf.defocus=best[0][1][0]
 	ctf.bfactor=best[0][1][1]
@@ -1073,22 +1109,24 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	#	s1=min(int(0.15/ds),len(bg_1d)-1)
 
 			# rerun the simplex with the new background
-			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
+			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]
+			bg_1d_low=low_bg_curve(bg_1d,ds)
+			bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background 
 			best[0][1][1]=500.0		# restart the fit with B=200.0
-			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,best[0][1][0]))
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
 				best[0]=(oparm[1],oparm[0])
 				break
 			best[0]=(oparm[1],oparm[0])
-			print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+			if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 	else:
 		# rerun the simplex with the new background
 		best[0][1][1]=500.0		# restart the fit with B=200.0
-		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,best[0][1][0]))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
-		print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+		if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 
 	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
 	
@@ -1110,7 +1148,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhi
 	ctf.defocus=best[0][1][0]
 	ctf.bfactor=best[0][1][1]
 
-	if 1 : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(ctf.defocus,ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
+	if verbose : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(ctf.defocus,ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
 	
 	# This smooths the SNR curve
 	#snr=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_SNR_SMOOTH)
@@ -1203,15 +1241,21 @@ def ctf_cmp(parms,data):
 	if sfcurve.get_size()!=99 : s0/=2
 	a,b,c=0,0,0
 	mx=0
+#	tp=[]
+#	tp2=[]
 	for i in range(s0,s1):
 		v=sfact(i*ds)*cc[i]**2
+#		tp.append(v)
 		
 		if c2[i]**2>.01:
 			a+=bgsub[i]/v
+#			tp2.append(bgsub[i]/v)
 			b+=(bgsub[i]/v)**2
 			c+=1
 			mx=i
-	
+#		else : tp2.append(0)
+#	plot(tp2,tp,bgsub)
+
 	mean=a/c
 	sig=b/c-mean*mean
 
@@ -1516,7 +1560,7 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
 
 		# refit will also write parameters back to the db
 		db_parms=db_open_dict("bdb:e2ctf.parms")
@@ -1598,6 +1642,11 @@ class GUIctf(QtGui.QWidget):
 		elif self.plotmode==0: 
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+			
+			lowbg=self.data[val][7]
+			lowbgsub=[self.data[val][2][i]-lowbg[i] for i in range(len(self.data[val][2]))]
+			self.guiplot.set_data((s,lowbgsub),"fg-lowbg",False,True,color=0,linetype=2)
+
 			
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor
@@ -1692,23 +1741,23 @@ class GUIctf(QtGui.QWidget):
 #			self.guiplot.updateGL()
 		# Debug
 		elif self.plotmode==9: 
-			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+#			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 #			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			
-			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
-			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
+			#fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			#fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
 
-			fit=[bgsub[i]/fit[i] for i in range(len(s))]
-			for i in range(len(fit)) :
-				if fabs(fit[i])>10000 : fit[i]=0
+			#fit=[bgsub[i]/fit[i] for i in range(len(s))]
+			#for i in range(len(fit)) :
+				#if fabs(fit[i])>10000 : fit[i]=0
 
 			#a=[i**2 for i in bgsub[33:]]
 			#b=[i**2 for i in fit[33:]]
 			#r=sqrt(sum(a)*sum(b))
 			#fit=[bgsub[i]*fit[i]/r for i in range(len(s))]
 
-			self.guiplot.set_data((s,fit),"fit",True)
-			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
+			#self.guiplot.set_data((s,fit),"fit",True)
+			#self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 						
 			#bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			#self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
@@ -1716,6 +1765,12 @@ class GUIctf(QtGui.QWidget):
 			#fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
 
 			#self.guiplot.set_data("fit",(s,fit))
+			
+			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
+			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
+			self.guiplot.set_data((s,low_bg_curve(self.data[val][3],ds)),"lowbg",color=2)
+			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
+			
 		# SNR Scaling
 		elif self.plotmode==8:
 			# SNR computed from fit and background
