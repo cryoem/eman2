@@ -2894,7 +2894,7 @@ def helical_consistency(p2i, p1):
 	  list corresponds to the k'th element on the second list.
 	  Input: two lists [ [phi2, theta2, psi2, sx2, sy2], [phi1, theta1, psi1, sx1, sy1], ...].  Second list is considered reference.
 	  	 parametes for helical symmetry-- dp, pixel_size, dphi
-	  Output: overall rotation detal_phi, delt_z, the change p2, 3D_error between thos two sets after adjustment 
+	  Output: , 3D_error between the two sets after adjustment 
 	  Note: all angles have to be in spider convention.
 	  """
 	from pixel_error import angle_diff
@@ -2947,10 +2947,12 @@ def helical_consistency(p2i, p1):
 			print " straight", ln
 		phi1 = []
 		phi2 = []
+		agree = []
 		for j in xrange(n):
 			if(mirror[j]):
 				phi1.append(p1[0][j])
 				phi2.append(p2[0][j])
+				agree.append(j)
 		print  len(phi1)
 		delta_phi = angle_diff( phi2, phi1 )
 		print "close form diff===", delta_phi
@@ -2977,7 +2979,7 @@ def helical_consistency(p2i, p1):
 			phi1o.extend(phi1)
 			phi2o.extend(phi2)
 		
-	return p2o, errormo, delta_phi, phi1o,phi2o
+	return p2o, errormo, agree, delta_phi, phi1o, phi2o
 
 # according two lists of orientation or marker (phi, theta, psi for each one)
 # return the global rotation (dphi, dtheta, dpsi) between the two systems
