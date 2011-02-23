@@ -36,7 +36,6 @@ from PyQt4.QtCore import Qt
 import os
 from emapplication import ModuleEventsManager
 from emsprworkflow import *
-from emtprworkflow import *
 from emselector import EMBrowser
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
@@ -314,7 +313,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr = self.__get_spr_tree(self.tree_widget)
 		self.tree_widget_entries.append(spr)
 
-		self.tree_widget_entries.append(self.__get_tomo_part_recon_tree(self.tree_widget))
+		#self.tree_widget_entries.append(self.__get_tomo_part_recon_tree(self.tree_widget))
 		self.tree_widget_entries.append(self.__get_utilities_tree(self.tree_widget))
 		self.tree_widget_entries.append(self.__get_generic_interfaces_tree(self.tree_widget))
 		
@@ -594,109 +593,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		gi.addChildren(gi_list)
 		return gi
 	
-	def __get_tomo_part_recon_tree(self,tree_widget):
+	#def __get_tomo_part_recon_tree(self,tree_widget):
 		
-		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
-
-		self.launchers["Tomographic Particle Reconstruction"] = self.launch_tomography
+		#tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
 		
-		tomo_list = []
-		
-		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files"))
-		tomo_list.append(rd)
-		tomo_list[-1].setIcon(0,self.icons["single_image_3d"])
-		
-		self.launchers["Raw Tomogram Files"] = self.launch_tomo_raw_files
-		
-		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomogram Particles"))
-		ap.setIcon(0,self.icons["green_boxes"])
-		self.launchers["Tomogram Particles"] = self.launch_tomo_particle_report
-		tomo_list.append(ap)
-		
-		filt = QtGui.QTreeWidgetItem(QtCore.QStringList("Filtered Particles"))
-		filt.setIcon(0,self.icons["green_boxes"])
-		self.launchers["Filtered Particles"] = self.launch_tomo_filt_ptcl_report
-		tomo_list.append(filt)
-		
-		
-		probes = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomogram Probes"))
-		tomo_list.append(probes)
-		tomo_list[-1].setIcon(0,self.icons["black_box"])
-		self.launchers["Tomogram Probes"] = self.launch_tomo_probe_report
-		
-		ali = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Alignment Report"))
-		self.launchers["Particle Alignment Report"] = self.launch_tomo_ptcl_ali_report
-		ali.setIcon(0,self.icons["tomo_hunter"])
-		tomo_list.append(ali)
-		
-		aves = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Averages"))
-		tomo_list.append(aves)
-		tomo_list[-1].setIcon(0,self.icons["refine"])
-		self.launchers["Particle Averages"] = self.launch_tomo_ave_report
-		
-		
-		ap_list = []
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing - e2tomoboxer")))
-		self.launchers["Interactive Boxing - e2tomoboxer"] = self.launch_e2tomoboxer_gui
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2tomoboxer")))
-		self.launchers["Generate Output - e2tomoboxer"] = self.launch_e2tomoboxer_output
-		ap_list[0].setIcon(0,self.icons["green_boxes"])
-		ap_list[1].setIcon(0,self.icons["green_boxes"])
-		ap.addChildren(ap_list)
-		
-		
-		filt_list = []
-		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Filter/Rotate Tomo Particles")))
-		filt_list[0].setIcon(0,self.icons["green_boxes"])
-		self.launchers["Filter/Rotate Tomo Particles"] = self.launch_tomo_filter_ptcls
-		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Scale/Clip Tomo Particles")))
-		filt_list[1].setIcon(0,self.icons["green_boxes"])
-		self.launchers["Scale/Clip Tomo Particles"] = self.launch_tomo_scale_clip_ptcls
-		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Mask Particles")))
-		filt_list[2].setIcon(0,self.icons["green_boxes"])
-		self.launchers["Mask Particles"] = self.launch_tomo_mask_ptcls
-		filt_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Norm/Invert Particles")))
-		filt_list[3].setIcon(0,self.icons["green_boxes"])
-		self.launchers["Norm/Invert Particles"] = self.launch_tomo_norm_inv_ptcls
-		filt.addChildren(filt_list)
-		
-		rd_list = []
-		rd_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Reconstruct ALI File")))
-		self.launchers["Reconstruct ALI File"] = self.launch_reconstruct_ali
-		rd_list[0].setIcon(0,self.icons["single_image_3d"])
-		rd.addChildren(rd_list)
-		
-		probe_list = []
-		probe_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Bootstrapped Probe")))
-		probe_list[-1].setIcon(0,self.icons["black_box"])
-		self.launchers["Generate Bootstrapped Probe"] = self.launch_tomo_boostrap_probe
-		probes.addChildren(probe_list)
-		
-		ali_list = []
-		ali_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Tomohunter")))
-		ali_list[-1].setIcon(0,self.icons["tomo_hunter"])
-		self.launchers["Tomohunter"] = self.launch_tomohunter
-		ali.addChildren(ali_list)
-		
-	
-		
-		aves_list = []
-		aves_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Average")))
-		self.launchers["Generate Average"] = self.launch_gen_ave_tomo
-		aves_list[0].setIcon(0,self.icons["refine"])
-		aves.addChildren(aves_list)
-		
-		
-		
-		tomo.addChildren(tomo_list)
-		
-		tree_widget.expandItem(rd)
-		tree_widget.expandItem(ap)
-		tree_widget.expandItem(ali)
-		tree_widget.expandItem(probes)
-		tree_widget.expandItem(aves)
-		tree_widget.expandItem(filt)
-		return tomo
+		#return tomo
 	
 	def launch_reconstruct_ali(self):
 		 self.launch_task(EMReconstructAliFile(),"Reconstruct ALI File")
@@ -931,7 +832,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseSetsTask(),"Choose Set For e2refine")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
-#	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
+	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
 	def launch_e2makeinitial(self): self.launch_task(E2InitialModel(),"e2makeinitialmodel")
 	def launch_initmodel_report(self): self.launch_task(EMInitialModelReportTask(),"Initial Model Report")
 	def launch_refine2d_report(self): self.launch_task(E2Refine2DReportTask(),"e2refine2d Report")
@@ -946,26 +847,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_mis_report(self): self.launch_task(EMSetReportTask(),"Project Sets")
 	def launch_make_ptcl_set(self):	self.launch_task(E2MakeSetChooseDataTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
-	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")
-	def launch_tomo_particle_report(self): self.launch_task(EMTomoParticleReportTask(),"Tomogram Particles")
-	def launch_tomo_probe_report(self): self.launch_task(EMTomoProbeReportTask(),"Tomogram Probes")
-	def launch_tomo_ptcl_ali_report(self): self.launch_task(EMTomoChooseAlignedSetTask(),"Tomo Particle Alignment Report Report")
-	def launch_tomo_ave_report(self): self.launch_task(EMTomoAveragesReportTask(),"Tomo Averages Report")
-	def launch_tomo_boostrap_probe(self): self.launch_task(EMTomoBootStapChoosePtclsTask(),"Boot Stap A Tomo Average")
-	def launch_gen_ave_tomo(self): self.launch_task(EMTomoGenerateAverageChooseDataTask(),"Choose Alignment Set")
-	def launch_tomo_filt_ptcl_report(self): self.launch_task(EMTomoChooseFilteredPtclsTask(),"Filtered Tomo Particles")
-	def launch_tomo_filter_ptcls(self): self.launch_task(EMTomoChooseFilteredPtclsForFiltTask(),"Filter/Rotate Tomo Particles")
-	def launch_tomo_scale_clip_ptcls(self):
-		task = 	EMTomoChooseFilteredPtclsForFiltTask(E2TomoScaleClipTask)
-		self.launch_task(task,"Scale/Clip Tomo Particles")
-	def launch_tomo_mask_ptcls(self):
-		task = EMTomoChooseFilteredPtclsForFiltTask( E2TomoMaskTask)
-		self.launch_task(task,"Mask Tomo Particles")
-	def launch_tomo_norm_inv_ptcls(self):
-		task = EMTomoChooseFilteredPtclsForFiltTask( E2TomoNormalizeInvertTask)
-		self.launch_task(task,"Norm/Invert Tomo Particles")
-		
-		
+	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")	
 	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import Particles")
 	
 	def launch_ptcl_coord_import(self):self.launch_task(EMParticleCoordImportTask(),"Import Coordinate Data")
@@ -978,24 +860,11 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2boxer_gui(self):
 		self.launch_task(E2BoxerGuiTask(),"e2boxer Interface")
 	
-	def launch_e2tomoboxer_gui(self):
-		self.launch_task(E2TomoBoxerGuiTask(),"e2tomoboxer Interface")
-	
-	def launch_e2tomoboxer_output(self):
-		self.launch_task(E2TomoBoxerOutputTask(),"Generate e2tomoboxer output")
-	
 	def launch_spr(self):
 		self.launch_task(SPRInitTask(),"Single Particle Reconstruction")
 
-	def launch_tomography(self):
-		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
-	def launch_tomohunter(self):
-		self.launch_task(EMTomoChooseTomoHunterPtclsTask(),"Tomohunter")
-	def launch_tomo_raw_files(self):
-		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
-			
-#	def launch_mic_ccd(self):
-#		self.launch_task(MicrographCCDTask(),"Micrograph/CCD report")
+	def launch_mic_ccd(self):
+		self.launch_task(MicrographCCDTask(),"Micrograph/CCD report")
 		
 	def launch_view_history(self):
 		self.launch_task(HistoryTask(),"History")
