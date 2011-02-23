@@ -57,314 +57,7 @@ import weakref
 
 from emapplication import EMProgressDialog
 
-class EMMXCoreMouseEvents:
-	'''
-	A base class for objects that handle mouse events in the EMImageMXWidget
-	'''
-	def __init__(self,mediator):
-		'''
-		Stores only a reference to the mediator
-		'''
-		if not isinstance(mediator,EMMXCoreMouseEventsMediator):
-			print "error, the mediator should be a EMMXCoreMouseEventsMediator"
-			return
-		self.mediator = mediator
-		
-	def mouse_up(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
 
-	def mouse_down(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
-		
-	def mouse_drag(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
-	
-	def mouse_move(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
-
-	def mouse_wheel(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
-	
-	def mouse_double_click(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		pass
-
-class EMMXCoreMouseEventsMediator:
-	'''
-	This class is like documentation. It doesn't really need to exist. MouseEventHandlers talk to this
-	and not to the EMImageMXWidget. This talks to the EMImageMXWidget. So instead the MouseEventHandlers could
-	just talk directly to EMImageMXWidget - I like it here because I can see exactly what's required of the
-	MouseEventHandlers - however the problem could be solved using subclassing as a method of documentation
-	It's much of a muchness.
-	'''
-	def __init__(self,target):
-		if not isinstance(target,EMImageMXWidget):
-			print "error, the target should be a EMImageMXWidget"
-			return
-		
-		self.target = weakref.ref(target)
-		
-	def get_image_file_name(self):
-		return self.target().get_image_file_name()
-	
-	def scr_to_img(self,vec):
-		return self.target().scr_to_img(vec)
-	
-	def get_parent(self):
-		return self.target().get_parent()
-
-	def get_box_image(self,idx):
-		return self.target().get_box_image(idx)
-	
-	def remove_particle_image(self,idx,event=None,redraw=False):
-		self.target().remove_particle_image(idx,event,redraw)
-		
-	def image_set_associate(self,idx,event=None,redraw=False):
-		self.target().image_set_associate(idx,event,redraw)
-	
-	def get_density_max(self):
-		return self.target().get_density_max()
-	
-	def get_density_min(self):
-		return self.target().get_density_min()
-	
-	def emit(self,*args,**kargs):
-		self.target().emit(*args,**kargs)
-
-	def set_selected(self,selected,update_gl=True):
-		self.target().set_selected(selected,update_gl)
-		
-	def force_display_update(self):
-		self.target().force_display_update() 
-		
-	def get_scale(self):
-		return self.target().get_scale()
-	
-	def update_inspector_texture(self):
-		self.target().update_inspector_texture()
-
-class EMMXDelMouseEvents(EMMXCoreMouseEvents):
-	def __init__(self,mediator):
-		EMMXCoreMouseEvents.__init__(self,mediator)
-		self.lc = None
-		
-	def mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
-			self.lc=self.mediator.scr_to_img((event.x(),event.y()))
-			
-	def mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.mediator.scr_to_img((event.x(),event.y()))
-			if lc != None and self.lc != None and lc[0] == self.lc[0]:
-				self.mediator.remove_particle_image(lc[0],event,True)
-				#self.mediator.force_display_update()
-				
-			self.lc = None
-				
-class EMMXSetMouseEvents(EMMXCoreMouseEvents):
-	def __init__(self,mediator):
-		EMMXCoreMouseEvents.__init__(self,mediator)
-		self.lc = None
-	def mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
-			self.lc= self.mediator.scr_to_img((event.x(),event.y()))
-			
-	def mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.mediator.scr_to_img((event.x(),event.y()))
-			if lc != None and self.lc != None and lc[0] == self.lc[0]:
-				self.mediator.image_set_associate(lc[0],event,True)
-				#self.mediator.force_display_update()
-				
-			self.lc = None
-				
-				
-class EMMXDragMouseEvents(EMMXCoreMouseEvents):
-	def __init__(self,mediator):
-		EMMXCoreMouseEvents.__init__(self,mediator)
-		self.class_window = None # used if people are looking at class averages and they double click - which case a second window is opend showing the particles in the class
-		
-	def mouse_down(self,event):
-		return
-	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
-		if event.button()==Qt.LeftButton:
-			lc= self.mediator.scr_to_img((event.x(),event.y()))
-			if lc == None: 
-				print "strange lc error"
-				return
-			box_image = self.mediator.get_box_image(lc[0])
-			xs=int(box_image.get_xsize())
-			ys=int(box_image.get_ysize())
-			drag = QtGui.QDrag(self.mediator.get_parent())
-			mime_data = QtCore.QMimeData()
-			
-			mime_data.setData("application/x-eman", dumps(box_image))
-			
-			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
-			mime_data.setText( str(lc[0])+"\n")
-			di=QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.mediator.get_density_min(),self.mediator.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
-			mime_data.setImageData(QtCore.QVariant(di))
-			drag.setMimeData(mime_data)
-	
-			# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
-			#di=QImage(GLUtil.render_amp8(elf.data[lc[0]],0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
-			#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
-			#else: pm=QtGui.QPixmap.fromImage(di)
-			#drag.setPixmap(pm)
-			#drag.setHotSpot(QtCore.QPoint(12,12))
-					
-			dropAction = drag.start()
-	
-	def mouse_double_click(self,event):
-		'''
-		Inheriting classes to potentially define this function
-		'''
-		lc=self.mediator.scr_to_img((event.x(),event.y()))
-		if lc != None:
-			a = self.mediator.get_box_image(lc[0])
-			d = a.get_attr_dict()
-			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
-				
-				# With shift-click we try to show rotated/translated images
-				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
-					curim=[a["source_path"],a["source_n"]]		# this is the class-average
-					if "EMAN2DB" in curim[0] : curim[0]="bdb:"+curim[0].replace("/EMAN2DB","")
-					if curim[0][-10:-3]=="classes" : 
-						mxpath=curim[0][:-11]+"#classmx_"+curim[0][-2:]
-						try: mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
-						except:
-							mxpath=curim[0][:-11]+"#classify_"+curim[0][-2:]
-							mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
-					else: mx=None
-				else: mx=None
-				
-				data = []
-				idxs = d["class_ptcl_idxs"]
-				#try: 
-				idxse = d["exc_class_ptcl_idxs"]
-				#except: idxse = []
-				name = d["class_ptcl_src"]
-				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs)+len(idxse),None)
-				progress.show()
-				get_application().setOverrideCursor(Qt.BusyCursor)
-				
-				i = 0
-				for idx in idxs:
-					data.append(EMData(name,idx))
-					if mx!=None:
-						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
-						data[-1].transform(xfm)
-					i+=1
-					progress.setValue(i)
- 					get_application().processEvents()
- 				
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
-
-				idxseim = []
-				for idx in idxse:
-					data.append(EMData(name,idx))
-					if mx!=None:
-						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
-						data[-1].transform(xfm)
-					idxseim.append(i)
-					i+=1
-					progress.setValue(i)
- 					get_application().processEvents()
- 				
-		 			if progress.wasCanceled():
-		 				progress.close()
-		 				get_application().setOverrideCursor(Qt.ArrowCursor)
-			 			return
-
-
-				progress.close()
-				get_application().setOverrideCursor(Qt.ArrowCursor)
-	
-				resize_necessary = False
-				if self.class_window == None:
-					self.class_window = EMImageMXWidget()
-					QtCore.QObject.connect(self.class_window,QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
-					resize_necessary = True
-				
-				self.class_window.set_data(data,"Class Particles")
-				
-				self.class_window.enable_set("excluded",idxseim)
-				
-				if resize_necessary:
-					get_application().show_specific(self.class_window)
-					self.class_window.optimally_resize()
-				else:
-					self.class_window.updateGL()
-					
-	def on_class_window_closed(self):
-		self.class_window = None
-	
-class EMMAppMouseEvents(EMMXCoreMouseEvents):
-	def __init__(self,mediator):
-		EMMXCoreMouseEvents.__init__(self,mediator)
-	
-	def mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.mediator.scr_to_img((event.x(),event.y()))
-			if lc:
-				self.mediator.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
-				#print "setting selected"
-				self.mediator.set_selected([lc[0]],True)
-			xians_stuff = False
-			if xians_stuff:
-				if lc[0] != None:
-					image = self.mediator.get_box_image(lc[0])
-					cx = image.get_xsize()/2
-					cy = image.get_ysize()/2
-					x = lc[1]-cx
-					y = lc[2]-cy
-					angle = atan2(y,x)*180.0/pi
-					# convert from clockwise to anti clockwise and convert to Xian's axis definition
-					angle = 270-angle
-					angle %= 360
-					print "Filename: ", self.mediator.get_image_file_name()
-					print "Sequence#: ",lc[0]
-					print "Angle: ", angle
-				 	
-			
-	def mouse_move(self,event):
-		if event.buttons()&Qt.LeftButton:
-			self.mediator.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.mediator.get_scale())
-	
-	def mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.mediator.scr_to_img((event.x(),event.y()))
-		
-			self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
-			
-			# disabled by stevel 2/17/2011 for external application flexibility
-			#if  not event.modifiers()&Qt.ShiftModifier:
-				#self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
-			#else:
-				#if lc != None:
-					#self.mediator.remove_particle_image(lc[0],event,True)
-					#self.mediator.force_display_update()
-			
 class EMMatrixPanel:
 	'''
 	A class for managing the parameters of displaying a matrix panel
@@ -634,7 +327,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.mousedrag=None
 		self.nimg=0
 		self.changec={}
-		self.mmode="Drag"
 		self.selected=[]
 		self.hist = []
 		self.targetorigin=None
@@ -655,6 +347,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.line_animation = None
 		self.sets_manager = EMMXSetsManager(self) # we need this for managing sets
 		self.deletion_manager = EMMXDeletionManager(self) # we need this for managing deleted particles
+		self.mouse_modes = ["App", "Del", "Drag", self.sets_manager.unique_name()]
+		self.mmode="Drag"
+		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
 		
 		self.coords={}
 		self.nshown=0
@@ -677,8 +372,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
 		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
-	
-		self.__init_mouse_handlers()
 		
 		self.reroute_delete = False
 	
@@ -712,24 +405,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.font_renderer.set_face_size(value)
 		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
 		self.updateGL()
-			
-	def __init_mouse_handlers(self):
-		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
-		self.mouse_event_handlers = {}
-		self.mouse_event_handlers["App"] = EMMAppMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers["Del"] = EMMXDelMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers["Drag"] = EMMXDragMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handlers[self.sets_manager.unique_name()] = EMMXSetMouseEvents(self.mouse_events_mediator)
-		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
-		
+
 	def set_mouse_mode(self,mode):
-		self.mmode = mode
-		meh  = self.mouse_event_handler
-		try:
-			self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
-		except:
-			print "unknown mode:",mode
-			self.mouse_event_handler = meh # just keep the old one
+		if mode in self.mouse_modes:
+			self.mmode = mode
+		else:
+			print "unknown mode:", mode
 	
 	def set_file_name(self,name):
 		#print "set image file name",name
@@ -1747,10 +1428,205 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	
 	def origin_update(self,new_origin):
 		self.origin = new_origin
+
+	def __app_mode_mouse_down(self, event):
+		print "app mode mouse down"
+		if event.button()==Qt.LeftButton:
+			lc=self.scr_to_img((event.x(),event.y()))
+			if lc:
+				self.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
+				#print "setting selected"
+				self.set_selected([lc[0]],True)
+			xians_stuff = False
+			if xians_stuff:
+				if lc[0] != None:
+					image = self.get_box_image(lc[0])
+					cx = image.get_xsize()/2
+					cy = image.get_ysize()/2
+					x = lc[1]-cx
+					y = lc[2]-cy
+					angle = atan2(y,x)*180.0/pi
+					# convert from clockwise to anti clockwise and convert to Xian's axis definition
+					angle = 270-angle
+					angle %= 360
+					print "Filename: ", self.get_image_file_name()
+					print "Sequence#: ",lc[0]
+					print "Angle: ", angle
+					
+	def __app_mode_mouse_move(self, event):
+		print "app mode mouse move"
+		if event.buttons()&Qt.LeftButton:
+			self.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.get_scale())
+			
+	def __app_mode_mouse_up(self,event):
+		print "app mode mouse up"
+		if event.button()==Qt.LeftButton:
+			lc=self.scr_to_img((event.x(),event.y()))
+		
+			self.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
+			
+			# disabled by stevel 2/17/2011 for external application flexibility
+			#if  not event.modifiers()&Qt.ShiftModifier:
+				#self.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
+			#else:
+				#if lc != None:
+					#self.remove_particle_image(lc[0],event,True)
+					#self.force_display_update()
+		
+	def __del_mode_mouse_down(self,event):
+		print "del mode mouse down"
+		if event.button()==Qt.LeftButton:
+			self.lc=self.scr_to_img((event.x(),event.y()))
+			
+	def __del_mode_mouse_up(self,event):
+		print "del mode mouse up"
+		if event.button()==Qt.LeftButton:
+			lc=self.scr_to_img((event.x(),event.y()))
+			if lc != None and self.lc != None and lc[0] == self.lc[0]:
+				self.remove_particle_image(lc[0],event,True)
+				#self.force_display_update()
+				
+			self.lc = None
+
+	def __drag_mode_mouse_down(self,event):
+		print "drag mode mouse down"
+		return
+	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
+		if event.button()==Qt.LeftButton:
+			lc= self.scr_to_img((event.x(),event.y()))
+			if lc == None: 
+				print "strange lc error"
+				return
+			box_image = self.get_box_image(lc[0])
+			xs=int(box_image.get_xsize())
+			ys=int(box_image.get_ysize())
+			drag = QtGui.QDrag(self.get_parent())
+			mime_data = QtCore.QMimeData()
+			
+			mime_data.setData("application/x-eman", dumps(box_image))
+			
+			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
+			mime_data.setText( str(lc[0])+"\n")
+			di=QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.get_density_min(),self.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
+			mime_data.setImageData(QtCore.QVariant(di))
+			drag.setMimeData(mime_data)
+	
+			# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
+			#di=QImage(GLUtil.render_amp8(elf.data[lc[0]],0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+			#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
+			#else: pm=QtGui.QPixmap.fromImage(di)
+			#drag.setPixmap(pm)
+			#drag.setHotSpot(QtCore.QPoint(12,12))
+					
+			dropAction = drag.start()
+	
+	def __drag_mode_mouse_double_click(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		print "drag mode mouse double click"
+		lc=self.scr_to_img((event.x(),event.y()))
+		if lc != None:
+			a = self.get_box_image(lc[0])
+			d = a.get_attr_dict()
+			if d.has_key("class_ptcl_src") and d.has_key("class_ptcl_idxs"):
+				
+				# With shift-click we try to show rotated/translated images
+				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
+					curim=[a["source_path"],a["source_n"]]		# this is the class-average
+					if "EMAN2DB" in curim[0] : curim[0]="bdb:"+curim[0].replace("/EMAN2DB","")
+					if curim[0][-10:-3]=="classes" : 
+						mxpath=curim[0][:-11]+"#classmx_"+curim[0][-2:]
+						try: mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
+						except:
+							mxpath=curim[0][:-11]+"#classify_"+curim[0][-2:]
+							mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
+					else: mx=None
+				else: mx=None
+				
+				data = []
+				idxs = d["class_ptcl_idxs"]
+				#try: 
+				idxse = d["exc_class_ptcl_idxs"]
+				#except: idxse = []
+				name = d["class_ptcl_src"]
+				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs)+len(idxse),None)
+				progress.show()
+				get_application().setOverrideCursor(Qt.BusyCursor)
+				
+				i = 0
+				for idx in idxs:
+					data.append(EMData(name,idx))
+					if mx!=None:
+						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						data[-1].transform(xfm)
+					i+=1
+					progress.setValue(i)
+ 					get_application().processEvents()
+ 				
+		 			if progress.wasCanceled():
+		 				progress.close()
+		 				get_application().setOverrideCursor(Qt.ArrowCursor)
+			 			return
+
+				idxseim = []
+				for idx in idxse:
+					data.append(EMData(name,idx))
+					if mx!=None:
+						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						data[-1].transform(xfm)
+					idxseim.append(i)
+					i+=1
+					progress.setValue(i)
+ 					get_application().processEvents()
+ 				
+		 			if progress.wasCanceled():
+		 				progress.close()
+		 				get_application().setOverrideCursor(Qt.ArrowCursor)
+			 			return
+
+
+				progress.close()
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+	
+				resize_necessary = False
+				if self.class_window == None:
+					self.class_window = EMImageMXWidget()
+					QtCore.QObject.connect(self.class_window,QtCore.SIGNAL("module_closed"),self.on_class_window_closed)
+					resize_necessary = True
+				
+				self.class_window.set_data(data,"Class Particles")
+				
+				self.class_window.enable_set("excluded",idxseim)
+				
+				if resize_necessary:
+					get_application().show_specific(self.class_window)
+					self.class_window.optimally_resize()
+				else:
+					self.class_window.updateGL()
+					
+	def on_class_window_closed(self):
+		self.class_window = None
+
+	def __set_mode_mouse_down(self,event):
+		print "set mode mouse down"
+		if event.button()==Qt.LeftButton:
+			self.lc= self.scr_to_img((event.x(),event.y()))
+			
+	def __set_mode_mouse_up(self,event):
+		print "set mode mouse up"
+		if event.button()==Qt.LeftButton:
+			lc=self.scr_to_img((event.x(),event.y()))
+			if lc != None and self.lc != None and lc[0] == self.lc[0]:
+				self.image_set_associate(lc[0],event,True)
+				#self.force_display_update()
+				
+			self.lc = None
 	
 	def mouseDoubleClickEvent(self,event):
 		if not self.data: return
-		self.mouse_event_handler.mouse_double_click(event)
+		if self.mmode == "Drag":
+			self.__drag_mode_mouse_double_click(event)
 
 	def mousePressEvent(self, event):
 		if not self.data: return
@@ -1766,17 +1642,21 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
-			app =  QtGui.QApplication.instance()
 			try:
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
-				#app.setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.SizeAllCursor)
-				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
 		else:
-			self.mouse_event_handler.mouse_down(event)
+			if self.mmode == "App":
+				self.__app_mode_mouse_down(event)
+			elif self.mmode == "Del":
+				self.__del_mode_mouse_down(event)
+			elif self.mmode == "Drag":
+				self.__drag_mode_mouse_down(event)
+			elif self.mmode == "Sets":
+				self.__set_mode_mouse_down(event)
 		
 	def mouseMoveEvent(self, event):
 		if not self.data: return
@@ -1797,7 +1677,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			try:self.updateGL()
 			except: pass
 		else: 
-			self.mouse_event_handler.mouse_move(event)
+			if self.mmode == "App":
+				self.__app_mode_mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
 		if not self.data: return
@@ -1810,7 +1691,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
-		else: self.mouse_event_handler.mouse_up(event)
+		else: 
+			if self.mmode == "App":
+				self.__app_mode_mouse_up(event)
+			elif self.mmode == "Del":
+				self.__del_mode_mouse_up(event)
+			elif self.mmode == "Sets":
+				self.__set_mode_mouse_up(event)
 			
 	def wheelEvent(self, event):
 		if not self.data: return
