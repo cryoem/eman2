@@ -238,6 +238,9 @@ class EMBoxViewer(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
 
+		self.gbl.setRowStretch(2,1)
+		self.gbl.setRowStretch(0,5)
+		self.gbl.setRowStretch(1,5)
 		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
 		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup")  ,self.xy_up  )
@@ -359,13 +362,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.wnlayers.setValue(1)
 		self.gbl2.addWidget(self.wnlayers,1,1)
 		
+		# Local boxes in side view
+		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
+		self.gbl2.addWidget(self.wlocalbox,2,0)
+		
 		# scale factor
 		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		self.gbl2.addWidget(self.wscale,2,0,1,2)
+		self.gbl2.addWidget(self.wscale,3,0,1,2)
 		
 		# 2-D filters
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
-		self.gbl2.addWidget(self.wfilt,3,0,1,2)
+		self.gbl2.addWidget(self.wfilt,4,0,1,2)
 		
 		
 		
@@ -394,6 +401,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
 		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
+		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
 		
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
@@ -571,8 +579,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return r
 
 	def event_boxsize(self):
-		pass
-	
+		cb=self.curbox
+		for i in range(len(self.boxes)) : self.update_box(i)
+		self.update_box(cb)
+		
 	def event_projmode(self,state):
 		"""Projection mode can be simple average (state=False) or maximum projection (state=True)"""
 		self.update_all()
@@ -590,6 +600,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def event_filter(self):
 		self.update_all()
+
+	def event_localbox(self,tog):
+		self.update_sides()
 
 	def boxsize(self): return int(self.wboxsize.getValue())
 	
@@ -672,6 +685,29 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.cury=y
 		self.curx=x
+		bs=self.boxsize()
+		
+		# update shape display
+		if self.wlocalbox.isChecked():
+			xzs=self.xzview.get_shapes()
+			for i in range(len(self.boxes)):
+				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
+					xzs[i][0]="rect"
+				else : xzs[i][0]="hidden"
+				
+			zys=self.zyview.get_shapes()
+			for i in range(len(self.boxes)):
+				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
+					zys[i][0]="rect"
+				else : zys[i][0]="hidden"
+		else :
+			xzs=self.xzview.get_shapes()
+			for i in range(len(self.boxes)): xzs[i][0]="rect"
+			zys=self.zyview.get_shapes()
+			for i in range(len(self.boxes)): zys[i][0]="rect"
+			
+		self.xzview.shapechange=1
+		self.zyview.shapechange=1
 		
 		# yz
 		avgr=self.get_averager()
@@ -899,7 +935,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if self.inside_box(i,x,-1,z) :
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
@@ -954,7 +990,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if self.inside_box(i,-1,y,z) :
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])

@@ -69,9 +69,11 @@ def main():
 	parser.add_option("--ref", type="string", help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. This is typically the projections that were used for classification.", default=None)
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles", default=None)
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=1)
+	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--mask",type="string",help="Mask processor applied to particles before alignment. Default is None", default=None)
 	parser.add_option("--normproc",type="string",help="Normalization processor applied to particles before alignment. Default is to use normalize.mask with the preceeding mask. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=False)
+	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment", default=1)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None. rotate_translate_3d would typically be used.", default=None)
 	parser.add_option("--aligncmp",type="string",help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default=None)
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is None, but should usuall be refine.3d", default=None)
@@ -81,11 +83,12 @@ def main():
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--shrink", type="int",default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
+	parser.add_option("--shrinkrefine", type="int",default=0,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 #	parser.add_option("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 #	parser.add_option("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 #	parser.add_option("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 #	parser.add_option("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-#	parser.add_option("--parallel", default=None, help="parallelism argument")
+	parser.add_option("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -143,7 +146,7 @@ def main():
 	# outer loop over classes, ic=class number
 	for ic in range(ncls):
 		if ncls==1 : ptcls=range(nptcl)				# start with a list of particle numbers in this class
-		else : ptcls=classmx_ptcls(classmx,ic)
+		else : ptcls=classmx_ptcls(classmx,ic)		# This gets the list from the classmx
 		
 		# read the reference image from disk, or build one if no reference available
 		if options.ref : ref=EMData(options.ref,ic)
@@ -156,74 +159,63 @@ def main():
 			
 
 
-
 	E2end(logger)
 
 class Align3DTask(EMTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,):
-		if usefilt==None : usefilt=imagefile
-		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
-		if ref!=None : data["ref"]=["cache",ref,n]
-		EMTask.__init__(self,"ClassAv",data,{},"")
+	def __init__(self,fixedimage,image,label,mask,normproc,preprocess,ncoarse,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
+		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
+	label is a descriptive string, not actually used in processing
+	other parameters match command-line options from e2classaverage3d.py
+	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
+		data={}
+		data={"fixedimage":fixedimage,"image":image}
+		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
-			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
-			"automask":automask,"verbose":verbose,"n":n}
+		self.options={"mask":mask,"normproc":normproc,"preprocess":preprocess,"ncoarse":ncoarse,"align":align,"aligncmp":aligncmp,"ralign":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
 	def execute(self,callback=None):
-		"""This does the actual class-averaging, and returns the result"""
+		"""This aligns one volume to a reference and returns the alignment parameters"""
 		options=self.options
+		if options.verbose : print "Aligning ",options.label
 
-		if options["verbose"]>0 : print "Start averaging class ",options["n"]
-
-		try: ref=EMData(self.data["ref"][1],self.data["ref"][2])
-		except: ref=None
-
-#		print [self.data["images"][1]]+self.data["images"][2]
-
-		# make the class-average
-		try:
-			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
-				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
-				options["automask"],options["verbose"],callback)
-		except KeyboardInterrupt: return None
-		except SystemExit: return None
-		except:
-			return {"average":None,"info":None,"n":self.options["n"]}
-
-		try: ref_orient=avg["xform.projection"]
-		except: ref_orient=None
-
-		try: ref_model=avg["model_id"]
-		except: ref_model=0
-
-		# Final alignment to the reference (if there is one)
-		if ref!=None :
-			#ref.process_inplace("normalize.edgemean")
-			ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
-			fxf=ali["xform.align2d"]
-			avg1=avg
-			if options["verbose"]>0 : print "Final realign:",fxf
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,options["averager"],options["normproc"],options["verbose"])
-
-			#self.data["ref"].write_image("tst.hdf",-1)
-			#avg1.write_image("tst.hdf",-1)
-			#avg.write_image("tst.hdf",-1)
-		else :
-			# Nothing to align to, so we just regenerate unmasked average with existing alignments
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
-			
-		if ref_orient!=None: 
-			avg["xform.projection"]=ref_orient
-			avg["model_id"]=ref_model
-			try: avg["projection_image_idx"]=self.data["ref"][2]
-			except: pass
+		fixedimage=self.data["fixedimage"]
+		image=self.data["image"]
 		
-		return {"average":avg,"info":ptcl_info,"n":options["n"]}
+		# If a Transform was passed in, we skip coarse alignment
+		if isinstance(options.align,Transform):
+			bestcoarse=[{"score":1.0,"xform.align3d":options.align}]
+		# this is the default behavior, seed orientations come from coarse alignment
+		else:
+			# returns an ordered vector of Dicts of length options.ncoarse. The Dicts in the vector have keys "score" and "xform.align3d"
+			bestcoarse=image.xform_align_nbest(options.align[0],fixedimage,options.align[1],options.ncoarse,options.aligncmp[0],options.aligncmp[1])
 
-	
+		# verbose printout
+		if options.verbose>1 :
+			for i,j in enumerate(bestcoarse): print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+
+		if ralign!=None :
+			# Now loop over the individual peaks and refine each
+			bestfinal=[]
+			for bc in bestcoarse:
+				options.ralign[1]["xform.align3d"]=bc["xform.align3d"]
+				ali=image.align(options.ralign[0],fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
+				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"]})
+
+			# verbose printout of fine refinement
+			if options.verbose>1 :
+				for i,j in enumerate(bestfinal): print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+		else : bestfinal=bestcoarse
+		
+		bestfinal.sort()
+		if options.verbose : print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+
+		if options.verbose: print "Done aligning ",options.label
+		
+		return bestfinal
+
+
 def classmx_ptcls(classmx,n):
 	"""Scans a classmx file to determine which images are in a specific class. classmx may be a filename or an EMData object.
 	returns a list of integers"""

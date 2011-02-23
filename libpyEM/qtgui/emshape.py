@@ -76,6 +76,7 @@ class EMShape:
 		"scrlabel"      R  G  B  x0 y0    text  size  linew
 		"scrcircle"     R  G  B  x0 y0    r     linew
 		"point"         R  G  B  x0 y0    r
+		"hidden"		anything, not rendered
 	"""
 	font_renderer = None
 	glutinit = True
@@ -103,6 +104,11 @@ class EMShape:
 			except:
 				EMShape.font_renderer = 1
 	
+	def __getitem__(self,key): return self.shape[key]
+		
+	def __setitem__(self,key,value): 
+		self.shape[key]=value
+	
 	def draw(self,d2s=None,col=None):
 		"""This function causes the shape to render itself into the current GL context.
 		d2s is a function of x,y which will convert data coordinates to screen
@@ -111,6 +117,8 @@ class EMShape:
 		col can be used to override the current shape's color."""
 		global glut_inited
 		s=self.shape
+		
+		if s[0]=="hidden": return
 		
 		if col==None: col=self.shape[1:4]
 		if d2s==None : d2s=shidentity
@@ -129,7 +137,7 @@ class EMShape:
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 			
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
-			
+		
 		if s[0]=="rect":
 			assert self.shape[8] >= 0
 			GL.glLineWidth(s[8])
