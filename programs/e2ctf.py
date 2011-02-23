@@ -1113,7 +1113,11 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			bg_1d_low=low_bg_curve(bg_1d,ds)
 			bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background 
 			best[0][1][1]=500.0		# restart the fit with B=200.0
+<<<<<<< e2ctf.py
+			sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+=======
 			sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,best[0][1][0]))
+>>>>>>> 1.170
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
 				best[0]=(oparm[1],oparm[0])
@@ -1123,7 +1127,11 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	else:
 		# rerun the simplex with the new background
 		best[0][1][1]=500.0		# restart the fit with B=200.0
+<<<<<<< e2ctf.py
+		sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+=======
 		sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,best[0][1][0]))
+>>>>>>> 1.170
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
 		if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
@@ -1150,71 +1158,6 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 	if verbose : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(ctf.defocus,ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
 	
-	# This smooths the SNR curve
-	#snr=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_SNR_SMOOTH)
-	#snr=snr[:len(ctf.snr)]
-	#ctf.snr=snr
-
-	# Last, we try to get a decent B-factor
-	# This is a quick hack and not very efficiently coded
-	#bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
-	#best=(0,0)
-	#s0=int(.04/ds)+1
-	#s1=min(int(0.15/ds),len(bg_1d)-1)
-	#for b in range(1,len(bfs)-1):
-		#ctf.bfactor=bfs[b]
-		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		#cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
-
-		## adjust the amplitude to match well
-		#a0,a1=0,0
-		#for s in range(s0,s1): 
-			#a0+=cc[s]
-			#a1+=fabs(im_1d[s]-bg_1d[s])
-		#if a1==0 : a1=1.0
-		#a0/=a1
-		#cc=[i/a0 for i in cc]
-		
-		#er=0
-		## compute the error
-		#for s in range(s0,len(bg_1d)-1):
-			#e=(cc[s]-(im_1d[s]-bg_1d[s]))
-			#er+=e**2 *s
-
-		#if best[0]==0 or er<best[0] : best=(er,b)
-
-	## Stupid replication here, in a hurry
-	#bb=best[1]
-	#best=(best[0],bfs[best[1]])
-	#for b in range(20):
-		#ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
-		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		#cc=[sfact(ds*i)*cc[i]**2 for i in range(len(cc))]
-
-		## adjust the amplitude to match well
-		#a0,a1=0,0
-		#for s in range(s0,s1): 
-			#a0+=cc[s]
-			#a1+=fabs(im_1d[s]-bg_1d[s])
-		#if a1==0 : a1=1.0
-		#a0/=a1
-		#cc=[i/a0 for i in cc]
-		
-		#er=0
-		## compute the error
-		#for s in range(s0,len(bg_1d)-1):
-			#e=(cc[s]-(im_1d[s]-bg_1d[s]))
-			#er+=e**2*s
-
-		#if best[0]==0 or er<best[0] : best=(er,ctf.bfactor)
-		
-##		print bfs[b],best
-
-
-	#ctf.bfactor=best[1]
-	#print "bfactor ",ctf.bfactor
-	
-#	if 1 : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(dfbest[0],ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
 
 	Util.save_data(0,ds,ctf.snr,"ctf.snr")
 	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
@@ -1265,10 +1208,39 @@ def ctf_cmp(parms,data):
 #	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 	
-	out=file("dbg","a")
-	out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],parms[1],er,mean,sig,mx))
+	#out=file("dbg","a")
+	#out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],parms[1],er,mean,sig,mx))
 
 	return er
+
+def ctf_cmp_a(parms,data):
+	"""This function is a quality metric for a set of CTF parameters vs. data"""
+	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf.defocus=parms[0]
+	ctf.bfactor=parms[1]
+	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
+	
+	# make a complete CTF curve over s0,s1 range
+	cc=[sfact(i*ds)*cc[i]**2 for i in range(s0,s1)]
+	bs=bgsub[s0:s1]
+	
+	# normalize (adjust amplitude)
+	s1=sum(cc)
+	s2=sum(bs)
+	cc=[f*s2/s1 for f in cc]
+	
+	plot(cc,bs)
+
+	er=0.0
+	for i,f in enumerate(cc): er+=fabs(f-bs[i])
+	return er
+
+#	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
+	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
+	
+
+	return er
+
 
 def ctf_cmp_2(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data
