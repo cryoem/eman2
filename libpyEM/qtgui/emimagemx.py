@@ -1430,7 +1430,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.origin = new_origin
 
 	def __app_mode_mouse_down(self, event):
-		print "app mode mouse down"
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc:
@@ -1454,12 +1453,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					print "Angle: ", angle
 					
 	def __app_mode_mouse_move(self, event):
-		print "app mode mouse move"
 		if event.buttons()&Qt.LeftButton:
 			self.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.get_scale())
 			
 	def __app_mode_mouse_up(self,event):
-		print "app mode mouse up"
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 		
@@ -1474,12 +1471,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					#self.force_display_update()
 		
 	def __del_mode_mouse_down(self,event):
-		print "del mode mouse down"
 		if event.button()==Qt.LeftButton:
 			self.lc=self.scr_to_img((event.x(),event.y()))
 			
 	def __del_mode_mouse_up(self,event):
-		print "del mode mouse up"
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
@@ -1489,7 +1484,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.lc = None
 
 	def __drag_mode_mouse_down(self,event):
-		print "drag mode mouse down"
 		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
 		if event.button()==Qt.LeftButton:
@@ -1524,7 +1518,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		Inheriting classes to potentially define this function
 		'''
-		print "drag mode mouse double click"
 		lc=self.scr_to_img((event.x(),event.y()))
 		if lc != None:
 			a = self.get_box_image(lc[0])
@@ -1609,12 +1602,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.class_window = None
 
 	def __set_mode_mouse_down(self,event):
-		print "set mode mouse down"
 		if event.button()==Qt.LeftButton:
 			self.lc= self.scr_to_img((event.x(),event.y()))
 			
 	def __set_mode_mouse_up(self,event):
-		print "set mode mouse up"
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
