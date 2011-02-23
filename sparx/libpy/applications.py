@@ -10565,13 +10565,15 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		mpi_barrier(MPI_COMM_WORLD)
 
 	elif CUDA and not MPI: # added 2009-02-20 16:27:26 # modify 2009-09-23 13:52:29
+		print "tao cuda only"
 		print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm)
+		k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm=flagnorm)
 		print_end_msg('k-means')
 
 	elif MPI and CUDA: # added 2009-09-22 14:34:45
+		print "tao mpi and cuda"
 		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 		if myid == main_node:
 			print_begin_msg('k-means')
