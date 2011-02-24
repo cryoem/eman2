@@ -6307,7 +6307,8 @@ def isc_read_conf(conf_file):
 	cfgali['maxit']      = int(cfgali['maxit'])
 	try:	cfgali['ctf']        = eval(cfgali['ctf'])
 	except:	cfgali['ctf']        = False
-	cfgali['snr']        = float(cfgali['snr'])
+	try:	cfgali['snr']        = float(cfgali['snr'])
+	except:	cfgali['snr']        = 1.0
 	cfgali['ou']         = int(cfgali['ou'])
 	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
 	try:       cfgali['cuda']       = eval(cfgali['cuda'])
@@ -6322,7 +6323,8 @@ def isc_read_conf(conf_file):
 	#   clustering
 	try:      cfgclu['f']          = float(cfgclu['f'])
 	except:    cfgclu['f']          = 0.9
-	cfgclu['th_nobj']    = int(cfgclu['th_nobj'])
+	try:	cfgclu['th_nobj']    = int(cfgclu['th_nobj'])
+	except:	cfgclu['th_nobj']    = 1
 	try:      cfgclu['t0']         = float(cfgclu['t0'])
 	except:    cfgclu['t0']         = 2.0
 	cfgclu['ctf']        = eval(cfgclu['ctf'])
@@ -6333,6 +6335,10 @@ def isc_read_conf(conf_file):
 	cfgclu['nb_cpu']     = int(cfgclu['nb_cpu'])
 	try:	cfgclu['cuda']	= eval(cfgclu['cuda'])
 	except:	cfgclu['cuda']	= False
+	try:	cfgclu['filter_cutoff']        = float(cfgclu['filter_cutoff'])
+	except:	cfgclu['filter_cutoff']        = 0.0
+	try:	cfgclu['filter_falloff']        = float(cfgclu['filter_falloff'])
+	except:	cfgclu['filter_falloff']        = 0.0
 
 	#   realignment
 	cfgrali['fourvar']   = eval(cfgrali['fourvar'])
