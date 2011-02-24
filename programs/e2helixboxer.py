@@ -295,14 +295,15 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
     @return: a list of EMData objects for each unrotated particle in the helix 
     """
     #Will be square
-    if not px_length and not px_width:
-        side = helix_coords[4]
-    elif not px_length:
-        side = px_width
-    elif not px_width:
-        side = px_length
-    else:
+    if px_length and px_width:
         side = max(px_length, px_width)
+    elif not px_length and not px_width:
+        side = helix_coords[4]
+    elif px_width:
+        side = px_width
+    elif px_length:
+        side = px_length
+        
     if not px_overlap:
         px_overlap = 0.9*side
     centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
@@ -940,11 +941,12 @@ if ENABLE_GUI:
             if not self.helix_viewer:
                 self.helix_viewer = EMImage2DWidget(application=get_application())
                 self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
-                self.helix_viewer.setWindowTitle("Current Boxed helix")
+                #self.helix_viewer.setWindowTitle("Current Helix")
                 self.helix_viewer.resize(300,800)
                 self.helix_viewer.set_scale(1)
             QtCore.QObject.connect(self.helix_viewer, QtCore.SIGNAL("module_closed"), self.helix_viewer_closed)
             self.helix_viewer.set_data(helix_emdata)
+            self.helix_viewer.setWindowTitle("Current Helix: %d x %d pixels" % (helix_emdata["nx"], helix_emdata["ny"]) )
             get_application().show_specific(self.helix_viewer)
             self.helix_viewer.updateGL()
         def closeEvent(self, event):
