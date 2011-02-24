@@ -292,7 +292,7 @@ class EMTaskCustomer:
 		raise Exception,"Unknown server type"
 	
 	def get_results(self,taskid,retry=True):
-		"""Get the results for a completed task. Returns a tuple with the task object and dictionary."""
+		"""Get the results for a completed task. Returns a tuple (task object,dictionary}."""
 		
 		if self.servtype in ("thread","mpi") :
 			return self.handler.get_results(taskid)

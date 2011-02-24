@@ -2246,8 +2246,8 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 
-			d.put("inner_radius", EMObject::INT, "inner mask radius. optional, default=-1");
-			d.put("outer_radius", EMObject::INT, "outer mask radius");
+			d.put("inner_radius", EMObject::INT, "inner mask radius. optional");
+			d.put("outer_radius", EMObject::INT, "outer mask radius. Negative value -> box radius + outer_radius +1");
 
 			d.put("dx", EMObject::FLOAT,
 				  "Modify mask center by dx relative to the default center nx/2");

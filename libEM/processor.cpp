@@ -1421,8 +1421,8 @@ void CircularMaskProcessor::calc_locals(EMData *)
 	yc = Util::fast_floor(ny/2.0f) + dy;
 	zc = Util::fast_floor(nz/2.0f) + dz;
 
-	if (outer_radius <= 0) {
-		outer_radius = nx / 2;
+	if (outer_radius < 0) {
+		outer_radius = nx / 2 + outer_radius +1;
 		outer_radius_square = outer_radius * outer_radius;
 	}
 

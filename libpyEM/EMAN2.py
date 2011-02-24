@@ -410,6 +410,7 @@ def parsemodopt(optstr):
 	("dot",{"normalize":1,"negative":0})"""
 	
 	if not optstr or len(optstr)==0 : return (None,{})
+	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 	
 	p_1 = re.findall( parseparmobj3, optstr )
 	if len(p_1)==0: return (optstr,{})
