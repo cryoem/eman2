@@ -333,13 +333,7 @@ def main():
 				fi = index_d[option1]
 				(processorname, param_dict) = parsemodopt(options.process[fi])
 				if not param_dict : param_dict={}
-				if(processorname[:2] == "sx"):
-					qte = "Processor.fourier_filter_types."+processorname[2:]
-					params = {"filter_type" : eval(qte), "dopad" : False}
-					for ety in param_dict.keys():  params[ety] = param_dict[ety]
-					d = Processor.EMFourierFilter(d, params)
-				else:
-					d.process_inplace(processorname, param_dict)
+				d.process_inplace(processorname, param_dict)
 				index_d[option1] += 1
 
 			elif option1 == "mult" :
