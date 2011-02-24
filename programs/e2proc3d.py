@@ -98,9 +98,6 @@ def main():
 	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
 								action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 
-	parser.add_option("--filter", metavar="processor_name:param1=value1:param2=value2", type="string",
-								action="append", help="(deprecated) equivalent to '--process'")
-
 	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
 	
 	parser.add_option("--origin", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
