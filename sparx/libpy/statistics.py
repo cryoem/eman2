@@ -6299,6 +6299,26 @@ def isc_read_conf(conf_file):
 	cfgrali = dict(config.items('realignment'))
 	# convert data if need
 
+	#   alignment
+	cfgali['n_ite']      = int(cfgali['n_ite'])
+	try:	cfgali['fourvar']    = eval(cfgali['fourvar'])
+	except:	cfgali['fourvar']    = False
+	cfgali['maxit']      = int(cfgali['maxit'])
+	cfgali['maxit']      = int(cfgali['maxit'])
+	try:	cfgali['ctf']        = eval(cfgali['ctf'])
+	except:	cfgali['ctf']        = False
+	cfgali['snr']        = float(cfgali['snr'])
+	cfgali['ou']         = int(cfgali['ou'])
+	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
+	try:       cfgali['cuda']       = eval(cfgali['cuda'])
+	except:     cfgali['cuda']       = False
+	try:       cfgali['ng'] 	     = int(cfgali['ng'])
+	except:   cfgali['ng'] 	     = -1
+	try:	cfgali['dst']	     = eval(cfgali['dst'])	
+	except:	cfgali['dst']	     = 1.0	
+	try:	cfgali['center']     = int(cfgali['center'])
+	except:	cfgali['center']     = -1
+
 	#   clustering
 	try:      cfgclu['f']          = float(cfgclu['f'])
 	except:    cfgclu['f']          = 0.9
@@ -6340,26 +6360,6 @@ def isc_read_conf(conf_file):
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
 	cfgmain['maxit']     = int(cfgmain['maxit'])
-
-	#   alignment
-	cfgali['n_ite']      = int(cfgali['n_ite'])
-	try:	cfgali['fourvar']    = eval(cfgali['fourvar'])
-	except:	cfgali['fourvar']    = False
-	cfgali['maxit']      = int(cfgali['maxit'])
-	cfgali['maxit']      = int(cfgali['maxit'])
-	try:	cfgali['ctf']        = eval(cfgali['ctf'])
-	except:	cfgali['ctf']        = False
-	cfgali['snr']        = float(cfgali['snr'])
-	cfgali['ou']         = int(cfgali['ou'])
-	cfgali['nb_cpu']     = int(cfgali['nb_cpu'])
-	try:       cfgali['cuda']       = eval(cfgali['cuda'])
-	except:     cfgali['cuda']       = False
-	try:       cfgali['ng'] 	     = int(cfgali['ng'])
-	except:   cfgali['ng'] 	     = -1
-	try:	cfgali['dst']	     = eval(cfgali['dst'])	
-	except:	cfgali['dst']	     = 1.0	
-	try:	cfgali['center']     = int(cfgali['center'])
-	except:	cfgali['center']     = -1
 
 	return cfgmain, cfgali, cfgclu, cfgrali
 
