@@ -59,6 +59,7 @@ def main():
 	parser.add_option("--CUDA",     action="store_true", default=False,          help="whether to use CUDA ")
 	parser.add_option("--GPUID",      type="string",        default="",            help="the IDs of GPU to use")
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
+	parser.add_option('--old',      action='store_true',   default=False,          help='old')
 
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
@@ -74,8 +75,13 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		from development import realignment
-		realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+		if options.old:
+			from development import realid
+			realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+			#def realid(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, snr, CTF, Fourvar, Ng, num_ali, th_mir, th_err, dst, center_type, CUDA, GPUID, MPI):
+		else:
+			from development import realignment
+			realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
