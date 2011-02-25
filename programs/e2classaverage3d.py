@@ -78,7 +78,7 @@ def main():
 	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment", default=1)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15", default="rotate_translate_3d:search=10:delta=15:dphi=15")
 	parser.add_option("--aligncmp",type="string",help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine.3d")
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d")
 	parser.add_option("--raligncmp",type="string",help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
@@ -185,7 +185,9 @@ def main():
 			# Wait for alignments to finish and get results
 			results=get_results(etc,tids,options.verbose)
 
-			if options.verbose>2 : pprint("Results:",results)
+			if options.verbose>2 : 
+				print "Results:"
+				pprint(results)
 			
 			ref=make_average(options.input,results,options.averager)		# the reference for the next iteration
 
@@ -204,7 +206,7 @@ def make_average(ptcl_file,align_parms,averager):
 	avgr=Averagers.get(averager[0], averager[1])
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
-		ptcl.process_inplace("xform",{"transform":ptcl_parms[0][1]})
+		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		avgr.add_image(ptcl)
 		
 	return avgr.finish()
@@ -266,7 +268,7 @@ class Align3DTask(EMTask):
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"ncoarse":ncoarse,"align":align,"aligncmp":aligncmp,"ralign":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"ncoarse":ncoarse,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -348,9 +350,9 @@ class Align3DTask(EMTask):
 		else : bestfinal=bestcoarse
 		
 		bestfinal.sort()
-		if options.verbose : print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		if options["verbose"] : print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 
-		if options.verbose: print "Done aligning ",options["label"]
+		if options["verbose"] : print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 

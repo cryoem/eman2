@@ -1946,6 +1946,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		d["delta"] = params.set_default("delta",10.f);
 	}
 
+	if ((string)params.set_default("orientgen","eman")=="eman") d["perturb"]=0;
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 
