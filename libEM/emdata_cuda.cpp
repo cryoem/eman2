@@ -399,6 +399,7 @@ void EMData::switchoffcuda()
 void EMData::cuda_fft_cache_destroy()
 {
 	do_cuda_fft_cache_destroy();
+	cudaThreadExit();
 }
 
 void EMData::cuda_initialize()

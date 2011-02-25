@@ -444,7 +444,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 				// Some objects have alignment offsets (icos and tet particularly)
 				az_soln += sym->get_az_alignment_offset();
 			}
-
+//printf("%f %f/n",alt_soln,az_soln);
 			if ( perturb &&  alt_soln != 0 ) {
 				alt_soln += Util::get_gauss_rand(0.0f,.125f*delta);
 				az_soln += Util::get_gauss_rand(0.0f,h*.125f);

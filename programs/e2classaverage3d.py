@@ -71,7 +71,8 @@ def main():
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles", default=None)
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_option("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False)
-	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False)
+	parser.add_option("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--mask",type="string",help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_option("--normproc",type="string",help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=False)
@@ -189,9 +190,11 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,results,options.averager)		# the reference for the next iteration
+			ref=make_average(options.input,results,options.averager,options.saveali)		# the reference for the next iteration
 
-			if options.sym!=None : symmetrize(ref,options.sym)
+			if options.sym!=None : 
+				if options.verbose : print "Apply ",options.sym," symmetry"
+				symmetrize(ref,options.sym)
 			
 			if options.savesteps :
 				ref.write_image("class_%02d.hdf"%ic,-1)
@@ -200,7 +203,7 @@ def main():
 
 	E2end(logger)
 	
-def make_average(ptcl_file,align_parms,averager):
+def make_average(ptcl_file,align_parms,averager,saveali):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average"""
 	
 	avgr=Averagers.get(averager[0], averager[1])
@@ -208,6 +211,7 @@ def make_average(ptcl_file,align_parms,averager):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		avgr.add_image(ptcl)
+		if saveali: ptcl.write_image("class_ptcl.hdf",i)
 		
 	return avgr.finish()
 

@@ -1976,10 +1976,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		if (verbose) {
 			float alt = params["alt"];
 			float az = params["az"];
-			if ( alt != verbose_alt ) {
-				verbose_alt = alt;
-				cout << "Trying angle alt: " << alt << " az: " << az << endl;
-			}
+			cout << "Trying angle alt: " << alt << " az: " << az << endl;
 		}
 
 		for( float phi = lphi; phi <= uphi; phi += dphi ) { 
