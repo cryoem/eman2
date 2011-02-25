@@ -77,7 +77,7 @@ def main():
 		global_def.BATCH = True
 		if options.old:
 			from development import realid
-			realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+			realid(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 			#def realid(stack, averages, out_averages, output_dir, ou, xr, ts, maxit, fun, snr, CTF, Fourvar, Ng, num_ali, th_mir, th_err, dst, center_type, CUDA, GPUID, MPI):
 		else:
 			from development import realignment
