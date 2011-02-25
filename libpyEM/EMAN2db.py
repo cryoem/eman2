@@ -81,7 +81,7 @@ cachesize=80000000
 
 def DB_cleanup(signum=None,stack=None):
 	try:	# will fail if cuda is not installed
-		EMData.cuda_fft_cache_destroy()
+		EMData.cuda_cleanup()
 	except:
 		pass
 	if signum in (2,15) :

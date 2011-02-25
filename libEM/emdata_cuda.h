@@ -131,7 +131,7 @@ inline	void roneedsanupdate()
 	
 	static void switchoffcuda();
 	
-	static void cuda_fft_cache_destroy();
+	static void cuda_cleanup();
 	
 	static void cuda_initialize();
 	

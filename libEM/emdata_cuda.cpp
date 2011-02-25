@@ -401,7 +401,7 @@ void EMData::switchoffcuda()
 	EMData::usecuda = 0;	
 }
 
-void EMData::cuda_fft_cache_destroy()
+void EMData::cuda_cleanup() 
 {
 	do_cuda_fft_cache_destroy();
 	//Cleanup any object mess.... CUDA has OCD
