@@ -495,7 +495,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2tomoboxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
-		pylong = ParamDef(name="ylong",vartype="boolean",desc_short="ylong",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
+		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
 		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=1,choices=None)
 		papix = ParamDef(name="apix",vartype="float",desc_short="Angstroms per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
 		params.append([pylong, pinmem])
@@ -516,22 +516,22 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			return
 
 		self.write_db_entries(params)
-		print "Opening tomoboxer....", params
-		#from e2tomoboxer import EMTomoBoxerModule
-		#get_application().setOverrideCursor(Qt.BusyCursor)
-		#self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
-		#get_application().setOverrideCursor(Qt.ArrowCursor)
-		#self.emit(QtCore.SIGNAL("gui_running"),"e2TomoBoxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+
+		e2tblist = []
+		e2tblist.append("e2tomoboxer.py")
+		e2tblist.append(params['filenames'][0])
+		if params["yshort"]:
+			e2tblist.append("--yshort")
+		if params["inmemory"]:
+			e2tblist.append("--inmemory")
+		e2tblist.append("--apix="+str(params["apix"]))
+		print e2tblist
 		
-		#QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-		#QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-		#self.tomo_boxer_module.show_guis()
-		
+		child = subprocess.Popen(e2tblist)
 		
 		self.form.close()
 		self.form = None
 		
-	
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
 		if self.tomo_boxer_module == None:
