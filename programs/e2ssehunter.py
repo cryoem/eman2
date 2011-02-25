@@ -36,9 +36,164 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
-import commands
-from sys import argv
 import numpy
+
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog [options] <volume file> <Angstroms per pixel> <resolution> <threshold>
+	
+	WARNING: This program is still under development
+
+	Identifies alpha helices and beta sheets in maps at subnanometer resolutions"""
+
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser.add_option("--atoms", "-A", type="string", help="pseudoatoms file", default="none")
+	parser.add_option("--atomswt", "-P", type="float", help="pseudoatom weight", default=1.0)
+	parser.add_option("--coeff","-C", type="string",help="helix correlation file",default="none")
+	parser.add_option("--coeffwt","-H", type="float",help="helix correlation weight",default=1.0)
+	parser.add_option("--skeleton","-S", type="string",help="skeleton file",default="none")
+#	parser.add_option("--sketype","-T", type="string",help="skeleton type",default="none")
+	parser.add_option("--skeletonwt","-W", type="float",help="skeleton weight",default=1.0)
+	parser.add_option("--helixlength","-L", type="float",help="helix length om angstroms",default=16.2)
+	parser.add_option("--da","-D", type="float",help="helix angular search step",default=5.0)
+	(options, args) = parser.parse_args()
+	
+	coeffwt = options.coeffwt
+	skeletonwt = options.skeletonwt
+	atomwt = options.atomswt
+	da = options.da
+	helixlength = options.helixlength
+	atoms = options.atoms
+	coeff = options.coeff
+	skeleton = options.skeleton
+	
+	if len(args) < 4 : 
+		parser.error("ERROR: supply all 4 required arguments!")
+
+	logid=E2init(sys.argv)
+
+	apix = float(args[1]) #Angstroms per pixel
+	res = float(args[2]) #Resolution
+	thr = float(args[3]) #Threshold
+	helixsize = 3
+	sheetsize = 4
+	
+	if coeffwt > 1 or coeffwt < 0:
+		print "Helix correlation weight must be between 0 and 1"
+		sys.exit()
+	if skeletonwt > 1 or skeletonwt < 0:
+		print "Skeleton weight must be between 0 and 1"
+		sys.exit()
+	if atomwt > 1 or atomwt < 0:
+		print "Pseudoatom weight must be between 0 and 1"
+		sys.exit() 
+	
+	try : 
+		infile=open(args[0],"r")
+		infile.close()
+	except : 
+		parser.error("Cannot open input file")
+	
+	targetMRC=EMData()
+	target_volume_filepath = args[0]
+	target_volume_name = os.path.basename(target_volume_filepath)
+	target_volume_name = os.path.splitext(target_volume_name)[0]
+	
+	targetMRC.read_image(args[0])
+	(nx,ny,nz) = ( targetMRC.get_xsize(), targetMRC.get_ysize(), targetMRC.get_zsize() )
+	if not (nx == ny and ny == nz and nx % 2 == 0):
+		print "The density map must be even and cubic. Terminating SSEHunter."
+		sys.exit()
+	##################################################################
+	
+	
+	# getting pseudoatoms
+	if atoms=="none":
+		patoms = generate_pseudoatoms(targetMRC.copy(), apix, res, thr)
+		atomNumber = range(1, 1+len(patoms))
+	else:
+		(patoms, atomNumber) = read_pseudoatoms(atoms)
+	
+	atomCount=len(patoms)
+	
+	
+	skeletonArray = skeleton_scores(patoms, targetMRC, thr, helixsize, sheetsize)
+	
+	########################### Generate coeff values
+	####This needs to be replaced 
+		
+	hhMrc=EMData()
+	if (coeff=="none") :
+		pdbHelix=model_pdb_helix(helixlength)	
+		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
+		if da==0.0:
+			da=2*asin(res/targetMRC.get_xsize())*(180.0/pi)
+			print "da not set; setting da to %f degrees"%da
+		hhMrc=helixhunter_ccf(targetMRC, mrcHelix, da)
+	
+	else:	
+		hhMrc.read_image(coeff,-1)
+	
+	hhMrc.set_attr_dict(targetMRC.get_attr_dict())
+	coeffArray=[]
+	avghhvalue=0.0
+	hc=0
+	maxValue=0.0
+	for patom in patoms: 
+		hhvalue=float(hhMrc.get_value_at(patom[0],patom[1],patom[2]))
+		if hhvalue > maxValue:
+			maxValue=hhvalue
+		avghhvalue=hhvalue+avghhvalue
+		coeffArray.append(hhvalue)
+		hc=hc+1
+	avghhvalue=avghhvalue/atomCount
+	print "Correlation threshold: %f"%(avghhvalue)
+	print "Correlation Maximum:   %f"%(maxValue)
+	hhMrc.write_image("hhMrc.mrc")
+		
+	##################################################################
+
+	(pseudoatomArray, neighborhood) = geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhvalue)
+
+	############################Scoring algorithm
+	index4=0
+	scorefile="score-%s.pdb"%(target_volume_name)
+	chain="A"
+	outscore=open(scorefile,"w")
+	
+	for atom in atomNumber:
+		score=0
+		temp_neighbors=neighborhood[index4]
+		
+		print "Atom Number: %s   "%(atomNumber[index4])
+		
+		print "	  Correlation:	   %s"%(coeffArray[index4]),
+		if coeffArray[index4] >= (0.9*avghhvalue):
+			tmpscore=(coeffArray[index4]/maxValue)
+			score=score+tmpscore*coeffwt
+			print " (+%f)"%(tmpscore)
+		else:
+			tmpscore=(coeffArray[index4]-avghhvalue)/avghhvalue
+			score=score+tmpscore*coeffwt
+			print " (%f)"%(tmpscore)	
+		
+		print "	  Skeleton:  %s"%(skeletonArray[index4])
+		score=score+skeletonArray[index4]*skeletonwt
+	
+		
+		print "	  Pseudoatom geometry:	  %s"%(pseudoatomArray[index4])
+		score=score+pseudoatomArray[index4]*atomwt
+	
+		
+		print "	Score: %f"%(score) 
+		line="ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00%6.2f0	  S_00  0 \n"%(atom,chain,atom,patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix,score)
+		outscore.write(line)
+		#outscore.write(line[index4][:60]+"%6.2f"%(score)+line[index4][66:])
+		index4=index4+1
+	outscore.close()
+##################################################################
+
+
 
 def cross_product(a,b):
 	"""Cross product of two 3-d vectors. from http://www-hep.colorado.edu/~fperez/python/python-c/weave_examples.html
@@ -65,26 +220,45 @@ def update_map(target, location,rangemin,rangemax):
 				target.set_value_at(location[0]+x,location[1]+y,location[2]+z, pixel_value)
 				target.update()
 
-def pseudoatoms(target, apix, res, thr):
+def generate_pseudoatoms(target, apix, res, thr):
 	print "No psuedoatom input; generating Pseudoatoms"
-	patoms=[]
+	patoms = []
 	rangemin=-1*res/apix
 	rangemax=res/apix
-	out=open("pseudoatoms.pdb","w")
-	Max_value=target.max_search()[3]
+	out = open("pseudoatoms.pdb","w")
+	Max_value = target["maximum"]
+	Max_location = target.calc_max_location()
 	i=1
 	chain="A"
 	point_array=[]
 	while Max_value >= thr:
-		map_max=target.max_search()
-		patom=[int(map_max[0]),int(map_max[1]),int(map_max[2])]
-		patoms.append(patom)
-		out.write("ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00	 0	  S_00  0 \n"%(i,chain,i,map_max[0]*apix,map_max[1]*apix,map_max[2]*apix))
-		update_map(target, patom, rangemin,rangemax)	
-		Max_value=map_max[3]
+		patoms.append(Max_location)
+		out.write("ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00	 0	  S_00  0 \n"%(i,chain,i,Max_location[0]*apix,Max_location[1]*apix,Max_location[2]*apix))
+		update_map(target, Max_location, rangemin,rangemax)	
+		Max_location = target.calc_max_location() #(x,y,z) for maximum value
+		Max_value = target[Max_location]
 		i=i+1
 	out.close()
 	return patoms
+
+def read_pseudoatoms(pdb_filepath):
+	print "Reading pseudatoms"
+	patoms=[]
+	atomNumber=[]
+	
+	file=open(atoms, "r")
+	for line in file:
+		if str(line[0:6].strip())=="ATOM":
+			TempX=(float(line[30:38].strip()))/apix
+			TempY=(float(line[38:46].strip()))/apix
+			TempZ=(float(line[46:54].strip()))/apix
+			patom=[TempX,TempY,TempZ]
+			patoms.append(patom)
+			atomNumber.append(int(line[6:11].strip()))
+	
+	file.close()
+	return (patoms, atomNumber)
+	
 
 def get_angle(patoms, origin, p1, p2):
 	v1=(patoms[p1][0]-patoms[origin][0],patoms[p1][1]-patoms[origin][1],patoms[p1][2]-patoms[origin][2])
@@ -195,216 +369,23 @@ def helixhunter_ccf(target, probe, da):
 	s = Symmetries.get("c1")
 	orients = s.gen_orientations("eman",{"delta":da,"inc_mirror":True})
 	counter=1
-	for t in orients:
+	N = len(orients)
+	for i in range(N):
+		if i % 25 == 0:
+			print "%5.2f" % (i*100.0/N) + " %"
+		t = orients[i]
 		probeMRC= probe.process("xform",{"transform":t}) 
 		currentCCF=target.calc_ccf(probeMRC)
 		bestCCF.process_inplace("operate.max",{"with":currentCCF})
+
 	bestCCF.process_inplace("xform.phaseorigin.tocenter")
 	bestCCF.write_image("int-hh-coeff.mrc")
 	return bestCCF
 
-#skeleton_scores() by Ross Coleman
-def skeleton_scores(pseudoatoms, vol, threshold, helix_size, sheet_size):
-	"""computes skeleton scores as in EMAN1 skeleton.C"""
-	skeleton = vol.process("gorgon.binary_skel", {"threshold":threshold, "min_curve_width":helix_size, "min_surface_width":sheet_size, "mark_surfaces":True})
-	skeletonScores = [] #corresponds with pseudoatoms
+def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhvalue):
+	'''psuedoatom geometry calculations'''
 	
-	MAX_DISTANCE = 4
-	
-	for (x,y,z) in pseudoatoms:
-		low_x = max(0, x - MAX_DISTANCE)
-		low_y = max(0, y - MAX_DISTANCE)
-		low_z = max(0, z - MAX_DISTANCE)
-		high_x = min(vol["nx"], x + MAX_DISTANCE + 1)
-		high_y = min(vol["ny"], y + MAX_DISTANCE + 1)
-		high_z = min(vol["nz"], z + MAX_DISTANCE + 1)
-		count = 0
-		curve_score = 0
-		surface_score = 0
-		for k in range(low_z, high_z):
-			for j in range(low_y, high_y):
-				for i in range(low_x, high_x):
-					val = int(vol[(i,j,k)])
-					i2 = i - x
-					j2 = j - y
-					k2 = k - z
-					if val == 1:
-						curve_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
-						count += 1
-					elif val == 2:
-						surface_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
-						count += 1
-		if count == 0:
-			score = 0
-		else:
-			score = float(curve_score - surface_score) / count
-		skeletonScores.append( score )
-		
-		#Normalization
-		min_score = min(skeletonScores)
-		max_score = max(skeletonScores)
-		for i in range(len(skeletonScores)):
-			if skeletonScores[i] > 0:
-				skeletonScores[i] /= float(max_score)
-			else:
-				skeletonScores[i] /= -1.0*min_score
-	
-	return skeletonScores	
-
-def main():
-	#These values are for testing
-	coeffwt=1.0
-	skeletonwt=1.0
-	atomwt=1.0
-	da=5.0
-	helixlength=16.2
-	
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] target apix res threshold
-	
-	WARNING: This program is still under development
-
-	Identifies alpha helices and beta sheets in maps at subnanometer resolutions"""
-
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-#	parser.add_option("--atoms", "-A", type="string", help="pseudoatoms file", default="none")
-#	parser.add_option("--atomswt", "-P", type="float", help="pseudoatom weight", default=1.0)
-#	parser.add_option("--coeff","-C", type="string",help="helix correlation file",default="none")
-#	parser.add_option("--coeffwt","-H", type="float",help="helix correlation weight",default=1.0)
-#	parser.add_option("--skeleton","-S", type="string",help="skeleton file",default="none")
-#	parser.add_option("--sketype","-T", type="string",help="skeleton type",default="none")
-#	parser.add_option("--skeletonwt","-W", type="float",help="skeleton weight",default=1.0)
-#	parser.add_option("--helixlength","-H", type="float",help="helix length om angstroms",default=16.2)
-#	parser.add_option("--da","-D", type="float",help="helix angular search step",default=5.0)
-	(options, args) = parser.parse_args()
-	
-	atoms="none"
-	coeff="none"
-	skeleton="none"
-	
-	###################################read map and options
-	if len(args)<4 : parser.error("ERROR")
-	logid=E2init(sys.argv)
-	print "Reading inputs"
-	apix=float(args[1]) #Ross: Angstroms per pixel
-	res=float(args[2]) #Ross: Resolution
-	thr=float(args[3]) #Ross: Threshold
-	helixsize=3
-	sheetsize=4
-	
-	#if coeffwt >1 or coeffwt<0 or skeletonwt>1 or skeletonwt<0 or pseudoatomwt>1 or pseudoatomwt<0:
-	#	print "All wieghts must be between 0 and 1"
-	#	sys.exit() 
-	
-	try : infile=open(args[0],"r")
-	except : parser.error("Cannot open input file")
-	targetMRC=EMData()
-	targetMRC.read_image(args[0])
-	tname=args[0]
-	t1=tname.split('/')
-	t=t1[-1].split('.')
-	targetName=str(t[0])
-	targetExt=str(t[-1])
-	
-	print tname, targetName, targetExt
-	(nx,ny,nz) = ( targetMRC.get_xsize(), targetMRC.get_ysize(), targetMRC.get_zsize() )
-	if not (nx == ny and ny == nz and nx % 2 == 0):
-		print "The density map must be even and cubic. Terminating SSEHunter."
-		sys.exit()
-	##################################################################
-	
-	
-	
-	##################################get psuedoatoms
-	print "Reading pseudatoms"
-	patoms=[]
-	atomNumber=[]
-	
-	target=targetMRC.copy()
-	
-	if (atoms=="none"):
-		patoms=pseudoatoms(target, apix, res, thr)
-		j=1
-		for patom in patoms:
-			atomNumber.append(j)
-			j=j+1
-	else: 
-		file1=open(atoms, "r")
-		lines1=file1.readlines()
-		file1.close()
-		for line in lines1:
-			isatom=str(line[0:6].strip())
-			if (isatom=="ATOM"):
-				TempX=(float(line[30:38].strip()))/apix
-				TempY=(float(line[38:46].strip()))/apix
-				TempZ=(float(line[46:54].strip()))/apix
-				patom=[TempX,TempY,TempZ]
-				patoms.append(patom)
-				atomNumber.append(int(line[6:11].strip()))
 	atomCount=len(patoms)
-				
-	##################################################################
-	
-	
-	
-	########################### Generate skeletons
-	skeletonArray = skeleton_scores(patoms, targetMRC, thr, helixsize, sheetsize)
-	####This needs to be replaced 
-#	print "Reading Skeleton"
-#	outfile="%s-score.pdb"%(targetName)
-#	cmd1="skeleton 6 %s pseudoatoms.pdb %f  %f %f %f %s"%(tname, apix, thr, helixsize, sheetsize, outfile)
-#	print cmd1
-#	os.system(cmd1)
-#	
-#	file2=open(outfile)
-#	lines2=file2.readlines()
-#	
-#	skeletonArray=[]
-#	for line in lines2:
-#		isatom=str(line[0:6].strip())
-#		if (isatom=="ATOM"):
-#			skeletonArray.append(float(line[60:66].strip()))																													 
-	##################################################################
-	
-	
-	
-	
-	########################### Generate coeff values
-	####This needs to be replaced 
-		
-	hhMrc=EMData()
-	if (coeff=="none") :
-		pdbHelix=model_pdb_helix(helixlength)	
-		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
-		if da==0.0:
-			da=2*asin(res/targetMRC.get_xsize())*(180.0/pi)
-			print "da not set; setting da to %f degrees"%da
-		hhMrc=helixhunter_ccf(targetMRC, mrcHelix, da)
-	
-	else:	
-		hhMrc.read_image(coeff,-1)
-	
-	hhMrc.set_attr_dict(targetMRC.get_attr_dict())
-	coeffArray=[]
-	avghhvalue=0.0
-	hc=0
-	maxValue=0.0
-	for patom in patoms: 
-		hhvalue=float(hhMrc.get_value_at(patom[0],patom[1],patom[2]))
-		if hhvalue > maxValue:
-			maxValue=hhvalue
-		avghhvalue=hhvalue+avghhvalue
-		coeffArray.append(hhvalue)
-		hc=hc+1
-	avghhvalue=avghhvalue/atomCount
-	print "Correlation threshold: %f"%(avghhvalue)
-	print "Correlation Maximum:   %f"%(maxValue)
-		
-	##################################################################
-
-	
-	
-	########################### psuedoatom geometry calculations
 	### all to all distance calculations
 	print "Calculating all atom distances"
 	distance=[]
@@ -426,7 +407,7 @@ def main():
 
 	### set search area
 	print "Grouping neighboring pixels"
-	kernelwidth=int(round(5/apix))
+	kernelwidth=int(round(5.0/apix))
 	pixels=[]
 	for atom in patoms:
 		tempPixel=[]
@@ -434,14 +415,11 @@ def main():
 		intX=int(atom[0])
 		intY=int(atom[1])
 		intZ=int(atom[2])
-		for addX in range(-1*kernelwidth, kernelwidth, 1):
-			tempX=int((addX+intX))
-			for addY in range(-1*kernelwidth, kernelwidth, 1):
-				tempY=int((addY+intY))
-				for addZ in range(-1*kernelwidth, kernelwidth, 1):
-					tempZ=int((addZ+intZ))
+		for tempX in range(intX-kernelwidth, intX+kernelwidth, 1):
+			for tempY in range(intY-kernelwidth, intY+kernelwidth, 1):
+				for tempZ in range(intZ-1*kernelwidth, intZ+kernelwidth, 1):
 					if targetMRC.get_value_at(tempX,tempY,tempZ) > thr:
-						tempPixel=[tempX,tempY,tempZ]
+						tempPixel = [tempX, tempY, tempZ]
 						if tempPixel not in pixelCoords:
 							pixelCoords.append(tempPixel)
 		pixels.append(pixelCoords)
@@ -473,8 +451,8 @@ def main():
 		axisMatrix.append(aspectratio)
 	
 	
-	### checks for nearest atoms and nearest helical atoms
-	### Identifying related pseudoatoms
+		### checks for nearest atoms and nearest helical atoms
+		### Identifying related pseudoatoms
 		index2=0
 		mindistance1=99998
 		mindistance2=99999
@@ -606,45 +584,61 @@ def main():
 		pseudoatomArray.append(float(pascore/4.0))	
 
 		index3=index3+1
+	return (pseudoatomArray, neighborhood)
 ##################################################################
 
-############################Scoring algorithm
-	index4=0
-	scorefile="score-%s.pdb"%(targetName)
-	chain="A"
-	outscore=open(scorefile,"w")
+
+
+
+#skeleton_scores() by Ross Coleman
+def skeleton_scores(pseudoatoms, vol, threshold, helix_size, sheet_size):
+	"""computes skeleton scores as in EMAN1 skeleton.C"""
+	skeleton = vol.process("gorgon.binary_skel", {"threshold":threshold, "min_curve_width":helix_size, "min_surface_width":sheet_size, "mark_surfaces":True})
+	skeletonScores = [] #corresponds with pseudoatoms
 	
-	for atom in atomNumber:
-		score=0
-		temp_neighbors=neighborhood[index4]
-		
-		print "Atom Number: %s   "%(atomNumber[index4])
-		
-		print "	  Correlation:	   %s"%(coeffArray[index4]),
-		if coeffArray[index4] >= (0.9*avghhvalue):
-			tmpscore=(coeffArray[index4]/maxValue)
-			score=score+tmpscore*coeffwt
-			print " (+%f)"%(tmpscore)
+	MAX_DISTANCE = 4
+	
+	for (x,y,z) in pseudoatoms:
+		low_x = max(0, x - MAX_DISTANCE)
+		low_y = max(0, y - MAX_DISTANCE)
+		low_z = max(0, z - MAX_DISTANCE)
+		high_x = min(vol["nx"], x + MAX_DISTANCE + 1)
+		high_y = min(vol["ny"], y + MAX_DISTANCE + 1)
+		high_z = min(vol["nz"], z + MAX_DISTANCE + 1)
+		count = 0
+		curve_score = 0
+		surface_score = 0
+		for k in range(low_z, high_z):
+			for j in range(low_y, high_y):
+				for i in range(low_x, high_x):
+					val = int(vol[(i,j,k)])
+					i2 = i - x
+					j2 = j - y
+					k2 = k - z
+					if val == 1:
+						curve_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
+						count += 1
+					elif val == 2:
+						surface_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
+						count += 1
+		if count == 0:
+			score = 0
 		else:
-			tmpscore=(coeffArray[index4]-avghhvalue)/avghhvalue
-			score=score+tmpscore*coeffwt
-			print " (%f)"%(tmpscore)	
+			score = float(curve_score - surface_score) / count
+		skeletonScores.append( score )
 		
-		print "	  Skeleton:  %s"%(skeletonArray[index4])
-		score=score+skeletonArray[index4]*skeletonwt
+		#Normalization
+		min_score = min(skeletonScores)
+		max_score = max(skeletonScores)
+		for i in range(len(skeletonScores)):
+			if skeletonScores[i] > 0:
+				skeletonScores[i] /= float(max_score)
+			else:
+				skeletonScores[i] /= -1.0*min_score
 	
-		
-		print "	  Pseudoatom geometry:	  %s"%(pseudoatomArray[index4])
-		score=score+pseudoatomArray[index4]*atomwt
-	
-		
-		print "	Score: %f"%(score) 
-		line="ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00%6.2f0	  S_00  0 \n"%(atom,chain,atom,patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix,score)
-		outscore.write(line)
-		#outscore.write(line[index4][:60]+"%6.2f"%(score)+line[index4][66:])
-		index4=index4+1
-	outscore.close()
-##################################################################
+	return skeletonScores	
+
+
 
 # If executed as a program
 if __name__ == '__main__':
