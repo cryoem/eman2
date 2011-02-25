@@ -1422,7 +1422,7 @@ The basic design of EMAN Processors: <br>\
 
 	/** Aligns a particle with the specified symmetry into the standard orientation for that
 	 * symmetry.
-	 *@author Steve Ludtke
+	 *@author Steve Ludtke and John Flanagan
 	 *@date February 2011
 	 *@param sym A string specifying the symmetry under which to do the alignment
 	 */
@@ -1446,7 +1446,12 @@ The basic design of EMAN Processors: <br>\
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment" );
+				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment, Default=c1" );
+				d.put("delta", EMObject::FLOAT,"Angle the separates points on the sphere. This is exclusive of the \'n\' paramater. Default is 10");
+				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
+				d.put("lphi", EMObject::FLOAT,"Lower bound for phi. Default it 0");
+				d.put("uphi", EMObject::FLOAT,"Upper bound for phi. Default it 359.9");
+				d.put("avger", EMObject::STRING, "The sort of averager to use, Default=mean" );
 				return d;
 			}
 

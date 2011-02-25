@@ -36,6 +36,7 @@ from PyQt4.QtCore import Qt
 import os
 from emapplication import ModuleEventsManager
 from emsprworkflow import *
+from emtprworkflow import *
 from emselector import EMBrowser
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
@@ -313,7 +314,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr = self.__get_spr_tree(self.tree_widget)
 		self.tree_widget_entries.append(spr)
 
-		#self.tree_widget_entries.append(self.__get_tomo_part_recon_tree(self.tree_widget))
+		self.tree_widget_entries.append(self.__get_tomo_part_recon_tree(self.tree_widget))
 		self.tree_widget_entries.append(self.__get_utilities_tree(self.tree_widget))
 		self.tree_widget_entries.append(self.__get_generic_interfaces_tree(self.tree_widget))
 		
@@ -593,11 +594,34 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		gi.addChildren(gi_list)
 		return gi
 	
-	#def __get_tomo_part_recon_tree(self,tree_widget):
+	def __get_tomo_part_recon_tree(self,tree_widget):
 		
-		#tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
+		tomo = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
+		self.launchers["Tomographic Particle Reconstruction"] = self.launch_tomography
 		
-		#return tomo
+		tomo_list = []
+		
+		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files"))
+		rd.setIcon(0,self.icons["single_image_3d"])
+		self.launchers["Raw Tomogram Files"] = self.launch_tomography
+		tomo_list.append(rd)
+		
+		ac = QtGui.QTreeWidgetItem(QtCore.QStringList("Box Tomogram Particles"))
+		ac.setIcon(0,self.icons["green_boxes"])
+		self.launchers["Box Tomogram Particles"] = self.launch_tomo_boxer
+		tomo_list.append(ac)
+		
+		ali = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomogram Alignment and Averaging"))
+		ali.setIcon(0,self.icons["tomo_hunter"])
+		self.launchers["Tomogram Alignment and Averaging"] = self.launch_tomo_hunter
+		tomo_list.append(ali)
+		
+		tomo.addChildren(tomo_list)
+		
+		tree_widget.expandItem(ac)
+		tree_widget.expandItem(ali)
+		
+		return tomo
 	
 	def launch_reconstruct_ali(self):
 		 self.launch_task(EMReconstructAliFile(),"Reconstruct ALI File")
@@ -849,6 +873,12 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")	
 	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import Particles")
+	
+	def launch_tomography(self):
+		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
+	def launch_tomo_boxer(self):
+		self.launch_task(E2TomoBoxerGuiTask(),"Box Tomograms")
+	def launch_tomo_hunter(self): pass
 	
 	def launch_ptcl_coord_import(self):self.launch_task(EMParticleCoordImportTask(),"Import Coordinate Data")
 		

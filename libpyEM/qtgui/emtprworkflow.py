@@ -477,12 +477,13 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		from e2tomoboxer import tomo_db_name
-		if db_check_dict(tomo_db_name):
-			tomo_db = db_open_dict(tomo_db_name)
-			image_dict = tomo_db.get(get_file_tag(name),dfl={})
-			if image_dict.has_key("coords"):
-				return str(len(image_dict["coords"]))
+		print "checking for boxes, but this aspect of things is not working yet...."
+		#from e2tomoboxer import tomo_db_name
+		#if db_check_dict(tomo_db_name):
+			#tomo_db = db_open_dict(tomo_db_name)
+			#image_dict = tomo_db.get(get_file_tag(name),dfl={})
+			#if image_dict.has_key("coords"):
+				#return str(len(image_dict["coords"]))
 		
 		return "0"
 	
@@ -494,6 +495,11 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2tomoboxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
+		pylong = ParamDef(name="ylong",vartype="boolean",desc_short="ylong",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
+		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=1,choices=None)
+		papix = ParamDef(name="apix",vartype="float",desc_short="Angstroms per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
+		params.append([pylong, pinmem])
+		params.append(papix)
 #		db = db_open_dict(self.form_db_name)
 #		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
 #		#db_close_dict(self.form_db_name)
@@ -510,16 +516,16 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			return
 
 		self.write_db_entries(params)
+		print "Opening tomoboxer....", params["filenames"][0]
+		#from e2tomoboxer import EMTomoBoxerModule
+		#get_application().setOverrideCursor(Qt.BusyCursor)
+		#self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
+		#get_application().setOverrideCursor(Qt.ArrowCursor)
+		#self.emit(QtCore.SIGNAL("gui_running"),"e2TomoBoxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 		
-		from e2tomoboxer import EMTomoBoxerModule
-		get_application().setOverrideCursor(Qt.BusyCursor)
-		self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
-		get_application().setOverrideCursor(Qt.ArrowCursor)
-		self.emit(QtCore.SIGNAL("gui_running"),"e2TomoBoxer",self.tomo_boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
-		
-		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
-		QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
-		self.tomo_boxer_module.show_guis()
+		#QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
+		#QtCore.QObject.connect(self.tomo_boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
+		#self.tomo_boxer_module.show_guis()
 		
 		
 		self.form.close()

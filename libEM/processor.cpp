@@ -42,6 +42,7 @@
 #include "emassert.h"
 #include "randnum.h"
 #include "symmetry.h"
+#include "averager.h"
 
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
@@ -270,7 +271,7 @@ template <> Factory < Processor >::Factory()
 	force_add<Rotate180Processor>();
 	force_add<TransformProcessor>();
 	force_add<ScaleTransformProcessor>();
-//	force_add<SymAlignProcessor>();
+	force_add<SymAlignProcessor>();
 	force_add<IntTranslateProcessor>();
 	force_add<InvertCarefullyProcessor>();
 
@@ -870,13 +871,62 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	return result;
 }
 
-EMData *SymAlignProcessor::process(const EMData * const image)
+EMData* SymAlignProcessor::process(const EMData * const image)
 {
-printf("Not implemented yet\n");
-
-
 	
+	// Set parms
+	float dphi = params.set_default("dphi",10.f);
+	float lphi = params.set_default("lphi",0.0f);
+	float uphi = params.set_default("uphi",359.9f);
 	
+	Dict d;
+	d["inc_mirror"] = true;
+	d["delta"] = params.set_default("delta",10.f);
+	
+	//Genrate points on a sphere in an asymmetric unit
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+	
+	//Genrate symmetry related orritenations
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+	
+	float bestquality = 0.0f;
+	EMData* bestimage;
+	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
+		Dict tparams = trans_it->get_params("eman");
+		Transform t(tparams);
+		for( float phi = lphi; phi < uphi; phi += dphi ) {
+			tparams["phi"] = phi;
+			t.set_rotation(tparams);
+			
+			//Get the averagaer
+			Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean")); 
+			//Now make the averages
+			for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+				Transform sympos = t*(*it);
+				EMData* transformed = image->process("xform",Dict("transform",&sympos));
+				imgavg->add_image(transformed);
+				delete transformed;
+			}
+			
+			EMData* symptcl=imgavg->finish();
+			delete imgavg;
+			//See which average is the best
+			float quality = symptcl->get_attr("sigma");
+			if(quality > bestquality) {
+				bestquality = quality;
+				bestimage = symptcl;
+			} else {
+				delete symptcl;
+			}
+		}
+	}
+	return bestimage;
+}
+
+void SymAlignProcessor::process_inplace(EMData* image)
+{
+	cout << "Not implemented yet" << endl;
 }
 
 EMData* KmeansSegmentProcessor::process(const EMData * const image)
