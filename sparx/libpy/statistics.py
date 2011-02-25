@@ -6357,11 +6357,11 @@ def isc_read_conf(conf_file):
 	try:	cfgrali['th_mir']    = float(cfgrali['th_mir'])
 	except:	cfgrali['th_mir']    = 0.5
 	try:	cfgrali['th_err']    = float(cfgrali['th_err'])
-	except:	cfgrali['th_err']    = 0.5
+	except:	cfgrali['th_err']    = 1.0
 	try:	cfgrali['center']    = int(cfgrali['center'])
 	except:	cfgrali['center']    = -1
 	try:	cfgrali['dst']       = float(cfgrali['dst'])
-	except:	cfgrali['dst']       = 1.0
+	except:	cfgrali['dst']       = 0.0
 
 	#   main
 	cfgmain['ite']       = int(cfgmain['ite'])
