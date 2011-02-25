@@ -28,7 +28,7 @@ except ImportError, e:
 This program is used to box helices from a micrograph and extract particles from the helices.
 A helical region of a macromolecule can appear as a rectangle on a 2D micrograph; thus a "helix" in this program is a rectangle. 
 Different helices from the same micrograph will generally have different lengths but the same width.
-A particle is a square or rectangle from inside a helix. Particles are chosen so that they overlap each other
+A "particle" in this program is a square or rectangular region taken from a "helix." Particles are chosen so that they overlap each other
 within a helix. Usually, all particles from a micrograph will have the same dimensions.
 """
 
@@ -200,7 +200,7 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
     @param px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
     @param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
     @param px_width: width of the particles in pixels, defaults to px_length
-    @param gridding: use gridding method for rotation operation
+    @param gridding: use gridding method for rotation operation, requires square particles (px_length == px_width)
     @return: a list of EMData particles
     """
     (x1,y1,x2,y2,w) = helix_coords
@@ -644,10 +644,16 @@ if ENABLE_GUI:
             self.ptcls_images_groupbox.setCheckable(True)
             self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("&Normalize Edge-Mean"))
             self.ptcls_edgenorm_checkbox.setChecked(False)
-            self.ptcls_unrotated_checkbox = QtGui.QCheckBox(self.tr("&Unrotated"))
-            self.ptcls_unrotated_checkbox.setChecked(False)
-            self.ptcls_gridding_checkbox = QtGui.QCheckBox(self.tr("&Gridding"))
-            self.ptcls_gridding_checkbox.setChecked(False)
+            self.ptcls_edgenorm_checkbox.setToolTip("Uses normalize.edgemean processor on each particle: pixel-value -> (pixel-value - edge-mean) / standard deviation")
+            
+            self.ptcls_bilinear_rotation_radiobutton = QtGui.QRadioButton(self.tr("Bilinear Rotation"))
+            self.ptcls_bilinear_rotation_radiobutton.setToolTip("Rectangular particles. Rotation angle is the one that makes associated helix vertical. Bilinear rotation algorithm.")
+            self.ptcls_bilinear_rotation_radiobutton.setChecked(True)
+            self.ptcls_gridding_rotation_radiobutton = QtGui.QRadioButton(self.tr("Gridding Rotation"))
+            self.ptcls_gridding_rotation_radiobutton.setToolTip("Square particles with sides = max(Length, Width). Rotation angle is the one that makes associated helix vertical. Gridding rotation algorithm.")
+            self.ptcls_no_rotation_radiobutton = QtGui.QRadioButton(self.tr("No Rotation"))
+            self.ptcls_no_rotation_radiobutton.setToolTip("Particles are not rotated from the micrograph. Square particles with sides = max(length, width)")
+
             ptcls_images_label = QtGui.QLabel(self.tr("Path:"))
             self.ptcls_images_line_edit = QtGui.QLineEdit()
             self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
@@ -698,9 +704,10 @@ if ENABLE_GUI:
             ptcls_images_path_layout.addWidget(self.ptcls_images_browse_button)
             
             ptcls_images_layout = QtGui.QVBoxLayout()
+            ptcls_images_layout.addWidget(self.ptcls_bilinear_rotation_radiobutton)
+            ptcls_images_layout.addWidget(self.ptcls_gridding_rotation_radiobutton)
+            ptcls_images_layout.addWidget(self.ptcls_no_rotation_radiobutton)
             ptcls_images_layout.addWidget(self.ptcls_edgenorm_checkbox)
-            ptcls_images_layout.addWidget(self.ptcls_unrotated_checkbox)
-            ptcls_images_layout.addWidget(self.ptcls_gridding_checkbox)
             ptcls_images_layout.addLayout(ptcls_images_path_layout)
             self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
             
@@ -793,17 +800,19 @@ if ENABLE_GUI:
                 px_width = self.ptcls_width_spinbox.value()
                 if self.ptcls_images_groupbox.isChecked():
                     do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
-                    are_rotated = not self.ptcls_unrotated_checkbox.isChecked()
                     ptcl_filepath = str(self.ptcls_images_line_edit.text())
                     
                     i = 0
                     for coords_key in helices_dict:
-                        if self.ptcls_unrotated_checkbox.isChecked():
-                            particles = get_unrotated_particles(micrograph, coords_key, px_overlap, px_length, px_width)
-                        else:
-                            gridding = self.ptcls_gridding_checkbox.isChecked()
+                        if self.ptcls_bilinear_rotation_radiobutton.isChecked():
+                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False)
+                        elif self.ptcls_gridding_rotation_radiobutton.isChecked():
+                            side = max(px_length, px_width)
                             #need to prepare the fft volume for gridding at here
-                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding )
+                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True )
+                        elif self.ptcls_no_rotation_radiobutton.isChecked():
+                            side = max(px_length, px_width)
+                            particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side)
                         save_particles(particles, i, ptcl_filepath, do_edge_norm)
                         i += 1
                 if self.ptcls_coords_groupbox.isChecked():
