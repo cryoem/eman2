@@ -352,6 +352,11 @@ void EMData::elementaccessed() const
 void EMData::removefromlist() const
 {
 	//remove from list
+	if(firstinlist == lastinlist){ //last item in list....
+		firstinlist = 0;
+		lastinlist = 0;
+		return;
+	}
 	if(nextlistitem !=0){
 		nextlistitem->prevlistitem = prevlistitem;	//this object is not first in the list
 	}else{
@@ -399,7 +404,14 @@ void EMData::switchoffcuda()
 void EMData::cuda_fft_cache_destroy()
 {
 	do_cuda_fft_cache_destroy();
+	//Cleanup any object mess.... CUDA has OCD
+	while(lastinlist){
+		if(lastinlist->cudarwdata) lastinlist->rw_free();
+		if(lastinlist && lastinlist->cudarodata) lastinlist->ro_free();
+	}
+	
 	cudaThreadExit();
+
 }
 
 void EMData::cuda_initialize()

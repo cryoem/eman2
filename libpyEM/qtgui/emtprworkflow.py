@@ -516,7 +516,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			return
 
 		self.write_db_entries(params)
-		print "Opening tomoboxer....", params["filenames"][0]
+		print "Opening tomoboxer....", params
 		#from e2tomoboxer import EMTomoBoxerModule
 		#get_application().setOverrideCursor(Qt.BusyCursor)
 		#self.tomo_boxer_module = EMTomoBoxerModule(params["filenames"][0])
