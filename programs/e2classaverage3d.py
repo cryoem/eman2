@@ -328,6 +328,8 @@ class Align3DTask(EMTask):
 			s2image=image
 			
 
+		if options["verbose"]: print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
+
 		# If a Transform was passed in, we skip coarse alignment
 		if isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
