@@ -106,10 +106,10 @@ def main():
 	# getting individual scores
 	skeletonArray = skeleton_scores(patoms, targetMRC, thr, helixsize, sheetsize, options.skeleton)
 	(coeffArray, avghhvalue, maxValue) = helix_correlation_scores(targetMRC, patoms, apix, res, options.coeff, options.helixlength, options.da)
-	(pseudoatomArray, neighborhood) = geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhvalue)
+	pseudoatomArray = geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhvalue)
 
 	# output composite scores
-	write_composite_scores(target_volume_name, apix, patoms, atomNumber, neighborhood, coeffArray, options.coeffwt, avghhvalue, maxValue, skeletonArray, options.skeletonwt, pseudoatomArray, options.atomswt)
+	write_composite_scores(target_volume_name, apix, patoms, atomNumber, coeffArray, options.coeffwt, avghhvalue, maxValue, skeletonArray, options.skeletonwt, pseudoatomArray, options.atomswt)
 
 	E2end(logid)
 
@@ -120,7 +120,7 @@ def cross_product(a,b):
 	cross[0] = a[1]*b[2]-a[2]*b[1]
 	cross[1] = a[2]*b[0]-a[0]*b[2]
 	cross[2] = a[0]*b[1]-a[1]*b[0]
-	return numpy.array(cross)
+	return cross
 
 def update_map(target, location,rangemin,rangemax):
 	rmin=int(round(rangemin/2))
@@ -185,7 +185,8 @@ def get_angle(patoms, origin, p1, p2):
 	v2=(patoms[p2][0]-patoms[origin][0],patoms[p2][1]-patoms[origin][1],patoms[p2][2]-patoms[origin][2])
 	lengthV2=sqrt(v2[0]**2+v2[1]**2+v2[2]**2)
 	v2n=(v2[0]/lengthV2,v2[1]/lengthV2,v2[2]/lengthV2)
-	dp=numpy.dot(v1n,v2n)
+
+	dp = v1n[0]*v2n[0] + v1n[1]*v2n[1] + v1n[2]*v2n[2] #dot product
 	if dp > 1:
 		dp=1
 	if dp<-1:
@@ -194,6 +195,69 @@ def get_angle(patoms, origin, p1, p2):
 	if angle>90:
 		angle=180-angle
 	return angle
+def get_distance_matrix(patoms, apix):
+	### all to all distance calculations
+	print "Calculating all atom distances"
+	distance=[]
+	
+	for atom1 in patoms:
+		x1=atom1[0]
+		y1=atom1[1]
+		z1=atom1[2]
+		d1=[]
+	
+		for atom2 in patoms:
+			x2=atom2[0]
+			y2=atom2[1]
+			z2=atom2[2]
+			dist=(sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2))*apix
+			d1.append(dist)
+		distance.append(d1)
+	return distance
+
+def find_aspect_ratio(targetMRC, patoms, apix, thr):
+	### set search area
+	print "Grouping neighboring pixels"
+	kernelwidth=int(round(5.0/apix))
+	pixels=[]
+	for atom in patoms:
+		tempPixel=[]
+		pixelCoords=[]
+		intX=int(atom[0])
+		intY=int(atom[1])
+		intZ=int(atom[2])
+		for tempX in range(intX-kernelwidth, intX+kernelwidth, 1):
+			for tempY in range(intY-kernelwidth, intY+kernelwidth, 1):
+				for tempZ in range(intZ-1*kernelwidth, intZ+kernelwidth, 1):
+					if targetMRC.get_value_at(tempX,tempY,tempZ) > thr:
+						tempPixel = [tempX, tempY, tempZ]
+						if tempPixel not in pixelCoords:
+							pixelCoords.append(tempPixel)
+		pixels.append(pixelCoords)
+	
+	### Check 2nd moments to see if globular
+	print "Assessing neighborhood shape"
+	axisMatrix=[]
+	for index1 in range(len(patoms)):
+		NumPoints1=numpy.array(pixels[index1],'d')
+		NumPoints1_mean=numpy.sum(NumPoints1,axis=0)/len(NumPoints1)
+		NumPoints2=NumPoints1-NumPoints1_mean
+		h = numpy.sum(map(numpy.outer,NumPoints2,NumPoints2),axis=0)
+		[u1,x1,v1]=numpy.linalg.svd(h)
+		if x1.all()==0:
+			print index1,
+			print "is bad"
+			xmod=x1
+		else:
+			xmod=x1/max(x1)
+			
+		if xmod[2]==0:
+			aspectratio=0
+		else:
+			aspectratio=xmod[1]/xmod[2]
+		axisMatrix.append(aspectratio)
+		
+	return axisMatrix
 
 def model_pdb_helix(length):
 	print "Generating prototypical helix %f Angstroms in length"%length
@@ -336,74 +400,17 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 	'''psuedoatom geometry calculations'''
 	
 	atomCount=len(patoms)
-	### all to all distance calculations
-	print "Calculating all atom distances"
-	distance=[]
+	distance = get_distance_matrix(patoms, apix) #distances between pseudoatoms
 	pseudoatomArray=[]
-	
-	for atom1 in patoms:
-		x1=atom1[0]
-		y1=atom1[1]
-		z1=atom1[2]
-		d1=[]
-	
-		for atom2 in patoms:
-			x2=atom2[0]
-			y2=atom2[1]
-			z2=atom2[2]
-			dist=(sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2))*apix
-			d1.append(dist)
-		distance.append(d1)
-
-	### set search area
-	print "Grouping neighboring pixels"
-	kernelwidth=int(round(5.0/apix))
-	pixels=[]
-	for atom in patoms:
-		tempPixel=[]
-		pixelCoords=[]
-		intX=int(atom[0])
-		intY=int(atom[1])
-		intZ=int(atom[2])
-		for tempX in range(intX-kernelwidth, intX+kernelwidth, 1):
-			for tempY in range(intY-kernelwidth, intY+kernelwidth, 1):
-				for tempZ in range(intZ-1*kernelwidth, intZ+kernelwidth, 1):
-					if targetMRC.get_value_at(tempX,tempY,tempZ) > thr:
-						tempPixel = [tempX, tempY, tempZ]
-						if tempPixel not in pixelCoords:
-							pixelCoords.append(tempPixel)
-		pixels.append(pixelCoords)
-	
-	### Check 2nd moments to see if globular
-	print "Assessing neighborhood shape"
-	axisMatrix=[]
-	index1=0
 	neighborhood=[]
 	pointcloud=[]
 	betadistance=8.25
-	while index1 < atomCount:
-		NumPoints1=numpy.array(pixels[index1],'d')
-		NumPoints1_mean=numpy.sum(NumPoints1,axis=0)/len(NumPoints1)
-		NumPoints2=NumPoints1-NumPoints1_mean
-		h = numpy.sum(map(numpy.outer,NumPoints2,NumPoints2),axis=0)
-		[u1,x1,v1]=numpy.linalg.svd(h) #FIXME: h should be 2D rather than zero-dimensional
-		if x1.all()==0:
-			print index1,
-			print "is bad"
-			xmod=x1
-		else:
-			xmod=x1/max(x1)
-		if xmod[2]==0:
-			aspectratio=0
 	
-		else:
-			aspectratio=xmod[1]/xmod[2]
-		axisMatrix.append(aspectratio)
+	axisMatrix = find_aspect_ratio(targetMRC, patoms, apix, thr)
 	
-	
+	for index1 in range(atomCount):
 		### checks for nearest atoms and nearest helical atoms
 		### Identifying related pseudoatoms
-		index2=0
 		mindistance1=99998
 		mindistance2=99999
 		helixneighbor1=0
@@ -413,7 +420,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 		neighbor3=0
 		neighbor4=0
 		cloud=[]
-		while index2 < atomCount:
+		for index2 in range(atomCount):
 			if distance[index1][index2]<=betadistance and index1!=index2:
 				cloud.append(atomNumber[index2])
 			if distance[index1][index2] <= mindistance2 and distance[index1][index2]>0.1 and coeffArray[index2]>=avghhvalue:
@@ -435,11 +442,9 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 				else:
 					mindistance4=distance[index1][index2]
 					neighbor4=atomNumber[index2]
-			index2=index2+1
 		neighbors=(helixneighbor1,helixneighbor2,mindistance1,mindistance2,neighbor3, neighbor4)
 		pointcloud.append(cloud)
 		neighborhood.append(neighbors)
-		index1=index1+1	
 	
 	sheetlist=[]
 	generallist=[]
@@ -488,7 +493,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			for dpxp1 in arrayofxp:
 				for dpxp2 in arrayofxp:
 					if dpxp1 != dpxp2:
-						dpxp=numpy.dot(dpxp1,dpxp2)
+						dpxp = dpxp1[0]*dpxp2[0] + dpxp1[1]*dpxp2[1] + dpxp1[2]*dpxp2[2] #dot product
 						if dpxp > 1:
 							dpxpAngle=0
 						elif dpxp<-1:
@@ -534,7 +539,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 		pseudoatomArray.append(float(pascore/4.0))	
 
 		index3=index3+1
-	return (pseudoatomArray, neighborhood)
+	return pseudoatomArray
 ##################################################################
 
 
@@ -588,7 +593,7 @@ def skeleton_scores(pseudoatoms, vol, threshold, helix_size, sheet_size, skeleto
 	
 	return skeletonScores	
 
-def write_composite_scores(target_volume_name, apix, patoms, atomNumber, neighborhood, coeffArray, coeffwt, avghhvalue, maxValue, skeletonArray, skeletonwt, pseudoatomArray, atomwt):
+def write_composite_scores(target_volume_name, apix, patoms, atomNumber, coeffArray, coeffwt, avghhvalue, maxValue, skeletonArray, skeletonwt, pseudoatomArray, atomwt):
 	index4=0
 	scorefile="score-%s.pdb"%(target_volume_name)
 	chain="A"
@@ -596,7 +601,6 @@ def write_composite_scores(target_volume_name, apix, patoms, atomNumber, neighbo
 	
 	for atom in atomNumber:
 		score=0
-		temp_neighbors=neighborhood[index4]
 		
 		print "Atom Number: %s   "%(atomNumber[index4])
 		
