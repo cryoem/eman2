@@ -477,7 +477,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		print "checking for boxes, but this aspect of things is not working yet...."
+		print "checking for boxes, but this aspect of things is not working yet...."+get_file_tag(name)+" "+name
 		#from e2tomoboxer import tomo_db_name
 		#if db_check_dict(tomo_db_name):
 			#tomo_db = db_open_dict(tomo_db_name)
