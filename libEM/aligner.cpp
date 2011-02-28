@@ -1753,12 +1753,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		searchz = params.set_default("searchz",3);
 	}
 
-	float lalt = params.set_default("lalt",0.0f);
-	float laz = params.set_default("laz",0.0f);
-	float lphi = params.set_default("lphi",0.0f);
-	float ualt = params.set_default("ualt",180.0f); // I am using 179.9 rather than 180 to avoid resampling
-	float uphi = params.set_default("uphi",359.9f); // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
-	float uaz = params.set_default("uaz",359.9f);   // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
+	float lalt = params.set_default("alt0",0.0f);
+	float laz = params.set_default("az0",0.0f);
+	float lphi = params.set_default("phi0",0.0f);
+	float ualt = params.set_default("alt1",180.0f); // I am using 179.9 rather than 180 to avoid resampling
+	float uphi = params.set_default("phi1",360.0f); // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
+	float uaz = params.set_default("az1",360.0f);   // I am using 359.9 rather than 180 to avoid resampling 0 = 360 (for perodic functions)
 	float dalt = params.set_default("dalt",10.f);
 	float daz = params.set_default("daz",10.f);
 	float dphi = params.set_default("dphi",10.f);
@@ -1803,11 +1803,11 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
-		for ( float az = laz; az <= uaz; az += daz ){
+		for ( float az = laz; az < uaz; az += daz ){
 			if (verbose) {
 				cout << "Trying angle alt " << alt << " az " << az << endl;
 			}
-			for( float phi = lphi; phi <= uphi; phi += dphi ) {
+			for( float phi = lphi; phi < uphi; phi += dphi ) {
 				d["alt"] = alt;
 				d["phi"] = phi; 
 				d["az"] = az;
@@ -1909,8 +1909,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		searchz = params.set_default("searchz",3);
 	}
 
-	float lphi = params.set_default("lphi",0.0f);
-	float uphi = params.set_default("uphi",359.9f);
+	float lphi = params.set_default("phi0",0.0f);
+	float uphi = params.set_default("phi1",360.0f);
 	float dphi = params.set_default("dphi",10.f);
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
@@ -1979,7 +1979,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			cout << "Trying angle alt: " << alt << " az: " << az << endl;
 		}
 
-		for( float phi = lphi; phi <= uphi; phi += dphi ) { 
+		for( float phi = lphi; phi < uphi; phi += dphi ) { 
 			
 			params["phi"] = phi;
 			t.set_rotation(params);

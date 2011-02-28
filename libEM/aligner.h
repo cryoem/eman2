@@ -1022,14 +1022,14 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("daz", EMObject::FLOAT,"The angle increment in the azimuth direction. Default is 10");
-				d.put("laz", EMObject::FLOAT,"Lower bound for the azimuth direction. Default it 0");
-				d.put("uaz", EMObject::FLOAT,"Upper bound for the azimuth direction. Default it 179.9");
+				d.put("az0", EMObject::FLOAT,"Lower bound for the azimuth direction. Default it 0");
+				d.put("az1", EMObject::FLOAT,"Upper bound for the azimuth direction. Default it 180.0");
 				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
-				d.put("lphi", EMObject::FLOAT,"Lower bound for the phi direction. Default it 0");
-				d.put("uphi", EMObject::FLOAT,"Upper bound for the phi direction. Default it 359.9");
+				d.put("phi0", EMObject::FLOAT,"Lower bound for the phi direction. Default it 0");
+				d.put("phi1", EMObject::FLOAT,"Upper bound for the phi direction. Default it 360.0");
 				d.put("dalt", EMObject::FLOAT,"The angle increment in the altitude direction. Default is 10");
-				d.put("lalt", EMObject::FLOAT,"Lower bound for the altitude direction. Default it 0");
-				d.put("ualt", EMObject::FLOAT,"Upper bound for the altitude direction. Default it 359.9");
+				d.put("alt0", EMObject::FLOAT,"Lower bound for the altitude direction. Default it 0");
+				d.put("alt1", EMObject::FLOAT,"Upper bound for the altitude direction. Default it 360.0");
 				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
@@ -1109,8 +1109,8 @@ namespace EMAN
 				d.put("delta", EMObject::FLOAT,"Angle the separates points on the sphere. This is exclusive of the \'n\' paramater. Default is 10");
 				d.put("n", EMObject::INT,"An alternative to the delta argument, this is the number of points you want generated on the sphere. Default is OFF");
 				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
-				d.put("lphi", EMObject::FLOAT,"Lower bound for phi. Default it 0");
-				d.put("uphi", EMObject::FLOAT,"Upper bound for phi. Default it 359.9");
+				d.put("phi0", EMObject::FLOAT,"Lower bound for phi. Default it 0");
+				d.put("phi1", EMObject::FLOAT,"Upper bound for phi. Default it 360");
 				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
