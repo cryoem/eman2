@@ -77,7 +77,12 @@ spr_stacks_map = "global.spr_stacks_map"
 spr_sets_dict = "global.spr_sets_dict"
 spr_init_models_dict = "global.spr_init_models_dict"
 
+#These are actually used
+tpr_subtomo_stacks = "global.tpr_subtomo_stacks"
 tpr_raw_data_dict = "global.tpr_raw_data_dict"
+tpr_subtomo_ref = "global.tpr_subtomo_ref"
+
+#Currently these are garbage!!
 tpr_filt_ptcls_map = "global.tpr_filt_ptcls_map"
 tpr_ptcls_dict = "global.tpr_ptcls_dict"
 tpr_probes_dict = "global.tpr_probes_dict"

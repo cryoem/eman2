@@ -457,8 +457,7 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 			return "-"
 				
 class E2TomoBoxerGuiTask(WorkFlowTask):
-	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. If it's the first time you're launching e2tomoboxer with the given data you will have to wait a few minutes for automatic shrinking and projection to occur."""
-	
+	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis to be normal to the screen, and inmemory load the tomo into memory for fast access"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
@@ -497,9 +496,8 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		params.append(p)
 		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
 		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=1,choices=None)
-		papix = ParamDef(name="apix",vartype="float",desc_short="Angstroms per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
-		params.append([pylong, pinmem])
-		params.append(papix)
+		papix = ParamDef(name="apix",vartype="float",desc_short=u"\u212B per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
+		params.append([pylong, pinmem, papix])
 #		db = db_open_dict(self.form_db_name)
 #		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
 #		#db_close_dict(self.form_db_name)
@@ -525,7 +523,6 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		if params["inmemory"]:
 			e2tblist.append("--inmemory")
 		e2tblist.append("--apix="+str(params["apix"]))
-		print e2tblist
 		
 		child = subprocess.Popen(e2tblist)
 		
@@ -1186,20 +1183,78 @@ class EMTomoAlignParams:
 	'''
 	A class that get parameters commonly used by alignment based programs
 	'''
+class EMSubTomoDataReportTask(EMRawDataReportTask):
+	'''Gets subtomogram stacks. ''' 
+	def __init__(self):
+		EMRawDataReportTask.__init__(self)
+		self.project_list = tpr_subtomo_stacks
+		
+	def get_raw_data_table(self):
+		'''
+		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
+		'''
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict()
+		project_names = project_data.keys()
+		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
-class EMTomoBootstrapTask(WorkFlowTask):
-	'''Use this task for running e2tomoaverage.py from the workflow for generating a bootstrapped probe'''
+		from emform import EMTomographicFileTable,EMFileTable
+		table = EMTomographicFileTable(project_names,desc_short="Sub Tomograms",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 	
-	# written by Grant Tang
-	documentation_string = "This is useful information about this task."
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(project_names)
 
-	def __init__(self,ptcls_list=[],name_map={}):
+class EMRefDataReportTask(EMRawDataReportTask):
+	'''Gets subtomogram references. ''' 
+	def __init__(self):
+		EMRawDataReportTask.__init__(self)
+		self.project_list = tpr_subtomo_ref
+		
+	def get_raw_data_table(self):
+		'''
+		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
+		'''
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict()
+		project_names = project_data.keys()
+		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
+
+		from emform import EMTomographicFileTable,EMFileTable
+		table = EMTomographicFileTable(project_names,name="refnames", desc_short="Sub Tomogram References",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(project_names)	
+	
+class EMTomoBootstrapTask(WorkFlowTask):
+	'''Use this task for running e2classaverage3d'''
+	
+	def __init__(self):
 		WorkFlowTask.__init__(self)
-		self.window_title = "Tomohunter Input Form"
-		self.preferred_size = (640,480)
-		self.form_db_name = "bdb:emform.tomohunter"
-		self.ptcls_list = ptcls_list
-		self.name_map = name_map
+		self.tomo_boxer_module = None
+		self.window_title = "Launch e2classaverage3d"
+		self.report_task = None
+		
+	def get_tomo_hunter_basic_table(self):
+		'''
+		'''
+		self.report_task = EMSubTomoDataReportTask()
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable,int_lt
+		return table, n
+		
+	def get_tomo_hunter_ref_table(self):
+		'''
+		'''
+		self.report_task = EMRefDataReportTask()
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable,int_lt
+		return table, n
 		
 	def run_form(self):
 		self.form = EMTableFormWidget(self.get_params())
@@ -1209,115 +1264,137 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_close"),self.on_form_close)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)
+		QtCore.QObject.connect(self.form,QtCore.SIGNAL("display_file"),self.on_display_file)	
 		
 	def get_params(self):
 		table_params = []
 		params = []
-		db = db_open_dict(self.form_db_name)
 		
-		self.ptcl_table_tool = EMTomoPtclReportTool(title="Particles",name="targetimage")
+		p,n = self.get_tomo_hunter_basic_table() # note n is unused, it's a refactoring residual		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(p)
+		psavesteps = ParamDef(name="savesteps",vartype="boolean",desc_short="Savesteps",desc_long="Save the steps",property=None,defaultunits=1,choices=None)
+		psaveali = ParamDef(name="saveali",vartype="boolean",desc_short="Saveali",desc_long="Save the alignments",property=None,defaultunits=1,choices=None)
+		params.append([psavesteps, psaveali])
+		piter = ParamDef(name="number of iterations",vartype="int",desc_short="Number of iterations", desc_long="Number of iterations",property=None,defaultunits=5,choices=None )
+		pncourse = ParamDef(name="course number",vartype="int",desc_short="Course Number", desc_long="Course number",property=None,defaultunits=6,choices=None )
+		params.append([piter, pncourse])
+		pshrink = ParamDef(name="Percentage to shrink",vartype="float",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=2.0,choices=None )
+		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="float",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=2.0,choices=None )
+		params.append([pshrink, pshrinkrefine])
 		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
-		nsoln = ParamDef(name="nsoln",vartype="int",desc_short="Number of solutions",desc_long="number of solution",property=None,defaultunits=db.get("nsoln",10),choices=None)
-		params.append(self.ptcl_table_tool.get_particle_table_with_ptcls(self.ptcls_list))
-		params.append(nsoln)
-		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
+		proc_data = dump_processors_list()
+		masks = {}
+		for key in proc_data.keys():
+			if len(key) >= 5 and key[:5] == "mask.":
+				masks[key] = proc_data[key]
+		masks["None"] = ["Choose this to stop masking from occuring"]
+		pmask = ParamDef("mask",vartype="string",desc_short="Mask",desc_long="The mask to apply to the subtomos",property=None,defaultunits="None",choices=masks)
+		pmaskparams = ParamDef("maskparams",vartype="string",desc_short="Params",desc_long="Parameters for the mask",property=None,defaultunits="")
+		params.append([pmask, pmaskparams])
+		
+		filters = {}
+		for key in proc_data.keys():
+			if len(key) >= 7 and key[:7] == "filter.":
+				filters[key] = proc_data[key]
+		filters["None"] = ["Choose this to stop filtering from occuring"]
+		pfilter = ParamDef("filter",vartype="string",desc_short="Filter",desc_long="The Filter to apply to the subtomos",property=None,defaultunits="None",choices=filters)
+		pfilterparams = ParamDef("filterparams",vartype="string",desc_short="Params",desc_long="Parameters for the filter",property=None,defaultunits="")
+		params.append([pfilter, pfilterparams])
+
+		ali_data = dump_aligners_list()
+		caligners = {}
+		for key in ali_data.keys():
+			if len(key) >= 19 and key[:19] == "rotate_translate_3d":
+				caligners[key] = ali_data[key]
+		pali = ParamDef("aligner3D",vartype="string",desc_short="Aligner3D",desc_long="The 3D course aligner",property=None,defaultunits="rotate_translate_3d",choices=caligners)
+		paliparams = ParamDef("ali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D aligner",property=None,defaultunits="search=10:delta=15:dphi=15:verbose=1")
+		params.append([pali, paliparams])
+		
+		craligners = {}
+		for key in ali_data.keys():
+			if len(key) >= 9 and key[:9] == "refine_3d":
+				craligners[key] = ali_data[key]
+		prali = ParamDef("raligner3D",vartype="string",desc_short="RAligner3D",desc_long="The 3D refine aligner",property=None,defaultunits="refine_3d",choices=craligners)
+		praliparams = ParamDef("rali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D refine aligner",property=None,defaultunits="precision=.001")
+		params.append([prali, praliparams])
+		
+		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits="")
 		params.append(pparallel)
-		pshrink = ParamDef(name="shrink",vartype="int",desc_short="Shrink",desc_long="Shrink the data at various stages, for speed purposes but at the expense of resolution",property=None,defaultunits=db.get("shrink",dfl=4),choices=[])
-		params.append(pshrink)
-		
+			
+		#pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
+		#pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=1,choices=None)
+		#papix = ParamDef(name="apix",vartype="float",desc_short=u"\u212B per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
+		#params.append([pylong, pinmem, papix])
+		#params.append(papix)
 		table_params.append(["Main",params])
 		
 		advanced_params = []
-		data = dump_aligners_list()
-		data_3d = {}
-		data_3d["rt.3d.grid"] = data["rt.3d.grid"]
-		data_3d["rt.3d.sphere"] = data["rt.3d.sphere"]
+		r,rn = self.get_tomo_hunter_ref_table() # note rn is unused, it's a refactoring residual
+		advanced_params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use tomo refs",desc_long="",property=None,defaultunits="Use this for selecting references",choices=None))
+		advanced_params.append(r)
 		
-		pstrategy = EMEmanStrategyWidget(data_3d,name="align",desc_short="Main Alignment Strategy",desc_long="Choose an alignment strategy",defaultunits="rt.3d.grid")
-		advanced_params.append(pstrategy)
-		
-		pcmp = EMEmanStrategyWidget(dump_cmps_list(),name="cmp",desc_short="Comparison Method",desc_long="Supply your comparator",defaultunits="dot.tomo")
-		advanced_params.append(pcmp)
-		
-		
-		data_r3d = {}
-		data_r3d["refine.3d"] = data["refine.3d"]
-		data_r3d["None"] = ["Choose this to stop the refinement aligner from being used"]
-		prstrategy = EMEmanStrategyWidget(data_r3d,name="ralign",desc_short="Refinement Alignment Strategy",desc_long="Choose a refine alignment strategy. Choose None to disable this",defaultunits="None")
-		advanced_params.append(prstrategy)
-		
-		proc_data = dump_processors_list()
-		proc_data_d = {}
-		for key in proc_data.keys():
-			if len(key) >= 7 and key[:7] == "filter.":
-				proc_data_d[key] = proc_data[key]
-				
-		proc_data_d["None"] = ["Choose this to stop filtering from occuring"]
-
-		if len(proc_data_d) > 0:
-			pproc_str = EMEmanStrategyWidget(proc_data_d,name="filter",desc_short="Filter",desc_long="Choose",defaultunits="None")
-			advanced_params.append(pproc_str)
-		
-		table_params.append(["Advanced",advanced_params])
-		#db_close_dict("bdb:project")
+		table_params.append(["References",advanced_params])
+#		db = db_open_dict(self.form_db_name)
+#		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+#		#db_close_dict(self.form_db_name)
 		return table_params
-
-	def write_db_entry(self,key,value):
-		WorkFlowTask.write_db_entry(self,key,value)
-	
-	def check_params(self,params):
-		error_msg = []
-		if len(params["targetimage"]) == 0: error_msg.append("Please choose at leaset one particle file")
-		if params.has_key("shrink") and params["shrink"] <= 1:
-			error_msg.append("If you supply the shrink argument it must be greater than 1. To avoid shrinking leave it blank.")
-		return error_msg
-	
+		
 	def on_form_ok(self,params):
 		
-		error_message = self.check_params(params)
-		if len(error_message):
-			self.show_error_message(error_message)
+		if not params.has_key("filenames"):
+			EMErrorMessageDisplay.run(["Please select files for processing"])
 			return
-		self.write_db_entries(params) # will only write filenames
-		options = EmptyObject()
-		string_args = ["align","cmp","aligncmp"]
-		options.filenames = params['targetimage']
-		options.align = params['align']
-#		options.n = params['n']
-		options.nsoln = params['nsoln']
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+		if len(params["refnames"]) > 1:
+			EMErrorMessageDisplay.run(["Only one referecne can be used"])
+			return
 		
-		options.cmp = params["cmp"]
-		options.aligncmp = params["cmp"]
+		e23dcalist = []
+		e23dcalist.append("e2classaverage3d.py")
+		e23dcalist.append("--input="+params['filenames'][0])
 		
-		if params["ralign"] != "None":
-			string_args.extend(["ralign","raligncmp"])
-			options.ralign = params['ralign']
-			options.raligncmp = params["cmp"]
-			
-		if params.has_key("parallel") and len(params["parallel"]) > 0:
-			string_args.append('parallel')
-			options.parallel = params['parallel']
+		spacer = ""
+		try:
+			e23dcalist.append(" --ref="+params["refnames"][0])
+		except:
+			pass
+		if params["savesteps"]:
+			e23dcalist.append("--savesteps")
+		if params["saveali"]:
+			e23dcalist.append("--saveali")
+		if params["number of iterations"]:
+			e23dcalist.append("--iter="+str(params["number of iterations"]))
+		if params["Percentage to shrink"]:
+			e23dcalist.append("--shrink="+str(params["Percentage to shrink"]))
+		if params["Percentage to shrink, refinement"]:
+			e23dcalist.append("--shrinkrefine="+str(params["Percentage to shrink, refinement"]))
+		if params["course number"]:
+			e23dcalist.append("--ncourse="+str(params["course number"]))
+		if params["mask"] != "None":
+			spacer=""
+			if params["maskparams"]: spacer=":"
+			e23dcalist.append("--mask="+params["mask"]+spacer+params["maskparams"])
+		if params["filter"] != "None":
+			spacer=""
+			if params["filterparams"]: spacer=":"  
+			e23dcalist.append("--preprocess="+params["filter"]+spacer+params["filterparams"])
+		spacer=""
+		if params["ali3dparams"]: spacer=":" 
+		e23dcalist.append("--align="+params["aligner3D"]+spacer+params["ali3dparams"])
+		spacer=""
+		if params["rali3dparams"]: spacer=":" 
+		e23dcalist.append("--ralign="+params["raligner3D"]+spacer+params["rali3dparams"])
+		if params["parallel"]:
+			e23dcalist.append("--parallel="+params["parallel"])
+		print e23dcalist
 		
-		if params.has_key("shrink"):
-			string_args.append('shrink')
-			options.shrink = params['shrink']
-			
-		if params.has_key("filter"):
-			string_args.append('filter')
-			options.filter = params['filter']
-			
-			
-		bool_args = []
-		additional_args = ["--dbls=%s" %tpr_probes_dict, "--bootstrap"]
-		temp_file_name = "e2tomoaverage_stdout.txt"
-		self.spawn_single_task('e2tomoaverage.py',options,string_args,bool_args,additional_args,temp_file_name)
-		self.emit(QtCore.SIGNAL("task_idle"))
+		child = subprocess.Popen(e23dcalist)
+		
 		self.form.close()
 		self.form = None
-
-
 
 class EMTomohunterTask(WorkFlowTask):
 	'''Use this task for running e2tomohunter.py from the workflow'''

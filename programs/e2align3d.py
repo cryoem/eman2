@@ -59,8 +59,8 @@ def main():
 	#options form the sphere alinger
 	parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=30.0")
 	parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=30.0")
-	parser.add_option("--lphi",type="float",default=0.0,help="lower bound for the inplane angle phi, default=0.0")
-	parser.add_option("--uphi",type="float",default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
+	parser.add_option("--phi0",type="float",default=0.0,help="lower bound for the inplane angle phi, default=0.0")
+	parser.add_option("--phi1",type="float",default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
 	parser.add_option("--search",type="int",default=10,help="maximum extent of the translational search, default=10")
 	parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
 	parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
@@ -184,7 +184,7 @@ def main():
 	bestmodel = 0
 	galignedref = []
 
-	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'lphi':options.lphi, 'uphi':options.uphi, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
+	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
 	
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
@@ -207,6 +207,8 @@ def main():
 	#apply the transform to the original model
 	moving.read_image(sys.argv[2])
 	ft = galignedref[bestmodel].get_attr("xform.align3d")
+	tft = ft.get_trans()
+	ft.set_trans([tft[0]/options.shrink,tft[1]/options.shrink,tft[2]/options.shrink]) # Rescale the translation pars, otherwise it will be crap!
 	moving.process_inplace("xform",{"transform":ft})
         
 	#now write out the aligned model

@@ -878,8 +878,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(EMTomoRawDataReportTask(),"Tomo Raw Data")
 	def launch_tomo_boxer(self):
 		self.launch_task(E2TomoBoxerGuiTask(),"Box Tomograms")
-	def launch_tomo_hunter(self): pass
-	
+	def launch_tomo_hunter(self): 
+		self.launch_task(EMTomoBootstrapTask(),"Tomo Hunter")
+		
 	def launch_ptcl_coord_import(self):self.launch_task(EMParticleCoordImportTask(),"Import Coordinate Data")
 		
 	def launch_mic_ccd_report(self): self.launch_task(EMRawDataReportTask(),"Raw Data")
