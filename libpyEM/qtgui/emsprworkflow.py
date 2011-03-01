@@ -75,7 +75,7 @@ spr_ptcls_dict = "global.spr_ptcls_dict"
 spr_rfca_dict = "global.spr_rfca_dict"
 spr_stacks_map = "global.spr_stacks_map"
 spr_sets_dict = "global.spr_sets_dict"
-spr_init_models_dict = "global.spr_init_models_dict" #my DB has been corrupted!!!!!
+spr_init_models_dict = "global.spr_init_models_dictx" #my DB has been corrupted!!!!!
 
 #These are actually used
 tpr_subtomo_stacks = "global.tpr_subtomo_stacks"
@@ -5610,7 +5610,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 	def get_main_params_2(self):
 		
 		params = []
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="",choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Select initial models for multireference alignment. To select click one one, and then click on another while holding down control. Please note that if you wish to add new models, use the initial model tool, as the form won't be updated(if you use browse to add) and you wont see the model symmetry parameter contols",choices=None))
 
 		# I could check to see if the database exists but it seems unnecessary
 		# In the event that the database doesn't exist it is created and 
