@@ -146,6 +146,8 @@ def main():
 	
 	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
 	
+	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
+	
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile"]
@@ -370,17 +372,19 @@ def main():
 					options.outtype = "unknown"
 		
 		#print_iminfo(data, "Final")
-		
 		if 'mrc8bit' in optionlist:
 			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 		elif 'mrc16bit' in optionlist:
 			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-		else:
+			
+		if options.append:
 			data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+		else:
+			data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 		
 		for append_option in append_options:	#clean up the multi-option counter for next image
 			index_d[append_option] = 0
-		
+				
 	E2end(logid)
 
 
