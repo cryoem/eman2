@@ -478,6 +478,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refine")))
 		refine_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2refine"] = self.launch_e2refine_sets
+		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinemulti")))
+		refine_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run - e2refinemulti"] = self.launch_e2refinemulti_sets
 #		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
 #		refine_list[-1].setIcon(0,self.icons["refine"])
 #		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
@@ -854,6 +857,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2eotest(self): self.launch_task(E2EotestTask(),"Run e2eotest")
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
 	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseSetsTask(),"Choose Set For e2refine")
+	def launch_e2refinemulti_sets(self): self.launch_task(E2RefineMultiChooseSetsTask(),"Choose Set For e2refinemulti")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")

@@ -457,7 +457,7 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 			return "-"
 				
 class E2TomoBoxerGuiTask(WorkFlowTask):
-	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis to be normal to the screen, and inmemory load the tomo into memory for fast access"""
+	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
@@ -1277,7 +1277,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		psaveali = ParamDef(name="saveali",vartype="boolean",desc_short="Saveali",desc_long="Save the alignments",property=None,defaultunits=1,choices=None)
 		params.append([psavesteps, psaveali])
 		piter = ParamDef(name="number of iterations",vartype="int",desc_short="Number of iterations", desc_long="Number of iterations",property=None,defaultunits=5,choices=None )
-		pncourse = ParamDef(name="course number",vartype="int",desc_short="Course Number", desc_long="Course number",property=None,defaultunits=6,choices=None )
+		pncourse = ParamDef(name="coarse number",vartype="int",desc_short="Coarse Number", desc_long="Coarse number",property=None,defaultunits=6,choices=None )
 		params.append([piter, pncourse])
 		pshrink = ParamDef(name="Percentage to shrink",vartype="float",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=2.0,choices=None )
 		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="float",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=2.0,choices=None )
@@ -1331,7 +1331,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		
 		advanced_params = []
 		r,rn = self.get_tomo_hunter_ref_table() # note rn is unused, it's a refactoring residual
-		advanced_params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use tomo refs",desc_long="",property=None,defaultunits="Use this for selecting references",choices=None))
+		advanced_params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use tomo refs",desc_long="",property=None,defaultunits="Use this for selecting references. If no reference is chosen, then reference free alignment will be executed",choices=None))
 		advanced_params.append(r)
 		
 		table_params.append(["References",advanced_params])

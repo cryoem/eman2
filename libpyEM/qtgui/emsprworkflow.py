@@ -75,7 +75,7 @@ spr_ptcls_dict = "global.spr_ptcls_dict"
 spr_rfca_dict = "global.spr_rfca_dict"
 spr_stacks_map = "global.spr_stacks_map"
 spr_sets_dict = "global.spr_sets_dict"
-spr_init_models_dict = "global.spr_init_models_dict"
+spr_init_models_dict = "global.spr_init_models_dict" #my DB has been corrupted!!!!!
 
 #These are actually used
 tpr_subtomo_stacks = "global.tpr_subtomo_stacks"
@@ -329,6 +329,7 @@ class WorkFlowTask:
 			args_adjusted = ["pythonw"]
 		args_adjusted.extend(args)
 		#print args_adjusted
+
 		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
 		print "started process",process.pid
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
@@ -395,25 +396,27 @@ class WorkFlowTask:
 	
 	def check_sym(self,params,options):
 		error_message = []
-		if params["symname"] in ["c","d","h"]:
-			n = params["symnumber"]
-			fail = False
-			if len(n) == 0: fail = True
-			try: int(n)
-			except: fail = True
+		for key in params:
+			if key[:7] == "symname":	
+				if params[key] in ["c","d","h"]:
+					n = params["symnumber"]
+					fail = False
+					if len(n) == 0: fail = True
+					try: int(n)
+					except: fail = True
 			
-			if not fail:
-				if int(n) < 1:
-					fail = True
+					if not fail:
+						if int(n) < 1:
+							fail = True
 					
-			if fail:
-				error_message.append("The symmetry number must be specified for c,d, and h.")
-			else:
-				options.sym=params["symname"]+n
-		elif len(params["symnumber"]) != 0:
-			error_message.append("There is something entered in the symmetry number box but you have not specified c, d or h symmetry.")
-		else:
-			options.sym = params["symname"]	
+					if fail:
+						error_message.append("The symmetry number must be specified for c,d, and h.")
+					else:
+						options.sym=params["symname"]+n
+				elif len(params["symnumber"]) != 0:
+					error_message.append("There is something entered in the symmetry number box but you have not specified c, d or h symmetry.")
+				else:
+					options.sym = params["symname"]	
 			
 		return error_message
 	
@@ -4124,7 +4127,7 @@ class E2Refine2DTask(EMClassificationTools):
 		pnp = ParamDef(name="normproj",vartype="boolean",desc_short="Normalize projection vectors",desc_long="Normalizes each projected vector into the MSA subspace",property=None,defaultunits=db.get("normproj",dfl=True),choices=None)
 		
 		project_db = db_open_dict("bdb:project")
-		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		#pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for e2refine2d to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
 		pinitclasses =  ParamDef(name="initial",vartype="string",desc_short="Initial class averages",desc_long="A file (full path) containing starting class averages. If note specificed will generate starting class averages automatically.",property=None,defaultunits=db.get("initial",dfl=""),choices=[])	
 		
 		#db_close_dict(self.form_db_name)
@@ -4133,7 +4136,7 @@ class E2Refine2DTask(EMClassificationTools):
 		params.append([pncls,pnp])
 		params.append(piter)
 		params.append([pnaliref,pnbasisfp])
-		params.append([pncp,pinitclasses])
+		params.append([pinitclasses])
 		
 		pparallel = ParamDef(name="parallel",vartype="string",desc_short="Parallel",desc_long="Parallel arguments (advanced). Leave blank if unsure",property=None,defaultunits=db.get("parallel",dfl=""),choices=None)
 		params.append(pparallel)
@@ -4581,7 +4584,7 @@ class EMInitialModelReportTask(ParticleWorkFlowTask):
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
 		self.window_title = "Project Initial Models"
-		self.imf = None # will eventually become an E2IntialModelsTool
+		self.imt = None # will eventually become an E2IntialModelsTool
 	
 	def get_params(self):
 		params = []
@@ -4921,51 +4924,11 @@ class E2Make3DTools:
 			E2Make3DTools.preprocessor_cache = l
 			 
 		return E2Make3DTools.preprocessor_cache
-			
-class E2RefineParticlesTask(EMClassificationTools, E2Make3DTools):
+		
+class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 	'''
-	This task will harness the parameters for, and launch, e2refine.py
+	This class is a base class for eman refinements, to avoid massive code duplicantions
 	'''
-	 
-	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
-	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
-	simmx_documentation = """These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. \
-To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record \
-the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.
-- The shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time advantage, though at the expense
-of resolution. Note however that the class averaging stage, which can involve iterative alignment, does not use shrunken data.
-- 2 stage simmx is still experimental. If set to 2 instead of zero, classification will be performed in two stages resulting in a 5-25x speedup, but with a potential decrease in accuracy.
-- PS match ref will force the power spectra of the particle and reference to be the same before comparison. Necessary for some comparators.
-- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmps -v2)
-- Aligner - use default
-- Align comparator and refine align comparator allow you to select which comparators are used for particle->reference alignment. In most cases ccc is adequate, but sometimes you may wish to match the main comparator.
-- Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
-
-For comparators here are some possible choices:
-
-ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted). Works poorly for very noisy data unless usefilt particles are used for alignment.
-
-frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
-
-phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
-
-sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
-
-"""
-	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:
-Averaging iterations - Use 6 or 7 when doing intial refinements to eliminate model bias. Use 2 (maybe 1) when pushing resolution
-Class separation - puts each particle in the best 'n' classes, a larger number here combined with a small angular step can somewhat mimic maximum liklihood methods (smoother map at the cost of resolution)
-keep - determines how many 'bad' particles are thrown away either in terms of sigma, or an absolute value (1 keeps 100%, .8 keeps 80%)
-averager - either ctf.auto for ctf amplitude correction or mean for no CTF amplitude correction
-set sf proj - this will filter the class-averages to match the radial power spectrum of the projections. Not good for initial rounds of refinement, but may be useful later.
-"""
-	make3d_documentation = """Parameters for 3D reconstruction:
-- Use the default 'fourier' reconstructor
-pad to - should be some number a bit larger than your box size. This should be a 'good' box size as well (see wiki)
-keep - similar to keep in class-averaging, but determines how many class averages are excluded from the reconstruction
-set SF - This will force the reconstruction to be filtered to match the structure factor determined during CTF correction. If used it should be combined with a gaussian lowpass filter at the targeted resolution
-post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'cutoff_freq=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
- be somewhat filtered even without this."""
 
 	def __init__(self,ptcls_list,usefilt_ptcls_list):
 		'''
@@ -4974,7 +4937,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		'''
 		self.ptcls = ptcls_list
 		self.usefilt_ptcls = usefilt_ptcls_list
-		self.imf = None # will eventually become an E2IntialModelsTool
+		self.imt = None # will eventually become an E2IntialModelsTool
 	 	EMClassificationTools.__init__(self)
 	 	E2Make3DTools.__init__(self)
 	 	
@@ -5028,13 +4991,12 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		options = EmptyObject()
 #		error_message = self.check_main_page(params,options)
-		
+
 		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page,self.check_classaverage_page,self.check_make3d_page]:
 			error_message = checker(params,options)
 			if len(error_message) > 0 :
 				self.display_errors(error_message)
-				return
-			
+				return	
 		self.write_db_entries(params)
 		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task
 		string_args = []
@@ -5053,7 +5015,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		# Steve is rethinking how we remember programs arguments
 		#self.write_db_parms(options,string_args,bool_args)
-		
+
 		self.spawn_single_task("e2refine.py",options,string_args,bool_args,additional_args,temp_file_name)
 		
 		self.emit(QtCore.SIGNAL("task_idle"))
@@ -5428,6 +5390,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		string_args.extend(["orientgen","projector"])
 		# sym is already taken care of in the main args
 		return None # no error to report
+		
 	def get_project3d_page(self):
 		params = []
 		
@@ -5453,13 +5416,10 @@ post-process - This is an optional filter to apply to the model as a final step,
 		params.append([pprojector,porientgens])
 		
 		syms = ["icos","oct","tet","d","c","h"]
-		
 		psym =  ParamDef(name="symname",vartype="string",desc_short="Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname",dfl="c"),choices=syms)
 		psymnum = ParamDef(name="symnumber",vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber",dfl="1"),choices=None)
-
 		params.append([psym,psymnum])
-	
-		
+			
 		params.append([porientoptions,porientoptionsentry])
 		params.append([pmirror,buttondialog])
 		
@@ -5497,6 +5457,238 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		return error_message
 
+class E2RefineParticlesTask(E2RefineParticlesTaskBase, EMClassificationTools, E2Make3DTools):
+	'''
+	This task will harness the parameters for, and launch, e2refine.py
+	'''
+	 
+	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
+	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
+	simmx_documentation = """These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. \
+To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record \
+the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.
+- The shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time advantage, though at the expense
+of resolution. Note however that the class averaging stage, which can involve iterative alignment, does not use shrunken data.
+- 2 stage simmx is still experimental. If set to 2 instead of zero, classification will be performed in two stages resulting in a 5-25x speedup, but with a potential decrease in accuracy.
+- PS match ref will force the power spectra of the particle and reference to be the same before comparison. Necessary for some comparators.
+- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmps -v2)
+- Aligner - use default
+- Align comparator and refine align comparator allow you to select which comparators are used for particle->reference alignment. In most cases ccc is adequate, but sometimes you may wish to match the main comparator.
+- Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
+
+For comparators here are some possible choices:
+
+ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted). Works poorly for very noisy data unless usefilt particles are used for alignment.
+
+frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
+
+phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
+
+sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+
+"""
+	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:
+Averaging iterations - Use 6 or 7 when doing intial refinements to eliminate model bias. Use 2 (maybe 1) when pushing resolution
+Class separation - puts each particle in the best 'n' classes, a larger number here combined with a small angular step can somewhat mimic maximum liklihood methods (smoother map at the cost of resolution)
+keep - determines how many 'bad' particles are thrown away either in terms of sigma, or an absolute value (1 keeps 100%, .8 keeps 80%)
+averager - either ctf.auto for ctf amplitude correction or mean for no CTF amplitude correction
+set sf proj - this will filter the class-averages to match the radial power spectrum of the projections. Not good for initial rounds of refinement, but may be useful later.
+"""
+	make3d_documentation = """Parameters for 3D reconstruction:
+- Use the default 'fourier' reconstructor
+pad to - should be some number a bit larger than your box size. This should be a 'good' box size as well (see wiki)
+keep - similar to keep in class-averaging, but determines how many class averages are excluded from the reconstruction
+set SF - This will force the reconstruction to be filtered to match the structure factor determined during CTF correction. If used it should be combined with a gaussian lowpass filter at the targeted resolution
+post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'cutoff_freq=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
+ be somewhat filtered even without this."""
+ 
+	def __init__(self,ptcls_list,usefilt_ptcls_list):
+		E2RefineParticlesTaskBase.__init__(self,ptcls_list,usefilt_ptcls_list) 
+
+class E2RefineMultiParticlesTask(E2RefineParticlesTaskBase, EMClassificationTools, E2Make3DTools):
+	'''
+	This task will harness the parameters for, and launch, e2refine.py
+	'''
+	 
+	general_documentation = "These are the general parameters for 3D refinement in EMAN2. Please select which particles you wish to use as part of this process, specify your starting model, and fill in other parameters such as symmetry and whether or not the usefilt option should be used."
+	project3d_documentation = "These  parameters are used by e2project3d. Several orientation generation techniques provide alternative methods for distributing orientations in the asymmetric unit. Orientations can be generated based on your desired angular spacing, or alternatively on the desired total number of projections. In the latter case EMAN2 will generate a number as close as possible to the specified number, but note that there is no guarantee of a perfect match. You can also vary the method by which projections are generated. If you check the \'include mirror\' option you should be sure to use aligners to that do not perform mirror alignment."
+	simmx_documentation = """These  parameters are used by e2simmx, a program that compares each particle to each projection and records quality scores. \
+To do this the particles must first be aligned to the projections using the aligners you specify. Once aligned the \'Main comparator\' is used to record \
+the quality score. These quality values are recorded to an image matrix on handed on to the next stage in the refinement process.
+- The shrink parameter causes all projections and particles to be shrunken by the given amount prior to comparison. This can provide a significant time advantage, though at the expense
+of resolution. Note however that the class averaging stage, which can involve iterative alignment, does not use shrunken data.
+- 2 stage simmx is still experimental. If set to 2 instead of zero, classification will be performed in two stages resulting in a 5-25x speedup, but with a potential decrease in accuracy.
+- PS match ref will force the power spectra of the particle and reference to be the same before comparison. Necessary for some comparators.
+- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmps -v2)
+- Aligner - use default
+- Align comparator and refine align comparator allow you to select which comparators are used for particle->reference alignment. In most cases ccc is adequate, but sometimes you may wish to match the main comparator.
+- Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
+
+For comparators here are some possible choices:
+
+ccc (no options) - Simple dot product. Fast, can work well, but in some situations will cause a deterministic orientation bias (like GroEL side views which end up tilted). Works poorly for very noisy data unless usefilt particles are used for alignment.
+
+frc zeromask=1:snrweight=1 - Fourier Ring Correlation with signal to noise ratio weighting and reference based masks. Works poorly without SNR weighting. Masking is optional, but a good idea.
+
+phase zeromask=1:snrweight=1 - Mean phase error. same options as for frc. Do NOT use phase without snrweight=1
+
+sqeuclidean normto=1:zeromask=1 - similar to ccc, but with additional options to better match densities. Only works well in conjunction with PS match ref, and usefilt with Wiener filtered particles.
+
+"""
+	class_documentation = """These parameters address how class-averages are made. For the comparators see the previous tab:
+Averaging iterations - Use 6 or 7 when doing intial refinements to eliminate model bias. Use 2 (maybe 1) when pushing resolution
+Class separation - puts each particle in the best 'n' classes, a larger number here combined with a small angular step can somewhat mimic maximum liklihood methods (smoother map at the cost of resolution)
+keep - determines how many 'bad' particles are thrown away either in terms of sigma, or an absolute value (1 keeps 100%, .8 keeps 80%)
+averager - either ctf.auto for ctf amplitude correction or mean for no CTF amplitude correction
+set sf proj - this will filter the class-averages to match the radial power spectrum of the projections. Not good for initial rounds of refinement, but may be useful later.
+"""
+	make3d_documentation = """Parameters for 3D reconstruction:
+- Use the default 'fourier' reconstructor
+pad to - should be some number a bit larger than your box size. This should be a 'good' box size as well (see wiki)
+keep - similar to keep in class-averaging, but determines how many class averages are excluded from the reconstruction
+set SF - This will force the reconstruction to be filtered to match the structure factor determined during CTF correction. If used it should be combined with a gaussian lowpass filter at the targeted resolution
+post-process - This is an optional filter to apply to the model as a final step, filter.lowpass.gauss with 'cutoff_freq=<1/resolution>' is good with set SF. If set SF is not used, note that the model will already \
+ be somewhat filtered even without this."""
+ 
+	def __init__(self,ptcls_list,usefilt_ptcls_list):
+		E2RefineParticlesTaskBase.__init__(self,ptcls_list,usefilt_ptcls_list) 
+		
+	def on_form_ok(self,params):
+		
+		options = EmptyObject()
+#		error_message = self.check_main_page(params,options)
+		params["symname"]="c"
+		params["symnumber"]="1"
+
+		for checker in [self.check_main_page,self.check_project3d_page,self.check_simmx_page,self.check_classaverage_page,self.check_make3d_page]:
+			error_message = checker(params,options)
+			if len(error_message) > 0 :
+				self.display_errors(error_message)
+				return	
+		self.write_db_entries(params)
+		# w'oh if we make it here a lot of checking has occured. Now get the args in order to spawn_single_task	
+		string_args = []
+		bool_args = []
+		
+		additional_args = []
+		
+		for get_args in [self.add_general_args,self.add_project3d_args,self.add_simmx_args,self.add_classaverage_args,self.add_make3d_args]:
+		  	error = get_args(options,string_args,bool_args,additional_args)
+		
+			if error != None: # not too fast, something still could have gone wrong
+				self.display_errors([error])
+				return
+		
+		temp_file_name = "e2refine_stdout.txt"
+		
+		# Steve is rethinking how we remember programs arguments
+		#self.write_db_parms(options,string_args,bool_args)
+		
+		# Hack to enable multimodels, BTW: The current design is COMPLETE SHIT!!!!
+		if len(params["model"]) > 0:
+			mlist = ""
+			tsym = ""
+			for i,m in enumerate(params["model"]):
+				mlist += m+","
+				tsym += params["symname"+str(i)]+params["symnumber"+str(i)]+","
+			mlist = mlist[:-1]
+			tysm = tsym[:-1]
+			#string_args[string_args.index("model")] = mlist
+			setattr(options, "models", mlist)
+			setattr(options, "sym", tsym)
+			print tsym
+		midx = string_args.index("model")
+		string_args.remove("model")
+		string_args.insert(midx, "models")
+		
+		self.spawn_single_task("e2refinemulti.py",options,string_args,bool_args,additional_args,temp_file_name)
+		
+		self.emit(QtCore.SIGNAL("task_idle"))
+		self.form.close()
+		self.form = None
+		
+	def get_main_params_2(self):
+		
+		params = []
+#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="",choices=None))
+
+		# I could check to see if the database exists but it seems unnecessary
+		# In the event that the database doesn't exist it is created and 
+		# a new entry is created on disk. The only inconvenient aspect of this comes
+		# if the user hits cancel - then there is a file on disk even though
+		# the user never agreed to anything
+		db = db_open_dict(self.form_db_name) # see eman wiki for a list of what args are kept in this db
+		project_db = db_open_dict("bdb:project")
+		
+		self.imt = E2InitialModelsTool()
+		p1,n1 = self.imt.get_initial_models_table()
+		p1.enable_multiple_selection = False
+		params.append(p1)
+			
+		pautomask = ParamDef(name="automask3d",vartype="boolean",desc_short="Auto mask 3D",desc_long="Causes automasking of the 3D volume to occur at the end of each iteration",property=None,defaultunits=db.get("automask3d",dfl=True),choices=None)
+		
+		params.append(pautomask)
+		
+		def_rad = 30
+		def_mask_dltn = 5
+		if len(self.ptcls) > 0:
+			nx,ny,nz = gimme_image_dimensions3D(self.ptcls[0])
+			def_rad = int(nx/8.0)
+			def_mask_dltn = int(nx/20.0)
+		
+		pamthreshold =  ParamDef(name="amthreshold",vartype="float",desc_short="Threshold",desc_long="An isosurface threshold that well defines your structure.",property=None,defaultunits=db.get("amthreshold",dfl=0.7),choices=None)
+		pamradius =  ParamDef(name="amradius",vartype="int",desc_short="Radius",desc_long="The radius of a sphere at the the origin which contains seeding points for the flood file operation using the given threshold",property=None,defaultunits=db.get("amradius",dfl=def_rad),choices=None)
+		pamnmax =  ParamDef(name="amnmax",vartype="int",desc_short="NMax",desc_long="Number of highest value voxels to use as a seed",property=None,defaultunits=db.get("amradius",dfl=def_rad),choices=None)
+		pamnshells =  ParamDef(name="amnshells",vartype="int",desc_short="Mask dilations",desc_long="The number of dilations to apply to the mask after the flood fill operation has finished. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshells",dfl=def_mask_dltn),choices=None)
+		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=def_mask_dltn),choices=None)
+		
+		pautomask.dependents = ["amthreshold","amradius","amnshells","amnshellsgauss"] # these are things that become disabled when the pautomask checkbox is checked etc
+		
+		params.append([pamthreshold,pamnmax,pamradius])
+		params.append([pamnshells,pamngaussshells])
+	
+		syms = ["icos","oct","tet","d","c","h"]
+		for s in xrange(n1):
+			psym =  ParamDef(name="symname"+str(s),vartype="string",desc_short="Model"+str(s+1)+" Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname"+str(s),dfl="c"),choices=syms)
+			psymnum = ParamDef(name="symnumber"+str(s),vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber"+str(s),dfl="1"),choices=None)
+			params.append([psym,psymnum])
+
+		#db_close_dict(self.form_db_name)
+		#db_close_dict("bdb:project")
+		
+		return ["Model",params]
+		
+	def get_project3d_page(self):
+		params = []
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2RefineParticlesTask.project3d_documentation,choices=None))
+
+		db = db_open_dict(self.form_db_name)
+		
+		projectors = self.get_projectors_list()
+		orientgens = self.get_orientgens_list()
+			
+		pprojector =  ParamDef(name="projector",vartype="string",desc_short="Projector",desc_long="The method used to generate projections",property=None,defaultunits=db.get("projector",dfl="standard"),choices=projectors)
+		
+		porientgens =  ParamDef(name="orientgen",vartype="string",desc_short="Orientation generator",desc_long="The method of orientation generation",property=None,defaultunits=db.get("orientgen",dfl="eman"),choices=orientgens)
+		
+		pmirror = ParamDef(name="incmirror",vartype="boolean",desc_short="Include mirror",desc_long="Include the mirror portion of the asymmetric uni",property=None,defaultunits=db.get("incmirror",False),choices=[])
+		
+		
+		orient_options = ["Angle Based", "Number Based"]
+		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
+		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientopt_entry",dfl=5),choices=[])
+		from emform import EMOrientationDistDialog
+		buttondialog = EMOrientationDistDialog()
+		params.append([pprojector,porientgens])
+		
+		params.append([porientoptions,porientoptionsentry])
+		params.append([pmirror,buttondialog])
+		
+		#db_close_dict(self.form_db_name)
+		
+		return ["Project 3D",params]
+		
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
 	documentation_string = "This selects the type of data to use for the refinement. Normally phase_flipped or phase_flipped_hp will be selected in the top \
@@ -5596,7 +5788,7 @@ detailed refinement options."
 				for b in bad: db_map.pop(b)
 				db[self.filt_name] = db_map 
 			
-			task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
+			task = self.task_to_use(intersection_ptcls,intersection_usefilt_ptcls)
 			task.single_selection = self.single_selection
 			self.emit(QtCore.SIGNAL("replace_task"),task,"e2refine2d arguments")
 			self.form.close()
@@ -5605,6 +5797,9 @@ detailed refinement options."
 		self.write_db_entries(params)
 
 	def replace_task(self): raise NotImplementedException("Inheriting class needs to implement this")
+	
+	def task_to_use(self, intersection_ptcls, intersection_usefilt_ptcls): raise NotImplementedException("Inheriting class needs to implement this")
+
 
 class E2RefineChooseParticlesTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
@@ -5614,7 +5809,11 @@ class E2RefineChooseParticlesTask(EMChooseTask):
 		self.window_title = "Choose Data For e2refine"
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
-
+		
+	# Lets you swap out one refine form for another (Template method pattern, is used here)
+	def task_to_use(self, intersection_ptcls, intersection_usefilt_ptcls):
+		task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
+		return task
 
 class E2RefineChooseSetsTask(EMChooseTask):
 	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
@@ -5625,7 +5824,27 @@ class E2RefineChooseSetsTask(EMChooseTask):
 		self.preferred_size = (480,300)
 		self.form_db_name = "bdb:emform.e2refine"
 		self.single_selection = True
-
+		
+	# Lets you swap out one refine form for another (Template method pattern, is used here)
+	def task_to_use(self, intersection_ptcls, intersection_usefilt_ptcls):
+		task = E2RefineParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
+		return task
+		
+class E2RefineMultiChooseSetsTask(EMChooseTask):
+	'''This form is for choosing e2refine input and usefilt data. After you hit ok a second form will appear asking for more parameters.'''
+	documentation_string = "This form is for choosing e2refinemulti input and usefilt data. After you hit ok a second form will appear asking for more parameters." 
+	def __init__(self):
+		EMChooseTask.__init__(self,spr_sets_dict,EMSetsOptions(),"_stack")
+		self.window_title = "Choose Data For e2refinemulti"
+		self.preferred_size = (480,300)
+		self.form_db_name = "bdb:emform.e2refinemulti"
+		self.single_selection = True
+		
+	# Lets you swap out one refine form for another (Template method pattern, is used here)
+	def task_to_use(self, intersection_ptcls, intersection_usefilt_ptcls):
+		task = E2RefineMultiParticlesTask(intersection_ptcls,intersection_usefilt_ptcls)
+		return task	
+		
 class ResolutionReportTask(ParticleWorkFlowTask):
 	documentation_string = "This form displays information related to the estimated resolution of refinement results.\nIf you double click on any of the entries \
  in the table you will see the convergence plot (thin lines, NOT useful in measuring resolution) and any associated resolution curve (thick line for resolution \
