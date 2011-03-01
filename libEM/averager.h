@@ -209,6 +209,51 @@ namespace EMAN
 		int nimg;
 	};
 
+	/** TomoAverager averages a list of volumes in Fourier space. It excludes values near zero
+	 * from the average, assuming they are part of the missing-cone/wedge. A threshold
+     *@param thresh_sigma a number, multiplied by the standard deviation of the image, below-which values are considered zero
+     */
+	class TomoAverager:public Averager
+	{
+	  public:
+		TomoAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Average of volumes in Fourier space, excluding any pixels with near 0 intensity.";
+		}
+
+		static Averager *NEW()
+		{
+			return new TomoAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh_sigma", EMObject::FLOAT, "multiplied by the standard deviation of the image, below-which values are considered zero. Default = .01");
+			d.put("save_norm", EMObject::INT, "If set, will save the normalization volume as norm.hdf. Mainly for debugging purposes.");
+			return d;
+		}
+
+		virtual void mult(const float&) { }
+
+		static const string NAME;
+		
+	private:
+		EMData *norm_image;
+		float thresh_sigma;
+	};
+
+	
 	/** ImageAverager averages a list of images. It optionally makes
      * a sigma image.
      *@param max If set, will find the max value, otherwise finds min

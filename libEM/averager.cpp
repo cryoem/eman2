@@ -43,6 +43,7 @@
 using namespace EMAN;
 
 const string ImageAverager::NAME = "mean";
+const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
 const string IterationAverager::NAME = "iteration";
 const string WeightingAverager::NAME = "snr_weight";
@@ -62,6 +63,7 @@ template <> Factory < Averager >::Factory()
 //	force_add(&CtfCWAverager::NEW);
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
+	force_add<TomoAverager>();
 //	force_add<XYZAverager>();
 }
 
@@ -81,6 +83,105 @@ void Averager::add_image_list(const vector<EMData*> & image_list)
 		add_image(image_list[i]);
 	}
 }
+
+TomoAverager::TomoAverager()
+	: norm_image(0)
+{
+
+}
+
+void TomoAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+	if (!image->is_complex()) {
+		image=image->do_fft();
+		image->set_attr("free_me",(int)1);
+	}
+		
+	if (result!=0 && !EMUtil::is_same_size(image, result)) {
+		LOGERR("%s Averager can only process same-size Images",
+			   get_name().c_str());
+		return;
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	size_t image_size = (size_t)nx * ny * nz;
+
+	if (norm_image == 0) {
+		printf("init average %d %d %d",nx,ny,nz);
+		result = image->copy_head();
+		result->to_zero();
+		
+		norm_image = image->copy_head();
+		norm_image->to_zero();
+		
+		thresh_sigma = (float)params.set_default("thresh_sigma", 0.01);
+	}
+
+	float *result_data = result->get_data();
+	float *norm_data = norm_image->get_data();
+	float *data = image->get_data();
+	float thresh=image->get_attr("sigma");
+	thresh=2.0*thresh*thresh*thresh_sigma;
+	
+	// Add any values above threshold to the result image, and add 1 to the corresponding pixels in the norm image
+	for (size_t j = 0; j < image_size; j+=2) {
+		float f=data[j];	// real
+		float g=data[j+1];	// imag
+		float inten=f*f+g*g;
+		
+		if (inten<thresh) continue;
+		
+		result_data[j]  +=f;
+		result_data[j+1]+=g;
+		
+		norm_data[j]  +=1.0;
+		norm_data[j+1]+=1.0;
+	}
+	
+	if (image->has_attr("free_me")) delete image;
+}
+
+EMData * TomoAverager::finish()
+{
+	if (norm_image==0 || result==0) return NULL;
+	
+	int nx = result->get_xsize();
+	int ny = result->get_ysize();
+	int nz = result->get_zsize();
+	size_t image_size = (size_t)nx * ny * nz;
+	
+	float *result_data = result->get_data();
+	float *norm_data = norm_image->get_data();
+	
+	printf("finish average %d %d %d",nx,ny,nz);
+	// normalize the average
+	for (size_t j = 0; j < image_size; j++) {
+		if (norm_data[j]==0.0) result_data[j]=0.0;
+		else result_data[j]/=norm_data[j];
+	}
+	
+	norm_image->update();
+	result->update();
+	
+	EMData *ret = result->do_ift();
+	ret->set_attr("ptcl_repr",norm_image->get_attr("maximum"));
+	if ((int)params.set_default("save_norm", 0)) 
+		norm_image->write_image("norm.hdf");
+	
+	delete result;
+	delete norm_image;
+	result=0;
+	norm_image=0;
+	
+	return ret;
+}
+
 
 ImageAverager::ImageAverager()
 	: sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)

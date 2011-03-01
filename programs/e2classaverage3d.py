@@ -75,7 +75,7 @@ def main():
 	parser.add_option("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--mask",type="string",help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_option("--normproc",type="string",help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
-	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=False)
+	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
 	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment", default=1)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15", default="rotate_translate_3d:search=10:delta=15:dphi=15")
 	parser.add_option("--aligncmp",type="string",help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
@@ -85,6 +85,7 @@ def main():
 	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
+	parser.add_option("--postprocess",type="string",help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
 	parser.add_option("--shrink", type="int",default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	parser.add_option("--shrinkrefine", type="int",default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 #	parser.add_option("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
@@ -105,6 +106,7 @@ def main():
 	if options.normproc : options.normproc=parsemodopt(options.normproc)
 	if options.mask : options.mask=parsemodopt(options.mask)
 	if options.preprocess : options.preprocess=parsemodopt(options.preprocess)
+	if options.postprocess : options.postprocess=parsemodopt(options.postprocess)
 
 	if options.resultmx!=None : options.storebad=True
 
@@ -164,7 +166,7 @@ def main():
 			# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
 			# compute pairwise alignments until we get an average out. 
 		
-			nseed=2**int(floor(log(nptcl,2)))	# we stick with powers of 2 for this to make the tree easier to collapse
+			nseed=2**int(floor(log(len(ptcls),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
 			if nseed>64 : 
 				nseed=64
 				print "Limiting seeding to the first 64 images"
@@ -172,10 +174,13 @@ def main():
 			nseediter=int(log(nseed,2))			# number of iterations we'll need
 			if options.verbose : print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
 			
+			# We copy the particles for this class into bdb:seedtree_0
+			for i,j in enumerate(ptcls[:nseed]):
+				EMData(options.input,j).write_image("bdb:seedtree_0",i)
+			
 			# Outer loop covering levels in the converging binary tree
 			for i in range(nseediter):
-				if i==0 : infile=options.input
-				else : infile="bdb:seedtree_%d"%i
+				infile="bdb:seedtree_%d"%i
 				outfile="bdb:seedtree_%d"%(i+1)
 			
 				tasks=[]
@@ -197,9 +202,13 @@ def main():
 					print "Results:"
 					pprint(results)
 				
+				
 				make_average_pairs(infile,outfile,results,options.averager)
 				
 			ref=EMData(outfile,0)		# result of the last iteration
+			if options.postprocess!=None : 
+				ref.process_inplace(options.postprocess[0],options.postprocess[1])
+				ref.write_image(outfile,0)
 			
 			if options.savesteps :
 				ref.write_image("bdb:class_%02d"%ic,-1)
@@ -226,6 +235,8 @@ def main():
 				pprint(results)
 			
 			ref=make_average(options.input,results,options.averager,options.saveali)		# the reference for the next iteration
+			if options.postprocess!=None : 
+				ref.process_inplace(options.postprocess[0],options.postprocess[1])
 
 			if options.sym!=None : 
 				if options.verbose : print "Apply ",options.sym," symmetry"
