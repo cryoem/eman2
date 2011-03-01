@@ -155,6 +155,8 @@ def main():
 		if ncls==1 : ptcls=range(nptcl)				# start with a list of particle numbers in this class
 		else : ptcls=classmx_ptcls(classmx,ic)		# This gets the list from the classmx
 		
+		if options.verbose and ncls>1 : print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
+		
 		# prepare a reference either by reading from disk or bootstrapping
 		if options.ref : ref=EMData(options.ref,ic)
 		else :
@@ -162,12 +164,45 @@ def main():
 			# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
 			# compute pairwise alignments until we get an average out. 
 		
-			nseed=2**int(floor(log(nptcl)/log(2.0)))	# we stick with powers of 2 for this to make the tree easier to collapse
+			nseed=2**int(floor(log(nptcl,2)))	# we stick with powers of 2 for this to make the tree easier to collapse
+			if nseed>64 : 
+				nseed=64
+				print "Limiting seeding to the first 64 images"
+
+			nseediter=int(log(nseed,2))			# number of iterations we'll need
+			if options.verbose : print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
 			
-			#########TODO
+			# Outer loop covering levels in the converging binary tree
+			for i in range(nseediter):
+				if i==0 : infile=options.input
+				else : infile="bdb:seedtree_%d"%i
+				outfile="bdb:seedtree_%d"%(i+1)
+			
+				tasks=[]
+				# loop over volumes in the current level
+				for j in range(0,nseed/(2**i),2):
+					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
+					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
+						options.ncoarse,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					tasks.append(task)
+
+				# Start the alignments for this level
+				tids=etc.send_tasks(tasks)
+				if options.verbose : print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+
+				# Wait for alignments to finish and get results
+				results=get_results(etc,tids,options.verbose)
+
+				if options.verbose>2 : 
+					print "Results:"
+					pprint(results)
+				
+				make_average_pairs(infile,outfile,results,options.averager)
+				
+			ref=EMData(outfile,0)		# result of the last iteration
 			
 			if options.savesteps :
-				ref.write_image("class_%02d.hdf"%ic,-1)
+				ref.write_image("bdb:class_%02d"%ic,-1)
 		
 		# Now we iteratively refine a single class
 		for it in range(options.iter):
@@ -211,9 +246,26 @@ def make_average(ptcl_file,align_parms,averager,saveali):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		avgr.add_image(ptcl)
-		if saveali: ptcl.write_image("class_ptcl.hdf",i)
+		if saveali: ptcl.write_image("bdb:class_ptcl",i)
 		
 	return avgr.finish()
+
+def make_average_pairs(ptcl_file,outfile,align_parms,averager):
+	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
+	
+	for i,ptcl_parms in enumerate(align_parms):
+		ptcl0=EMData(ptcl_file,i*2)
+		ptcl1=EMData(ptcl_file,i*2+1)
+		ptcl1.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+
+		# While this is only 2 images, we still use the averager in case something clever is going on
+		avgr=Averagers.get(averager[0], averager[1])
+		avgr.add_image(ptcl0)
+		avgr.add_image(ptcl1)
+		
+		avg=avgr.finish()
+		avg.write_image(outfile,i)
+
 
 def symmetrize(ptcl,sym):
 	"Impose symmetry in the standard orientation in-place. Does not reorient particle before symmetrization"
@@ -348,7 +400,10 @@ class Align3DTask(EMTask):
 			for bc in bestcoarse:
 				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"]})
+				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"]})
+				except:
+					print "Refine alignment failed for %s. Using the coarse alignment instead. Results may be invalid"%self.label
+					bestfinal.append(bc)
 
 			# verbose printout of fine refinement
 			if options["verbose"]>1 :
