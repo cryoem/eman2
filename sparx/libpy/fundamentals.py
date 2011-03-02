@@ -762,7 +762,7 @@ def rops(e):
 	ps = periodogram(e)
 	return ps.rotavg()
 
-def rops_textfile(e, filename, helpful_string=""):
+def rops_textfile(e, filename, helpful_string="", lng = False):
 	"""Rotational average of the periodogram stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average 
 	   of the periodogram of image e.
@@ -772,21 +772,31 @@ def rops_textfile(e, filename, helpful_string=""):
 	ps = periodogram(e)
 	f = ps.rotavg()
 	nr = f.get_xsize()
-	for ir in xrange(nr): out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
+	table=[0.0]*nr
+	for ir in xrange(nr): table[ir] = ro.get_value_at(ir)
+	if lng:
+		from math import log
+		for ir in xrange(1,nr): table[ir] = log(table[ir])
+		table[0] = table[1]
+	for ir in xrange(nr): out.write("%d\t%12.5g\n" % (ir, table[ir]))
 	out.close()
 	
-def rops_table(img):
+def rops_table(img, lng = False):
 
 	""" 
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
 	"""
 
-	table=[]
 	e=periodogram(img)
 	ro=e.rotavg()
 	nr = ro.get_xsize()
-	for ir in xrange(nr): table.append(ro.get_value_at(ir))
+	table=[0.0]*nr
+	for ir in xrange(nr): table[ir] = ro.get_value_at(ir)
+	if lng:
+		from math import log
+		for ir in xrange(1,nr): table[ir] = log(table[ir])
+		table[0] = table[1]
 	return table
 
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
