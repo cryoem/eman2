@@ -48,11 +48,15 @@ from global_def import *
 # 11. calc_connect_list (new)
 # 12. ali_stable_list (new)
 #
+# Update on 09/01/10, we have decided for multiple alignment function 10 and 11 are not best way
+# to determine the stability. We have instead written a new function to to this.
+# 13. multi_align_stability (latest)
+#
 # Here, align_diff_params() and ave_ali_err_params() takes two lists of alignmnet parameters
 # in the following format:
 # [alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2, ...]
 # align_diff() and ave_ali_err() takes two lists of images
-# align_diff_textfile() and ave_ali_err_text() takes two textfiles, which are usually the output
+# align_diff_textfile() and ave_ali_err_textfile() takes two textfiles, which are usually the output
 # file of header() or sxheader.py.
 # Per previous discussion, I decided not to support two stacks of images.
 
