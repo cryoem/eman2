@@ -213,6 +213,7 @@ def main():
 
 	print "%d images, processing %d-%d......"%(nimg, n0, n1)
 	#print 'start.....'
+	img_index = n0
 	for data in datlst:
 		for option1 in optionlist:				
 			if option1 == "origin":
@@ -376,12 +377,13 @@ def main():
 			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 		elif 'mrc16bit' in optionlist:
 			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-			
-		if options.append:
-			data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 		else:
-			data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+			if options.append:
+				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+			else:
+				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 		
+		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image
 			index_d[append_option] = 0
 				
