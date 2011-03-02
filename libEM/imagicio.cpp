@@ -106,9 +106,9 @@ void ImagicIO::init()
 			throw ImageReadException(hed_filename, "IMAGIC header");
 		}
 
-		if (!is_valid(&imagich)) {
-			throw ImageReadException(hed_filename, "invalid IMAGIC file");
-		}
+//		if (!is_valid(&imagich)) {
+//			throw ImageReadException(hed_filename, "invalid IMAGIC file");
+//		}
 
 		datatype = get_datatype_from_name(imagich.type);
 
@@ -483,7 +483,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	}
 #endif
 
-	int img_size = imagich.nx * imagich.ny * nimg;
+	size_t img_size = imagich.nx * imagich.ny * nimg;
 
 	if (datatype == IMAGIC_FLOAT) {
 		become_host_endian(data, img_size);

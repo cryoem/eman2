@@ -82,11 +82,22 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
 		
+		 /* If returns -1, then we have an old-style Imagic file
+		 *
+		 * @return 0 for new Imagic4D file, -1 for old-style Imagic file*/
+		int init_test();
+
+		/**If this file format is only for single iamge
+		 *
+		 * @return false this file format support stack*/
 		bool is_single_image_format() const
 		{
 			return false;
 		}
 		
+		/** Get number of images in this file
+		 *
+		 * @return number of images*/
 		int get_nimg();
 		
 	  private:
@@ -104,25 +115,26 @@ namespace EMAN
 			IMAGIC_UNKNOWN_TYPE
 		};
 
+		/*This enum is used to skip those char type when swap bytes between big endian and little endian*/
 		enum
 		{
-			NUM_4BYTES_PRE_IXOLD = 14,
+			NUM_4BYTES_PRE_IYLP = 14,
 			NUM_4BYTES_AFTER_IXOLD = 14,
-			NUM_4BYTES_AFTER_SPACE = 207
+			NUM_4BYTES_AFTER_NAME = 150	//before HISTORY
 		};
 		
 		enum RealType
 		{
-			VAX_VMS = 16777216,	//for VAX/VMS
+			VAX_VMS = 16777216,			//for VAX/VMS
 			LINUX_WINDOWS = 33686018,	//for OSF, ULTRIX, LINUX, MS WINDOWS
-			SGI_IBM = 67372036	//for SiliconGraphics, SUN, HP, IBM
+			SGI_IBM = 67372036			//for SiliconGraphics, SUN, HP, IBM
 		};
 
 		/** IMAGIC-4D file format
 		 * http://www.imagescience.de/formats/formats.htm
 		 * */
 		struct Imagic4D {
-			int imnum;	//1 image location number (1,2,3,...)
+			int imgnum;	//1 image location number (1,2,3,...)
 			int count;	//2 total # images in file (1st record only), total number of images - 1 (0,1,2,...)
 			int error;	//3 error code for this image during IMAGIC run
 			int headrec;//4 number of header records per image (=1 always)
@@ -132,10 +144,10 @@ namespace EMAN
 			int hour;	//8 creation hour
 			int minute; //9	creation minute
 			int sec;	//10 creation second
-			int reals;	//11 image size in bytes
+			int rsize;	//11 image size in bytes
 			int izold;	//12 top left Z co-ordinate before THREED-CUT
-			int ny;		//13 number of lines per image (for 1D data IYLP1=1)
-			int nx;		//14  number of pixels per line
+			int ny;		//13 number of lines per image (for 1D data IXLP1=1)
+			int nx;		//14  number of pixels per line (IYLP)
 			char type[4];	//15 only 'REAL', or 'INTG' are implemented for EMAN
 							// 4 characters determining the image type
 							// REAL : REAL/float
@@ -166,10 +178,10 @@ namespace EMAN
 			int ebeta;		//55 equivalent Euler angle beta 
 			int egamma;		//56 equivalent Euler angle gamma
 			int unused1;	//57 currently not used
-			int unused2		//58 currently not used
+			int unused2;		//58 currently not used
 			int nalisum;	//59 number of image summed
 			int pgroup;		//60 point-group symmetry in international notation (622, for example) 
-			int izlp;		//61 number of 2D planes in 3D data (for 1D/2D: IZLP1=1)
+			int izlp;		//61 number of 2D planes in 3D data (for 1D/2D: IZLP=1)
 			int i4lp;		//62 number of objects in file:
 							// 1D (IXLP=1): number of 1D spectra
 							// 2D (IZLP=1): number of 2D images
@@ -221,20 +233,21 @@ namespace EMAN
 			float coosmsa[69];	//131-199  co-ordinates of "image" along factorial axis
 								// number 1 through 69 (maximum possible).
 								// Used during MSA calculations.
-								//150 eigval, eigenvalues if the "images" represent eigenimages (eigenvalue #1 into loc#1 etc.)
+//			float eigval;					//150 eigval, eigenvalues if the "images" represent eigenimages (eigenvalue #1 into loc#1 etc.)
 			char history[228];	//220-256 coded history of image (228 characters)
 		};
 
-		size_t get_datatype_size(DataType t);
-		int to_em_datatype(DataType t);
-		void make_header_host_endian(ImagicHeader & hed);
-		void swap_header(ImagicHeader & hed);
-		DataType get_datatype_from_name(const char *name);
+		size_t get_datatype_size(DataType t) const;
+		int to_em_datatype(DataType t) const;
+		void make_header_host_endian(Imagic4D & hed) const;
+		void swap_header(Imagic4D & hed) const;
+		DataType get_datatype_from_name(const char *name) const;
 
 		/** the Ctf object is a EMAN1Ctf object. */
-		Ctf * read_ctf(const ImagicHeader& hed) const;
+		Ctf * read_ctf(const Imagic4D& hed) const;
 		void write_ctf(const Ctf * const ctf, int image_index = 0);
 		
+		int generate_machine_stamp() const;
 	  private:
 		string filename;
 		string hed_filename;
@@ -251,6 +264,7 @@ namespace EMAN
 		bool is_new_img;
 
 		DataType datatype;
+		int nz;
 	};
 
 }

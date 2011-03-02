@@ -48,6 +48,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     gatan2io.cpp
     emio.cpp
     imagicio.cpp
+    imagicio2.cpp
     df3io.cpp
     emcache.cpp
     ctf.cpp

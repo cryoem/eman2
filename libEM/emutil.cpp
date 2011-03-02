@@ -39,6 +39,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "emassert.h"
+#include "exception.h"
 
 #ifdef WIN32
 	#include <windows.h>
@@ -219,11 +220,6 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_MRC;
 		}
 		break;
-	case IMAGE_IMAGIC:
-		if (ImagicIO::is_valid(first_block)) {
-			return IMAGE_IMAGIC;
-		}
-		break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
 			return IMAGE_DM3;
@@ -318,6 +314,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 	case IMAGE_DF3:
 		if (EmIO::is_valid(first_block, file_size)) {
 			return IMAGE_DF3;
+		}
+		break;
+	case IMAGE_IMAGIC:
+		if (ImagicIO::is_valid(first_block)) {
+			return IMAGE_IMAGIC;
 		}
 		break;
 	default:
@@ -505,7 +506,11 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		imageio = new MrcIO(filename, rw_mode);
 		break;
 	case IMAGE_IMAGIC:
-		imageio = new ImagicIO(filename, rw_mode);
+		imageio = new ImagicIO2(filename, rw_mode);
+		if (rw_mode==ImageIO::READ_ONLY && ((ImagicIO2 *)imageio)->init_test()==-1 ) {
+			delete imageio;
+			imageio = new ImagicIO(filename, rw_mode);
+		}
 		break;
 	case IMAGE_DM3:
 		imageio = new DM3IO(filename, rw_mode);

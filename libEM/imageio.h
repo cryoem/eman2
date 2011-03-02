@@ -275,7 +275,7 @@ namespace EMAN
 		 * @param image_index The 'image_index'th image. Valid value =
 		 * [0, max_nimg].
 		 * @param max_nimg Maximum number of images in the file. If
-		 * its value <= 0, don't check image_index againt max_nimg.
+		 * its value <= 0, don't check image_index against max_nimg.
 		 * @exception ImageWriteException Image is not opened for writing.
 		 * @exception OutofRangeException If image_index is out of range.
 		 */

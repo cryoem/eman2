@@ -73,6 +73,7 @@
 #include "gatan2io.h"
 #include "emio.h"
 #include "imagicio.h"
+#include "imagicio2.h"
 #include "fitsio.h"
 #include "df3io.h"
 
