@@ -67,7 +67,7 @@ void cudasetup(int id) {
 	cudaError_t cudaError;
 	cudaError = cudaGetLastError();
 	if (cudaError != cudaSuccess) {
-		fprintf(stderr, "CUDA Runtime API Error reported: %s\n", cudaGetErrorString(cudaError));
+		fprintf(stderr, "CUDA Runtime API Error reported: %s.   Devide id = %d\n", cudaGetErrorString(cudaError), id);
 		exit(0);
 	}
 }
