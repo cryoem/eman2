@@ -332,6 +332,7 @@ def EMSelectorBaseTemplate(Type):
 			''' Slot for OK button '''
 			print "EMSelectorBase.ok_button_clicked"
 			self.emit(QtCore.SIGNAL("ok"),self.selections)
+			self.emit(QtCore.SIGNAL("oky"))
 		
 		def cancel_button_clicked(self,bool):
 			''' Slot for Cancel button '''

@@ -75,7 +75,7 @@ spr_ptcls_dict = "global.spr_ptcls_dict"
 spr_rfca_dict = "global.spr_rfca_dict"
 spr_stacks_map = "global.spr_stacks_map"
 spr_sets_dict = "global.spr_sets_dict"
-spr_init_models_dict = "global.spr_init_models_dictx" #my DB has been corrupted!!!!!
+spr_init_models_dict = "global.spr_init_models_dict" #my DB has been corrupted!!!!!
 
 #These are actually used
 tpr_subtomo_stacks = "global.tpr_subtomo_stacks"
@@ -4539,8 +4539,8 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 class E2InitialModelsTool:
 	def __init__(self):
 		self.project_data_at_init = None
-	
-	def get_initial_models_table(self):
+		
+	def get_initial_models_table(self, makebutton=1):
 		data_dict = EMProjectDataDict(spr_init_models_dict)
 		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
@@ -4550,11 +4550,11 @@ class E2InitialModelsTool:
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Initial Models",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_init_models_dict)
 		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		if makebutton:
+			table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
 		table.add_column_data(EMFileTable.EMColumnData("Quality",E2InitialModelsTool.get_quality_score,"This the quality score as determined by e2initialmodel.py",float_lt))
 
 		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
-
 		#p.append(pdims) # don't think this is really necessary
 		return table,len(init_model_names)
 	
@@ -5432,7 +5432,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		error_message = []
 		if params["orientopt_entry"] < 0:
 			error_message.append("Please enter a positive non zero value for the angle/number of projections in the Project3D settings")
-		
+
 		if params["orientgen"] == "rand" and params["orientopt"] == "Angle Based":
 			error_message.append("The random orientation generator doesn't work with the \'Angle Based\' argument, please choose \'Number Based\' instead") 
 		
@@ -5610,7 +5610,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 	def get_main_params_2(self):
 		
 		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Select initial models for multireference alignment. To select click one one, and then click on another while holding down control. Please note that if you wish to add new models, use the initial model tool, as the form won't be updated(if you use browse to add) and you wont see the model symmetry parameter contols",choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits="Select initial models for multireference alignment. To select click one one, and then click on another while holding down control. To add additional models to the list,use the Initial Model tab in the previous section",choices=None))
 
 		# I could check to see if the database exists but it seems unnecessary
 		# In the event that the database doesn't exist it is created and 
@@ -5621,7 +5621,9 @@ post-process - This is an optional filter to apply to the model as a final step,
 		project_db = db_open_dict("bdb:project")
 		
 		self.imt = E2InitialModelsTool()
-		p1,n1 = self.imt.get_initial_models_table()
+		p1,n1 = self.imt.get_initial_models_table(makebutton=0) # Do not add a Browse to Add button, it just created a headache
+		QtCore.QObject.connect(p1,QtCore.SIGNAL("updateform"),self.updateform)
+		
 		p1.enable_multiple_selection = False
 		params.append(p1)
 			
@@ -5657,6 +5659,12 @@ post-process - This is an optional filter to apply to the model as a final step,
 		#db_close_dict("bdb:project")
 		
 		return ["Model",params]
+	
+	def updateform(self):
+		#print "CLICKED"
+		#self.on_form_cancel()
+		#self.run_form()
+		pass
 		
 	def get_project3d_page(self):
 		params = []

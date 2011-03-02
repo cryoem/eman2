@@ -263,7 +263,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
 		QtCore.QObject.connect(self, QtCore.SIGNAL("itemDoubleClicked(QTableWidgetItem*)"),self.table_item_double_clicked)
-		
+
 		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
 
@@ -582,7 +582,10 @@ class EMFileTable(QtGui.QTableWidget):
 			button = QtGui.QPushButton(button_data.name,None)
 			layout.addWidget(button,0)
 			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),button_data.function)
-	
+			QtCore.QObject.connect(button,QtCore.SIGNAL("clicked(bool)"),self.sendupdate)
+	def sendupdate(self):
+		self.emit(QtCore.SIGNAL("updateform"))
+		
 	class EMColumnData:
 		'''
 		This class defines what's required to add column data to the EMFileTable
