@@ -243,7 +243,7 @@ def main():
 				symmetrize(ref,options.sym)
 			
 			if options.savesteps :
-				ref.write_image("class_%02d.hdf"%ic,-1)
+				ref.write_image("bdb:class_%02d"%ic,it)
 
 		ref.write_image(options.output,ic)
 
@@ -396,7 +396,7 @@ class Align3DTask(EMTask):
 		# If a Transform was passed in, we skip coarse alignment
 		if isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-			if options["shrinkrefine"]>1 : bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"]/float(options["shrinkrefine"]))
+			if options["shrinkrefine"]>1 : bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
 		# this is the default behavior, seed orientations come from coarse alignment
 		else:
 			# returns an ordered vector of Dicts of length options.ncoarse. The Dicts in the vector have keys "score" and "xform.align3d"
@@ -404,7 +404,7 @@ class Align3DTask(EMTask):
 			scaletrans=options["shrink"]/float(options["shrinkrefine"])
 			if scaletrans!=1.0:
 				for c in bestcoarse:
-					c["xform.align3d"].set_trans(c["xform.align3d"]*scaletrans)
+					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
 
 		# verbose printout
 		if options["verbose"]>1 :
@@ -416,14 +416,13 @@ class Align3DTask(EMTask):
 			for bc in bestcoarse:
 				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"]})
+				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d","coarse":bc]})
 				except:
-					print "Refine alignment failed for %s. Using the coarse alignment instead. Results may be invalid"%self.label
-					bestfinal.append(bc)
+					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
 
 			if options["shrinkrefine"]>1 :
 				for c in bestfinal:
-					c["xform.align3d"].set_trans(c["xform.align3d"]*float(options["shrinkrefine"]))
+					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(options["shrinkrefine"]))
 
 			# verbose printout of fine refinement
 			if options["verbose"]>1 :
@@ -432,6 +431,9 @@ class Align3DTask(EMTask):
 		else : bestfinal=bestcoarse
 		
 		bestfinal.sort()
+		if bestfinal[0]["score"]==1.0e10 :
+			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
+		
 		if options["verbose"] : print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 
 		if options["verbose"] : print "Done aligning ",options["label"]
