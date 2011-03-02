@@ -396,10 +396,15 @@ class Align3DTask(EMTask):
 		# If a Transform was passed in, we skip coarse alignment
 		if isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
+			if options["shrinkrefine"]>1 : bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"]/float(options["shrinkrefine"]))
 		# this is the default behavior, seed orientations come from coarse alignment
 		else:
 			# returns an ordered vector of Dicts of length options.ncoarse. The Dicts in the vector have keys "score" and "xform.align3d"
 			bestcoarse=simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["ncoarse"],options["aligncmp"][0],options["aligncmp"][1])
+			scaletrans=options["shrink"]/float(options["shrinkrefine"])
+			if scaletrans!=1.0:
+				for c in bestcoarse:
+					c["xform.align3d"].set_trans(c["xform.align3d"]*scaletrans)
 
 		# verbose printout
 		if options["verbose"]>1 :
@@ -416,9 +421,14 @@ class Align3DTask(EMTask):
 					print "Refine alignment failed for %s. Using the coarse alignment instead. Results may be invalid"%self.label
 					bestfinal.append(bc)
 
+			if options["shrinkrefine"]>1 :
+				for c in bestfinal:
+					c["xform.align3d"].set_trans(c["xform.align3d"]*options["shrinkrefine"])
+
 			# verbose printout of fine refinement
 			if options["verbose"]>1 :
 				for i,j in enumerate(bestfinal): print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+
 		else : bestfinal=bestcoarse
 		
 		bestfinal.sort()
