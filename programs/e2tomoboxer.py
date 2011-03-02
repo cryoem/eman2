@@ -65,8 +65,8 @@ def main():
 	
 	(options, args) = parser.parse_args()
 		
-#	if len(args) < 0: parser.error("You must sepcify the input argument")
-#	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
+	if len(args) != 1: parser.error("You must specify a single volume data file on the command-line.")
+	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")

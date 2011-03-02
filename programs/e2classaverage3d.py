@@ -203,7 +203,7 @@ def main():
 					pprint(results)
 				
 				
-				make_average_pairs(infile,outfile,results,options.averager)
+				make_average_pairs(infile,outfile,results,options.averager,options.mask,options.normproc,options.postprocess)
 				
 			ref=EMData(outfile,0)		# result of the last iteration
 			if options.postprocess!=None : 
@@ -235,8 +235,8 @@ def main():
 				pprint(results)
 			
 			ref=make_average(options.input,results,options.averager,options.saveali)		# the reference for the next iteration
-			if options.postprocess!=None : 
-				ref.process_inplace(options.postprocess[0],options.postprocess[1])
+			
+			postprocess(ref,options.mask,options.normproc,options.postprocess)
 
 			if options.sym!=None : 
 				if options.verbose : print "Apply ",options.sym," symmetry"
@@ -248,7 +248,27 @@ def main():
 		ref.write_image(options.output,ic)
 
 	E2end(logger)
+
+def postprocess(img,optmask,optnormproc,optpostprocess):
+	"""Postprocesses a volume in-place"""
 	
+	# Make a mask, use it to normalize (optionally), then apply it 
+	mask=EMData(img["nx"],img["ny"],img["nz"])
+	mask.to_one()
+	if optmask != None:
+		mask.process_inplace(optmask[0],optmask[1])
+		
+	# normalize
+	if optnormproc != None:
+		if optnormproc[0]=="normalize.mask" : optnormproc[1]["mask"]=mask
+		img.process_inplace(optnormproc[0],optnormproc[1])
+
+	img.mult(mask)
+	
+	# Postprocess filter
+	if optpostprocess!=None : 
+		img.process_inplace(optpostprocess[0],optpostprocess[1])
+
 def make_average(ptcl_file,align_parms,averager,saveali):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average"""
 	
@@ -261,7 +281,7 @@ def make_average(ptcl_file,align_parms,averager,saveali):
 		
 	return avgr.finish()
 
-def make_average_pairs(ptcl_file,outfile,align_parms,averager):
+def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormproc,optpostprocess):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
 	for i,ptcl_parms in enumerate(align_parms):
@@ -275,6 +295,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager):
 		avgr.add_image(ptcl1)
 		
 		avg=avgr.finish()
+		postprocess(avg,optmask,optnormproc,optpostprocess)		# we treat these intermediate averages just like the final average
 		avg.write_image(outfile,i)
 
 
@@ -365,6 +386,9 @@ class Align3DTask(EMTask):
 			if options["normproc"][0]=="normalize.mask" : options["normproc"][1]["mask"]=mask
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
+		
+		fixedimage.mult(mask)
+		image.mult(mask)
 		
 		# preprocess
 		if options["preprocess"] != None:

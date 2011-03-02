@@ -52,6 +52,7 @@ def main():
 		
 	#options associated with e2refine.py
 	parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
+	parser.add_option("--startiter", dest = "startiter", type = "int", default=0, help = "If a refinement crashes, this can be used to pick it up where it left off. This should NOT be used to change parameters, but only to resume an incomplete run.")
 	parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
@@ -153,13 +154,13 @@ def main():
 	# this is the main refinement loop
 	
 	progress = 0.0
-	total_procs = 5*options.iter
+	total_procs = 5*(options.iter-options.startiter)
 	
 	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 	
 	apix = get_apix_used(options)
 	
-	for i in range(0,options.iter) :
+	for i in range(options.startiter,options.iter) :
 		
 		number_options_file(i,"projections",options,"projfile")
 		if ( os.system(get_projection_cmd(options)) != 0 ):
