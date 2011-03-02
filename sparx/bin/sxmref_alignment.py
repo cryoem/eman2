@@ -59,7 +59,7 @@ def main():
 	parser.add_option('--MPI',      action='store_true',   default=False,          help='MPI')
 
 	(options, args) = parser.parse_args()
-	if len(args) != 2:
+	if len(args) != 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -73,7 +73,7 @@ def main():
 
 		global_def.BATCH = True
 		from development import mref_alignment
-		mref_alignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, 
+		mref_alignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, 
 				options.Fourvar, options.Ng, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		

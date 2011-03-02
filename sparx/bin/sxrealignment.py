@@ -64,7 +64,7 @@ def main():
 	parser.add_option('--old',      action='store_true',   default=False,          help='old')
 
 	(options, args) = parser.parse_args()
-	if options.old == False and len(args) != 2 or options.old and len(args) != 4:
+	if options.old == False and len(args) != 3 or options.old and len(args) != 4:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -82,7 +82,7 @@ def main():
 			realid(args[0], args[1], args[2], args[3], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.th_mir, options.th_err, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		else:
 			from development import realignment
-			realignment(args[0], args[1], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
+			realignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
