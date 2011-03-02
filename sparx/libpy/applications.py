@@ -60,25 +60,64 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 		ali2d_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
 		return
 
+	from utilities    import print_begin_msg, print_end_msg, print_msg
+	from utilities    import file_type
+	import os
+
+	print_begin_msg("ali2d")
+	
+	# Comment by Zhengfan Yang on 09/03/10
+	# I have decided that outdir should be able to take None as parameter, if the user does not need an output directory.
+	# This is particularly useful in the ISAC program, nobody will care what is in the alignment and realignment directory.
+	# It takes a lot of disk space and time to write them, too. It may not be much for one iteration, but will be enormous 
+	# for several hundred iterations. This change will not affect the normal use.
+	if outdir:
+		if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
+		os.mkdir(outdir)
+
+	if file_type(stack) == "bdb":
+		from EMAN2db import db_open_dict
+		dummy = db_open_dict(stack, True)
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if active[im]:  list_of_particles.append(im)
+	del active
+	nima = len(list_of_particles)
+	
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+	
+	print_msg("Input stack                 : %s\n"%(stack))
+	
+	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID, True)
+	
+	# write out headers
+	from utilities import write_headers
+	write_headers(stack, data, list_of_particles)
+	print_end_msg("ali2d")
+
+
+def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
+		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False):
+	
+	# Comment by Zhengfan Yang 02/25/11
+	# This is where ali2d() actually runs, the reason I divided it into two parts is that
+	# the alignment program will now also support list of EMData instead of just a stack.
+	
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import max_2D_pixel_error
 	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from utilities    import model_blank, model_circle, file_type
+	from utilities    import model_blank, model_circle
 	import os
-			
-	print_begin_msg("ali2d")
-	
-	ftp = file_type(stack)
 
-	# Comment by Zhengfan Yang on 09/03/10
-	# I have decided that outdir should be able to take None as parameter, if the user does not need an output directory.
-	# This is particularly useful in the ISAC program, nobody will care what is in the alignment and realignment directory.
-	# It takes a lot of disk space and time to write them, too. It may not be much for one iteration, but will be enormous for several hundred iterations.
-	# This change will not affect the normal use.
-	if outdir:
+	if from_ali2d == False: print_begin_msg("ali2d_data")
+	
+	if outdir and from_ali2d == False:
 		if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
 		os.mkdir(outdir)
 
@@ -95,31 +134,20 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	else:
 		auto_stop = False
 
-	if ftp == "bdb":
-		from EMAN2db import db_open_dict
-		dummy = db_open_dict(stack, True)
-	active = EMUtil.get_all_attributes(stack, 'active')
-	list_of_particles = []
-	for im in xrange(len(active)):
-		if active[im]:  list_of_particles.append(im)
-	del active
-	nima = len(list_of_particles)
+	nima = len(data)
 	
 	if Ng == -1:
 		Ng = nima
 	elif Ng == -2:
 		Ng = int(0.98*nima)
 
-	ima  = EMData()
-	ima.read_image(stack, list_of_particles[0], True)
-	nx = ima.get_xsize()
+	nx = data[0].get_xsize()
 
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
-	print_msg("Input stack                 : %s\n"%(stack))
 	print_msg("Number of active images     : %s\n"%(nima))
 	print_msg("Output directory            : %s\n"%(outdir))
 	print_msg("Inner radius                : %i\n"%(first_ring))
@@ -162,9 +190,8 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	cnx = nx/2+1
  	cny = cnx
  	mode = "F"
-	data = []
 	if CTF:
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
+		if data[0].get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf
 		from morphology import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -178,15 +205,11 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 		else:
 			from statistics   import varf
 
-	del ima
-	
 	if CUDA:
 		all_ali_params = []
 		all_ctf_params = []
-	
-	data = EMData.read_images(stack, list_of_particles)
+
 	for im in xrange(nima):
-		data[im].set_attr('ID', list_of_particles[im])
 		#  Subtract averages outside of mask from all input data
 		st = Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
@@ -346,10 +369,9 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 
 	if outdir:
 		drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
-	# write out headers
-	from utilities import write_headers
-	write_headers(stack, data, list_of_particles)
-	print_end_msg("ali2d")
+
+	if from_ali2d == False: print_end_msg("ali2d_data")
+
 
 
 def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
