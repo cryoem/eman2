@@ -2398,7 +2398,7 @@ CUDA_Aligner::CUDA_Aligner(int id) {
 	image_stack = NULL;
 	image_stack_filtered = NULL;
 	ccf = NULL;
-	cudasetup(id);
+	if (id != -1) cudasetup(id);
 }
 
 void CUDA_Aligner::finish() {
@@ -2763,7 +2763,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 			calculate_multiref_ccf(image_stack+batch_begin[i]*NX*NY, ref_image_stack, ccf, batch_size[i], NREF, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY,
 				sx2+batch_begin[i], sy2+batch_begin[i], silent);
 		}
-		
+
 		for (int j=0; j<batch_size[i]; j++) {
 			for (int im=0; im<NREF; im++) {
 				float max_ccf = -1.0e22;
