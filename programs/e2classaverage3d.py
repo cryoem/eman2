@@ -82,7 +82,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d")
 	parser.add_option("--raligncmp",type="string",help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average. Default=mean",default="mean")
-	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
+#	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--postprocess",type="string",help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
@@ -102,7 +102,7 @@ def main():
 	if options.aligncmp : options.aligncmp=parsemodopt(options.aligncmp)
 	if options.raligncmp : options.raligncmp=parsemodopt(options.raligncmp)
 	if options.averager : options.averager=parsemodopt(options.averager)
-	if options.cmpr : options.cmpr=parsemodopt(options.cmpr)
+#	if options.cmpr : options.cmpr=parsemodopt(options.cmpr)
 	if options.normproc : options.normproc=parsemodopt(options.normproc)
 	if options.mask : options.mask=parsemodopt(options.mask)
 	if options.preprocess : options.preprocess=parsemodopt(options.preprocess)
@@ -206,9 +206,6 @@ def main():
 				make_average_pairs(infile,outfile,results,options.averager,options.mask,options.normproc,options.postprocess)
 				
 			ref=EMData(outfile,0)		# result of the last iteration
-			if options.postprocess!=None : 
-				ref.process_inplace(options.postprocess[0],options.postprocess[1])
-				ref.write_image(outfile,0)
 			
 			if options.savesteps :
 				ref.write_image("bdb:class_%02d"%ic,-1)
@@ -234,7 +231,7 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,results,options.averager,options.saveali)		# the reference for the next iteration
+			ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 			
 			postprocess(ref,options.mask,options.normproc,options.postprocess)
 
@@ -251,6 +248,8 @@ def main():
 
 def postprocess(img,optmask,optnormproc,optpostprocess):
 	"""Postprocesses a volume in-place"""
+	
+	img.process_inplace("xform.centerofmass")
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
 	mask=EMData(img["nx"],img["ny"],img["nz"])
@@ -269,17 +268,45 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 	if optpostprocess!=None : 
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
-def make_average(ptcl_file,align_parms,averager,saveali):
-	"""Will take a set of alignments and an input particle stack filename and produce a new class-average"""
+def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
+	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
+	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
+	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
+	
+	if keepsig:
+		# inefficient memory-wise
+		val=sum([p[0]["score"] for p in align_parms])
+		val2=sum([p[0]["score"]**2 for p in align_parms])
+		
+		mean=val/len(align_parms)
+		sig=sqrt(val2/len(align_parms)-mean*mean)
+		thresh=mean+sig*keep
+		if verbose : print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+	else:
+		val=[p[0]["score"] for p in align_parms]
+		val.sort()
+		thresh=val[int(keep*len(align_parms))-1]
+		if verbose : print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+	
 	
 	avgr=Averagers.get(averager[0], averager[1])
+	included=[]
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-		avgr.add_image(ptcl)
+		if ptcl_parms[0]["score"]<thresh : 
+			avgr.add_image(ptcl)
+			included.append(i)
 		if saveali: ptcl.write_image("bdb:class_ptcl",i)
-		
-	return avgr.finish()
+	
+	if verbose : print "Kept %d / %d particles in average"%(len(included),len(align_parms))
+	
+	ret=avgr.finish()
+	ret["class_ptcl_idxs"]=included
+	ret["class_ptcl_src"]=ptcl_file
+	
+	return ret
+
 
 def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormproc,optpostprocess):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
