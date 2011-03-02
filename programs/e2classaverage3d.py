@@ -423,7 +423,7 @@ class Align3DTask(EMTask):
 
 			if options["shrinkrefine"]>1 :
 				for c in bestfinal:
-					c["xform.align3d"].set_trans(c["xform.align3d"]*options["shrinkrefine"])
+					c["xform.align3d"].set_trans(c["xform.align3d"]*float(options["shrinkrefine"]))
 
 			# verbose printout of fine refinement
 			if options["verbose"]>1 :
