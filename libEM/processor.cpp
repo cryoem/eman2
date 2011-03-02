@@ -9810,13 +9810,16 @@ int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extn_start
     params[5] = BLOCK_SIZE; // Size of threads block (512)
     params[6] = NB;         // Number of blocks which fit with BLOCK_SIZE
     params[7] = ins_BLOCK;  // Number of blocks remaining
+    
 
     return 0;
 }
 
 // add image pre-process by Util.compress_image_mask
 void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
+   
     for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
+    
 }
 
 // cuda init mem device, cublas (get device ptr)
@@ -9849,7 +9852,8 @@ int MPICUDA_kmeans::random_ASG(long int rnd) {
     int ret = 20;
     int flag = 0;
     int i, k;
-    for (k = 0; k < K; k++) h_NC[k] = 0;
+    std::cout<<"111111111  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
+    /*for (k = 0; k < K; k++) h_NC[k] = 0;
     while (ret > 0) {
 	ret--;
 	for (i = 0; i < N; i++) {
@@ -9870,7 +9874,35 @@ int MPICUDA_kmeans::random_ASG(long int rnd) {
 	    }
 	if (flag == 1) ret = 0;
 	}
+    }*/
+   /* std::cout<<"2222222222  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
+    h_ASG[0] = 0;
+    h_ASG[1] = 0;
+    h_ASG[2] = 0;
+    h_ASG[3] = 1;
+    h_ASG[4] = 1;
+    h_ASG[5] = 1;
+    h_ASG[6] = 2;
+    h_ASG[7] = 2;
+    h_ASG[8] = 2;
+    for (k = 0; k < K; k++) h_NC[k] = 0;
+    ///for (i = 0; i < N; i++) {
+	//   h_NC[h_ASG[i]]++;
+	//}
+    h_NC[0] = 3;
+    h_NC[1] = 3;
+    h_NC[2] = 3;
+    std::cout<<"initial h_ASG=="<<h_ASG[0]<<"  "<<h_ASG[1]<<"  "<<h_ASG[2]<<"  "<<h_ASG[3]<<"  "<<h_ASG[4]<<"  "<<h_ASG[5]<<"  "<<h_ASG[6]<<"  "<<h_ASG[7]<<"   "<<h_ASG[8]<<std::endl;*/
+    for (k = 0; k < K; k++) h_NC[k] = 0;
+    for (i = 0; i < N; i++) {
+    	h_ASG [i] = i%K;
+	h_NC[h_ASG[i]]++;
     }
+    
+      
+    std::cout<<"h_NC=="<<h_NC[0]<<"  "<<h_NC[1]<<"  "<<h_NC[2]<<std::endl;
+    std::cout<<"h_ASG=="<<h_ASG[0]<<"  "<<h_ASG[1]<<"  "<<h_ASG[2]<<"  "<<h_ASG[3]<<"  "<<h_ASG[4]<<"  "<<h_ASG[5]<<"  "<<h_ASG[6]<<"  "<<h_ASG[7]<<"   "<<h_ASG[8]<<std::endl;
+    
     return 0;
 }
 
@@ -9943,6 +9975,12 @@ void MPICUDA_kmeans::compute_AVE() {
 	}
 	h_AVE2[i] = buf;
     }
+    
+    /*for (i = 0; i < K; i++) {
+    	std::cout<<"average image"<<std::endl;
+    	std::cout<<h_AVE[i*m+0]<<"  "<<h_AVE[i*m+1]<<"  "<<h_AVE[i*m+2]<<"  "<<h_AVE[i*m+3]<<"  "<<h_AVE[i*m+4]<<std::endl;
+    }*/
+  
 }
 
 // set averages
@@ -9970,7 +10008,41 @@ int MPICUDA_kmeans::one_iter() {
     ite++;
     return status;
 }
+// k-means SSE one iteration help function
+int MPICUDA_kmeans::init_dist() {
+   
+    int status = cuda_mpi_kmeans_dist_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
+   
+    return status;
+}
 
+int MPICUDA_kmeans::AVE_to_host() {
+   
+    int status = cuda_mpi_kmeans_copy_ave_from_device(h_AVE, d_AVE, params);
+   
+    return status;
+}
+
+
+int one_iter_SA();
+// k-means SSE one iteration
+int MPICUDA_kmeans::one_iter_SSE() {
+    //if ( ite == 0)
+    
+    if( ite ==0) {
+    	 int status_init=init_dist();
+    	 ttt = compute_tt();//int status = 0;
+    	 printf("intial energy ===%f\n",ttt);
+    }
+    //std::cout<<bb<<BB<<std::endl;
+    int status = cuda_mpi_kmeans_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params, ite, ttt);
+    
+    //float t = compute_tt();//int status = 0;
+    //std::cout<<"engery at iteration"<<ite<<"==="<<t<<std::endl;
+ 
+    ite++;
+    return status;
+}
 // k-means SA one iteration
 int MPICUDA_kmeans::one_iter_SA() {
     int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, T, params);
@@ -9990,6 +10062,42 @@ vector <float> MPICUDA_kmeans::compute_ji() {
     for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
     return ji;
 }
+
+
+float MPICUDA_kmeans::compute_tt() {
+    /*int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
+    vector <float> ji(K);
+    int i;
+    if (status != 0) {
+        for (i = 0; i < K; ++i) ji[i] = -1.0;
+        return -11111111;
+    }
+    for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
+   float t =0.0; 
+   for (i =0; i<K;i++)
+       t +=ji[i];
+    return t;*/
+    
+           
+    vector <float> ji(K);
+    int i,j;
+    float dist, temp;
+    for (i = 0; i < n; ++i) 
+    {
+    	dist =0;
+	for ( j=0; j<m; j++)	 {
+	    temp = (h_im[i*m+j] -h_AVE[ h_asg[i]*m+j]);
+	    dist = dist + temp*temp;
+	 }
+    	ji[h_asg[i]] = ji[h_asg[i]]+ dist;
+   }
+	
+   float t =0.0; 
+   for (i =0; i<K;i++)
+       t +=ji[i];
+    return t;
+}
+
 
 //
 vector <float> MPICUDA_kmeans::compute_criterion(const vector <float>& Ji) {

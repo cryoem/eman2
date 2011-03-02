@@ -6888,6 +6888,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		void set_AVE(EMData* im, int pos);
 		vector<EMData*> get_AVE();
 		int one_iter();
+		int one_iter_SSE();
+		int AVE_to_host();
 		int one_iter_SA();
 		vector<float> compute_ji();
 		vector<float> compute_criterion(const vector <float>& Ji);
@@ -6922,10 +6924,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		unsigned short int* h_asg;
 		unsigned int* h_NC;
 		int* params;
+		float ttt;
 		// device memory
 		float* d_im;
 		float* d_AVE;
 		float* d_dist;
+		int init_dist(); // intial h_dist and d_dist for SSE
+                float compute_tt();
 	};
 
 #endif //EMAN2_USING_CUDA
