@@ -1148,6 +1148,7 @@ of these occasional errors"""
 			try: del ad["data_path"]
 			except:pass
 			
+			ad["timestamp"]=local_datetime()
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
@@ -1329,6 +1330,7 @@ of these occasional errors"""
 			try: del ad["data_path"]
 			except:pass
 			
+			ad["timestamp"]=local_datetime()
 			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key

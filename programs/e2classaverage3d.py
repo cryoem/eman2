@@ -76,7 +76,7 @@ def main():
 	parser.add_option("--mask",type="string",help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_option("--normproc",type="string",help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
-	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment", default=1)
+	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15", default="rotate_translate_3d:search=10:delta=15:dphi=15")
 	parser.add_option("--aligncmp",type="string",help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d")
@@ -416,7 +416,7 @@ class Align3DTask(EMTask):
 			for bc in bestcoarse:
 				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d","coarse":bc]})
+				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc]})
 				except:
 					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
 
