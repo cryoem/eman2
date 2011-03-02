@@ -416,7 +416,7 @@ class Align3DTask(EMTask):
 			for bc in bestcoarse:
 				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc]})
+				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
 				except:
 					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
 
