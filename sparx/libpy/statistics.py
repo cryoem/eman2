@@ -1801,18 +1801,18 @@ def k_means_init_open_im(stack, maskname):
 	
 	# if flag active used, prepare the list of images
 	if flagactive:
+		active = EMUtil.get_all_attributes(stack, "active")
 		lim  = []
-		ext  = file_type(stack)
-		if ext == 'bdb':
-			DB = db_open_dict(stack)
-			for n in xrange(Ntot):
-				if DB.get_attr(n, 'active'): lim.append(n)
-			DB.close()
-		else:
-			im = EMData.read_images(stack, range(Ntot), True)
-			for n in xrange(Ntot):
-				if im[n].get_attr('active'): lim.append(n)
-			del im
+		for n in xrange(len(active)):
+			if active[n]: lim.append(n)
+		"""
+		from utilities import write_text_file
+		from sys import exit
+		write_text_file(active,'active')
+		write_text_file(lim,'lim')
+		exit()
+		"""
+		del active
 		N = len(lim)
 	else:
 		lim = range(Ntot)
@@ -6300,7 +6300,7 @@ def isc_read_conf(conf_file):
 	# convert data if need
 
 	#   alignment
-	cfgali['n_ite']      = int(cfgali['n_ite'])
+	#cfgali['n_ite']      = int(cfgali['n_ite'])
 	try:	cfgali['fourvar']    = eval(cfgali['fourvar'])
 	except:	cfgali['fourvar']    = False
 	cfgali['maxit']      = int(cfgali['maxit'])
@@ -6316,7 +6316,7 @@ def isc_read_conf(conf_file):
 	try:       cfgali['ng'] 	     = int(cfgali['ng'])
 	except:   cfgali['ng'] 	     = -1
 	try:	cfgali['dst']	     = eval(cfgali['dst'])	
-	except:	cfgali['dst']	     = 1.0	
+	except:	cfgali['dst']	     = 0.0	
 	try:	cfgali['center']     = int(cfgali['center'])
 	except:	cfgali['center']     = -1
 
@@ -6327,18 +6327,25 @@ def isc_read_conf(conf_file):
 	except:	cfgclu['th_nobj']    = 1
 	try:      cfgclu['t0']         = float(cfgclu['t0'])
 	except:    cfgclu['t0']         = 2.0
-	cfgclu['ctf']        = eval(cfgclu['ctf'])
+	try:	cfgclu['ctf']        = eval(cfgclu['ctf'])
+	except:	cfgclu['ctf']        = False
 	cfgclu['maxit']      = int(cfgclu['maxit'])
 	cfgclu['rand_seed']  = int(cfgclu['rand_seed'])
 	cfgclu['im_per_grp'] = int(cfgclu['im_per_grp'])
 	cfgclu['nb_part']    = int(cfgclu['nb_part'])
 	cfgclu['nb_cpu']     = int(cfgclu['nb_cpu'])
+	try:	cfgclu['flag_tiny']	= eval(cfgclu['flag_tiny'])
+	except:	cfgclu['flag_tiny']	= False
 	try:	cfgclu['cuda']	= eval(cfgclu['cuda'])
 	except:	cfgclu['cuda']	= False
 	try:	cfgclu['filter_cutoff']        = float(cfgclu['filter_cutoff'])
 	except:	cfgclu['filter_cutoff']        = 0.0
 	try:	cfgclu['filter_falloff']        = float(cfgclu['filter_falloff'])
 	except:	cfgclu['filter_falloff']        = 0.0
+	try:	cfgclu['new_nx']        = int(cfgclu['new_nx'])
+	except:	cfgclu['new_nx']        = -1
+	try:	cfgclu['new_ny']        = int(cfgclu['new_ny'])
+	except:	cfgclu['new_ny']        = -1
 
 	#   realignment
 	cfgrali['fourvar']   = eval(cfgrali['fourvar'])

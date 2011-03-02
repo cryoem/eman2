@@ -38,12 +38,11 @@ from   optparse import OptionParser
 import sys, ConfigParser
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " config_file.cfg --align --clustering --realign --use_deci_data"
+	usage = progname + " config_file.cfg --align --cluster --realign"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option('--align',         action='store_true', default=False, help='Perform global alignement')
-	parser.add_option('--clustering',    action='store_true', default=False, help='Perform clustering')
-	parser.add_option('--realign',       action='store_true', default=False, help='Perform realignment')
-	parser.add_option('--use_deci_data', action='store_true', default=False, help='Used decimated data')
+	parser.add_option('--align',     action='store_true', default=False, help='Perform global alignement')
+	parser.add_option('--cluster',   action='store_true', default=False, help='Perform clustering')
+	parser.add_option('--realign',   action='store_true', default=False, help='Perform realignment')
 	(options, args) = parser.parse_args()
 
     	if len(args) != 1:
@@ -57,7 +56,7 @@ def main():
 
 	from development import isc
 	global_def.BATCH = True
-	isc(args[0], options.align, options.clustering, options.realign, options.use_deci_data)
+	isc(args[0], options.align, options.cluster, options.realign)
 	global_def.BATCH = False
 	
 
