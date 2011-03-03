@@ -489,9 +489,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refineFreAlign")))
 		freealign_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2refineFreAlign"] = self.launch_e2refinetofrealign
-		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2runFrealign")))
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2runFreAlign")))
 		freealign_list[-1].setIcon(0,self.icons["refine"])
-		self.launchers["Run - e2runFrealign"] = self.launch_e2runfrealign
+		self.launchers["Run - e2runFreAlign"] = self.launch_e2runfrealign
+		freealign.addChildren(freealign_list)
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinefromFreAlign")))
+		freealign_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run - e2refinefromFreAlign"] = self.launch_e2refinefromfrelaign
 		freealign.addChildren(freealign_list)
 		
 		refine_list.append(freealign)
@@ -870,6 +874,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_e2refinemulti_sets(self): self.launch_task(E2RefineMultiChooseSetsTask(),"Choose Set For e2refinemulti")
 	def launch_e2refinetofrealign(self): self.launch_task(E2RefineToFreeAlign(),"Run RefinenToFreAlign")
 	def launch_e2runfrealign(self): self.launch_task(E2RunFreAlign(), "Run RunFreAlign")
+	def launch_e2refinefromfrelaign(self): self.launch_task(E2RefineFromFreAlign(), "Run RefineFromFreAlign")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")
