@@ -1,2 +1,9 @@
-INSTALL_PROGRAMS(/bin "^.+\\.py$")
-INSTALL_PROGRAMS(/bin sparx)
+FILE(GLOB sxfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
+
+INSTALL(PROGRAMS ${sxfiles}
+  DESTINATION    bin
+)
+
+INSTALL(PROGRAMS sparx
+    DESTINATION    bin
+)
