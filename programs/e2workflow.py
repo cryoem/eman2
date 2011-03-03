@@ -872,7 +872,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
 	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseSetsTask(),"Choose Set For e2refine")
 	def launch_e2refinemulti_sets(self): self.launch_task(E2RefineMultiChooseSetsTask(),"Choose Set For e2refinemulti")
-	def launch_e2refinetofrealign(self): self.launch_task(E2RefineToFreeAlign(),"Run RefinenToFreAlign")
+	def launch_e2refinetofrealign(self): self.launch_task(E2RefineToFreeAlign(),"Run RefineToFreAlign")
 	def launch_e2runfrealign(self): self.launch_task(E2RunFreAlign(), "Run RunFreAlign")
 	def launch_e2refinefromfrelaign(self): self.launch_task(E2RefineFromFreAlign(), "Run RefineFromFreAlign")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
