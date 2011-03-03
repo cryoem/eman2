@@ -1,3 +1,5 @@
+SET(DOC_PATH ${EMAN_INSTALL_PREFIX}/doc)
+
 FILE(GLOB_RECURSE MKDOCSRCS
 	${EMAN_SOURCE_DIR}/doc/latex/*.tex
 )
@@ -42,16 +44,16 @@ ADD_CUSTOM_COMMAND(
 )
 
 ADD_CUSTOM_COMMAND(
-	SOURCE mkdoc
-	COMMAND cp
-	ARGS -f EMAN2.dvi EMAN2.ps EMAN2.pdf ${DOC_PATH}
+	SOURCE  mkdoc
+	COMMAND latex2html  
+	ARGS EMAN2.tex
 	TARGET mkdoc
 )
 
 ADD_CUSTOM_COMMAND(
-	SOURCE  mkdoc
-	COMMAND latex2html  
-	ARGS EMAN2.tex
+	SOURCE mkdoc
+	COMMAND cp
+	ARGS -f EMAN2.dvi EMAN2.ps EMAN2.pdf ${DOC_PATH}
 	TARGET mkdoc
 )
 

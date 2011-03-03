@@ -1,9 +1,13 @@
 IF (ENABLE_AUTODOC)
-	SUBDIRS(latex modular_class_html doxygen)
+    ADD_SUBDIRECTORY(latex)
+    ADD_SUBDIRECTORY(modular_class_html)
+    ADD_SUBDIRECTORY(doxygen)
 ENDIF (ENABLE_AUTODOC)
 
-#MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc)
-SET(DOC_PATH ${EMAN_INSTALL_PREFIX}/doc)
+FILE(GLOB static_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
+INSTALL(FILES ${static_html}
+  DESTINATION    doc
+)
 
-INSTALL_FILES(/doc "^.+\\.(html)$")
-INSTALL_FILES(/doc FILES INSTALL EMAN2.0.big.jpg)
+INSTALL(FILES INSTALL EMAN2.0.big.jpg 
+    DESTINATION examples)

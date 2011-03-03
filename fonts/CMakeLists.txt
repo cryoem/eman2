@@ -1,1 +1,2 @@
-INSTALL_FILES(/fonts FILES DejaVuSerif.ttf readme.txt)
+INSTALL(FILES DejaVuSerif.ttf readme.txt
+    DESTINATION fonts)
