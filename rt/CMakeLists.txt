@@ -1,2 +1,2 @@
-#SUBDIRS(demo imageio pyem emdata)
-SUBDIRS(pyem emdata)
+ADD_SUBDIRECTORY(pyem)
+ADD_SUBDIRECTORY(emdata)

@@ -1,3 +1,4 @@
-#MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/test/rt)
-
-INSTALL_FILES(/test/rt "\\.(py)$")
+FILE(GLOB testprograms "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
+INSTALL(PROGRAMS ${testprograms}
+  DESTINATION    test/rt
+)

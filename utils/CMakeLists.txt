@@ -6,5 +6,6 @@ ADD_EXECUTABLE(e2speedtest speedtest.cpp)
 #ADD_EXECUTABLE(pdbreader pdbreader.cpp)
 # ADD_EXECUTABLE(e2ptcltrace e2ptcltrace.cpp)
 
-
-INSTALL_TARGETS(/bin e2speedtest)
+INSTALL(TARGETS e2speedtest 
+    DESTINATION    bin
+)
