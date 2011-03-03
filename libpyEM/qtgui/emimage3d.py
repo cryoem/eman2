@@ -542,6 +542,8 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 						model.get_inspector().thr.setValue( data["mean"] + 1.8*data["sigma"] )
 			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
 			elif previous_cam_data:
+				if (nx, ny, nz) != previous_size:
+					self.set_cam_z_from_fov_image(self.get_fov(), self.data)
 				for model in self.viewables:
 					model.busy = True
 					inspector = model.get_inspector()
