@@ -3711,7 +3711,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					else:
 						dJe[k] = 0
 
-				# [all] Simulate annealing
+				# [all] Simulated annealing
 				if SA:
 					# normalize and select
 					mindJe = min(dJe)
@@ -3736,17 +3736,16 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 				# [all] update to SSE method
 				ct_update += 1
-				# this is all messed up, here it will enter only after all nodes did update th_update times, but there is no guarantee it will happen
-				#  instead, it should enter here when any node does th_updates!
 				if( (imn-N_start)>=th_update and (imn-N_start)<N_min ):
 					# check whether any exceeded the threshold
 					updates = [0]*ncpu
 					updates[myid] = ct_update
+
 					mpi_barrier(MPI_COMM_WORLD)
 					updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 					updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
 					updates = map(int, updates)    # convert array given by MPI to list
-					if( max(updates) >= th_updates):
+					if( max(updates) >= th_update):
 						# redo averages and reset counters
 						ct_update = 0
 						# [id] compute the number of objects
@@ -3817,6 +3816,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 						# [all] waiting the result
 						mpi_barrier(MPI_COMM_WORLD)
+				#if(myid == 3):  print  "   imn   ",imn,N_start,N_stop
 
 			#  Here check if there were still any changes after last update within the loop above
 			updates = [0]*ncpu
@@ -3826,11 +3826,10 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
 			updates = map(int, updates)    # convert array given by MPI to list
 			if( max(updates) > 0):
-				# redo averages and reset counters
-				ct_update = 0
+				# redo averages
 				# [id] compute the number of objects
-				for k in xrange(K): 		  Cls['n'][k] = 0
-				for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
+				for k in xrange(K):		 Cls['n'][k] = 0
+				for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1 		       
 
 				# [all] sum the number of objects in each node and broadcast
 				Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -3845,7 +3844,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						break
 
 					Cls['ave'][k].to_zero()
-					if CTF:	Cls_ctf2[k] = [0] * len_ctm
+					if CTF:        Cls_ctf2[k] = [0] * len_ctm
 
 				mpi_barrier(MPI_COMM_WORLD)
 
@@ -3878,10 +3877,10 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 						valCTF = [0] * len_ctm
-						for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+						for i in xrange(len_ctm):      valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
 						Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
 
-				else:			
+				else:		       
 					# [id] Update clusters averages
 					for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
 
