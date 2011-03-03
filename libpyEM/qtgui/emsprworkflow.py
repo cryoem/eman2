@@ -5743,7 +5743,7 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		edir = edir[:edir.rindex("/")]
 		
 		prflist = []
-		prflist.append("e2runfrealign.py")
+		prflist.append("e2refinefromfrealign.py")
 		prflist.append(edir)
 
 		child = subprocess.Popen(prflist)
