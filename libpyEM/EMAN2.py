@@ -293,7 +293,7 @@ def get_prefixed_directories(prefix,wd=e2getcwd()):
 	dirs, files = get_files_and_directories(wd)
 	dirs.sort()
 	dirs=[i for i in dirs if i.startswith(prefix) and not "." in i]
-	
+
 	return dirs
 
 def get_image_directory():
