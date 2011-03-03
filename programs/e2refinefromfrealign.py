@@ -45,11 +45,8 @@ for l_iter in range(1,high+1):
    in_img = EMData(dir + "/3DMapInOut.mrc")
    fa_out_img = EMData(dir + "/OutputMap_" + iter + ".mrc")
    b = fa_out_img.process("xform.flip", {"axis":"x"})
-   c = b * -1
-   d = c.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
+   d = b.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
    d.write_image(dir + "/OutputMap_Contrast_Corrected_" + iter + ".mrc")
-
-
 
 
 
