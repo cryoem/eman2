@@ -59,7 +59,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	A QT widget for rendering 3D EMData objects
 	"""
 	allim=weakref.WeakKeyDictionary()
-	def add_model(self,model,num=0):
+	def add_model(self,model,num=0, updateGL = False):
 		
 		model.set_gl_widget(self)
 		model.set_dont_delete_parent() # stops a RunTimeError
@@ -78,7 +78,8 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_name(name)
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
-		self.updateGL()
+		if updateGL:
+			self.updateGL()
 	#def __del__(self):
 		##if not self.dont_delete_parent:
 			##self.qt_parent.deleteLater()
@@ -545,13 +546,15 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 				for model in self.viewables:
 					inspector = model.get_inspector()
 					inspector.update_rotations( previous_cam_data["rot"] )
-					inspector.rotation_sliders.slider_rotate()
+#					inspector.rotation_sliders.slider_rotate()
 					inspector.set_xyz_trans(*previous_cam_data["pos"])				
 					if (nx,ny,nz) == previous_size:
 						inspector.rotation_sliders.set_scale(previous_cam_data["scale"])
 					if model.get_type() == "Isosurface":
 						new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
-						inspector.thr.setValue(new_threshold)
+						inspector.thr.setValue(new_threshold) # Causes a GL update
+
+					inspector.rotation_sliders.slider_rotate() #Causes a GL update
 			#############
 		
 		self.set_camera_defaults(data)
