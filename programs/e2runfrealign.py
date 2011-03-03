@@ -27,4 +27,7 @@ for i in range(iter):
 
 os.system('mv 3DMapInOut.mrc.old 3DMapInOut.mrc')
 os.system('mv ptcl_meta_data.old ptcl_meta_data')
+
+print "e2runfrealign.py finished"
+
 exit(0)

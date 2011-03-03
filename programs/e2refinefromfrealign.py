@@ -44,9 +44,8 @@ for l_iter in range(1,high+1):
 
    in_img = EMData(dir + "/3DMapInOut.mrc")
    fa_out_img = EMData(dir + "/OutputMap_" + iter + ".mrc")
-   b = fa_out_img.process("xform.flip", {"axis":"x"})
-   d = b.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
-   d.write_image(dir + "/OutputMap_Contrast_Corrected_" + iter + ".mrc")
+   a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
+   a.write_image(dir + "/OutputMap_Normalized_" + iter + ".mrc")
 
 
 
@@ -63,8 +62,8 @@ for k in range(2,high+1):
    else:
       iter_minus = str(k-1)
 
-   a = EMData(dir + "/OutputMap_Contrast_Corrected_" + iter + ".mrc")
-   b = EMData(dir + "/OutputMap_Contrast_Corrected_" + iter_minus + ".mrc")
+   a = EMData(dir + "/OutputMap_Normalized_" + iter + ".mrc")
+   b = EMData(dir + "/OutputMap_Normalized_" + iter_minus + ".mrc")
    s = iter_minus + "_" + iter + "_fsc"
    fsc = a.calc_fourier_shell_correlation(b)
    fsc_dict[s] = fsc[81:162]
@@ -135,3 +134,5 @@ for i in range(len(ptcl_dict_in)):
 s=' Average{0:12.3f}{1:13.3f}{2:11.3f}{3:15.3f}{4:14.3f}\n'.format(phi_sum/len(ptcl_dict_in), theta_sum/len(ptcl_dict_in), psi_sum/len(ptcl_dict_in), x_sum/len(ptcl_dict_in), y_sum/len(ptcl_dict_in))
 f.write(s)
 f.close()
+
+print "e2refinefromfrealign.py finished"
