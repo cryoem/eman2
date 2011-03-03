@@ -328,7 +328,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
 		        		old_ali_params.extend([alphan, sxn, syn, mirror])
 
-			if Iter%4 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
 			else: delta = dst
 			if CUDA:
 				all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 1, delta)
@@ -695,7 +695,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
-				if Iter%4 == 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
 				else: delta = dst
 				if CUDA:
 					all_ali_params = R.ali2d_single_iter(tavg, all_ali_params, cs[0], cs[1], 1, delta)
