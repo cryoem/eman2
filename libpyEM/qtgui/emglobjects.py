@@ -2041,7 +2041,7 @@ class EM3DModel(QtCore.QObject):
 		self.help_window = None # eventually will become a Qt help widget of some kind
 #		self.dont_delete_parent = True
 		self.rank = 0 # rank is to do with shading and using the stencil buffer. Each object should have a unique rank... if it is using the OpenGL contrast enhancement stuff
-
+		self.busy = False  #updateGL() does nothing when self.busy == True
 	def draw_bc_screen(self):
 		'''
 		Assumes the gl_widget is an EMGLProjectionViewMatrices instance
@@ -2228,6 +2228,8 @@ class EM3DModel(QtCore.QObject):
 		self.cube = not self.cube
 		self.updateGL()
 	def updateGL(self):
+		if self.busy:
+			return
 		if self.get_gl_widget() != None and self.under_qt_control:
 			self.get_gl_widget().updateGL()
 #		raise DeprecationWarning

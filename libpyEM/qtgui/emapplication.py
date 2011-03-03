@@ -124,6 +124,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.application_control = application_control
 		self.file_name = ""
 		self.disable_inspector = False
+		self.busy = False #updateGL() does nothing when self.busy == True
 	
 	def closeEvent(self, event):
 		if self.inspector:
@@ -177,7 +178,11 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	def update_inspector_texture(self):
 		if self.inspector != None:
 			self.inspector.update()
-
+	def updateGL(self):
+		if self.busy:
+			return
+		else:
+			super(EMGLWidget, self).updateGL()
 
 class EMInstance:
 	'''

@@ -59,8 +59,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	A QT widget for rendering 3D EMData objects
 	"""
 	allim=weakref.WeakKeyDictionary()
-	def add_model(self,model,num=0, updateGL = False):
-		
+	def add_model(self,model,num=0):
 		model.set_gl_widget(self)
 		model.set_dont_delete_parent() # stops a RunTimeError
 		model.under_qt_control = True
@@ -78,8 +77,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_name(name)
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
-		if updateGL:
-			self.updateGL()
+		self.updateGL()
 	#def __del__(self):
 		##if not self.dont_delete_parent:
 			##self.qt_parent.deleteLater()
@@ -486,6 +484,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.cam.default_z = -1.25*data.get_xsize()
 			self.cam.cam_z = -1.25*data.get_xsize()
 	def set_data(self,data,file_name="",replace=True):
+		self.busy = True #Prevent updateGL() from doing anything until the end of this method
 		was_previous_data = bool(self.data)
 		
 		###########TODO: update this code once we start doing mouse rotations and translations on the Widget camera
@@ -544,6 +543,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			###########TODO: update this code when mouse rotations and translations are performed on the Widget camera
 			elif previous_cam_data:
 				for model in self.viewables:
+					model.busy = True
 					inspector = model.get_inspector()
 					inspector.update_rotations( previous_cam_data["rot"] )
 #					inspector.rotation_sliders.slider_rotate()
@@ -558,6 +558,11 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			#############
 		
 		self.set_camera_defaults(data)
+		self.busy = False
+		self.updateGL()
+		for model in self.viewables:
+			model.busy = False
+			model.updateGL()
 	def set_file_name(self,name):
 		self.file_name = name
 		if self.qt_parent != None:
