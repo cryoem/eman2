@@ -2517,7 +2517,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	# Simulate annealing use or not
 	if T0 != 0: SA = True
 	else:       SA = False
-	
+
 	if SA:
 		# for simulate annealing
 		from math   import exp
@@ -3481,12 +3481,12 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if mask != None:
 		if isinstance(mask, basestring):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
-	
+
 	# [id]   part of code different for each node
 	# [sync] synchronise each node
 	# [main] part of code just for the main node
 	# [all]  code write for all node
-	
+
 	t_start = time.time()	
 
 	# [all] Informations on images or mask for the norm
@@ -3506,8 +3506,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		nz   = im_M[N_start].get_zsize()
 		norm = nx * ny * nz
 		buf  = model_blank(nx, ny, nz)
-	
-	# [all] define parameters	
+
+	# [all] define parameters
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
 	if(myid != main_node):  jumpahead(17*myid+123)
@@ -3519,7 +3519,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	Cls['k']   =  K	     # value of number of clusters
 	Cls['N']   =  N
 	assign     = [0]*N
-	
+
 	if CTF:
 		Cls_ctf2    = {}
 		len_ctm	    = len(ctf2[N_start])
@@ -3534,10 +3534,10 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	while ntrials < trials:
 		ntrials += 1
 
-		# Simulate annealing
+		# Simulated annealing
 		SA = SA_run
 		if SA: T = T0
-		
+
 		# [all] Init the cluster by an image empty
 		buf.to_zero()
 		for k in xrange(K):
@@ -3546,7 +3546,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			Cls['Ji'][k]  = 0
 			Cls['n'][k]   = 0
 			OldClsn       = [0] * K
-		
+
 		## [main] Random method
 		FLAG_EXIT = 0
 		if myid == main_node:
@@ -3569,7 +3569,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 							Cls['n'][k] = 0
 					k += 1
 				if flag == 1:	retrial = 0
-		
+
 		# [sync] waiting the assign is finished
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -3578,19 +3578,19 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		FLAG_EXIT = map(int, FLAG_EXIT)[0]
 		if FLAG_EXIT: sys.exit()
-		
+
 		# [all] send assign to the others proc and the number of objects in each cluster
 		assign   = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
 		assign   = map(int, assign)     # convert array gave by MPI to list
 		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
-			
+
 		## 
 		if CTF:
 			# [all] first init ctf2
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
-			
-			# [id] compute local S ctf2 and local S ave	
+
+			# [id] compute local S ctf2 and local S ave
 			for im in xrange(N_start, N_stop):
 				# ctf2
 				for i in xrange(len_ctm):
@@ -3598,19 +3598,19 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				# ave
 				CTFxF = filt_table(im_M[im], ctf[im])
 				Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-			
+
 			# [sync] waiting the result
 			mpi_barrier(MPI_COMM_WORLD)
-			
+
 			# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
-				
+
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-				
+
 				valCTF = [0] * len_ctm
 				for i in xrange(len_ctm):	valCTF[i] = 1.0 / Cls_ctf2[k][i]
 				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
@@ -3619,7 +3619,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for im in xrange(N_start, N_stop):
 				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-											
+
 		else:
 			# [id] Calculates averages, first calculate local sum
 			for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -3647,7 +3647,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 		Je = map(float, Je)[0]
-	
+
 		## Clustering
 		ite       = 0
 		watch_dog = 0
@@ -3656,14 +3656,14 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		sway_ct   = 0
 		change    = 1
 		loc_order = range(N_start, N_stop)
-		
+
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 			print_msg('Criterion: %11.6e \n' % Je)
 		th_update   = max(N // ncpu // 10, 10)
 		#nb_update   = N // ncpu // th_update
 		flag_update = 0
-		
+
 		while change and watch_dog < maxit:
 			ite       += 1
 			watch_dog += 1
@@ -3674,7 +3674,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			Je	   = 0
 			if SA:
 			   ct_pert = 0
-			shuffle(loc_order)	
+			shuffle(loc_order)
 			ct_update  = 0
 			# [id] random number to image
 			for n in xrange(N_start, N_stop):
@@ -3690,7 +3690,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				# to select random image
 				im  = order[imn]
 				imn +=  1
-					
+
 				# [all] compute min dist between object and centroids
 				if CTF:
 					CTFxAve = []
@@ -3698,10 +3698,9 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						tmp = filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
 					res = Util.min_dist_four(im_M[im], CTFxAve)
-					
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
-				
+
 				dJe = [0.0] * K
 				ni  = float(Cls['n'][assign[im]])
 				di  = res['dist'][assign[im]]											
@@ -3713,10 +3712,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					else:
 						dJe[k] = 0
 
-					
 				# [all] Simulate annealing
 				if SA:
-				
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
@@ -3732,18 +3729,20 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						if( dJe[i] >= max_value) :
 							max_value = dJe[i]
 							res['pos'] = i
-					
+
 				# [all] moving object
 				if res['pos'] != assign[im]:
 					assign[im] = res['pos']
 					change     = 1
-				
+
 				# [all] update to SSE method
 				ct_update += 1
-				if ct_update % th_update == 0:
+				# this is all messed up, here it will enter only after all nodes did update th_update times, but there is no guarantee it will happen
+				#  instead, it should enter here when any node does th_updates!
+				if( ct_update%th_update == 0 and (imn-N_start)<N_min ):
 					mpi_barrier(MPI_COMM_WORLD)
-	
-				        # [id] compute the number of objects
+
+					# [id] compute the number of objects
 					for k in xrange(K): 		  Cls['n'][k] = 0
 					for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
 
@@ -3771,7 +3770,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if FLAG_EXIT_UPDATE: break
 
 					if CTF:
-						# [id] compute local S ctf2 and local S ave	
+						# [id] compute local S ctf2 and local S ave
 						for im in xrange(N_start, N_stop):
 							# ctf2
 							for i in xrange(len_ctm):
@@ -3795,7 +3794,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 							valCTF = [0] * len_ctm
 							for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
 							Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-						
+
 					else:			
 						# [id] Update clusters averages
 						for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -3811,11 +3810,11 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
-		
-														
+
+			#  Here check if there were still any changes after last update within the loop above
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
-			
+
 			# [id] compute the number of objects
 			for k in xrange(K): 		  Cls['n'][k] = 0
 			for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
@@ -3824,7 +3823,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Cls['n'] = map(float, Cls['n']) # convert array gave by MPI to list
-			
+
 			# [all] init average, Ji and ctf2, and manage empty cluster
 			FLAG_EMPTY = 0
 			for k in xrange(K):
@@ -3832,7 +3831,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					FLAG_EMPTY = 1
 					break
-				
+
 				Cls['ave'][k].to_zero()
 				Cls['Ji'][k] = 0
 				if CTF:	Cls_ctf2[k] = [0] * len_ctm	
@@ -3843,7 +3842,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			FLAG_EMPTY = map(int, FLAG_EMPTY)[0]
 			if FLAG_EMPTY: break
-			
+
 			if CTF:
 				# [id] compute local S ctf2 and local S ave	
 				for im in xrange(N_start, N_stop):
@@ -3853,10 +3852,10 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					# ave
 					CTFxF = filt_table(im_M[im], ctf[im])
 					Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-				
+
 				# [sync] waiting the result
 				mpi_barrier(MPI_COMM_WORLD)
-				
+
 				# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
 				for k in xrange(K):
 					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -3865,7 +3864,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-					
+
 					valCTF = [0] * len_ctm
 					for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
 					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
@@ -3874,7 +3873,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for im in xrange(N_start, N_stop):
 					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-				
+
 			else:			
 				# [id] Update clusters averages
 				for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -3932,15 +3931,15 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			if sway_ct == 4 and not SA:
 				change = 0
 				if myid == main_node: print_msg('> Stop iteration, unstable cluster detected: Criterion sway.\n')
-			
+
 			# [all] Need to broadcast this value because all node must run together
 			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
 			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			change = map(int, change)[0]
-			
+
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
-				
+
 		if not FLAG_EMPTY:
 			# [id] memorize the result for this trial	
 			if trials > 1:
@@ -3970,12 +3969,12 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				wd_trials = 0
 			else:
 				ntrials -= 1
-	
+
 	if trials > 1:
 		if ALL_EMPTY:
 			if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')	
 			sys.exit()
-				
+
 	# if severals trials choose the best
 	if trials > 1:
 		val_min = 1.0e20
@@ -3988,8 +3987,8 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Cls    = MemCls[best]
 		Je     = MemJe[best]
 		assign = MemAssign[best]
-	
-	
+
+
 	if CTF:
 		# [id] the variance S (F - CTFxAve)**2
 		for im in xrange(N_start, N_stop):
@@ -3997,7 +3996,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			buf.to_zero()
 			buf = Util.subn_img(CTFxAve, im_M[im])
 			Util.add_img(Cls['var'][int(assign[im])], buf) # **2
-		
+
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
 		
@@ -4020,12 +4019,12 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				Util.add_img2(buf, Cls['ave'][k])
 				Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
 				Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
-				
+
 				# Uncompress ave and var images if the mask is used
 				if mask != None:
 					Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
 					Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
-	
+
 	# [id] prepare assign to update
 	for n in xrange(N_start):
 		assign[n] = 0
@@ -4044,7 +4043,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		pickle.dump(assign, f)
 		f.close()
 	"""
-	
+
 	# compute Ji global
 	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	if myid == main_node:
@@ -4071,7 +4070,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if myid == main_node: return Cls, assign
 	else:                 return None, None
 
-# K-mean CUDA
+# K-means CUDA
 def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, flagnorm = False):
 	from statistics import k_means_cuda_error, k_means_cuda_open_im
 	from statistics import k_means_locasg2glbasg, k_means_cuda_export
