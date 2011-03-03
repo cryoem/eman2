@@ -455,7 +455,7 @@ class EMTomoPtclAlignmentReportTask(WorkFlowTask):
 					return s
 				
 			return "-"
-				
+		
 class E2TomoBoxerGuiTask(WorkFlowTask):
 	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
 	def __init__(self):
@@ -1230,7 +1230,7 @@ class EMRefDataReportTask(EMRawDataReportTask):
 	
 		#p.append(pdims) # don't think this is really necessary
 		return table,len(project_names)	
-	
+
 class EMTomoBootstrapTask(WorkFlowTask):
 	'''Use this task for running e2classaverage3d'''
 	
@@ -1319,6 +1319,10 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		praliparams = ParamDef("rali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D refine aligner",property=None,defaultunits="precision=.001")
 		params.append([prali, praliparams])
 		
+		ppostfilter = ParamDef("postfilter",vartype="string",desc_short="PostFilter",desc_long="The Filter to apply to the average",property=None,defaultunits="None",choices=filters)
+		ppostfilterparams = ParamDef("postfilterparams",vartype="string",desc_short="Params",desc_long="Parameters for the postfilter",property=None,defaultunits="")
+		params.append([pfilter, pfilterparams])
+		
 		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits="")
 		params.append(pparallel)
 			
@@ -1387,6 +1391,9 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		spacer=""
 		if params["rali3dparams"]: spacer=":" 
 		e23dcalist.append("--ralign="+params["raligner3D"]+spacer+params["rali3dparams"])
+		if params["postfilter"] != "None":
+			if params["postfilterparams"]: spacer=":" 
+			e23dcalist.append("--postprocess="+params["postfilter"]+spacer+params["postfilterparams"])
 		if params["parallel"]:
 			e23dcalist.append("--parallel="+params["parallel"])
 		print e23dcalist

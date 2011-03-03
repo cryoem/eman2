@@ -405,6 +405,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Eulers"] = self.launch_eulers
 		resolution = QtGui.QTreeWidgetItem(QtCore.QStringList("Resolution"))
 		resolution.setIcon(0,self.icons["plot"])
+
 		self.launchers["Resolution"] = self.launch_resolution_report
 		spr_list.append(resolution)
 		
@@ -481,10 +482,19 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinemulti")))
 		refine_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2refinemulti"] = self.launch_e2refinemulti_sets
-#		refine_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run (Particles) e2refine")))
-#		refine_list[-1].setIcon(0,self.icons["refine"])
-#		self.launchers["Run (Particles) e2refine"] = self.launch_e2refine
 		
+		freealign_list = []
+		freealign = QtGui.QTreeWidgetItem(QtCore.QStringList("FREALIGN"))
+		freealign.setIcon(0,self.icons["refine"])
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refineFreAlign")))
+		freealign_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run - e2refineFreAlign"] = self.launch_e2refinetofrealign
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2runFrealign")))
+		freealign_list[-1].setIcon(0,self.icons["refine"])
+		self.launchers["Run - e2runFrealign"] = self.launch_e2runfrealign
+		freealign.addChildren(freealign_list)
+		
+		refine_list.append(freealign)
 		refinement.addChildren(refine_list)
 		
 		resolution_list = []
@@ -858,6 +868,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_resolution_report(self): self.launch_task(ResolutionReportTask(),"Resolution Report")
 	def launch_e2refine_sets(self): self.launch_task(E2RefineChooseSetsTask(),"Choose Set For e2refine")
 	def launch_e2refinemulti_sets(self): self.launch_task(E2RefineMultiChooseSetsTask(),"Choose Set For e2refinemulti")
+	def launch_e2refinetofrealign(self): self.launch_task(E2RefineToFreeAlign(),"Run RefinenToFreAlign")
+	def launch_e2runfrealign(self): self.launch_task(E2RunFreAlign(), "Run RunFreAlign")
 	def launch_e2refine(self): self.launch_task(E2RefineChooseParticlesTask(),"Choose Particles For e2refine")
 	def launch_refinement_report(self): self.launch_task(RefinementReportTask(),"Refinement Report")
 	def launch_import_initial_model(self): self.launch_task(ImportInitialModels(),"import initial models")

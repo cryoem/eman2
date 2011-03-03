@@ -75,7 +75,9 @@ spr_ptcls_dict = "global.spr_ptcls_dict"
 spr_rfca_dict = "global.spr_rfca_dict"
 spr_stacks_map = "global.spr_stacks_map"
 spr_sets_dict = "global.spr_sets_dict"
-spr_init_models_dict = "global.spr_init_models_dict" #my DB has been corrupted!!!!!
+spr_init_models_dict = "global.spr_init_models_dictx" #my DB has been corrupted!!!!!
+spr_freealign_models_dict = "global.spr_freealign_models_dict"
+spr_freealign_dirs_dict = "global.spr_freealign_dirs_dict"
 
 #These are actually used
 tpr_subtomo_stacks = "global.tpr_subtomo_stacks"
@@ -688,7 +690,7 @@ class EMProjectDataDict:
 		rem = []
 		for name, map in dict.items():			
 			for key,image_name in map.items():
-				if not file_exists(image_name):
+				if not file_exists(image_name) and not os.path.isdir(image_name[:image_name.rindex("/")]):
 					map.pop(key)
 					rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
 					
@@ -911,7 +913,7 @@ Note that the data cannot be filtered unless it is imported."
 				project_names = data_dict.keys()
 				
 				for name in list_of_names:
-					if not file_exists(name):
+					if not file_exists(name) and not os.path.isdir(name[:name.rfind("/")]):
 						EMErrorMessageDisplay.run(["%s does not exists" %name])
 						return
 				
@@ -1012,7 +1014,7 @@ class AddFilesToProjectValidator:
 		project_names = data_dict.keys()
 		
 		for name in list_of_names:
-			if not file_exists(name):
+			if not file_exists(name) and not os.path.isdir(name[:name.rfind("/")]): #See if its a dir, which is ok:
 				EMErrorMessageDisplay.run(["%s does not exists" %name])
 				return 0
 		
@@ -5519,7 +5521,7 @@ the quality score. These quality values are recorded to an image matrix on hande
 of resolution. Note however that the class averaging stage, which can involve iterative alignment, does not use shrunken data.
 - 2 stage simmx is still experimental. If set to 2 instead of zero, classification will be performed in two stages resulting in a 5-25x speedup, but with a potential decrease in accuracy.
 - PS match ref will force the power spectra of the particle and reference to be the same before comparison. Necessary for some comparators.
-- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmps -v2)
+- Main comparator is used to decide which reference a particle most looks-like (e2help.py cmpRefineMultiChooseSetsTasks -v2)
 - Aligner - use default
 - Align comparator and refine align comparator allow you to select which comparators are used for particle->reference alignment. In most cases ccc is adequate, but sometimes you may wish to match the main comparator.
 - Refine align - if set to 'refine', alignments will be more accurate, and thus classification will be more accurate. Severe speed penalty.
@@ -5645,7 +5647,6 @@ post-process - This is an optional filter to apply to the model as a final step,
 		pamngaussshells =  ParamDef(name="amnshellsgauss",vartype="int",desc_short="Post Gaussian dilations",desc_long="The number of dilations to apply to the dilated mask, using a gaussian fall off. Suggest 5% of the boxsize",property=None,defaultunits=db.get("amnshellsgauss",dfl=def_mask_dltn),choices=None)
 		
 		pautomask.dependents = ["amthreshold","amradius","amnshells","amnshellsgauss"] # these are things that become disabled when the pautomask checkbox is checked etc
-		
 		params.append([pamthreshold,pamnmax,pamradius])
 		params.append([pamnshells,pamngaussshells])
 	
@@ -5696,6 +5697,164 @@ post-process - This is an optional filter to apply to the model as a final step,
 		#db_close_dict(self.form_db_name)
 		
 		return ["Project 3D",params]
+
+class E2RunFreAlign(WorkFlowTask):
+	"""Select the file you want to use for frealign"""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Launch e2runfrealign"
+		self.report_task = None
+
+	def get_ref_table(self):
+		data_dict = EMProjectDataDict(spr_freealign_dirs_dict)
+		init_model_data = data_dict.get_data_dict()
+		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
+		init_model_names = init_model_data.keys()
+
+		from emform import EM3DFileTable,EMFileTable,float_lt
+		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_dirs_dict)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		
+		return table,len(init_model_names)
+		
+	def get_params(self):
+	 	params = []
+	 	
+	 	r,rn = self.get_ref_table()
+	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(r)
+		piter = ParamDef(name="iter",vartype="int",desc_short="iterations", desc_long="number of FreAlign iterations",property=None,defaultunits=5,choices=None)
+		params.append(piter)
+		return params
+		
+	def on_form_ok(self,params):
+		
+		if not params.has_key("dirs"):
+			EMErrorMessageDisplay.run(["Please select dirs for processing"])
+			return
+		if  params.has_key("dirs") and len(params["dirs"]) == 0:
+			EMErrorMessageDisplay.run(["Please select dirs for processing"])
+			return
+			
+		self.write_db_entries(params)
+		
+		
+		edir = params["dirs"][0]
+		edir = edir[:edir.rindex("/")]
+		
+		prflist = []
+		prflist.append("e2runfrealign.py")
+		prflist.append(str(params["iter"]))
+		
+		child = subprocess.Popen(prflist, cwd=edir)
+		
+		self.form.close()
+		self.form = None
+		
+
+		
+class E2RefineToFreeAlign(WorkFlowTask):
+	"""Select the file you want to use for frealign"""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.window_title = "Launch e2refinetofrealign"
+		self.report_task = None
+
+	def get_ref_table(self):
+		data_dict = EMProjectDataDict(spr_freealign_models_dict)
+		init_model_data = data_dict.get_data_dict()
+		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
+		init_model_names = init_model_data.keys()
+
+		from emform import EM3DFileTable,EMFileTable,float_lt
+		table = EM3DFileTable(init_model_names,name="model",desc_short="Starting Models",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_models_dict)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+		table.add_column_data(EMFileTable.EMColumnData("Quality",E2InitialModelsTool.get_quality_score,"This the quality score as determined by e2initialmodel.py",float_lt))
+
+		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(init_model_names)
+		
+	def get_params(self):
+	 	params = []
+	 	
+	 	r,rn = self.get_ref_table()
+	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(r)
+		pfbeaut = ParamDef(name="fbeaut",vartype="boolean",desc_short="fbeaut",desc_long="FreeAlign fbeaut",property=None,defaultunits=0,choices=None)
+		pfcref = ParamDef(name="fcref",vartype="boolean",desc_short="fcref",desc_long="FreeAlign cref",property=None,defaultunits=0,choices=None)
+		pfstat = ParamDef(name="fstat",vartype="boolean",desc_short="fstat",desc_long="FreeAlign fstat",property=None,defaultunits=0,choices=None)
+		params.append([pfbeaut, pfcref, pfstat])
+		ifsc = ["0","1","2","3"]
+		pifsc =  ParamDef(name="ifsc",vartype="string",desc_short="ifsc",desc_long="FreeAlign ifsc",property=None,defaultunits="0",choices=ifsc)
+		iblow = ["0","1","2"]
+		piblow =  ParamDef(name="iblow",vartype="string",desc_short="iblow",desc_long="FreeAlign iblow",property=None,defaultunits="2",choices=iblow)
+		pmask = ParamDef(name="mask",vartype="float",desc_short="mask", desc_long="Mask for FreeAlign",property=None,defaultunits=200.0,choices=None)
+		prrec = ParamDef(name="rrec",vartype="float",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits=15.0,choices=None)
+		params.append([pifsc, piblow, pmask, prrec])
+		preslow = ParamDef(name="reslow",vartype="float",desc_short="reslow", desc_long="low resolution",property=None,defaultunits=200.0,choices=None)
+		preshigh = ParamDef(name="reshigh",vartype="float",desc_short="reshigh", desc_long="high resolution",property=None,defaultunits=15.0,choices=None)
+		prefdef = ParamDef(name="refdef",vartype="boolean",desc_short="refdef",desc_long="FreeAlign refdef",property=None,defaultunits=0,choices=None)
+		params.append([preslow, preshigh, prefdef])
+		prefpart = ParamDef(name="refpart",vartype="boolean",desc_short="refpart",desc_long="FreeAlign refpart",property=None,defaultunits=0,choices=None)
+		prefastyg = ParamDef(name="refastyg",vartype="boolean",desc_short="refastyg",desc_long="FreeAlign refastyg",property=None,defaultunits=0,choices=None)
+		ppbc = ParamDef(name="pbc",vartype="float",desc_short="pbc", desc_long="FreeAlign pbc",property=None,defaultunits=5.0,choices=None)
+		pthresh = ParamDef(name="thresh",vartype="float",desc_short="thresh", desc_long="FreeAlign threshold",property=None,defaultunits=90.0,choices=None)
+		params.append([prefpart, prefastyg, ppbc, pthresh])
+		
+		return params
+		
+	def on_form_ok(self,params):
+		
+		if not params.has_key("model"):
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+		if  params.has_key("model") and len(params["model"]) == 0:
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+			
+		self.write_db_entries(params)
+		
+		redata = params["model"][0]
+		directory = re.compile(r':.+#').findall(redata)[0][1:-1]
+		iteration = re.compile(r'#.+_[0-9]+').findall(redata)[0][-1:]
+		iteration = str(int(iteration)) # This is a hack, to remove preceding zeros
+		
+		e2falist = []
+		e2falist.append("e2refinetofrealign.py")
+		e2falist.append(directory)
+		e2falist.append(iteration)
+		if(params["fbeaut"]):
+			e2falist.append("--fbeaut")
+		if(params["fcref"]):
+			e2falist.append("--fcref")
+		e2falist.append("--ifsc="+params["ifsc"])
+		if(params["fstat"]):
+			e2falist.append("--fstat")
+		e2falist.append("--iblow="+params["iblow"])
+		e2falist.append("--mask="+str(params["mask"]))
+		e2falist.append("--rrec="+str(params["rrec"]))
+		e2falist.append("--reslow="+str(params["reslow"]))
+		e2falist.append("--reshigh="+str(params["reshigh"]))
+		if(params["refdef"]):
+			e2falist.append("--refdef")
+		if(params["refpart"]):
+			e2falist.append("--refpart")
+		if(params["refastyg"]):
+			e2falist.append("--refastyg")
+		e2falist.append("--pbc="+str(params["pbc"]))
+		e2falist.append("--thresh="+str(params["thresh"]))
+			
+		child = subprocess.Popen(e2falist)
+		
+		self.form.close()
+		self.form = None
+		
+		print e2falist
 		
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''

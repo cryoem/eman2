@@ -1046,7 +1046,7 @@ def file_exists( file_name ):
 	'''
 	
 	if ( os.path.exists(file_name) ):
-		
+		print "CH"
 		parts = file_name.split('.')
 		file_tag = parts[len(parts)-1]
 		
