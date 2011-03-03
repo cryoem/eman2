@@ -3088,16 +3088,16 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				# ave
 				CTFxF = filt_table(im_M[im], ctf[im])
 				Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-			
+
 			# [sync] waiting the result
 			mpi_barrier(MPI_COMM_WORLD)
-			
+
 			# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
-				
+
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
@@ -3108,7 +3108,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for im in xrange(N_start, N_stop):
 				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
 				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-			
+
 		else:
 			# [id] Calculates averages, first calculate local sum
 			for im in xrange(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
@@ -3440,7 +3440,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:                 return None, None
 
 # K-means MPI with SSE method
-def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N, ncpu):
+def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N_min, N, ncpu):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -3606,7 +3606,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
+				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array given by MPI to list
 
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -3660,7 +3660,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		if myid == main_node:
 			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 			print_msg('Criterion: %11.6e \n' % Je)
-		th_update   = max(N // ncpu // 10, 10)
+		th_update   = max( N//ncpu//10, 10)
 		#nb_update   = N // ncpu // th_update
 		flag_update = 0
 
@@ -3672,8 +3672,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			order	   = [0]*N
 			index	   = 0
 			Je	   = 0
-			if SA:
-			   ct_pert = 0
+			if SA:	ct_pert = 0
 			shuffle(loc_order)
 			ct_update  = 0
 			# [id] random number to image
@@ -3739,79 +3738,162 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				ct_update += 1
 				# this is all messed up, here it will enter only after all nodes did update th_update times, but there is no guarantee it will happen
 				#  instead, it should enter here when any node does th_updates!
-				if( ct_update%th_update == 0 and (imn-N_start)<N_min ):
+				if( (imn-N_start)>=th_update and (imn-N_start)<N_min ):
+					# check whether any exceeded the threshold
+					updates = [0]*ncpu
+					updates[myid] = ct_update
 					mpi_barrier(MPI_COMM_WORLD)
+					updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+					updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
+					updates = map(int, updates)    # convert array given by MPI to list
+					if( max(updates) >= th_updates):
+						# redo averages and reset counters
+						ct_update = 0
+						# [id] compute the number of objects
+						for k in xrange(K): 		  Cls['n'][k] = 0
+						for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
 
-					# [id] compute the number of objects
-					for k in xrange(K): 		  Cls['n'][k] = 0
-					for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
+						# [all] sum the number of objects in each node and broadcast
+						Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+						Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+						Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
 
-					# [all] sum the number of objects in each node and broadcast
-					Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-					Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
+						# [all] init average, Ji and ctf2
+						FLAG_EXIT_UPDATE  = 0
+						for k in xrange(K):
+							if Cls['n'][k] <= 1:
+								FLAG_EXIT_UPDATE = 1
+								break
 
-					# [all] init average, Ji and ctf2
-					FLAG_EXIT_UPDATE  = 0
-					for k in xrange(K):
-						if Cls['n'][k] <= 1:
-							FLAG_EXIT_UPDATE = 1
-							break
+							Cls['ave'][k].to_zero()
+							if CTF:	Cls_ctf2[k] = [0] * len_ctm
 
-						Cls['ave'][k].to_zero()
-						if CTF:	Cls_ctf2[k] = [0] * len_ctm
-
-					mpi_barrier(MPI_COMM_WORLD)
-
-					# [all] check if need to exit due to initialization
-					FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-					FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-					FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
-					if FLAG_EXIT_UPDATE: break
-
-					if CTF:
-						# [id] compute local S ctf2 and local S ave
-						for im in xrange(N_start, N_stop):
-							# ctf2
-							for i in xrange(len_ctm):
-								Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
-							# ave
-							CTFxF = filt_table(im_M[im], ctf[im])
-							Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-
-						# [sync] waiting the result
 						mpi_barrier(MPI_COMM_WORLD)
 
-						# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
-						for k in xrange(K):
-							Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-							Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-							Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
+						# [all] check if need to exit due to initialization
+						FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+						FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+						FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
+						if FLAG_EXIT_UPDATE: break
 
-							reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-							bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+						if CTF:
+							# [id] compute local S ctf2 and local S ave
+							for im in xrange(N_start, N_stop):
+								# ctf2
+								for i in xrange(len_ctm):
+									Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
+								# ave
+								CTFxF = filt_table(im_M[im], ctf[im])
+								Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
 
-							valCTF = [0] * len_ctm
-							for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-							Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+							# [sync] waiting the result
+							mpi_barrier(MPI_COMM_WORLD)
 
-					else:			
-						# [id] Update clusters averages
-						for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+							# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
+							for k in xrange(K):
+								Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+								Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+								Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
 
-						# [sync] waiting the result
+								reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+								bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+
+								valCTF = [0] * len_ctm
+								for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+								Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+
+						else:			
+							# [id] Update clusters averages
+							for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+
+							# [sync] waiting the result
+							mpi_barrier(MPI_COMM_WORLD)
+
+							# [all] compute global sum, broadcast the results and obtain the average
+							for k in xrange(K):
+								reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+								bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+								Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+						# [all] waiting the result
 						mpi_barrier(MPI_COMM_WORLD)
-
-						# [all] compute global sum, broadcast the results and obtain the average
-						for k in xrange(K):
-							reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-							bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-							Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-					# [all] waiting the result
-					mpi_barrier(MPI_COMM_WORLD)
 
 			#  Here check if there were still any changes after last update within the loop above
+			updates = [0]*ncpu
+			updates[myid] = ct_update
+			mpi_barrier(MPI_COMM_WORLD)
+			updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
+			updates = map(int, updates)    # convert array given by MPI to list
+			if( max(updates) > 0):
+				# redo averages and reset counters
+				ct_update = 0
+				# [id] compute the number of objects
+				for k in xrange(K): 		  Cls['n'][k] = 0
+				for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
+
+				# [all] sum the number of objects in each node and broadcast
+				Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
+
+				# [all] init average, Ji and ctf2
+				FLAG_EXIT_UPDATE  = 0
+				for k in xrange(K):
+					if Cls['n'][k] <= 1:
+						FLAG_EXIT_UPDATE = 1
+						break
+
+					Cls['ave'][k].to_zero()
+					if CTF:	Cls_ctf2[k] = [0] * len_ctm
+
+				mpi_barrier(MPI_COMM_WORLD)
+
+				# [all] check if need to exit due to initialization
+				FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+				FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
+				if FLAG_EXIT_UPDATE: break
+
+				if CTF:
+					# [id] compute local S ctf2 and local S ave
+					for im in xrange(N_start, N_stop):
+						# ctf2
+						for i in xrange(len_ctm):
+							Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
+						# ave
+						CTFxF = filt_table(im_M[im], ctf[im])
+						Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
+
+					# [sync] waiting the result
+					mpi_barrier(MPI_COMM_WORLD)
+
+					# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
+					for k in xrange(K):
+						Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+						Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+						Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
+
+						reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+						bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+
+						valCTF = [0] * len_ctm
+						for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+						Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+
+				else:			
+					# [id] Update clusters averages
+					for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+
+					# [sync] waiting the result
+					mpi_barrier(MPI_COMM_WORLD)
+
+					# [all] compute global sum, broadcast the results and obtain the average
+					for k in xrange(K):
+						reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+						bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+						Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
 
