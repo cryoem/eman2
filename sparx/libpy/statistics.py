@@ -3682,9 +3682,6 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			imn = N_start
 			all_proc_end = 0
 
-			#if myid == main_node:
-			#	Cls['ave'][0].write_image('test.hdf', ite-1)
-
 			while imn < N_stop:
 				# to select random image
 				im  = order[imn]
@@ -3737,6 +3734,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				# [all] update to SSE method
 				ct_update += 1
 				if( (imn-N_start)>=th_update and (imn-N_start)<N_min ):
+					#print "   AAAAAAAA ",myid,ct_update
 					# check whether any exceeded the threshold
 					updates = [0]*ncpu
 					updates[myid] = ct_update
@@ -3816,7 +3814,6 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 						# [all] waiting the result
 						mpi_barrier(MPI_COMM_WORLD)
-				#if(myid == 3):  print  "   imn   ",imn,N_start,N_stop
 
 			#  Here check if there were still any changes after last update within the loop above
 			updates = [0]*ncpu
@@ -3825,6 +3822,7 @@ def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
 			updates = map(int, updates)    # convert array given by MPI to list
+
 			if( max(updates) > 0):
 				# redo averages
 				# [id] compute the number of objects
@@ -4822,6 +4820,10 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		os.mkdir(outdir)
 
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+	N_min = N
+	for i in xrange(ncpu):
+		N_start, N_stop = MPI_start_end(N, ncpu, i)
+		N_min = min(N_min, N_stop-N_start)
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
@@ -4855,7 +4857,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
 			elif opt_method == 'SSE':
 				[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,\
-						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N, ncpu)
+						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N_min, N, ncpu)
 			else:
 				ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 				sys.exit()
@@ -5560,6 +5562,11 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	if T0 == -1: T0 = Tm
 	
 	return T0, ct_pert
+
+
+
+
+
 
 '''
 -- Munkres algorithm (or Hungarian algorithm) ----------------------------------

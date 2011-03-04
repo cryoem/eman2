@@ -10557,6 +10557,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	if MPI and not CUDA:
 		if myid == main_node: print_begin_msg('k-means')
 		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
+		N_min = N
+		for i in xrange(ncpu):
+			N_start, N_stop = MPI_start_end(N, ncpu, i)
+			N_min = min(N_min, N_stop-N_start)
 		N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 		lut                   = LUT[N_start:N_stop]
 		n                     = len(lut)
@@ -10573,7 +10577,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		elif opt_method == 'SSE':
 			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,
 				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
-					N_start, N_stop, N, ncpu)
+					N_start, N_stop, N_min, N, ncpu)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
 			sys.exit()
