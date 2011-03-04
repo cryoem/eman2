@@ -95,25 +95,30 @@ class ModuleEventsManager:
 class EMGLWidget(QtOpenGL.QGLWidget):
 	FTGL = "ftgl"
 	GLUT = "glut"
+	
 	def hide(self):
 		if self.qt_parent:
 			self.qt_parent.hide()
+			
 	def resize(self, w, h):
 		if self.qt_parent:
 			QtOpenGL.QGLWidget.resize(self, w, h)
 			self.qt_parent.resize(w, h)
+			
 	def show(self):
 		if self.qt_parent:
 			self.qt_parent.show()
+			
 	def setWindowTitle(self, title):
 		if self.qt_parent:
 			self.qt_parent.setWindowTitle(title)
+			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
 		QtOpenGL.QGLWidget.__init__(self,parent)
 		self.qt_parent = EMParentWin(self, enable_timer)
 		
 		self.under_qt_control = True #TODO: figure out which value works better -- eventually eliminate this Qt control vs GL control was from 3D desktop days
-		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
+		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
 		
 		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
@@ -131,11 +136,9 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			self.inspector.close()
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		self.qt_parent.close()
-#		print 'signal: "module_closed"'
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
 	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
-	
 		try:
 			try:
 				import webbrowser
@@ -152,7 +155,9 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		except:
 			pass
 
-	def enable_inspector(self,val=True): self.disable_inspector = not val
+	def enable_inspector(self,val=True): 
+		self.disable_inspector = not val
+		
 	def load_font_renderer(self):
 		try:
 			self.font_render_mode = EMGLWidget.FTGL
@@ -161,28 +166,35 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		except:
 			self.font_render_mode = EMGLWidget.GLUT
+			
 	def show_inspector(self,force=0):
-		if self.disable_inspector: return
+		if self.disable_inspector: 
+			return
+		
 		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
 		app = get_application()
 		if app == None:
 			print "can't show an inspector with having an associated application"
 		
-		if not force and self.inspector==None : return
+		if not force and self.inspector==None : 
+			return
 		if not self.inspector : 
 			self.inspector = self.get_inspector()
-			if self.inspector == None: return # sometimes this happens
+			if self.inspector == None: 
+				return # sometimes this happens
 		if not app.child_is_attached(self.inspector):
 			app.attach_child(self.inspector)
 		app.show_specific(self.inspector)
+		
 	def update_inspector_texture(self):
 		if self.inspector != None:
 			self.inspector.update()
+			
 	def updateGL(self):
 		if self.busy:
 			return
 		else:
-			super(EMGLWidget, self).updateGL()
+			QtOpenGL.QGLWidget.updateGL(self)
 
 class EMInstance:
 	'''
