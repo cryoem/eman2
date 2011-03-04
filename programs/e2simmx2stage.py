@@ -172,12 +172,12 @@ def main():
 
 	############### Step 3 - classify particles against subset of original projections
 	# Now we need to convert this small classification into a 'seed' for the large classification matrix for simplicity
-	print "Seeding full classification matrix (%d x %d)"%(clen,rlen)
+	print "Seeding full classification matrix (%d x %d) -> %s"%(clen,rlen,args[2])
 	mxstg1=EMData(args[5],0)
 	mx=EMData(clen,rlen,1)
 	mx.to_zero()
 	if options.saveali:
-		for i in xrange(1,5): mx.write_image(args[3],i)		# seed alignment data with nothing
+		for i in xrange(1,6): mx.write_image(args[2],i)		# seed alignment data with nothing
 	mx.add(-1.0e38)	# a large negative value to be replaced later
 
 	for ptcl in xrange(rlen):
@@ -191,6 +191,7 @@ def main():
 			
 	mx.update()
 	mx.write_image(args[2],0)
+	print "Write mx to ",args[2]
 
 	# the actual final classification
 	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
