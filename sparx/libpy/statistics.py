@@ -797,6 +797,36 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 	Util.mul_scalar(var, 1.0/float(nima-1))
 
 	return ave, var
+	
+def ave(stack, mode="a", i1 = 0, i2 = 0):
+	"""
+		Calculate the average and variance for
+		1. mode="a" for alignment
+		2. mode=else for normal summation
+	"""
+	from utilities    import get_im, model_blank, get_params2D
+	from fundamentals import rot_shift2D
+
+	if i2 == 0:
+		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
+		else:  i2 = len(stack)-1
+	nima = i2-i1+1
+
+	ima = get_im(stack, i1)
+	nx  = ima.get_xsize()
+	ny  = ima.get_ysize()
+	ave = model_blank(nx,ny)
+	for i in xrange(i1, i2 + 1):
+		if i > i1:
+			ima = get_im(stack, i)
+		if mode=="a":
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+			Util.add_img(ave, rot_shift2D(ima, alpha, sx, sy, mirror))
+		else: 
+			Util.add_img(ave, ima)
+
+	ave = Util.mult_scalar(ave, 1.0/float(nima))
+	return ave
 
 def aves_w(stack, mode="a"):
 	"""
