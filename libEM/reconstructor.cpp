@@ -439,7 +439,7 @@ void FourierReconstructor::setup()
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
 		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
-		printf ("You will require approximately %1.3g GB of memory to reconstruct this volume",((float)subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0);
+		printf ("You will require approximately %1.3g GB of memory to reconstruct this volume\n",((float)subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0);
 	}
 }
 
