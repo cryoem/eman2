@@ -159,8 +159,10 @@ class WorkFlowTask:
 		self.emit(QtCore.SIGNAL("task_idle"))
 
 	def close(self):
-		if self.form != None: self.form.close()
-		#self.emit(QtCore.SIGNAL("task_idle")
+		if self.form != None: 
+			self.form.close()
+		self.emit(QtCore.SIGNAL("task_idle"))
+        
 	def closeEvent(self,event):
 		self.close()
 		

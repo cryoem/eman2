@@ -1110,7 +1110,11 @@ class EMFormWidget(QtGui.QWidget):
 		self.emdata_3d_icon = QtGui.QIcon(get_image_directory() + "/single_image_3d.png")
 		self.emdata_matrix_icon = QtGui.QIcon(get_image_directory() + "/multiple_images.png")
 		self.plot_icon = QtGui.QIcon(get_image_directory() + "/plot.png")
-		
+	
+	def closeEvent(self, event):
+		self.emit(QtCore.SIGNAL("emform_close"))
+		QtGui.QWidget.closeEvent(self, event)
+	
 	def incorporate_params(self,params,layout):
 		for param in params:
 			act = True
