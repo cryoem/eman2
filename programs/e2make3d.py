@@ -513,7 +513,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			# set exclusion thresholds
 			if keepsig:
 				qmean=sum(qlist)/len(qlist)
-				qsigma=sum([i*i for i in qlist])/len(qlist)-qmean**2
+				qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
 				qcutoff=qmean-qsigma*keep
 				if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
 			else:
