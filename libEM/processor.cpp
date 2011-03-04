@@ -5551,7 +5551,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
-	float threshold = params.set_default("threshold",0.0);
+	float threshold = params.set_default("threshold",0.0f);
 //	int positive = params.set_default("positive",0);
 
 	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
@@ -5909,7 +5909,7 @@ void SymSearchProcessor::process_inplace(EMData * image)
 							float u = y2 - y;
 							float v = z2 - z;
 
-							size_t ii = x + y * nx + (size_t)z * xy;
+							size_t ii = x + y * nx + z * (size_t)xy;
 
 							symval[s]=
 								Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],

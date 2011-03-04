@@ -1090,7 +1090,7 @@ float Transform::get_determinant() const
 	det2 -= matrix[0][1]*((double)matrix[1][0]*matrix[2][2]-(double)matrix[2][0]*matrix[1][2]);
 	det2 += matrix[0][2]*((double)matrix[1][0]*matrix[2][1]-(double)matrix[2][0]*matrix[1][1]);
 
-	det = det2;
+	det = (float)det2;
 	Util::apply_precision(det,ERR_LIMIT);
 
 	return det;

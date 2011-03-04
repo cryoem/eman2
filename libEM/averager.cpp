@@ -127,7 +127,7 @@ void TomoAverager::add_image(EMData * image)
 	float *norm_data = norm_image->get_data();
 	float *data = image->get_data();
 	float thresh=image->get_attr("sigma");
-	thresh=2.0*thresh*thresh*thresh_sigma;
+	thresh=2.0f*thresh*thresh*thresh_sigma;
 	
 	// Add any values above threshold to the result image, and add 1 to the corresponding pixels in the norm image
 	for (size_t j = 0; j < image_size; j+=2) {
