@@ -1403,6 +1403,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Total SNR")
 		self.splotmode.addItem("All SNR (peak)")
 		self.splotmode.addItem("SNR Scaling")
+		self.splotmode.addItem("SNR vs Defocus")
 		self.splotmode.addItem("<debug>")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
@@ -1707,8 +1708,17 @@ class GUIctf(QtGui.QWidget):
 				
 			self.guiplot.setAxisParms("s (1/A)","SNR")
 #			self.guiplot.updateGL()
+		# All SNR vs defocus
+		elif self.plotmode==9:
+			dflist=[d[1].defocus for d in self.data]
+			snrlist=[sum(d[1].snr)/len(d[1].snr) for d in self.data]
+			self.guiplot.set_data((dflist,snrlist),"df vs snr",replace=True,linetype=-1,symtype=0,symsize=2)		# erase existing data quietly
+			
+			self.guiplot.setAxisParms("Defocus (um)","Mean SNR")
+#			self.guiplot.updateGL()
+
 		# Debug
-		elif self.plotmode==9: 
+		elif self.plotmode==10: 
 #			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 #			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			

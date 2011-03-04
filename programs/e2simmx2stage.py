@@ -172,7 +172,7 @@ def main():
 
 	############### Step 3 - classify particles against subset of original projections
 	# Now we need to convert this small classification into a 'seed' for the large classification matrix for simplicity
-	print "Seeding full classification matrix"
+	print "Seeding full classification matrix (%d x %d)"%(clen,rlen)
 	mxstg1=EMData(args[5],0)
 	mx=EMData(clen,rlen,1)
 	mx.to_zero()

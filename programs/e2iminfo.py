@@ -79,10 +79,12 @@ def main():
 		print "Only one of --header and --stat may be specified"
 		sys.exit(1)
 	
+	nimgs=0
 	for imagefile in args:
-	
+		
 		if imagefile.lower()[:4]!="bdb:" :
 			nimg = EMUtil.get_image_count(imagefile)
+			nimgs+=nimg
 			imgtype = EMUtil.get_image_type(imagefile)
 			imgtypename = EMUtil.get_imagetype_name(imgtype)
 			if imgtype == EMUtil.ImageType.IMAGE_SPIDER and not options.stat: 
@@ -98,6 +100,7 @@ def main():
 			dct=db_open_dict(imagefile,ro=True)
 			d=dct.get_header(0)
 			nimg=len(dct)
+			nimgs+=nimg
 			
 			d=EMData(imagefile, options.number, True)
 			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
@@ -129,6 +132,7 @@ def main():
 				for k in keys:
 					print "\t%s: %s"%(k,str(d[k]))
 				print
-			
+	
+	if nimgs>1 : print "%d total images"%nimgs
 if __name__ == "__main__":
 	main()

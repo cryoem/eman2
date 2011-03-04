@@ -349,6 +349,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=100)
 		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
+		self.oldboxsize=100
 		
 		# max or mean
 		self.wmaxmean=QtGui.QPushButton("MaxProj")
@@ -579,6 +580,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return r
 
 	def event_boxsize(self):
+		if self.boxsize()==self.oldboxsize : return
+		self.oldboxsize=self.boxsize()
+		
 		cb=self.curbox
 		for i in range(len(self.boxes)) : self.update_box(i)
 		self.update_box(cb)
