@@ -39,7 +39,7 @@ from EMAN2 import *
 import os
 import copy
 from emapplication import EMProgressDialog, get_application, EMErrorMessageDisplay, error
-from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets
+from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets,init_sfcurve
 import subprocess
 import weakref
 from e2history import HistoryForm
