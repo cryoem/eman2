@@ -89,8 +89,8 @@ def main():
 
 	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 
-	parser.add_option("--clip", metavar="x,y,z[,xc,yc,zc]", type='string', action="callback", callback=intvararg_callback, 
-							help="Make the output have this size, no scaling. ")
+	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, 
+							help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
 	
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
 								help="Make the output have this size, rescaling by padding FFT.")
@@ -300,8 +300,15 @@ def main():
 					xc = x/2
 					yc = y/2
 					zc = z/2
+				elif(len(options.clip) ==1):
+					nx = options.clip[0]
+					ny=nx
+					nz=nx
+					xc = x/2
+					yc = y/2
+					zc = z/2
 				else:
-					print 'clip option takes either 3 or 6 arguments. --clip=x,y,z[,xc,yc,zc]'
+					print 'clip option takes 1, 3 or 6 arguments. --clip=x[,y,z[,xc,yc,zc]]'
 					return
 
 				if not (xc>=0 and yc>=0 and zc>=0 and xc<x and yc<y and zc<z):

@@ -1756,10 +1756,16 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 						EMErrorMessageDisplay.run(["%s does not exists" %name])
 						return
 				
-				for name in list_of_names:
-					if get_file_tag(name) in project_name_tags:
-						EMErrorMessageDisplay.run(["%s is already in the project" %name])
-						return
+#				for name in list_of_names:
+#					if get_file_tag(name) in project_name_tags:
+#						EMErrorMessageDisplay.run(["%s is already in the project" %name])
+#						return
+
+				err_list=[i for i in list_of_names if (get_file_tag(i) in project_name_tags)]
+				if len(err_list)>0 : EMErrorMessageDisplay.run(["%s are already in the project"%(",".join(err_list))])
+
+				# only include files not already in the project
+				list_of_names=[i for i in list_of_names if not (get_file_tag(i) in project_name_tags)]
 						
 				# if we make it here we're good
 				# first add entries to the table
@@ -3344,7 +3350,7 @@ important when manually fitting before determining a structure factor."
 			
 			img_sets = get_gui_arg_img_sets(options.filenames)
 		
-			
+			init_sfcurve("auto")
 			self.gui=GUIctf(get_application(),img_sets)
 			self.emit(QtCore.SIGNAL("gui_running"), "CTF", self.gui) # so the desktop can prepare some space!
 			self.form.close()

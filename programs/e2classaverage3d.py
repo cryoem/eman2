@@ -108,6 +108,8 @@ def main():
 	if options.preprocess : options.preprocess=parsemodopt(options.preprocess)
 	if options.postprocess : options.postprocess=parsemodopt(options.postprocess)
 
+	if options.resultmx : 
+		print "Sorry, resultmx not implemented yet"
 	if options.resultmx!=None : options.storebad=True
 
 	hdr=EMData(options.input,0,True)
