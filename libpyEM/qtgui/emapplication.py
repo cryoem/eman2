@@ -93,6 +93,11 @@ class ModuleEventsManager:
 		QtCore.QObject.disconnect(emitter, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
 
 class EMGLWidget(QtOpenGL.QGLWidget):
+	"""
+	This class encapsulates the use of the EMParentWin to provide a status bar with a size grip on Mac.
+	It also handles much of the inspector behavior, displays help in a web browser, and provides 
+	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
+	"""
 	FTGL = "ftgl"
 	GLUT = "glut"
 	

@@ -270,21 +270,31 @@ class EMTransformPanel:
 import weakref
 
 class EMParentWin(QtGui.QWidget,Animator):
-	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
+	"""
+	This class adds a status bar with a size grip to QGLWidgets on Mac OS X, 
+	to provide a visual cue that the window can be resized. This is accomplished
+	by placing a QGLWidget and a QStatusBar onto a QWidget. The EMGLWidget 
+	class hides the fact that this workaround is required.
+	"""
 	
 	def __init__(self,child,enable_timer=False):
+		"""
+		@param child: the central GL display widget
+		@type child: EMGLWidget
+		@param enable_timer: not used... historical purposes???
+		"""
 		#TODO: figure out why the enable_timer parameter isn't being used
 		QtGui.QWidget.__init__(self,None)
 		Animator.__init__(self)
 
-		self.child = weakref.ref(child)		
+		self.child = weakref.ref(child) # Either EMGLWidget.parent_widget or EMParentWin.child must be a weakref for garbage collection purposes.
 		self.resize(child.width(),child.height())
 		self.setMaximumSize(8000,8000)
 
 		self.hbl = QtGui.QVBoxLayout()
 		
 		self.hbl.setSpacing(0)
-		self.hbl.addWidget(self.child(),100)		# Not sure why we are using a weakref here..., seems risky...
+		self.hbl.addWidget(self.child(),100)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
 			self.status = QtGui.QStatusBar()
 			self.status.setSizeGripEnabled(True)
@@ -298,14 +308,12 @@ class EMParentWin(QtGui.QWidget,Animator):
 		
 	def __del__(self):
 		pass
-		#print "delete parent win"
 	
 	def get_margin(self):
 		return 50
 	
 
 	def closeEvent(self, e):
-			
 		try:
 			self.child().closeEvent(e)
 			#self.child.inspector.close()
@@ -339,6 +347,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 	#def height(self):
 		##print "asked for height!"
 		#return self.child.height()
+		
 	def initGL(self):
 		self.child().glInit()
 	
