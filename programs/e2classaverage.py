@@ -485,11 +485,12 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				mean+=sim
 				sigma+=sim**2
 			mean/=len(ptcl_info)
-			sigma=sigma/len(ptcl_info)-mean**2
+			sigma=sqrt(sigma/len(ptcl_info)-mean**2)
 			
 			# set a threshold based on statistics and options
 			if keepsig:					# keep a relative fraction based on the standard deviation of the similarity values
 				thresh=mean+sigma*keep
+				if verbose>1 : print "mean = %f\tsigma = %f\tthresh=%f"%(mean,sigma,thresh)
 			else:						# keep an absolute fraction of the total
 				l=[i[0] for i in ptcl_info]
 				l.sort()
