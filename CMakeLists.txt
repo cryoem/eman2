@@ -499,6 +499,7 @@ IF(ENABLE_PYTHON)
     	/usr/lib/python2.5/site-packages/numpy/core/include
 	    /Library/Python/2.5/site-packages/numpy/core/include
 	    /usr/lib/python2.4/site-packages/numpy/core/include
+            /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
 	    /usr/include)
 
     INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
