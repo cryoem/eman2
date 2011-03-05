@@ -248,7 +248,7 @@ def main():
 		# new average
 		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 		if options.postprocess!=None : 
-			img.process_inplace(options.postprocess[0],options.postprocess[1])
+			ref.process_inplace(options.postprocess[0],options.postprocess[1])
 		ref.write_image(options.output,ic)
 
 	E2end(logger)
