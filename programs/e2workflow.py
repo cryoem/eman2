@@ -968,10 +968,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			# solution is to turn the tasks into a module and add more modules
 			return
 		
-		for val in self.tasks.keys():
-			tasks.append(str(val))
-			tasks_dict["Workflow"] = val
-			#tasks_dict["workflow"] = 
+		for (task_id, task) in self.tasks.items():
+			tasks.append(str(task_id))
+			#tasks_dict["Workflow"] = task_id
+			tasks_dict[task] = task_id
 		
 		for val in self.gui_modules:
 			tasks_dict[val[2]] = val[1]
