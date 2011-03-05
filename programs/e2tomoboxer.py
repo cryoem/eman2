@@ -56,7 +56,7 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
+	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=32)
 #	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
 	parser.add_option("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis")
@@ -78,8 +78,8 @@ def main():
 		print "Reading tomogram. Please wait."
 		img=EMData(args[0],0)
 		print "Done !"
-		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort)
-	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix)
+		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
+	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
 	boxer.show()
 	app.execute()
 #	E2end(logid)
@@ -295,7 +295,7 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
@@ -347,9 +347,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl.addLayout(self.gbl2,1,0)
 		
 		# box size
-		self.wboxsize=ValBox(label="Box Size:",value=100)
+		self.wboxsize=ValBox(label="Box Size:",value=boxsize)
 		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
-		self.oldboxsize=100
+		self.oldboxsize=boxsize
 		
 		# max or mean
 		self.wmaxmean=QtGui.QPushButton("MaxProj")
