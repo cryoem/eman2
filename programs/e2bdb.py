@@ -71,6 +71,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
 	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
 	parser.add_option("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
+	parser.add_option("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
 	
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
@@ -85,6 +86,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	#if global_def.CACHE_DISABLE:
 		#from utilities import disable_bdb_cache
 		#disable_bdb_cache()
+	if options.nocache : BDB_CACHE_DISABLE=True
 
 	if options.cleanup : 
 		db_cleanup(options.force)
