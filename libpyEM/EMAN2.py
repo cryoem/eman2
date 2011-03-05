@@ -100,9 +100,6 @@ def E2init(argv) :
 This function is called to log information about the current job to the local logfile. The flags stored for each process
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
-	if EMAN2db.BDB_CACHE_DISABLE :
-		print "Note: Cache disabled, history logging disabled"
-		return -1
 		
 	# We go to the end of the file. Record the location, then write a fixed length string
 	try: 
@@ -116,6 +113,9 @@ is complete. If the process is killed, 'end' may never be set."""
 #	hist.flush()
 	hist.close()
 	
+	if EMAN2db.BDB_CACHE_DISABLE :
+		print "Note: Cache disabled"
+		
 	return n
 
 def E2progress(n,progress):
@@ -1046,7 +1046,6 @@ def file_exists( file_name ):
 	'''
 	
 	if ( os.path.exists(file_name) ):
-		print "CH"
 		parts = file_name.split('.')
 		file_tag = parts[len(parts)-1]
 		

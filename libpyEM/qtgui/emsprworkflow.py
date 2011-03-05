@@ -284,7 +284,8 @@ class WorkFlowTask:
 			args_adjusted.extend(args)
 			#print args_adjusted
 			
-			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
+#			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
+			process = subprocess.Popen(args_adjusted)
 			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
@@ -334,7 +335,8 @@ class WorkFlowTask:
 		args_adjusted.extend(args)
 		#print args_adjusted
 
-		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
+#		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
+		process = subprocess.Popen(args_adjusted)
 		print "started process",process.pid
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		

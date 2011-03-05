@@ -1342,6 +1342,7 @@ of these occasional errors"""
 				val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"],region,ad["nx"],ad["ny"],ad["nz"])
 			else:
 				val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
+#			print "WI ",self.path,self.name,key,val,BDB_CACHE_DISABLE,pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"]
 			
 		else :
 			self.put(dumps(key,-1),dumps(val,-1),txn=txn)

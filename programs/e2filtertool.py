@@ -198,8 +198,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
-		self.viewer=None
-		self.filters=[]
+		self.viewer=None			# viewer window for data
+		self.filters=[]				# list of filter specifications (name,dict)
 		self.origdata=None
 		self.nx=0
 		self.ny=0

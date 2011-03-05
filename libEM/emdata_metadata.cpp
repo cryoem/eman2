@@ -229,6 +229,7 @@ void EMData::write_data(string fsp,size_t loc,const Region* area,const int file_
 								  0, 4,fnx,fny,fnz,area);
 	}
 	fclose(f);
+//	printf("WROTE %s %ld %ld\n",fsp.c_str(),loc,nx*ny*nz);
 }
 
 void EMData::read_data(string fsp,size_t loc,const Region* area, const int file_nx, const int file_ny, const int file_nz) {
