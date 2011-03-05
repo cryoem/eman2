@@ -244,7 +244,7 @@ def main():
 			if options.savesteps :
 				ref.write_image("bdb:class_%02d"%ic,it)
 
-		if verbose: print "Preparing final average"
+		if options.verbose: print "Preparing final average"
 		# new average
 		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 		if options.postprocess!=None : 
