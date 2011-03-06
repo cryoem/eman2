@@ -70,7 +70,7 @@ def main():
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
 	parser.add_option("--shrinks1", type="int",help="Shrinking performed for first stage classification, default=2",default=2)
 	parser.add_option("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
-	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
+	parser.add_option("--parallel",type="string",help="Parallelism string",default="thread:1")
 	parser.add_option("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
