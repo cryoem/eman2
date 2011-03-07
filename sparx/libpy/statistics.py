@@ -6045,9 +6045,9 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	return list_stable, nb_tot_objs
 
-# Match two partitions with hungarian algorithm and also return the matches. Is otherwise identical
+# Match two partitions with hungarian algorithm and also return the matches whose corresponding stable sets have size larger than T. Is otherwise identical
 # to k_means_match_clusters_asg
-def k_means_match_clusters_asg_new(asg1, asg2):
+def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, array
 	from statistics import Munkres
@@ -6066,19 +6066,21 @@ def k_means_match_clusters_asg_new(asg1, asg2):
 			cost_MAT[i][j] = sys.maxint - MAT[i][j]
 	m = Munkres()
 	indexes = m.compute(cost_MAT)
+	newindexes = []
 	list_stable = []
 	nb_tot_objs = 0
 	for r, c in indexes:
 		cont = MAT[r][c]
-		if cont == 0:
+		if cont <= T:
 			list_stable.append(array([], 'int32'))
 			continue
 		nb_tot_objs += cont
 		objs = zeros(cont, 'int32')
 		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
 		list_stable.append(objs)
+		newindexes.append([r,c])
 
-	return indexes, list_stable, nb_tot_objs
+	return newindexes, list_stable, nb_tot_objs
 
 # Hierarchical stability between partitions given by k-means
 def k_means_stab_H(ALL_PART):
@@ -9335,8 +9337,8 @@ class pcanalyzebck:
 
 
 
-def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1, np=-1, cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
-	
+def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1,cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+	from statistics import k_means_match_clusters_asg_new
 	"""
 		
 		Input:
@@ -9404,6 +9406,8 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	
 		Output: MATCH, STB_PART, CT_s, CT_t, ST, st
 			
+			If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm, and those matches for which the corresponding stable set has size greater than T will be output. If T==0, then the output matches will be optimal.
+			
 			MATCH: A list of arrays. Each array has len(PART) elements, and the i-th element corresponds to a class in the i-th partition. 
 			       So MATCH[0][0] is an index into PART[0], MATCH[0][1] is an index into PART[1], etc.
 			    
@@ -9421,10 +9425,10 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	"""
 	
 	from copy import deepcopy
-
+	from numpy import array, append
 
 	MATCH=[]
-	
+	np = len(PART)
 	# do MPI_init: compute pruned partitions and Njobs top matches and return
 	#if doMPI_init:
 	#	newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, J=J, nguesses=nguesses, DoMPI_init=True,Njobs=njobs)
@@ -9433,13 +9437,43 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	#if do_mpi:
 	#	MATCH,cost= k_means_match_bbenum(PART, T=T, J=J, nguesses=nguesses, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
 	#	return MATCH,cost
-		
-	if do_mpi==False and doMPI_init == False:
+			
+	if np > 2:
 		MATCH= k_means_match_bbenum(PART, T=T, J=J, max_branching=max_branching, stmult=stmult, branchfunc=branchfunc, LIM=LIM, nguesses=nguesses, DoMPI=False)
+
 	
-	
-	K=len(PART[0])
-	np = len(PART)
+	list_stb=[]
+	tot_n=0
+	if np == 2:
+		# First make sure the two partitions have the same number of classes. If not, pad the one with less with junk.
+		K1 = len(PART[0])
+		K2 = len(PART[1])
+		maxK = max(K1, K2)
+		if K1 < maxK or K2 < maxK:
+			# ffind garbage value to pad empty classes with
+			garbage_value = 923456
+			garbage_incr=1
+			for i in xrange(np):
+				K = len(PART[i])
+				for j in xrange(K):
+					pSize = PART[i][j].size
+					if pSize >= 1:
+						for p in xrange(pSize):
+							if PART[i][j][p] >= garbage_value:
+								garbage_value = PART[i][j][p] + garbage_incr
+			for i in xrange(np):
+				if len(PART[i]) < maxK:
+					# pad with empty arrays
+					df = maxK - len(PART[i])
+					for pd in xrange(df):
+						a=array([garbage_value, garbage_value+1],'int32')
+						garbage_value = garbage_value + 2
+						PART[i].append(a.copy())
+		# now call 
+		MATCH, list_stb, tot_n = k_means_match_clusters_asg_new(PART[0], PART[1], T)
+			
+							
+	K=len(PART[0])		
 	
 	STB_PART = [[] for i in xrange(K)]
 	nm       = len(MATCH)
@@ -9484,6 +9518,12 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	if sum(CT_t) == 0:
 		st = 0
 	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
+
+	if np == 2:
+		if sum(CT_s) != tot_n:
+			print sum(CT_s), tot_n
+			print "something wrong!!"
+			sys.exit()
 
 	return MATCH, STB_PART, CT_s, CT_t, ST, st
 
