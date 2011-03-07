@@ -798,7 +798,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 
 	return ave, var
 	
-def ave(stack, mode="a", i1 = 0, i2 = 0):
+def aveq(stack, mode="a", i1 = 0, i2 = 0):
 	"""
 		Calculate the average and variance for
 		1. mode="a" for alignment

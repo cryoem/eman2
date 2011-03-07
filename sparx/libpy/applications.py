@@ -101,11 +101,11 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 
 def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False):
-	
+
 	# Comment by Zhengfan Yang 02/25/11
 	# This is where ali2d() actually runs, the reason I divided it into two parts is that
-	# the alignment program will now also support list of EMData instead of just a stack.
-	
+	# this alignment program supports list of EMData not a stack.
+
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
@@ -135,7 +135,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		auto_stop = False
 
 	nima = len(data)
-	
+
 	if Ng == -1:
 		Ng = nima
 	elif Ng == -2:
@@ -228,7 +228,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		Util.div_filter(adw_img, ctf_abs_sum)
 		Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
 		adw_img += float(nima-Ng)/(nima-1)
-			
+
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
@@ -240,7 +240,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	cs = [0.0]*2
 	total_iter = 0
-	
+
 	if CUDA:
 		from math import log, pi
 		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
@@ -275,7 +275,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
 				tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
 			else: tavg = (ave1+ave2)/nima
-			
+
 			if outdir:
 				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 				if CTF:
@@ -283,7 +283,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 			else:
 				frsc = fsc_mask(ave1, ave2, mask, 1.0)
-			
+
 			if Fourvar:
 				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
 				else: vav, rvar = varf(data, tavg, mask, "a")
@@ -371,8 +371,6 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 
 	if from_ali2d == False: print_end_msg("ali2d_data")
-
-
 
 def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID=""):
@@ -1776,7 +1774,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000):
 # 2D multi-reference alignment using rotational ccf in polar coordinates and quadratic interpolation
 
-	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
+	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image, get_im
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all
 	from utilities      import   send_attr_dict
 	from utilities	    import   center_2D
@@ -1878,10 +1876,8 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	# prepare reference images on all nodes
 	ima.to_zero()
 	for j in xrange(numref):
-		temp = EMData()
-		temp.read_image(refim, j)
 		#  even, odd, numer of even, number of images.  After frc, totav
-		refi.append([temp, ima.copy(), 0])
+		refi.append([get_im(refim,j), ima.copy(), 0])
 	#  for each node read its share of data
 	data = EMData.read_images(stack, range(image_start, image_end))
 	for im in xrange(image_start, image_end):
@@ -1895,13 +1891,13 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				data[im-image_start].set_attr('ctf_applied', 1)
 	if myid == main_node:  seed(rand_seed)
-	
+
 	a0 = -1.0
 	again = True
 	Iter = 0
-	
+
 	ref_data = [mask, center, None, None]
-	
+
 	while Iter < max_iter and again:
 		ringref = []
 		for j in xrange(numref):
