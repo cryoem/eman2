@@ -121,6 +121,9 @@ EMData::EMData(const string& filename, int image_index) :
 
 	update();
 	EMData::totalalloc++;
+#ifdef MEMDEBUG2
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 
 	EXITFUNC;
 }
@@ -154,6 +157,9 @@ EMData::EMData(const EMData& that) :
 	if (that.rot_fp != 0) rot_fp = new EMData(*(that.rot_fp));
 
 	EMData::totalalloc++;
+#ifdef MEMDEBUG2
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 
 	ENTERFUNC;
 }
@@ -251,6 +257,9 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 	this->to_zero();
 	update();
 	EMData::totalalloc++;
+#ifdef MEMDEBUG2
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 
 	EXITFUNC;
 }
@@ -270,6 +279,9 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 	attr_dict["apix_z"] = 1.0f;
 
 	EMData::totalalloc++;
+#ifdef MEMDEBUG2
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 
 	update();
 	EXITFUNC;
@@ -290,6 +302,9 @@ EMData::EMData(float* data, float* cudadata, const int x, const int y, const int
 	attr_dict["apix_z"] = 1.0f;
 
 	EMData::totalalloc++;
+#ifdef MEMDEBUG2
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 
 	update();
 	EXITFUNC;
