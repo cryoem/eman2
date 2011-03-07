@@ -91,7 +91,7 @@ EMData::EMData() :
 	attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;
 
 	EMData::totalalloc++;
-#ifdef MEMDEBUG
+#ifdef MEMDEBUG2
 	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 #endif
 
@@ -310,7 +310,7 @@ EMData::~EMData()
 	if(cudarodata){ro_free();}
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
-#ifdef MEMDEBUG
+#ifdef MEMDEBUG2
 	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
 #endif
 	EXITFUNC;

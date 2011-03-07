@@ -726,6 +726,11 @@ void EMData::set_size(int x, int y, int z)
 		throw InvalidValueException(z, "z size <= 0");
 	}
 
+#ifdef MEMDEBUG2
+	printf("EMDATA sz  %4d    %p (%d,%d,%d)\n",EMData::totalalloc,this,x,y,z);
+#endif
+
+
 	int old_nx = nx;
 
 	size_t size = x*y*z*sizeof(float);
