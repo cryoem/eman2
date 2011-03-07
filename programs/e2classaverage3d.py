@@ -60,7 +60,7 @@ def main():
 	--preprocess=filter.lowpass.gauss:cutoff_freq=<1/resolution in A>
 	
 	"""
-		
+			
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_option("--input", type="string", help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
@@ -138,9 +138,18 @@ def main():
 			#sys.exit(1)
 
 	nptcl=EMUtil.get_image_count(options.input)
-	if nptcl<2 : 
-		print "ERROR : at least 2 particles required in input stack"
+	if nptcl<1 : 
+		print "ERROR : at least 1 particle required in input stack"
 		sys.exit(1)
+		
+	if nptcl==1:
+		if options.iter>1 :
+			print "Error: makes no sense to have iter>1 with one particle"
+			sys.exit(1)
+		
+		if options.keepsig or options.keep!=1.0 :
+			print "Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
+			sys.exit(1)
 
 	# Initialize parallelism if being used
 	if options.parallel :
@@ -164,6 +173,10 @@ def main():
 		# prepare a reference either by reading from disk or bootstrapping
 		if options.ref : ref=EMData(options.ref,ic)
 		else :
+			if nptcl==1 : 
+				print "Error: More than 1 particle required if no reference specified"
+				sys.exit(1)
+			
 			# we need to make an initial reference. Due to the parallelism scheme we're using in 3-D and the slow speed of the
 			# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
 			# compute pairwise alignments until we get an average out. 
@@ -301,7 +314,7 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-		if ptcl_parms[0]["score"]<thresh : 
+		if ptcl_parms[0]["score"]<=thresh : 
 			avgr.add_image(ptcl)
 			included.append(i)
 		if saveali: ptcl.write_image("bdb:class_ptcl",i)
