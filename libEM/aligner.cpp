@@ -71,6 +71,7 @@ const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resa
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
+const string Refine3DAlignerGridInefficient::NAME = "refine_3d_grid_slow";
 const string Refine3DAlignerQuaternion::NAME = "refine_3d";
 const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
 const string RT3DSphereAligner::NAME = "rotate_translate_3d";
@@ -94,6 +95,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
+	force_add<Refine3DAlignerGridInefficient>();
 	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
@@ -1706,6 +1708,139 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 
 	if ( c != 0 ) delete c;
 	return result;
+}
+
+EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
+	const string & cmp_name, const Dict& cmp_params) const
+{
+	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
+		throw ImageDimensionException("This aligner only works for 3D images");
+	}
+
+	Transform* t;
+	if (params.has_key("xform.align3d") ) {
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
+		// parameters to form the starting guess. Instead the Transform itself
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
+		// when you use orthogonally-based Euler angles
+		t = params["xform.align3d"];
+	}else {
+		t = new Transform(); // is the identity
+	}
+	
+	int searchx = 0;
+	int searchy = 0;
+	int searchz = 0;
+	
+	bool dotrans = params.set_default("dotrans",1);
+	if (params.has_key("search")) {
+		vector<string> check;
+		check.push_back("searchx");
+		check.push_back("searchy");
+		check.push_back("searchz");
+		for(vector<string>::const_iterator cit = check.begin(); cit != check.end(); ++cit) {
+			if (params.has_key(*cit)) throw InvalidParameterException("The search parameter is mutually exclusive of the searchx, searchy, and searchz parameters");
+		}
+		int search  = params["search"];
+		searchx = search;
+		searchy = search;
+		searchz = search;
+	} else {
+		searchx = params.set_default("searchx",3);
+		searchy = params.set_default("searchy",3);
+		searchz = params.set_default("searchz",3);
+	}	
+	
+	float raz = params.set_default("raz",10.0f);
+	float ralt = params.set_default("ralt",10.0f);
+	float rphi = params.set_default("rphi",10.0f);
+	float saz = params.set_default("saz",2.0f);
+	float salt = params.set_default("salt",2.0f);
+	float sphi = params.set_default("sphi",2.0f);
+	bool verbose = params.set_default("verbose",false);
+	
+	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
+	EMData * tofft = 0;
+	if(dotrans || tomography){
+		tofft = to->do_fft();
+	}
+	
+#ifdef EMAN2_USING_CUDA 
+	if(EMData::usecuda == 1) {
+		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
+		if(!to->cudarwdata) to->copy_to_cuda();
+		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
+	}
+#endif
+
+	Dict d;
+	d["type"] = "eman"; // d is used in the loop below
+	bool use_cpu = true;
+	EMData* best_match = new EMData();
+	best_match->set_attr("score", 0.0f);
+	for ( float alt = -ralt; alt < ralt; alt += salt) {
+		// An optimization for the range of az is made at the top of the sphere
+		// If you think about it, this is just a coarse way of making this approach slightly more efficient
+		for ( float az = -raz; az < raz; az += raz ){
+			if (verbose) {
+				cout << "Trying angle alt " << alt << " az " << az << endl;
+			}
+			for( float phi = -rphi; phi < rphi; phi += sphi ) {
+				d["alt"] = alt;
+				d["phi"] = phi; 
+				d["az"] = az;
+				Transform tr(d);
+				tr = tr*(*t);	// compose transforms
+				
+				EMData* transformed = this_img->process("xform",Dict("transform",&tr));
+				
+				//need to do things a bit diffrent if we want to compare two tomos
+				float score;
+				if(dotrans || tomography){
+					EMData* ccf = transformed->calc_ccf(tofft);
+#ifdef EMAN2_USING_CUDA	
+					if(to->cudarwdata){
+						use_cpu = false;
+						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						tr.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
+					}
+#endif
+					if(use_cpu){
+						if(tomography) ccf->process_inplace("normalize");	
+						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+						tr.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						delete transformed; // this is to stop a mem leak
+						transformed = this_img->process("xform",Dict("transform",&tr));
+					}
+					delete ccf; ccf =0;
+				}
+
+				if(!tomography){
+					score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+				
+				}
+				
+				float best_score = best_match->get_attr("score");
+				if(score < best_score) {
+					delete best_match;
+					best_match = transformed;
+					best_match->set_attr("xform.align3d",&tr);
+					best_match->set_attr("score", score);
+				} else {
+					delete transformed; transformed = 0;
+				}
+					
+			}
+		}
+	}
+
+	if(tofft) {delete tofft; tofft = 0;}
+	
+	return best_match;
+	
 }
 
 EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const

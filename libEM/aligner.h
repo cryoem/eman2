@@ -894,6 +894,55 @@ namespace EMAN
 		
 		static const string NAME;
 	};
+
+	class Refine3DAlignerGridInefficient:public Aligner
+	{
+		public:
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name="sqeuclidean", const Dict& cmp_params = Dict()) const;
+
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new Refine3DAlignerGridInefficient();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
+				d.put("saz", EMObject::FLOAT, "The angular step size for az. Default is 2." );
+				d.put("salt", EMObject::FLOAT, "The The angular step size for alt. Default is 2." );
+				d.put("sphi", EMObject::FLOAT, "The The angular step size for phi. Default is 2." );
+				d.put("raz", EMObject::FLOAT, "The angular range(+- this amount) for az. Default is 10." );
+				d.put("ralt", EMObject::FLOAT, "The The angular range(+- this amount) for alt. Default is 10." );
+				d.put("rphi", EMObject::FLOAT, "The The angular range(+- this amount) for phi. Default is 10." );	
+				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
+				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
+				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
+				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
+				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				return d;
+			}
+			
+			static const string NAME;
+	};
 	
 	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
 	 * Target function for the simplex algorithm is a rotation along an arbitrary axis defined by a quaternion, whose
