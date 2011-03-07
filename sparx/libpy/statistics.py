@@ -1744,7 +1744,7 @@ def k_means_init_asg_d2w(im, N, K):
 		assign[n]      = res['pos']
 		nc[assign[n]] += 1
 
-	print nc
+	#print nc
 
 	return assign, nc
 
