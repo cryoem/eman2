@@ -5788,8 +5788,8 @@ class E2RunFreAlign(WorkFlowTask):
 	 	r,rn = self.get_ref_table()
 	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(r)
-		piter = ParamDef(name="iter",vartype="int",desc_short="iterations", desc_long="number of FreAlign iterations",property=None,defaultunits=5,choices=None)
-		params.append(piter)
+		#piter = ParamDef(name="iter",vartype="int",desc_short="iterations", desc_long="number of FreAlign iterations",property=None,defaultunits=5,choices=None)
+		#params.append(piter)
 		return params
 		
 	def on_form_ok(self,params):
@@ -5809,7 +5809,7 @@ class E2RunFreAlign(WorkFlowTask):
 		
 		prflist = []
 		prflist.append("e2runfrealign.py")
-		prflist.append(str(params["iter"]))
+		#prflist.append(str(params["iter"]))
 		
 		child = subprocess.Popen(prflist, cwd=edir)
 		
