@@ -1781,7 +1781,7 @@ EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
 	for ( float alt = -ralt; alt < ralt; alt += salt) {
 		// An optimization for the range of az is made at the top of the sphere
 		// If you think about it, this is just a coarse way of making this approach slightly more efficient
-		for ( float az = -raz; az < raz; az += raz ){
+		for ( float az = -raz; az < raz; az += saz ){
 			if (verbose) {
 				cout << "Trying angle alt " << alt << " az " << az << endl;
 			}
