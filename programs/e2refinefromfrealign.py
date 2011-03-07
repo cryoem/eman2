@@ -51,8 +51,8 @@ for l_iter in range(1,high+1):
 
 OUT_META_FILE = "OutParam"
 
-fsc_dict = db_open_dict("bdb:" + dir + "#convergence_results")
-for k in range(2,high+1):
+fsc_dict = db_open_dict("bdb:" + dir + "#convergence.results")
+for k in range(1,high):
    if k < 10:
       iter = '0' + str(k)    
    else:
@@ -66,7 +66,8 @@ for k in range(2,high+1):
    b = EMData(dir + "/OutputMap_Normalized_" + iter_minus + ".mrc")
    s = iter_minus + "_" + iter + "_fsc"
    fsc = a.calc_fourier_shell_correlation(b)
-   fsc_dict[s] = fsc[81:162]
+   fsc_len = len(fsc)
+   fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]
 
 f = open(dir + "/" + IN_META_FILE, 'r')
 l2 = f.readlines()

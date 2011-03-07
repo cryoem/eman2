@@ -13,10 +13,10 @@ os.system('cp 3DMapInOut.mrc 3DMapInOut.mrc.old')
 os.system('cp ptcl_meta_data ptcl_meta_data.old')
 for i in range(iter):
    os.system('frealign_v8.exe < card.txt')
-   if i+1 < 10:
-      k = '0' + str(i+1) 
+   if i < 10:
+      k = '0' + str(i) 
    else:
-      k = str(i+1)
+      k = str(i)
    s = "cp 3DMapInOut.mrc OutputMap_" + k +".mrc"
    os.system(s)
    s = "cp OutParam OutParam_" + k

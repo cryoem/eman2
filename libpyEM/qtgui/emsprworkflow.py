@@ -6247,7 +6247,6 @@ def get_convergence_results_list(keys):
 			break
 
 		i += 1
-	
 	return solns
 
 class E2EotestTask(EMClassificationTools,E2Make3DTools):
