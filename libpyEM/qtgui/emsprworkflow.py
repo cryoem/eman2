@@ -5857,7 +5857,7 @@ class E2RefineToFreeAlign(WorkFlowTask):
 		iblow = ["0","1","2"]
 		piblow =  ParamDef(name="iblow",vartype="string",desc_short="iblow",desc_long="FreeAlign iblow",property=None,defaultunits="2",choices=iblow)
 		pmask = ParamDef(name="mask",vartype="float",desc_short="mask", desc_long="Mask for FreeAlign",property=None,defaultunits=0.0,choices=None)
-		prrec = ParamDef(name="rrec",vartype="float",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits=10.0,choices=None)
+		prrec = ParamDef(name="rrec",vartype="string",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits="10.0",choices=None)
 		params.append([pifsc, piblow, pmask, prrec])
 		preslow = ParamDef(name="reslow",vartype="float",desc_short="reslow", desc_long="low resolution",property=None,defaultunits=200.0,choices=None)
 		preshigh = ParamDef(name="reshigh",vartype="float",desc_short="reshigh", desc_long="high resolution",property=None,defaultunits=25.0,choices=None)
@@ -5901,7 +5901,7 @@ class E2RefineToFreeAlign(WorkFlowTask):
 		e2falist.append("--iblow="+params["iblow"])
 		if params["mask"] != 0:
 			e2falist.append("--mask="+str(params["mask"]))
-		e2falist.append("--rrec="+str(params["rrec"]))
+		e2falist.append("--rrec="+params["rrec"])
 		e2falist.append("--reslow="+str(params["reslow"]))
 		e2falist.append("--reshigh="+str(params["reshigh"]))
 		if(params["refdef"]):
