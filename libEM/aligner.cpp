@@ -1751,7 +1751,7 @@ EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
 		searchz = params.set_default("searchz",3);
 	}	
 	
-	float raz = params.set_default("raz",180.0f);
+	float raz = params.set_default("raz",6.0f);
 	float ralt = params.set_default("ralt",6.0f);
 	float rphi = params.set_default("rphi",6.0f);
 	float saz = params.set_default("saz",2.0f);
