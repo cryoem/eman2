@@ -36,7 +36,7 @@ for item in os.listdir(dir):
             high = int(item[9:11])
 
 
-for l_iter in range(1,high+1):
+for l_iter in range(high+1):
    if l_iter < 10:
       iter = '0' + str(l_iter)
    else:
@@ -48,17 +48,18 @@ for l_iter in range(1,high+1):
    a.write_image(dir + "/OutputMap_Normalized_" + iter + ".mrc")
 
 
-
 OUT_META_FILE = "OutParam"
-
+FINAL_META_FILE = OUT_META_FILE + "_" + iter
 fsc_dict = db_open_dict("bdb:" + dir + "#convergence.results")
-
 a = EMData(dir + "/3DMapInOut.mrc")
 b = EMData(dir + "/OutputMap_Normalized_00.mrc")
 s =  "00_init_fsc"
 fsc = a.calc_fourier_shell_correlation(b)
 fsc_len = len(fsc)
 fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]
+
+
+
 
 for k in range(1,high):
    if k < 10:
@@ -78,6 +79,28 @@ for k in range(1,high):
    fsc_len = len(fsc)
    fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]
 
+f=open(dir + "/" + FINAL_META_FILE, 'r')
+l3=f.readlines()
+f.close()
+ring_rad = []
+fsc_val = []
+start = 0
+
+for i in range(len(l3)):
+   lst=l3[i].split()
+   if l3[i][0] == 'C' and len(lst) > 1:
+      if lst[1] =='Average':
+         break
+   if start == 1:
+      ring_rad.append(int(lst[3]))
+      fsc_val.append(int(lst[5]))
+   if l3[i][0] == 'C' and len(lst) > 1:
+      if lst[1] =='NO.':
+         start = 1
+s = 'even_odd_' + iter + '_fsc'
+fsc_dict[s] = [ring_rad,fsc_val]
+
+   
 f = open(dir + "/" + IN_META_FILE, 'r')
 l2 = f.readlines()
 f.close()
