@@ -438,7 +438,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxesviewer.setWindowTitle("Particle List")
 
 		# Average viewer shows results of background tomographic processing
-		self.averageviewer=EMAverageViewer(self)
+#		self.averageviewer=EMAverageViewer(self)
 		#self.averageviewer.show()
 		
 		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
@@ -446,7 +446,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def menu_win_boxes(self) : self.boxesviewer.show()
 	def menu_win_single(self) : self.boxviewer.show()
-	def menu_win_average(self) : self.averageviewer.show()
+#	def menu_win_average(self) : self.averageviewer.show()
 
 
 	def set_datafile(self,datafile):
@@ -1045,7 +1045,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		print "Exiting"
 		self.boxviewer.close()
 		self.boxesviewer.close()
-		self.averageviewer.close()
+#		self.averageviewer.close()
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop

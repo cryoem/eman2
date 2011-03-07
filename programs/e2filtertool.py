@@ -76,8 +76,63 @@ def main():
 	app.execute()
 #	E2end(logid)
 
+class EMProcessorWidget(QtGui.QWidget):
+	"""A single processor with parameters"""
+	
+	plist=dump_processors_list()
+	
+	# Sorted list of the stuff before the first '.'
+	cats=set([i.split(".")[0] for i in plist.keys()])
+	cats=list(cats)
+	cats.sort()
+	
+	def __init__(self):
+		self.gbl = QtGui.QGridLayout(self)
+		
+		# List of processor categories
+		self.wcat=QtGui.QComboBox(self)
+		for i in cats: self.wcat.addItem(i)
+#		self.wcat.setCurrentindex(self.wcat.findText("filter"))
+		self.gbl.add_widget(self.wcat,0,0)
+		
+		# List of processor subcategories
+		self.wsubcat=QtGui.QComboBox(self)
+		self.gbl.add_widget(self.wsubcat,0,1)
+#		self.update_subcat()
 
-class EMTomoBoxer(QtGui.QMainWindow):
+		#button grid
+		self.gbl2=QtGui.QGridLayout(self)
+		self.gbl.add_layout(0,2,2,1)
+		
+		self.wup = QtGui.QPushButton("up")
+		self.gbl2.add_widget(self.wup,0,0)
+		
+		self.wdown = QtGui.QPushButton("down")
+		self.gbl2.add_widget(self.wdown,1,0)
+		
+		self.wplus = QtGui.QPushButton("+")
+		self.gbl2.add_widget(self.wplus,0,1)
+		
+		self.wminus= QtGui.QPushButton("-")
+		self.gbl2.add_widget(self.wminus,1,1)
+		
+		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_cat_sel)
+		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_subcat_sel)
+		
+
+	def event_cat_sel(self,idx):
+		cat=str(self.wcat.currentText())
+		scats=[i.split('.',1)[1] for i in self.cats if i.split(".")[0]==cat]
+		self.wsubcat.clear()
+		self.wsubcat.addItems(scats)
+
+	def event_subcat_sel(self,idx):
+		cat=str(self.wcat.currentText())
+		scat=str(self.wsubcat.currentText())
+		proc=cat+"."+scat
+		print proc
+	
+class EMFilterTool(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
 	def __init__(self,application,data=None,apix=0.0,verbose=0):

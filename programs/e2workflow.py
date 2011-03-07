@@ -484,16 +484,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Run - e2refinemulti"] = self.launch_e2refinemulti_sets
 		
 		freealign_list = []
-		freealign = QtGui.QTreeWidgetItem(QtCore.QStringList("FREALIGN"))
+		freealign = QtGui.QTreeWidgetItem(QtCore.QStringList("Frealign"))
 		freealign.setIcon(0,self.icons["refine"])
-		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refineFreAlign")))
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinefrealign")))
 		freealign_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2refineFreAlign"] = self.launch_e2refinetofrealign
-		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2runFreAlign")))
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2runfrealign")))
 		freealign_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2runFreAlign"] = self.launch_e2runfrealign
 		freealign.addChildren(freealign_list)
-		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinefromFreAlign")))
+		freealign_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Run - e2refinefromfrealign")))
 		freealign_list[-1].setIcon(0,self.icons["refine"])
 		self.launchers["Run - e2refinefromFreAlign"] = self.launch_e2refinefromfrelaign
 		freealign.addChildren(freealign_list)
