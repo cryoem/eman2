@@ -3,16 +3,31 @@
 import os
 import sys
 
-if len(sys.argv) != 2:
-   print "Please use e2fa.py <number of iterations to run FreAlign>"
+if len(sys.argv) != 1:
+   print "Please use e2runfrealign.py"
    exit(-1)
-iter = int(sys.argv[1])
-os.system('clear')
 
+os.system('clear')
 os.system('cp 3DMapInOut.mrc 3DMapInOut.mrc.old')
 os.system('cp ptcl_meta_data ptcl_meta_data.old')
-for i in range(iter):
-   os.system('frealign_v8.exe < card.txt')
+dir_list = os.listdir('.')
+dir_list.sort()
+high = 0
+for item in dir_list:
+   print len(item)
+   if len(item) > 6:
+      print item[:4]
+      if item[:4] == 'card':
+         item = item.replace(".txt",'')
+         item = item.replace("card",'')
+         print int(item)
+         if int(item) > high:
+            high = int(item)
+
+print high
+
+for i in range(high):
+   os.system('frealign_v8.exe < card' + str(i) + '.txt')
    if i < 10:
       k = '0' + str(i) 
    else:
