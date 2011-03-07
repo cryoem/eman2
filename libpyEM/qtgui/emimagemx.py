@@ -2117,7 +2117,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			
 		if self.xyz == None:
 			self.xyz = QtGui.QComboBox()
-			self.xyz.addItems(["x","y","z"])
+			self.xyz.addItems(QtCore.QStringList(["x","y","z"]))
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
 			QtCore.QObject.connect(self.xyz, QtCore.SIGNAL("currentIndexChanged(const QString&)"), self.target().xyz_changed)
