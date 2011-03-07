@@ -6045,6 +6045,41 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	return list_stable, nb_tot_objs
 
+# Match two partitions with hungarian algorithm and also return the matches. Is otherwise identical
+# to k_means_match_clusters_asg
+def k_means_match_clusters_asg_new(asg1, asg2):
+	# asg1 and asg2 are numpy array
+	from numpy      import zeros, array
+	from statistics import Munkres
+	import sys
+
+	K        = len(asg1)
+	MAT      = [[0] * K for i in xrange(K)] 
+	cost_MAT = [[0] * K for i in xrange(K)]
+	dummy    = array([0], 'int32')
+	for k1 in xrange(K):
+		for k2 in xrange(K):
+			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
+
+	for i in xrange(K):
+		for j in xrange(K):
+			cost_MAT[i][j] = sys.maxint - MAT[i][j]
+	m = Munkres()
+	indexes = m.compute(cost_MAT)
+	list_stable = []
+	nb_tot_objs = 0
+	for r, c in indexes:
+		cont = MAT[r][c]
+		if cont == 0:
+			list_stable.append(array([], 'int32'))
+			continue
+		nb_tot_objs += cont
+		objs = zeros(cont, 'int32')
+		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
+		list_stable.append(objs)
+
+	return indexes, list_stable, nb_tot_objs
+
 # Hierarchical stability between partitions given by k-means
 def k_means_stab_H(ALL_PART):
 	from copy       import deepcopy
