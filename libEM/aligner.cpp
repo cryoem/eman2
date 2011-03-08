@@ -1777,7 +1777,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	for ( float alt = 0; alt < range; alt += delta) {
 		// now compute a sane az step size 
 		float saz = 360;
-		if(alt != 0) saz = delta/sin(alt*M_PI/180.0f); // This gives even step sizes
+		if(alt != 0) saz = delta/sin(alt*M_PI/180.0f); // This gives consistent az step sizes(arc lengths)
 		for ( float az = 0; az < 360; az += saz ){
 			if (verbose) {
 				cout << "Trying angle alt " << alt << " az " << az << endl;
@@ -1807,9 +1807,12 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 #endif
 					if(use_cpu){
 						if(tomography) ccf->process_inplace("normalize");
-						vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
-						tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
-						score = -fpoint[3];
+						//vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
+						//tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
+						//score = -fpoint[3];
+						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+						tr.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 						delete transformed; // this is to stop a mem leak
 						transformed = this_img->process("xform",Dict("transform",&tr));
 					}
