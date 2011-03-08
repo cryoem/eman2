@@ -10528,7 +10528,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_criterion, k_means_export
 		if MPI: from statistics import k_means_cla_MPI, k_means_SSE_MPI
 		else:   from statistics import k_means_cla, k_means_SSE
-			
+
 	ext = file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False

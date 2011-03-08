@@ -2594,7 +2594,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
         if CTF:
 		Cls_ctf2   = {}
 		len_ctm	   = len(ctf2[0])
-	
+
 	## TRIALS
 	if trials > 1:
 		MemCls, MemJe, MemAssign = {}, {}, {}
@@ -2635,12 +2635,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				# compute average first step
 				CTFxF = filt_table(im_M[im], ctf[im])
 				Util.add_img(Cls['ave'][assign[im]], CTFxF)
-			
+
 			for k in xrange(K):
 				valCTF = [0] * len_ctm
 				for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
 				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-			
+
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in xrange(N):
 				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
@@ -2656,7 +2656,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Je = 0
 			for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
 			for k in xrange(K):	Je += Cls['Ji'][k]	
-	
+
 		## Clustering		
 		ite       = 0
 		watch_dog = 0
@@ -2666,7 +2666,6 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if DEBUG: print 'init Je', Je
 
-		
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 		print_msg('Criterion: %11.6e \n' % Je)
 
@@ -2681,7 +2680,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				# to select random image
 				im = order[imn]
 				assign_to = -1
-				
+
 				# compute SqEuclidean (objects and centroids)
 				if CTF:
 					# compute the minimum distance with centroids
@@ -2724,15 +2723,15 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						if( dJe[i] >= max_value) :
 							max_value = dJe[i]
 							res['pos'] = i
-			
+
 				# moving object and update iteratively
 				if res['pos'] != assign[im]:
 					assign_from = assign[im]
 					assign_to   = res['pos']
-								
+
 					if CTF:
 						# Update average
-						
+
 						# compute valCTF = CTFi / (S ctf2 - ctf2i)
 						valCTF = [0] * len_ctm
 						for i in xrange(len_ctm):
@@ -2760,7 +2759,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						# compute valCTF * (F - CTFxAve)
 						buf = filt_table(buf, valCTF)
 						# add the value at the average
-						Util.add_img(Cls['ave'][assign_to], buf)	
+						Util.add_img(Cls['ave'][assign_to], buf)
 					else:
 						# Update average
 						buf.to_zero()
@@ -2772,7 +2771,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						buf = Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
 						Util.add_img(buf, im_M[im])
 						Cls['ave'][assign_to] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
-								
+
 					# new number of objects in clusters
 					Cls['n'][assign_from] -= 1
 					assign[im]             = assign_to
@@ -2892,12 +2891,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				wd_trials = 0
 			else:
 				ntrials -= 1
-	
+
 	if trials > 1:
 		if ALL_EMPTY:
 			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
-			
+
 	# if severals trials choose the best
 	if trials > 1:
 		val_min = 1.0e20
@@ -3042,7 +3041,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if CTF:
 		Cls_ctf2    = {}
 		len_ctm	    = len(ctf2[N_start])
-	
+
 	# TRIALS
 	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
 	else: trials = 1
@@ -3466,716 +3465,6 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	# [all] waiting all nodes
 	mpi_barrier(MPI_COMM_WORLD)
 		
-	if myid == main_node: return Cls, assign
-	else:                 return None, None
-
-# K-means MPI with SSE method
-def k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N_min, N, ncpu):
-	from utilities    import model_blank, get_im
-	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
-	from utilities    import print_msg, running_time
-	from random       import seed, randint, shuffle, jumpahead
-	from copy	  import deepcopy
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR
-	import time
-	import sys
-	
-	if CTF[0]:
-		from filter		import filt_ctf, filt_table
-		from fundamentals	import fftip
-
-		tmpctf  = deepcopy(CTF[1])
-		tmpctf2 = deepcopy(CTF[2])
-		CTF     = True
-		ctf     = [None] * N
-		ctf[N_start:N_stop]  = tmpctf
-		ctf2    = [None] * N
-		ctf2[N_start:N_stop] = tmpctf2
-	else:
-		CTF  = False
-
-	## TODO change data struct to work directly with IM
-	im_M = [None] * N
-	im_M[N_start:N_stop] = IM
-
-	# Simulate annealing
-	if F != 0: SA = True
-	else:      SA = False
-
-	if SA:
-		from math   import exp
-		from random import random
-
-	if mask != None:
-		if isinstance(mask, basestring):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
-
-	# [id]   part of code different for each node
-	# [sync] synchronise each node
-	# [main] part of code just for the main node
-	# [all]  code write for all node
-
-	t_start = time.time()	
-
-	# [all] Informations on images or mask for the norm
-	if CTF:
-		nx  = im_M[N_start].get_attr('or_nx')
-		ny  = im_M[N_start].get_attr('or_ny')
-		nz  = im_M[N_start].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
-		nx   = im_M[N_start].get_xsize()
-		ny   = im_M[N_start].get_ysize()
-		nz   = im_M[N_start].get_zsize()
-		norm = nx * ny * nz
-	else:
-		nx   = im_M[N_start].get_xsize()
-		ny   = im_M[N_start].get_ysize()
-		nz   = im_M[N_start].get_zsize()
-		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
-
-	# [all] define parameters
-	if rand_seed > 0: seed(rand_seed)
-	else:             seed()
-	if(myid != main_node):  jumpahead(17*myid+123)
-	Cls={}
-	Cls['n']   = [0]*K   # number of objects in a given cluster
-	Cls['ave'] = [0]*K   # value of cluster average
-	Cls['var'] = [0]*K   # value of cluster variance
-	Cls['Ji']  = [0]*K   # value of ji
-	Cls['k']   =  K	     # value of number of clusters
-	Cls['N']   =  N
-	assign     = [0]*N
-
-	if CTF:
-		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[N_start])
-	
-	# TRIALS
-	if trials > 1: MemCls, MemJe, MemAssign = {}, {}, {}
-	else: trials = 1
-	ntrials    = 0
-	wd_trials  = 0
-	SA_run     = SA
-	ALL_EMPTY = True
-	while ntrials < trials:
-		ntrials += 1
-
-		# Simulated annealing
-		SA = SA_run
-		if SA: T = T0
-
-		# [all] Init the cluster by an image empty
-		buf.to_zero()
-		for k in xrange(K):
-			Cls['ave'][k] = buf.copy()
-			Cls['var'][k] = buf.copy()
-			Cls['Ji'][k]  = 0
-			Cls['n'][k]   = 0
-			OldClsn       = [0] * K
-
-		## [main] Random method
-		FLAG_EXIT = 0
-		if myid == main_node:
-			retrial = 20
-			while retrial > 0:
-				retrial -= 1
-				i = 0
-				for im in xrange(N):
-					assign[im] = randint(0, K-1)
-					Cls['n'][int(assign[im])] += 1
-				flag,k = 1,0
-				while k < K and flag:
-					if Cls['n'][k] <= 1:
-						flag = 0
-						if retrial == 0:
-							print_msg('Empty class in the initialization k_means_SSE_MPI \n')
-							FLAG_EXIT = 1
-							flag      = 1
-						for k in xrange(K):
-							Cls['n'][k] = 0
-					k += 1
-				if flag == 1:	retrial = 0
-
-		# [sync] waiting the assign is finished
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# [all] check if need to exit due to initialization
-		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		FLAG_EXIT = map(int, FLAG_EXIT)[0]
-		if FLAG_EXIT: sys.exit()
-
-		# [all] send assign to the others proc and the number of objects in each cluster
-		assign   = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		assign   = map(int, assign)     # convert array gave by MPI to list
-		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
-
-		## 
-		if CTF:
-			# [all] first init ctf2
-			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
-
-			# [id] compute local S ctf2 and local S ave
-			for im in xrange(N_start, N_stop):
-				# ctf2
-				for i in xrange(len_ctm):
-					Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
-				# ave
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-
-			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
-
-			# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
-			for k in xrange(K):
-				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array given by MPI to list
-
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-
-				valCTF = [0] * len_ctm
-				for i in xrange(len_ctm):	valCTF[i] = 1.0 / Cls_ctf2[k][i]
-				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-
-			# [id] compute Ji
-			for im in xrange(N_start, N_stop):
-				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-
-		else:
-			# [id] Calculates averages, first calculate local sum
-			for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
-
-			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
-
-			# [all] compute global sum, broadcast the results and obtain the average
-			for k in xrange(K):
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-			# [id] compute Ji
-			for im in xrange(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
-
-		# [all] compute Je
-		Je = 0
-		for k in xrange(K): Je += Cls['Ji'][k]
-
-		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# [all] calculate Je global sum and broadcast
-		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Je = map(float, Je)[0]
-
-		## Clustering
-		ite       = 0
-		watch_dog = 0
-		old_Je    = 0
-		sway_Je   = [0] * 2
-		sway_ct   = 0
-		change    = 1
-		loc_order = range(N_start, N_stop)
-
-		if myid == main_node:
-			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			print_msg('Criterion: %11.6e \n' % Je)
-		th_update   = max( N//ncpu//10, 10)
-		#nb_update   = N // ncpu // th_update
-		flag_update = 0
-
-		while change and watch_dog < maxit:
-			ite       += 1
-			watch_dog += 1
-			change     = 0
-			err	   = {}
-			order	   = [0]*N
-			index	   = 0
-			Je	   = 0
-			if SA:	ct_pert = 0
-			shuffle(loc_order)
-			ct_update  = 0
-			# [id] random number to image
-			for n in xrange(N_start, N_stop):
-				order[n] = loc_order[index]
-				index   += 1
-			imn = N_start
-			all_proc_end = 0
-
-			while imn < N_stop:
-				# to select random image
-				im  = order[imn]
-				imn +=  1
-
-				# [all] compute min dist between object and centroids
-				if CTF:
-					CTFxAve = []
-					for k in xrange(K):
-						tmp = filt_table(Cls['ave'][k], ctf[im])
-						CTFxAve.append(tmp.copy())
-					res = Util.min_dist_four(im_M[im], CTFxAve)
-				else:
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
-
-				dJe = [0.0] * K
-				ni  = float(Cls['n'][assign[im]])
-				di  = res['dist'][assign[im]]											
-				for k in xrange(K):
-					if k != assign[im]:
-						nj  = float(Cls['n'][k])
-						dj  = res['dist'][k]
-						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
-					else:
-						dJe[k] = 0
-
-				# [all] Simulated annealing
-				if SA:
-					# normalize and select
-					mindJe = min(dJe)
-					scale  = max(dJe) - mindJe
-					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
-					select = select_kmeans(dJe, T)
-
-					if select != res['pos']:
-						ct_pert    += 1
-						res['pos']  = select
-				else:
-					max_value = -1.e30
-					for i in xrange( len(dJe) ):
-						if( dJe[i] >= max_value) :
-							max_value = dJe[i]
-							res['pos'] = i
-
-				# [all] moving object
-				if res['pos'] != assign[im]:
-					assign[im] = res['pos']
-					change     = 1
-
-				# [all] update to SSE method
-				ct_update += 1
-				if( (imn-N_start)>=th_update and (imn-N_start)<N_min ):
-					#print "   AAAAAAAA ",myid,ct_update
-					# check whether any exceeded the threshold
-					updates = [0]*ncpu
-					updates[myid] = ct_update
-
-					mpi_barrier(MPI_COMM_WORLD)
-					updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-					updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
-					updates = map(int, updates)    # convert array given by MPI to list
-					if( max(updates) >= th_update):
-						# redo averages and reset counters
-						ct_update = 0
-						# [id] compute the number of objects
-						for k in xrange(K): 		  Cls['n'][k] = 0
-						for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
-
-						# [all] sum the number of objects in each node and broadcast
-						Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-						Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-						Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
-
-						# [all] init average, Ji and ctf2
-						FLAG_EXIT_UPDATE  = 0
-						for k in xrange(K):
-							if Cls['n'][k] <= 1:
-								FLAG_EXIT_UPDATE = 1
-								break
-
-							Cls['ave'][k].to_zero()
-							if CTF:	Cls_ctf2[k] = [0] * len_ctm
-
-						mpi_barrier(MPI_COMM_WORLD)
-
-						# [all] check if need to exit due to initialization
-						FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-						FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-						FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
-						if FLAG_EXIT_UPDATE: break
-
-						if CTF:
-							# [id] compute local S ctf2 and local S ave
-							for im in xrange(N_start, N_stop):
-								# ctf2
-								for i in xrange(len_ctm):
-									Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
-								# ave
-								CTFxF = filt_table(im_M[im], ctf[im])
-								Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-
-							# [sync] waiting the result
-							mpi_barrier(MPI_COMM_WORLD)
-
-							# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
-							for k in xrange(K):
-								Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-								Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-								Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
-
-								reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-								bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-
-								valCTF = [0] * len_ctm
-								for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-								Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-
-						else:			
-							# [id] Update clusters averages
-							for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
-
-							# [sync] waiting the result
-							mpi_barrier(MPI_COMM_WORLD)
-
-							# [all] compute global sum, broadcast the results and obtain the average
-							for k in xrange(K):
-								reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-								bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-								Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-						# [all] waiting the result
-						mpi_barrier(MPI_COMM_WORLD)
-
-			#  Here check if there were still any changes after last update within the loop above
-			updates = [0]*ncpu
-			updates[myid] = ct_update
-			mpi_barrier(MPI_COMM_WORLD)
-			updates = mpi_reduce(updates, ncpu, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			updates = mpi_bcast(updates,  ncpu, MPI_INT, main_node, MPI_COMM_WORLD)
-			updates = map(int, updates)    # convert array given by MPI to list
-
-			if( max(updates) > 0):
-				# redo averages
-				# [id] compute the number of objects
-				for k in xrange(K):		 Cls['n'][k] = 0
-				for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1 		       
-
-				# [all] sum the number of objects in each node and broadcast
-				Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
-
-				# [all] init average, Ji and ctf2
-				FLAG_EXIT_UPDATE  = 0
-				for k in xrange(K):
-					if Cls['n'][k] <= 1:
-						FLAG_EXIT_UPDATE = 1
-						break
-
-					Cls['ave'][k].to_zero()
-					if CTF:        Cls_ctf2[k] = [0] * len_ctm
-
-				mpi_barrier(MPI_COMM_WORLD)
-
-				# [all] check if need to exit due to initialization
-				FLAG_EXIT_UPDATE = mpi_reduce(FLAG_EXIT_UPDATE, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-				FLAG_EXIT_UPDATE = mpi_bcast(FLAG_EXIT_UPDATE, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-				FLAG_EXIT_UPDATE = map(int, FLAG_EXIT_UPDATE)[0]
-				if FLAG_EXIT_UPDATE: break
-
-				if CTF:
-					# [id] compute local S ctf2 and local S ave
-					for im in xrange(N_start, N_stop):
-						# ctf2
-						for i in xrange(len_ctm):
-							Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
-						# ave
-						CTFxF = filt_table(im_M[im], ctf[im])
-						Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-
-					# [sync] waiting the result
-					mpi_barrier(MPI_COMM_WORLD)
-
-					# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
-					for k in xrange(K):
-						Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-						Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-						Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
-
-						reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-						bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-
-						valCTF = [0] * len_ctm
-						for i in xrange(len_ctm):      valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-						Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-
-				else:		       
-					# [id] Update clusters averages
-					for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
-
-					# [sync] waiting the result
-					mpi_barrier(MPI_COMM_WORLD)
-
-					# [all] compute global sum, broadcast the results and obtain the average
-					for k in xrange(K):
-						reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-						bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-						Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-			# [sync]
-			mpi_barrier(MPI_COMM_WORLD)
-
-			# [id] compute the number of objects
-			for k in xrange(K): 		  Cls['n'][k] = 0
-			for n in xrange(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
-
-			# [all] sum the number of objects in each node and broadcast
-			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls['n'] = map(float, Cls['n']) # convert array gave by MPI to list
-
-			# [all] init average, Ji and ctf2, and manage empty cluster
-			FLAG_EMPTY = 0
-			for k in xrange(K):
-				if Cls['n'][k] <= 1:
-					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
-					FLAG_EMPTY = 1
-					break
-
-				Cls['ave'][k].to_zero()
-				Cls['Ji'][k] = 0
-				if CTF:	Cls_ctf2[k] = [0] * len_ctm	
-
-			# [all] broadcast empty cluster information
-			mpi_barrier(MPI_COMM_WORLD)
-			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			FLAG_EMPTY = map(int, FLAG_EMPTY)[0]
-			if FLAG_EMPTY: break
-
-			if CTF:
-				# [id] compute local S ctf2 and local S ave	
-				for im in xrange(N_start, N_stop):
-					# ctf2
-					for i in xrange(len_ctm):
-						Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
-					# ave
-					CTFxF = filt_table(im_M[im], ctf[im])
-					Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
-
-				# [sync] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
-
-				# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
-				for k in xrange(K):
-					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
-
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-
-					valCTF = [0] * len_ctm
-					for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-
-				# [id] compute Ji
-				for im in xrange(N_start, N_stop):
-					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
-
-			else:			
-				# [id] Update clusters averages
-				for im in xrange(N_start, N_stop): Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
-
-				# [sync] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
-
-				# [all] compute global sum, broadcast the results and obtain the average
-				for k in xrange(K):
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-					Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-				# [id] compute Ji
-				for im in xrange(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
-
-			# [all] compute Je
-			Je = 0
-			for k in xrange(K): Je += Cls['Ji'][k]
-
-			# [all] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
-
-			# [all] calculate Je global sum and broadcast
-			Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Je = map(float, Je)[0]
-
-			# Convergence control: threshold on the criterion value
-			if Je != 0: thd = abs(Je - old_Je) / Je
-			else:       thd = 0
-
-			# Simulate annealing, update temperature
-			if SA:
-				if thd < 1.0e-12 and ct_pert == 0: change = 0
-				T *= F
-				if T < 0.009 and ct_pert < 5: SA = False
-				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
-			else:
-				if thd < 1.0e-8: change = 0
-				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
-		
-			# Convergence control: if Je sway, means clusters unstable, due to the parallel version of k-means
-			# store Je_n, Je_(n-1), Je_(n-2)
-			sway_Je[1] = sway_Je[0]
-			sway_Je[0] = old_Je
-			old_Je = Je
-
-			# count the consecutive number of Je periods egal at 2 (if Je_n == Je_(n-2))
-			if Je == sway_Je[1]: sway_ct += 1
-			else:                sway_ct == 0
-			# if more of 4 periods consecutive, stop the program, detection of clusters unstable
-			if sway_ct == 4 and not SA:
-				change = 0
-				if myid == main_node: print_msg('> Stop iteration, unstable cluster detected: Criterion sway.\n')
-
-			# [all] Need to broadcast this value because all node must run together
-			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-			change = map(int, change)[0]
-
-		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
-
-		if not FLAG_EMPTY:
-			# [id] memorize the result for this trial	
-			if trials > 1:
-				MemCls[ntrials-1]    = deepcopy(Cls)
-				MemJe[ntrials-1]     = deepcopy(Je)
-				MemAssign[ntrials-1] = deepcopy(assign)
-				if myid == main_node: print_msg('Criterion: %11.6e \n' % Je)
-				ALL_EMPTY = False
-
-			# set to zero watch dog trials
-			wd_trials = 0
-		else:
-			FLAG_EMPTY  = 0
-			wd_trials  += 1
-			if wd_trials > 10:
-				if trials > 1:
-					MemJe[ntrials-1] = 1e10
-					if ntrials == trials:
-						#if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-						#sys.exit()
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
-					else:
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				else:
-					if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-					sys.exit()
-				wd_trials = 0
-			else:
-				ntrials -= 1
-
-	if trials > 1:
-		if ALL_EMPTY:
-			if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')	
-			sys.exit()
-
-	# if severals trials choose the best
-	if trials > 1:
-		val_min = 1.0e20
-		best    = -1
-		for n in xrange(trials):
-			if MemJe[n] < val_min:
-				val_min = MemJe[n]
-				best    = n
-		# affect the best
-		Cls    = MemCls[best]
-		Je     = MemJe[best]
-		assign = MemAssign[best]
-
-
-	if CTF:
-		# [id] the variance S (F - CTFxAve)**2
-		for im in xrange(N_start, N_stop):
-			CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-			buf.to_zero()
-			buf = Util.subn_img(CTFxAve, im_M[im])
-			Util.add_img(Cls['var'][int(assign[im])], buf) # **2
-
-		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
-		
-		# [all] global sum var
-		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)
-	else:
-		# [id] compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
-		for im in xrange(N_start, N_stop): Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
-		
-		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# [all] global sum var
-		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
-		
-		# [main] caclculate the variance for each cluster
-		if myid == main_node:
-			for k in xrange(K):
-				buf.to_zero()
-				Util.add_img2(buf, Cls['ave'][k])
-				Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
-				Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
-
-				# Uncompress ave and var images if the mask is used
-				if mask != None:
-					Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
-					Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
-
-	# [id] prepare assign to update
-	for n in xrange(N_start):
-		assign[n] = 0
-	for n in xrange(N_stop, N):
-		assign[n] = 0
-		
-	# [all] gather in main_node
-	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	assign = map(int, assign) # convert array gave by MPI to list
-
-	"""
-	# [main] Watch dog
-	if myid == main_node:
-		import pickle
-		f = open('Assign', 'w')
-		pickle.dump(assign, f)
-		f.close()
-	"""
-
-	# compute Ji global
-	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	if myid == main_node:
-		for k in xrange(K): Cls['Ji'][k] = map(float, Cls['Ji'][k])[0]
-
-	# [main_node] write the result
-	if myid == main_node and CTF:
-		# ifft
-		for k in xrange(K):
-			Cls['ave'][k].do_ift_inplace()
-			Cls['var'][k].do_ift_inplace()
-			Cls['ave'][k].depad()
-			Cls['var'][k].depad()
-
-	# [main_node] information display
-	if myid == main_node:
-		running_time(t_start)
-		print_msg('Criterion = %11.6e \n' % Je)
-		for k in xrange(K): print_msg('Cls[%i]: %i\n' % (k, Cls['n'][k]))
-
-	# [all] waiting all nodes
-	mpi_barrier(MPI_COMM_WORLD)
-
 	if myid == main_node: return Cls, assign
 	else:                 return None, None
 
@@ -7472,7 +6761,7 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 			alpha = retvals["tot"]
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
 		Util.update_fav(tave, data[im], alpha, mirror, numr)
-	
+
 	nx = tave.get_xsize()
 	a0 = Util.ener(tave, numr)
 	msg = "Initial criterion = %20.7e\n"%(a0)
@@ -7521,7 +6810,7 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 		if (again):
 			# calculate total average using current alignment parameters
 			tave = model_blank(nx)
-			for im in xrange(nima):  
+			for im in xrange(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
 				Util.update_fav(tave, data[im], alpha, mirror, numr)
@@ -7565,7 +6854,7 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 			alpha = retvals["tot"]
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
 		Util.update_fav(tave, data[im], alpha, mirror, numr)
-	
+
 	nx = tave.get_xsize()
 	a0 = Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
@@ -7614,7 +6903,7 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 		if (again):
 			# calculate total average using current alignment parameters
 			tave = model_blank(nx)
-			for im in xrange(nima):  
+			for im in xrange(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
 				Util.update_fav(tave, data[im], alpha, mirror, numr)
@@ -7928,14 +7217,14 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	
 
 def multi_search_func(args, data):
-	
+
 	from utilities import model_blank
-	
+
 	fdata = data[0]
 	numr = data[1]
 	tave = data[2].copy()
 	ori_alpha = data[3]
-	
+
 	nima = len(fdata)
 
 	total_change = 0
@@ -7944,7 +7233,7 @@ def multi_search_func(args, data):
 		if args[im]!=ori_alpha[im]: 
 			total_change += 1 
 			update_list.append(im)
-	
+
 	if total_change < nima*0.3:
 		for im in update_list:
 			Util.sub_fav(tave, fdata[im], ori_alpha[im], 0, numr) 
@@ -7957,7 +7246,7 @@ def multi_search_func(args, data):
 			
 	energy = Util.ener(tave, numr)	
 	#energy = Util.ener_tot(fdata, numr, args)
-	
+
 	return energy
 
 """
