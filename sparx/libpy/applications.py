@@ -10152,7 +10152,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	main_node=0
 	
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1)
 	mpi_barrier(MPI_COMM_WORLD)
         if myid== main_node:   os.mkdir(outdir)
 
@@ -10544,7 +10544,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		main_node = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
-		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1,myid)
+		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1)
 		mpi_barrier(MPI_COMM_WORLD)
 
 	else:
