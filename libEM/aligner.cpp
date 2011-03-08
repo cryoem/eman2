@@ -1839,6 +1839,8 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	}
 
 	if(tofft) {delete tofft; tofft = 0;}
+	
+	//debug....
 	Transform* zz = best_match->get_attr("xform.align3d");
 	Vec3f zzz = zz->get_trans();
 	cout << "x " << float(zzz[0]) << " y " << float(zzz[1]) << " z " << float(zzz[2]) << endl;
