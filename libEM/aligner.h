@@ -925,12 +925,8 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
-				d.put("saz", EMObject::FLOAT, "The angular step size for az. Default is 2." );
-				d.put("salt", EMObject::FLOAT, "The The angular step size for alt. Default is 2." );
-				d.put("sphi", EMObject::FLOAT, "The The angular step size for phi. Default is 2." );
-				d.put("raz", EMObject::FLOAT, "The angular range(+- this amount) for az. Default is 180." );
-				d.put("ralt", EMObject::FLOAT, "The The angular range(+- this amount) for alt. Default is 6." );
-				d.put("rphi", EMObject::FLOAT, "The The angular range(+- this amount) for phi. Default is 6." );	
+				d.put("delta", EMObject::FLOAT, "The angular step size. Default is 1." );
+				d.put("range", EMObject::FLOAT, "The angular range size. Default is 10." );
 				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");

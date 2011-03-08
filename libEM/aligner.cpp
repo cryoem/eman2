@@ -1751,12 +1751,8 @@ EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
 		searchz = params.set_default("searchz",3);
 	}	
 	
-	float raz = params.set_default("raz",6.0f);
-	float ralt = params.set_default("ralt",6.0f);
-	float rphi = params.set_default("rphi",6.0f);
-	float saz = params.set_default("saz",2.0f);
-	float salt = params.set_default("salt",2.0f);
-	float sphi = params.set_default("sphi",2.0f);
+	float delta = params.set_default("delta",1.0f);
+	float range = params.set_default("range",10.0f);
 	bool verbose = params.set_default("verbose",false);
 	
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
@@ -1778,19 +1774,21 @@ EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
 	bool use_cpu = true;
 	EMData* best_match = new EMData();
 	best_match->set_attr("score", 0.0f);
-	for ( float alt = -ralt; alt < ralt; alt += salt) {
-		// An optimization for the range of az is made at the top of the sphere
-		// If you think about it, this is just a coarse way of making this approach slightly more efficient
-		for ( float az = -raz; az < raz; az += saz ){
+	for ( float alt = 0; alt < range; alt += delta) {
+		// now compute a sane az step size 
+		float saz = 360;
+		if(alt != 0) saz = delta/sin(alt*M_PI/180.0f); // This gives even step sizes
+		for ( float az = 0; az < 360; az += saz ){
 			if (verbose) {
 				cout << "Trying angle alt " << alt << " az " << az << endl;
 			}
-			for( float phi = -rphi; phi < rphi; phi += sphi ) {
+			// account for any changes in az
+			for( float phi = -range-az; phi < range-az; phi += delta ) {
 				d["alt"] = alt;
 				d["phi"] = phi; 
 				d["az"] = az;
 				Transform tr(d);
-				tr = tr*(*t);	// compose transforms
+				tr = tr*(*t);	// compose transforms, this moves to the pole (aprox)
 				
 				EMData* transformed = this_img->process("xform",Dict("transform",&tr));
 				
