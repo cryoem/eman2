@@ -86,7 +86,7 @@ def ali2d_single_iter_best(data, tavg, xrng, yrng, step, first_ring, last_ring, 
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
 	from alignment import Applyws, ormq, Numrinit
-	from
+	from utilities import set_params2D
 
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
