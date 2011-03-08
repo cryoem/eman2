@@ -45,14 +45,12 @@ def main():
 	parser.add_option("--K1",          type="int",          default=2,          help="Mimimum number of clusters")
 	parser.add_option("--K2",          type="int",          default=3,          help="Maximum number of clusters")
 	parser.add_option("--trials",      type="int",          default=1,          help="Number of trials in K-means (default 1)")
-	parser.add_option("--opt_method",  type='string',       default="SSE",      help="K-means method: SSE (default), cla")
 	parser.add_option("--CTF",         action="store_true", default=False,      help="Perform clustering using CTF information")
 	parser.add_option("--rand_seed",   type="int",          default=-1,         help="Random seed of initial (default random)" )
 	parser.add_option("--maxit",       type="int",          default=100,        help="Mimimum number of iterations within K-means")
 	parser.add_option("--F",           type="float",        default=0.0,        help="Factor to decrease temperature in simulated annealing, ex.: 0.9")
 	parser.add_option("--T0",          type="float",        default=0.0,        help="Initial temperature in simulated annealing, ex: 100")
 	parser.add_option("--MPI",         action="store_true", default=False,      help="Use MPI version")
-	parser.add_option("--CUDA",        action="store_true", default=False,      help="Use CUDA version")
 	parser.add_option("--debug",       action="store_true", default=False,      help="Debug output")
 
 	(options, args) = parser.parse_args()
@@ -62,9 +60,7 @@ def main():
 	elif options.trials < 1:
 			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
 			sys.exit()
-	elif options.opt_method != "cla"  and options.opt_method != "SSE":
-			sys.stderr.write("ERROR: unknown method\n\n")
-			sys.exit()
+	
 	else: 
 		if len(args)==2: mask = None
 		else:            mask = args[2]
@@ -78,7 +74,7 @@ def main():
 			disable_bdb_cache()
 		from applications import k_means_groups
 		global_def.BATCH = True
-		k_means_groups(args[0], args[1], mask, options.opt_method, options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, options.F, options.T0, options.MPI, options.CUDA, options.debug)
+		k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, options.F, options.T0, options.MPI, False, options.debug)
 		global_def.BATCH = False
 		
 		if options.MPI:

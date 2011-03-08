@@ -44,7 +44,6 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help="Number of classes (default 2)")
 	parser.add_option("--trials",     type="int",          default=1,         help="Number of trials of K-means (default 1)")
-	parser.add_option("--opt_method", type='string',       default="SSE",     help="option for test only, K-means method: SSE (default), cla")
 	parser.add_option("--maxit",      type="int",          default=100,       help="Maximum number of iterations within K-means")
 	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--rand_seed",  type="int",          default=-1,        help="Random seed of initial (default random)" )
@@ -52,7 +51,6 @@ def main():
 	parser.add_option("--F",          type="float",        default=0.0,       help="Cooling in simulated annealing, ex.: 0.9")
 	parser.add_option("--T0",         type="float",        default=0.0,       help="Initial temperature in simulated annealing, ex: 100")
 	parser.add_option("--MPI",        action="store_true", default=False,     help="Use MPI version")
-	parser.add_option("--CUDA",       action="store_true", default=False,     help="Use CUDA version")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
 	parser.add_option("--normalize",  action="store_true", default=False,     help="Normalize images under the mask")
 	parser.add_option('--init_method', type='string',      default='rnd',     help='Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rnd)')
@@ -63,9 +61,6 @@ def main():
         			print "Please run '" + progname + " -h' for detailed options"
 	elif options.trials < 1:
 			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
-			sys.exit()
-	elif(options.opt_method != "cla"  and options.opt_method != "SSE"):
-			sys.stderr.write("ERROR: unknown method\n\n")
 			sys.exit()
 	else:
 		if len(args)==2: mask = None
@@ -80,9 +75,9 @@ def main():
 			disable_bdb_cache()
 		from  applications  import  k_means_main
 		global_def.BATCH = True
-		k_means_main(args[0], args[1], mask, options.opt_method, options.K, options.rand_seed, 
+		k_means_main(args[0], args[1], mask, "SSE", options.K, options.rand_seed, 
 			     options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, 
-			     options.MPI, options.CUDA, options.debug, options.normalize, options.init_method)
+			     options.MPI, False, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
                 if options.MPI:
 			from mpi import mpi_finalize
