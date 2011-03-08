@@ -80,85 +80,33 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	return sx_sum, sy_sum
 
 
-def ali2d_single_iter_CUDA(data, cs, tavg, R, GPUID, CTF, ali_params="xform.align2d"):
-	"""
-		single iteration of 2D alignment using CUDA
-		if CTF = True, apply CTF to data (not to reference!)
-	"""
-	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
-
-	sx_list = []
-	sy_list = []
-
-	for im in xrange(len(data)):
-		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
-		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
-		sx_list.append(sxi)
-		sy_list.append(syi)
-
-	results = R.alignment_2d(tavg, sx_list, sy_list, GPUID, 1)	
-
-	sx_sum = 0.0
-	sy_sum = 0.0
-	for im in xrange(len(data)):
-		[alphan, sxn, syn, mn] = combine_params2(0.0, -sx_list[im], -sy_list[im], 0, results[im*4], results[im*4+1], results[im*4+2], int(results[im*4+3]))
-		set_params2D(data[im], [alphan, sxn, syn, int(mn), 1.0], ali_params)
-		if mn == 0: sx_sum += sxn
-		else:       sx_sum -= sxn
-		sy_sum += syn
-
-	return sx_sum, sy_sum
-
-
-def ali2d_random_ccf(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d"):
+def ali2d_single_iter_best(data, tavg, xrng, yrng, step, first_ring, last_ring, rstep, mode):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
-	from alignment import Applyws, ormq
-
-	if CTF:
-		from filter  import filt_ctf
+	from alignment import Applyws, ormq, Numrinit
+	from
 
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
-	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+ 	wr = ringwe(numr, mode)
+	cimage = Util.Polar2Dm(tavg, 0.0, 0.0, numr, mode)
 	Util.Frngs(cimage, numr)
 	Applyws(cimage, numr, wr)
-	
-	maxrin = numr[-1]
-	sx_sum = 0.0
-	sy_sum = 0.0
+
+	max_id = -1
+	max_peak = -1
+	max_alpha, max_sx, max_sy, max_mirror = -1, -1, -1, -1
 	for im in xrange(len(data)):
-		if CTF:
-			#Apply CTF to image
-			ctf_params = data[im].get_attr("ctf")
-			ima = filt_ctf(data[im], ctf_params, True)
-		else:
-			ima = data[im]
-		alpha, sx, sy, mirror, dummy = get_params2D(ima, ali_params)
-		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
+		[angt, sxst, syst, mirrort, peakt] = ormq(data[im], cimage, xrng, yrng, step, mode, numr, 0.0, 0.0, 0.0)
+		if peakt > max_peak:
+			max_peak = peakt
+			max_id = im
+			max_alpha, max_sx, max_sy, max_mirror = angt, sxst, syst, mirrort, peakt
+	set_params2D(data[max_id], [max_alpha, max_sx, max_sy, max_mirror, 1.0])
+	return max_id
 
-		# align current image to the reference
-		if random_method == "SA":
-			peak = Util.ali2d_ccf_list(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, T)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_ccf(peak, T, step, mode, maxrin)
-			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			data[im].set_attr_dict({"select":select, "peak":peakt})
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
-		else:
-			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
-
-		if mn == 0: sx_sum += sxn
-		else:       sx_sum -= sxn
-		sy_sum += syn
-
-	return sx_sum, sy_sum
 
 def ang_n(tot, mode, maxrin):
 	"""
