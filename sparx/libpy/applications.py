@@ -10516,8 +10516,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	from time        import time
 	import sys, os
 	if MPI:
+		print "MPI version of kmeans is under development"
+		sys.exit()
 		from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
 		from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
+		
 	if CUDA:
 		from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog
 		from statistics import k_means_cuda_export
@@ -10641,6 +10644,8 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 		#ERROR('Output directory exists, please change the name and restart the program', "k_means_groups", 1)
 	
 	if MPI:
+	 	print "MPI version of kmeans group is under development"
+		sys.exit()
 		from statistics import k_means_groups_MPI
 		k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
 	elif CUDA:

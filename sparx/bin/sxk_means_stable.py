@@ -81,6 +81,8 @@ def main():
 
 		global_def.BATCH = True
 		if options.MPI:
+			print "MPI version of kmeans stable is under development"
+			sys.exit()
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 			'''if options.CUDA:
