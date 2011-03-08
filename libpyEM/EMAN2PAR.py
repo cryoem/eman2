@@ -51,7 +51,7 @@ from e2classaverage import ClassAvTask
 from e2classaverage3d import Align3DTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
-from e2tomoaverage import EMTomoAlignTaskDC
+#from e2tomoaverage import EMTomoAlignTaskDC
 import SocketServer
 from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
