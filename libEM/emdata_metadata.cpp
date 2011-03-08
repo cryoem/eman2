@@ -500,6 +500,7 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 	int z1 = peak[2] - 1;
 	int z2 = peak[2];
 	int z3 = peak[2] + 1;
+	
 	float yx1 = get_value_at_wrap(x1,y2,z2);
 	float yx2 = get_value_at_wrap(x2,y2,z2);
 	float yx3 = get_value_at_wrap(x3,y2,z2);
