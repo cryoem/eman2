@@ -277,6 +277,91 @@ CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const i
 	}
 }
 
+/**
+__global__ void  calc_max_location_wrap(const float* in, CudaPeakInfo* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz) {
+	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
+	if (maxdx == -1) maxshiftx = nx/4;
+	if (maxdy == -1) maxshifty = ny/4;
+	if (maxdz == -1) maxshiftz = nz/4;
+
+	float max_value = -10000000000000;
+	int nxy = nx*ny;
+
+	for (int k = -maxshiftz; k <= maxshiftz; k++) {
+		for (int j = -maxshifty; j <= maxshifty; j++) {
+			for (int i = -maxshiftx; i <= maxshiftx; i++) {
+				
+				int kk = k;
+				if (kk < 0) {
+					kk = nz+kk;
+				}
+				int jj = j;
+				if (jj < 0) {
+					jj = ny+jj;
+				}
+				
+				int ii = i;
+				if (ii < 0) {
+					ii = nx+ii;
+				}
+				float value = in[ii+jj*nx+kk*nxy];
+
+				if (value > max_value) {
+					max_value = value;
+					soln->px = i;
+					soln->py = j;
+					soln->pz = k;
+					soln->peak = max_value;
+				}
+			}
+		}
+	}
+	// Now do the intepolation...
+	int x2 = soln->px;
+	int x1 = x2-1;
+	int x3 = x2+1;
+	if(x1 < 0) x1 = nx+x1;
+	if(x2 < 0) x2 = nx+x2;
+	if(x3 < 0) x3 = nx+x3;
+	int y2 = soln->yx;
+	int y1 = y2-1;
+	int y3 = y2+1;
+	if(y1 < 0) y1 = ny+y1;
+	if(y2 < 0) y2 = ny+y2;
+	if(y3 < 0) y3 = ny+y3;
+	int z2 = soln->pz;
+	int z1 = z2-1;
+	int z3 = z2+1;
+	if(z1 < 0) x1 = nz+z1;
+	if(z2 < 0) x1 = nz+z2;
+	if(z3 < 0) x1 = nz+z3;
+	#float y1 = 
+	
+
+}
+
+CudaPeakInfo* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz)
+{
+	
+	if(nz > 1)
+	{
+		const dim3 blockSize(1,1,1);
+		const dim3 gridSize(1,1,1);
+	
+		CudaPeakInfo * device_soln=0;
+		cudaMalloc((void **)&device_soln, sizeof(CudaPeakInfo));
+		CudaPeakInfo * host_soln = 0;
+		host_soln = (CudaPeakInfo*) malloc(sizeof(CudaPeakInfo));
+
+		calc_max_location_wrap_intp<<<blockSize,gridSize>>>(in,device_soln, nx, ny, nz, maxdx, maxdy, maxdz);
+		cudaThreadSynchronize();
+		cudaMemcpy(host_soln,device_soln,sizeof(CudaPeakInfo),cudaMemcpyDeviceToHost);
+		cudaFree(device_soln);
+
+		return host_soln;
+}
+**/
+
 __global__ void mult_kernel(float* data, const float scale, const int num_threads)
 {
 

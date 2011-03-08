@@ -1808,10 +1808,10 @@ EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
 					}
 #endif
 					if(use_cpu){
-						if(tomography) ccf->process_inplace("normalize");	
-						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-						tr.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						if(tomography) ccf->process_inplace("normalize");
+						vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
+						tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
+						score = -fpoint[3];
 						delete transformed; // this is to stop a mem leak
 						transformed = this_img->process("xform",Dict("transform",&tr));
 					}

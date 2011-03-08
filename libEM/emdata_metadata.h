@@ -193,6 +193,15 @@ IntPoint calc_max_location() const;
  */
 IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
 
+/** Calculates the wrapped coordinates of the maximum value, and uses quadration intp to subpixel prec
+ * This function is useful in the context of Fourier correlation
+ * you can call this function to find the correct translational shift when using calc_ccf etc
+ * @return the wrapped coordinates of the maximum
+ * @author John Flanagan
+ * @date Mon Mar 7th 2011
+ */
+vector<float> calc_max_location_wrap_intp(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
+
 /** Calculate the center of mass with a threshold (Default 0, so only positive values are considered)
  * @author Steve Ludtke
  * @date Fri Jun 6th 2008

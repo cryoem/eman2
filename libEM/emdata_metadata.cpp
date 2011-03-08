@@ -446,6 +446,97 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 	return peak;
 }
 
+vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int maxdy, const int maxdz)
+{
+	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
+	if (maxdx == -1) maxshiftx = get_xsize()/4;
+	if (maxdy == -1) maxshifty = get_ysize()/4;
+	if (maxdz == -1) maxshiftz = get_zsize()/4;
+
+	float max_value = -FLT_MAX;
+
+	IntPoint peak(0,0,0);
+
+// NOT yet working......
+/**
+#ifdef EMAN2_USING_CUDA //CUDA
+	if(cudarwdata){
+	
+		CudaPeakInfo* soln = calc_max_location_wrap_cuda(cudarwdata, nx, ny, nz, maxdx, maxdy, maxdz);
+		
+		peak[0] = soln->px;
+		peak[1] = soln->py;
+		peak[2] = soln->pz;
+		free(soln);
+		
+//		cout << "x " << peak[0] << " y " << peak[1] << " z " << peak[2] << endl;
+		return peak;
+	}
+#endif
+**/
+	for (int k = -maxshiftz; k <= maxshiftz; k++) {
+		for (int j = -maxshifty; j <= maxshifty; j++) {
+			for (int i = -maxshiftx; i <= maxshiftx; i++) {
+
+				float value = get_value_at_wrap(i,j,k);
+
+				if (value > max_value) {
+					max_value = value;
+					peak[0] = i;
+					peak[1] = j;
+					peak[2] = k;
+				}
+			}
+		}
+	}
+	
+	// I guess I could use GSL, but this is faster....
+	int x1 = peak[0] - 1;
+	int x2 = peak[0];
+	int x3 = peak[0] + 1;
+	int y1 = peak[1] - 1;
+	int y2 = peak[1];
+	int y3 = peak[1] + 1;
+	int z1 = peak[2] - 1;
+	int z2 = peak[2];
+	int z3 = peak[2] + 1;
+	float yx1 = get_value_at_wrap(x1,y2,z2);
+	float yx2 = get_value_at_wrap(x2,y2,z2);
+	float yx3 = get_value_at_wrap(x3,y2,z2);
+	float yy1 = get_value_at_wrap(x2,y1,z2);
+	float yy2 = get_value_at_wrap(x2,y2,z2);
+	float yy3 = get_value_at_wrap(x2,y3,z2);
+	float yz1 = get_value_at_wrap(x2,y2,z1);
+	float yz2 = get_value_at_wrap(x2,y2,z2);
+	float yz3 = get_value_at_wrap(x2,y2,z3);
+
+	// Fit peak in X to y = ax^2 + bx +c
+	float bx = ((yx1 - yx2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yx2-yx3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float ax = ((yx1 - yx2) - bx*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	float xintp = -bx/(2*ax);
+	
+	// Fit peak in X to y = ax^2 + bx +c
+	float by = ((yy1 - yy2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yy2-yy3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float ay = ((yy1 - yy2) - by*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	float yintp = -by/(2*ay);
+	
+	// Fit peak in X to y = ax^2 + bx +c
+	float bz = ((yz1 - yz2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yz2-yz3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float az = ((yz1 - yz2) - bz*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	float zintp = -bz/(2*az);
+	
+	vector<float> mydata;
+	mydata.push_back(xintp);
+	mydata.push_back(yintp);
+	mydata.push_back(zintp);
+	mydata.push_back(max_value);
+
+	return mydata;
+}
+
 FloatPoint EMData::calc_center_of_mass(float threshold)
 {
 	float *data = get_data();
