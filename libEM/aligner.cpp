@@ -71,7 +71,7 @@ const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resa
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
-const string Refine3DAlignerGridInefficient::NAME = "refine_3d_grid_slow";
+const string Refine3DAlignerGrid::NAME = "refine_3d_grid";
 const string Refine3DAlignerQuaternion::NAME = "refine_3d";
 const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
 const string RT3DSphereAligner::NAME = "rotate_translate_3d";
@@ -95,7 +95,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<RefineAligner>();
-	force_add<Refine3DAlignerGridInefficient>();
+	force_add<Refine3DAlignerGrid>();
 	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
@@ -1710,7 +1710,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	return result;
 }
 
-EMData*Refine3DAlignerGridInefficient::align(EMData * this_img, EMData *to,
+EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
 	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {

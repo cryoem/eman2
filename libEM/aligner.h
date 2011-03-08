@@ -895,7 +895,7 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	class Refine3DAlignerGridInefficient:public Aligner
+	class Refine3DAlignerGrid:public Aligner
 	{
 		public:
 			virtual EMData * align(EMData * this_img, EMData * to_img,
@@ -918,7 +918,7 @@ namespace EMAN
 
 			static Aligner *NEW()
 			{
-				return new Refine3DAlignerGridInefficient();
+				return new Refine3DAlignerGrid();
 			}
 
 			virtual TypeDict get_param_types() const
