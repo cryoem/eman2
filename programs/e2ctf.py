@@ -511,7 +511,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	if skipped>0 : print "Warning: %d files skipped, because they were already smoothed"%skipped
-	if len(olddf)>0 : print "Mean defocus adjustment : %1.4f"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in xrange(len(olddf))]))/len(olddf))
+	if len(olddf)>0 : print "Mean defocus adjustment : %1.4f um"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in xrange(len(olddf))]))/len(olddf))
 
 
 def env_cmp(sca,envelopes):
