@@ -278,7 +278,7 @@ CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const i
 }
 
 /**
-__global__ void  calc_max_location_wrap(const float* in, CudaPeakInfo* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz) {
+__global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfo* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz) {
 	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
 	if (maxdx == -1) maxshiftx = nx/4;
 	if (maxdy == -1) maxshifty = ny/4;
@@ -335,7 +335,10 @@ __global__ void  calc_max_location_wrap(const float* in, CudaPeakInfo* soln, con
 	if(z1 < 0) x1 = nz+z1;
 	if(z2 < 0) x1 = nz+z2;
 	if(z3 < 0) x1 = nz+z3;
-	#float y1 = 
+
+	float yx1 = in[x1+y2*nx+z2*nxy];
+	float yx2 = in[x2+y2*nx+z2*nxy];
+	float yx3 = in[x3+y2*nx+z2*nxy];
 	
 
 }

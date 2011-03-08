@@ -946,16 +946,17 @@ Note that the data cannot be filtered unless it is imported."
 				selector.set_validator(self.validator)
 				files = selector.exec_()
 				selector.close()
+
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
 					from emform import get_table_items_in_column
 					entries = get_table_items_in_column(table_widget,0)
-					entrie_tags = [get_file_tag(str(i.text())) for i in entries]
-					file_tags = [get_file_tag(i) for i in files]
+					strentires = [str(i.text())[4:] for i in entries]
+					strfiles = [i[5+len(os.getcwd()):] for i in files]
 					error_messages = []
-					for idx,tag in enumerate(file_tags):
-						if tag in entrie_tags:
+					for idx,tag in enumerate(strfiles):
+						if tag in strentires:
 							error_messages.append("%s is already listed" %files[idx])
 					
 				
