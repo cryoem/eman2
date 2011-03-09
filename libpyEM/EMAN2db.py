@@ -1276,7 +1276,7 @@ of these occasional errors"""
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):
 					p,l=r["data_path"].split("*")
-					if p[0]=='/' or p[0]=='\\' : ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
+					if p[0]=='/' or p[0]=='\\' or p[1]==':': ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
 					else : 
 						ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
 				else:
