@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-EMANVERSION="EMAN2 RC4"
+EMANVERSION="EMAN 2.0"
 CVSDATESTAMP="$Date$"
 
 def main():
