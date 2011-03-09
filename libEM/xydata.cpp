@@ -163,32 +163,19 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 
 float XYData::get_yatx(float x,bool outzero)
 {
-// You MUST be kidding. Do you know how expensive update() is !?!?
-// the correct answer is to call update after you change the data, just like with EMData objects. --steve
-//	update();	//update to set the mean_x_spacing value
-
 	if (data.size()==0 || mean_x_spacing==0) return 0.0;
 
+	// Do the range checking up front before we get into trouble
+	if (x<data[0].x) return outzero?0.0:data[0].y;
+	if (x>data[nx-1].x) return outzero?0.0:data[nx-1].y;
+	
 	int s = (int) floor((x - data[0].x) / mean_x_spacing);
 	int nx = (int) data.size();
 
-	if (data[s].x > x) {
-		while (data[s].x > x && s >= 0) {
-			s--;
-		}
-	}
-	else if (data[s + 1].x < x) {
-		while (data[s + 1].x < x && s < (nx - 1)) {
-			s++;
-		}
-	}
-
-	if (s >= nx || s < 0) {
-		if (outzero) return 0.0;			// if outzero is set, any x point beyond the edges of the data will be 0
-		if (s>=nx) return data[nx-1].y;		// otherwise return the edge value
-		return data[0].y;
-	}
-
+	// These deal with possibly nonuniform x values. A btree would be better, but this is simple
+	while (s>0 && data[s].x > x) s--;
+	while (s<(nx-1) && data[s + 1].x < x ) s++;
+	
 	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
 	float y = data[s].y * (1 - f) + data[s + 1].y * f;
 	return y;
