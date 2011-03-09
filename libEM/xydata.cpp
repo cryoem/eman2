@@ -165,12 +165,12 @@ float XYData::get_yatx(float x,bool outzero)
 {
 	if (data.size()==0 || mean_x_spacing==0) return 0.0;
 
+	int nx = (int) data.size();
 	// Do the range checking up front before we get into trouble
-	if (x<data[0].x) return outzero?0.0:data[0].y;
-	if (x>data[nx-1].x) return outzero?0.0:data[nx-1].y;
+	if (x<data[0].x) return outzero?0.0f:data[0].y;
+	if (x>data[nx-1].x) return outzero?0.0f:data[nx-1].y;
 	
 	int s = (int) floor((x - data[0].x) / mean_x_spacing);
-	int nx = (int) data.size();
 
 	// These deal with possibly nonuniform x values. A btree would be better, but this is simple
 	while (s>0 && data[s].x > x) s--;
