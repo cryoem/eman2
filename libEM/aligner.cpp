@@ -2230,8 +2230,9 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	
 	float score = 0.0f;
 	for ( vector<Transform>::const_iterator symit = syms.begin(); symit != syms.end(); ++symit ) {
+		Transform sympos = *symit; //stupidly this is necessary!!!
 		//Here move to sym position and compute the score
-		EMData* transformed = this_img->process("xform",Dict("transform",&symit));
+		EMData* transformed = this_img->process("xform",Dict("transform",&sympos));
 		score = transformed->cmp(cmp_name,this_img,cmp_params);
 		delete transformed; transformed = 0;
 		
@@ -2246,7 +2247,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 				copy(rit+1,solns.rend()-j,rit);
 				Dict& d = (*it);
 				d["score"] = score;
-				d["xform.align3d"] = &symit; // deep copy is going on here
+				d["xform.align3d"] = &sympos; // deep copy is going on here
 				break;
 			}
 		}
