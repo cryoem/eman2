@@ -277,8 +277,18 @@ CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const i
 	}
 }
 
-/**
-__global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfo* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz) {
+__device__ float dget_value_at_wrap_cuda(const float* data, const int nx, const int ny, const int nz, int x, int y, int z)
+{
+	
+	if (x < 0) x = nx + x;
+	if (y < 0) y = ny + y;
+	if (z < 0) z = nz + z;
+
+	return data[x + y*nx + z*nx*ny];
+
+}
+
+__global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfoFloat* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz) {
 	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
 	if (maxdx == -1) maxshiftx = nx/4;
 	if (maxdy == -1) maxshifty = ny/4;
@@ -287,6 +297,9 @@ __global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfo* soln
 	float max_value = -10000000000000;
 	int nxy = nx*ny;
 
+	int px = 0;
+	int py = 0;
+	int pz = 0;
 	for (int k = -maxshiftz; k <= maxshiftz; k++) {
 		for (int j = -maxshifty; j <= maxshifty; j++) {
 			for (int i = -maxshiftx; i <= maxshiftx; i++) {
@@ -308,42 +321,56 @@ __global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfo* soln
 
 				if (value > max_value) {
 					max_value = value;
-					soln->px = i;
-					soln->py = j;
-					soln->pz = k;
+					px = i;
+					py = j;
+					pz = k;
 					soln->peak = max_value;
 				}
 			}
 		}
 	}
 	// Now do the intepolation...
-	int x2 = soln->px;
+	int x2 = px;
 	int x1 = x2-1;
 	int x3 = x2+1;
-	if(x1 < 0) x1 = nx+x1;
-	if(x2 < 0) x2 = nx+x2;
-	if(x3 < 0) x3 = nx+x3;
-	int y2 = soln->yx;
+	int y2 = py;
 	int y1 = y2-1;
 	int y3 = y2+1;
-	if(y1 < 0) y1 = ny+y1;
-	if(y2 < 0) y2 = ny+y2;
-	if(y3 < 0) y3 = ny+y3;
-	int z2 = soln->pz;
+	int z2 = pz;
 	int z1 = z2-1;
 	int z3 = z2+1;
-	if(z1 < 0) x1 = nz+z1;
-	if(z2 < 0) x1 = nz+z2;
-	if(z3 < 0) x1 = nz+z3;
 
-	float yx1 = in[x1+y2*nx+z2*nxy];
-	float yx2 = in[x2+y2*nx+z2*nxy];
-	float yx3 = in[x3+y2*nx+z2*nxy];
+	float yx1 = dget_value_at_wrap_cuda(in, nx, ny, nz, x1 , y2, z2);
+	float yx2 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z2);
+	float yx3 = dget_value_at_wrap_cuda(in, nx, ny, nz, x3 , y2, z2);
+	float yy1 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y1, z2);
+	float yy2 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z2);
+	float yy3 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y3, z2);
+	float yz1 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z1);
+	float yz2 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z2);
+	float yz3 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z3);	
+
+	// Fit peak in X to y = ax^2 + bx +c
+	float bx = ((yx1 - yx2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yx2-yx3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float ax = ((yx1 - yx2) - bx*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	soln->xintp = -bx/(2*ax);
 	
+	// Fit peak in X to y = ax^2 + bx +c
+	float by = ((yy1 - yy2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yy2-yy3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float ay = ((yy1 - yy2) - by*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	soln->yintp = -by/(2*ay);
+	
+	// Fit peak in X to y = ax^2 + bx +c
+	float bz = ((yz1 - yz2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yz2-yz3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
+	float az = ((yz1 - yz2) - bz*(x1 - x2))/(x1*x1 - x2*x2);
+	//Find minima
+	soln->zintp = -bz/(2*az);
 
 }
 
-CudaPeakInfo* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz)
+CudaPeakInfoFloat* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz)
 {
 	
 	if(nz > 1)
@@ -351,19 +378,22 @@ CudaPeakInfo* calc_max_location_wrap_intp_cuda(const float* in, const int nx, co
 		const dim3 blockSize(1,1,1);
 		const dim3 gridSize(1,1,1);
 	
-		CudaPeakInfo * device_soln=0;
-		cudaMalloc((void **)&device_soln, sizeof(CudaPeakInfo));
-		CudaPeakInfo * host_soln = 0;
-		host_soln = (CudaPeakInfo*) malloc(sizeof(CudaPeakInfo));
+		CudaPeakInfoFloat * device_soln=0;
+		cudaMalloc((void **)&device_soln, sizeof(CudaPeakInfoFloat));
+		CudaPeakInfoFloat * host_soln = 0;
+		host_soln = (CudaPeakInfoFloat*) malloc(sizeof(CudaPeakInfoFloat));
 
 		calc_max_location_wrap_intp<<<blockSize,gridSize>>>(in,device_soln, nx, ny, nz, maxdx, maxdy, maxdz);
 		cudaThreadSynchronize();
-		cudaMemcpy(host_soln,device_soln,sizeof(CudaPeakInfo),cudaMemcpyDeviceToHost);
+		cudaMemcpy(host_soln,device_soln,sizeof(CudaPeakInfoFloat),cudaMemcpyDeviceToHost);
 		cudaFree(device_soln);
 
 		return host_soln;
+	} else {
+		printf("Cannot to INTP on 2D yet\n");
+		exit(1);
+	}
 }
-**/
 
 __global__ void mult_kernel(float* data, const float scale, const int num_threads)
 {

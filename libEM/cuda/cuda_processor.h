@@ -22,6 +22,8 @@ void calc_ccf_cuda(float* afft, const float* bfft, const int nx, const int ny, c
 
 CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz);
 
+CudaPeakInfoFloat* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz);
+
 void emdata_phaseorigin_to_center(float* data, const int nx, const int ny, const int nz);
 
 void emdata_phaseorigin_to_corner(float* data, const int nx, const int ny, const int nz) ;

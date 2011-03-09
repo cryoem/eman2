@@ -24,6 +24,13 @@ struct CudaPeakInfo {
 	float peak;
 };
 
+struct CudaPeakInfoFloat {
+	float xintp;
+	float yintp;
+	float zintp;
+	float peak;
+};
+
 bool copy_to_array(const float * data, cudaArray * array, const int nx, const int ny, const int n, const cudaMemcpyKind memkindz);
 
 //int* calc_max_location_wrap_cuda(const EMDataForCuda* data, const int maxdx, const int maxdy, const int maxdz);

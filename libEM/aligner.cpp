@@ -1800,9 +1800,12 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 					if(to->cudarwdata){
 						use_cpu = false;
 						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
-						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-						tr.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						//CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						//tr.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						tr.set_trans(-data->xintp, -data->yintp, -data->zintp);
 						score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
+						
 					}
 #endif
 					if(use_cpu){
