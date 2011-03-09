@@ -490,12 +490,33 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 		}
 	}
 	
-	/**
+/**
 	// compute the center of mass
-	for (int x = peak[0]-2; x < peak[0]+2; x++) {
-		for (int y = peak[0]-2; y < peak[0]+2; y++) {
-	**/
-	
+	float cmx = 0.0; float cmy = 0.0f; float cmz = 0.0f;
+	float sval = 0.0f;
+	for (float x = float(peak[0])-4.0f; x <= float(peak[0])+4.0f; x++) {
+		for (float y = float(peak[1])-4.0f; y <= float(peak[1])+4.0f; y++) {
+			for (float z = float(peak[2])-4.0f; z <= float(peak[2])+4.0f; z++) {
+				//Compute center of mass
+				float val = get_value_at_wrap(x,y,z);
+				cmx += x*val;
+				cmy += y*val;
+				cmz += z*val;
+				sval += val;
+			}
+		}
+	}
+	cmx /= sval;
+	cmy /= sval;
+	cmz /= sval;
+
+	vector<float> mydata;
+	mydata.push_back(cmx);
+	mydata.push_back(cmy);
+	mydata.push_back(cmz);
+	mydata.push_back(max_value);
+**/
+
 	// I guess I could use GSL, but this is faster....
 	int x1 = peak[0] - 1;
 	int x2 = peak[0];
