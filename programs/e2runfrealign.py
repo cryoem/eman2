@@ -14,18 +14,15 @@ dir_list = os.listdir('.')
 dir_list.sort()
 high = 0
 for item in dir_list:
-   print len(item)
    if len(item) > 6:
-      print item[:4]
       if item[:4] == 'card':
          item = item.replace(".txt",'')
          item = item.replace("card",'')
-         print int(item)
          if int(item) > high:
             high = int(item)
 
-print high
-
+if high == 0:
+   high = high + 1
 for i in range(high):
    os.system('frealign_v8.exe < card' + str(i) + '.txt')
    if i < 10:
@@ -39,6 +36,7 @@ for i in range(high):
    os.system('mv OutParam ptcl_meta_data')
    s = "cp OutParamShift OutParamShift_" + k
    os.system(s)
+   os.system('cp 3DMapInOut.mrc.old 3DMapInOut.mrc')
 
 os.system('mv 3DMapInOut.mrc.old 3DMapInOut.mrc')
 os.system('mv ptcl_meta_data.old ptcl_meta_data')
