@@ -80,34 +80,6 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	return sx_sum, sy_sum
 
 
-def ali2d_single_iter_best(data, tavg, xrng, yrng, step, first_ring, last_ring, rstep, mode):
-	"""
-		single iteration of 2D alignment using ormq
-		if CTF = True, apply CTF to data (not to reference!)
-	"""
-	from alignment import Applyws, ormq, Numrinit
-	from utilities import set_params2D
-
-	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
-	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
- 	wr = ringwe(numr, mode)
-	cimage = Util.Polar2Dm(tavg, 0.0, 0.0, numr, mode)
-	Util.Frngs(cimage, numr)
-	Applyws(cimage, numr, wr)
-
-	max_id = -1
-	max_peak = -1
-	max_alpha, max_sx, max_sy, max_mirror = -1, -1, -1, -1
-	for im in xrange(len(data)):
-		[angt, sxst, syst, mirrort, peakt] = ormq(data[im], cimage, xrng, yrng, step, mode, numr, 0.0, 0.0, 0.0)
-		if peakt > max_peak:
-			max_peak = peakt
-			max_id = im
-			max_alpha, max_sx, max_sy, max_mirror = angt, sxst, syst, mirrort, peakt
-	set_params2D(data[max_id], [max_alpha, max_sx, max_sy, max_mirror, 1.0])
-	return max_id
-
-
 def ang_n(tot, mode, maxrin):
 	"""
 	  Calculate angle based on the position of the peak
