@@ -1168,6 +1168,50 @@ namespace EMAN
 			static const string NAME;
 	};
 	
+	class RT3DSymmetryAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name="ccc.tomo", const Dict& cmp_params = Dict()) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "ccc.tomo", Dict());
+			}
+
+
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D symmetry aligner";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DSymmetryAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::FLOAT,"The symmetry. Default is icos");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				return d;
+			}
+			
+			static const string NAME;
+	};
 
 	class FRM2DAligner:public Aligner
 			{

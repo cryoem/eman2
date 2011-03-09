@@ -490,6 +490,12 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 		}
 	}
 	
+	/**
+	// compute the center of mass
+	for (int x = peak[0]-2; x < peak[0]+2; x++) {
+		for (int y = peak[0]-2; y < peak[0]+2; y++) {
+	**/
+	
 	// I guess I could use GSL, but this is faster....
 	int x1 = peak[0] - 1;
 	int x2 = peak[0];
