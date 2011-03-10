@@ -129,7 +129,7 @@ set to indicate an error exit."""
 		hist.seek(n+20)
 	except:
 		return -1
-	hist.write("%03d%%         "%(int(progress)))
+	hist.write("%3d%%         "%(int(progress*100.0)))
 #	hist.flush()
 	hist.close()
 	
