@@ -56,6 +56,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali2d", help="  name of the reference preparation function")
 	parser.add_option("--rand_seed", type="int", default=1000, help=" random seed of initial (set to 1000)" )
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether to use MPI version ")
+	parser.add_option("--EQ", action="store_true", default=False,     help="  equal version ")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -67,8 +68,6 @@ def main():
 		else:
 			mask = args[3]
 
-		from applications import mref_ali2d
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -78,7 +77,12 @@ def main():
    			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		global_def.BATCH = True
-		mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
+		if options.EQ:
+			from development import mrefeq
+			mrefeq_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
+		else:
+			from applications import mref_ali2d
+			mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
                 if options.MPI:
 		        from mpi import mpi_finalize

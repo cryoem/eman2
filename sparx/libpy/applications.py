@@ -1611,7 +1611,6 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 	wr = ringwe(numr, mode)
 	# reference images
-	again = True
 	params = []
 	#read all data
 	data = EMData.read_images(stack)
@@ -2070,7 +2069,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_mirror = False, CTF = False, rand_seed = 1000):
 # 2D rotational alignment using ccf in polar coordinates
 
-	from utilities    import model_circle, compose_transform2, combine_params2, drop_image, get_im, get_arb_params
+	from utilities    import model_circle, compose_transform2, combine_params2, drop_image, get_im, get_arb_params, get_params2D, set_params2D
 	from alignment    import Numrinit, ringwe, ang_n
 	from statistics   import kmn, kmn_ctf
 	from morphology   import ctf_2
@@ -2159,10 +2158,7 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			from filter       import filt_table
 			refc = filt_table(temp, ctf2)
 			
-			alpha_original = temp.get_attr('alpha')
-			sx =  temp.get_attr('sx')
-			sy =  temp.get_attr('sy')
-			miri = temp.get_attr('mirror')
+			alpha_original, sx, sy, miri, scale = get_params2D(temp)
 			#tempg = prepg(temp, kb)
 			#cimage = Util.Polar2Dmi(tempg, cnx+sx, cny+sy, numr, mode, kb)
 			alphan, sxn, syn, mir = combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
@@ -2187,10 +2183,7 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			if (im>0):
 				temp = EMData()
 				temp.read_image(stack, im)
-			alpha_original = temp.get_attr('alpha')
-			sx =  temp.get_attr('sx')
-			sy =  temp.get_attr('sy')
-			miri = temp.get_attr('mirror')
+			alpha_original, sx, sy, miri, scale = get_params2D(temp)
 			temp.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":0})
 			#tempg = prepg(temp, kb)
 			#cimage = Util.Polar2Dmi(tempg, cnx+sx, cny+sy, numr, mode, kb)
@@ -2219,7 +2212,7 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 		alphan, sxn, syn, mir           = combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
 		temp.read_image(stack, im, True)
 		if(CTF and data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
-		temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir})
+		set_params2D(temp, [alphan, sxn, syn, mir, 1.0])
 		write_header(stack, temp, im)
 		#temp.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("ali2d_ra")
