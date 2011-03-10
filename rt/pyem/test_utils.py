@@ -530,10 +530,12 @@ class TestEMUtils(unittest.TestCase):
         #self.assertEqual(EMUtil.get_image_type('piffile'), EMUtil.ImageType.IMAGE_PIF)
         #testlib.safe_unlink('piffile')
         
-        e4 = test_image()
-        e4.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
-        self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)
-        testlib.safe_unlink('pngfile')
+        platform = get_platform()
+        if platform!='Windows' and platform!='win32':
+            e4 = test_image()
+            e4.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
+            self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)
+            testlib.safe_unlink('pngfile')
         
         e5 = test_image()
         e5.write_image('vtkfile', 0, EMUtil.ImageType.IMAGE_VTK)

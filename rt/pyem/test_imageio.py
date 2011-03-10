@@ -1399,6 +1399,8 @@ class TestImageIO(unittest.TestCase):
 """
 
 def test_main():
+	platform = get_platform()
+
 	p = OptionParser()
 	p.add_option('--t', action='store_true', help='test exception', default=False )
 	global IS_TEST_EXCEPTION
@@ -1407,32 +1409,46 @@ def test_main():
 		IS_TEST_EXCEPTION = True
 	Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
 	suite1 = unittest.TestLoader().loadTestsFromTestCase(TestEMIO)
-	suite2 = unittest.TestLoader().loadTestsFromTestCase(TestIcosIO)
-	suite3 = unittest.TestLoader().loadTestsFromTestCase(TestPNGIO)
-	suite4 = unittest.TestLoader().loadTestsFromTestCase(TestVTKIO)
-	suite5 = unittest.TestLoader().loadTestsFromTestCase(TestXPLORIO)
-	suite6 = unittest.TestLoader().loadTestsFromTestCase(TestPGMIO)
-	suite7 = unittest.TestLoader().loadTestsFromTestCase(TestSpiderIO)
-	suite8 = unittest.TestLoader().loadTestsFromTestCase(TestImageIO)
-	suite9 = unittest.TestLoader().loadTestsFromTestCase(TestHdfIO)
-	suite10 = unittest.TestLoader().loadTestsFromTestCase(TestMrcIO)
-	suite11 = unittest.TestLoader().loadTestsFromTestCase(TestImagicIO)
-	suite12 = unittest.TestLoader().loadTestsFromTestCase(TestPifIO)
-	#suite13 = unittest.TestLoader().loadTestsFromTestCase(TestFitsIO)
-	suite14 = unittest.TestLoader().loadTestsFromTestCase(TestDF3IO)
 	unittest.TextTestRunner(verbosity=2).run(suite1)
+	
+	suite2 = unittest.TestLoader().loadTestsFromTestCase(TestIcosIO)
 	unittest.TextTestRunner(verbosity=2).run(suite2)
-	unittest.TextTestRunner(verbosity=2).run(suite3)
+	
+	if platform!='Windows' and platform!='win32':
+		suite3 = unittest.TestLoader().loadTestsFromTestCase(TestPNGIO)
+		unittest.TextTestRunner(verbosity=2).run(suite3)
+	
+	suite4 = unittest.TestLoader().loadTestsFromTestCase(TestVTKIO)
 	unittest.TextTestRunner(verbosity=2).run(suite4)
+	
+	suite5 = unittest.TestLoader().loadTestsFromTestCase(TestXPLORIO)
 	unittest.TextTestRunner(verbosity=2).run(suite5)
+	
+	suite6 = unittest.TestLoader().loadTestsFromTestCase(TestPGMIO)
 	unittest.TextTestRunner(verbosity=2).run(suite6)
+	
+	suite7 = unittest.TestLoader().loadTestsFromTestCase(TestSpiderIO)
 	unittest.TextTestRunner(verbosity=2).run(suite7)
+	
+	suite8 = unittest.TestLoader().loadTestsFromTestCase(TestImageIO)
 	unittest.TextTestRunner(verbosity=2).run(suite8)
+	
+	suite9 = unittest.TestLoader().loadTestsFromTestCase(TestHdfIO)
 	unittest.TextTestRunner(verbosity=2).run(suite9)
+	
+	suite10 = unittest.TestLoader().loadTestsFromTestCase(TestMrcIO)
 	unittest.TextTestRunner(verbosity=2).run(suite10)
+	
+	suite11 = unittest.TestLoader().loadTestsFromTestCase(TestImagicIO)
 	unittest.TextTestRunner(verbosity=2).run(suite11)
+	
+	suite12 = unittest.TestLoader().loadTestsFromTestCase(TestPifIO)
 	unittest.TextTestRunner(verbosity=2).run(suite12)
+	
+	#suite13 = unittest.TestLoader().loadTestsFromTestCase(TestFitsIO)
 	#inittest.TextTestRunner(verbosity=2).run(suite13)
+	
+	suite14 = unittest.TestLoader().loadTestsFromTestCase(TestDF3IO)	
 	unittest.TextTestRunner(verbosity=2).run(suite14) 
 	
 if __name__ == '__main__':
