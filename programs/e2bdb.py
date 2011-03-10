@@ -166,6 +166,9 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					try:
 						dpath=os.path.realpath(dct.get_data_path(n))
 						if options.verbose>2 : print "dpath: ",dpath
+						if os.name == 'nt':
+							vspath=vspath.replace("\\", '/')
+							dpath=dpath.replace('\\', '/')
 						rpath=makerelpath(vspath,dpath)
 						if options.verbose>2 : print "rpath: ",rpath
 					except:
