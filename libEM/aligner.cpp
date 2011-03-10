@@ -2247,7 +2247,8 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 		delete transformed; transformed = 0;
 		
 		if (verbose) {
-			cout <<"Score is: " << score << endl;
+			Dict rots = sympos.get_rotation("eman");
+			cout <<"Score is: " << score << " az " << float(rots["az"]) << " alt " << float(rots["alt"]) << " phi " << float(rots["phi"]) << endl;
 		}
 		
 		unsigned int j = 0;
