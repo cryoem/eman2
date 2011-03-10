@@ -330,15 +330,15 @@ __global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfoFloat*
 		}
 	}
 	// Now do the intepolation...
-	int x2 = px;
-	int x1 = x2-1;
-	int x3 = x2+1;
-	int y2 = py;
-	int y1 = y2-1;
-	int y3 = y2+1;
-	int z2 = pz;
-	int z1 = z2-1;
-	int z3 = z2+1;
+	float x2 = float(px);
+	float x1 = x2-1.0f;
+	float x3 = x2+1.0f;
+	float y2 = float(py);
+	float y1 = y2-1.0f;
+	float y3 = y2+1.0f;
+	float z2 = float(pz);
+	float z1 = z2-1.0f;
+	float z3 = z2+1.0f;
 
 	float yx1 = dget_value_at_wrap_cuda(in, nx, ny, nz, x1 , y2, z2);
 	float yx2 = dget_value_at_wrap_cuda(in, nx, ny, nz, x2 , y2, z2);

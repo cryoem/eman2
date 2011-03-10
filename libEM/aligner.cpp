@@ -1776,6 +1776,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	Dict best;
 	best["score"] = 0.0f;
 	bool use_cpu = true;
+	Transform tran = Transform();
 	for ( float alt = 0; alt < range; alt += delta) {
 		// now compute a sane az step size 
 		float saz = 360;
@@ -1801,10 +1802,11 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 #ifdef EMAN2_USING_CUDA	
 					if(to->cudarwdata){
 						use_cpu = false;
-						//CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-						//tr.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-						CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-						tr.set_trans(-data->xintp, -data->yintp, -data->zintp);
+						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						tran.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						tr = tran*tr;
+						//CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						//tr.set_trans(-data->xintp, -data->yintp, -data->zintp);
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1816,12 +1818,14 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 #endif
 					if(use_cpu){
 						if(tomography) ccf->process_inplace("normalize");
-						vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
-						tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
-						score = -fpoint[3];
-						//IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-						//tr.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-						//score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						//vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
+						//tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
+						//score = -fpoint[3];
+						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
+						tran.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						tr = tran*tr;
+						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						
 					}
 					delete ccf; ccf =0;
 					delete transformed; transformed = 0;// this is to stop a mem leak

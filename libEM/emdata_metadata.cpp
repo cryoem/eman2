@@ -518,15 +518,15 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 **/
 
 	// I guess I could use GSL, but this is faster....
-	int x1 = peak[0] - 1;
-	int x2 = peak[0];
-	int x3 = peak[0] + 1;
-	int y1 = peak[1] - 1;
-	int y2 = peak[1];
-	int y3 = peak[1] + 1;
-	int z1 = peak[2] - 1;
-	int z2 = peak[2];
-	int z3 = peak[2] + 1;
+	float x1 = float(peak[0]) - 1.0f;
+	float x2 = float(peak[0]);
+	float x3 = float(peak[0]) + 1.0f;
+	float y1 = float(peak[1]) - 1.0f;
+	float y2 = float(peak[1]);
+	float y3 = float(peak[1]) + 1.0f;
+	float z1 = float(peak[2]) - 1.0f;
+	float z2 = float(peak[2]);
+	float z3 = float(peak[2]) + 1.0f;
 	
 	float yx1 = get_value_at_wrap(x1,y2,z2);
 	float yx2 = get_value_at_wrap(x2,y2,z2);
@@ -543,7 +543,7 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 	float ax = ((yx1 - yx2) - bx*(x1 - x2))/(x1*x1 - x2*x2);
 	//Find minima
 	float xintp = -bx/(2*ax);
-	
+
 	// Fit peak in X to y = ax^2 + bx +c
 	float by = ((yy1 - yy2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2) - (yy2-yy3))/(-(x2 - x3) + (x1 - x2)*(x2*x2 - x3*x3)/(x1*x1 - x2*x2));
 	float ay = ((yy1 - yy2) - by*(x1 - x2))/(x1*x1 - x2*x2);
