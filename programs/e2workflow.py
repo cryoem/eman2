@@ -82,11 +82,11 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 		self.vbl.addWidget(self.groupbox)
 		self.kill = QtGui.QPushButton("Kill")
 		
-		self.vbl.addWidget(self.kill)
+#		self.vbl.addWidget(self.kill)
 		
 #		self.set_entries(self.entries_dict)
 	
-		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
+#		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
 		
 		self.resize(256,200)
 		get_application().attach_child(self)
@@ -130,6 +130,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 				day=int(tsk[0][8:10])
 				if mon!=tm[1] or yr!=tm[0] or tm[2]-day>1 : raise Exception 
 				
+			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
 			if command=="e2workflow.py" : raise Exception
 		except:
@@ -157,6 +158,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			# This contains (file location,process id, status, command name)
 			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
 			else : pid=int(tsk[2])
+			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
 			self.tasks.append((loc,pid,tsk[0],tsk[1],command))
 		
@@ -170,7 +172,6 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			self.tasks=[]
 			self.parse_new_commands(fin)
 			if len(self.tasks)==0 :
-				print "no commands"
 				self.tasks=None
 				return
 		
@@ -187,15 +188,13 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			
 			# Go through existing entries and see if they've finished
 			self.tasks=[i for i in self.tasks if self.check_task(fin,i)]
-			print len(self.tasks)," commands"
 			
 			# now check for new entries
 			fin.seek(self.lastpos)
 			self.parse_new_commands(fin)
-			print len(self.tasks)," commands"
 				
 		self.list_widget.clear()
-		items=["%s\t%s"%(t[0],t[4]) for t in self.tasks]
+		items=["%s\t%s\t%s"%(t[2][5:16],t[1],t[4]) for t in self.tasks]
 		self.list_widget.addItems(QtCore.QStringList(items))
 	
 	def animate(self,time):
