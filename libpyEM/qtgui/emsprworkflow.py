@@ -5820,7 +5820,28 @@ class E2RunFreAlign(WorkFlowTask):
 
 		
 class E2RefineToFreeAlign(WorkFlowTask):
-	"""Select the file you want to use for frealign"""
+	"""Select the file you want to use for frealign
+
+fbeaut: Apply extra real space symmetry averaging and masking to beautify the final map just prior to output
+fcref:  Apply an FOM filter to the final reconstruction using the function SQRT(2.0*FSC/(1.0+FSC))
+fstat:  Calculate additional statistics in the resolution table at the end. Using this option requires about 50% more memory
+ifsc:   Calculation of the FSC table:
+        0 = Calculate two reconstructions with even and odd particles and generate FSC at end of run
+        1 = Only calculate one reconstruction using odd particles
+        2 = Only calculate one reconstruction using even particles
+        3 = Only calculate one reconstruction using all particles
+iblow:  Padding factor for reference structure. Can be 1/2/4. 4 requires the most memory but results in the fastest search and refinement
+mask:   Outer radius of reconstruction in Angstroms from center of particle
+rrec:   Resolution to which the reconstruction is calculated
+reslow: Resolution of the data in the refinement. This is the low resolution number
+reshigh:Resolution of the data in the refinement. This is the high resolution number
+redef:  Perform defocus refinement
+refastyg: Perform Astigmatism refinement
+refpar: Defocus refinement for individual particles
+pbc:    Phase residual/Pseudo B-Factor conversion constant. 5 is the default. A large value (ex. 100) would give equal weighing to each particle
+thresh: Phase residual cutoff. Any particles with a higher phase residual will not be included in the reconstruction
+
+"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Launch e2refinetofrealign"

@@ -1,11 +1,21 @@
 #!/usr/bin/env python
+# Author: Stephen Murray (scmurray@bcm.edu), 2/14/11
+# Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
+# Official copyright notice. EMAN2 is distributed under a joint GPL/BSD license. Please copy
+# this statement from one of the other programs. You must agree to use this license if your
+# code is distributed with EMAN2. While you may use your own institution for the copyright notice
+# the terms of the GPL/BSD license permit us to redistribute it.
+
+# import block
 import os
 import sys
 
 if len(sys.argv) != 1:
    print "Please use e2runfrealign.py"
    exit(-1)
+
+E2n=E2init(sys.argv)
 
 os.system('clear')
 os.system('cp 3DMapInOut.mrc 3DMapInOut.mrc.old')
@@ -43,4 +53,4 @@ os.system('mv ptcl_meta_data.old ptcl_meta_data')
 
 print "e2runfrealign.py finished"
 
-exit(0)
+E2end(E2n)

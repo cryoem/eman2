@@ -1,20 +1,22 @@
 #!/usr/bin/env python
+# Author: Stephen Murray (scmurray@bcm.edu), 2/14/11
+# Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
-########################################################################################################
-# This program is designed to parse the output files from FreAlign and to convert the data back to     #
-# Eman2.                                                                                               #
-# Developed in the Ludtke Lab by SCM                                                                   #
-# Version 1.0                                                                                          #
-######################################################################################################## 
+# Official copyright notice. EMAN2 is distributed under a joint GPL/BSD license. Please copy
+# this statement from one of the other programs. You must agree to use this license if your
+# code is distributed with EMAN2. While you may use your own institution for the copyright notice
+# the terms of the GPL/BSD license permit us to redistribute it.
 
+# import block
 from EMAN2 import *
 from optparse import OptionParser
 import pyemtbx.options
 import os
 import sys
+
+
 IN_META_FILE = "ptcl_meta_data"
 OUTFILE = "diff.txt"
-
 progname = os.path.basename(sys.argv[0])
 usage = progname + """ [options] <name of frealign directory>
 
@@ -25,6 +27,8 @@ if len(sys.argv) != 2:
    print "usage:" + usage
    print "Please run'" + progname + " -h' for detailed options"
    sys.exit(1)
+
+E2n = E2init(sys.argv)
 
 high = 0
 dir = sys.argv[1]
@@ -171,3 +175,5 @@ f.write(s)
 f.close()
 
 print "e2refinefromfrealign.py finished"
+
+E2end(E2n)

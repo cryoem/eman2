@@ -1,12 +1,14 @@
 #!/usr/bin/env python
+# Author: Stephen Murray (scmurray@bcm.edu), 2/14/11
+# Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
-########################################################################################################
-# This program is designed to parse the EMAN2 databases and files once a refinement has been completed.#
-# It will create a meta data file and a card file, both needed by FreAlign to run.                     #
-# Developed in the Ludtke Lab by SCM                                                                   #
-# Version 1.0                                                                                          #
-######################################################################################################## 
+# Official copyright notice. EMAN2 is distributed under a joint GPL/BSD license. Please copy
+# this statement from one of the other programs. You must agree to use this license if your
+# code is distributed with EMAN2. While you may use your own institution for the copyright notice
+# the terms of the GPL/BSD license permit us to redistribute it.
 
+
+#import block
 from EMAN2 import *
 from optparse import OptionParser
 import pyemtbx.options
@@ -86,6 +88,7 @@ if len(args) != 2:
    sys.exit(1)
 
 
+E2n = E2init(sys.argv)
 # Create the E2FA directory structure if it does not exist
 dir = args[0]
 
@@ -360,3 +363,5 @@ for i in range(len(rrec_list)):
    f.close()
 
 print "e2refinetofrealign.py finished"
+
+E2end(E2n)
