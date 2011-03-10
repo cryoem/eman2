@@ -555,6 +555,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 					if model.get_type() == "Isosurface":
 						new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
 						inspector.thr.setValue(new_threshold) # Causes a GL update
+						model.set_force_update(True)
 
 					inspector.rotation_sliders.slider_rotate() #Causes a GL update
 			#############
