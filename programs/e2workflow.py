@@ -47,6 +47,7 @@ from emimage import EMWidgetFromFile
 
 import time
 import weakref
+import traceback
 
 class EMTaskMonitorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
@@ -90,6 +91,113 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 		self.resize(256,200)
 		get_application().attach_child(self)
 		
+		self.tasks=None
+		
+		# A timer for updates
+		self.timer = QtCore.QTimer(self);
+ 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_list)
+ 		self.timer.start(3000)
+	
+	def check_task(self,fin,tsk):
+		fin.seek(tsk[0])
+		try : t=fin.readline()
+		except: return False
+		
+		tsk=t.split("\t")
+		if self.is_running(tsk) : return True
+		
+		return False
+	
+	def is_running(self,tsk):
+		"""Check to see if the 'tsk' string is actively running"""
+		
+		try:
+			# This means the task must be done
+			if tsk[1][4]=="/" : return False
+			
+			# or not running
+			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
+			else : pid=int(tsk[2])
+			
+			if os.name=="posix":
+				# don't do this on windows (may actually kill the process)
+				os.kill(pid,0)			# raises an exception if doesn't exist
+			else :
+				# not a good approach, but the best we have right now on windows
+				tm=time.localtime()
+				mon=int(tsk[0][5:7])
+				yr=int(tsk[0][:4])
+				day=int(tsk[0][8:10])
+				if mon!=tm[1] or yr!=tm[0] or tm[2]-day>1 : raise Exception 
+				
+			command = tsk[4].split()[0].split("/")[-1]
+			if command=="e2workflow.py" : raise Exception
+		except:
+#			traceback.print_exc()
+			return False
+
+		return True
+	
+	def parse_new_commands(self,fin):
+		self.last_update=time.time()
+		while 1:
+			loc=fin.tell()
+			try: 
+				t=fin.readline()
+				if len(t)==0 : raise Exception
+			except: 
+				self.lastpos=loc
+				break
+				
+			tsk=t.split("\t")
+			if not self.is_running(tsk) : continue
+			
+			# if we get here, then we have a (probably) active task
+			
+			# This contains (file location,process id, status, command name)
+			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
+			else : pid=int(tsk[2])
+			command = tsk[4].split()[0].split("/")[-1]
+			self.tasks.append((loc,pid,tsk[0],tsk[1],command))
+		
+	
+	def update_list(self):
+		
+		if self.tasks==None:
+			try: fin=file(".eman2log.txt","r")
+			except: return
+			
+			self.tasks=[]
+			self.parse_new_commands(fin)
+			if len(self.tasks)==0 :
+				print "no commands"
+				self.tasks=None
+				return
+		
+		else:
+			# only check the file when it changes
+			try: 
+				if os.stat(".eman2log.txt").st_mtime < self.last_update : return
+			except:
+				print "Error, couldn't stat(.eman2log.txt)."
+				return
+				
+			try: fin=file(".eman2log.txt","r")
+			except: return
+			
+			# Go through existing entries and see if they've finished
+			self.tasks=[i for i in self.tasks if self.check_task(fin,i)]
+			print len(self.tasks)," commands"
+			
+			# now check for new entries
+			fin.seek(self.lastpos)
+			self.parse_new_commands(fin)
+			print len(self.tasks)," commands"
+				
+		self.list_widget.clear()
+		items=["%s\t%s"%(t[0],t[4]) for t in self.tasks]
+		self.list_widget.addItems(QtCore.QStringList(items))
+	
 	def animate(self,time):
 		print "animate"
 		return True
@@ -108,7 +216,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 		print "add_process ",pid
 	
 	def list_widget_item_clicked(self,item):
-		print "list_widget_item_clicked ",item
+		print "list_widget_item_clicked ",item.text()
 #		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
 	
 	def on_kill(self):

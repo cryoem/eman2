@@ -109,7 +109,8 @@ is complete. If the process is killed, 'end' may never be set."""
 		try: hist=file(".eman2log.txt","w")
 		except: return -1
 	n=hist.tell()
-	hist.write("%s\tincomplete         \t%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),socket.gethostname()," ".join(argv)))
+	try:    hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),os.getppid(),socket.gethostname()," ".join(argv)))
+	except: hist.write("%s\tincomplete         \t%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),socket.gethostname()," ".join(argv)))
 #	hist.flush()
 	hist.close()
 	
