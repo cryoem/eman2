@@ -98,12 +98,14 @@ class EMTaskMonitorWidget(QtGui.QWidget):
  		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_list)
  		self.timer.start(3000)
 	
-	def check_task(self,fin,tsk):
-		fin.seek(tsk[0])
+	def check_task(self,fin,ptsk):
+		"""Note that this modifies ptsk in-place"""
+		fin.seek(ptsk[0])
 		try : t=fin.readline()
 		except: return False
 		
 		tsk=t.split("\t")
+		ptsk[3]=tsk[1]
 		if self.is_running(tsk) : return True
 		
 		return False
@@ -160,7 +162,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			else : pid=int(tsk[2])
 			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
-			self.tasks.append((loc,pid,tsk[0],tsk[1],command))
+			self.tasks.append([loc,pid,tsk[0],tsk[1],command])
 		
 	
 	def update_list(self):
@@ -194,7 +196,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			self.parse_new_commands(fin)
 				
 		self.list_widget.clear()
-		items=["%s\t%s\t%s"%(t[2][5:16],t[1],t[4]) for t in self.tasks]
+		items=["%s\t%s(%s)\t%s"%(t[2][5:16],t[3][:4],t[1],t[4]) for t in self.tasks]
 		self.list_widget.addItems(QtCore.QStringList(items))
 	
 	def animate(self,time):
