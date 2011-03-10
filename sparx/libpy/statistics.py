@@ -324,7 +324,7 @@ def ave_series(data, pave = True):
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = model_blank(nx,ny)
+	ave = model_blank(nx, ny)
 	for i in xrange(n):
 	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)

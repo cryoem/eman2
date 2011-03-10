@@ -17901,6 +17901,46 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 	return peak;
 }
 
+vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
+
+	int kt = nref;
+	unsigned int maxasi = nima/nref;
+	vector<int> id_list[nref];
+	int group;
+	while (kt > 0) {
+		int l = -1;
+		float dmax = -1.e22;
+		for (int i=0; i<nref*nima; i++)
+			if (d[i] > dmax) {
+				dmax = d[i];
+				l = i;
+			}
+		group = l/nima;
+		int ima  = l%nima;
+		id_list[group].push_back(ima);
+		if (kt > 1) {
+			if (id_list[group].size() < maxasi) group = -1;
+			else kt -= 1;
+		} else {
+			if (id_list[group].size() < maxasi+nima%nref) group = -1;
+			else kt -= 1;
+		}
+		for (int iref=0; iref<nref; iref++) d[iref*nima+ima] = -1.e20;
+		if (group != -1) {
+			for (int im=0; im<nima; im++) d[group*nima+im] = -1.e20;
+		}
+	}
+
+	vector<int> id_list_1; 
+	for (int iref=0; iref<nref; iref++)
+		for (int im=0; im<maxasi; im++)
+			id_list_1.push_back(id_list[iref][im]);
+	for (int im=maxasi; im<maxasi+nima%nref; im++)
+			id_list_1.push_back(id_list[group][im]);
+	id_list_1.push_back(group);
+	return id_list_1;
+}
+
 
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
