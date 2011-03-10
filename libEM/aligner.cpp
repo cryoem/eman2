@@ -1804,9 +1804,9 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 						use_cpu = false;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						tran.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-						tr = tran*tr;
 						//CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-						//tr.set_trans(-data->xintp, -data->yintp, -data->zintp);
+						//tran.set_trans(-data->xintp, -data->yintp, -data->zintp);
+						tr = tran*tr;
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1819,12 +1819,12 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 					if(use_cpu){
 						if(tomography) ccf->process_inplace("normalize");
 						//vector<float> fpoint = ccf->calc_max_location_wrap_intp(searchx,searchy,searchz);
-						//tr.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
+						//tran.set_trans(-fpoint[0], -fpoint[1], -fpoint[2]);
 						//score = -fpoint[3];
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						tran.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-						tr = tran*tr;
 						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
+						tr = tran*tr;
 						
 					}
 					delete ccf; ccf =0;
@@ -1952,6 +1952,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
+	Transform trans = Transform();
 	bool use_cpu = true;
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
@@ -1975,7 +1976,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					if(to->cudarwdata){
 						use_cpu = false;;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-						t.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+						t = trans*t;
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1988,7 +1990,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					if(use_cpu){
 						if(tomography) ccf->process_inplace("normalize");	
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-						t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+						t = trans*t;
 						best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 					}
 					delete ccf; ccf =0;
@@ -2125,6 +2128,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 #endif
 
+	Transform trans = Transform();
 	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
@@ -2149,7 +2153,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				if(this_img->cudarwdata){
 					use_cpu = false;;
 					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
-					t.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+					trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
+					t = trans*t;	//composite transform
 					if (tomography) {
 						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 						best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -2162,7 +2167,8 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				if(use_cpu){
 					if(tomography) ccf->process_inplace("normalize");
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
-					t.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+					trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
+					t = trans*t;	//composite transform
 					best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 				}
 				delete ccf; ccf =0;
