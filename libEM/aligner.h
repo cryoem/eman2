@@ -895,6 +895,24 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** Refine alignment. Refines a preliminary 3D alignment using a sampling grid. This is a port from tomohunter, but the az
+	 * sampling scheme is altered cuch that the points on the sphere are equidistant (Improves speed several hundered times).
+	 * The distance between the points on the sphere is 'delta' and the range(distance from the pole, 0,0,0 position) is
+	 * given as 'range'. IN general this refinement scheme is a bit slower than the Quaternion Simplex aligner, but perfroms
+	 * better in the presence of noise(according to current dogma).
+	 * @ingroup CUDA_ENABLED
+	 * @param xform.align3d The Transform from the previous course alignment. If unspecified the identity matrix is used
+	 * @param delta The angluar distance bewteen points on the spehere used in the grid
+	 * @param range The size of the grid. Measured in angluar distance from the north pole
+	 * @param dotrans Do a translational search
+	 * @param search The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive
+	 * @param searchx The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author John Flanagan 
+	 * @date Mar 2011
+	*/
 	class Refine3DAlignerGrid:public Aligner
 	{
 		public:
@@ -1008,8 +1026,9 @@ namespace EMAN
 	};
 	
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
-	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner),
-	 * but very useful  if you want to search in a specific, small, local area.
+	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner).
+	 * This is for use as a course aligner. For refineing alignments, use the refine_3d_grid aligner. In general this aligner is not
+	 * used much and is mostly depreciated.
 	 * @ingroup CUDA_ENABLED
 	 * @param daz The angle increment in the azimuth direction
 	 * @param laz Lower bound for the azimuth direction
@@ -1026,8 +1045,8 @@ namespace EMAN
 	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param verbose Turn this on to have useful information printed to standard out
-	 * @author David Woolford and John Flanagan (ported from Mike Schmid's e2tomohuntThis is the increment applied to the inplane rotationer code - Mike Schmid is the intellectual author)
-	 * @date June 23 2009
+	 * @author John Flanagan and David Woolford (ported from Mike Schmid's e2tomohuntThis is the increment applied to the inplane rotationer code - Mike Schmid is the intellectual author)
+	 * @date Feb 2011
 	 */
 	class RT3DGridAligner:public Aligner
 	{
@@ -1110,7 +1129,7 @@ namespace EMAN
 	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param verbose Turn this on to have useful information printed to standard out
 	 * @author John Flanagan and  David Woolford
-	 * @date Feb 2010
+	 * @date Feb 2011
 	 */
 	class RT3DSphereAligner:public Aligner
 	{
@@ -1167,6 +1186,17 @@ namespace EMAN
 			
 			static const string NAME;
 	};
+	
+	/** 3D rotational symmetry aligner. This aligner takes a map, which must be first aligned to the symmetry axis,
+	 * and rotates it to it symmetric positions. This is used to check for pseudo symmetry (such as finding the tail
+	 * of an icosahedral virus). A list of best matches (moving to a reference is produced. Alternativly, a rotated 
+	 * verison of the moving map is returned.
+	 * @ingroup CUDA_ENABLED
+	 * @param sym The symmtery to use 
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author John Flanagan
+	 * @date Mar 2011
+	 */
 	
 	class RT3DSymmetryAligner:public Aligner
 	{
