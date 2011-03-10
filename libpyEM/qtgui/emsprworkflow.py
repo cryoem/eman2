@@ -694,10 +694,11 @@ class EMProjectDataDict:
 		rem = []
 		for name, map in dict.items():			
 			for key,image_name in map.items():
-				if not file_exists(image_name) and not os.path.isdir(image_name[:image_name.rindex("/")]):
-					map.pop(key)
-					rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
-					
+				try:
+					if not file_exists(image_name) and not os.path.isdir(image_name[:image_name.rindex("/")]):
+						map.pop(key)
+						rem.append("%s data no longer exists for %s. Automatically removing from project" %(key,image_name))
+				except: pass
 			if len(map) == 0:
 				dict.pop(name)
 				rem.append("%s no longer exists. Automatically removing from project" %(name))
