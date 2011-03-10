@@ -1977,7 +1977,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						use_cpu = false;;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-						t = trans*t;
+						t = trans*t;	//composite transfrom
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1991,7 +1991,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						if(tomography) ccf->process_inplace("normalize");	
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-						t = trans*t;
+						t = trans*t;	//composite transfrom
 						best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 					}
 					delete ccf; ccf =0;
