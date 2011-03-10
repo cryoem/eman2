@@ -186,7 +186,7 @@ void TestUtil::to_emobject(const Dict& d)
 	if (d.has_key("transformarray")) {
 		vector<Transform> array = d["transformarray"];
 		for (size_t i = 0; i < array.size(); i++) {
-			array[i].printme();
+//			array[i].printme();
 			Assert(array[i] == get_debug_transform(i));
 //			LOGDEBUG("transformarray[%d] = %s\n", i, array[i].to_str());
 		}
