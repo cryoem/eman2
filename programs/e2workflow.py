@@ -48,7 +48,7 @@ from emimage import EMWidgetFromFile
 import time
 import weakref
 
-class EMTaskMonitorWidget(QtGui.QWidget,Animator):
+class EMTaskMonitorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "workflow"
 
@@ -56,35 +56,6 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "workflow.png"))
 		self.setWindowTitle("Running Tasks")
-		Animator.__init__(self)
-		# animation specific
-		self.timer_interval = 500 # half a second time interval
-		self.register_animatable(self)
-		# remember the number of entries in the history db when this was initialized
-		# so that keeping track of processes using pids is more efficient
-		global HOMEDB
-		HOMEDB=EMAN2db.EMAN2DB.open_db()
-		HOMEDB.open_dict("history")
-		try: self.init_history_db_entries = HOMEDB.history["count"]
-		except: self.init_history_db_entries = 0
-		if self.init_history_db_entries == None: self.init_history_db_entries = 0
-		#print self.init_history_db_entries
-		if db_check_dict("bdb:project"):
-			project_db = db_open_dict("bdb:project")
-			self.current_process_info = project_db.get("workflow.process_ids",{})
-
-			# If a project is copied from one machine to another while a job is running,
-			# the job table will be corrupt. If we run into this, we clear the table
-			for k in self.current_process_info.keys(): 
-				try: x=HOMEDB.history[k]["pid"]
-				except: 
-					project_db["workflow.process_ids"]={}
-					self.current_process_info = {}
-					break
-		else:
-			self.current_process_info = {}
-		self.entries_dict = {}
-		self.history_check = []
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -112,7 +83,7 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		
 		self.vbl.addWidget(self.kill)
 		
-		self.set_entries(self.entries_dict)
+#		self.set_entries(self.entries_dict)
 	
 		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
 		
@@ -120,167 +91,40 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		get_application().attach_child(self)
 		
 	def animate(self,time):
-		global HOMEDB
-		HOMEDB=EMAN2db.EMAN2DB.open_db()
-		HOMEDB.open_dict("history")
-		
-		if not HOMEDB.history: return
-		
-		for i,pid in enumerate(self.history_check):
-			try: total = HOMEDB.history["count"]+1
-			except: return True
-			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
-				try:
-					if HOMEDB.history[j]["pid"] == pid:
-						project_db = db_open_dict("bdb:project")
-						#print "adding",j
-						self.current_process_info[j] = HOMEDB.history[j]
-						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
-						project_db ["workflow.process_ids"] = self.current_process_info
-						db_close_dict("bdb:project")
-						self.set_entries(self.entries_dict)
-						return True
-				except:
-					continue
-		
-		
-		for key in self.current_process_info.keys():
-			#if not process_running(HOMEDB.history[key]["pid"]):
-			if not process_running(HOMEDB.history[key]["pid"]):
-				project_db = db_open_dict("bdb:project")
-				self.current_process_info.pop(key)
-				self.set_entries(self.entries_dict)
-				project_db ["workflow.process_ids"] = self.current_process_info
-				db_close_dict("bdb:project")
-				self.set_entries(self.entries_dict)
-				return True
-			else:
-				self.current_process_info[key] = HOMEDB.history[key]
-			#else:
-				#print "process running",HOMEDB.history[key]["pid"]
-		
-		# kill defunct child processes
-		# i.e. If I don't do this defunct processes will still show up as running
-		if len(self.current_process_info) > 0: 
-			try:
-				pid,stat = os.waitpid(0,os.WNOHANG)
-			except: pass 
-			
-		self.set_entries(self.entries_dict)
+		print "animate"
 		return True
 				
 			
 	def set_entries(self,entries_dict):
-		selected_items = self.list_widget.selectedItems() # need to preserve the selection
-		
-		s_text = None
-		if len(selected_items) == 1 :
-			s = str(selected_items[0].text())
-			if len(s) >= 4:
-				s_text= s[:4]
-		elif len(selected_items) > 1:
-			print "can't handle more than one selection in the task manager" # yes this should work, no time
-		
-		
-		self.entries_dict=entries_dict
-		self.list_widget.clear()
-		for k,val in entries_dict.items():
-			a = QtGui.QListWidgetItem(val,self.list_widget)
-			if s_text != None and len(val) >=4:
-				if val[:4] == s_text:
-					a.setSelected(True)
-			a.module = k
-		self.list_processes(s_text)
-		
+		print "set_entries",entries_dict
+			
 	def list_processes(self,s_text):
-		
-		for key in self.current_process_info.keys():
-			d = self.current_process_info[key]
-			pid = str(d["pid"])
-			prog = get_file_tag(d["args"][0])
-			progress = "0%"
-			try:
-				progress = str(float(d["progress"])*100)
-				if len(progress) > 4:
-					progress = progress[:4]
-				progress += "%"
-			except: pass
-			t = str(time.ctime(d["start"]))
-			s = pid + "\t" +progress+"\t"+ prog + "\t" + t
-			
-			a =  QtGui.QListWidgetItem(s,self.list_widget)
-			
-			if s_text != None and len(s) >=4:
-				if s[:4] == s_text:
-					a.setSelected(True)
-					
-			a.module = "process"
-			a.pid = pid
-	
+		print "list_processes ",s_text
+
 	def accrue_process_info(self):
-		
-		for i in range(len(self.current_process_info),len(self.current_processes)):
-			for j in range(self.init_history_db_entries,HOMEDB.history["count"]):
-				print db[j]["pid"],self.current_processes[i]
-				
+		print "accrue_process_info"
 	
 	def add_process(self,pid):
-		self.history_check.append(pid) # the program hasn't added the entry to the db (There is lag)
+		print "add_process ",pid
 	
 	def list_widget_item_clicked(self,item):
-		#val = None
-		#for k,v in  self.entries_dict.items():
-			#if v == str(item.text()):
-				#val = k
-				#break
-			
-		#if val == None:
-			#print "error, this shouldn't happen"
-		#print item.module
-		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
+		print "list_widget_item_clicked ",item
+#		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
 	
 	def on_kill(self):
+		print "on_kill"
 		selected_items = self.list_widget.selectedItems()
 		if len(selected_items) == 0:
 			return
 		
 		# not sure if there will ever be more than one selected but oh well let's support closing them all
 		
-		for item in selected_items:
-			if item.module == "process":
-				if not kill_process(int(item.pid)):
-					print "kill process failed for some reason"
-			else:
-				#print self.entries_dict
-				self.entries_dict.pop(item.module)
-				self.emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
-				self.set_entries(self.entries_dict)
-			
-	def keyPressEvent(self,event):
-		if event.key() == Qt.Key_F1:
-			try:
-				import webbrowser
-				webbrowser.open("http://blake.bcm.edu/emanwiki/e2workflow")
-				return
-			except: pass
-
-			try: from PyQt4 import QtWebKit
-			except: return
-			try:
-				try:
-					test = self.browser
-				except: 
-					self.browser = QtWebKit.QWebView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2workflow"))
-					self.browser.resize(800,800)
-				
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass		
-		
-		#self.list_widget.
-			#print "removing item",item
-			#self.list_widget.removeItemWidget(item)
-
+		#for item in selected_items:
+			#if item.module == "process":
+				#if not kill_process(int(item.pid)):
+					#print "kill process failed for some reason"
+			#else:
+				#self.emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
 	
 class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
