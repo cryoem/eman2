@@ -174,6 +174,8 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			self.tasks=[]
 			self.parse_new_commands(fin)
 			if len(self.tasks)==0 :
+				
+				#print "no commands"
 				self.tasks=None
 				return
 		

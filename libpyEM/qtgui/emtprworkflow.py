@@ -461,6 +461,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
+		self.form_db_name = "bdb:emform.tomo.boxer"
 		self.window_title = "Launch e2tomoboxer"
 		self.report_task = None
 		
@@ -490,13 +491,14 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	
 	def get_params(self):
 		params = []
+		db = db_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2tomoboxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
-		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
-		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=1,choices=None)
-		papix = ParamDef(name="apix",vartype="float",desc_short=u"\u212B per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=1.0,choices=None )
+		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=db.get("yshort",dfl=True),choices=None)
+		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=db.get("inmemory",dfl=True),choices=None)
+		papix = ParamDef(name="apix",vartype="float",desc_short=u"\u212B per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=db.get("apix",dfl=1.0),choices=None )
 		params.append([pylong, pinmem, papix])
 #		db = db_open_dict(self.form_db_name)
 #		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
@@ -528,6 +530,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		
 		self.form.close()
 		self.form = None
+		self.write_db_entries(params)
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
@@ -1237,6 +1240,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
+		self.form_db_name = "bdb:emform.tomo.classavg3d"
 		self.window_title = "Launch e2classaverage3d"
 		self.report_task = None
 		
@@ -1269,18 +1273,19 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def get_params(self):
 		table_params = []
 		params = []
+		db = db_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_hunter_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
-		psavesteps = ParamDef(name="savesteps",vartype="boolean",desc_short="Savesteps",desc_long="Save the steps",property=None,defaultunits=1,choices=None)
-		psaveali = ParamDef(name="saveali",vartype="boolean",desc_short="Saveali",desc_long="Save the alignments",property=None,defaultunits=1,choices=None)
+		psavesteps = ParamDef(name="savesteps",vartype="boolean",desc_short="Savesteps",desc_long="Save the steps",property=None,defaultunits=db.get("savesteps",dfl=True),choices=None)
+		psaveali = ParamDef(name="saveali",vartype="boolean",desc_short="Saveali",desc_long="Save the alignments",property=None,defaultunits=db.get("saveali",dfl=True),choices=None)
 		params.append([psavesteps, psaveali])
-		piter = ParamDef(name="number of iterations",vartype="int",desc_short="Number of iterations", desc_long="Number of iterations",property=None,defaultunits=5,choices=None )
-		pncourse = ParamDef(name="coarse number",vartype="int",desc_short="Coarse Number", desc_long="Coarse number",property=None,defaultunits=6,choices=None )
-		params.append([piter, pncourse])
-		pshrink = ParamDef(name="Percentage to shrink",vartype="float",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=2.0,choices=None )
-		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="float",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=2.0,choices=None )
+		piter = ParamDef(name="number of iterations",vartype="int",desc_short="Number of iterations", desc_long="Number of iterations",property=None,defaultunits=db.get("number of iterations",dfl=5),choices=None )
+		pncoarse = ParamDef(name="coarse number",vartype="int",desc_short="Coarse Number", desc_long="Coarse number",property=None,defaultunits=db.get("coarse number",dfl=6),choices=None )
+		params.append([piter, pncoarse])
+		pshrink = ParamDef(name="Percentage to shrink",vartype="int",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=db.get("Percentage to shrink",dfl=2),choices=None )
+		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="int",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=db.get("Percentage to shrink, refinement",dfl=2),choices=None )
 		params.append([pshrink, pshrinkrefine])
 		
 		proc_data = dump_processors_list()
@@ -1289,8 +1294,8 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			if len(key) >= 5 and key[:5] == "mask.":
 				masks[key] = proc_data[key]
 		masks["None"] = ["Choose this to stop masking from occuring"]
-		pmask = ParamDef("mask",vartype="string",desc_short="Mask",desc_long="The mask to apply to the subtomos",property=None,defaultunits="None",choices=masks)
-		pmaskparams = ParamDef("maskparams",vartype="string",desc_short="Params",desc_long="Parameters for the mask",property=None,defaultunits="")
+		pmask = ParamDef("mask",vartype="string",desc_short="Mask",desc_long="The mask to apply to the subtomos",property=None,defaultunits=db.get("mask",dfl="None"),choices=masks)
+		pmaskparams = ParamDef("maskparams",vartype="string",desc_short="Params",desc_long="Parameters for the mask",property=None,defaultunits=db.get("maskparams",dfl=""))
 		params.append([pmask, pmaskparams])
 		
 		filters = {}
@@ -1298,8 +1303,8 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			if len(key) >= 7 and key[:7] == "filter.":
 				filters[key] = proc_data[key]
 		filters["None"] = ["Choose this to stop filtering from occuring"]
-		pfilter = ParamDef("filter",vartype="string",desc_short="Filter",desc_long="The Filter to apply to the subtomos",property=None,defaultunits="None",choices=filters)
-		pfilterparams = ParamDef("filterparams",vartype="string",desc_short="Params",desc_long="Parameters for the filter",property=None,defaultunits="")
+		pfilter = ParamDef("filter",vartype="string",desc_short="Filter",desc_long="The Filter to apply to the subtomos",property=None,defaultunits=db.get("filter",dfl="None"),choices=filters)
+		pfilterparams = ParamDef("filterparams",vartype="string",desc_short="Params",desc_long="Parameters for the filter",property=None,defaultunits=db.get("filterparams",dfl=""))
 		params.append([pfilter, pfilterparams])
 
 		ali_data = dump_aligners_list()
@@ -1307,23 +1312,23 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		for key in ali_data.keys():
 			if len(key) >= 19 and key[:19] == "rotate_translate_3d":
 				caligners[key] = ali_data[key]
-		pali = ParamDef("aligner3D",vartype="string",desc_short="Aligner3D",desc_long="The 3D course aligner",property=None,defaultunits="rotate_translate_3d",choices=caligners)
-		paliparams = ParamDef("ali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D aligner",property=None,defaultunits="search=10:delta=15:dphi=15:verbose=1")
+		pali = ParamDef("aligner3D",vartype="string",desc_short="Aligner3D",desc_long="The 3D course aligner",property=None,defaultunits=db.get("aligner3D",dfl="rotate_translate_3d"),choices=caligners)
+		paliparams = ParamDef("ali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D aligner",property=None,defaultunits=db.get("ali3dparams",dfl="search=10:delta=15:dphi=15:verbose=1"))
 		params.append([pali, paliparams])
 		
 		craligners = {}
 		for key in ali_data.keys():
 			if len(key) >= 9 and key[:9] == "refine_3d":
 				craligners[key] = ali_data[key]
-		prali = ParamDef("raligner3D",vartype="string",desc_short="RAligner3D",desc_long="The 3D refine aligner",property=None,defaultunits="refine_3d",choices=craligners)
-		praliparams = ParamDef("rali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D refine aligner",property=None,defaultunits="precision=.001")
+		prali = ParamDef("raligner3D",vartype="string",desc_short="RAligner3D",desc_long="The 3D refine aligner",property=None,defaultunits=db.get("raligner3D",dfl="refine_3d_grid"),choices=craligners)
+		praliparams = ParamDef("rali3dparams",vartype="string",desc_short="Params",desc_long="Parameters for the 3D refine aligner",property=None,defaultunits=db.get("rali3dparams",dfl="verbose=1"))
 		params.append([prali, praliparams])
 		
-		ppostfilter = ParamDef("postfilter",vartype="string",desc_short="PostFilter",desc_long="The Filter to apply to the average",property=None,defaultunits="None",choices=filters)
-		ppostfilterparams = ParamDef("postfilterparams",vartype="string",desc_short="Params",desc_long="Parameters for the postfilter",property=None,defaultunits="")
-		params.append([pfilter, pfilterparams])
+		ppostfilter = ParamDef("postfilter",vartype="string",desc_short="PostFilter",desc_long="The Filter to apply to the average",property=None,defaultunits=db.get("postfilter",dfl="None"),choices=filters)
+		ppostfilterparams = ParamDef("postfilterparams",vartype="string",desc_short="Params",desc_long="Parameters for the postfilter",property=None,defaultunits=db.get("postfilterparams",dfl=""))
+		params.append([ppostfilter, ppostfilterparams])
 		
-		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits="")
+		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits=db.get("parallel",dfl=""))
 		params.append(pparallel)
 			
 		#pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
@@ -1359,10 +1364,14 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		e23dcalist = []
 		e23dcalist.append("e2classaverage3d.py")
 		e23dcalist.append("--input="+params['filenames'][0])
+		if(params['filenames'][0][-4:-3] == "."):
+			e23dcalist.append("--output="+params['filenames'][0][:-4]+"_3DAVG."+params['filenames'][0][-3:]) # output file hack
+		else:
+			e23dcalist.append("--output="+params['filenames'][0]+"_3DAVG")
 		
 		spacer = ""
 		try:
-			e23dcalist.append(" --ref="+params["refnames"][0])
+			e23dcalist.append("--ref="+params["refnames"][0])
 		except:
 			pass
 		if params["savesteps"]:
@@ -1375,8 +1384,8 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			e23dcalist.append("--shrink="+str(params["Percentage to shrink"]))
 		if params["Percentage to shrink, refinement"]:
 			e23dcalist.append("--shrinkrefine="+str(params["Percentage to shrink, refinement"]))
-		if params["course number"]:
-			e23dcalist.append("--ncourse="+str(params["course number"]))
+		if params["coarse number"]:
+			e23dcalist.append("--ncoarse="+str(params["coarse number"]))
 		if params["mask"] != "None":
 			spacer=""
 			if params["maskparams"]: spacer=":"
@@ -1402,6 +1411,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		
 		self.form.close()
 		self.form = None
+		self.write_db_entries(params)
 
 class EMTomohunterTask(WorkFlowTask):
 	'''Use this task for running e2tomohunter.py from the workflow'''

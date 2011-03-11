@@ -329,6 +329,26 @@ __global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfoFloat*
 			}
 		}
 	}
+
+	float cmx = 0.0f; float cmy = 0.0f; float cmz = 0.0f;
+	float sval = 0.0f;
+	for (float x = float(px)-2.0f; x <= float(px)+2.0f; x++) {
+		for (float y = float(py)-2.0f; y <= float(py)+2.0f; y++) {
+			for (float z = float(pz)-2.0f; z <= float(pz)+2.0f; z++) {
+				//Compute center of mass
+				float val = dget_value_at_wrap_cuda(in,nx,ny,nz,x,y,z);
+				cmx += x*val;
+				cmy += y*val;
+				cmz += z*val;
+				sval += val;
+			}
+		}
+	}
+	soln->xintp = cmx/sval;
+	soln->yintp = cmy/sval;
+	soln->zintp = cmz/sval;
+
+/**
 	// Now do the intepolation...
 	float x2 = float(px);
 	float x1 = x2-1.0f;
@@ -367,7 +387,7 @@ __global__ void  calc_max_location_wrap_intp(const float* in, CudaPeakInfoFloat*
 	float az = ((yz1 - yz2) - bz*(x1 - x2))/(x1*x1 - x2*x2);
 	//Find minima
 	soln->zintp = -bz/(2*az);
-
+**/
 }
 
 CudaPeakInfoFloat* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz)
