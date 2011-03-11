@@ -526,10 +526,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		#for i in self.viewables:
 			#i.set_data(data)
 		
-		if isinstance(self,EMImage3DWidget) and not was_previous_data:
-			self.resize(self.width(),self.height())
-			self.set_cam_z_from_fov_image(self.get_fov(),self.data) #perhaps this should be done every time
-		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
 		
@@ -559,8 +555,12 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 
 					inspector.rotation_sliders.slider_rotate() #Causes a GL update
 			#############
+
 		
-		self.set_camera_defaults(data)
+		if isinstance(self,EMImage3DWidget) and not was_previous_data:
+			#self.resize(self.width(),self.height())
+			self.set_cam_z_from_fov_image(self.get_fov(),self.data) #perhaps this should be done every time
+
 		self.busy = False
 		self.updateGL()
 		for model in self.viewables:
