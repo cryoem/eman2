@@ -1161,8 +1161,13 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 
 		}
 	}
+#ifdef _WIN32
+	_unlink("fkCopy.???");
+	_unlink("fk?Copy.???");
+#else
 	system("rm -f fkCopy.???");
 	system("rm -f fk?Copy.???");
+#endif	//_WIN32
 	fkCopy  -> write_image("fkCopy.img");
 	fkRCopy -> write_image("fkRCopy.img");
 	fkICopy -> write_image("fkICopy.img");
@@ -1649,7 +1654,11 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 		}
 
 		cout << " Almost Done " << endl;
+#ifdef	_WIN32
+		_unlink("WeightImage.???");
+#else
 		system("rm -f WeightImage.???");
+#endif	//_WIN32
 		WeightImage  -> write_image("WeightImage.img");
 
 		return  RotTransInvF ;
@@ -1763,7 +1772,11 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}
 
+#ifdef	_WIN32
+		_unlink("WeightImage.???");
+#else
 		system("rm -f WeightImage.???");
+#endif	//_WIN32
 		WeightImage  -> write_image("WeightImage.img");
 
 		return  RotTransInvF ;
