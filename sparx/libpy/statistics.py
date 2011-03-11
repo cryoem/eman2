@@ -2534,6 +2534,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	from copy         import deepcopy
 	import sys
 	import time
+	print "k means SSE is called"
 	if CTF[0]:
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
@@ -2623,6 +2624,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
 		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
+		print "ntrials ==", ntrials, "hahaha assign[10:20] == ", assign[10:20]
 	
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
@@ -2955,6 +2957,545 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		
 	# return Cls, assign and Je
 	return Cls, assign
+
+def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
+	# Common
+	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	from statistics  import k_means_locasg2glbasg
+	from time        import time
+	import sys, os
+	
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
+	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
+	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
+	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
+	
+	
+	
+	#print "my id ==", myid, " assign [10:20] ", assign[10:20], " Je===", Je, "Cls==",Cls[ 'n' ], " Ji==", Cls['Ji']
+		
+	if myid == main_node:
+		je_return = [0.0]*(ncpu)
+		for n1 in xrange(ncpu):
+			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, MPI_TAG_UB, MPI_COMM_WORLD)
+ 			else:               je_return[main_node]  = Je
+	else:
+		mpi_send(Je, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+	n_best = -1
+	if(myid == main_node):
+		je_return = map(float, je_return)
+		#print "recived je", je_return
+		min_je= 1.0e30
+				
+		for i in xrange(ncpu):
+			if( je_return[i] < min_je):
+				min_je = je_return[i]
+				n_best = i
+				
+	n_best = bcast_number_to_all(n_best,   source_node = main_node)
+		
+	
+		
+	if myid == main_node:
+		assign_return = [0]*(N)
+		if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
+		else: assign_return = mpi_recv(N,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+	else:
+		if n_best == myid:
+			mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+	
+	if myid == main_node:	
+		r_Cls={}
+		r_Cls['n']   = [0]*K   # number of objects in a given cluster
+		r_Cls['ave'] = [0]*K   # value of cluster average
+		r_Cls['var'] = [0]*K   # value of cluster variance
+		r_Cls['Ji']  = [0]*K   # value of ji
+		r_Cls['k']   =  K	     # value of number of clusters
+		r_Cls['N']   =  N
+		#get 'n'	
+	if myid == main_node:
+			
+		if n_best == main_node: r_Cls['n'] = Cls['n'] 
+		else: r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+	else:
+		if n_best == myid:
+			mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
+		# get 'Ji"		
+	if myid == main_node:
+			
+		if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
+		else: r_Cls['Ji'] = mpi_recv(K,MPI_FLOAT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+	else:
+		if n_best == myid:
+			mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+		
+	for k in xrange( K):	
+		tag_cls_ave = 1000
+		tag_cls_var = 1010	
+		if myid == main_node:
+			
+			if n_best == main_node: 
+				r_Cls['ave'][k] = Cls['ave'][k] 
+				r_Cls['var'][k] = Cls['var'][k]
+			else: 
+				r_Cls['ave'][k] = recv_EMData( n_best, tag_cls_ave )
+				r_Cls['var'] [k]= recv_EMData( n_best, tag_cls_var )
+		
+		else:
+			if n_best == myid:
+				send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+				send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+
+	
+		mpi_barrier(MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	
+	if myid == main_node: return assign_return, r_Cls, je_return
+	else: return 0.0, 0.0, 0.0
+		
+
+	
+
+def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd', myid = 0, main_node =0):
+	from utilities    import model_blank, get_im, running_time
+	from utilities    import print_begin_msg, print_end_msg, print_msg
+	from random       import seed, randint, shuffle
+	from copy         import deepcopy
+	import sys
+	import time
+	
+	if CTF[0]:
+		from filter		import filt_ctf, filt_table
+		from fundamentals	import fftip
+
+		ctf  = deepcopy(CTF[1])
+		ctf2 = deepcopy(CTF[2])
+		CTF  = True
+	else:
+		CTF  = False
+
+	# Simulate annealing use or not
+	if T0 != 0: SA = True
+	else:       SA = False
+
+	if SA:
+		# for simulate annealing
+		from math   import exp
+		from random import random
+
+	if mask != None:
+		if isinstance(mask, basestring):
+			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+
+	N = len(im_M)
+
+	t_start = time.time()	
+	
+	# Information about images
+	if CTF:
+		nx  = im_M[0].get_attr('or_nx')
+		ny  = im_M[0].get_attr('or_ny')
+		nz  = im_M[0].get_attr('or_nz')
+		buf = model_blank(nx, ny, nz)
+		fftip(buf)		
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+	else:
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+		buf  = model_blank(nx, ny, nz)
+
+	# Variables
+	if(rand_seed > 0):  seed(rand_seed)
+	else:               seed()
+	from random import jumpahead
+	if(myid != main_node):  jumpahead(17*myid+123)
+	Cls = {}
+	Cls['n']   = [0]*K     # number of objects in a given cluster
+	Cls['ave'] = [0]*K     # value of cluster average
+	Cls['var'] = [0]*K     # value of cluster variance
+	Cls['Ji']  = [0]*K     # value of Ji
+	Cls['k']   =  K	       # value of number of clusters
+	Cls['N']   =  N
+	assign     = [0]*N
+	
+        if CTF:
+		Cls_ctf2   = {}
+		len_ctm	   = len(ctf2[0])
+
+	## TRIALS
+	if trials > 1:
+		MemCls, MemJe, MemAssign = {}, {}, {}
+	else:
+		trials = 1
+	flag_empty = False	
+	ntrials    = 0
+	wd_trials  = 0
+	SA_run     = SA
+	
+	ALL_EMPTY = True	
+	while ntrials < trials:
+		ntrials += 1
+
+		# for simulate annealing
+		SA = SA_run
+		if SA: T = T0
+	
+		# Init the cluster by an image empty
+		buf.to_zero()
+		for k in xrange(K):
+			Cls['ave'][k] = buf.copy()
+			Cls['var'][k] = buf.copy()
+			Cls['n'][k]   = 0
+			Cls['Ji'][k]  = 0
+
+		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
+		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
+		
+	
+		if CTF:
+			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
+			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+			
+			for im in xrange(N):
+				# compute Sum ctf2
+				for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+				
+				# compute average first step
+				CTFxF = filt_table(im_M[im], ctf[im])
+				Util.add_img(Cls['ave'][assign[im]], CTFxF)
+
+			for k in xrange(K):
+				valCTF = [0] * len_ctm
+				for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+
+			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
+			for n in xrange(N):
+				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+			Je = 0
+			for k in xrange(K):	  Je += Cls['Ji'][k]
+		else:
+			## Calculate averages
+			for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
+			for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+				
+			# Compute Ji = S(im - ave)**2 and Je = S Ji
+			Je = 0
+			for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+			for k in xrange(K):	Je += Cls['Ji'][k]	
+
+		## Clustering		
+		ite       = 0
+		watch_dog = 0
+		old_Je    = 0
+		change    = True
+		order     = range(N)
+
+		if DEBUG: print 'init Je', Je
+
+		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		print_msg('Criterion: %11.6e \n' % Je)
+
+		while change and watch_dog < maxit:
+			ite       += 1
+			watch_dog += 1
+			change     = False
+			shuffle(order)
+			if SA: ct_pert = 0
+
+			for imn in xrange(N):
+				# to select random image
+				im = order[imn]
+				assign_to = -1
+
+				# compute SqEuclidean (objects and centroids)
+				if CTF:
+					# compute the minimum distance with centroids
+					# CTF: (F - CTFxAve)**2
+					CTFxAve = []
+					for k in xrange(K):
+						tmp = filt_table(Cls['ave'][k], ctf[im])
+						CTFxAve.append(tmp.copy())
+					res = Util.min_dist_four(im_M[im], CTFxAve)
+				else:
+					# compute the minimum distance with centroids
+					res = Util.min_dist_real(im_M[im], Cls['ave'])
+
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+						dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+					else:
+						dJe[k] = 0	
+				# Simulate Annealing
+				if SA:
+					
+					
+					# normalize and select
+					mindJe = min(dJe)
+					scale  = max(dJe) - mindJe
+					for k in xrange(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					select = select_kmeans(dJe, T)
+					
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
+				else:
+					max_value = -1.e30
+					for i in xrange( len(dJe) ):
+						if( dJe[i] >= max_value) :
+							max_value = dJe[i]
+							res['pos'] = i
+
+				# moving object and update iteratively
+				if res['pos'] != assign[im]:
+					assign_from = assign[im]
+					assign_to   = res['pos']
+
+					if CTF:
+						# Update average
+
+						# compute valCTF = CTFi / (S ctf2 - ctf2i)
+						valCTF = [0] * len_ctm
+						for i in xrange(len_ctm):
+							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
+							valCTF[i] = ctf[im][i] / valCTF[i]
+						# compute CTFxAve
+						CTFxAve = filt_table(Cls['ave'][assign_from], ctf[im])
+						# compute F - CTFxAve
+						buf.to_zero()
+						buf = Util.subn_img(im_M[im], CTFxAve) 
+						# compute valCTF * (F - CTFxAve)
+						buf = filt_table(buf, valCTF)
+						# sub the value at the average
+						Util.sub_img(Cls['ave'][assign_from], buf)
+
+						# compute valCTF = CTFi / (S ctf2 + ctf2i)
+						valCTF = [0] * len_ctm
+						for i in xrange(len_ctm):
+							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
+						# compute CTFxAve
+						CTFxAve = filt_table(Cls['ave'][assign_to], ctf[im])
+						# compute F - CTFxAve
+						buf.to_zero()
+						buf = Util.subn_img(im_M[im], CTFxAve) 
+						# compute valCTF * (F - CTFxAve)
+						buf = filt_table(buf, valCTF)
+						# add the value at the average
+						Util.add_img(Cls['ave'][assign_to], buf)
+					else:
+						# Update average
+						buf.to_zero()
+						buf = Util.mult_scalar(Cls['ave'][assign_from], float(Cls['n'][assign_from]))
+						Util.sub_img(buf,im_M[im])
+						Cls['ave'][assign_from] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_from]-1))
+
+						buf.to_zero()
+						buf = Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
+						Util.add_img(buf, im_M[im])
+						Cls['ave'][assign_to] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
+
+					# new number of objects in clusters
+					Cls['n'][assign_from] -= 1
+					assign[im]             = assign_to
+					Cls['n'][assign_to]   += 1
+					if CTF:
+						# update Sum ctf2
+						for i in xrange(len_ctm):
+							Cls_ctf2[assign_from][i] -= ctf2[im][i]
+							Cls_ctf2[assign_to][i]   += ctf2[im][i]
+														
+					# empty cluster control
+					if Cls['n'][assign_from] <= 1:
+						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
+						flag_empty = True
+												
+					change = True
+
+				# empty cluster
+				if flag_empty: break
+
+			# empty cluster
+			if flag_empty: break
+			
+			if CTF:
+				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
+				for k in xrange(K): Cls['Ji'][k] = 0
+				for n in xrange(N):
+					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Je = 0
+				for k in xrange(K):	  Je += Cls['Ji'][k]
+			else:
+				# Compute Je
+				Je = 0
+				for k in xrange(K):     Cls['Ji'][k] = 0
+				for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for k in xrange(K):	Je += Cls['Ji'][k]
+	
+			# threshold convergence control
+			if Je != 0: thd = abs(Je - old_Je) / Je
+			else:       thd = 0
+
+			# Simulate annealing, update temperature
+			if SA:
+				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
+				T *= F
+				if T < 0.009: SA = False
+				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
+			else:
+				if thd < 1e-8: watch_dog = maxit
+				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
+				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
+
+			old_Je = Je
+
+		# if no empty cluster
+		if not flag_empty:
+
+			if CTF:
+				## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
+				for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+				for im in xrange(N):
+					# compute Sum ctf2
+					for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+					# compute average first step
+					CTFxF = filt_table(im_M[im], ctf[im])
+					Util.add_img(Cls['ave'][assign[im]], CTFxF)
+				for k in xrange(K):
+					valCTF = [0] * len_ctm
+					for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
+				for k in xrange(K): Cls['Ji'][k] = 0
+				for n in xrange(N):
+					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Je = 0
+				for k in xrange(K):	  Je += Cls['Ji'][k]
+			else:
+				# Calculate the real averages, because the iterations method cause approximation
+				buf.to_zero()
+				for k in xrange(K):     Cls['ave'][k] = buf.copy()
+				for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
+				for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+				# Compute the accurate Je, because during the iterations Je is aproximated from average
+				Je = 0
+				for k in xrange(K):     Cls['Ji'][k] = 0
+				for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for k in xrange(K):	Je += Cls['Ji'][k]	
+
+			# memorize the result for this trial	
+			if trials > 1:
+				MemCls[ntrials-1]    = deepcopy(Cls)
+				MemJe[ntrials-1]     = deepcopy(Je)
+				MemAssign[ntrials-1] = deepcopy(assign)
+				print_msg('# Criterion: %11.6e \n' % Je)
+				ALL_EMPTY = False
+			# set to zero watch dog trials
+			wd_trials = 0
+		else:
+			flag_empty  = False
+			wd_trials  += 1
+			if wd_trials > 10:
+				
+				if trials > 1:
+					MemJe[ntrials-1] = 1e10
+					if ntrials == trials:
+						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+						#sys.exit()
+						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				else:
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sys.exit()
+				wd_trials = 0
+			else:
+				ntrials -= 1
+
+	if trials > 1:
+		if ALL_EMPTY:
+			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			sys.exit()
+
+	# if severals trials choose the best
+	if trials > 1:
+		val_min = 1.0e20
+		best    = -1
+		for n in xrange(trials):
+			if MemJe[n] < val_min:
+				val_min = MemJe[n]
+				best    = n
+		# affect the best
+		Cls    = MemCls[best]
+		Je     = MemJe[best]
+		assign = MemAssign[best]
+		
+	if CTF:
+		# compute the variance S (F - CTF * Ave)**2
+		buf.to_zero()
+		for k in xrange(K): Cls['var'][k] = buf.copy()
+		
+		for n in xrange(N):
+			CTFxAve = filt_table(Cls['ave'][assign[n]], ctf[n])
+			
+			buf.to_zero()
+			buf     = Util.subn_img(im_M[n], CTFxAve)
+			Util.add_img(Cls['var'][assign[n]], buf) ## **2
+		
+	else:
+		# compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)
+		for im in xrange(N):	Util.add_img2(Cls['var'][assign[im]], im_M[im])
+		for k in xrange(K):
+			buf.to_zero()
+			Util.add_img2(buf, Cls['ave'][k])
+			Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
+			Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
+			
+			# Uncompress ave and var images if the mask is used
+			if mask != None:
+				Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
+				Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
+
+	# write the results if out_dire is defined
+	if CTF:
+		# ifft
+		for k in xrange(K):
+			Cls['ave'][k].do_ift_inplace()
+			Cls['var'][k].do_ift_inplace()
+			Cls['ave'][k].depad()
+			Cls['var'][k].depad()
+
+	# information display
+	running_time(t_start)
+	print_msg('Criterion = %11.6e \n' % Je)
+	for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	
+	# to debug
+	if DEBUG: print Cls['n']
+		
+	# return Cls, assign and Je
+	return Cls, assign, Je
+	
+	
+
 
 
 # K-means MPI with classical method
