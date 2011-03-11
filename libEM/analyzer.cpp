@@ -611,7 +611,7 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
 
         // do Av <-- A*V(:,iter), where A is a cov matrix
         for (i = 0; i < imgsize; i++) Av[i] = 0;
-        fp = fopen(maskedimages.c_str(),"r");
+        fp = fopen(maskedimages.c_str(),"rb");
         for (i = 0; i < nimages; i++) {
            fread(imgdata, sizeof(float), imgsize, fp);
            alpha = sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione);
