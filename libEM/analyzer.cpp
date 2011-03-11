@@ -341,7 +341,7 @@ int PCAlarge::insert_image(EMData * image)
    FILE *fp;
    string scratchfile = string("maskedimages.scratch");
 
-   fp = fopen(scratchfile.c_str(),"a");
+   fp = fopen(scratchfile.c_str(),"ab");
 
    int nx = maskedimage->get_xsize();
    float *imgdata = maskedimage->get_data();
@@ -417,11 +417,17 @@ vector<EMData*> PCAlarge::analyze()
                          vmat, &resnrm);
 
         // remove scratch file
-        sprintf(command,"rm -f %s\n", scratchfile.c_str());
-        status = system(command);
-        if (status != 0) {
-	    fprintf(stderr,"PCAlarge: cannot remove scratchfile\n");
-        }
+#ifdef _WIN32
+	if (_unlink(scratchfile.c_str()) == -1) {
+		fprintf(stderr,"PCAlarge: cannot remove scratchfile\n");
+	}
+#else
+	sprintf(command,"rm -f %s\n", scratchfile.c_str());
+	status = system(command);
+	if (status != 0) {
+		fprintf(stderr,"PCAlarge: cannot remove scratchfile\n");
+	}
+#endif	//_WIN32
 
 	char jobz[2] = "V";
 	float *qmat  = new float[kstep*kstep];
@@ -571,7 +577,7 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
 	V(i,1) = v0(i) / (*beta);
 
     // do Av <-- A*v0, where A is a cov matrix
-    fp = fopen(maskedimages.c_str(),"r");
+    fp = fopen(maskedimages.c_str(),"rb");
     if (fp==NULL) {
 	fprintf(stderr,"Lanczos: cannot open %s\n", maskedimages.c_str());
     }
