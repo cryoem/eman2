@@ -78,7 +78,7 @@ def main():
 
 		global_def.BATCH = True
 		if options.EQ:
-			from development import mrefeq
+			from development import mrefeq_ali2d
 			mrefeq_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		else:
 			from applications import mref_ali2d
