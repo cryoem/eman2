@@ -188,7 +188,10 @@ def db_parse_path(url):
 		url.insert(0,".")									# bdb:dictname?keys
 	else :
 		u1=url[1].split("?",1)
-		if url[0][0]!='/' : url[0]=e2getcwd()+"/"+url[0]	# relative path
+		if os.name=='nt':
+			if url[0][0]!='/' or url[0][1]!=':' : url[0]=e2getcwd()+"/"+url[0] 	# relative path
+		else:
+			if url[0][0]!='/' : url[0]=e2getcwd()+"/"+url[0]	# relative path
 		if url[0][:3]=="../": url[0]=e2getcwd().rsplit("/",1)[0]+"/"+url[0]	# find cwd if we start with ../
 		if len(u1)==1 : return(url[0],url[1],None)			# bdb:path/to#dictname
 		url=[url[0]]+url[1].split("?")						# bdb:path/to#dictname?keys
