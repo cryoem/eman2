@@ -256,7 +256,7 @@ int PCA::dopca_ooc(const string &filename_in, const string &filename_out,
    // compute Ritz vectors (approximate eigenvectors) one at a time
    FILE *fp;
    float *vlan = new float[nx];
-   fp = fopen(lanscratch.c_str(),"r"); 
+   fp = fopen(lanscratch.c_str(),"rb");
    for (int j=0; j<nvec; j++) {
       for (int i = 0; i<nx; i++) ritzvec[i]=0.0;
       for (int jlan = 1; jlan <= kstep; jlan++) {
@@ -533,7 +533,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
     sscal_(&imgsize, &alpha, v, &ione);
     // write v out to a scratch file
     FILE *fp;
-    fp = fopen(lanscratch.c_str(), "w");
+    fp = fopen(lanscratch.c_str(), "wb");
     fwrite(v, sizeof(float), imgsize, fp);
     fclose(fp);
 
@@ -567,7 +567,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
 	}	
 
         // write v out to a scratch file at appropriate position
-        fp = fopen(lanscratch.c_str(),"a");
+        fp = fopen(lanscratch.c_str(),"ab");
         fwrite(v, sizeof(float), imgsize, fp);
         fclose(fp);
 
@@ -583,7 +583,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
         // f <--- Av - V(:,1:iter)*V(:,1:iter)'*Av
         // the out-of-core version reads one Lanczos vector at a time
         scopy_(&imgsize, Av, &ione, resid, &ione);
-        fp = fopen(lanscratch.c_str(),"r");
+        fp = fopen(lanscratch.c_str(),"rb");
         for (int jlan = 1; jlan <= iter; jlan++) {
            fread(v, sizeof(float), imgsize, fp);
            h     = sdot_(&imgsize, v, &ione, Av, &ione);
@@ -594,7 +594,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
 
         // one step of reorthogonalization
         scopy_(&imgsize, resid, &ione, Av, &ione);
-        fp = fopen(lanscratch.c_str(),"r");
+        fp = fopen(lanscratch.c_str(),"rb");
         for (int jlan = 1; jlan <= iter; jlan++) {
            fread(v, sizeof(float), imgsize, fp);
            htmp  = sdot_(&imgsize, v, &ione, Av, &ione);
