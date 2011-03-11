@@ -17905,7 +17905,9 @@ vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
 
 	int kt = nref;
 	unsigned int maxasi = nima/nref;
-	vector<int> id_list[nref];
+//	vector<int> id_list[nref];
+	vector< vector<int> > id_list;
+	id_list.resize(nref);
 	int group;
 	while (kt > 0) {
 		int l = -1;
