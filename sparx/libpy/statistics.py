@@ -2534,7 +2534,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	from copy         import deepcopy
 	import sys
 	import time
-	print "k means SSE is called"
+	
 	if CTF[0]:
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
@@ -2624,8 +2624,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
 		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
-		print "ntrials ==", ntrials, "hahaha assign[10:20] == ", assign[10:20]
-	
+		
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
@@ -3202,10 +3201,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		change    = True
 		order     = range(N)
 
-		if DEBUG: print 'init Je', Je
+		#if DEBUG: print 'init Je', Je
 
-		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-		print_msg('Criterion: %11.6e \n' % Je)
+		#print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		#print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -3322,7 +3321,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 														
 					# empty cluster control
 					if Cls['n'][assign_from] <= 1:
-						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
+						#print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
 												
 					change = True
@@ -3357,12 +3356,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
 				if T < 0.009: SA = False
-				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
-				if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
+				#print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				#if DEBUG: print '> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert)
 			else:
 				if thd < 1e-8: watch_dog = maxit
-				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
-				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
+				#print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
+				#if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
 
 			old_Je = Je
 
@@ -3407,7 +3406,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				MemCls[ntrials-1]    = deepcopy(Cls)
 				MemJe[ntrials-1]     = deepcopy(Je)
 				MemAssign[ntrials-1] = deepcopy(assign)
-				print_msg('# Criterion: %11.6e \n' % Je)
+				#print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3418,13 +3417,11 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				
 				if trials > 1:
 					MemJe[ntrials-1] = 1e10
-					if ntrials == trials:
-						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-						#sys.exit()
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
-					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					#if ntrials == trials:
+						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+					#else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -3432,7 +3429,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 	if trials > 1:
 		if ALL_EMPTY:
-			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			#print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
 
 	# if severals trials choose the best
@@ -3484,9 +3481,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 			Cls['var'][k].depad()
 
 	# information display
-	running_time(t_start)
-	print_msg('Criterion = %11.6e \n' % Je)
-	for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	#running_time(t_start)
+	#print_msg('Criterion = %11.6e \n' % Je)
+	#for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 	
 	# to debug
 	if DEBUG: print Cls['n']
