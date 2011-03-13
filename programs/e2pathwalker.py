@@ -1,5 +1,35 @@
 #!/usr/bin/env python
 
+# Author: Ian Rees (ian.rees@bcm.edu), 08/01/2010
+# Copyright (c) 2000-2011 Baylor College of Medicine
+
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+
+
+import EMAN2
 import collections
 import math
 import random
@@ -14,7 +44,6 @@ import re
 import numpy
 import json
 
-VERSION = 0.1
 
 
 
@@ -709,7 +738,7 @@ def main():
 	Find paths between two atoms in a PDB model
 	"""
 
-	parser = optparse.OptionParser(usage=usage, version=VERSION)
+	parser = optparse.OptionParser(usage=usage, version=EMAN2.EMANVERSION)
 	parser.add_option("--start", type="int",help="Start ATOM")
 	parser.add_option("--end", type="int",help="End ATOM")	
 	parser.add_option("--average", type="float",help="Average Ca-Ca length", default=3.78)
@@ -722,6 +751,8 @@ def main():
 	parser.add_option("--edgefile", type="str" ,help="Load fixed fragment file; one sequence of forced connections per line, separated by space.")	
 	parser.add_option("-e", "--edge", action="append", help="Forced edge: e.g. -e1,3")
 	parser.add_option("--iterations", type="int",help="Iterations", default=1)	
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help='verbose level [0-9], higher number means higher level of verboseness')
+	
 	(options, args) = parser.parse_args()
 
 	filename = args[0]
@@ -742,8 +773,6 @@ def main():
 			solver=options.solver
 		)
 		pw.run()
-
-
 
 
 
