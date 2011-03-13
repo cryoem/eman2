@@ -1606,6 +1606,7 @@ class GUIctf(QtGui.QWidget):
 		
 		if self.plotmode==1:
 			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
+			self.guiplot.set_data((s,self.data[val][7]),"bg(concave)",quiet=True,color=0,linetype=2)
 			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==0: 

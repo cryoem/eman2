@@ -198,7 +198,7 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 			self.parse_new_commands(fin)
 				
 		self.list_widget.clear()
-		items=["%s\t%s(%s)\t%s"%(t[2][5:16],t[3][:4],t[1],t[4]) for t in self.tasks]
+		items=["%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]) for t in self.tasks]
 		self.list_widget.addItems(QtCore.QStringList(items))
 	
 	def animate(self,time):
