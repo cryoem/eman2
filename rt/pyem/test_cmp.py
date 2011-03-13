@@ -56,35 +56,21 @@ class TestCmp(unittest.TestCase):
         
     def test_basic_cmp(self):
         """test basic cmp ..................................."""
-        imgfile1 = "test_basic_cmp_1.hed"
-        TestUtil.make_image_file(imgfile1, IMAGE_IMAGIC, EM_FLOAT, 16,16,4)
+        e1 = EMData(16,16)
+        e1.process_inplace('testimage.noise.uniform.rand')
 
-        e1 = EMData()
-        e1.read_image(imgfile1, 1)
-
-        e2 = EMData()
-        e2.read_image(imgfile1, 2)
-
-        #e1.write_image("test_basic_cmp_out_1.mrc")
-        #e2.write_image("test_basic_cmp_out_2.mrc")
+        e2 = EMData(16,16)
+        e2.process_inplace('testimage.noise.uniform.rand')
 
         dot_score = e2.cmp("dot", e1, {"negative":0, "normalize":1})
-#        self.assertEqual(dot_score, 19944.0)    #todo: dot score not match, anything wrong?
 
         variance_score = e2.cmp("sqeuclidean", e1)
-#        self.assertEqual(variance_score, 0)    #todo: score not match, anything wrong?
         
         phase_score = e2.cmp("phase", e1, {})
-#        testlib.assertfloat(self, phase_score, 1.6488)    #todo: score not match, anything wrong?
         
         e1.do_fft_inplace()
         e2.do_fft_inplace()
         frc_score = e2.cmp("frc", e1, {})
-#        testlib.assertfloat(self, frc_score, -0.4011)    #todo: score not match, anything wrong?
-
-        (hed1,img1) = testlib.get_imagic_filename_pair(imgfile1)
-        testlib.safe_unlink(hed1)
-        testlib.safe_unlink(img1)
     
     def test_QuadMinDotCmp(self):
         """test QuadMinDotCmp ..............................."""
