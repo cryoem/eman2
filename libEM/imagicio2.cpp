@@ -227,8 +227,6 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 
 	check_read_access(image_index);
 
-	int nimg = 1;
-
 	Imagic4D hed;
 	if (image_index == 0) {
 		hed = imagich;
@@ -239,7 +237,9 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 		fread(&hed, sizeof(Imagic4D), 1, hed_file);
 		make_header_host_endian(hed);
 	}
-	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed, false);
+
+	int nz = hed.izlp ? hed.izlp : 1;
+	check_region(area, FloatSize(hed.nx, hed.ny, hed.izlp), is_new_hed, false);
 
     datatype = get_datatype_from_name(imagich.type);
 
@@ -485,7 +485,7 @@ int ImagicIO2::write_header(EMAN::Dict const& dict, int image_index,
 	check_write_access(rw_mode, image_index);
 
 	if (area) {
-		check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.count+1),
+		check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.izlp),
 					 is_new_hed);
 		EXITFUNC;
 		return 0;
