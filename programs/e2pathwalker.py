@@ -86,6 +86,7 @@ class PathWalker(object):
 			self.atomtype = None
 			
 		# Read PDB file
+		# pointmap is a mapping from the PDB atom # to the Path atom #
 		self.pointmap, self.points = self.read_pdb(atomtype=self.atomtype, chain=self.chain)
 
 		# Point graph
@@ -350,6 +351,7 @@ class PathWalker(object):
 			score_tsp = float(score_tsp)
 
 		path = map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")])
+		path = [self.pointmap[i] for i in path]
 		
 		# Save output
 		ret = {
@@ -393,7 +395,7 @@ class PathWalker(object):
 			r = ['%-10s'%i for i in args]
 			return "".join(r)
 		
-		print fmt("TSP Edge", "", "PDB Edge", "", "Distance", "Weight")
+		print fmt("PDB Edge", "", "Distance", "Weight")
 		breaks = []
 
 		pmin = min(path)
@@ -401,8 +403,8 @@ class PathWalker(object):
 		distances = []
 		r = []
 		for i in range(len(path)-1):
-			p1 = self.pointmap.get(path[i])
-			p2 = self.pointmap.get(path[i+1])
+			p1 = path[i]
+			p2 = path[i+1]
 			d1 = '%0.2f'%self.distances.get((p1, p2))
 			d2 = self.weighted.get((p1, p2))
 			distances.append(self.distances.get((p1, p2)))
@@ -679,7 +681,7 @@ class PathWalker(object):
 
 		print "\n=== C-a Ramachandran ==="
 		
-		points = map(self.points.get, map(self.pointmap.get, path))
+		points = map(self.points.get, path)
 		# filename = filename or self.basename+".out.angles"
 
 		out=[]
