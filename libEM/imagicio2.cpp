@@ -239,12 +239,12 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 	}
 
 	int nz = hed.izlp ? hed.izlp : 1;
-	check_region(area, FloatSize(hed.nx, hed.ny, hed.izlp), is_new_hed, false);
+	check_region(area, FloatSize(hed.nx, hed.ny, nz), is_new_hed, false);
 
     datatype = get_datatype_from_name(imagich.type);
 
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, hed.izlp, &zlen);
+	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nz, &zlen);
 
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
@@ -360,7 +360,7 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 	dict["euler_gamma"] = gamma;
 	Transform *trans = new Transform();
 	trans->set_rotation(Dict("type", "imagic", "alpha", alpha, "beta", beta, "gamma", gamma));
-	if( hed.izlp<=1 ) {
+	if( nz<=1 ) {
 		dict["xform.projection"] = trans;
 	}
 	else {
