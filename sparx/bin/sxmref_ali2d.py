@@ -78,8 +78,10 @@ def main():
 
 		global_def.BATCH = True
 		if options.EQ:
-			from development import mrefeq_ali2d
-			mrefeq_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
+			from development import mrefeq_ali2df
+			#print  "  calling MPI",options.MPI,options.function,options.rand_seed
+			#print  args
+			mrefeq_ali2df(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		else:
 			from applications import mref_ali2d
 			mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
