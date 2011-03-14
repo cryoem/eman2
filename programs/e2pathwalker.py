@@ -86,9 +86,8 @@ class PathWalker(object):
 			self.atomtype = None
 			
 		# Read PDB file
-		# pointmap is a mapping from the PDB atom # to the Path atom #
-		self.pointmap, self.points = self.read_pdb(atomtype=self.atomtype, chain=self.chain)
-
+		self.points = self.read_pdb(atomtype=self.atomtype, chain=self.chain)
+		
 		# Point graph
 		self.itree = {}
 
@@ -129,7 +128,6 @@ class PathWalker(object):
 			self.end = end
 
 		print "Note: linking start/end: ", self.start, self.end
-
 		self.fixededges.append((self.start, self.end))
 	
 		# Process forced edges
@@ -314,7 +312,7 @@ class PathWalker(object):
 		self.write_tsplib(filename=tspfile)
 		os.system("concorde -x -m -o %s %s"%(outfile, tspfile))
 
-		return self.readtour_concorde(outfile)
+		return self._readtour_concorde(outfile)
 
 
 
@@ -334,12 +332,12 @@ class PathWalker(object):
 		self.write_tsplib(filename=tspfile)
 		os.system("LKH %s"%(lkhfile))
 		
-		return self.readtour_lkh(outfile)
+		return self._readtour_lkh(outfile)
 		
 		
 		
 		
-	def readtour_lkh(self, tourfile):		
+	def _readtour_lkh(self, tourfile):		
 		# TSP Tour file format..
 		f = open(tourfile)
 		r = [i.strip() for i in f.readlines()]
@@ -351,7 +349,10 @@ class PathWalker(object):
 			score_tsp = float(score_tsp)
 
 		path = map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")])
-		path = [self.pointmap[i] for i in path]
+		
+		# We need to convert the TSP #'s back to atom #s
+		keyorder = sorted(self.points.keys())				
+		path = [keyorder[i-1] for i in path]
 		
 		# Save output
 		ret = {
@@ -364,7 +365,7 @@ class PathWalker(object):
 
 
 
-	def readtour_concorde(self, tourfile):
+	def _readtour_concorde(self, tourfile):
 		# Concorde Tour file format:
 		# numpoints
 		# point1, point2, point3...
@@ -416,9 +417,9 @@ class PathWalker(object):
 			else:
 				r.append(False)
 				breaks.append((d1, d2))
-				b = "BREAK!"
+				b = "*"
 				
-			print fmt(path[i], path[i+1], p1, p2, d1, d2, b)
+			print fmt(p1, p2, d1, d2, b)
 
 		r2 = []
 		j = 0
@@ -583,7 +584,6 @@ class PathWalker(object):
 	def read_pdb(self, atomtype=None, chain=None):
 		print "\n=== Reading %s (atom type %s, chain %s) ==="%(self.filename, atomtype, chain)
 		points = {}
-		pointmap = {}
 
 		pdbfile = open(self.filename, "r")
 		lines = pdbfile.readlines()
@@ -617,7 +617,6 @@ class PathWalker(object):
 			pos = int(line[23:27])
 			x = [float(line[30:38].strip()), float(line[38:46].strip()), float(line[46:54].strip())]
 			points[pos] = tuple([i+self.makenoise() for i in x])
-			pointmap[count] = pos
 			count += 1
 
 		if len(points) == 0:
@@ -625,7 +624,7 @@ class PathWalker(object):
 		
 		print "Loaded %s C-a points"%len(points)
 		
-		return pointmap, points
+		return points
 
 
 
@@ -648,18 +647,17 @@ class PathWalker(object):
 		
 		fout.write("\n".join(header))
 
-		#print "POINTMAP"
-		#print self.pointmap
-
+		# TSPlib expects edges to start at #1
+		keyorder = sorted(self.points.keys())		
+		
 		if self.fixededges:
 			fout.write("FIXED_EDGES_SECTION\n")
 			for i in self.fixededges:
-				fout.write("%s %s\n"%(i[0], i[1]))
+				fout.write("%s %s\n"%(keyorder.index(i[0])+1, keyorder.index(i[1])+1))
 			fout.write("-1\n")
 
 		fout.write("EDGE_WEIGHT_SECTION\n")
 
-		keyorder = sorted(self.points.keys())		
 		for point1 in keyorder:
 			row = []
 			for point2 in keyorder:
@@ -759,7 +757,8 @@ def main():
 
 	filename = args[0]
 	for j in range(options.iterations):
-		print "Iteration:", j
+		if options.iterations > 1:
+			print "Iteration:", j
 	
 		pw = PathWalker(
 			filename=filename, 
