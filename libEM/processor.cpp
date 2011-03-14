@@ -9853,7 +9853,7 @@ int MPICUDA_kmeans::random_ASG(long int rnd) {
     int flag = 0;
     int i, k;
     std::cout<<"111111111  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
-    /*for (k = 0; k < K; k++) h_NC[k] = 0;
+    for (k = 0; k < K; k++) h_NC[k] = 0;
     while (ret > 0) {
 	ret--;
 	for (i = 0; i < N; i++) {
@@ -9874,35 +9874,8 @@ int MPICUDA_kmeans::random_ASG(long int rnd) {
 	    }
 	if (flag == 1) ret = 0;
 	}
-    }*/
-   /* std::cout<<"2222222222  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
-    h_ASG[0] = 0;
-    h_ASG[1] = 0;
-    h_ASG[2] = 0;
-    h_ASG[3] = 1;
-    h_ASG[4] = 1;
-    h_ASG[5] = 1;
-    h_ASG[6] = 2;
-    h_ASG[7] = 2;
-    h_ASG[8] = 2;
-    for (k = 0; k < K; k++) h_NC[k] = 0;
-    ///for (i = 0; i < N; i++) {
-	//   h_NC[h_ASG[i]]++;
-	//}
-    h_NC[0] = 3;
-    h_NC[1] = 3;
-    h_NC[2] = 3;
-    std::cout<<"initial h_ASG=="<<h_ASG[0]<<"  "<<h_ASG[1]<<"  "<<h_ASG[2]<<"  "<<h_ASG[3]<<"  "<<h_ASG[4]<<"  "<<h_ASG[5]<<"  "<<h_ASG[6]<<"  "<<h_ASG[7]<<"   "<<h_ASG[8]<<std::endl;*/
-    for (k = 0; k < K; k++) h_NC[k] = 0;
-    for (i = 0; i < N; i++) {
-    	h_ASG [i] = i%K;
-	h_NC[h_ASG[i]]++;
     }
-    
-      
-    std::cout<<"h_NC=="<<h_NC[0]<<"  "<<h_NC[1]<<"  "<<h_NC[2]<<std::endl;
-    std::cout<<"h_ASG=="<<h_ASG[0]<<"  "<<h_ASG[1]<<"  "<<h_ASG[2]<<"  "<<h_ASG[3]<<"  "<<h_ASG[4]<<"  "<<h_ASG[5]<<"  "<<h_ASG[6]<<"  "<<h_ASG[7]<<"   "<<h_ASG[8]<<std::endl;
-    
+   
     return 0;
 }
 
@@ -10009,24 +9982,24 @@ int MPICUDA_kmeans::one_iter() {
     return status;
 }
 // k-means SSE one iteration help function
-int MPICUDA_kmeans::init_dist() {
+/*int MPICUDA_kmeans::init_dist() {
    
     int status = cuda_mpi_kmeans_dist_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
    
     return status;
-}
+}*/
 
-int MPICUDA_kmeans::AVE_to_host() {
+/*int MPICUDA_kmeans::AVE_to_host() {
    
     int status = cuda_mpi_kmeans_copy_ave_from_device(h_AVE, d_AVE, params);
    
     return status;
-}
+}*/
 
 
 int one_iter_SA();
 // k-means SSE one iteration
-int MPICUDA_kmeans::one_iter_SSE() {
+/*int MPICUDA_kmeans::one_iter_SSE() {
     //if ( ite == 0)
     
     if( ite ==0) {
@@ -10042,7 +10015,7 @@ int MPICUDA_kmeans::one_iter_SSE() {
  
     ite++;
     return status;
-}
+}*/
 // k-means SA one iteration
 int MPICUDA_kmeans::one_iter_SA() {
     int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, T, params);

@@ -160,7 +160,7 @@ int cuda_mpi_kmeans(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, fl
 }
 
 // k-means SSE init dist
-int cuda_mpi_kmeans_dist_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, float* d_IM, float* h_IM2, float* h_AVE2, unsigned short int* h_ASG, unsigned int* h_NC, int* params) {
+/*int cuda_mpi_kmeans_dist_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, float* d_IM, float* h_IM2, float* h_AVE2, unsigned short int* h_ASG, unsigned int* h_NC, int* params) {
     //           0, 1, 2,         3,        4
       // params = [N, m, K, flag_stop, ct_im_mv]
     int N = params[0];
@@ -185,7 +185,7 @@ int cuda_mpi_kmeans_dist_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d
     // load averages to the device memory
     status = cublasSetVector(size_AVE, sizeof(float), h_AVE, 1, d_AVE, 1);
     if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
-    /*// compute the distances
+    // compute the distances
     cublasGetError();
     cublasSgemm('t', 'n', K, N, m, alpha, d_AVE, m, d_IM, m, beta, d_DIST, K);
     status = cublasGetError();
@@ -208,12 +208,12 @@ int cuda_mpi_kmeans_dist_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d
 	}
 	
     }
-    printf("initial distance\n");*/
+    printf("initial distance\n");
     
     return EXIT_OK;
-}
+}*/
 
-int cuda_mpi_kmeans_copy_ave_from_device(float* h_AVE, float* d_AVE,int* params) {
+/*int cuda_mpi_kmeans_copy_ave_from_device(float* h_AVE, float* d_AVE,int* params) {
     int m = params[1];
     int K = params[2];
     cublasStatus status;
@@ -222,10 +222,10 @@ int cuda_mpi_kmeans_copy_ave_from_device(float* h_AVE, float* d_AVE,int* params)
     status = cublasGetVector(size_AVE, sizeof(float), d_AVE, 1, h_AVE, 1);
     if (status != CUBLAS_STATUS_SUCCESS) return ERROR_DEVICE;
     return EXIT_OK;
-}
+}*/
 
 // k-means SSE one step
-int cuda_mpi_kmeans_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, float* d_IM, float* h_IM2, float* h_AVE2, unsigned short int* h_ASG, unsigned int* h_NC, int* params, int ite, float & ttt) {
+/*int cuda_mpi_kmeans_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST, float* d_IM, float* h_IM2, float* h_AVE2, unsigned short int* h_ASG, unsigned int* h_NC, int* params, int ite, float & ttt) {
     //           0, 1, 2,         3,        4
     // params = [N, m, K, flag_stop, ct_im_mv]
     int N = params[0];
@@ -377,7 +377,7 @@ int cuda_mpi_kmeans_SSE(float* h_AVE, float* d_AVE, float* h_DIST, float* d_DIST
     
 
     return EXIT_OK;
-}
+}*/
 
 
 // k-means SA one step
