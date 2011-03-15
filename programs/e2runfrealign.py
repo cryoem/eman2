@@ -10,6 +10,7 @@
 # import block
 import os
 import sys
+from EMAN2 import *
 
 if len(sys.argv) != 1:
    print "Please use e2runfrealign.py"
