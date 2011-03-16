@@ -5936,7 +5936,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		e2falist.append("--pbc="+str(params["pbc"]))
 		e2falist.append("--thresh="+str(params["thresh"]))
 			
-		child = subprocess.Popen(e2falist)
+		child = subprocess.Popen(e2falist, shell=True)
 		
 		self.form.close()
 		self.form = None
