@@ -5758,7 +5758,7 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		prflist.append("e2refinefromfrealign.py")
 		prflist.append(edir)
 
-		child = subprocess.Popen(prflist)
+		child = subprocess.Popen(prflist, shell=True)
 		
 		self.form.close()
 		self.form = None
@@ -5813,7 +5813,7 @@ class E2RunFreAlign(WorkFlowTask):
 		prflist.append("e2runfrealign.py")
 		#prflist.append(str(params["iter"]))
 		
-		child = subprocess.Popen(prflist, cwd=edir)
+		child = subprocess.Popen(prflist, cwd=edir, shell=True)
 		
 		self.form.close()
 		self.form = None
