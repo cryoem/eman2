@@ -1715,14 +1715,14 @@ def k_means_init_asg_rnd(N, K):
 def k_means_init_asg_d2w(im, N, K):
 	from random    import randrange, gauss
 	from numpy     import ones
-	from utilities import print_msg
+	#from utilities import print_msg
 	from sys       import exit
 	
 	C = [im[randrange(N)]]
-	print_msg('\n')
+	#print_msg('\n')
 	d = ones((N)) * 1e4
 	for k in xrange(K-1):
-		print_msg('\rInitialization with D2 weighting method... %i / %i' % (k+2, K))
+		#print_msg('\rInitialization with D2 weighting method... %i / %i' % (k+2, K))
 		for n in xrange(N):
 			val = im[n].cmp("SqEuclidean", C[k])
 			if val < d[n]: d[n] = val
@@ -1736,7 +1736,7 @@ def k_means_init_asg_d2w(im, N, K):
 		ind  = int(abs(ind))
 		C.append(im[ps[ind][1]])
 
-	print_msg('\n')
+	#print_msg('\n')
 	assign = [0] * N
 	nc     = [0] * K
 	for n in xrange(N):
@@ -2026,6 +2026,7 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 
 		# limitation of hdf file in the numbers of attributes
 		if flagHDF or TXT:
+			
 			if part != -1:
 				outfile = open(os.path.join(out_seedname, 'kmeans_part_%02i_grp_%03i.txt' % (part + 1, k + 1)), 'w')
 			else:
@@ -2625,6 +2626,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
 		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
 		
+		
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
@@ -2784,6 +2786,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 							Cls_ctf2[assign_to][i]   += ctf2[im][i]
 														
 					# empty cluster control
+					
 					if Cls['n'][assign_from] <= 1:
 						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
@@ -2985,89 +2988,205 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		je_return = map(float, je_return)
 		#print "recived je", je_return
 		min_je= 1.0e30
+		
+		#for i in xrange(ncpu):
+			#print "i ==", i, "Je==", je_return[i]
 				
 		for i in xrange(ncpu):
-			if( je_return[i] < min_je):
-				min_je = je_return[i]
-				n_best = i
+			if( je_return[i] < min_je ):
+				if Je > 0:
+					min_je = je_return[i]
+					n_best = i
+		#print "main_node n_best===", n_best
 				
 	n_best = bcast_number_to_all(n_best,   source_node = main_node)
 		
+	if( n_best >=0):
+		
+		if myid == main_node:
+			assign_return = [0]*(N)
+			if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
+			else: assign_return = mpi_recv(N,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+
+		else:
+			if n_best == myid:
+				mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+		if myid == main_node:	
+			r_Cls={}
+			r_Cls['n']   = [0]*K   # number of objects in a given cluster
+			r_Cls['ave'] = [0]*K   # value of cluster average
+			r_Cls['var'] = [0]*K   # value of cluster variance
+			r_Cls['Ji']  = [0]*K   # value of ji
+			r_Cls['k']   =  K	     # value of number of clusters
+			r_Cls['N']   =  N
+			#get 'n'	
+		if myid == main_node:
+
+			if n_best == main_node: r_Cls['n'] = Cls['n'] 
+			else: r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+
+		else:
+			if n_best == myid:
+				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
+			# get 'Ji"		
+		if myid == main_node:
+
+			if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
+			else: r_Cls['Ji'] = mpi_recv(K,MPI_FLOAT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+
+		else:
+			if n_best == myid:
+				mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+
+		for k in xrange( K):	
+			tag_cls_ave = 1000
+			tag_cls_var = 1010	
+			if myid == main_node:
+
+				if n_best == main_node: 
+					r_Cls['ave'][k] = Cls['ave'][k] 
+					r_Cls['var'][k] = Cls['var'][k]
+				else: 
+					r_Cls['ave'][k] = recv_EMData( n_best, tag_cls_ave )
+					r_Cls['var'] [k]= recv_EMData( n_best, tag_cls_var )
+
+			else:
+				if n_best == myid:
+					send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+					send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+
+
+			mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+
+
+		if myid == main_node: return assign_return, r_Cls, je_return, n_best
+		else: return 0.0, 0.0, 0.0, 0.0
+	else:
+		if myid == main_node: return 0.0, 0.0, je_return, n_best
+		else: return 0.0, 0.0, 0.0, 0.0
+
+
+
+def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
+	# Common
+	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	from statistics  import k_means_locasg2glbasg
+	from time        import time
+	import sys, os
 	
-		
-	if myid == main_node:
-		assign_return = [0]*(N)
-		if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
-		else: assign_return = mpi_recv(N,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
-		
-	else:
-		if n_best == myid:
-			mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
+	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
+	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
+	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 	
-	if myid == main_node:	
-		r_Cls={}
-		r_Cls['n']   = [0]*K   # number of objects in a given cluster
-		r_Cls['ave'] = [0]*K   # value of cluster average
-		r_Cls['var'] = [0]*K   # value of cluster variance
-		r_Cls['Ji']  = [0]*K   # value of ji
-		r_Cls['k']   =  K	     # value of number of clusters
-		r_Cls['N']   =  N
-		#get 'n'	
-	if myid == main_node:
+	
+	
+	#print "my id ==", myid, " assign [10:20] ", assign[10:20], " Je===", Je, "Cls==",Cls[ 'n' ], " Ji==", Cls['Ji']
+	
 			
-		if n_best == main_node: r_Cls['n'] = Cls['n'] 
-		else: r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
-		
-	else:
-		if n_best == myid:
-			mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
-		# get 'Ji"		
 	if myid == main_node:
-			
-		if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
-		else: r_Cls['Ji'] = mpi_recv(K,MPI_FLOAT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
-		
+		je_return = [0.0]*(ncpu)
+		for n1 in xrange(ncpu):
+			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, MPI_TAG_UB, MPI_COMM_WORLD)
+ 			else:               je_return[main_node]  = Je
 	else:
-		if n_best == myid:
-			mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(Je, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 		
+	if  myid == main_node:
+		r_assign = []
+		for i in xrange(ncpu):
+			r_assign.append( [0]*N )
+
+	if myid == main_node:
+		for n in xrange( ncpu ):
+			if n == main_node:
+				r_assign[ n ] = assign
+			else:
+				r_assign[ n ] = mpi_recv(N,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+	else:
+		mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 		
+	
+	if  myid == main_node:
+		r_cls = []
+		for i in xrange(ncpu):
+			
+			t_Cls={}
+			t_Cls['n']   = [0]*K   # number of objects in a given cluster
+			t_Cls['ave'] = [0]*K   # value of cluster average
+			t_Cls['var'] = [0]*K   # value of cluster variance
+			t_Cls['Ji']  = [0]*K   # value of ji
+			t_Cls['k']   =  K	     # value of number of clusters
+			t_Cls['N']   =  N
+			r_cls.append( t_Cls )
+			del t_Cls
+	#print " myiid ==", myid, "Cls['n'] before ==", Cls['n']
+	mpi_barrier(MPI_COMM_WORLD)
+	
+
+	for n in xrange( ncpu ):
+		if myid == main_node:
+			if n == main_node:
+				(r_cls[n])['n'] = Cls['n']
+			else:
+				(r_cls[n])['n'] = mpi_recv(K,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+		else:
+			if myid == n: 
+				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
+		mpi_barrier(MPI_COMM_WORLD)
+	'''if myid == main_node:
+		for n in xrange( ncpu ):
+			print " n==", n, "Cls['n'] after ==", (r_cls[ n ])['n']	'''
+	if myid == main_node:
+		for n in xrange( ncpu ):
+			if n == main_node:
+				(r_cls[n])['Ji'] = Cls['Ji']
+			else:
+				(r_cls[n])['Ji'] = mpi_recv(K,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+	else:
+		mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+
 	for k in xrange( K):	
 		tag_cls_ave = 1000
 		tag_cls_var = 1010	
 		if myid == main_node:
-			
-			if n_best == main_node: 
-				r_Cls['ave'][k] = Cls['ave'][k] 
-				r_Cls['var'][k] = Cls['var'][k]
-			else: 
-				r_Cls['ave'][k] = recv_EMData( n_best, tag_cls_ave )
-				r_Cls['var'] [k]= recv_EMData( n_best, tag_cls_var )
-		
-		else:
-			if n_best == myid:
-				send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
-				send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+			for n in xrange( ncpu):
+				if n == main_node:
+					(r_cls[n])['ave'][k] = Cls['ave'][k]
+					(r_cls[n])['var'][k] = Cls['var'][k]
+				else:
+					(r_cls[n])['ave'][k] = recv_EMData( n, tag_cls_ave )
+					(r_cls[n])['var'][k] = recv_EMData( n, tag_cls_var )
 
-	
+		else:
+			send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+			send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+
+
 		mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
+
 	
-	
-	if myid == main_node: return assign_return, r_Cls, je_return
+
+	if myid == main_node: return r_assign, r_cls, je_return
 	else: return 0.0, 0.0, 0.0
-		
+
 
 	
 
-def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd', myid = 0, main_node =0):
+def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd', myid = 0, main_node =0, jumping = 1):
 	from utilities    import model_blank, get_im, running_time
-	from utilities    import print_begin_msg, print_end_msg, print_msg
+	#from utilities    import print_begin_msg, print_end_msg, print_msg
 	from random       import seed, randint, shuffle
 	from copy         import deepcopy
 	import sys
 	import time
-	
+	#using jumping to change method for initialization
 	if CTF[0]:
 		from filter		import filt_ctf, filt_table
 		from fundamentals	import fftip
@@ -3116,8 +3235,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 	# Variables
 	if(rand_seed > 0):  seed(rand_seed)
 	else:               seed()
-	from random import jumpahead
-	if(myid != main_node):  jumpahead(17*myid+123)
+	if jumping ==1:
+		from random import jumpahead
+		if(myid != main_node):  jumpahead(17*myid+123)
 	Cls = {}
 	Cls['n']   = [0]*K     # number of objects in a given cluster
 	Cls['ave'] = [0]*K     # value of cluster average
@@ -3422,12 +3542,13 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					#else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
-					sys.exit()
+					#sys.exit()
+					return 0.0, 0.0, -1e30
 				wd_trials = 0
 			else:
 				ntrials -= 1
 
-	if trials > 1:
+	'''if trials > 1:
 		if ALL_EMPTY:
 			#print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
@@ -3443,7 +3564,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		# affect the best
 		Cls    = MemCls[best]
 		Je     = MemJe[best]
-		assign = MemAssign[best]
+		assign = MemAssign[best]'''
 		
 	if CTF:
 		# compute the variance S (F - CTF * Ave)**2
@@ -4668,23 +4789,21 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	
+	ext = file_type(stack)
+	if ext == 'txt': TXT = True
+	else:            TXT = False
+	
 	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print_begin_msg('k-means groups_MPI')
+		#print_begin_msg('k-means groups_MPI')
 		t_start = time.time()
 		os.mkdir(outdir)
-
+	print "ncp ==", ncpu, "myid===", myid
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
-	N_min = N
-	for i in xrange(ncpu):
-		N_start, N_stop = MPI_start_end(N, ncpu, i)
-		N_min = min(N_min, N_stop-N_start)
-	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
-	lut                   = LUT[N_start:N_stop]
-	n                     = len(lut)
-	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
+	
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
 
 	if myid == main_node: k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
@@ -4700,7 +4819,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		file_crit.write('# %s %s %s  %s\n' % ('N ', 'Coleman'.ljust(sp), 'Davies-Bouldin'.ljust(sp), 'Harabasz'.ljust(sp)))
 		file_crit.close()
 
-		k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
+		#k_means_headlog(stack, outdir, opt_method, N, [K1, K2], 'CHD', maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu, m)
 
 	# get some criterion
 	for K in KK:
@@ -4709,21 +4828,38 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 			print_msg('| K=%d |====================================================================\n' % K)
 
 		try:
-			if   opt_method == 'cla':
-				[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit,\
-						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
-			elif opt_method == 'SSE':
-				[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,\
-						trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N_min, N, ncpu)
-			else:
-				ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
-				sys.exit()
+						
+			[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, 
+						1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 1)
 
+
+			from statistics import k_means_SSE_combine
+			[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
+			mpi_barrier(MPI_COMM_WORLD)
+
+			if myid == main_node:
+
+				if n_best == -1:
+					print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+					sys.exit()
+					#print_end_msg('k-means MPI end')	
+				#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
+				else:
+					for i in xrange( ncpu ):
+						if( je_return[i] <0 ):
+							print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
+						else:
+							print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
+					crit = k_means_criterion(r_Cls, 'CHD')
+					glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
+					k_means_export(r_Cls, crit, glb_assign, outdir, -1, TXT)
+					#print_end_msg('k-means MPI end')
+			
 		except SystemExit:
 			ERROR('Empty cluster, number of groups to high', 'k_means_groups', 1)
 
 		if myid == main_node:
-			crit = k_means_criterion(Cls, 'CHD')
+			crit = k_means_criterion(r_Cls, 'CHD')
 
 			# res file
 			file_crit = open(outdir + '/' + outdir, 'a')
@@ -5908,7 +6044,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		crit       = k_means_criterion(Cls, critname)
 		glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
-		
+				
 	# end of classification
 	print_end_msg('k-means')
 
@@ -5982,17 +6118,14 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		
 	logging.basicConfig(filename = os.path.join(outdir, 'main_log.txt'), format = '%(asctime)s     %(message)s', level = logging.INFO)
 	if myid == main_node: logging.info('Clustering')
-
-	if(myid != main_node):
-		from random import jumpahead
-		jumpahead(17*myid + 123)
-	# manage random seed
-	rnd = []
+	rnd = [ ]
 	if(rand_seed > 0):
-		for n in xrange(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
+		for n in xrange( 1,ncpu+1):
+			rnd.append( n * (2**n) + rand_seed)
 	else:
 		from random import randint
-		for n in xrange(1, npart + 1): rnd.append(randint(1,91234567))
+		for n in xrange( 1,ncpu+1):
+			rnd.append( randint(1,91234567) )
 	if myid == main_node: logging.info('... Init list random seed: %s' % rnd)
 
 	trials       = 1
@@ -6002,14 +6135,14 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node: logging.info('... Open images')
 
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
-	N_min = N
+	'''N_min = N
 	for i in xrange(ncpu):
 		N_start, N_stop = MPI_start_end(N, ncpu, i)
 		N_min = min(N_min, N_stop-N_start)
 	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
-	n                     = len(lut)
-	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
+	n                     = len(lut)'''
+	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
 
 	if myid == main_node:
 		logging.info('... %d active images found' % N)
@@ -6019,33 +6152,28 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 	# loop over partition
 	if myid == main_node: print_begin_msg('k-means')
-	for n in xrange(npart):
-		# info
-		if myid == main_node:
-			logging.info('...... Start partition: %d' % (n + 1))
-			k_means_headlog(stack, 'partition %d' % (n + 1), opt_method, N, K, 'CHD', maskname, trials, maxit, CTF, T0, F, rnd[n], ncpu, m)
+	
+	
+	[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rnd[myid], maxit,1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 0) # no jumping
+	
+	[r_assign, r_cls, r_je] = k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node)
+			
 
-		flag_cluster = False
-		# classification
-		if   opt_method == 'cla':
-			try:
-				[Cls, assign] = k_means_cla_MPI(IM, mask, K, rnd[n], maxit,\
-				     trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N)
-			except SystemExit:	flag_cluster  = True
-		elif opt_method == 'SSE':
-			try:
-				[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rnd[n], maxit,\
-				     trials, [CTF, ctf, ctf2], F, T0, myid, main_node, N_start, N_stop, N_min, N, ncpu)
-			except SystemExit:      flag_cluster  = True
-		if flag_cluster:
-			if myid == main_node: logging.info('[ERROR] Empty cluster')
-			sys.exit()
-
-		# export partition
-		if myid == main_node:
-			crit       = k_means_criterion(Cls, 'CHD')
-			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
-			k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
+	#print " myiid ==", myid, "Cls['n'] before ==", Cls['n']
+	#print " myiid ==", myid, "assign before ==", assign[20:29]
+	#print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+	mpi_barrier( MPI_COMM_WORLD )
+	if myid == main_node:
+		for n in xrange( ncpu ):
+			r_cls[n]['n'] = map(int, r_cls[n]['n'] )
+			r_assign[n] = map(int, r_assign[n] )
+			
+			print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
+			crit       = k_means_criterion(r_cls[n], 'CHD')
+			glb_assign = k_means_locasg2glbasg(r_assign[n], LUT, Ntot)
+			k_means_export(r_cls[n], crit, glb_assign, outdir, n, TXT)
+			del crit, glb_assign
+			
 			
 	if myid == main_node:
 		# end of classification
@@ -6448,24 +6576,25 @@ def k_means_stab_asg2part(outdir, npart):
 	# first check special case, when membership is export as txt file
 	# due to the limitation of hdf header or the data is TXT file
 	ALL_PART = []
-	if path.isfile(path.join(outdir, 'k_means_part_00_grp_000.txt')):
+	if path.isfile(path.join(outdir, 'kmeans_part_01_grp_001.txt')):
 		from utilities import read_text_file
 		lname = listdir(outdir)
 		K     = 0
 		for name in lname:
-			if name.find('k_means_part_00_grp_') == 0: K += 1
+			if name.find('kmeans_part_01_grp_') == 0: K += 1
 		for n in xrange(npart):
 			part = []
 			for k in xrange(K):
-				lid = read_text_file(path.join(outdir, 'k_means_part_%02i_grp_%03i.txt' % (n, k)), 0)
+				lid = read_text_file(path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
 				lid = array(lid, 'int32')
 				lid.sort()
 				part.append(lid.copy())
 			ALL_PART.append(part)
 	else:
 		for n in xrange(npart):
-			name = path.join(outdir, 'averages_%02i.hdf' % n)
+			name = path.join(outdir, 'averages_%02i.hdf' % n)			
 			K    = EMUtil.get_image_count(name)
+			print "imagename==", name, "npart==",npart, "k==",K
 			part = []
 			for k in xrange(K):
 				im  = get_im(name, k)

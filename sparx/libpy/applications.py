@@ -10498,138 +10498,8 @@ def refvol( vollist, fsclist, output, mask ):
 		volfs[i].write_image( output, i )
 
 # -- K-means main ---------------------------------------------------------------------------
-
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
-		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False,
-		 init_method = 'rnd'):
-	# Common
-	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics  import k_means_locasg2glbasg
-	from time        import time
-	import sys, os
-	if MPI:
-		print "MPI version of kmeans is under development"
-		sys.exit()
-		from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
-		from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-		
-	if CUDA:
-		from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog
-		from statistics import k_means_cuda_export
-		if MPI: from statistics import k_means_CUDA_MPI
-		else:   from statistics import k_means_CUDA, k_means_SSE_CUDA
-	else:
-		from statistics import k_means_init_open_im, k_means_open_im, k_means_headlog
-		from statistics import k_means_criterion, k_means_export
-		if MPI: from statistics import k_means_cla_MPI, k_means_SSE_MPI
-		else:   from statistics import k_means_cla, k_means_SSE
-
-	ext = file_type(stack)
-	if ext == 'txt': TXT = True
-	else:            TXT = False
-
-	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
-		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k_means_main', 1)
-		sys.exit()
-
-	if MPI:
-		sys.argv  = mpi_init(len(sys.argv), sys.argv)
-		ncpu      = mpi_comm_size(MPI_COMM_WORLD)
-		myid      = mpi_comm_rank(MPI_COMM_WORLD)
-		main_node = 0
-		mpi_barrier(MPI_COMM_WORLD)
-
-		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1)
-		mpi_barrier(MPI_COMM_WORLD)
-
-	else:
-		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1)
-
-	if MPI and not CUDA:
-		if myid == main_node: print_begin_msg('k-means')
-		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
-		N_min = N
-		for i in xrange(ncpu):
-			N_start, N_stop = MPI_start_end(N, ncpu, i)
-			N_min = min(N_min, N_stop-N_start)
-		N_start, N_stop       = MPI_start_end(N, ncpu, myid)
-		lut                   = LUT[N_start:N_stop]
-		n                     = len(lut)
-		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, lut, flagnorm)
-
-		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, 
-						      critname, maskname, trials, maxit, CTF, T0, 
-						      F, rand_seed, ncpu, m)
-		
-		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, 
-							[CTF, ctf, ctf2], F, T0, myid, main_node, 
-							N_start, N_stop, N)
-		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,
-				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
-					N_start, N_stop, N_min, N, ncpu)
-		else:
-			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
-			sys.exit()
-
-		if myid == main_node:
-			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
-			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, glb_assign, out_dir, -1, TXT)
-			print_end_msg('k-means')
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-	elif CUDA and not MPI: # added 2009-02-20 16:27:26 # modify 2009-09-23 13:52:29
-		print_begin_msg('k-means')
-		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
-		k_means_cuda_headlog(stack, out_dir, 'cla', N, K, maskname, maxit, T0, F, rand_seed, 1, m)
-		if   opt_method == 'cla':
-			k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm=flagnorm)
-		else:
-			k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, out_dir, TXT, 1, flagnorm=flagnorm)
-		print_end_msg('k-means')
-
-	elif MPI and CUDA: # added 2009-09-22 14:34:45
-		print "tao mpi and cuda"
-		LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
-		if myid == main_node:
-			print_begin_msg('k-means')
-			k_means_cuda_headlog(stack, out_dir, 'cuda', N, K, maskname, maxit, T0, F, rand_seed, ncpu, m)
-		k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, out_dir, TXT, 1, flagnorm=flagnorm)
-		if myid == main_node:
-			print_end_msg('k-means')
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-	else:
-		print_begin_msg('k-means')
-		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
-		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
-		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, 
-					CTF, T0, F, rand_seed, 1, m, init_method)
-		
-		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, 
-					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)
-		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, 
-					trials, [CTF, ctf, ctf2], F, T0, DEBUG, init_method)
-		else:
-			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
-			sys.exit()
-			
-		crit = k_means_criterion(Cls, critname)
-		glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
-		k_means_export(Cls, crit, glb_assign, out_dir, -1, TXT)
-
-		print_end_msg('k-means')
-		
-		
-# K-means main driver
-def k_means_main_new(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname,
 		 CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False,
 		 init_method = 'rnd'):
 	# Common
@@ -10676,7 +10546,9 @@ def k_means_main_new(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, 
 		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1)
 
 	if MPI and not CUDA:
-		if myid == main_node: print_begin_msg('k-means')
+		if myid == main_node:	print_begin_msg('k-means')
+		mpi_barrier(MPI_COMM_WORLD)
+		
 		LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
 		N_min = N
 		
@@ -10689,41 +10561,33 @@ def k_means_main_new(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, 
 						      critname, maskname, trials, maxit, CTF, T0, 
 						      F, rand_seed, ncpu, m)
 		[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, 
-					1, [CTF, ctf, ctf2], F, T0, DEBUG, init_method, myid)
+					1, [CTF, ctf, ctf2], F, T0, DEBUG, init_method, myid = myid, main_node = main_node, jumping = 1)
+					
 				
 		
 		from statistics import k_means_SSE_combine
-		[ assign_return, r_Cls, je_return ] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
+		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		
 		if myid == main_node:
+		
+			if n_best == -1:
+				print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+				sys.exit()
+				print_end_msg('k-means MPI end')	
 			#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
-			
-			crit = k_means_criterion(r_Cls, critname)
-			glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
-			k_means_export(r_Cls, crit, glb_assign, out_dir, -1, TXT)
-			print_end_msg('k-means MPI end')
+			else:
+				for i in xrange( ncpu ):
+					if( je_return[i] <0 ):
+						print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
+					else:
+						print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
+				crit = k_means_criterion(r_Cls, critname)
+				glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
+				k_means_export(r_Cls, crit, glb_assign, out_dir, -1, TXT)
+				print_end_msg('k-means MPI end')
 		
-		
-		'''if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, 
-							[CTF, ctf, ctf2], F, T0, myid, main_node, 
-							N_start, N_stop, N)
-		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit,
-				        trials, [CTF, ctf, ctf2], F, T0, myid, main_node, 
-					N_start, N_stop, N_min, N, ncpu)
-		else:
-			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
-			sys.exit()
-
-		if myid == main_node:
-			glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
-			crit = k_means_criterion(Cls, critname)
-			k_means_export(Cls, crit, glb_assign, out_dir, -1, TXT)
-			print_end_msg('k-means') '''
-			
-		mpi_barrier(MPI_COMM_WORLD)
+	
 	
 	#don't touch below code
 
@@ -10765,7 +10629,6 @@ def k_means_main_new(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, 
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k_means_main', 1,myid)
 			sys.exit()
-		print "SSE size =",Cls['ave'][0].get_xsize()			
 		crit = k_means_criterion(Cls, critname)
 		glb_assign = k_means_locasg2glbasg(assign, LUT, Ntot)
 		k_means_export(Cls, crit, glb_assign, out_dir, -1, TXT)
@@ -10783,8 +10646,8 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 		#ERROR('Output directory exists, please change the name and restart the program', "k_means_groups", 1)
 	
 	if MPI:
-	 	print "MPI version of kmeans group is under development"
-		sys.exit()
+	 	#print "MPI version of kmeans group is under development"
+		#sys.exit()
 		from statistics import k_means_groups_MPI
 		k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
 	elif CUDA:
