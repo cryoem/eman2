@@ -2299,6 +2299,26 @@ def recv_EMData(src, tag):
 	return img
 	'''
 
+def gather_EMData(data, number_of_proc, myid, main_node):
+	"""
+	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
+	"""
+	
+	l = len(data)
+	gathered_data = []
+	if myid == main_node:
+		for i in xrange(number_of_proc):
+			if i == main_node:
+				for k in xrange(l):
+					gathered_data.append(data[k])
+			else:
+				for k in xrange(l):
+					gathered_data.append(recv_EMData(i, i*l+k))
+	else:
+		for k in xrange(l):
+			send_EMData(data[k], main_node, myid*l+k)
+	return gathered_data
+	
 
 def bcast_string_to_all(str_to_send, source_node = 0):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD
