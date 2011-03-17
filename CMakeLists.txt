@@ -464,7 +464,7 @@ ENDIF(WIN32)
 
 IF(PYTHON_INCLUDE_PATH)
     # Check the most generic name first (used by cctbx).
-CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
+CHECK_LIB_ONLY(BOOST boost_python boost/python.hpp)
 IF(BOOST_LIBRARY)
 ELSE(BOOST_LIBRARY)
         CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
