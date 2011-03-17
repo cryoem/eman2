@@ -2201,10 +2201,10 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 		return img
 '''
 
-def send_EMData(img, dst, tag):
+def send_EMData(img, dst, tag, comm=-1):
 	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 	
-	comm = MPI_COMM_WORLD
+	if comm == -1: comm = MPI_COMM_WORLD
 	img_head = []
 	img_head.append(img.get_xsize())
 	img_head.append(img.get_ysize())
@@ -2234,11 +2234,11 @@ def send_EMData(img, dst, tag):
 		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
         '''
 
-def recv_EMData(src, tag):
+def recv_EMData(src, tag, comm=-1):
 	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 	
-	comm = MPI_COMM_WORLD
+	if comm==-1: comm = MPI_COMM_WORLD
 	head_tag = 2*tag
 	img_head = mpi_recv(5, MPI_INT, src, head_tag, comm)
 
