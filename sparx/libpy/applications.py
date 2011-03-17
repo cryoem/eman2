@@ -10546,6 +10546,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "k_means_main ", 1)
 
 	if MPI and not CUDA:
+		
 		if myid == main_node:	print_begin_msg('k-means')
 		mpi_barrier(MPI_COMM_WORLD)
 		
@@ -10558,7 +10559,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		
 		
 		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, 
-						      critname, maskname, trials, maxit, CTF, T0, 
+						      critname, maskname, ncpu, maxit, CTF, T0, 
 						      F, rand_seed, ncpu, m)
 		[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, 
 					1, [CTF, ctf, ctf2], F, T0, DEBUG, init_method, myid = myid, main_node = main_node, jumping = 1)
@@ -10573,7 +10574,6 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		
 			if n_best == -1:
 				print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
-				sys.exit()
 				print_end_msg('k-means MPI end')	
 			#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
 			else:
@@ -10586,7 +10586,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 				glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
 				k_means_export(r_Cls, crit, glb_assign, out_dir, -1, TXT)
 				print_end_msg('k-means MPI end')
-		
+	
 	
 	
 	#don't touch below code
