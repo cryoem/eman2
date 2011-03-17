@@ -6172,6 +6172,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 	
 	n_best = 0
+	#if any of je , 0, n_bes =-1 and broadcast to all
 	if myid == main_node:
 		for n in xrange( ncpu):
 			je_return[n] = float(je_return[n])
@@ -6187,7 +6188,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	mpi_barrier( MPI_COMM_WORLD )
 	if n_best == -1: 
 		if myid == main_node:
-			print_msg('>> K is too big and resulted empty cluters, stop k-mans  \n' )
+			print_msg('>> K is too big and resulted empty cluters, stop k-means  \n' )
 		sys.exit()
 	
 	[r_assign, r_cls] = k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node)
