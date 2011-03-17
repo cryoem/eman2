@@ -40,7 +40,6 @@ OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_JPEG "enable JPEG support" ON)
-OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
 OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 OPTION(ENABLE_SPARX_CUDA "enable SPARX CUDA usage" OFF)
@@ -83,21 +82,20 @@ IF (ENABLE_BOUNDS_CHECKING)
 ENDIF (ENABLE_BOUNDS_CHECKING)
 
 IF (ENABLE_DEBUG)
-    SET (OPT_FLAGS "-DDEBUG -O0 -g")
+    SET (OPT_FLAGS "-DDEBUG -O0 -g -ansi")
 ELSE (ENABLE_DEBUG)
 	IF (ENABLE_PROFILE)
-		SET (OPT_FLAGS "-O2 -g")
+		SET (OPT_FLAGS "-O2 -g -ansi")
 	ELSE (ENABLE_PROFILE)
 		IF (ENABLE_ATHLON)
-			SET (OPT_FLAGS "-O3 -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
+			SET (OPT_FLAGS "-O3 -ansi -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
 		ENDIF(ENABLE_ATHLON)
 		IF (ENABLE_X86_64)
-			SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
+			SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 		ELSE (ENABLE_X86_64)
-			SET (OPT_FLAGS "-O5 -ffast-math")		# This is the default
+			SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
 		ENDIF(ENABLE_X86_64)
 	ENDIF(ENABLE_PROFILE)
-    
 ENDIF (ENABLE_DEBUG)
 
 IF (ENABLE_OPENGL)
@@ -438,6 +436,48 @@ IF(ENABLE_PNG)
     ENDIF (WIN32)    
 ENDIF(ENABLE_PNG)
 
+FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
+    $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+    $ENV{PYTHON_ROOT}/lib/python2.6/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.5/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
+	/usr/local/lib/python2.7/site-packages/numpy/core/include
+	/usr/local/lib/python2.6/site-packages/numpy/core/include
+	/usr/lib64/python2.7/site-packages/numpy/core/include
+	/usr/lib64/python2.6/site-packages/numpy/core/include
+	/usr/lib64/python2.5/site-packages/numpy/core/include
+	/usr/lib64/python2.4/site-packages/numpy/core/include
+	/usr/lib/python2.7/site-packages/numpy/core/include
+	/usr/lib/python2.6/site-packages/numpy/core/include
+	/usr/lib/python2.5/site-packages/numpy/core/include
+    /Library/Python/2.5/site-packages/numpy/core/include
+    /usr/lib/python2.4/site-packages/numpy/core/include
+    /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
+    /usr/include)
+INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH}) 
+
+IF(WIN32)
+	CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
+ELSE(WIN32)
+	CHECK_PYTHON($ENV{PYTHON_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2)
+ENDIF(WIN32)
+
+IF(PYTHON_INCLUDE_PATH)
+    # Check the most generic name first (used by cctbx).
+CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
+IF(BOOST_LIBRARY)
+ELSE(BOOST_LIBRARY)
+        CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
+ENDIF(BOOST_LIBRARY)
+IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
+    ADD_SUBDIRECTORY(libpyEM)
+    ADD_SUBDIRECTORY(pyemtbx)
+ENDIF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
+ELSE(PYTHON_INCLUDE_PATH)
+MESSAGE("WARNING: Python.h not found, ENABLE_PYTHON is set back to OFF")
+OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
+ENDIF(PYTHON_INCLUDE_PATH)
+
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 
 ADD_SUBDIRECTORY(libEM)
@@ -452,50 +492,6 @@ ADD_SUBDIRECTORY(images)
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
 ENDIF(ENABLE_RT)
-
-IF(ENABLE_PYTHON)
-    IF(WIN32)
-		CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
-    ELSE(WIN32)
-		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2)
-    ENDIF(WIN32)
-    
-    IF(PYTHON_INCLUDE_PATH)
-        # Check the most generic name first (used by cctbx).
-	CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
-	IF(BOOST_LIBRARY)
-	ELSE(BOOST_LIBRARY)
-            CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
-	ENDIF(BOOST_LIBRARY)
-	IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
-	    ADD_SUBDIRECTORY(libpyEM)
-	    ADD_SUBDIRECTORY(pyemtbx)
-	ENDIF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
-    ELSE(PYTHON_INCLUDE_PATH)
-	MESSAGE("WARNING: Python.h not found, ENABLE_PYTHON is set back to OFF")
-	OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
-    ENDIF(PYTHON_INCLUDE_PATH)
-
-    FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-        $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-        $ENV{PYTHON_ROOT}/lib/python2.6/site-packages/numpy/core/include
-    	$ENV{PYTHON_ROOT}/lib/python2.5/site-packages/numpy/core/include
-    	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
-		/usr/local/lib/python2.7/site-packages/numpy/core/include
-		/usr/local/lib/python2.6/site-packages/numpy/core/include
-    	/usr/lib64/python2.7/site-packages/numpy/core/include
-    	/usr/lib64/python2.6/site-packages/numpy/core/include
-    	/usr/lib64/python2.5/site-packages/numpy/core/include
-    	/usr/lib64/python2.4/site-packages/numpy/core/include
-    	/usr/lib/python2.7/site-packages/numpy/core/include
-    	/usr/lib/python2.6/site-packages/numpy/core/include
-    	/usr/lib/python2.5/site-packages/numpy/core/include
-	    /Library/Python/2.5/site-packages/numpy/core/include
-	    /usr/lib/python2.4/site-packages/numpy/core/include
-            /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
-	    /usr/include)
-    INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})   
-ENDIF(ENABLE_PYTHON)
 
 IF (ENABLE_SPARX_CUDA)
 	INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
