@@ -4827,6 +4827,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		if myid == main_node:
 			print_msg('\n')
 			print_msg('| K=%d |====================================================================\n' % K)
+			t_start1 = time.time()
 
 		
 
@@ -4836,6 +4837,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 
 		from statistics import k_means_SSE_combine
 		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
+		if myid == main_node: running_time(t_start1)
 		n_best_get = 0
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
@@ -4859,8 +4861,8 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 					else:
 						print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
 				crit = k_means_criterion(r_Cls, 'CHD')
-				glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
-				k_means_export(r_Cls, crit, glb_assign, outdir, -1, TXT)
+				#glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
+				#k_means_export(r_Cls, crit, glb_assign, outdir, -1, TXT)
 				#print_end_msg('k-means MPI end')
 			
 		if n_best_get== -1:
@@ -6088,13 +6090,13 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, maxit = 1e9, flagnorm = False, num_first_matches=1):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT, mpi_send, mpi_recv, MPI_TAG_UB
-	from utilities 	 import print_begin_msg, print_end_msg, print_msg
+	from utilities 	 import print_begin_msg, print_end_msg, print_msg, running_time
 	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_init_open_im, k_means_open_im
 	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_criterion, k_means_locasg2glbasg
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt, k_means_stab_bbenum, k_means_stab_getinfo
 	from applications import MPI_start_end
-	import sys, logging, os, pickle
+	import sys, logging, os, pickle, time
 
 	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
@@ -6154,11 +6156,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		sys.exit()
 
 	# loop over partition
-	if myid == main_node: print_begin_msg('k-means')
+	if myid == main_node: 
+		print_begin_msg('k-means')
+		t_start = time.time()
 	
-	if myid == main_node: k_means_headlog(stack, outdir, opt_method, N, K, 
-						      '', maskname, 1, maxit, CTF, T0, 
-						      F, rand_seed, ncpu, m)
 	[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rnd[myid], maxit,1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 0) # no jumping
 	
 	
@@ -6196,7 +6197,9 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		for n in xrange( ncpu ):
 			r_cls[n]['n'] = map(int, r_cls[n]['n'] )
 			r_assign[n] = map(int, r_assign[n] )
-			
+			k_means_headlog(stack, outdir, opt_method, N, K, 
+						      '', maskname, 1, maxit, CTF, T0, 
+						      F, rnd[n], ncpu, m)
 			print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
 			crit       = k_means_criterion(r_cls[n], 'CHD')
 			glb_assign = k_means_locasg2glbasg(r_assign[n], LUT, Ntot)
@@ -6206,6 +6209,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			
 	if myid == main_node:
 		# end of classification
+		running_time(t_start)
 		print_end_msg('k-means')
 
 		# convert all assignments to partition

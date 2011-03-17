@@ -48,8 +48,8 @@ def main():
 	parser.add_option("--CTF",         action="store_true", default=False,      help="Perform clustering using CTF information")
 	parser.add_option("--rand_seed",   type="int",          default=-1,         help="Random seed of initial (default random)" )
 	parser.add_option("--maxit",       type="int",          default=100,        help="Mimimum number of iterations within K-means")
-	parser.add_option("--F",           type="float",        default=0.0,        help="Factor to decrease temperature in simulated annealing, ex.: 0.9")
-	parser.add_option("--T0",          type="float",        default=0.0,        help="Initial temperature in simulated annealing, ex: 100")
+	#parser.add_option("--F",           type="float",        default=0.0,        help="Factor to decrease temperature in simulated annealing, ex.: 0.9")
+	#parser.add_option("--T0",          type="float",        default=0.0,        help="Initial temperature in simulated annealing, ex: 100")
 	parser.add_option("--MPI",         action="store_true", default=False,      help="Use MPI version")
 	parser.add_option("--debug",       action="store_true", default=False,      help="Debug output")
 
@@ -74,7 +74,7 @@ def main():
 			disable_bdb_cache()
 		from applications import k_means_groups
 		global_def.BATCH = True
-		k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, options.F, options.T0, options.MPI, False, options.debug)
+		k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, 0.0, 0.0, options.MPI, False, options.debug)
 		global_def.BATCH = False
 		
 		if options.MPI:

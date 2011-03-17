@@ -10507,6 +10507,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	from statistics  import k_means_locasg2glbasg
 	from time        import time
 	import sys, os
+	#import time
 	if MPI:
 		from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
 		from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
@@ -10558,9 +10559,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
 		
 		
-		if myid == main_node: k_means_headlog(stack, out_dir, opt_method, N, K, 
+		if myid == main_node: 
+			k_means_headlog(stack, out_dir, opt_method, N, K, 
 						      critname, maskname, ncpu, maxit, CTF, T0, 
 						      F, rand_seed, ncpu, m)
+			t_start = time()
+		
 		[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rand_seed, maxit, 
 					1, [CTF, ctf, ctf2], F, T0, DEBUG, init_method, myid = myid, main_node = main_node, jumping = 1)
 					
@@ -10569,12 +10573,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from statistics import k_means_SSE_combine
 		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
-		
 		if myid == main_node:
 		
 			if n_best == -1:
 				print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
-				print_end_msg('k-means MPI end')	
+				print_end_msg('k-means MPI end')
+				running_time(t_start)	
 			#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
 			else:
 				for i in xrange( ncpu ):
@@ -10582,6 +10586,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 						print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
 					else:
 						print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
+				running_time(t_start)
 				crit = k_means_criterion(r_Cls, critname)
 				glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
 				k_means_export(r_Cls, crit, glb_assign, out_dir, -1, TXT)
@@ -10639,7 +10644,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 # -- K-means groups ---------------------------------------------------------------------------
 			
 # K-means groups driver
-def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
+def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF=False, F=0.0, T0=0.0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False):
 
 	#import os
 	#if os.path.exists(out_file):

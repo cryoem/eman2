@@ -40,12 +40,12 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5 --F=0.9 --T0=5.0 --th_nobj=10 --rand_seed=10 --opt_method=SSE --maxit=1000 --normalize --CTF --CUDA --MPI"
+	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5  --th_nobj=10 --rand_seed=10 --opt_method=SSE --maxit=1000 --normalize --CTF  --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for K-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
-	parser.add_option("--F",              type="float",        default=0.0,       help="Cooling factor in simulated annealing, <1.0")
-	parser.add_option("--T0",             type="float",        default=0.0,       help="Simulated annealing first temperature")
+	#parser.add_option("--F",              type="float",        default=0.0,       help="Cooling factor in simulated annealing, <1.0")
+	#parser.add_option("--T0",             type="float",        default=0.0,       help="Simulated annealing first temperature")
 	parser.add_option("--th_nobj",        type="int",          default=1,         help="Cleanning threshold, classes with number of images < th_nobj are removed (default 1)")
 	parser.add_option("--rand_seed",      type="int",          default=0,         help="Random seed")
 	#parser.add_option("--opt_method",     type='string',       default='SSE',     help="K-means method: SSE (default), cla")
@@ -70,11 +70,6 @@ def main():
 		if options.nb_part < 2:
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
-
-		if options.F != 0 and options.T0 == 0:
-			sys.stderr.write('ERROR: is F is set you must also set T0\n\n')
-			sys.exit()
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -88,7 +83,7 @@ def main():
 				k_means_stab_MPICUDA_stream_YANG(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
 			else:'''
 			from  statistics import  k_means_stab_MPI_stream
-			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
+			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		else:
 			'''if options.CUDA:
 				from  development  import  k_means_stab_CUDA_stream
@@ -96,7 +91,7 @@ def main():
 			else:'''
 			
 			from  statistics  import  k_means_stab_stream
-			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
+			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		global_def.BATCH = False
 
 		if options.MPI:

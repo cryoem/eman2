@@ -48,8 +48,8 @@ def main():
 	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
 	parser.add_option("--rand_seed",  type="int",          default=-1,        help="Random seed of initial (default random)" )
 	parser.add_option("--crit",       type="string",       default="D",       help="Criterions: Coleman [C], Harabasz[H], Davies-Bouldin[D], All [all]")
-	parser.add_option("--F",          type="float",        default=0.0,       help="Cooling in simulated annealing, ex.: 0.9")
-	parser.add_option("--T0",         type="float",        default=0.0,       help="Initial temperature in simulated annealing, ex: 100")
+	#parser.add_option("--F",          type="float",        default=0.0,       help="Cooling in simulated annealing, ex.: 0.9")
+	#parser.add_option("--T0",         type="float",        default=0.0,       help="Initial temperature in simulated annealing, ex: 100")
 	parser.add_option("--MPI",        action="store_true", default=False,     help="Use MPI version")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
 	parser.add_option("--normalize",  action="store_true", default=False,     help="Normalize images under the mask")
@@ -76,7 +76,7 @@ def main():
 		from  applications  import  k_means_main
 		global_def.BATCH = True
 		k_means_main(args[0], args[1], mask, "SSE", options.K, options.rand_seed, 
-			     options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, 
+			     options.maxit, options.trials, options.crit, options.CTF, 0.0, 0.0, 
 			     options.MPI, False, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
                 if options.MPI:
