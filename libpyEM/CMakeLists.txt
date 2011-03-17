@@ -1,22 +1,5 @@
-IF(WIN32)	
-    LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2)
-ELSE(WIN32)
-    SET(CMAKE_CXX_FLAGS_DEBUG "")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_ORIG_FLAGS} ${EMAN_CXX_FLAGS} -O0")
-    SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -O0")
-    ## On linux, linking agains libpython24.a fails, and libpython24.so is
-    ## not available in the default cctbx configuration.
-    ## 
-    ## LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2)
-    LINK_LIBRARIES(${BOOST_LIBRARY}  EM2)
-ENDIF(WIN32)
-
 #this definition is for boost.python > 1.35.0 
 ADD_DEFINITIONS(-DBOOST_PYTHON_NO_PY_SIGNATURES)
-
-IF(APPLE)	
-    LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2)
-ENDIF(APPLE)
 
 INCLUDE_DIRECTORIES(${EMAN_SOURCE_DIR}/libpyEM ${BOOST_INCLUDE_PATH} ${PYTHON_INCLUDE_PATH})
 
@@ -28,19 +11,21 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	IF(WIN32)
 		ADD_LIBRARY(lib${libname} SHARED lib${libname}.cpp ${srcfile})		
-		#INSTALL_TARGETS(/lib RUNTIME_DIRECTORY /lib lib${libname})
+		TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
 		INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/release/lib${libname}.dll
 				DESTINATION	lib
 				RENAME lib${libname}.pyd)
 	ELSE(WIN32)
 		IF(APPLE)
 			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+			TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
 			INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/lib${libname}.dylib
 				DESTINATION	lib
 				RENAME lib${libname}.so)	
 		ELSE(APPLE)
 			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
-			INSTALL_TARGETS(/lib ${libname})
+			TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY})
+			INSTALL(TARGETS ${libname} DESTINATION lib)
 		ENDIF(APPLE)
 	ENDIF(WIN32)
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
@@ -75,7 +60,6 @@ IF(ENABLE_OPENGL)
     ADD_PYSTE_LIB(pyGLUtils2)
     
     IF(WIN32)
-    	#TARGET_LINK_LIBRARIES(libpyGLUtils2 GLEM2 ${GL_LIBRARY} ${GLU_LIBRARY})
     	TARGET_LINK_LIBRARIES(libpyGLUtils2 GLEM2)
     ELSE(WIN32)
 		TARGET_LINK_LIBRARIES(pyGLUtils2 GLEM2)
@@ -95,15 +79,10 @@ IF(ENABLE_OPENGL)
 	ENDIF(ENABLE_FTGL)
 ENDIF(ENABLE_OPENGL)
 
-INSTALL_FILES(/lib "^.+\\.py$")
-INSTALL_FILES(/include "^.+\\.h$")
-#INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py gui/emimagecanvas.py)
-INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/emshape.py)
+FILE(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
+INSTALL(FILES ${empythonlibs} DESTINATION lib)
 
-INSTALL_FILES(/lib FILES qtgui/emimage3diso.py qtgui/emglobjects.py qtgui/emimage3dslice.py qtgui/emimage3dvol.py qtgui/emimage3dsym.py qtgui/emapplication.py qtgui/emanimationutil.py qtgui/embrowse.py  qtgui/emselector.py qtgui/emdatastorage.py qtgui/emform.py qtgui/emsprworkflow.py qtgui/emtprworkflow.py qtgui/emlights.py qtgui/emplot3d.py qtgui/emsave.py qtgui/em3Dfonts.py qtgui/emboxerbase.py)
+FILE(GLOB headerfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+INSTALL(FILES ${headerfiles} DESTINATION include)
 
-INSTALL_FILES(/lib FILES  qtgui/empdbviewer.py qtgui/empdbvaltool.py qtgui/emfoldhunterstat.py)
-
-INSTALL_FILES(/lib FILES wxgui/wxemimage.py wxgui/wximagecontrol.py wxgui/wxValSlider.py)
-INSTALL_PROGRAMS(/bin qtgui/emselector.py)
-
+ADD_SUBDIRECTORY(qtgui)

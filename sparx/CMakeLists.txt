@@ -1,1 +1,2 @@
-SUBDIRS(bin libpy)
+ADD_SUBDIRECTORY(bin)
+ADD_SUBDIRECTORY(libpy)
