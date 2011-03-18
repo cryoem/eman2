@@ -394,17 +394,6 @@ IF (ENABLE_FTGL)
 	ENDIF (ENABLE_STATIC_FTGL)
 ENDIF (ENABLE_FTGL)
 
-INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} 
-					${EMAN_SOURCE_DIR}/libEM 
-					${GL_INCLUDE_PATH}
-					${GSL_INCLUDE_PATH} 
-					${GSL_INCLUDE_PATH}/gsl 
-					${FFTW_INCLUDE_PATH}
-					${DJBFFT_INCLUDE_PATH} 
-					${ACML_INCLUDE_PATH}
-					/usr/include/freetype2
-				   ) 
-
 
 IF(ENABLE_TIFF)
     CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
@@ -469,18 +458,28 @@ IF(BOOST_LIBRARY)
 ELSE(BOOST_LIBRARY)
         CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
 ENDIF(BOOST_LIBRARY)
-IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
-    ADD_SUBDIRECTORY(libpyEM)
-    ADD_SUBDIRECTORY(pyemtbx)
-ENDIF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
 ELSE(PYTHON_INCLUDE_PATH)
-MESSAGE("WARNING: Python.h not found, ENABLE_PYTHON is set back to OFF")
-OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
+MESSAGE("ERROR: Python.h not found")
 ENDIF(PYTHON_INCLUDE_PATH)
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 
+INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} 
+			${EMAN_SOURCE_DIR}/libEM
+                        ${GL_INCLUDE_PATH}
+                        ${GSL_INCLUDE_PATH}
+                        ${GSL_INCLUDE_PATH}/gsl
+                        ${FFTW_INCLUDE_PATH}
+                        ${DJBFFT_INCLUDE_PATH}
+                        ${ACML_INCLUDE_PATH}
+			${BOOST_INCLUDE_PATH}
+			${PYTHON_INCLUDE_PATH}		
+                        /usr/include/freetype2
+                        )
+
 ADD_SUBDIRECTORY(libEM)
+ADD_SUBDIRECTORY(libpyEM)
+ADD_SUBDIRECTORY(pyemtbx)
 ADD_SUBDIRECTORY(sparx)
 ADD_SUBDIRECTORY(utils)
 ADD_SUBDIRECTORY(mpi_eman)
