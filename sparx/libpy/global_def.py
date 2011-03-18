@@ -64,7 +64,7 @@ BATCH = False
 CACHE_DISABLE = True
 
 # variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
-GUIUSE = True
+GUIUSE = False
 
 LOGFILE = "logfile"
 from time import localtime, strftime

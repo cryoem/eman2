@@ -2043,13 +2043,13 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 			Cls['ave'][k].set_attr('Class_average', 1.0)
 			Cls['ave'][k].set_attr('nobjects', float(Cls['n'][k]))
 			Cls['ave'][k].set_attr('members', lassign)
-			Cls['ave'][k].set_attr('Ji', Cls['Ji'][k])
+			Cls['ave'][k].set_attr('Ji', float(Cls['Ji'][k]) )
 			Cls['ave'][k].set_attr('Je', Je)
 
 			Cls['var'][k].set_attr('Class_variance', 1.0)
 			Cls['var'][k].set_attr('nobjects', float(Cls['n'][k]))
 			Cls['var'][k].set_attr('members', lassign)
-			Cls['var'][k].set_attr('Ji', Cls['Ji'][k])
+			Cls['var'][k].set_attr('Ji', float( Cls['Ji'][k] ) )
 			Cls['var'][k].set_attr('Je', Je)
 
 		if part == -1:
@@ -10042,4 +10042,3 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 			qt = disc
 	return best_def
 	
-
