@@ -39,10 +39,10 @@ import sys, ConfigParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack_file number_of_group number_of_clsuter number_of_init"
+	usage = progname + " stack_file number_of_CPU_groups number_of_clusters number_of_init"
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
+	parser.add_option("--MPI",      action="store_true", default=True,   help="use MPI version ")
 	(options, args) = parser.parse_args()
 
 	if len(args) != 4:
