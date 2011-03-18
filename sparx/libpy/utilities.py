@@ -2303,7 +2303,9 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 	"""
 	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
 	"""
-	
+	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_TAG_UB
+	from mpi import mpi_send, mpi_recv	
+
 	l = len(data)
 	gathered_data = []
 	if myid == main_node:
@@ -2313,10 +2315,18 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 					gathered_data.append(data[k])
 			else:
 				for k in xrange(l):
-					gathered_data.append(recv_EMData(i, i*l+k))
+					im = recv_EMData(i, i*l+k)
+					mem_len = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = mpi_recv(int(mem_len[0]), MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = map(int, members)
+					im.set_attr('members', members)
+					gathered_data.append(im)
 	else:
 		for k in xrange(l):
 			send_EMData(data[k], main_node, myid*l+k)
+			mem = data[k].get_attr('members')
+			mpi_send(len(mem), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(mem, len(mem), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	return gathered_data
 	
 
