@@ -6097,12 +6097,12 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt, k_means_stab_bbenum, k_means_stab_getinfo
 	from applications import MPI_start_end
 	import sys, logging, os, pickle, time
-
+	
 	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	mpi_barrier(MPI_COMM_WORLD)
-
+	npart = ncpu
 	ext = file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
@@ -6214,7 +6214,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 		# convert all assignments to partition
 		logging.info('... Matching')
-		ALL_PART = k_means_stab_asg2part(outdir, npart)
+		ALL_PART = k_means_stab_asg2part(outdir, ncpu )
 
 		# calculate the stability
 		if npart == 2:
@@ -6627,7 +6627,6 @@ def k_means_stab_asg2part(outdir, npart):
 		for n in xrange(npart):
 			name = path.join(outdir, 'averages_%02i.hdf' % n)			
 			K    = EMUtil.get_image_count(name)
-			print "imagename==", name, "npart==",npart, "k==",K
 			part = []
 			for k in xrange(K):
 				im  = get_im(name, k)
