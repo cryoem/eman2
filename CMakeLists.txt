@@ -1,5 +1,6 @@
 PROJECT(EMAN)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4.3)
+SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 
 IF(COMMAND cmake_policy)
        cmake_policy(SET CMP0003 NEW)
@@ -48,16 +49,20 @@ OPTION(ENABLE_FTGL "enable EMAN2 FTGL (3D fonts) usage" OFF)
 OPTION(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
 MARK_AS_ADVANCED(ENABLE_STATIC_FTGL)
 
-OPTION(ENABLE_DEBUG "enable debug support" OFF)
-OPTION(ENABLE_PROFILE "enable symbol generation without debug support" OFF)
+#flags used for debugging and testing
 OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
 OPTION(ENABLE_MEMDEBUG2 "enable memory debug support of EMData" OFF)
 OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
+
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
+#flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
+OPTION(ENABLE_DEBUG "enable debug support" OFF)
+OPTION(ENABLE_PROFILE "enable symbol generation without debug support" OFF)
 OPTION(ENABLE_ATHLON "enable ATHLON specific support" OFF)
 OPTION(ENABLE_X86_64 "enable x86_64 specific optimizations" OFF)
+
 OPTION(ENABLE_LEOPARD "enable OSX 10.5 support" OFF)
 
 IF (ENABLE_LEOPARD)
@@ -70,7 +75,7 @@ IF (ENABLE_MEMDEBUG)
 ENDIF (ENABLE_MEMDEBUG)
 
 IF (ENABLE_MEMDEBUG2)
-	ADD_DEFINITIONS(-DMEMDEBUG2-W -Wall)
+	ADD_DEFINITIONS(-DMEMDEBUG2 -W -Wall)
 ENDIF (ENABLE_MEMDEBUG2)
 
 IF (ENABLE_V4L2)
@@ -82,21 +87,18 @@ IF (ENABLE_BOUNDS_CHECKING)
 ENDIF (ENABLE_BOUNDS_CHECKING)
 
 IF (ENABLE_DEBUG)
-    SET (OPT_FLAGS "-DDEBUG -O0 -g -ansi")
-ELSE (ENABLE_DEBUG)
-	IF (ENABLE_PROFILE)
-		SET (OPT_FLAGS "-O2 -g -ansi")
-	ELSE (ENABLE_PROFILE)
-		IF (ENABLE_ATHLON)
-			SET (OPT_FLAGS "-O3 -ansi -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
-		ENDIF(ENABLE_ATHLON)
-		IF (ENABLE_X86_64)
-			SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
-		ELSE (ENABLE_X86_64)
-			SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
-		ENDIF(ENABLE_X86_64)
-	ENDIF(ENABLE_PROFILE)
-ENDIF (ENABLE_DEBUG)
+    SET (OPT_FLAGS "-DDEBUG -O0 -g -ansi -Wall -W")
+ELSEIF(ENABLE_PROFILE)
+    SET (OPT_FLAGS "-O2 -g -ansi")
+    OPTION(ENABLE_DEBUG "enable debug support" OFF)
+ELSEIF (ENABLE_ATHLON)
+    SET (OPT_FLAGS "-O3 -ansi -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
+ELSEIF (ENABLE_X86_64)
+    SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
+ELSE()
+    SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
+ENDIF()
+#MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
 IF (ENABLE_OPENGL)
 # 	FIND_PATH(GL_INCLUDE_DIR gl.h /usr/include/GL)
@@ -171,10 +173,6 @@ SET(INCLUDE_DIRS
 	$ENV{GSLDIR}/include 
 	/usr/local/include 
 	/usr/local/cuda/include
-	/usr/local/include/boost-1_31 
-	/usr/local/include/boost-1_32 
-	/usr/local/include/boost-1_33
-	/usr/local/include/boost-1_34_1
 	/Developer/SDKs/MacOSX10.5.sdk/usr/X11/include
 	/usr/include 
 	/sw/include
@@ -453,29 +451,26 @@ ENDIF(WIN32)
 
 IF(PYTHON_INCLUDE_PATH)
     # Check the most generic name first (used by cctbx).
-CHECK_LIB_ONLY(BOOST boost_python boost/python.hpp)
-IF(BOOST_LIBRARY)
-ELSE(BOOST_LIBRARY)
-        CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
-ENDIF(BOOST_LIBRARY)
+    CHECK_LIB_ONLY(BOOST boost_python boost/python.hpp)
 ELSE(PYTHON_INCLUDE_PATH)
-MESSAGE("ERROR: Python.h not found")
+    MESSAGE("ERROR: Python.h not found")
 ENDIF(PYTHON_INCLUDE_PATH)
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 
-INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} 
+INCLUDE_DIRECTORIES(. 
+            ${EMAN_SOURCE_DIR} 
 			${EMAN_SOURCE_DIR}/libEM
-                        ${GL_INCLUDE_PATH}
-                        ${GSL_INCLUDE_PATH}
-                        ${GSL_INCLUDE_PATH}/gsl
-                        ${FFTW_INCLUDE_PATH}
-                        ${DJBFFT_INCLUDE_PATH}
-                        ${ACML_INCLUDE_PATH}
+            ${GL_INCLUDE_PATH}
+            ${GSL_INCLUDE_PATH}
+            ${GSL_INCLUDE_PATH}/gsl
+            ${FFTW_INCLUDE_PATH}
+            ${DJBFFT_INCLUDE_PATH}
+            ${ACML_INCLUDE_PATH}
 			${BOOST_INCLUDE_PATH}
 			${PYTHON_INCLUDE_PATH}		
-                        /usr/include/freetype2
-                        )
+            /usr/include/freetype2
+            )
 
 ADD_SUBDIRECTORY(libEM)
 ADD_SUBDIRECTORY(libpyEM)
