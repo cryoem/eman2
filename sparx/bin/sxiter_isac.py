@@ -39,13 +39,29 @@ import sys, ConfigParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack_file number_of_CPU_groups number_of_clusters number_of_init"
+	usage = progname + " stack_file --n_run=n_run --img_per_grp=img_per_grps"
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--MPI",      action="store_true", default=True,   help="use MPI version ")
+	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates ")
+	parser.add_option("--ou",             type="int",          default=-1,      help="outer ring of the resampling to polar coordinates ")
+	parser.add_option("--rs",             type="int",          default=1,       help="ring step of the resampling to polar coordinated")
+	parser.add_option("--xr",             type="float",        default=1.0,     help="x range of translational search ")
+	parser.add_option("--yr",             type="float",        default=1.0,     help="y range of translational search ")
+	parser.add_option("--ts",             type="float",        default=0.5,     help="search step of translational search ")
+	parser.add_option("--maxit",          type="int",          default=5,       help="maximum iteration of isac program ")
+	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information ")
+	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio ")
+	parser.add_option("--num_ali",        type="int",          default=5,       help="number of alignments when checking for stability ")
+	parser.add_option("--loops_reali",    type="int",          default=5,       help="number of iterations in ISAC before checking stability ")
+	parser.add_option("--th_err",         type="float",        default=1.0,     help="the threshold of stability ")
+	parser.add_option("--max_Iter",       type="int",          default=10,      help="maximum overall iterations ")
+	parser.add_option("--n_run",          type="int",          default=4,       help="number of indepentdent runs ")
+	parser.add_option("--th_grp",         type="int",          default=10,      help="the threshold of size of reproducible group ")
+	parser.add_option("--img_per_grp",    type="int",          default=50,      help="number of images per group ")
+	parser.add_option("--MPI",            action="store_true", default=True,   help="use MPI version ")
 	(options, args) = parser.parse_args()
 
-	if len(args) != 4:
+	if len(args) != 1:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit()
@@ -60,7 +76,9 @@ def main():
 
 	from development import iter_isac
 	global_def.BATCH = True
-	iter_isac(args[0], args[1], args[2], args[3])
+	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, \
+		    options.snr, options.num_ali, options.loops_reali, options.th_err, options.max_Iter, options.n_run, options.th_grp, \
+		    options.img_per_grp)
 	global_def.BATCH = False
 
 
