@@ -52,7 +52,7 @@ parser.add_option("--fcref", action="store_true",
                   help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))")
 parser.add_option("--fstat", action="store_true",
                   help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50% more memory.")
-parser.add_option("--rrec", type="string",
+parser.add_option("--rrec", type="float",
                   help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.")
 parser.add_option("--reslow", type="float",
                   help="Resolution of the data included in the alignment. This is the low resolution value. ex:200")
@@ -120,7 +120,6 @@ if not 'ctf' in part2[0].get_attr_dict():
    exit(-1)
 part = db_open_dict(inpt)
 tmp = part2[0]['ctf'].to_dict()                                      # CTF has things like Defocus, apix, etc
-
 
 for i in range(num_images):
    classes[i]= db[i]['xform.projection'].get_rotation("eman")        # Has the angles needed to get the Euler Angles
