@@ -10,6 +10,7 @@
 # import block
 import os
 import sys
+from subprocess import *
 from EMAN2 import *
 
 if len(sys.argv) != 1:
@@ -35,19 +36,27 @@ for item in dir_list:
 if high == 0:
    high = high + 1
 for i in range(high):
-   os.system('frealign_v8.exe < card' + str(i) + '.txt')
-   if i < 10:
-      k = '0' + str(i) 
-   else:
-      k = str(i)
-   s = "cp 3DMapInOut.mrc OutputMap_" + k +".mrc"
-   os.system(s)
-   s = "cp OutParam OutParam_" + k
-   os.system(s)
-   os.system('mv OutParam ptcl_meta_data')
-   s = "cp OutParamShift OutParamShift_" + k
-   os.system(s)
-   os.system('cp 3DMapInOut.mrc.old 3DMapInOut.mrc')
+#   os.system('frealign_v8.exe < card' + str(i) + '.txt')
+	try:
+		retcode = call('frealign_v8.exe < card' + str(i) + '.txt', shell=True)
+		if retcode < 0:
+			print >>sys.stderr, "Child was terminated by signal", -retcode
+		else:
+			print >>sys.stderr, "child returned", retcode
+	except OSError, e:
+		print >>sys.stderr, "Execution Failed:", e
+	if i < 10:
+		k = '0' + str(i) 
+	else:
+		k = str(i)
+	s = "cp 3DMapInOut.mrc OutputMap_" + k +".mrc"
+	os.system(s)
+	s = "cp OutParam OutParam_" + k
+	os.system(s)
+	os.system('mv OutParam ptcl_meta_data')
+	s = "cp OutParamShift OutParamShift_" + k
+	os.system(s)
+	os.system('cp 3DMapInOut.mrc.old 3DMapInOut.mrc')
 
 os.system('mv 3DMapInOut.mrc.old 3DMapInOut.mrc')
 os.system('mv ptcl_meta_data.old ptcl_meta_data')
