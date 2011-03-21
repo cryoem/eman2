@@ -5826,26 +5826,16 @@ class E2RefineToFreeAlign(WorkFlowTask):
 fbeaut: Apply extra real space symmetry averaging and masking to beautify the final map just prior to output
 fcref:  Apply an FOM filter to the final reconstruction using the function SQRT(2.0*FSC/(1.0+FSC))
 fstat:  Calculate additional statistics in the resolution table at the end. Using this option requires about 50% more memory
-ifsc:   Calculation of the FSC table:
-        0 = Calculate two reconstructions with even and odd particles and generate FSC at end of run
-        1 = Only calculate one reconstruction using odd particles
-        2 = Only calculate one reconstruction using even particles
-        3 = Only calculate one reconstruction using all particles
-iblow:  Padding factor for reference structure. Can be 1/2/4. 4 requires the most memory but results in the fastest search and refinement
-mask:   Outer radius of reconstruction in Angstroms from center of particle
-rrec:   Resolution to which the reconstruction is calculated
 reslow: Resolution of the data in the refinement. This is the low resolution number
 reshigh:Resolution of the data in the refinement. This is the high resolution number
-redef:  Perform defocus refinement
-refastyg: Perform Astigmatism refinement
-refpar: Defocus refinement for individual particles
-pbc:    Phase residual/Pseudo B-Factor conversion constant. 5 is the default. A large value (ex. 100) would give equal weighing to each particle
+rrec:   Resolution to which the reconstruction is calculated
 thresh: Phase residual cutoff. Any particles with a higher phase residual will not be included in the reconstruction
 
 """
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Launch e2refinetofrealign"
+		self.form_db_name = "bdb:emform.refinetofrealign"
 		self.report_task = None
 
 	def get_ref_table(self):
@@ -5867,30 +5857,21 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		
 	def get_params(self):
 	 	params = []
+	 	db = db_open_dict(self.form_db_name)
 	 	
 	 	r,rn = self.get_ref_table()
 	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(r)
-		pfbeaut = ParamDef(name="fbeaut",vartype="boolean",desc_short="fbeaut",desc_long="FreeAlign fbeaut",property=None,defaultunits=0,choices=None)
-		pfcref = ParamDef(name="fcref",vartype="boolean",desc_short="fcref",desc_long="FreeAlign cref",property=None,defaultunits=0,choices=None)
-		pfstat = ParamDef(name="fstat",vartype="boolean",desc_short="fstat",desc_long="FreeAlign fstat",property=None,defaultunits=0,choices=None)
+		pfbeaut = ParamDef(name="fbeaut",vartype="boolean",desc_short="fbeaut",desc_long="FreeAlign fbeaut",property=None,defaultunits=db.get("fbeaut",dfl=False),choices=None)
+		pfcref = ParamDef(name="fcref",vartype="boolean",desc_short="fcref",desc_long="FreeAlign cref",property=None,defaultunits=db.get("fcref",dfl=False),choices=None)
+		pfstat = ParamDef(name="fstat",vartype="boolean",desc_short="fstat",desc_long="FreeAlign fstat",property=None,defaultunits=db.get("fstat",dfl=False),choices=None)
 		params.append([pfbeaut, pfcref, pfstat])
-		ifsc = ["0","1","2","3"]
-		pifsc =  ParamDef(name="ifsc",vartype="string",desc_short="ifsc",desc_long="FreeAlign ifsc",property=None,defaultunits="0",choices=ifsc)
-		iblow = ["0","1","2"]
-		piblow =  ParamDef(name="iblow",vartype="string",desc_short="iblow",desc_long="FreeAlign iblow",property=None,defaultunits="2",choices=iblow)
-		pmask = ParamDef(name="mask",vartype="float",desc_short="mask", desc_long="Mask for FreeAlign",property=None,defaultunits=0.0,choices=None)
-		prrec = ParamDef(name="rrec",vartype="string",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits="10.0",choices=None)
-		params.append([pifsc, piblow, pmask, prrec])
-		preslow = ParamDef(name="reslow",vartype="float",desc_short="reslow", desc_long="low resolution",property=None,defaultunits=200.0,choices=None)
-		preshigh = ParamDef(name="reshigh",vartype="float",desc_short="reshigh", desc_long="high resolution",property=None,defaultunits=25.0,choices=None)
-		prefdef = ParamDef(name="refdef",vartype="boolean",desc_short="refdef",desc_long="FreeAlign refdef",property=None,defaultunits=0,choices=None)
-		params.append([preslow, preshigh, prefdef])
-		prefpart = ParamDef(name="refpart",vartype="boolean",desc_short="refpart",desc_long="FreeAlign refpart",property=None,defaultunits=0,choices=None)
-		prefastyg = ParamDef(name="refastyg",vartype="boolean",desc_short="refastyg",desc_long="FreeAlign refastyg",property=None,defaultunits=0,choices=None)
-		ppbc = ParamDef(name="pbc",vartype="float",desc_short="pbc", desc_long="FreeAlign pbc",property=None,defaultunits=5.0,choices=None)
-		pthresh = ParamDef(name="thresh",vartype="float",desc_short="thresh", desc_long="FreeAlign threshold",property=None,defaultunits=90.0,choices=None)
-		params.append([prefpart, prefastyg, ppbc, pthresh])
+		preslow = ParamDef(name="reslow",vartype="float",desc_short="reslow", desc_long="low resolution",property=None,defaultunits=db.get("reslow",dfl=200.0),choices=None)
+		preshigh = ParamDef(name="reshigh",vartype="float",desc_short="reshigh", desc_long="high resolution",property=None,defaultunits=db.get("reshigh",dfl=25.0),choices=None)
+		params.append([preslow, preshigh])
+		prrec = ParamDef(name="rrec",vartype="string",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits=db.get("rrec",dfl="10.0"),choices=None)
+		pthresh = ParamDef(name="thresh",vartype="float",desc_short="thresh", desc_long="FreeAlign threshold",property=None,defaultunits=db.get("thresh",dfl=90.0),choices=None)
+		params.append([prrec, pthresh])
 		
 		return params
 		
@@ -5906,8 +5887,14 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		self.write_db_entries(params)
 		
 		redata = params["model"][0]
-		directory = re.compile(r':.+#').findall(redata)[0][1:-1]
-		iteration = re.compile(r'#.+_[0-9]+').findall(redata)[0][-1:]
+		try:
+			directory = re.compile(r':.+#').findall(redata)[0][1:-1]
+		except:
+			raise RuntimeError("The directory %s does not conform to the format: bdb:refinedir#threed_??", redata)
+		try:
+			iteration = re.compile(r'#threed.*_[0-9]+').findall(redata)[0][-2:]
+		except:
+			raise RuntimeError("The model %s does not conform to the format: bdb:refinedir#threed_??+", redata)
 		iteration = str(int(iteration)) # This is a hack, to remove preceding zeros
 		
 		e2falist = []
@@ -5918,22 +5905,11 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 			e2falist.append("--fbeaut")
 		if(params["fcref"]):
 			e2falist.append("--fcref")
-		e2falist.append("--ifsc="+params["ifsc"])
 		if(params["fstat"]):
 			e2falist.append("--fstat")
-		e2falist.append("--iblow="+params["iblow"])
-		if params["mask"] != 0:
-			e2falist.append("--mask="+str(params["mask"]))
 		e2falist.append("--rrec="+params["rrec"])
 		e2falist.append("--reslow="+str(params["reslow"]))
 		e2falist.append("--reshigh="+str(params["reshigh"]))
-		if(params["refdef"]):
-			e2falist.append("--refdef")
-		if(params["refpart"]):
-			e2falist.append("--refpart")
-		if(params["refastyg"]):
-			e2falist.append("--refastyg")
-		e2falist.append("--pbc="+str(params["pbc"]))
 		e2falist.append("--thresh="+str(params["thresh"]))
 			
 		child = subprocess.Popen(e2falist, shell=True)

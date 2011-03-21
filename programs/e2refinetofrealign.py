@@ -52,7 +52,11 @@ parser.add_option("--fcref", action="store_true",
                   help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))")
 parser.add_option("--fstat", action="store_true",
                   help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50% more memory.")
+<<<<<<< e2refinetofrealign.py
+parser.add_option("--rrec", type="sting",
+=======
 parser.add_option("--rrec", type="float",
+>>>>>>> 1.5
                   help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.")
 parser.add_option("--reslow", type="float",
                   help="Resolution of the data included in the alignment. This is the low resolution value. ex:200")
