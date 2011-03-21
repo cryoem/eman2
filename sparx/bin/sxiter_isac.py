@@ -47,7 +47,7 @@ def main():
 	parser.add_option("--rs",             type="int",          default=1,       help="ring step of the resampling to polar coordinated")
 	parser.add_option("--xr",             type="float",        default=1.0,     help="x range of translational search ")
 	parser.add_option("--yr",             type="float",        default=1.0,     help="y range of translational search ")
-	parser.add_option("--ts",             type="float",        default=0.5,     help="search step of translational search ")
+	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search ")
 	parser.add_option("--maxit",          type="int",          default=5,       help="maximum iteration of isac program ")
 	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information ")
 	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio ")
@@ -57,8 +57,8 @@ def main():
 	parser.add_option("--max_Iter",       type="int",          default=10,      help="maximum overall iterations ")
 	parser.add_option("--n_run",          type="int",          default=4,       help="number of indepentdent runs ")
 	parser.add_option("--th_grp",         type="int",          default=10,      help="the threshold of size of reproducible group ")
-	parser.add_option("--img_per_grp",    type="int",          default=50,      help="number of images per group ")
-	parser.add_option("--MPI",            action="store_true", default=True,   help="use MPI version ")
+	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group ")
+	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version ")
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:
