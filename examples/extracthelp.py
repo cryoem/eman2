@@ -1,4 +1,4 @@
-#!/bin/env/python
+#!/usr/bin/env python
 
 # extracthelp.py -  Steven Ludtke  09/14/2010
 
@@ -10,10 +10,15 @@ from optparse import OptionParser
 
 parser = OptionParser(usage="doesn't matter",version="1.0")
 
-lines=[i for i in file(sys.argv[1],"r") if "parser.add_option" in i]
+lines=[i for i in file(sys.argv[1],"r")]
 
-for i in lines: 
-	exec i.strip()
+
+for j,i in enumerate(lines): 
+ 	if "parser.add_option" in i:
+		try : exec i.strip()
+		except:
+			try: exec (i+lines[j+1]).strip()
+			except: print (i+lines[j+1]).strip()
 	
 #print parser.__dict__.keys()
 for i in parser.option_list:
