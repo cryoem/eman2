@@ -2308,8 +2308,9 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 
 	l = len(data)
 	gathered_data = []
+	inc = 1   # A temp measure
 	if myid == main_node:
-		for i in xrange(number_of_proc):
+		for i in xrange(0, number_of_proc*inc, inc):
 			if i == main_node:
 				for k in xrange(l):
 					gathered_data.append(data[k])
