@@ -189,10 +189,7 @@ for option1 in optionList:
       FCREF = 'T'
   
    elif option1 == "rrec":
-      rrec_list = options.rrec
-      rrec_list = rrec_list.replace(' ', '')
-      rrec_list = rrec_list.split(',')
-      rrec_list.sort(reverse=True)
+      RREC = str(options.rrec)
 
    elif option1 == "reslow":
       RMAX1 = str(options.reslow)
@@ -203,134 +200,121 @@ for option1 in optionList:
    elif option1 == "fstat":
          FSTAT = 'T'
 
-for i in range(len(rrec_list)):
-   OUTFILE2 = E2FA + "/card" + str(i) + ".txt"          # Cards required by FA
-   f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above
+OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
+f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above
 
  
-   # Card 1
-   CFORM = 'M'
-   IFLAG = '1'
-   FMAG = FDEF = FASTIG = FPART = FMATCH = 'F'
-   IEWALD = '0'
-   s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FCREF + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IBLOW + '\n'
-   f.write(s)
+# Card 1
+CFORM = 'M'
+IFLAG = '1'
+FMAG = FDEF = FASTIG = FPART = FMATCH = 'F'
+IEWALD = '0'
+s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FCREF + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IBLOW + '\n'
+f.write(s)
 
-   # Card 2
-   RI = DANG = ITMAX = '0'
-   XSTD = '1'
-   PBC = '100'
-   BOFF = '60'
-   IPMAX = '10' 
-   PSIZE = str(tmp['apix']) 
-   WGH = str(tmp['ampcont']/100)
-   s = RO + SPACE + RI + SPACE + PSIZE + SPACE + WGH + SPACE + XSTD + SPACE + PBC + SPACE + BOFF + SPACE + DANG + SPACE + ITMAX + SPACE + IPMAX + '\n'
-   f.write(s)
+# Card 2
+RI = DANG = ITMAX = '0'
+XSTD = '1'
+PBC = '100'
+BOFF = '60'
+IPMAX = '10' 
+PSIZE = str(tmp['apix']) 
+WGH = str(tmp['ampcont']/100)
+s = RO + SPACE + RI + SPACE + PSIZE + SPACE + WGH + SPACE + XSTD + SPACE + PBC + SPACE + BOFF + SPACE + DANG + SPACE + ITMAX + SPACE + IPMAX + '\n'
+f.write(s)
  
-   # Card 3
-   MASK = '1 1 1 1 1'
-   f.write(MASK + '\n')
+# Card 3
+MASK = '1 1 1 1 1'
+f.write(MASK + '\n')
 
-   # Card 4
-   IFIRST = '1'
-   ILAST = str(ny)
-   f.write(IFIRST + SPACE + ILAST + '\n')
+# Card 4
+IFIRST = '1'
+ILAST = str(ny)
+f.write(IFIRST + SPACE + ILAST + '\n')
 
-   # Card 5
-   sym = cmd['sym']
-   if sym[0] == 'c':      # Convert from EMAN2 symmetry conventions to FreAlign symmetry conventions
-      ASYM = 'C' + sym[1]
-   elif sym[0] == 'd':
-      ASYM = 'D' + sym[1]
-   elif sym[0] == 'i':
-      ASYM = 'I'
-   elif sym[0] == 'o':
-      ASYM = 'O'
-   elif sym[0] == 't':
-      ASYM = 'T'
-   else:
-      ASYM = sym
-   f.write(ASYM + '\n')
+# Card 5
+sym = cmd['sym']
+if sym[0] == 'c':      # Convert from EMAN2 symmetry conventions to FreAlign symmetry conventions
+   ASYM = 'C' + sym[1]
+elif sym[0] == 'd':
+   ASYM = 'D' + sym[1]
+elif sym[0] == 'i':
+   ASYM = 'I'
+elif sym[0] == 'o':
+   ASYM = 'O'
+elif sym[0] == 't':
+   ASYM = 'T'
+else:
+   ASYM = sym
+f.write(ASYM + '\n')
 
-   # Card 6
-   RELMAG = 1.0
-   DSTEP = 10 
-   TARGET = 15
-   THRESH = 90
-   CS = tmp['cs']
-   AKV = tmp['voltage'] 
-   TX = TY = 0.0
-   s = str(RELMAG) + SPACE + str(DSTEP) + SPACE + str(TARGET) + SPACE + str(THRESH) + SPACE + str(CS) + SPACE + str(AKV) + SPACE + str(TX) + SPACE + str(TY) + "\n"
-   f.write(s)
+# Card 6
+RELMAG = 1.0
+DSTEP = 10 
+TARGET = 15
+THRESH = 90
+CS = tmp['cs']
+AKV = tmp['voltage'] 
+TX = TY = 0.0
+s = str(RELMAG) + SPACE + str(DSTEP) + SPACE + str(TARGET) + SPACE + str(THRESH) + SPACE + str(CS) + SPACE + str(AKV) + SPACE + str(TX) + SPACE + str(TY) + "\n"
+f.write(s)
 
-   # Card 7
-   DFSTD = '200.0'
-   RBFACT = '0.0'
-   RREC = rrec_list[i]
-   s = RREC + SPACE + RMAX1 + SPACE + RMAX2 + SPACE + DFSTD + SPACE + RBFACT + '\n' 
-   f.write(s)
+# Card 7
+DFSTD = '200.0'
+RBFACT = '0.0'
+s = RREC + SPACE + RMAX1 + SPACE + RMAX2 + SPACE + DFSTD + SPACE + RBFACT + '\n' 
+f.write(s)
 
-   # Card 8
-   FINPAT1 = 'particlestack.mrc'
-   f.write(FINPAT1 + '\n')
+# Card 8
+FINPAT1 = 'particlestack.mrc'
+f.write(FINPAT1 + '\n')
 
-   # Card 9
-   FINPAT2 = '/dev/null'
-   f.write(FINPAT2 + '\n')
+# Card 9
+FINPAT2 = '/dev/null'
+f.write(FINPAT2 + '\n')
 
-   # Card 10
-   FINPAR = meta_data_file
-   f.write(FINPAR + '\n')
+# Card 10
+FINPAR = meta_data_file
+f.write(FINPAR + '\n')
 
-   # Card 11
-   FOUTPAR = 'OutParam'
-   f.write(FOUTPAR + '\n')
+# Card 11
+FOUTPAR = 'OutParam'
+f.write(FOUTPAR + '\n')
 
-   # Card 12
-   FOUTSH = 'OutParamShift'
-   f.write(FOUTSH + '\n')
+# Card 12
+FOUTSH = 'OutParamShift'
+f.write(FOUTSH + '\n')
 
-   # Card 6 again because it is required to deliniate that there is only one data set
-   f.write("0 0 0 0 0 0 0 0\n")
+# Card 6 again because it is required to deliniate that there is only one data set
+f.write("0 0 0 0 0 0 0 0\n")
 
-   # Card 13
-   F3D = '3DMapInOut.mrc'
-   f.write(F3D + '\n')
+# Card 13
+F3D = '3DMapInOut.mrc'
+f.write(F3D + '\n')
 
-   # Card 14
-   FWEIGH = '3DWeights.mrc'
-   f.write(FWEIGH + '\n')
+# Card 14
+FWEIGH = '3DWeights.mrc'
+f.write(FWEIGH + '\n')
 
 
-   n = int(IFSC)
-   if n == 0 :
-      MAP1 = '3DMap_Odd.mrc'
-      MAP2 = '3DMap_Even.mrc'
-   elif n == 1:
-      MAP1 = '3DMap_Odd.mrc'
-      MAP2 = '3DMap_Empty.mrc'
-   elif n == 2:
-      MAP1 = '3DMap_Even.mrc'
-      MAP2 = '3DMap_Empty.mrc'
-   else:
-      MAP1 = '3DMap_All.mrc'
-      MAP2 = '3DMap_Empty.mrc'
+MAP1 = '3DMap_Odd.mrc'
+MAP2 = '3DMap_Even.mrc'
 
-   # Card 15
-   f.write(MAP1 + '\n')
+# Card 15
+f.write(MAP1 + '\n')
 
-   # Card 16
-   f.write(MAP2 + '\n')
+# Card 16
+f.write(MAP2 + '\n')
 
-   # Card 17
-   FPHA = '3DPhaseResidual.mrc'
-   f.write(FPHA + '\n')
+# Card 17
+FPHA = '3DPhaseResidual.mrc'
+f.write(FPHA + '\n')
 
-   # Card 18
-   FPOI = '3DPointSpreadFunc.mrc'
-   f.write(FPOI + '\n')
+# Card 18
+FPOI = '3DPointSpreadFunc.mrc'
+f.write(FPOI + '\n')
 
-   f.close()
+f.close()
 
 print "e2refinetofrealign.py finished"
 

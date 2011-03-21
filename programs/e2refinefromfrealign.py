@@ -30,60 +30,25 @@ if len(sys.argv) != 2:
 
 E2n = E2init(sys.argv)
 
-high = 0
 dir = sys.argv[1]
 
-for item in os.listdir(dir):
-   if len(item) == 11:
-      if item[0:8] == 'OutParam':
-         if int(item[9:11]) > high:
-            high = int(item[9:11])
-
-
-for l_iter in range(high+1):
-   if l_iter < 10:
-      iter = '0' + str(l_iter)
-   else:
-      iter = str(l_iter)
-
-   in_img = EMData(dir + "/3DMapInOut.mrc")
-   fa_out_img = EMData(dir + "/OutputMap_" + iter + ".mrc")
-   a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
-   a.write_image(dir + "/OutputMap_Normalized_" + iter + ".mrc")
+in_img = EMData(dir + "/3DMapInOut.mrc")
+fa_out_img = EMData(dir + "/OutputMap.mrc")
+a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
+a.write_image(dir + "/OutputMap_Normalized.mrc")
 
 
 OUT_META_FILE = "OutParam"
-FINAL_META_FILE = OUT_META_FILE + "_" + iter
+FINAL_META_FILE = OUT_META_FILE
 fsc_dict = db_open_dict("bdb:" + dir + "#convergence.results")
 a = EMData(dir + "/3DMapInOut.mrc")
-b = EMData(dir + "/OutputMap_Normalized_00.mrc")
+b = EMData(dir + "/OutputMap_Normalized.mrc")
 s =  "init_00_fsc"
 fsc = a.calc_fourier_shell_correlation(b)
 fsc_len = len(fsc)
 for i in range(0,fsc_len/3-1):
    fsc[i] = fsc[i]/b['apix_x']
 fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]  
-
-
-
-for k in range(1,high):
-   if k < 10:
-      iter = '0' + str(k)    
-   else:
-      iter = str(k)   
-   if k-1 < 10:
-      iter_minus = '0' + str(k-1)
-   else:
-      iter_minus = str(k-1)
-
-   a = EMData(dir + "/OutputMap_Normalized_" + iter + ".mrc")
-   b = EMData(dir + "/OutputMap_Normalized_" + iter_minus + ".mrc")
-   s = iter_minus + "_" + iter + "_fsc"
-   fsc = a.calc_fourier_shell_correlation(b)
-   fsc_len = len(fsc)
-   for i in range(0,fsc_len/3-1):
-      fsc[i] = fsc[i]/a['apix_x']
-   fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]
 
 f=open(dir + "/" + FINAL_META_FILE, 'r')
 l3=f.readlines()
@@ -103,7 +68,7 @@ for i in range(len(l3)):
    if l3[i][0] == 'C' and len(lst) > 1:
       if lst[1] =='NO.':
          start = 1
-s = 'even_odd_' + iter + '_fsc'
+s = 'even_odd_fsc'
 fsc_dict[s] = [nyquist,fsc_val]
 
    
@@ -124,7 +89,7 @@ for i in range(len(l2)):
       ptcl[3] = lst[4] # Shift in X
       ptcl[4] = lst[5] # Shift in Y
       ptcl_dict_in[i-k] = ptcl
-f = open(dir + "/" + OUT_META_FILE + "_" + iter, 'r')
+f = open(dir + "/" + OUT_META_FILE, 'r')
 l = f.readlines()
 f.close()
 ptcl_dict_out = {}
