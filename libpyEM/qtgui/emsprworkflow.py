@@ -5754,9 +5754,8 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		edir = params["dirs"][0]
 		edir = edir[:edir.rindex("/")]
 		
-		prflist = []
-		prflist.append("e2refinefromfrealign.py")
-		prflist.append(edir)
+		prflist = "e2refinefromfrealign.py"
+		prflist += " "+edir
 
 		child = subprocess.Popen(prflist, shell=True)
 		
@@ -5809,9 +5808,7 @@ class E2RunFreAlign(WorkFlowTask):
 		edir = params["dirs"][0]
 		edir = edir[:edir.rindex("/")]
 		
-		prflist = []
-		prflist.append("e2runfrealign.py")
-		#prflist.append(str(params["iter"]))
+		prflist = "e2runfrealign.py"
 		
 		child = subprocess.Popen(prflist, cwd=edir, shell=True)
 		
@@ -5897,27 +5894,26 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 			raise RuntimeError("The model %s does not conform to the format: bdb:refinedir#threed_??+", redata)
 		iteration = str(int(iteration)) # This is a hack, to remove preceding zeros
 		
-		e2falist = []
-		e2falist.append("e2refinetofrealign.py")
-		e2falist.append(directory)
-		e2falist.append(iteration)
+		e2falist = "e2refinetofrealign.py"
+		e2falist += " "+directory
+		e2falist += " "+iteration
 		if(params["fbeaut"]):
-			e2falist.append("--fbeaut")
+			e2falist += " --fbeaut"
 		if(params["fcref"]):
-			e2falist.append("--fcref")
+			e2falist += " --fcref"
 		if(params["fstat"]):
-			e2falist.append("--fstat")
-		e2falist.append("--rrec="+str(params["rrec"]))
-		e2falist.append("--reslow="+str(params["reslow"]))
-		e2falist.append("--reshigh="+str(params["reshigh"]))
-		e2falist.append("--thresh="+str(params["thresh"]))
-			
+			e2falist += " --fstat"
+		e2falist += (" --rrec="+str(params["rrec"]))
+		e2falist += " --reslow="+str(params["reslow"])
+		e2falist += " --reshigh="+str(params["reshigh"])
+		e2falist += " --thresh="+str(params["thresh"])
+		
+		print e2falist
 		child = subprocess.Popen(e2falist, shell=True)
 		
 		self.form.close()
 		self.form = None
 		
-		print e2falist
 		
 class EMChooseTask(ParticleWorkFlowTask):
 	'''Fill me in'''
