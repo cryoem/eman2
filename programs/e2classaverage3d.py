@@ -76,7 +76,8 @@ def main():
 	parser.add_option("--mask",type="string",help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_option("--normproc",type="string",help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_option("--preprocess",type="string",help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
-	parser.add_option("--ncoarse", type="int", help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4)
+	parser.add_option("--ncoarse", type="int", help="Deprecated", default=None)
+	parser.add_option("--npeakstorefine", type="int", help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15", default="rotate_translate_3d:search=10:delta=15:dphi=15")
 	parser.add_option("--aligncmp",type="string",help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d")
@@ -97,6 +98,9 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	if options.ncoarse!=None :
+		print "The ncoarse option has been renamed npeakstorefine"
+		sys.exit(1)
 	if options.align : options.align=parsemodopt(options.align)
 	if options.ralign : options.ralign=parsemodopt(options.ralign)
 	if options.aligncmp : options.aligncmp=parsemodopt(options.aligncmp)
@@ -203,7 +207,7 @@ def main():
 				for j in range(0,nseed/(2**i),2):
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
-						options.ncoarse,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					tasks.append(task)
 
 				# Start the alignments for this level
@@ -232,7 +236,7 @@ def main():
 			tasks=[]
 			for p in ptcls:
 				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,
-					options.ncoarse,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				tasks.append(task)
 			
 			# start the alignments running
@@ -393,7 +397,7 @@ def get_results(etc,tids,verbose):
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,ncoarse,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
+	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
@@ -403,7 +407,7 @@ class Align3DTask(EMTask):
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"ncoarse":ncoarse,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -470,8 +474,8 @@ class Align3DTask(EMTask):
 			if options["shrinkrefine"]>1 : bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
 		# this is the default behavior, seed orientations come from coarse alignment
 		else:
-			# returns an ordered vector of Dicts of length options.ncoarse. The Dicts in the vector have keys "score" and "xform.align3d"
-			bestcoarse=simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["ncoarse"],options["aligncmp"][0],options["aligncmp"][1])
+			# returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
+			bestcoarse=simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			scaletrans=options["shrink"]/float(options["shrinkrefine"])
 			if scaletrans!=1.0:
 				for c in bestcoarse:
