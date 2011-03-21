@@ -8162,40 +8162,35 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int z_start = 1-nz%2;
 
 	if (axis == "x" || axis == "X") {
- 	        for (int iz = 0; iz < nz; iz++)
+	        for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
 				int offset = nx*iy + nxy*iz;
-                         	 reverse(&data[offset+x_start],&data[offset+nx]);
-		         }
-         }
-
-         if (axis == "y" || axis == "Y") {
-                float *tmp = new float[nx];
-	         int nhalf   = ny/2;
- 		 size_t beg     = 0;
-                 for (int iz = 0; iz < nz; iz++) {
-		      beg = iz*nxy;
-		      for (int iy = y_start; iy < nhalf; iy++) {
-		      		memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
+				reverse(&data[offset+x_start],&data[offset+nx]);
+			}
+	} else if (axis == "y" || axis == "Y") {
+		float *tmp = new float[nx];
+		int nhalf   = ny/2;
+		size_t beg     = 0;
+		for (int iz = 0; iz < nz; iz++) {
+			beg = iz*nxy;
+			for (int iy = y_start; iy < nhalf; iy++) {
+				memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
 				memcpy(&data[beg+iy*nx], &data[beg+(ny-iy-1+y_start)*nx], nx*sizeof(float));
 				memcpy(&data[beg+(ny-iy-1+y_start)*nx], tmp, nx*sizeof(float));
 			}
 		}
 		delete[] tmp;
-	}
-
-         if (axis == "z" || axis == "Z") {
-	 	if(1-z_start){
+	} else if (axis == "z" || axis == "Z") {
+		if(1-z_start) {
 			int nhalf = nz/2;
 			float *tmp = new float[nxy];
 			for(int iz = 0;iz<nhalf;iz++){
 				memcpy(tmp,&data[iz*nxy],nxy*sizeof(float));
 				memcpy(&data[iz*nxy],&data[(nz-iz-1)*nxy],nxy*sizeof(float));
 				memcpy(&data[(nz-iz-1)*nxy],tmp,nxy*sizeof(float));
-				}
+			}
 			delete[] tmp;
-		}
-		else{
+		} else {
 			float *tmp = new float[nx];
 			int nhalf   = nz/2;
 			size_t beg     = 0;
@@ -8209,9 +8204,9 @@ void MirrorProcessor::process_inplace(EMData *image)
 			}
 			delete[] tmp;
 		}
-         }
+	}
 
-	 image->update();
+	image->update();
 }
 
 
