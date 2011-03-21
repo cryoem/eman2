@@ -50,30 +50,17 @@ parser.add_option("--fbeaut", action="store_true",
                   help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output")
 parser.add_option("--fcref", action="store_true",
                   help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))")
-parser.add_option("--ifsc", type="string", default="0",
-                  help="(0,1,2,3)Calculation of FSC Table (1,2,3 save reduce memory usage): 0 = Internally calculate two reconstructions with odd and even particles and generate FSC table at end. 1 = Only use odd particles for one reconstruction. 2 = Only use even particles for one reconstruction. 3 = use all particles but only for one reconstruction.")
 parser.add_option("--fstat", action="store_true",
                   help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50% more memory.")
-parser.add_option("--iblow", type="string", default="2",
-                  help="(1,2,4)Padding factor for reference structure. 4 uses the most memory but is the fastest search and refinement")
-parser.add_option("--mask", type="float",
-                  help="Size of mask radius (RO). Default is 3/8 the particle radius * its angstrom per pixel")
 parser.add_option("--rrec", type="string",
                   help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.")
 parser.add_option("--reslow", type="float",
                   help="Resolution of the data included in the alignment. This is the low resolution value. ex:200")
 parser.add_option("--reshigh", type="float",
                   help="Resolution of the data included in the alignment. This is the high resolution value. ex:25")
-parser.add_option("--refdef", action="store_true",
-                  help="FreAlign will refine the defocus ")
-parser.add_option("--refastyg", action="store_true",
-                  help="FreAlign will refine the astigmatism ")
-parser.add_option("--refpart", action="store_true",
-                  help="FreAlign will refine the defocus for individual particles ")
 parser.add_option("--thresh", type="float",
                   help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ")
-parser.add_option("--pbc", type="float",
-                  help="Phase Residual/Pseudo B-Factor Constant ")
+
 
 
 
@@ -202,20 +189,12 @@ for option1 in optionList:
    elif option1 == "fcref":
       FCREF = 'T'
   
-   elif option1 == "mask":
-      RO = str(options.mask)
-   elif option1 == "ifsc":
-      ifs = options.ifsc
-      if int(ifs) < 4 and int(ifs) >= 0:
-         IFSC = ifs
-      else:
-         print "Invalid ifsc value. using default 0"
-         IFSC = '0'
    elif option1 == "rrec":
       rrec_list = options.rrec
       rrec_list = rrec_list.replace(' ', '')
       rrec_list = rrec_list.split(',')
       rrec_list.sort(reverse=True)
+
    elif option1 == "reslow":
       RMAX1 = str(options.reslow)
 
@@ -224,14 +203,6 @@ for option1 in optionList:
 
    elif option1 == "fstat":
          FSTAT = 'T'
-
-   elif option1 == "iblow":
-      ibl = int(options.iblow)
-      if ibl != 1 and ibl!= 2 and ibl != 4:
-         print "Invalid value for iblow. using default 2"
-         IBLOW = '2'
-      else:
-         IBLOW = str(ibl)
 
 for i in range(len(rrec_list)):
    OUTFILE2 = E2FA + "/card" + str(i) + ".txt"          # Cards required by FA
@@ -249,7 +220,7 @@ for i in range(len(rrec_list)):
    # Card 2
    RI = DANG = ITMAX = '0'
    XSTD = '1'
-   PBC = '5'
+   PBC = '100'
    BOFF = '60'
    IPMAX = '10' 
    PSIZE = str(tmp['apix']) 
