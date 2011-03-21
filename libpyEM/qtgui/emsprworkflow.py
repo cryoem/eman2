@@ -5869,7 +5869,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		preslow = ParamDef(name="reslow",vartype="float",desc_short="reslow", desc_long="low resolution",property=None,defaultunits=db.get("reslow",dfl=200.0),choices=None)
 		preshigh = ParamDef(name="reshigh",vartype="float",desc_short="reshigh", desc_long="high resolution",property=None,defaultunits=db.get("reshigh",dfl=25.0),choices=None)
 		params.append([preslow, preshigh])
-		prrec = ParamDef(name="rrec",vartype="string",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits=db.get("rrec",dfl="10.0"),choices=None)
+		prrec = ParamDef(name="rrec",vartype="float",desc_short="rrec", desc_long="rrec for FreeAlign",property=None,defaultunits=db.get("rrec",dfl=10.0),choices=None)
 		pthresh = ParamDef(name="thresh",vartype="float",desc_short="thresh", desc_long="FreeAlign threshold",property=None,defaultunits=db.get("thresh",dfl=90.0),choices=None)
 		params.append([prrec, pthresh])
 		
@@ -5907,7 +5907,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 			e2falist.append("--fcref")
 		if(params["fstat"]):
 			e2falist.append("--fstat")
-		e2falist.append("--rrec="+params["rrec"])
+		e2falist.append("--rrec="+str(params["rrec"]))
 		e2falist.append("--reslow="+str(params["reslow"]))
 		e2falist.append("--reshigh="+str(params["reshigh"]))
 		e2falist.append("--thresh="+str(params["thresh"]))
