@@ -46,6 +46,7 @@ def main():
 	
 	#options associated with e2rctV2.py
 	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
+	parser.add_option("--output",type="string",default="mc.mrc",help="Name of ocomputed reconstruction, default=mc.mrc")
 	parser.add_option("--mccoeff",type="float",default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0")
 	parser.add_option("--numsasteps",type="float",default=10.0,help="The number of steps at a given temp, default=10.0")
 	parser.add_option("--numtemps",type="float",default=10.0,help="The number of temp steps, default=10.0")
@@ -119,8 +120,11 @@ def main():
 		#ca.set_attr("xform.projection", besttlist[canum])
 		bfreconstructor.insert_slice(ca, besttlist[canum][0],1)
 	recon = bfreconstructor.finish(1)
-	recon.set_attr('UCSF.chimera',1)
-	recon.write_image('mc.mrc')
+	
+	#write output
+	if options.output[-3:] == "mrc":
+		recon.set_attr('UCSF.chimera',1)
+	recon.write_image(options.output)
 
 # Strategy pattern, allows other algoithms to be plugged in
 class Refine:
@@ -128,7 +132,7 @@ class Refine:
 		self.name = name
 	def refinerecon(self, calist, blist, reconstructor):
 		raise NotImplementedError("Subclass must implement abstract method")
-	
+# Do per image SA
 class SAsca(Refine):
 	def refinerecon(self, calist, blist, reconstructor):
 		print "Running: "+self.name
@@ -177,6 +181,7 @@ class SAsca(Refine):
 		return de < 0 or Util.get_frand(0,1) < math.exp(-de/temp)
 
 # This algorithm is a bit Rubbish!!!!
+# DO all image SA
 class SA(Refine):
 	def refinerecon(self, calist, blist, reconstructor):
 		print "Running: "+self.name
