@@ -4281,7 +4281,7 @@ void FlipProcessor::process_inplace(EMData * image)
 	string axis = (const char*)params["axis"];
 	
 #ifdef EMAN2_USING_CUDA
-	if (image->cudarwdata) {
+	if (image->getcudarwdata()) {
 		//cout << "flip processor" << endl;
 		float array[12] = {1.0, 0.0, 0.0, 0.0,
 						   0.0, 1.0, 0.0, 0.0,
@@ -4930,9 +4930,9 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
-	if (image->cudarwdata && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+	if (image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
 		//cout << "CUDA tocorner" << endl;
-		emdata_phaseorigin_to_corner(image->cudarwdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		emdata_phaseorigin_to_corner(image->getcudarwdata(), image->get_xsize(), image->get_ysize(), image->get_zsize());
 		return;
 	}
 #endif // EMAN2_USING_CUDA
@@ -5078,9 +5078,9 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
-	if (image->cudarwdata && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+	if (image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
 		//cout << "CUDA tocenter" << endl;
-		emdata_phaseorigin_to_center(image->cudarwdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		emdata_phaseorigin_to_center(image->getcudarwdata(), image->get_xsize(), image->get_ysize(), image->get_zsize());
 		return;
 	}
 #endif // EMAN2_USING_CUDA
@@ -8641,8 +8641,8 @@ void Rotate180Processor::process_inplace(EMData* image) {
 	}
 
 #ifdef EMAN2_USING_CUDA
-	if (image->cudarwdata ) {
-		emdata_rotate_180(image->cudarwdata, image->get_xsize(), image->get_ysize());
+	if (image->getcudarwdata()) {
+		emdata_rotate_180(image->getcudarwdata(), image->get_xsize(), image->get_ysize());
 		EXITFUNC;
 		return;
 	}

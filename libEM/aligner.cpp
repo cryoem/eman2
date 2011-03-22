@@ -136,8 +136,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
-		if(!to->cudarwdata) to->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!to->getcudarwdata()) to->copy_to_cuda();
 		if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
 		if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
  		//cout << "Translate on GPU" << endl;
@@ -196,7 +196,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 #ifdef EMAN2_USING_CUDA
 	if (!use_cpu) {
 		if (nozero) throw UnexpectedBehaviorException("Nozero is not yet supported in CUDA");
-		CudaPeakInfo* data = calc_max_location_wrap_cuda(cf->cudarwdata, cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), maxshiftx, maxshifty, maxshiftz);
+		CudaPeakInfo* data = calc_max_location_wrap_cuda(cf->getcudarwdata(), cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), maxshiftx, maxshifty, maxshiftz);
 		peak = IntPoint(data->px,data->py,data->pz);
 		free(data);
 	}
@@ -307,8 +307,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
-		if(!to->cudarwdata) to->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 #endif
 
@@ -544,8 +544,8 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
-		if(!to->cudarwdata) to->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 #endif
 
@@ -1583,8 +1583,8 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
-		if(!to->cudarwdata) to->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 #endif
 
@@ -1766,8 +1766,8 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
-		if(!to->cudarwdata) to->copy_to_cuda();
-		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
+		if(!to->getcudarwdata()) to->copy_to_cuda();
+		if(to->getcudarwdata()){if(tofft) tofft->copy_to_cuda();}
 	}
 #endif
 
@@ -1800,15 +1800,15 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
 #ifdef EMAN2_USING_CUDA	
-					if(to->cudarwdata){
+					if(to->getcudarwdata()){
 						use_cpu = false;
-						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						tran.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-						//CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						//CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						//tran.set_trans(-data->xintp, -data->yintp, -data->zintp);
 						tr = tran*tr;
 						if (tomography) {
-							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+							float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
 						} else {
 							score = -data->peak;
@@ -1945,8 +1945,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
-		if(!to->cudarwdata) to->copy_to_cuda();
-		if(to->cudarwdata){if(tofft) tofft->copy_to_cuda();}
+		if(!to->getcudarwdata()) to->copy_to_cuda();
+		if(to->getcudarwdata()){if(tofft) tofft->copy_to_cuda();}
 	}
 #endif
 
@@ -1973,13 +1973,13 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
 #ifdef EMAN2_USING_CUDA	
-					if(to->cudarwdata){
+					if(to->getcudarwdata()){
 						use_cpu = false;;
-						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
 						t = trans*t;	//composite transfrom
 						if (tomography) {
-							float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+							float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
 						} else {
 							best_score = -data->peak;
@@ -2123,7 +2123,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if(EMData::usecuda == 1) {
 		cout << "Using CUDA for 3D alignment" << endl;
 		if(!to->isrodataongpu()) to->copy_to_cudaro();
-		if(!this_img->cudarwdata) this_img->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
 		if(this_imgfft) this_imgfft->copy_to_cuda();
 	}
 #endif
@@ -2150,13 +2150,13 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			if(dotrans || tomography){
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
 #ifdef EMAN2_USING_CUDA	
-				if(this_img->cudarwdata){
+				if(this_img->getcudarwdata()){
 					use_cpu = false;;
-					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
+					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 					trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
 					t = trans*t;	//composite transform
 					if (tomography) {
-						float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+						float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 						best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
 					} else {
 						best_score = -data->peak;

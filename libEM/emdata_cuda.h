@@ -86,19 +86,27 @@ public:
 	*/
 	bool isrodataongpu() const;
 	
-inline	void roneedsanupdate()
-{
-	
-	roneedsupdate = true;
-}
+	inline	void roneedsanupdate()
+	{
+		roneedsupdate = true;
+	}
 
+	inline float* getcudarwdata() const
+	{
+		return cudarwdata;
+	}
+	
+	inline cudaArray* getcudarodata() const
+	{
+		return cudarodata;
+	}
+	
 	/** switch to turn on mempool usage */
 	static void usemempool(int size);
 	
 	/** freemempool */
 	static void freemempool();
 	
-//private:
 	/** allocate RW on GPU device
 	*/
 	bool rw_alloc() const;
@@ -135,6 +143,9 @@ inline	void roneedsanupdate()
 	
 	static void cuda_initialize();
 	
+	static bool usecuda;
+
+private:
 	//pointers to cuda data
 	mutable float* cudarwdata;	//we can still change GPU data on a cost object
 	mutable cudaArray* cudarodata;	//we can still change GPU data on a cost object
@@ -151,7 +162,6 @@ inline	void roneedsanupdate()
 	static int fudgemem;
 	const static EMData* firstinlist;
 	const static EMData* lastinlist;
-	static bool usecuda;
 	
 	// mempool stuff
 	static float* mempool[MEMPOOL_SIZE];

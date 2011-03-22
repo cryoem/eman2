@@ -890,7 +890,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 			//EMData *e = new EMData();
 			//e->set_size(image->get_xsize(), image->get_ysize(), 1);
 			e->rw_alloc();
-			standard_project(m,e->cudarwdata, e->get_xsize(), e->get_ysize());
+			standard_project(m,e->getcudarwdata(), e->get_xsize(), e->get_ysize());
 			image->unbindcudaarryA();
 			delete [] m;
 		

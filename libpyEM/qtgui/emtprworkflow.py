@@ -516,15 +516,14 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			return
 
 		self.write_db_entries(params)
-
-		e2tblist = []
-		e2tblist.append("e2tomoboxer.py")
-		e2tblist.append(params['filenames'][0])
+		
+		e2tblist = "e2tomoboxer.py"
+		e2tblist += " "+params['filenames'][0]
 		if params["yshort"]:
-			e2tblist.append("--yshort")
+			e2tblist += " --yshort"
 		if params["inmemory"]:
-			e2tblist.append("--inmemory")
-		e2tblist.append("--apix="+str(params["apix"]))
+			e2tblist += " --inmemory"
+		e2tblist += " --apix="+str(params["apix"])
 		
 		cmdstr = ''
 		for i in e2tblist:
@@ -1364,50 +1363,49 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			EMErrorMessageDisplay.run(["Only one referecne can be used"])
 			return
 		
-		e23dcalist = []
-		e23dcalist.append("e2classaverage3d.py")
-		e23dcalist.append("--input="+params['filenames'][0])
+		e23dcalist = "e2classaverage3d.py"
+		e23dcalist += " --input="+params['filenames'][0]
 		if(params['filenames'][0][-4:-3] == "."):
-			e23dcalist.append("--output="+params['filenames'][0][:-4]+"_3DAVG."+params['filenames'][0][-3:]) # output file hack
+			e23dcalist += " --output="+params['filenames'][0][:-4]+"_3DAVG."+params['filenames'][0][-3:] # output file hack
 		else:
-			e23dcalist.append("--output="+params['filenames'][0]+"_3DAVG")
+			e23dcalist += " --output="+params['filenames'][0]+"_3DAVG"
 		
 		spacer = ""
 		try:
-			e23dcalist.append("--ref="+params["refnames"][0])
+			e23dcalist += " --ref="+params["refnames"][0]
 		except:
 			pass
 		if params["savesteps"]:
-			e23dcalist.append("--savesteps")
+			e23dcalist += " --savesteps"
 		if params["saveali"]:
-			e23dcalist.append("--saveali")
+			e23dcalist += " --saveali"
 		if params["number of iterations"]:
-			e23dcalist.append("--iter="+str(params["number of iterations"]))
+			e23dcalist += " --iter="+str(params["number of iterations"])
 		if params["Percentage to shrink"]:
-			e23dcalist.append("--shrink="+str(params["Percentage to shrink"]))
+			e23dcalist += " --shrink="+str(params["Percentage to shrink"])
 		if params["Percentage to shrink, refinement"]:
-			e23dcalist.append("--shrinkrefine="+str(params["Percentage to shrink, refinement"]))
+			e23dcalist += " --shrinkrefine="+str(params["Percentage to shrink, refinement"])
 		if params["coarse number"]:
-			e23dcalist.append("--ncoarse="+str(params["coarse number"]))
+			e23dcalist += " --npeakstorefine="+str(params["coarse number"])
 		if params["mask"] != "None":
 			spacer=""
 			if params["maskparams"]: spacer=":"
-			e23dcalist.append("--mask="+params["mask"]+spacer+params["maskparams"])
+			e23dcalist += " --mask="+params["mask"]+spacer+params["maskparams"]
 		if params["filter"] != "None":
 			spacer=""
 			if params["filterparams"]: spacer=":"  
-			e23dcalist.append("--preprocess="+params["filter"]+spacer+params["filterparams"])
+			e23dcalist += " --preprocess="+params["filter"]+spacer+params["filterparams"]
 		spacer=""
 		if params["ali3dparams"]: spacer=":" 
-		e23dcalist.append("--align="+params["aligner3D"]+spacer+params["ali3dparams"])
+		e23dcalist += " --align="+params["aligner3D"]+spacer+params["ali3dparams"]
 		spacer=""
 		if params["rali3dparams"]: spacer=":" 
-		e23dcalist.append("--ralign="+params["raligner3D"]+spacer+params["rali3dparams"])
+		e23dcalist += " --ralign="+params["raligner3D"]+spacer+params["rali3dparams"]
 		if params["postfilter"] != "None":
 			if params["postfilterparams"]: spacer=":" 
-			e23dcalist.append("--postprocess="+params["postfilter"]+spacer+params["postfilterparams"])
+			e23dcalist += " --postprocess="+params["postfilter"]+spacer+params["postfilterparams"]
 		if params["parallel"]:
-			e23dcalist.append("--parallel="+params["parallel"])
+			e23dcalist += " --parallel="+params["parallel"]
 		print e23dcalist
 		
 		cmdstr = ''

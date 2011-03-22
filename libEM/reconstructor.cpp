@@ -521,12 +521,12 @@ void FourierReconstructor::clear()
 	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(image->cudarwdata) {
-			to_zero_cuda(image->cudarwdata,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		if(image->getcudarwdata()) {
+			to_zero_cuda(image->getcudarwdata(),image->get_xsize(),image->get_ysize(),image->get_zsize());
 			zeroimage = false;
 		}
-		if(tmp_data->cudarwdata) {
-			//to_zero_cuda(tmp_data->cudarwdata,image->get_xsize(),image->get_ysize(),image->get_zsize());
+		if(tmp_data->getcudarwdata()) {
+			//to_zero_cuda(tmp_data->getcudarwdata(),image->get_xsize(),image->get_ysize(),image->get_zsize());
 			zerotmpimg = false;
 		}
 	}
@@ -541,7 +541,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 {
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!slice->cudarwdata) slice->copy_to_cuda(); //copy slice to cuda using the const version
+		if(!slice->getcudarwdata()) slice->copy_to_cuda(); //copy slice to cuda using the const version
 	}
 #endif
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
@@ -558,7 +558,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 	// Fourier transform the slice
 	
 #ifdef EMAN2_USING_CUDA
-	if(return_slice->cudarwdata) {
+	if(return_slice->getcudarwdata()) {
 		return_slice->do_fft_inplace_cuda(); //a CUDA FFT inplace is quite slow as there is a lot of mem copying.
 	}else{
 		return_slice->do_fft_inplace();
@@ -586,7 +586,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->cudarwdata) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
+		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
 	}
 #endif
 
@@ -638,7 +638,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!image->cudarwdata){
+		if(!image->getcudarwdata()){
 			image->copy_to_cuda();
 			tmp_data->copy_to_cuda();
 		}
@@ -646,8 +646,8 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 		for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 			Transform t3d = arg*(*it);
 			t3d.copy_matrix_into_array(m);
-			//cout << "using CUDA " << image->cudarwdata << endl;
-			insert_slice_cuda(m,input_slice->cudarwdata,image->cudarwdata,tmp_data->cudarwdata,inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
+			//cout << "using CUDA " << image->getcudarwdata() << endl;
+			insert_slice_cuda(m,input_slice->getcudarwdata(),image->getcudarwdata(),tmp_data->getcudarwdata(),inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
 		}
 		delete m;
 		return;
@@ -693,7 +693,7 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->cudarwdata) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
+		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
 	}
 #endif
 
@@ -751,8 +751,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->cudarwdata) input_slice->copy_to_cuda();
-		if(!image->cudarwdata){
+		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda();
+		if(!image->getcudarwdata()){
 			image->copy_to_cuda();
 			tmp_data->copy_to_cuda();
 		}
@@ -760,7 +760,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 			Transform t3d = arg*(*it);
 			float * m = new float[12];
 			t3d.copy_matrix_into_array(m);
-			float4 stats = determine_slice_agreement_cuda(m,input_slice->cudarwdata,image->cudarwdata,tmp_data->cudarwdata,inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
+			float4 stats = determine_slice_agreement_cuda(m,input_slice->getcudarwdata(),image->getcudarwdata(),tmp_data->getcudarwdata(),inx,iny,image->get_xsize(),image->get_ysize(),image->get_zsize(), weight);
 			dot = stats.x;
 			vweight = stats.y;
 			power = stats.z;
@@ -906,7 +906,7 @@ EMData *FourierReconstructor::finish(bool doift)
 // 	float *norm = tmp_data->get_data();
 // 	float *rdata = image->get_data();
 #ifdef EMAN2_USING_CUDA
-	if(image->cudarwdata){
+	if(image->getcudarwdata()){
 		cout << "copy back from CUDA" << endl;
 		image->copy_from_device();
 		tmp_data->copy_from_device();

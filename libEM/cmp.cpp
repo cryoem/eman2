@@ -73,7 +73,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 {
 	
 #ifdef EMAN2_USING_CUDA  
-	if (image->cudarwdata && with->cudarwdata) {
+	if (image->getcudarwdata() && with->getcudarwdata()) {
 		//no need for futher checking, which will induce an expensive copy from device to host
 		return;
 	}
@@ -125,14 +125,14 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 		if(mask!=0) {has_mask=true;}
 	}
 #ifdef EMAN2_USING_CUDA
-	if (image->cudarwdata && with->cudarwdata) {
+	if (image->getcudarwdata() && with->getcudarwdata()) {
 		//cout << "CUDA ccc cmp" << endl;
 		float* maskdata = 0;
-		if(has_mask && !mask->cudarwdata){
+		if(has_mask && !mask->getcudarwdata()){
 			mask->copy_to_cuda();
-			maskdata = mask->cudarwdata;
+			maskdata = mask->getcudarwdata();
 		}
-		float ccc = ccc_cmp_cuda(image->cudarwdata, with->cudarwdata, maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+		float ccc = ccc_cmp_cuda(image->getcudarwdata(), with->getcudarwdata(), maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
 		ccc *= negative;
 		//cout << "CUDA CCC is: " << ccc << endl;
 		return ccc;
@@ -415,7 +415,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 #ifdef EMAN2_USING_CUDA // SO far only works for real images I put CUDA first to avoid running non CUDA overhead (calls to getdata are expensive!!!!)
 	if(image->is_complex() && with->is_complex()) {
 	} else {
-		if (image->cudarwdata && with->cudarwdata) {
+		if (image->getcudarwdata() && with->getcudarwdata()) {
 			//cout << "CUDA dot cmp" << endl;
 			float* maskdata = 0;
 			bool has_mask = false;
@@ -424,12 +424,12 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				mask = params["mask"];
 				if(mask!=0) {has_mask=true;}
 			}
-			if(has_mask && !mask->cudarwdata){
+			if(has_mask && !mask->getcudarwdata()){
 				mask->copy_to_cuda();
-				maskdata = mask->cudarwdata;
+				maskdata = mask->getcudarwdata();
 			}
 
-			float result = dot_cmp_cuda(image->cudarwdata, with->cudarwdata, maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
+			float result = dot_cmp_cuda(image->getcudarwdata(), with->getcudarwdata(), maskdata, image->get_xsize(), image->get_ysize(), image->get_zsize());
 			result *= negative;
 
 			return result;
@@ -646,14 +646,14 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	searchz = params.set_default("searchz",-1);
 	
 #ifdef EMAN2_USING_CUDA	
-	if(image->cudarwdata && with->cudarwdata){
+	if(image->getcudarwdata() && with->getcudarwdata()){
 		if (!ccf) {
 			ccf = image->calc_ccf(with);
 			ccf_ownership = true;
 		}
 		//cout << "using CUDA" << endl;
-		float2 stats = get_stats_cuda(ccf->cudarwdata, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
-		float best_score = get_value_at_wrap_cuda(ccf->cudarwdata, 0, 0, 0, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		float best_score = get_value_at_wrap_cuda(ccf->getcudarwdata(), 0, 0, 0, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 		if(norm) {
 			best_score = negative*(best_score - stats.x)/sqrt(stats.y);
 		} else {
@@ -1139,7 +1139,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	vector < float >fsc;
 	bool use_cpu = true;
 #ifdef EMAN2_USING_CUDA
-	if(image->cudarwdata && with->cudarwdata) {
+	if(image->getcudarwdata() && with->getcudarwdata()) {
 		UnexpectedBehaviorException("CUDA FRC cmp under construction....");
 		/*
 		if (zeromask) throw UnexpectedBehaviorException("ZeroMask is not yet supported in CUDA"); 
