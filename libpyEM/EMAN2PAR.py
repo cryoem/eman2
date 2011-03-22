@@ -539,7 +539,7 @@ class EMLocalTaskHandler():
 			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
 #				print "Launch task ",self.nextid
 				EMLocalTaskHandler.lock.acquire()
-				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)], shell=True)
+				proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
 				self.running.append((proc,self.nextid))
 				self.nextid+=1
 				EMLocalTaskHandler.lock.release()

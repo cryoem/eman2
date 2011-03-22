@@ -526,7 +526,10 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 			e2tblist.append("--inmemory")
 		e2tblist.append("--apix="+str(params["apix"]))
 		
-		child = subprocess.Popen(e2tblist, shell=True)
+		cmdstr = ''
+		for i in e2tblist:
+			cmdstr += i + ' '
+		child = subprocess.Popen(cmdstr, shell=True)
 		
 		self.form.close()
 		self.form = None
@@ -1407,6 +1410,9 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			e23dcalist.append("--parallel="+params["parallel"])
 		print e23dcalist
 		
+		cmdstr = ''
+		for i in e23dcalist:
+			cmdstr += i + ' '
 		child = subprocess.Popen(e23dcalist, shell=True)
 		
 		self.form.close()
