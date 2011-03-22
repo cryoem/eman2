@@ -295,6 +295,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		dims = 1;	//one compound type
 		spc = H5Screate_simple(1, &dims, NULL);
 		break;
+	case EMObject::TRANSFORMARRAY:
 	case EMObject::STRINGARRAY:
 	case EMObject::EMDATA:
 	case EMObject::XYDATA:
