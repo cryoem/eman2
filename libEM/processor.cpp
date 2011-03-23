@@ -891,7 +891,7 @@ EMData* SymAlignProcessor::process(const EMData * const image)
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 	
 	float bestquality = 0.0f;
-	EMData* bestimage;
+	EMData* bestimage = 0;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict tparams = trans_it->get_params("eman");
 		Transform t(tparams);
@@ -1996,7 +1996,7 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 					}
 				}
 
-				for (k = 0; k < threed_shrink_factor / 2 + 1; k++) {
+				for (k = 0; k < size_t(threed_shrink_factor / 2 + 1); k++) {
 					for (int i2 = k + 1; i2 < threed_shrink_factor; i2++) {
 						if (mbuf[i2] < mbuf[k]) {
 							float f = mbuf[i2];
