@@ -343,7 +343,7 @@ def db_read_image(self,fsp,*parms):
 		else: 
 			try: key=parms[0]
 			except: key=0
-		
+        
 		x=db.get(key,target=self,nodata=nodata,region=region)
 		if x==None : raise Exception("Could not access "+str(fsp)+" "+str(key))
 #		except: 
@@ -965,8 +965,7 @@ class DBDict:
 				self.bdb=None
 				self.lock.release()
 				if DBDEBUG : traceback.print_exc()
-				print "Cannot open or find ",self.name
-				raise Exception
+				raise Exception, "Cannot open or find %s"%self.name
 				
 			#except: 
 				## try one more time... this shouldn't be necessary...
@@ -1291,6 +1290,8 @@ of these occasional errors"""
 						traceback.print_exc()
 						sys.exit(1)
 			return ret
+		if not isinstance(r,dict):
+			raise Exception,"missing meta data for this image!!!"
 		return r
 		
 	def get_header(self,key,txn=None,target=None):
