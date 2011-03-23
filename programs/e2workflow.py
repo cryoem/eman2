@@ -1050,7 +1050,7 @@ class EMWorkFlowManager:
 		self.task_monitor = EMTaskMonitorWidget()
 		self.selector = EMWorkFlowSelectorWidget(self.task_monitor)
 		self.selector.resize(300,540)
-		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.set_entries)
+		#QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.set_entries) # I don't like all this output!
 		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.task_killed)
 		
 	
