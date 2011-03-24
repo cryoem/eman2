@@ -1290,8 +1290,8 @@ of these occasional errors"""
 						traceback.print_exc()
 						sys.exit(1)
 			return ret
-		if not isinstance(r,dict):
-			raise Exception,"missing meta data for this image!!!"
+		#if not isinstance(r,dict):
+		#	raise Exception,"missing meta data for this image!!!"
 		return r
 		
 	def get_header(self,key,txn=None,target=None):
