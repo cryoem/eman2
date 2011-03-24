@@ -61,7 +61,7 @@ def main():
 	parser.add_option("--aligngran",type="float",default=30.0,help="Fineness of global search in e2align3d.py, default=30.0")
 	parser.add_option("--weightrecons",type="int",default=1,help="weight reconstructions by ptcl_repr (before averaging), default=1")
 	parser.add_option("--maxshift",type="int",help="Maximun amout to shift the images during alignment", default=2)
-	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections in each reconstruction, default=auto")
+	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto")
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
