@@ -966,6 +966,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
+	if(!data) {
+		std::cerr << "Warning:blank image written!!! " << std::endl;
+		return 0;
+	}
 
 #ifdef DEBUGHDF
 	printf("write_data %d\n",image_index);
