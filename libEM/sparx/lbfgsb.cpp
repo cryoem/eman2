@@ -5297,7 +5297,7 @@ double dpmeps_()
     /* Local variables */
     static double beta;
     static long int irnd;
-    static double temp, temp1, a, b;
+    static volatile double temp, temp1, a, b;
     static long int i__;
     static double betah;
     static long int ibeta, negep;
