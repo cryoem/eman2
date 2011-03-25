@@ -19067,7 +19067,7 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 		x[i] = args[i]; 
 		nbd[i] = 0;
 	}
-	
+
 	//     We start the iteration by initializing task.
 	// (**MUST clear remaining chars in task with spaces (else crash)!**)
 	strcpy(task,"START");
@@ -19101,7 +19101,7 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	vector<float> res;
 	for (int i=0; i<nmax; i++) res.push_back(static_cast<float>(x[i]));
 	res.push_back(f);
-	
+
 	delete[] nbd;
 	delete[] iwa;
 	delete[] x;
@@ -19109,7 +19109,7 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	delete[] u;
 	delete[] g;
 	delete[] wa;
-	
+
 	return res;
 
 }
@@ -19160,21 +19160,20 @@ float Util::multi_align_error_func(double* x, vector<float> all_ali_params, int 
 			rot_shift(x2, y2, alpha12, sx12, sy12, x2_new+j, y2_new+j);
 		}
 		
-		float p = var(x1_new, num_ali)+var(y1_new, num_ali)+var(x2_new, num_ali)+var(y2_new, num_ali);
-		all_var += p;
+		all_var += var(x1_new, num_ali)+var(y1_new, num_ali)+var(x2_new, num_ali)+var(y2_new, num_ali);
 	}
 	delete[] x1_new;
 	delete[] y1_new;
 	delete[] x2_new;
 	delete[] y2_new;
-	return all_var/static_cast<float>(nima);
+	return all_var/static_cast<float>(nima-1);
 }
 
 void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int nima, int num_ali, double* g) {
 
 	
 	for (int i=0; i<num_ali*3-3; i++) g[i] = 0.0;
-	
+
 	float x1 = 1.0;
 	float y1 = 0.0;
 	float x2 = 0.0;
@@ -19192,14 +19191,14 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 	float* mirror1_0 = new float[num_ali-1];
 
 	for (int i=0; i<nima; i++) {
-		
+
 		float alpha2 = all_ali_params[(num_ali-1)*(nima*4)+i*4];
 		float sx2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+1];
 		float sy2 = all_ali_params[(num_ali-1)*(nima*4)+i*4+2];
-		
+
 		rot_shift(x1, y1, alpha2, sx2, sy2, x1_new+num_ali-1, y1_new+num_ali-1);
 		rot_shift(x2, y2, alpha2, sx2, sy2, x2_new+num_ali-1, y2_new+num_ali-1);
-		
+
 		for (int j=0; j<num_ali-1; j++) {
 			float alpha1 = all_ali_params[j*(nima*4)+i*4];
 			float sx1 = all_ali_params[j*(nima*4)+i*4+1];
@@ -19212,7 +19211,7 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 
 			float cosi = cos(alphai/180.0f*M_PI);
 			float sini = sin(alphai/180.0f*M_PI);
-			
+
 			float alpha12, sx12, sy12;
 			int mirror12;
 			if (mirror1 == 0) {
@@ -19227,7 +19226,7 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 
 			rot_shift(x1, y1, alpha12, sx12, sy12, x1_new+j, y1_new+j);
 			rot_shift(x2, y2, alpha12, sx12, sy12, x2_new+j, y2_new+j);
-		
+
 			alpha12_0[j] = alpha12;
 			mirror1_0[j] = mirror1;
 			if (mirror1 == 0) {
@@ -19270,7 +19269,7 @@ void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int 
 	delete[] dsx12;
 	delete[] dsy12;
 	delete[] mirror1_0;
-	
+
 }
 
 float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, float sx, float sy) {

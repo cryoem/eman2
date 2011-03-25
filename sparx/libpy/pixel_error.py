@@ -483,10 +483,10 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		avg = ave(a)
 		var = 0.0
 		for i in xrange(n): var+=(a[i]-avg)**2
-		return var/n
-	
-	def stable(args, data):
+		return var/(n-1)
 
+	def stable(args, data):
+		from math import sqrt
 	        x1 = 1.0
 	        y1 = 0.0
         	x2 = 0.0
@@ -495,7 +495,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
         	all_ali_params = data
 	        num_ali = len(all_ali_params)
 	        nima = len(all_ali_params[0])/4
-		err = []
+		err = [0.0]*nima
 
 	        for i in xrange(nima):
 	        	pix_error = 0
@@ -513,8 +513,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, sx12, sy12)
 	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, sx12, sy12)
 
-	        	p = var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new)
-	        	err.append(p)
+	        	err[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
 
 	        return err
 
@@ -563,6 +562,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 
 	if val > error_threshold: return [], mirror_consistent_rate, val
 	err = stable(ps, ali_params_mir_cons)
+	#  Here all errors could be printed, PAP.
 	stable_set = []
 	for i in xrange(len(mir_cons_part)):
 		if err[i] < individual_error_threshold: stable_set.append([err[i], mir_cons_part[i]])
