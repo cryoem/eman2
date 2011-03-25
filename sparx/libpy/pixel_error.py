@@ -570,7 +570,6 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		
 	return stable_set, mirror_consistent_rate, val
 
-
 '''
 
 # These are some obsolete codes, we retain them just in case.
