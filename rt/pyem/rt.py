@@ -37,5 +37,7 @@ import os
 import glob
 
 for name in glob.glob('test_*.py'):
-    #os.system('python %s'%name)
-    os.system('./%s'%name)
+    if os.name=='nt':
+        os.system('python %s'%name)
+    else:
+        os.system('./%s'%name)
