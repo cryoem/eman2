@@ -1037,7 +1037,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 				xch=sockf.read(4)
 				signal.alarm(0)
 				if xch=="WAIT" :
-					time.sleep(random.randint(5,20))
+					time.sleep(random.randint(8,30))
 					continue
 		except:
 			time.sleep(8)
@@ -1841,7 +1841,7 @@ class EMDCTaskClient(EMTaskClient):
 		return (sockout,sockoutf)
 
 	def listencache(self):
-		"""This will listen for cached data (idle for up to 15 seconds) or sleep for 15 seconds if someone else on this node is listening"""
+		"""This will listen for cached data (idle for up to 30 seconds) or sleep for 30 seconds if someone else on this node is listening"""
 		
 		try:
 			sock=socket.socket()
@@ -1850,13 +1850,13 @@ class EMDCTaskClient(EMTaskClient):
 		except:
 #			print "Sleeping (not listening)"
 			sock=None
-			time.sleep(15)
+			time.sleep(30)
 			return
 
 		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 		try:
 #			signal.alarm(15)
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 30, 0))
 			sock.listen(1)
 			sock2=sock.accept()[0]
 			sockf=sock2.makefile()
