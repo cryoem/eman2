@@ -17901,7 +17901,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 	return peak;
 }
 
-vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
+vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 
 	int kt = nref;
 	unsigned int maxasi = nima/nref;
@@ -17909,14 +17909,24 @@ vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
 	vector< vector<int> > id_list;
 	id_list.resize(nref);
 	int group;
+	bool* del_row = new bool[nref];
+	for (int i=0; i<nref; i++) del_row[i] = false;
+	bool* del_column = new bool[nima];
+	for (int i=0; i<nima; i++) del_column[i] = false;
 	while (kt > 0) {
 		int l = -1;
 		float dmax = -1.e22;
-		for (int i=0; i<nref*nima; i++)
-			if (d[i] > dmax) {
-				dmax = d[i];
-				l = i;
+		for (int i=0; i<nref; i++) {
+			if (del_row[i]) continue;
+			for (int j=0; j<nima; j++) {
+				if (del_column[j]) continue;
+				int index = i*nima+j;
+				if (d[index] > dmax) {
+					dmax = d[index];
+					l = index;
+				}
 			}
+		}
 		group = l/nima;
 		int ima  = l%nima;
 		id_list[group].push_back(ima);
@@ -17927,9 +17937,11 @@ vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
 			if (id_list[group].size() < maxasi+nima%nref) group = -1;
 			else kt -= 1;
 		}
-		for (int iref=0; iref<nref; iref++) d[iref*nima+ima] = -1.e20;
+		del_column[ima] = true;
+		//for (int iref=0; iref<nref; iref++) d[iref*nima+ima] = -1.e20;
 		if (group != -1) {
-			for (int im=0; im<nima; im++) d[group*nima+im] = -1.e20;
+			del_row[group] = true;
+			//for (int im=0; im<nima; im++) d[group*nima+im] = -1.e20;
 		}
 	}
 
@@ -17940,6 +17952,9 @@ vector<int> Util::assign_groups(vector<float> d, int nref, int nima) {
 	for (int im=maxasi; im<maxasi+nima%nref; im++)
 			id_list_1.push_back(id_list[group][im]);
 	id_list_1.push_back(group);
+
+	delete[] del_row;
+	delete[] del_column;
 	return id_list_1;
 }
 

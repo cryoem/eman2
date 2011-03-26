@@ -833,7 +833,7 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
-	static vector<int> assign_groups(vector<float> d, int nref, int nima);
+	static vector<int> assign_groups(const vector<float>& d, int nref, int nima);
 
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
