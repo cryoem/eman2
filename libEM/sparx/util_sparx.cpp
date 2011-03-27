@@ -17901,34 +17901,42 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 	return peak;
 }
 
+struct peak_table {
+	float value;
+	int index;
+	bool operator<(const peak_table& b) const { return value > b.value; }
+};
+
 vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 
 	int kt = nref;
 	unsigned int maxasi = nima/nref;
-//	vector<int> id_list[nref];
 	vector< vector<int> > id_list;
 	id_list.resize(nref);
-	int group;
+	int group, ima;
+
+	peak_table* dd = new peak_table[nref*nima];
+	for (int i=0; i<nref*nima; i++)  {
+		dd[i].value = d[i];
+		dd[i].index = i;
+	}
+	sort(dd, dd+nref*nima);
+	int begin = 0;
+
 	bool* del_row = new bool[nref];
 	for (int i=0; i<nref; i++) del_row[i] = false;
 	bool* del_column = new bool[nima];
 	for (int i=0; i<nima; i++) del_column[i] = false;
 	while (kt > 0) {
-		int l = -1;
-		float dmax = -1.e22;
-		for (int i=0; i<nref; i++) {
-			if (del_row[i]) continue;
-			for (int j=0; j<nima; j++) {
-				if (del_column[j]) continue;
-				int index = i*nima+j;
-				if (d[index] > dmax) {
-					dmax = d[index];
-					l = index;
-				}
-			}
+		bool flag = true;
+		while (flag) {
+			int l = dd[begin].index;
+			group = l/nima;
+			ima = l%nima;
+			if (del_column[ima] || del_row[group]) begin++;
+			else flag = false;
 		}
-		group = l/nima;
-		int ima  = l%nima;
+
 		id_list[group].push_back(ima);
 		if (kt > 1) {
 			if (id_list[group].size() < maxasi) group = -1;
@@ -17938,10 +17946,8 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 			else kt -= 1;
 		}
 		del_column[ima] = true;
-		//for (int iref=0; iref<nref; iref++) d[iref*nima+ima] = -1.e20;
 		if (group != -1) {
 			del_row[group] = true;
-			//for (int im=0; im<nima; im++) d[group*nima+im] = -1.e20;
 		}
 	}
 
@@ -17955,6 +17961,7 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 
 	delete[] del_row;
 	delete[] del_column;
+	delete[] dd;
 	return id_list_1;
 }
 
