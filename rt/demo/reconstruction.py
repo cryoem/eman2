@@ -36,6 +36,7 @@
 """
 from EMAN2 import *
 import os,os.path
+import shutil
 
 # stuff the user would change
 init_model_name = "model.tcp"
@@ -71,8 +72,7 @@ for deltheta in theta_granularity:
 			                     data_start, data_end,
 								 refpattern, alipattern, anglelist)
 	# remove reference projections
-	syscommand = "rm -rf %s" % rpdir
-	os.system(syscommand)
+	shutil.rmtree(rpdir, ignore_errors=True)
 	# do 3-d reconstruction to create a new model
 	vol = do_reconstruction(alipattern, data_start, data_end,
 			                4, exptanglelist)
