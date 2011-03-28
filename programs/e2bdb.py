@@ -346,10 +346,11 @@ def db_cleanup(force=False):
 	
 	if(sys.platform == 'win32'):
 		force = True
+		path="eman2db-%s"%os.getenv('USERNAME')
 		print "Database cleanup is in force mode on windows machines"
-		
-	path="eman2db-%s"%os.getenv("USER","anyone")
-
+	else:		
+		path="eman2db-%s"%os.getenv("USER","anyone")
+	
 	if not force :
 		try:
 			pipe=os.popen("lsof","r")
@@ -402,6 +403,7 @@ A serious error occured in the database cache. This normally happens if you try 
 	if(sys.platform == 'win32'):
 		import shutil
 		shutil.rmtree('C:'+e2gethome()+'/.eman2/EMAN2DB')
+		shutil.rmtree('C:/tmp/'+path)
 	else:
 		os.system("rm -rf /tmp/%s"%path)
 	print "Database cache removed. Now safe to access databases from another machine or delete existing databases"
