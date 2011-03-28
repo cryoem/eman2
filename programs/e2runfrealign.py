@@ -11,6 +11,7 @@
 import os
 import sys
 from subprocess import *
+import shutil
 from EMAN2 import *
 
 if len(sys.argv) != 1:
@@ -20,8 +21,8 @@ if len(sys.argv) != 1:
 E2n=E2init(sys.argv)
 
 os.system('clear')
-os.system('cp 3DMapInOut.mrc 3DMapInOut.mrc.old')
-os.system('cp ptcl_meta_data ptcl_meta_data.old')
+shutil.copy('3DMapInOut.mrc', '3DMapInOut.mrc.old')
+shutil.copy('ptcl_meta_data', ' ptcl_meta_data.old')
 
 try:
 	retcode = call('frealign_v8.exe < card.txt', shell=True)
@@ -32,9 +33,9 @@ try:
 except OSError, e:
 	print >>sys.stderr, "Execution Failed:", e
 
-os.system('cp 3DMapInOut.mrc OutputMap.mrc')
-os.system('mv 3DMapInOut.mrc.old 3DMapInOut.mrc')
-os.system('mv ptcl_meta_data.old ptcl_meta_data')
+shutil.copy('3DMapInOut.mrc', ' OutputMap.mrc')
+shutil.move('3DMapInOut.mrc.old', '3DMapInOut.mrc')
+shutil.move('ptcl_meta_data.old', ' ptcl_meta_data')
 print "e2runfrealign.py finished"
 
 E2end(E2n)

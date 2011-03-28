@@ -14,6 +14,7 @@ from optparse import OptionParser
 import pyemtbx.options
 import os
 import sys
+from subprocess import *
 
 SEP = 1                                # First is always best
 CLS = 6                                # Number of images in the cls_result_## bdb
@@ -128,9 +129,9 @@ nx = db[0]['nx']
 cls_dir = dir + "#cls_result_" + high                               # CLS results. 
 
 s = "e2proc2d.py " + inpt + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean"
-os.system(s)
+call(s, shell=True)
 s = "e2proc2d.py " + dir + "#threed_filt_" + high + " " + E2FA + "/3DMapInOut.mrc --threed2threed --process=normalize.edgemean"
-os.system(s)
+call(s, shell=True)
 
 # Retrieve the pixel values of each image in the CLS stack.
 for i in range(CLS):
