@@ -387,7 +387,7 @@ def db_write_image(self,fsp,*parms):
 	Writes and image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
 	the remaining options are ignored"
 	"""
-#	print "WI ",fsp,str(parms)
+#	print "In db_write_image, WI ",fsp,str(parms)
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms
