@@ -40,6 +40,7 @@ import random
 import time
 import string
 import math
+import glob
 from os import system
 from os import unlink
 from sys import argv
@@ -214,7 +215,7 @@ together."""
 					
 		
 	if (options.clsfiles) :
-		os.system("rm -f cls????.lst")
+		map(os.remove, glob.glob('cls????.lst'))
 		stackname=argv[1]
 		if options.original : stackname=options.original
 		for j in range(options.ncls):
