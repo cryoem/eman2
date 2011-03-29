@@ -285,7 +285,7 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
-	e2cacmd = "e2classaverage.py --resample --input=%s --classmx=%s --output=%s" %(options.input,options.classifyfile,options.cafile)
+	e2cacmd = "e2classaverage.py --resample --input=%s --classmx=%s --output=%s --storebad" %(options.input,options.classifyfile,options.cafile)
 	
 	e2cacmd += " --ref=%s --iter=%d -f --normproc=%s --averager=%s %s" %(options.projfile,options.classiter,options.classnormproc,options.classaverager,options.classrefsf)
 	

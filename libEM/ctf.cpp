@@ -759,14 +759,15 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				}
 
 				double div = sum * sum_xx - sum_x * sum_x;
-				if (div == 0) {
-					div = 0.0000001f;
-				}
+// 				if (div == 0) {
+// 					div = 0.0000001f;
+// 				}
 
 	//			*intercept = (float) ((sum_xx * sum_y - sum_x * sum_xy) / div);
 	//			*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
 
-				r[i]=(float) ((sum * sum_xy - sum_x * sum_y) / div)*tsnr[i];
+				if (div!=0.0) r[i]=(float) ((sum * sum_xy - sum_x * sum_y) / div)*tsnr[i];
+				else r[i]=0.0;
 				if (r[i]<0) r[i]=0;
 				
 				s+=ds;
