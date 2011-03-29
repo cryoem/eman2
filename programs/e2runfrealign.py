@@ -15,7 +15,7 @@ import shutil
 from EMAN2 import *
 
 if len(sys.argv) != 1:
-   print "Please use e2runfrealign.py"
+   print "Please use e2runfrealign.py with no arguments"
    exit(-1)
 
 E2n=E2init(sys.argv)
