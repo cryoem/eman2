@@ -137,7 +137,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
-		if(!to->getcudarwdata()) to->copy_to_cuda();
+		if(to && !to->getcudarwdata()) to->copy_to_cuda();
 		if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
 		if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
  		//cout << "Translate on GPU" << endl;
@@ -205,7 +205,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (use_cpu) {
 		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
 	}
-	//if(peak[2] != 0) cout << -peak[0] << " " << -peak[1] << " " << -peak[2] << endl;
+	//cout << -peak[0] << " " << -peak[1] << " " << -peak[2] << endl;
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 	//cout << peak[0] << " " << peak[1] << endl;
 

@@ -103,7 +103,7 @@ float* emdata_transform_cuda(const float* const matrix,const int nx,const int ny
 	return data;
 }
 
-__global__ void complexmult_kernal(float *afft, const float *bfft, int num_threads, int offset)
+__global__ void complexmult_conj_kernal(float *afft, const float *bfft, int num_threads, int offset)
 {
 
 	const uint ridx = 2*(threadIdx.x + blockIdx.x*num_threads + offset);
@@ -121,6 +121,44 @@ __global__ void complexmult_kernal(float *afft, const float *bfft, int num_threa
 }
 
 void calc_ccf_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz)
+{
+
+	int num_calcs = ny*(nx/2)*nz;
+	int grid_y = num_calcs/(MAX_THREADS);
+	int res_y = num_calcs - grid_y*MAX_THREADS;
+
+	if (grid_y > 0) {
+		const dim3 blockSize(MAX_THREADS,1, 1);
+		const dim3 gridSize(grid_y,1,1);
+		complexmult_conj_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, 0);
+	}
+	if (res_y) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		complexmult_conj_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, grid_y*MAX_THREADS);
+	}
+	cudaThreadSynchronize();
+
+}
+
+__global__ void complexmult_kernal(float *afft, const float *bfft, int num_threads, int offset)
+{
+
+	const uint ridx = 2*(threadIdx.x + blockIdx.x*num_threads + offset);
+	const uint iidx = ridx + 1;
+	//maybe use float2 to improve coalessing....
+
+	float afftr = afft[ridx];
+	float affti = afft[iidx];
+	float bfftr = bfft[ridx];
+	float bffti = bfft[iidx];
+
+	afft[ridx] = afftr*bfftr - affti*bffti;  //real portion
+	afft[iidx] = affti*bfftr + afftr*bffti; //imaginary portion
+
+}
+
+void calc_conv_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz)
 {
 
 	int num_calcs = ny*(nx/2)*nz;
@@ -183,7 +221,44 @@ __global__ void  calc_max_location_wrap(const float* in, CudaPeakInfo* soln, con
 	}
 }
 
-//so far only for 2D
+//This is basically the above kernal, but for 2D images
+__global__ void calc_max_location_wrapv2(const float* in, CudaPeakInfo* soln, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz)
+{
+	int maxshiftx = maxdx, maxshifty = maxdy;
+	if (maxdx == -1) maxshiftx = nx/4;
+	if (maxdy == -1) maxshifty = ny/4;
+
+	float max_value = -10000000000000;
+	for (int j = -maxshifty; j <= maxshifty; j++) {
+		for (int i = -maxshiftx; i <= maxshiftx; i++) {
+				
+			int jj = j;
+			if (jj < 0) {
+				jj = ny+jj;
+			}
+				
+			int ii = i;
+			if (ii < 0) {
+				ii = nx+ii;
+			}
+			float value = in[ii+jj*nx];
+
+			if (value > max_value) {
+				max_value = value;
+				soln->px = i;
+				soln->py = j;
+				soln->pz = 0;
+				soln->peak = max_value;
+			}
+		}
+	}
+
+	
+}
+
+//so far only for 2D, and this needs some tweaking to get it to work, currently we are doing it the dumb way (see above)
+// But then again, the real bottleneck, for CUDA, it the 2D FFTs. To get a significant speedup for 2D images, we need to
+// process images in parallel.
 __global__ void calc_max_location_wrapv3(const float* in, CudaPeakInfo* solns, const int num_threads, const int nx, const int maxdx, const int maxdy, const int maxdz, const int offset)
 {
 
@@ -228,6 +303,24 @@ CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const i
 
 		return host_soln;
 	}else{
+		//printf("2D\n");
+
+		const dim3 blockSize(1,1,1);
+		const dim3 gridSize(1,1,1);
+	
+		CudaPeakInfo * device_soln=0;
+		cudaMalloc((void **)&device_soln, sizeof(CudaPeakInfo));
+		CudaPeakInfo * host_soln = 0;
+		host_soln = (CudaPeakInfo*) malloc(sizeof(CudaPeakInfo));
+
+		calc_max_location_wrapv2<<<blockSize,gridSize>>>(in,device_soln, nx, ny, nz, maxdx, maxdy, maxdz);
+		cudaThreadSynchronize();
+		cudaMemcpy(host_soln,device_soln,sizeof(CudaPeakInfo),cudaMemcpyDeviceToHost);
+		cudaFree(device_soln);
+
+		return host_soln;
+		
+		/* This code needs to be fixed......(In theory it should be faster)
 		int num_calcs = 2*maxdx;
 		int grid_y = num_calcs/(MAX_THREADS);
 		int res_y = num_calcs - grid_y*MAX_THREADS;
@@ -266,14 +359,15 @@ CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const i
 				bestpeak = host_soln[i].peak;
 				soln->px = host_soln[i].px;
 				soln->py = host_soln[i].py;
-				soln->pz = host_soln[i].pz;
+				soln->pz = 0;
 				soln->peak = bestpeak;
 			}	
 			//printf("x %d y %d z %d peak %f\n",host_soln[i].px,host_soln[i].py,host_soln[i].pz,host_soln[i].peak);
 		}
 		free(host_soln);
-
 		return soln;
+		*/
+
 	}
 }
 

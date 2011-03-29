@@ -1464,7 +1464,30 @@ void EMData::zero_corner_circulant(const int radius)
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 {
 	ENTERFUNC;
+
 	if( with == 0 ) {
+#ifdef EMAN2_USING_CUDA //CUDA 
+	if(cudarwdata) {
+		EMData* ifft = 0;
+		bool delifft = false;
+		int offset = 0;
+		
+		//do fft if not alreay done
+		if(!is_complex()){
+			ifft = do_fft_cuda();
+			delifft = true;
+			offset = 2 - nx%2;
+		}else{
+			ifft = this;
+		}
+		calc_conv_cuda(ifft->cudarwdata,ifft->cudarwdata,nx + offset, ny, nz); //this is the business end, results go in afft
+		
+		EMData * conv = ifft->do_ift_cuda();
+		if(delifft) delete ifft;
+			
+		return conv;
+	}
+#endif
 		EXITFUNC;
 		return convolution(this,this,fpflag, center);
 	}

@@ -20,6 +20,8 @@ float* emdata_transform_cuda(const float* const m, const int nx, const int ny, c
 
 void calc_ccf_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz);
 
+void calc_conv_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz);
+
 CudaPeakInfo* calc_max_location_wrap_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz);
 
 CudaPeakInfoFloat* calc_max_location_wrap_intp_cuda(const float* in, const int nx, const int ny, const int nz, const int maxdx, const int maxdy, const int maxdz);
