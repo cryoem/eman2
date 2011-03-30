@@ -411,6 +411,17 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 	for index1 in range(atomCount):
 		### checks for nearest atoms and nearest helical atoms
 		### Identifying related pseudoatoms
+		
+		################### Note by Ross #####################
+		# coeffArray stores the cross-correlation based scores for the pseudoatoms
+		# It seems that helixneighbor1 is the closest pseudoatom which is likely to be a helix atom based on coeffArray
+		# The distance to helixneighbor1 is mindistance1
+		# helixneighbor2 is the second closest and its distance is mindistance2
+		# neighbor3 is the closest neighbor regardless of the cross-correlation score, and mindistance3 is the distance to it
+		# neighbor4 is the second closest neighbor, and mindistance4 is the distance to it
+		# Note: distances to nighbors must be at least 0.1
+		#######################################################
+		
 		mindistance1=99998
 		mindistance2=99999
 		helixneighbor1=0
@@ -450,9 +461,8 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 	generallist=[]
 	helixlist=[]
 	
-	index3=0
 	### Checking local gemoetry
-	while index3 < atomCount:
+	for index3 in range(atomCount):
 	### check generic angles
 		origin=index3
 		p1=neighborhood[index3][4]-1
@@ -512,9 +522,9 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 		else:
 			betaAngle=90	
 	
-		generallist.append(genericAngle)
-		sheetlist.append(betaAngle)
-		helixlist.append(helixAngle)
+		#generallist.append(genericAngle)
+		#sheetlist.append(betaAngle)
+		#helixlist.append(helixAngle)
 		aspectratio=axisMatrix[index3]
 		pascore=0
 		print "%d: axis: %f, neighbor angle: %f, helix angle: %f, sheet angle: %f,  number of neighbors: %d"%(atomNumber[index3], aspectratio, genericAngle, helixAngle, betaAngle, len(cloud))
@@ -538,7 +548,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			pascore=pascore-1
 		pseudoatomArray.append(float(pascore/4.0))	
 
-		index3=index3+1
+
 	return pseudoatomArray
 ##################################################################
 
