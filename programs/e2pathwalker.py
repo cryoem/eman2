@@ -28,7 +28,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-
 import EMAN2
 import collections
 import math
@@ -43,9 +42,29 @@ import copy
 import re
 import numpy
 import json
+import tempfile
+import os
 
 
 
+
+def check_exists(outfile, overwrite=False):
+	if not outfile:
+		return False
+
+	if overwrite:
+		return True
+
+	if not os.path.exists(outfile):
+		return True
+			
+	p = raw_input("File %s exists. Overwrite? yes/no: "%outfile)
+	if p.lower() in ["yes", "y"]:
+		return True
+
+	return False
+		
+		
 
 def cross_product(a,b):
     """Cross product of two 3-d vectors. from http://www-hep.colorado.edu/~fperez/python/python-c/weave_examples.html"""
@@ -65,28 +84,145 @@ def norm_vector(a,b):
 
 
 
+def distance(point1, point2):
+	return math.sqrt(sum([(x[0]-x[1])**2 for x in zip(point1, point2)]))
+
+
+
+def read_pdb(filename, atomtype=None, chain=None, noisemodel=None):
+	print "\n=== Reading %s (atom type %s, chain %s) ==="%(filename, atomtype, chain)
+	points = {}
+	path = []
+	
+	if not noisemodel:
+		noisemodel = lambda x:x
+	
+
+	pdbfile = open(filename, "r")
+	lines = pdbfile.readlines()
+	pdbfile.close()
+
+	atomtypes = set()
+	chains = set()
+	for line in (i for i in lines if i.startswith("ATOM  ")):
+		atomtypes.add(line[12:15].strip() or None)
+		chains.add(line[21].strip() or None)
+		
+	print "Found chains %s and atomtypes %s"%(chains, atomtypes)
+	if len(atomtypes) == 1: # and not atomtype 
+		print "Only one atomtype present; using all atoms in PDB file"
+		atomtype = None
+		
+	if len(chains) == 1:
+		#print "One chain present"
+		chain = None	
+
+	count = 1
+	for line in (i for i in lines if i.startswith("ATOM  ")):
+		latomtype = line[12:15].strip()
+		lchain = line[21].strip() or None			
+		if atomtype and atomtype != latomtype:
+			continue
+		if chain and chain != lchain:
+			continue
+
+		atomnumber = int(line[23:27])
+		pos = [float(line[30:38].strip()), float(line[38:46].strip()), float(line[46:54].strip())]
+		points[atomnumber] = noisemodel(pos) # tuple([noisemodel(i) for i in x])
+		path.append(atomnumber)
+		count += 1
+
+	if len(points) == 0:
+		raise Exception, "No atoms found in PDB file! Are chain and atomtype correct?"
+	
+	print "Loaded %s points"%len(points)
+	
+	return path, points
+
+
+
+
+
+
+
+def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
+	
+	bfactors = bfactors or {}
+	points = points or {}
+	tree = tree or {}
+	out = open(filename,"w")
+	# Ian: TODO: Paths should be chains A-Z, 0-9
+	chain = "A"
+
+	print "\n=== Writing %s ==="%filename
+
+	for pathid in sorted(paths.keys()):
+		d = paths[pathid]
+		path = d['path']
+		count = 1
+		out.write(
+			"MODEL     %4d\n"%pathid
+		)
+		for atom in path:
+			point = points.get(atom)
+			out.write(
+				"ATOM %6d  CA  ALA %s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f     S_00  0\n"
+				%(atom, chain, atom, point[0], point[1], point[2], 1, bfactors.get(atom, 0)) #len(self.itree.get(atom,[]))
+				)
+			count += 1
+		out.write("""TER  %6d      ALA %s%4d\n"""%(count, chain, atom))
+
+		if tree:
+			connected = []
+			count = 0
+			for k,v in tree.items():
+				for v2 in v:
+					if (k,v2) in connected or (v2,k) in connected:
+						continue
+					count+=1
+					out.write('CONECT %4d %4d\n'%(k,v2))
+					connected.append((k,v2))
+			print "Wrote %s edges"%count
+	
+		# out.write('CONECT %4d %4d\n'%(atoms[0], atoms[-1]))
+		out.write("ENDMDL\n")
+
+
+	print "Wrote %s points"%len(path)
+
+	out.write("END")
+	out.close()
+
+
+
+
+
+
+
 
 
 class PathWalker(object):
 
-	def __init__(self, filename=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=4.2, average=3.78, atomtype='CA', chain=None, noise=0, solver=False):
+	def __init__(self, filename=None, outfile=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=4.2, average=3.78, atomtype='CA', chain=None, noise=0, solver=False, json=True, overwrite=False):
 
 		# Run parameters
 		self.dmin = dmin
 		self.dmax = dmax
 		self.average = average	
 		self.filename = filename
-		self.basename = self.get_basename()
+		self.outfile = outfile
 		self.chain = chain
 		self.atomtype = atomtype
+		self.overwrite = overwrite
 		self.noise = noise
 		self.solver = solver
-
+		self.json = json
+		
 		if self.atomtype in ['all', 'None', '']:
 			self.atomtype = None
 			
 		# Read PDB file
-		self.points = self.read_pdb(atomtype=self.atomtype, chain=self.chain)
+		_, self.points = read_pdb(filename=filename, atomtype=self.atomtype, chain=self.chain, noisemodel=self.noisemodel)
 		
 		# Point graph
 		self.itree = {}
@@ -152,7 +288,10 @@ class PathWalker(object):
 		# Write the processed PDB file
 		self.stats()
 		
-		self.write_pdb(self.points.keys(), tree=self.itree)
+		#self.write_pdb(self.points.keys())
+		#def write_pdb(self, path, filename=None):
+		# d = {0:{'path':path}}
+		# self.write_pdbs(d, filename=filename)
 
 		if not self.solver:
 			return
@@ -166,7 +305,7 @@ class PathWalker(object):
 		# We need to rotate the path so the start atom is first..
 		paths = ret.get('paths', {})
 		for pathid in sorted(paths.keys()):
-			print "--- Evaluating path %s of %s ---"%(pathid, len(paths))
+			print "--- Evaluating path %s of %s ---"%(pathid+1, len(paths))
 			d = paths[pathid]
 
 			# Rotate the path so the starting element is first in the list
@@ -181,8 +320,10 @@ class PathWalker(object):
 
 
 		# Write output
-		self.write_pdbs(paths, filename=self.basename+".out.pdb")			
-		self.write_json(ret)
+		if check_exists(self.outfile, overwrite=self.overwrite):
+			write_pdbs(filename=self.outfile, paths=paths, points=self.points)
+			if self.json:
+				self.write_json(ret)
 		
 		
 
@@ -215,7 +356,6 @@ class PathWalker(object):
 			'edges_fixed', 
 			'noise', 
 			'filename', 
-			'basename', 
 			'dmax', 
 			'dmin', 
 			'average',
@@ -262,7 +402,7 @@ class PathWalker(object):
 		if method:
 			return method()
 		# else:
-		#	raise ValueError, "Unknown solver: %s"%solver
+		# 	raise ValueError, "Unknown solver: %s"%solver
 		return {}
 
 
@@ -303,8 +443,8 @@ class PathWalker(object):
 	def _solve_concorde(self):
 		print "\n=== Solving TSP with Concorde ==="
 		
-		tspfile = self.basename+".tsp"
-		outfile = self.basename+".out"
+		tspfile = tempfile.mkstemp(suffix='.tsp')[1]
+		outfile = tempfile.mkstemp(suffix='.out')[1]
 		
 		print "TSPLib file: %s"%tspfile
 		print "Results file: %s"%outfile
@@ -312,17 +452,24 @@ class PathWalker(object):
 		self.write_tsplib(filename=tspfile)
 		os.system("concorde -x -m -o %s %s"%(outfile, tspfile))
 
-		return self._readtour_concorde(outfile)
-
-
+		ret = self._readtour_concorde(outfile)
+		
+		try:
+			os.unlink(tspfile)
+			os.unlink(outfile)
+		except:
+			pass
+						
+		return ret
+		
 
 
 	def _solve_lkh(self):
 		print "\n=== Solving TSP with LKH ==="
 		
-		tspfile = self.basename+".tsp"
-		lkhfile = self.basename+".lkh"
-		outfile = self.basename+".out"
+		tspfile = tempfile.mkstemp(suffix='.tsp')[1]
+		lkhfile = tempfile.mkstemp(suffix='.lkh')[1]
+		outfile = tempfile.mkstemp(suffix='.out')[1]
 
 		lkh = """PROBLEM_FILE = %s\nOUTPUT_TOUR_FILE = %s\nPRECISION = 100\n"""%(tspfile,outfile)
 		f = open(lkhfile, "w")
@@ -332,8 +479,16 @@ class PathWalker(object):
 		self.write_tsplib(filename=tspfile)
 		os.system("LKH %s"%(lkhfile))
 		
-		return self._readtour_lkh(outfile)
+		ret = self._readtour_lkh(outfile)
 		
+		try:
+			os.unlink(tspfile)
+			os.unlink(lkhfile)
+			os.unlink(outfile)
+		except:
+			pass
+		
+		return ret
 		
 		
 		
@@ -463,7 +618,7 @@ class PathWalker(object):
 
 
 	def calcweight(self, point1, point2):
-		d = self.distance(point1, point2)
+		d = distance(point1, point2)
 		if self.cutoff(d):
 			w = int(math.fabs(d-self.average)*100)
 			# w = 0
@@ -473,11 +628,6 @@ class PathWalker(object):
 			w = 100000
 		return d, w
 
-
-
-
-	def distance(self, point1, point2):
-		return math.sqrt(sum([(x[0]-x[1])**2 for x in zip(point1, point2)]))
 
 
 
@@ -496,142 +646,38 @@ class PathWalker(object):
 	
 	
 
-	def get_basename(self):
-		basename = os.path.basename(self.filename).split(".")
-		basename = ".".join(basename[:basename.index("pdb")])
-		r = "%s-(\d+).tsp"%basename
-		r = re.compile(r)
-		runs = map(int, [(r.findall(i) or [0])[0] for i in os.listdir(".")])
-		if not runs:
-			runcount = 0
-		else:
-			runcount = max(runs)+1
-
-		return "%s-%s"%(basename, runcount)
+	# def get_basename(self):
+	# 	basename = os.path.basename(self.filename).split(".")
+	# 	basename = ".".join(basename[:basename.index("pdb")])
+	# 	r = "%s-(\d+).tsp"%basename
+	# 	r = re.compile(r)
+	# 	runs = map(int, [(r.findall(i) or [0])[0] for i in os.listdir(".")])
+	# 	if not runs:
+	# 		runcount = 0
+	# 	else:
+	# 		runcount = max(runs)+1
+	# 
+	# 	return "%s-%s"%(basename, runcount)
 		
 
 
 	def write_json(self, soln, filename=None):
-		outfile = filename or self.basename + ".json"
+		outfile = self.outfile + ".json"
 		print "Writing solution dictionary to %s"%outfile
 		f = open(outfile, 'w')
 		json.dump(soln, f, indent=1)
 		f.close()
 
 					
-					
-
-	def write_pdb(self, path, filename=None, tree=None):
-		d = {0:{'path':path}}
-		return self.write_pdbs(d, filename=filename, tree=tree)
-		
-		
+						
 		
 
-	def write_pdbs(self, paths, filename=None, tree=None):
-		outfile = filename or self.basename + ".pdb"
-		out = open(outfile,"w")
-		chain = "A"
-
-		print "\n=== Writing %s ==="%outfile
-
-		for pathid in sorted(paths.keys()):
-			d = paths[pathid]
-			path = d['path']
-			count = 1
-			out.write(
-				"MODEL     %4d\n"%pathid
-			)
-			for atom in path:
-				point = self.points.get(atom)
-				out.write(
-					"ATOM %6d  C   ALA %s%4d    %8.3f%8.3f%8.3f %5.2f     0     S_00  0\n"
-					%(atom, chain, atom, point[0], point[1], point[2], len(self.itree.get(atom,[])))
-					)
-				count += 1
-			out.write("""TER  %6d      ALA %s%4d\n"""%(count, chain, atom))
-
-			if tree:
-				connected = []
-				count = 0
-				for k,v in tree.items():
-					for v2 in v:
-						if (k,v2) in connected or (v2,k) in connected:
-							continue
-						count+=1
-						out.write('CONECT %4d %4d\n'%(k,v2))
-						connected.append((k,v2))
-				print "Wrote %s edges"%count
-		
-			# out.write('CONECT %4d %4d\n'%(atoms[0], atoms[-1]))
-			out.write("ENDMDL\n")
-
-
-		print "Wrote %s points"%len(path)
-
-
-		out.write("END")
-		out.close()
-
-
-
-
-	def makenoise(self):
-		return random.gauss(self.average, self.noise) - self.average
-
-
-
-	def read_pdb(self, atomtype=None, chain=None):
-		print "\n=== Reading %s (atom type %s, chain %s) ==="%(self.filename, atomtype, chain)
-		points = {}
-
-		pdbfile = open(self.filename, "r")
-		lines = pdbfile.readlines()
-		pdbfile.close()
-
-		atomtypes = set()
-		chains = set()
-		for line in (i for i in lines if i.startswith("ATOM  ")):
-			atomtypes.add(line[12:15].strip() or None)
-			chains.add(line[21].strip() or None)
-			
-		print "Found chains %s and atomtypes %s"%(chains, atomtypes)
-		if len(atomtypes) == 1:
-			print "Only one atomtype present; using all atoms in PDB file"
-			atomtype = None
-			
-		if len(chains) == 1:
-			print "Only one chain present"
-			chain = None	
-
-		count = 1
-		for line in (i for i in lines if i.startswith("ATOM  ")):
-			latomtype = line[12:15].strip()
-			lchain = line[21].strip() or None			
-
-			if atomtype and atomtype != latomtype:
-				continue
-			if chain and chain != lchain:
-				continue
-
-			pos = int(line[23:27])
-			x = [float(line[30:38].strip()), float(line[38:46].strip()), float(line[46:54].strip())]
-			points[pos] = tuple([i+self.makenoise() for i in x])
-			count += 1
-
-		if len(points) == 0:
-			raise Exception, "No atoms found in PDB file! Are chain and atomtype correct?"
-		
-		print "Loaded %s C-a points"%len(points)
-		
-		return points
-
-
+	def noisemodel(self, pos):
+		return [i+(random.gauss(self.average, self.noise) - self.average) for i in pos]
 
 
 
 	def write_tsplib(self, filename=None):
-		filename = filename or self.basename+".tsp"
 		fout = open(filename, "w")
 		
 		# TSPLib format header
@@ -732,13 +778,48 @@ class PathWalker(object):
 # a = [i.strip().split() for i in helix.split("\n")]
 # for i in b: print " ".join(map(str,range(int(i[5]), int(i[8])+1)))	
 	
+	
+
+class CaRMSD(object):
+	def __init__(self, pdb1, pdb2, atomtype=None, outfile=None, overwrite=False, *args, **kwargs):
+		self.atomtype = atomtype
+		self.overwrite = overwrite
+		self.path1, self.pdb1 = read_pdb(pdb1, atomtype=self.atomtype)
+		self.path2, self.pdb2 = read_pdb(pdb2, atomtype=self.atomtype)
+		self.outfile = outfile
+	
+	def run(self):
+		common = set(self.pdb1.keys()) & set(self.pdb2.keys())
+		print "%s points in common"%len(common)
+
+		distances = {}
+		for pos in common:
+			distances[pos] = distance(self.pdb1[pos], self.pdb2[pos])
+		
+		rmsd = math.sqrt(sum((i**2 for i in distances.values())) / len(distances))
+
+		print "Total RMSD:", rmsd
+		
+		if check_exists(self.outfile, overwrite=self.overwrite):
+			p = {0:{'path':self.path1}}
+			write_pdbs(filename=self.outfile, paths=p, points=self.pdb1, bfactors=distances)
+		
+
+
+
 
 def main():
 	usage = """%prog [options] <pdb file>
-	Find paths between two atoms in a PDB model
+	
+	Find paths between two atoms in a PDB model. You can also specify two PDB files to calculate an RMSD.
+	
+	Use "--solve=<solver>" to run the TSP solver and save the output.
+	Use "--output" to save the output to a PDB file.
+
 	"""
 
 	parser = optparse.OptionParser(usage=usage, version=EMAN2.EMANVERSION)
+	parser.add_option("--output", type="str",help="Output file")
 	parser.add_option("--start", type="int",help="Start ATOM")
 	parser.add_option("--end", type="int",help="End ATOM")	
 	parser.add_option("--average", type="float",help="Average Ca-Ca length", default=3.78)
@@ -750,31 +831,46 @@ def main():
 	parser.add_option("--chain", type="str" ,help="Load Chain. Default: load all chains")	
 	parser.add_option("--edgefile", type="str" ,help="Load fixed fragment file; one sequence of forced connections per line, separated by space.")	
 	parser.add_option("-e", "--edge", action="append", help="Forced edge: e.g. -e1,3")
-	parser.add_option("--iterations", type="int",help="Iterations", default=1)	
+	parser.add_option("--iterations", type="int",help="Iterations", default=1)
+	parser.add_option("--json", type="int", help="If writing output pdb, also write JSON metadata. Default: 1. Options: 0, 1", default=1)
+	parser.add_option("--overwrite", action="store_true", help="Overwrite files without prompting")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help='verbose level [0-9], higher number means higher level of verboseness')
 	
 	(options, args) = parser.parse_args()
 
-	filename = args[0]
-	for j in range(options.iterations):
-		if options.iterations > 1:
-			print "Iteration:", j
+	if len(args) == 1:
+		filename = args[0]
+		for j in range(options.iterations):
+			if options.iterations > 1:
+				print "Iteration:", j
 	
-		pw = PathWalker(
-			filename=filename, 
-			start=options.start, 
-			end=options.end, 
-			edgefile=options.edgefile, 
-			dmin=options.dmin, 
-			dmax=options.dmax, 
-			average=options.average, 
-			noise=options.noise, 
-			atomtype=options.atomtype, 
-			chain=options.chain, 
-			solver=options.solver
-		)
-		pw.run()
-
+			pw = PathWalker(
+				filename=filename, 
+				start=options.start, 
+				end=options.end, 
+				edgefile=options.edgefile, 
+				dmin=options.dmin, 
+				dmax=options.dmax, 
+				average=options.average, 
+				noise=options.noise, 
+				atomtype=options.atomtype, 
+				chain=options.chain, 
+				json=options.json,
+				solver=options.solver,
+				overwrite=options.overwrite,
+				outfile=options.output
+			)
+			pw.run()
+	
+	
+	elif len(args) == 2:
+		ca = CaRMSD(args[0], args[1], outfile=options.output, atomtype=options.atomtype, overwrite=options.overwrite)
+		ca.run()
+	
+	else:
+		#print "Not enough arguments!"
+		pass
+		
 
 
 # If executed as a program
