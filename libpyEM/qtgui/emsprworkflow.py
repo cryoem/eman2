@@ -275,8 +275,8 @@ class WorkFlowTask:
 			print
 			
 			#print args
-			fname = temp_fname_root +"_"+str(n)+temp_fname_end
-			file = open(fname,"w+")
+			#fname = temp_fname_root +"_"+str(n)+temp_fname_end
+			#file = open(fname,"w+")
 			
 			cmdstr = ' '.join(args)
 #			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
@@ -322,7 +322,7 @@ class WorkFlowTask:
 #		print ""
 #		
 		#print args
-		file = open(temp_file_name,"w+")
+		#file = open(temp_file_name,"w+")
 
 		cmdstr = ' '.join(args)
 #		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
