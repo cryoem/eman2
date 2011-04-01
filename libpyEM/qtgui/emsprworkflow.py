@@ -324,11 +324,11 @@ class WorkFlowTask:
 		#print args
 		file = open(temp_file_name,"w+")
 
-        cmdstr = ' '.join(args)
+		cmdstr = ' '.join(args)
 #		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
-        process = subprocess.Popen(cmdstr, shell=True)
-        print "started process",process.pid
-        self.emit(QtCore.SIGNAL("process_started"),process.pid)
+		process = subprocess.Popen(cmdstr, shell=True)
+		print "started process",process.pid
+		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
 		#db_close_dict("bdb:project")
 		
