@@ -118,9 +118,7 @@ def main():
 	nprogress=options.nmodels*2.0+1.0
 	# this loops over each of the n models we create to compute the variance
 	for mod in xrange(options.nmodels) :
-		if options.volfiles :
-			options.model="var3d_%03d.mrc"%mod
-		else:
+		if not options.volfiles :
 			if options.verbose : print "Class-averaging"
 			# Compute class-averages with the --resample option
 			options.classifyfile="bdb:%s#classify_%02d"%(options.path,options.iteration)
@@ -154,27 +152,29 @@ def main():
 			if options.sym.lower()!="c1" :
 				os.system("e2proc3d.py %s %s --sym=%s"%(options.model,options.model,options.sym))
 
-		if options.verbose : print "Post-processing"
+			if options.verbose : print "Post-processing"
 
-		cur_map=EMData(options.model,0)
-		nx=cur_map["nx"]
-		ny=cur_map["ny"]
-		nz=cur_map["nz"]
-		apix=cur_map["apix_x"]
-		
-		if options.mass:
-			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
-			# apix argument has been specified.
-			cur_map.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
-			if options.automask3d: 
+			cur_map=EMData(options.model,0)
+			nx=cur_map["nx"]
+			ny=cur_map["ny"]
+			nz=cur_map["nz"]
+			apix=cur_map["apix_x"]
+			
+			if options.mass:
+				# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
+				# apix argument has been specified.
+				cur_map.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
+				if options.automask3d: 
 
-				automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
+					automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 
-				mask = cur_map.process(automask_parms[0],automask_parms[1])
-				cur_map.mult(mask)
-		
-		# Write the individual models to MRC files
-		if options.keep3d and not options.volfiles : cur_map.write_image("var3d_%03d.mrc"%mod,0)
+					mask = cur_map.process(automask_parms[0],automask_parms[1])
+					cur_map.mult(mask)
+			
+			# Write the individual models to MRC files
+			if options.keep3d and not options.volfiles : cur_map.write_image("var3d_maps.hdf",mod)
+	
+		if options.volfiles : cur_map=EMData("var3d_maps.hdf",mod)
 	
 		# now keep a sum of all of the maps and all of the maps^2
 		if mod==0 :

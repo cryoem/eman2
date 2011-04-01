@@ -528,7 +528,9 @@ class EMLocalTaskHandler():
 					if p[0].returncode!=0 :
 						print "Error running task : ",p[1]
 						thread.interrupt_main()
-						sys.exit(1)
+						sys.stderr.flush()
+						sys.stdout.flush()
+						os._exit(1)
 					
 #					print "Task complete ",p[1]
 					# if we get here, the task completed
@@ -597,7 +599,9 @@ class EMMpiClient():
 				if b[:2]!="OK" :
 					print "MPI: Failed receive from node=%d"%src
 					mpi_finalize()
-					sys.exit(1)
+					sys.stderr.flush()
+					sys.stdout.flush()
+					os._exit(1)
 				allsrc.remove(src)
 
 			if verbose>1 : print "Successful HELO to all MPI nodes !"
@@ -606,7 +610,9 @@ class EMMpiClient():
 			if a!="HELO" : 
 				print "MPI: Failed receive on node=%d"%self.rank
 				mpi_finalize()
-				sys.exit(1)
+				sys.stderr.flush()
+				sys.stdout.flush()
+				os._exit(1)
 			mpi_send("OK "+socket.gethostname(),0,0)
 
 	def mpi_send_com(self,target,com,data=None):
@@ -630,7 +636,9 @@ class EMMpiClient():
 			# Initial handshake to make sure we're both there
 			if (self.fmcon.read(4)!="HELO") :
 				print "Fatal error establishing MPI communications"
-				sys.exit(1)
+				sys.stderr.flush()
+				sys.stdout.flush()
+				os._exit(1)
 			self.tocon.write("HELO")
 
 			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
@@ -721,7 +729,9 @@ class EMMpiClient():
 									r=self.mpi_send_com(rank,"DATA",d2s)
 									if r!="OK" :
 										print "ERROR sending DATA to rank %d"%rank
-										sys.exit(1)
+										sys.stderr.flush()
+										sys.stdout.flush()
+										os._exit(1)
 									d2s=[]
 									ds=0
 							
@@ -729,7 +739,9 @@ class EMMpiClient():
 							r=self.mpi_send_com(rank,"LAST",d2s)
 							if r!="OK" :
 								print "ERROR sending LAST to rank %d"%rank
-								sys.exit(1)
+								sys.stderr.flush()
+								sys.stdout.flush()
+								os._exit(1)
 						
 							if verbose>2 : print "Send requested data to rank %d"%rank
 							
@@ -867,7 +879,9 @@ class EMMpiClient():
 			else:
 				print "ERROR: Got mysterious command during processing: ",com,data
 				mpi_finalize()
-				sys.exit(1)
+				sys.stderr.flush()
+				sys.stdout.flush()
+				os._exit(1)
 				
 		if time.time()-self.lastupdate>120 :
 			ret=self.mpi_send_com(0,"PROG",(self.task.taskid,prog))
@@ -952,7 +966,9 @@ class EMMpiTaskHandler():
 		self.tompi.write("HELO")
 		if (self.fmmpi.read(4)!="HELO") :
 			print "Fatal error establishing MPI communications"
-			sys.exit(1)
+			sys.stderr.flush()
+			sys.stdout.flush()
+			os._exit(1)
 			
 		print "MPI subsystem initialized"
 

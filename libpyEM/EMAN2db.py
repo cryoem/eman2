@@ -89,7 +89,7 @@ def DB_cleanup(signum=None,stack=None):
 			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,len(DBDict.alldicts),os.getpid())
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): 
-		d.close()
+		d.forceclose()
 		d.lock.acquire(False)		# prevents reopening
 	for e in EMAN2DB.opendbs.values(): e.close()
 	for d in DBDict.alldicts.keys(): 
@@ -97,7 +97,9 @@ def DB_cleanup(signum=None,stack=None):
 		except : pass
 	if signum in (2,15) :
 		print "Shutdown complete, exiting" 
-		sys.exit(1)
+		sys.stderr.flush()
+		sys.stdout.flush()
+		os._exit(1)
 
 # if the program exits nicely, close all of the databases
 atexit.register(DB_cleanup)
@@ -553,7 +555,7 @@ class EMTaskQueue:
 			except:
 				print "Invalid data item %s: %s"%(str(j),str(k))
 				print str(task)
-				sys.exit(1)
+				os._exit(1)
 			try: k[1]=did
 			except:
 				task.data[j]=list(k)
@@ -795,7 +797,7 @@ see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*'
 While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the
 only practical option.)
 """
-				sys.exit(1)
+				os._exit(1)
 
 		self.dicts={}
 		#if self.__dbenv.DBfailchk(flags=0) :
@@ -910,12 +912,12 @@ class DBDict:
 			tmpdb.open(self.path+"/"+lfile.replace(".bdb",".old"),self.name)
 		except:
 			print "Error updating %s. Please contact sludtke@bcm.edu."%lfile
-			sys.exit(1)
+			os._exit(1)
 		try: 
 			self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 		except:
 			print "Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile
-			sys.exit(1)
+			os._exit(1)
 		
 		for k in tmpdb.keys():
 			self.bdb[k]=tmpdb[k]
@@ -1035,12 +1037,28 @@ class DBDict:
 		
 		DBDict.closelock.release()
 
+	def forceclose(self):
+		global DBDEBUG
+		if not self.lock.acquire(False):
+			time.sleep(0.1)
+
+		if self.bdb == None: 
+			self.lock.release()
+			return
+#		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
+		self.bdb.close()
+		self.bdb=None
+		DBDict.nopen-=1
+		self.lock.release()
+		if DBDEBUG : print "Closed ",self.name
+		
+
 	def close(self):
 		global DBDEBUG
 		n=0
 		while not self.lock.acquire(False) and n<3: 
 			print "Sleep on close ",self.name
-			time.sleep(1)
+			time.sleep(.2)
 			n+=1
 		if n>=4 : return	# failed too many times, just return and let things fail where they may...
 
@@ -1288,7 +1306,9 @@ of these occasional errors"""
 					except :
 						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
 						traceback.print_exc()
-						sys.exit(1)
+						sys.stderr.flush()
+						sys.stdout.flush()
+						os._exit(1)
 			return ret
 		return r
 		
