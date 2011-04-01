@@ -17953,9 +17953,9 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 
 	vector<int> id_list_1; 
 	for (int iref=0; iref<nref; iref++)
-		for (int im=0; im<maxasi; im++)
+		for (unsigned int im=0; im<maxasi; im++)
 			id_list_1.push_back(id_list[iref][im]);
-	for (int im=maxasi; im<maxasi+nima%nref; im++)
+	for (unsigned int im=maxasi; im<maxasi+nima%nref; im++)
 			id_list_1.push_back(id_list[group][im]);
 	id_list_1.push_back(group);
 
