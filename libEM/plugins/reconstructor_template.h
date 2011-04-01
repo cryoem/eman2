@@ -57,7 +57,7 @@ namespace EMAN
 	/** insert each image slice to the reconstructor. You may call
 	 * this function multiple times.
 	 */
-		int insert_slice(const EMData * const slice, const Transform & euler,float weight);
+		int insert_slice(const EMData * const slice, const Transform & euler,const float weight);
 
 	/** finish reconstruction and return the complete model.
 	 */

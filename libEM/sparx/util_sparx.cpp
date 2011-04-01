@@ -19122,7 +19122,7 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 	//printf("Total step is %d\n", step);
 	vector<float> res;
 	for (int i=0; i<nmax; i++) res.push_back(static_cast<float>(x[i]));
-	res.push_back(f);
+	res.push_back((float)f);
 
 	delete[] nbd;
 	delete[] iwa;
