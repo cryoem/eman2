@@ -277,15 +277,10 @@ class WorkFlowTask:
 			#print args
 			fname = temp_fname_root +"_"+str(n)+temp_fname_end
 			file = open(fname,"w+")
-			if(sys.platform != 'win32'):
-				args_adjusted = []
-			else:
-				args_adjusted = ["pythonw"]
-			args_adjusted.extend(args)
-			#print args_adjusted
 			
+			cmdstr = ' '.join(args)
 #			process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
-			process = subprocess.Popen(args_adjusted)
+			process = subprocess.Popen(cmdstr, shell=True)
 			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
@@ -328,17 +323,12 @@ class WorkFlowTask:
 #		
 		#print args
 		file = open(temp_file_name,"w+")
-		if(sys.platform != 'win32'):
-			args_adjusted = []
-		else:
-			args_adjusted = ["pythonw"]
-		args_adjusted.extend(args)
-		#print args_adjusted
 
+        cmdstr = ' '.join(args)
 #		process = subprocess.Popen(args_adjusted,stdout=file,stderr=subprocess.STDOUT)
-		process = subprocess.Popen(args_adjusted)
-		print "started process",process.pid
-		self.emit(QtCore.SIGNAL("process_started"),process.pid)
+        process = subprocess.Popen(cmdstr, shell=True)
+        print "started process",process.pid
+        self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
 		#db_close_dict("bdb:project")
 		
