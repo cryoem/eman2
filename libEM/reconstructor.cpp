@@ -2660,7 +2660,7 @@ int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform&
 
 	for( int isym=0; isym < m_nsym; isym++) {
 		Transform tsym = t.get_sym( m_symmetry, isym );
-		 m_volume->insert_rect_slice(m_wptr, padded, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+		 m_volume->insert_rect_slice(m_wptr, padded, tsym, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
 		}
 
 	return 0;
@@ -3682,11 +3682,13 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
+	for( int isym=0; isym < m_nsym; isym++) {
+		Transform tsym = t.get_sym( m_symmetry, isym );
 
-	if (ctf_applied)	m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, t, m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
-	else			m_volume->insert_rect_slice_ctf(m_wptr, padfft, t, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+		if (ctf_applied)	m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym, m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
+	else			m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
 
-	
+	}
 
 	return 0;
 
