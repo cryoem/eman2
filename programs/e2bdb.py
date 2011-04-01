@@ -76,7 +76,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--list",type="string",help="Inpust an ASCII filr with selected image to creates a new virtual BDB stack from an existed virtual stack",default=None)
+	parser.add_option("--list",type="string",help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_option("--restore",type="string",help="Write changes in the derived virtual stack back to the original stack",default=None)
 
 
@@ -188,6 +188,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 							sys.stdout.flush()
 						except: pass	
 				print "\r  ",vstackn,"     "
+				dct.close()
 
 		try: maxname=max([len(s) for s in dbs])
 		except: 
@@ -241,6 +242,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 							print "\n\t%s : %s"%(i,v[i]),
 						print ""
 					else : print str(v)
+				dct.close()
 			
 		# long listing, one db per line
 		elif options.long :
@@ -266,9 +268,12 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					size=first.get_xsize()*first.get_ysize()*first.get_zsize()*len(dct)*4;
 					total[0]+=len(dct)
 					total[1]+=size
-					print fmt%(db,len(dct),"%dx%dx%d"%(first.get_xsize(),first.get_ysize(),first.get_zsize()),human_size(size))
+					print fmt%(db,len(dct),"%dx%dx%d   apix: %1.2f"%(first.get_xsize(),first.get_ysize(),first.get_zsize(),first["apix_x"]),human_size(size)),
 				except:
 					print fmt2%db
+				try: print "\tdf: %1.3f\tB: %1.0f"%(first["ctf"].defocus,first["ctf"].bfactor)
+				except: print ""
+				dct.close()
 			print fmt%("TOTAL",total[0],"",human_size(total[1]))
 		elif options.check :
 			from cPickle import loads
@@ -291,6 +296,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					if len(allkvp[i])!=int(max(allkvp[i])+1) : print "\nMismatch found in %s. Could be normal if file has been rewritten multiple times, but is unusual"%db
 				if options.verbose>0 : print ""
 				else : print " done"
+				dct.close()
 
 		elif options.short :
 			for db in dbs:

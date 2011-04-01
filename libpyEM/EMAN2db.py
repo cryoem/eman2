@@ -86,7 +86,9 @@ def DB_cleanup(signum=None,stack=None):
 		pass
 	if signum in (2,15) :
 		if len(DBDict.alldicts)>0 : 
-			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,len(DBDict.alldicts),os.getpid())
+			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
+			except: nopen=0
+			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid())
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys(): 
 		d.forceclose()
@@ -1039,14 +1041,20 @@ class DBDict:
 
 	def forceclose(self):
 		global DBDEBUG
+		
+		# There should be no lock to acquire if the bdb is None
+		try :
+			if self.bdb == None: 
+				return
+		except: return
+
 		if not self.lock.acquire(False):
 			time.sleep(0.1)
 
-		if self.bdb == None: 
-			self.lock.release()
-			return
+		
 #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
-		self.bdb.close()
+		try: self.bdb.close()
+		except: pass
 		self.bdb=None
 		DBDict.nopen-=1
 		self.lock.release()
