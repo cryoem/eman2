@@ -151,7 +151,7 @@ def generate_pseudoatoms(target, apix, res, thr):
 	point_array=[]
 	while Max_value >= thr:
 		patoms.append(Max_location)
-		out.write("ATOM  %5d  C   GLY %s%4d	%8.3f%8.3f%8.3f  1.00	 0	  S_00  0 \n"%(i,chain,i,Max_location[0]*apix,Max_location[1]*apix,Max_location[2]*apix))
+		out.write("ATOM  %5d  C   GLY %s%4d    %8.3f%8.3f%8.3f  1.00     0      S_00  0 \n"%(i,chain,i,Max_location[0]*apix,Max_location[1]*apix,Max_location[2]*apix))
 		update_map(target, Max_location, rangemin,rangemax)	
 		Max_location = target.calc_max_location() #(x,y,z) for maximum value
 		Max_value = target[Max_location]
@@ -255,6 +255,7 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 			aspectratio=0
 		else:
 			aspectratio=xmod[1]/xmod[2]
+			print aspectratio
 		axisMatrix.append(aspectratio)
 		
 	return axisMatrix
