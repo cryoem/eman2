@@ -980,7 +980,6 @@ Output: 2D 3xk real image.
 	return result;
 }
 
-
 EMData* EMData::symvol(string symString) {
 	ENTERFUNC;
 	int nsym = Transform::get_nsym(symString); // number of symmetries
@@ -989,19 +988,13 @@ EMData* EMData::symvol(string symString) {
 	EMData *svol = new EMData;
 	svol->set_size(nx, ny, nz);
 	svol->to_zero();
-	// set up new copy
-	//EMData* symcopy = new EMData;
-	//symcopy->set_size(nx, ny, nz);
-	// set up coord grid
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 	         Transform rm = sym.get_sym(symString, isym);
 		 EMData* symcopy = this -> rot_scale_trans(rm);
 		 *svol += (*symcopy);
 		 delete symcopy;
-		
 	}
-	
 	*svol /=  ((float) nsym);
 	svol->update();
 	EXITFUNC;
