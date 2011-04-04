@@ -50,7 +50,8 @@ def main():
 	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search ")
 	parser.add_option("--init_maxit",     type="int",          default=2,       help="maximum iteration of ISAC program in the initialization phase ")
 	parser.add_option("--main_maxit",     type="int",          default=3,       help="maximum iteration of ISAC program in the main phase ")
-	parser.add_option("--match_loop",     type="int",          default=3,       help="number of iterations to run 2-way (or 3-way) matching ")
+	parser.add_option("--match_loop_first",     type="int",          default=3,       help="number of iterations to run 2-way matching in the first phase ")
+	parser.add_option("--match_loop_second",    type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
 	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information ")
 	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio ")
 	parser.add_option("--num_ali",        type="int",          default=5,       help="number of alignments when checking for stability ")
@@ -79,8 +80,8 @@ def main():
 	from development import iter_isac
 	global_def.BATCH = True
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.init_maxit, options.main_maxit, \
-		    options.match_loop, options.CTF, options.snr, options.num_ali, options.loops_reali, options.th_err, options.max_Iter, \
-		    options.n_run, options.th_grp, options.img_per_grp)
+		    options.match_loop_first, options.match_loop_second, options.CTF, options.snr, options.num_ali, options.loops_reali, \
+		    options.th_err, options.max_Iter, options.n_run, options.th_grp, options.img_per_grp)
 	global_def.BATCH = False
 
 
