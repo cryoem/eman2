@@ -757,7 +757,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 					else:
 						k=int( ((phi2/4/cn) - phi1)/delta ) + 1
 				else:
-					ERROR("For helical strucutre, we only support scn and sdn, tet, oct, icos")
+					ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 						
 			else:
 				k=int( ((phi2/cn) - phi1)/delta ) + 1
