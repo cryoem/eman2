@@ -710,7 +710,10 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2/int(symmetry_string[1:]), method, phiEqpsi)
 			if(int(symmetry_string[1:]) > 1):
-				qt = 180.0/int(symmetry_string[1:])
+				if( int(symmetry_string[1:])%2 ==0):
+					qt = 360.0/int(symmetry_string[1:])
+				else:
+					qt = 180.0/int(symmetry_string[1:])
 				n = len(angles)
 				for i in xrange(n):
 					t = n-i-1
@@ -721,7 +724,10 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 	elif(symmetry_string[0]  == "d"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/2/int(symmetry_string[1:]), method, phiEqpsi)
-			qt = 180.0/2/int(symmetry_string[1:])
+			if (int(symmetry_string[1:])%2 == 0):
+				qt = 360.0/2/int(symmetry_string[1:])
+			else:
+				qt = 180.0/2/int(symmetry_string[1:])
 			n = len(angles)
 			for i in xrange(n):
 				t = n-i-1
@@ -730,17 +736,36 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 	elif(symmetry_string[0]  == "s"):
+	
 	#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
-				
+		# for helical, theta1 cannot be 0.0
+		if theta1 == 0.0: theta1 =90.0		
 		theta_number = int((90.0 - theta1)/theta2)
+		#for helical, symmetry = s or scn
+		cn = float(symmetry_string[2:])
 		for j in xrange(theta_number,-1, -1):
+			
 			if( j == 0):
-				k=int( ((phi2/2) - phi1)/delta ) + 1
+				if (symmetry_string[1] =="c"):
+					if cn%2 == 0:
+						k=int( ((phi2/cn) - phi1)/delta ) + 1
+					else:
+						k=int( ((phi2/2/cn) - phi1)/delta ) + 1
+				elif (symmetry_string[1] =="d"):
+					if cn%2 == 0:
+						k=int( ((phi2/2/cn) - phi1)/delta ) + 1
+					else:
+						k=int( ((phi2/4/cn) - phi1)/delta ) + 1
+				else:
+					ERROR("For helical strucutre, we only support scn and sdn, tet, oct, icos")
+						
 			else:
-				k=int( ((phi2) - phi1)/delta ) + 1 
+				k=int( ((phi2/cn) - phi1)/delta ) + 1
 			for i in xrange(k):
+					
 					t = phi1 +i*delta
 					angles.append([t,90.0-j*theta2,90.0])
+		
 	
 	else : # This is very close to the Saff even_angles routine on the asymmetric unit;
 		# the only parameters used are symmetry and delta
