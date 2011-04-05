@@ -174,13 +174,13 @@ class Strategy2IMGMan(Strategy):
 			if mediator.tilt_win.boxes.boxpopulation < mediator.untilt_win.boxes.boxpopulation:
 				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
 				return False
-			if caller == mediator.tilt_win:
-				if (mediator.tilt_win.boxes.boxpopulation == 0 and mediator.untilt_win.boxes.boxpopulation == 0):
-					print "Error, you first need to pick an untilted particle"
-					return False
-				if mediator.untilt_win.boxes.boxpopulation < mediator.tilt_win.boxes.boxpopulation:
-					print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
-					return False
+		if caller == mediator.tilt_win:
+			if (mediator.tilt_win.boxes.boxpopulation == 0 and mediator.untilt_win.boxes.boxpopulation == 0):
+				print "Error, you first need to pick an untilted particle"
+				return False
+			if mediator.untilt_win.boxes.boxpopulation < mediator.tilt_win.boxes.boxpopulation:
+				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
+				return False
 		return True
 		
 	def unpickevent(self, caller, mediator, box_num):
@@ -209,22 +209,11 @@ class Strategy2IMGPair(Strategy):
 				#if mediator.tilt_win.boxes.boxpopulation < mediator.untilt_win.boxes.boxpopulation:
 					#print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
 					#return False
-				#else:
-			findtilt = False	
+				#else:	
 			if mediator.untilt_win.boxes.boxpopulation == mediator.tilt_win.boxes.boxpopulation:
 				if mediator.untilt_win.boxes.boxpopulation >= 3:
-					if findtilt:
-						points = range(mediator.untilt_win.boxes.boxpopulation)	
-						comb = itertools.combinations(points,3)
-						for triangle in comb:
-							areau = self.trianglearea(mediator.untilt_win,triangle[0],triangle[1],triangle[2])
-							areat = self.trianglearea(mediator.tilt_win,triangle[0],triangle[1],triangle[2])
-							try:
-								tiltang = math.acos(areat/areau)
-								print math.degrees(tiltang), triangle
-							except:
-								pass
 					print "calc matrix"
+					# Find the transformation matrix
 					Xrow1 = []
 					Xrow2 = []
 					Xrow3 = []
@@ -240,24 +229,30 @@ class Strategy2IMGPair(Strategy):
 						Yrow3.append(1.0)
 					X = numpy.array([Xrow1,Xrow2,Xrow3])
 					Y = numpy.array([Yrow1,Yrow2,Yrow3])
-					pinvX = numpy.linalg.pinv(X)
+					pinvX = numpy.linalg.pinv(X)	# Use pseduoinverse to find the best transformation matrix, A, in a least squares sense
 					A = numpy.dot(Y,pinvX)
+					# Use the transfomration matrix to compute the tilted angle
+					# I could just use the affine matrix, but better to use just the rotational part to reduce error
 					currX = [x,y,1]
 					currY = numpy.dot(A,currX)
-					rotA = numpy.array([[A[0,0],A[0,1]],[A[1,0],A[1,1]]])
-					print "Determinate of rot of A is:", numpy.linalg.det(A)
 					mediator.tilt_win.boxes.append_box(currY[0],currY[1])
 					mediator.tilt_win.update_mainwin()
+					# Use the transformation matrix to compute the tilt angle
+					rotA = numpy.array([[A[0,0],A[0,1]],[A[1,0],A[1,1]]])
+					detA = numpy.linalg.det(A)	# The determinate is is COS of the tilt angle
+					print "The tilt angle is: ", math.degrees(math.acos(detA))
 					
 					for i,box in enumerate(mediator.untilt_win.boxes.boxlist):
+						# Compute tilted box
 						boxX = [mediator.untilt_win.boxes.boxlist[i].x,mediator.untilt_win.boxes.boxlist[i].y,1.0]
 						boxY = numpy.dot(A,boxX)
-						print mediator.tilt_win.boxes.boxlist[i].x, boxY[0]
+						# Set tilted box
 						mediator.tilt_win.boxes.boxlist[i].x = boxY[0]
 						mediator.tilt_win.boxes.boxlist[i].y = boxY[1]
 						mediator.tilt_win.boxes.shapelist[i] = None
 						mediator.tilt_win.boxes.labellist[i] = None
 						mediator.tilt_win.boxes.save_boxes_to_db()
+						# Update tilted window
 						mediator.tilt_win.window.update_shapes(mediator.tilt_win.boxes.get_box_shapes(mediator.boxsize))
 						mediator.tilt_win.window.updateGL()
 		
@@ -269,13 +264,6 @@ class Strategy2IMGPair(Strategy):
 				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
 				return False
 		return True
-		
-	def trianglearea(self,window,a,b,c):
-		row1 = [window.boxes.boxlist[a].x,window.boxes.boxlist[b].x,window.boxes.boxlist[c].x]
-		row2 = [window.boxes.boxlist[a].y,window.boxes.boxlist[b].y,window.boxes.boxlist[c].y]
-		row3 = [1.0,1.0,1.0]
-		A = numpy.array([row1,row2,row3])
-		return 0.5*abs(numpy.linalg.det(A))
 	
 	def unpickevent(self, caller, mediator, box_num):
 		if caller == mediator.untilt_win:
