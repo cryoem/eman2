@@ -50,10 +50,11 @@ This is a tilted - untilted particle particle picker, for use in RCT particle pi
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
+	parser.add_option("--slow","-S",action="store_true",help="High performace",default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 
-	
+	global options
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
@@ -137,8 +138,8 @@ class RCTboxer:
 		if not self.strategy.pickevent(caller, self, x, y): return False
 		return True
 		
-	def handle_unpick_event(self):
-		if not self.strategy.unpickevent(): return False
+	def handle_unpick_event(self, caller, box_num):
+		if not self.strategy.unpickevent(caller, self, box_num): return False
 		return True
 	
 	def handle_move_event(self):
@@ -157,7 +158,7 @@ class Strategy:
 	def pickevent(self, caller, mediator, x, y):
 		raise NotImplementedError("Subclass must implement abstract method")
 	
-	def unpickevent(self):
+	def unpickevent(self, mediator, box_num):
 		raise NotImplementedError("Subclass must implement abstract method")
 	
 	def moveevent(self):
@@ -169,13 +170,33 @@ class Strategy2IMGMan(Strategy):
 		Strategy.__init__(self)
 	
 	def pickevent(self, caller, mediator, x, y):
+		if caller == mediator.untilt_win:
+			if mediator.tilt_win.boxes.boxpopulation < mediator.untilt_win.boxes.boxpopulation:
+				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
+				return False
+			if caller == mediator.tilt_win:
+				if (mediator.tilt_win.boxes.boxpopulation == 0 and mediator.untilt_win.boxes.boxpopulation == 0):
+					print "Error, you first need to pick an untilted particle"
+					return False
+				if mediator.untilt_win.boxes.boxpopulation < mediator.tilt_win.boxes.boxpopulation:
+					print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
+					return False
 		return True
 		
-	def unpickevent(self):
+	def unpickevent(self, caller, mediator, box_num):
+		if caller == mediator.untilt_win:
+			if len(mediator.tilt_win.boxes.boxlist)-1 >= box_num:
+				mediator.tilt_win.boxes.remove_box(box_num, mediator.boxsize)
+				mediator.tilt_win.update_mainwin()
+		if caller == mediator.tilt_win:
+			if len(mediator.untilt_win.boxes.boxlist)-1 >= box_num:
+				mediator.untilt_win.boxes.remove_box(box_num, mediator.boxsize)
+				mediator.untilt_win.update_mainwin()
 		return True
 		
 	def moveevent(self):
 		return True
+		
 class Strategy2IMGPair(Strategy):
 	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
 	def __init__ (self):
@@ -256,7 +277,15 @@ class Strategy2IMGPair(Strategy):
 		A = numpy.array([row1,row2,row3])
 		return 0.5*abs(numpy.linalg.det(A))
 	
-	def unpickevent(self):
+	def unpickevent(self, caller, mediator, box_num):
+		if caller == mediator.untilt_win:
+			if len(mediator.tilt_win.boxes.boxlist)-1 >= box_num:
+				mediator.tilt_win.boxes.remove_box(box_num, mediator.boxsize)
+				mediator.tilt_win.update_mainwin()
+		if caller == mediator.tilt_win:
+			if len(mediator.untilt_win.boxes.boxlist)-1 >= box_num:
+				mediator.untilt_win.boxes.remove_box(box_num, mediator.boxsize)
+				mediator.untilt_win.update_mainwin()
 		return True
 		
 	def moveevent(self):
@@ -390,10 +419,17 @@ class ManualPicker(QtGui.QWidget):
 		vbl = QtGui.QVBoxLayout()
 		vbl.setSpacing(60)
 		label = QtGui.QLabel("Manual Picker", self)
-		clr_but = QtGui.QPushButton("Clear", self)
+		self.clr_but = QtGui.QPushButton("Clear", self)
 		vbl.addWidget(label)
-		vbl.addWidget(clr_but)
+		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
+		
+		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
+	
+	def on_clear(self):
+		for window in self.mediator.windowlist:
+			window.boxes.clear_boxes()
+			window.update_mainwin()
 		
 	def get_widget(self):	
 		return self
@@ -556,7 +592,7 @@ class MainWin:
 			self.moving=[m,box_num]
 		else:
 			if event.modifiers()&QtCore.Qt.ShiftModifier:
-				if not self.rctwidget.handle_unpick_event(): return	# The unpick failed
+				if not self.rctwidget.handle_unpick_event(self, box_num): return	# The unpick failed
 				self.boxes.remove_box(box_num, self.rctwidget.boxsize)
 				self.moving=[m,box_num]	# This is just to say that we have changes something
 			else:
@@ -571,7 +607,8 @@ class MainWin:
 			self.moving[0] = m
 			self.window.update_shapes(self.boxes.get_box_shapes(self.rctwidget.boxsize))
 			self.window.updateGL()
-			self.update_particles()
+			if options.slow:
+				self.update_particles()	# slows things down too much
 		
 	def mouse_up(self, event):
 		if self.moving != None:
@@ -655,6 +692,12 @@ class EMBoxList:
 		self.boxpopulation -= 1
 		self.save_boxes_to_db()		# This is not the greatest way of doing things as the list should be appended, not rewritten
 	
+	def clear_boxes(self):
+		for i in xrange(len(self.boxlist)-1,-1,-1):
+			self.boxlist.pop(i)
+			self.shapelist.pop(i)
+			self.labellist.pop(i)
+			
 	def move_box(self,i,dx,dy):
 		self.boxlist[i].move(dx,dy)
 		self.shapelist[i] = None
