@@ -934,6 +934,8 @@ class DBDict:
 		"""This actually opens the database (unless already open), if ro is set and the database is not already
 		open read-write, it will be opened read-only"""
 
+#		print "open ",self.name
+
 		global DBDEBUG
 		if DBDEBUG:
 			while not self.lock.acquire(False) :

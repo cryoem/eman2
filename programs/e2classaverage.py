@@ -328,7 +328,10 @@ class ClassAvTask(EMTask):
 			#avg1.write_image("tst.hdf",-1)
 			#avg.write_image("tst.hdf",-1)
 		else :
-			# Nothing to align to, so we just regenerate unmasked average with existing alignments
+			# Nothing to align to, so we just try to center the final average
+			ali=avg.process("xform.centerofmass",{"threshold":avg["mean"]+avg["sigma"]})
+			fxf=ali["xform.align2d"]
+			if options["verbose"]>0 : print "Final center:",fxf
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 			
 		if ref_orient!=None: 
@@ -456,7 +459,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		ref.process_inplace("normalize.circlemean")
 		gmw=max(5,ref["nx"]/16)		# gaussian mask width
 		ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
-		ref.process_inplace("xform.centerofmass",{"threshold":1.0})						# TODO: should probably check how well this works
+		ref.process_inplace("normalize.circlemean")
+		ref.process_inplace("xform.centerofmass",{"threshold":ref["mean"]+ref["sigma"]})						# TODO: should probably check how well this works
 		ref_orient=None
 	else:
 		try: ref_orient=ref["xform.projection"]

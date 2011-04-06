@@ -3417,7 +3417,7 @@ class EMPartSetOptions:
 	def __init__(self,data_dict_name,bdb_only=False):
 		self.data_dict_name  = data_dict_name
 		self.bdb_only = bdb_only # restricts returned options the image sets that exist only in the database
-		self.image_count = True # if False merely counts the number of stacks - this is useful for the set choosing form
+		self.image_count = False # if False merely counts the number of stacks - this is useful for the set choosing form
 		
 	def get_particle_options(self):
 		'''

@@ -62,10 +62,12 @@ def main():
 	parser.add_option("--simmask",type="string", help="A file containing a mask to apply prior to comparisons, to focus the sort on one particular region",default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_option("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
+	parser.add_option("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
 	parser.add_option("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
 	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_option("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
 	parser.add_option("--nsort",type="int",help="Number of output particles to generate (mainly for reverse mode)",default=0)
+	parser.add_option("--ninput",type="int",help="Number of input particles to read (first n in the file)",default=0)
 	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
@@ -87,6 +89,7 @@ def main():
 	
 	if options.simmask!=None : options.simmask=EMData(options.simmask,0)
 	
+	
 	# read all images
 	if "%" not in args[0] :
 		a=EMData.read_images(args[0])
@@ -98,10 +101,15 @@ def main():
 			except: break
 			a.append(im)
 			i+=1
+	
+	# technically we read them all then truncate the list. inefficient...
+	if options.ninput>0 : a=a[:options.ninput]
 			
 	if options.nsort<1 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
+	elif options.bykurtosis:
+		b=sortstackkurt(a,options.nsort)
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
@@ -287,6 +295,14 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,m
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
 
 	return ret
+
+def sortstackkurt(stack,nsort):
+	"""Sorts a list of images based on the number of particles each image represents"""
+
+	stack.sort(key=lambda B:B.get_attr("kurtosis"),reverse=True)
+
+	return stack[:nsort]
+
 
 def sortstackptcl(stack,nsort):
 	"""Sorts a list of images based on the number of particles each image represents"""

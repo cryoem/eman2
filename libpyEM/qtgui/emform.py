@@ -41,6 +41,7 @@ from EMAN2 import Util, get_image_directory,file_exists,dump_aligners_list,dump_
 import EMAN2
 import weakref
 import warnings
+import time
 
 class EMButtonDialog:
 	'''
@@ -274,7 +275,7 @@ class EMFileTable(QtGui.QTableWidget):
 			self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 		
 		self.timer = None
-		self.timer_interval = 2000
+		self.timer_interval = 5000
 		self.animated_columns = {}
 		self.busy = 0
 		self.items_selected_by_default = True
@@ -291,7 +292,12 @@ class EMFileTable(QtGui.QTableWidget):
 		self.animated_columns[column_title] = -1 # -1 is a flag
 		
 	def time_out(self):
-		if self.busy: return
+		if self.busy :
+			self.timer.stop()
+			from emapplication import EMErrorMessageDisplay
+			EMErrorMessageDisplay.run(["Disabling updates of %s for speed" %key] )
+		
+		stime=time.time()	
 		self.busy = 1
 		for key,value in self.animated_columns.items():
 			if value == -1:
@@ -315,6 +321,12 @@ class EMFileTable(QtGui.QTableWidget):
 				item.setText(cd.function(self.convert_text(str(self.item(i,0).text()))))
 
 		self.busy = 0
+		
+		if time.time()-stime>0.5 :
+			self.timer.stop()
+			from emapplication import EMErrorMessageDisplay
+			EMErrorMessageDisplay.run(["Disabling updates of %s for speed" %key] )
+		
 	
 	def convert_text(self,name):
 		'''

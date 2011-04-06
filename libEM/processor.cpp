@@ -5555,6 +5555,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 //	int positive = params.set_default("positive",0);
 
 	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
+	if (threshold>(float)image->get_attr("maximum")) {
+		printf("Warning, centering threshold %1.2f, but image max %1.2f. Adjusting.",threshold,(float)image->get_attr("maximum"));
+		threshold=(float)image->get_attr("mean")+(float)image->get_attr("sigma");
+	}
 
 	FloatPoint com = image->calc_center_of_mass(threshold);
 

@@ -336,6 +336,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	// Added by d.woolford
 	ENTERFUNC;
 
+//	printf("cip %d %d %d %d %d %d %f %d %d %d\n",area.origin[0],area.origin[1],area.origin[2],area.size[0],area.size[1],area.size[2],fill_value,nx,ny,nz);
 	// Store the current dimension values
 	int prev_nx = nx, prev_ny = ny, prev_nz = nz;
 	size_t prev_size = (size_t)nx*ny*nz;

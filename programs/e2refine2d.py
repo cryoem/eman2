@@ -230,8 +230,11 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2proc2d.py %s %s#allrefs_%02d --inplace --process=filter.highpass.gauss:cutoff_abs=.05 --process=normalize.edgemean --process=xform.centerofmass:threshold=1"%(options.initial,options.path,it))
+		run("e2proc2d.py %s %s#allrefs_%02d --inplace --process=filter.highpass.gauss:cutoff_abs=.02 --process=normalize.edgemean --process=xform.centerofmass:threshold=1"%(options.initial,options.path,it))
+		# now we try for mutual alignment of particle orientations
 		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip --useali --iterative"%(options.path,it,options.path,it))
+		# however we don't want things off-center, so we do a final recentering
+		run("e2proc2d.py %s#allrefs_%02d %s#allrefs_%02d --inplace --process=xform.centerofmass:threshold=1"%(options.path,it,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
@@ -244,10 +247,10 @@ def main():
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 
 		# sort by particles
-		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byptcl"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --bykurtosis"%(options.path,it,options.path,it))
 
-       		# now extract most different refs
-		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,options.naliref))
+       	# now extract most different refs. ninput eliminates 25% particles with lowest kurtosis from consideration
+		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,options.ncls*3/4,options.naliref))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
