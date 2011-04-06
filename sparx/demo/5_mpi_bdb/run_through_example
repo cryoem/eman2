@@ -20,7 +20,7 @@ sxboxer.py -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --cc
 mpirun -np 4 sxali2d.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --MPI || exit
 
 # K-means clustering of the 2D dataset (MPI version)
-mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --opt_method=cla --rand_seed=10 --F=0.97 --T0=0.2 --nb_part=2 --MPI || exit
+mpirun -np 4 sxk_means.py bdb:data kmeans --K=12 --maxit=100 --rand_seed=10 --init_method='d2w' --MPI || exit
 # OR K-means clustering of the 2D dataset (CUDA version)
 #mpirun -np 4 sxk_means_stable.py bdb:data kmeans --K=12 --rand_seed=10 --F=0.97 --nb_part=2 --CUDA || exit
 sxheader.py bdb:data --params=active --one
@@ -46,27 +46,4 @@ mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.
 # Refinement of the 3D structure using high accuracy alignment
 mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --MPI  --debug || exit
 
-# Renormalize the data
-#mpirun -np 4 sxnormal_prj.py bdb:data norma --r=24 --niter=3 --MPI || exit
 
-#sxnormal_prj.py bdb:data  bdb:data  --apply_weights=norma/weights.txt || exit
-#  The data is overwritten
-
-# bootstrap calculations
-#  Calculate weights of projections to account for their uneven distribution
-mpirun -np 4 sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi --MPI || exit
-
-#  Generate buffer containing 2D projection data
-sxbootstrap_genbuf.py bdb:data BUFFER  || exit
-
-# Calculate bootstrap volumes
-mpirun -np 4 sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap BUFFER --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --MPI || exit
-
-# Compute real-space variance
-mpirun -np 4 sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --aa=0.20 --radccc=24 --MPI || exit
-
-# generate reference volume using average volume and variance
-../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0 || exit
-
-# 3D multi reference alignment
-#mpirun -np 4 sxmref_ali3d.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --MPI || exit
