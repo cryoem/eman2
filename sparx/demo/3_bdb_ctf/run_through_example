@@ -12,13 +12,13 @@ rm tmp.hdf
 
 ../generate_projections.py --CTF --format="bdb" --apix=5.2 || exit
 
-sxboxer.py -A cmd -B 64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=75 --ctf_fstop=1 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
+sxboxer.py -A cmd --boxsize=64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=0.02 --ctf_fstop=0.5 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
 
 # Reference-free alignment of the entire 2D dataset
 sxali2d.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF || exit
 
 # K-mean clustering of the 2D dataset
-sxk_means.py bdb:data kmeans --K=12 --opt_method=cla --maxit=100 --rand_seed=10 --T0=0.2 --F=0.97 --CTF || exit
+sxk_means.py bdb:data kmeans --K=12 --maxit=100 --rand_seed=10 --init_method='d2w' || exit
 
 # Multireference alignment of the 2D dataset
 sxmref_ali2d.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF || exit
@@ -41,19 +41,5 @@ sxali3d.py bdb:data ../fmodel_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' -
 # Refinement of the 3D structure using high accuracy alignment
 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --CTF --debug || exit
 
-# bootstrap calculation
-sxbootstrap_calcwgts.py bdb:data wgts.txt --voronoi || exit
-
-# bootstrap calculation
-sxbootstrap_bigdisk.py bdb:data wgts.txt bootstrap bootstrap/tmpslice --nvol=100 --nbufvol=5 --seedbase=10000 --snr=1.0 --genbuf  || exit
-
-# Compute real-space variance
-sxvar.py bootstrap/bsvol000*.hdf defvar --fl=0.16 --fh=0.20 --radccc=24 || exit
-
-# generate reference volume using average volume and variance
-../generate_refvols.py defvar/avg.hdf defvar/var.hdf 88.0
-
-# 3D multi reference alignment
-sxmref_ali3d.py bdb:data rem.hdf ali3d_m --ou=30 --xr='4' --ts='2' --delta='15' --center=1 --nassign=3 --nrefine=1 --ref_a=P --CTF
 
 

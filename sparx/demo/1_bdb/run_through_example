@@ -18,7 +18,7 @@ sxboxer.py -A cmd -B 64 --write_box_images --var --pix_in=5.2 --pix_out=5.2 --cc
 sxali2d.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 || exit
 
 # K-mean clustering of the 2D dataset
-sxk_means.py bdb:data kmeans --K=12 --opt_method=cla --maxit=100 --rand_seed=10 --T0=0.2 --F=0.97 || exit
+sxk_means.py bdb:data kmeans --K=12 --maxit=100 --rand_seed=10 --init_method='d2w' || exit
 
 # Multireference alignment of the 2D dataset
 sxmref_ali2d.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 || exit
