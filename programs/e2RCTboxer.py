@@ -54,17 +54,22 @@ This is a tilted - untilted particle particle picker, for use in RCT particle pi
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 
+	# Options need to be accessible, anywhere
 	global options
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
-	db = db_open_dict(EMBOXERRCT_DB)
 	
+	# The RCT DB needs to be accessible, anywhere
+	global rctdb 
+	rctdb = db_open_dict(EMBOXERRCT_DB)
+	
+	# Get and set the boxsize
 	cache_box_size = True
 	if options.boxsize == -1:
 		cache_box_size = False
-		options.boxsize = db.get("box_size",dfl=128)
-	if cache_box_size: db["box_size"] = options.boxsize
+		options.boxsize = rctdb.get("box_size",dfl=128)
+	if cache_box_size: rctdb["box_size"] = options.boxsize
 	
 		
 	# Open Application, setup rct object, and run
@@ -72,11 +77,12 @@ This is a tilted - untilted particle particle picker, for use in RCT particle pi
 	rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxer
 	rctboxer.load_untilt_image(args[0])			# Load the untilted image
 	rctboxer.load_tilt_image(args[1])			# Load the tilted image
-	rctboxer.set_strategy(Strategy2IMGMan)			# Set the picking strategy
+	rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
 	application.execute()
-		
+	
+	# Clean up
 	E2end(logid)
-	db.close_Dict(EMBOXERRCT_DB)
+	rctdb.close_Dict(EMBOXERRCT_DB)
 
 class RCTboxer:
 	'''
@@ -86,6 +92,7 @@ class RCTboxer:
 	def __init__(self, application, boxsize):
 		self.boxsize = boxsize
 		self.parent_window = application
+		self.strategy = None
 		
 		self.widgetlist = []
 		self.windowlist = []
@@ -97,7 +104,9 @@ class RCTboxer:
 		EMBox.set_box_color("untilted",[0,0,1])
 		EMBox.set_box_color("tilted",[0,1,0])
 	
-		# initialize the picked particles window
+	########################  Client functions ############################################
+	
+	# initialize the picked particles window
 	def init_particles_window(self):
 		self.particles_window = ParticlesWindow(self)
 		self.parent_window.show_specific(self.particles_window.window)
@@ -130,16 +139,21 @@ class RCTboxer:
 		self.control_window = ControlPannel(self)
 		self.parent_window.show_specific(self.control_window)
 		self.widgetlist.append(self.control_window)
-		
+	
+	def init_control_pannel_tools(self):
+		self.control_window.configure_tools()
+	
+	############################ Functions to support Mediator ####################################
+	
 	def set_strategy(self, strategy):
-		self.strategy = strategy()
+		self.strategy = strategy(self)
 		
 	def handle_pick_event(self, caller, x=0, y=0):
-		if not self.strategy.pickevent(caller, self, x, y): return False
+		if not self.strategy.pickevent(caller, x, y): return False
 		return True
 		
 	def handle_unpick_event(self, caller, box_num):
-		if not self.strategy.unpickevent(caller, self, box_num): return False
+		if not self.strategy.unpickevent(caller, box_num): return False
 		return True
 	
 	def handle_move_event(self):
@@ -149,49 +163,79 @@ class RCTboxer:
 	def update_particles(self, particles, idx):
 		self.particles_window.update_particles(particles, idx)
 		
-
+	def configure_strategy(self, caller):
+		if self.strategy != None:
+			self.strategy.configure_strategy(caller)
+		
+	def handle_strategy_signal(self, signal):
+		self.strategy.handle_strategy_signal(signal)
+		
 class Strategy:
 	''' This is a base class for the strategy to use for pcik event hadeling'''
-	def __init__ (self):
-		pass
+	def __init__ (self, mediator):
+		self.mediator = mediator
 	
-	def pickevent(self, caller, mediator, x, y):
+	# Run this function to do initial calculation, when widget is loaded
+	def initial_calculations(self):
 		raise NotImplementedError("Subclass must implement abstract method")
 	
-	def unpickevent(self, mediator, box_num):
+	# Run this function to respond to user input from the GUI(caller)
+	def configure_strategy(self, caller):
 		raise NotImplementedError("Subclass must implement abstract method")
 	
+	# Respond to signals form the GUI
+	def handle_strategy_signal(self, signal):
+		raise NotImplementedError("Subclass must implement abstract method")
+	
+	# Handle pick events
+	def pickevent(self, caller, x, y):
+		raise NotImplementedError("Subclass must implement abstract method")
+	
+	# Handle unpick events
+	def unpickevent(self, box_num):
+		raise NotImplementedError("Subclass must implement abstract method")
+	
+	# Handle move events
 	def moveevent(self):
 		raise NotImplementedError("Subclass must implement abstract method")
 
 class Strategy2IMGMan(Strategy):
 	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
-	def __init__ (self):
-		Strategy.__init__(self)
+	def __init__ (self, mediator):
+		Strategy.__init__(self, mediator)
 	
-	def pickevent(self, caller, mediator, x, y):
-		if caller == mediator.untilt_win:
-			if mediator.tilt_win.boxes.boxpopulation < mediator.untilt_win.boxes.boxpopulation:
+	def initial_calculations(self):
+		pass
+	
+	def configure_strategy(self, caller):
+		pass
+	
+	def handle_strategy_signal(self, signal):
+		pass
+	
+	def pickevent(self, caller, x, y):
+		if caller == self.mediator.untilt_win:
+			if self.mediator.tilt_win.boxes.boxpopulation < self.mediator.untilt_win.boxes.boxpopulation:
 				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
 				return False
-		if caller == mediator.tilt_win:
-			if (mediator.tilt_win.boxes.boxpopulation == 0 and mediator.untilt_win.boxes.boxpopulation == 0):
+		if caller == self.mediator.tilt_win:
+			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
 				print "Error, you first need to pick an untilted particle"
 				return False
-			if mediator.untilt_win.boxes.boxpopulation < mediator.tilt_win.boxes.boxpopulation:
+			if self.mediator.untilt_win.boxes.boxpopulation < self.mediator.tilt_win.boxes.boxpopulation:
 				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
 				return False
 		return True
 		
-	def unpickevent(self, caller, mediator, box_num):
-		if caller == mediator.untilt_win:
-			if len(mediator.tilt_win.boxes.boxlist)-1 >= box_num:
-				mediator.tilt_win.boxes.remove_box(box_num, mediator.boxsize)
-				mediator.tilt_win.update_mainwin()
-		if caller == mediator.tilt_win:
-			if len(mediator.untilt_win.boxes.boxlist)-1 >= box_num:
-				mediator.untilt_win.boxes.remove_box(box_num, mediator.boxsize)
-				mediator.untilt_win.update_mainwin()
+	def unpickevent(self, caller, box_num):
+		if caller == self.mediator.untilt_win:
+			if len(self.mediator.tilt_win.boxes.boxlist)-1 >= box_num:
+				self.mediator.tilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				self.mediator.tilt_win.update_mainwin()
+		if caller == self.mediator.tilt_win:
+			if len(self.mediator.untilt_win.boxes.boxlist)-1 >= box_num:
+				self.mediator.untilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				self.mediator.untilt_win.update_mainwin()
 		return True
 		
 	def moveevent(self):
@@ -199,86 +243,141 @@ class Strategy2IMGMan(Strategy):
 		
 class Strategy2IMGPair(Strategy):
 	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
-	def __init__ (self):
-		Strategy.__init__(self)
-		self.modelrank = 3
+	def __init__ (self, mediator):
+		Strategy.__init__(self, mediator)
+		self.A = None
+		self.minpp_for_xfrom = 3
+		self.cont_update_boxes = False
 	
-	def pickevent(self, caller, mediator, x, y):
-		if caller == mediator.untilt_win:
-			#if mediator.untilt_win.boxes.boxpopulation < 3 or  mediator.tilt_win.boxes.boxpopulation < 3:
-				#if mediator.tilt_win.boxes.boxpopulation < mediator.untilt_win.boxes.boxpopulation:
-					#print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
-					#return False
-				#else:	
-			if mediator.untilt_win.boxes.boxpopulation == mediator.tilt_win.boxes.boxpopulation:
-				if mediator.untilt_win.boxes.boxpopulation >= 3:
-					print "calc matrix"
-					# Find the transformation matrix
-					Xrow1 = []
-					Xrow2 = []
-					Xrow3 = []
-					Yrow1 = []
-					Yrow2 = []
-					Yrow3 = []
-					for i,box in enumerate(mediator.untilt_win.boxes.boxlist):
-						Xrow1.append(box.x)
-						Xrow2.append(box.y)
-						Xrow3.append(1.0)
-						Yrow1.append(mediator.tilt_win.boxes.boxlist[i].x)
-						Yrow2.append(mediator.tilt_win.boxes.boxlist[i].y)
-						Yrow3.append(1.0)
-					X = numpy.array([Xrow1,Xrow2,Xrow3])
-					Y = numpy.array([Yrow1,Yrow2,Yrow3])
-					pinvX = numpy.linalg.pinv(X)	# Use pseduoinverse to find the best transformation matrix, A, in a least squares sense
-					A = numpy.dot(Y,pinvX)
+	def initial_calculations(self):
+		if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
+				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+					self.compute_transform()
+					self.compute_tilt_angle()
+					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
+					
+	def configure_strategy(self, caller):
+		self.minpp_for_xfrom = caller.minpp_for_xfrom
+		self.cont_update_boxes =  caller.updateboxes
+	
+	def handle_strategy_signal(self, signal):
+		if signal == "updateboxes":
+			self.on_update_boxes()
+		
+	def pickevent(self, caller, x, y):
+		# Pick tilted particle
+		if caller == self.mediator.untilt_win:
+			if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
+				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+
+					# Compute transform
+					self.compute_transform()
+					
+					# Compute tilt angle
+					self.compute_tilt_angle()
+					
 					# Use the transfomration matrix to compute the tilted angle
 					# I could just use the affine matrix, but better to use just the rotational part to reduce error
 					currX = [x,y,1]
-					currY = numpy.dot(A,currX)
-					mediator.tilt_win.boxes.append_box(currY[0],currY[1])
-					mediator.tilt_win.update_mainwin()
-					# Use the transformation matrix to compute the tilt angle
-					rotA = numpy.array([[A[0,0],A[0,1]],[A[1,0],A[1,1]]])
-					detA = numpy.linalg.det(A)	# The determinate is is COS of the tilt angle
-					print "The tilt angle is: ", math.degrees(math.acos(detA))
+					currY = numpy.dot(self.A,currX)
+					self.mediator.tilt_win.boxes.append_box(currY[0],currY[1])
+					self.mediator.tilt_win.update_mainwin()	
 					
-					for i,box in enumerate(mediator.untilt_win.boxes.boxlist):
-						# Compute tilted box
-						boxX = [mediator.untilt_win.boxes.boxlist[i].x,mediator.untilt_win.boxes.boxlist[i].y,1.0]
-						boxY = numpy.dot(A,boxX)
-						# Set tilted box
-						mediator.tilt_win.boxes.boxlist[i].x = boxY[0]
-						mediator.tilt_win.boxes.boxlist[i].y = boxY[1]
-						mediator.tilt_win.boxes.shapelist[i] = None
-						mediator.tilt_win.boxes.labellist[i] = None
-						mediator.tilt_win.boxes.save_boxes_to_db()
-						# Update tilted window
-						mediator.tilt_win.window.update_shapes(mediator.tilt_win.boxes.get_box_shapes(mediator.boxsize))
-						mediator.tilt_win.window.updateGL()
-		
-		if caller == mediator.tilt_win:
-			if (mediator.tilt_win.boxes.boxpopulation == 0 and mediator.untilt_win.boxes.boxpopulation == 0):
+					#Talk back to GUI:
+					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
+					
+					if self.cont_update_boxes:
+						self.update_boxes()
+		#pick untilted particle
+		if caller == self.mediator.tilt_win:
+			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
 				print "Error, you first need to pick an untilted particle"
 				return False
-			if mediator.untilt_win.boxes.boxpopulation < mediator.tilt_win.boxes.boxpopulation:
-				print "Error, you need to selct an untilted partilce pair, before you select a new tilted one"
-				return False
+			if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
+				if self.mediator.tilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+					# Compute transform
+					self.compute_transform()
+					# Compute tilt angle
+					self.compute_tilt_angle()
+					
+					currX = [x,y,1]
+					currY = numpy.dot(numpy.linalg.inv(self.A),currX)
+					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
+					self.mediator.untilt_win.update_mainwin()
+					
+					#Talk back to GUI:
+					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
+					
+					if self.cont_update_boxes:
+						self.update_boxes()	
 		return True
 	
-	def unpickevent(self, caller, mediator, box_num):
-		if caller == mediator.untilt_win:
-			if len(mediator.tilt_win.boxes.boxlist)-1 >= box_num:
-				mediator.tilt_win.boxes.remove_box(box_num, mediator.boxsize)
-				mediator.tilt_win.update_mainwin()
-		if caller == mediator.tilt_win:
-			if len(mediator.untilt_win.boxes.boxlist)-1 >= box_num:
-				mediator.untilt_win.boxes.remove_box(box_num, mediator.boxsize)
-				mediator.untilt_win.update_mainwin()
+	def compute_transform(self):
+		#print "calc matrix"
+		# Find the transformation matrix
+		Xrow1 = []
+		Xrow2 = []
+		Xrow3 = []
+		Yrow1 = []
+		Yrow2 = []
+		Yrow3 = []
+		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):
+			Xrow1.append(box.x)
+			Xrow2.append(box.y)
+			Xrow3.append(1.0)
+			Yrow1.append(self.mediator.tilt_win.boxes.boxlist[i].x)
+			Yrow2.append(self.mediator.tilt_win.boxes.boxlist[i].y)
+			Yrow3.append(1.0)
+		X = numpy.array([Xrow1,Xrow2,Xrow3])
+		Y = numpy.array([Yrow1,Yrow2,Yrow3])
+		pinvX = numpy.linalg.pinv(X)	# Use pseduoinverse to find the best transformation matrix, A, in a least squares sense
+		self.A = numpy.dot(Y,pinvX)
+	
+	def compute_tilt_angle(self):
+		# Use the transformation matrix to compute the tilt angle
+		rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
+		detA = numpy.linalg.det(self.A)	# The determinate is is COS of the tilt angle
+		try:
+			tiltangle = math.degrees(math.acos(detA))
+			self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%tiltangle)+u'\u00B0')
+		except:
+			self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")	
+		
+	def update_boxes(self):
+		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):
+			# Compute tilted box
+			boxX = [self.mediator.untilt_win.boxes.boxlist[i].x,self.mediator.untilt_win.boxes.boxlist[i].y,1.0]
+			boxY = numpy.dot(self.A,boxX)
+			# Set tilted box
+			self.mediator.tilt_win.boxes.boxlist[i].x = boxY[0]
+			self.mediator.tilt_win.boxes.boxlist[i].y = boxY[1]
+			self.mediator.tilt_win.boxes.shapelist[i] = None
+			self.mediator.tilt_win.boxes.labellist[i] = None
+			
+		self.mediator.tilt_win.boxes.save_boxes_to_db()
+		# Update tilted window
+		self.mediator.tilt_win.window.update_shapes(self.mediator.tilt_win.boxes.get_box_shapes(self.mediator.boxsize))
+		self.mediator.tilt_win.window.updateGL()
+		
+	def unpickevent(self, caller, box_num):
+		if caller == self.mediator.untilt_win:
+			if len(self.mediator.tilt_win.boxes.boxlist)-1 >= box_num:
+				self.mediator.tilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				self.mediator.tilt_win.update_mainwin()
+		if caller == self.mediator.tilt_win:
+			if len(self.mediator.untilt_win.boxes.boxlist)-1 >= box_num:
+				self.mediator.untilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				self.mediator.untilt_win.update_mainwin()
 		return True
 		
 	def moveevent(self):
 		return True
 
+	def on_update_boxes(self):
+		self.compute_transform()
+		self.compute_tilt_angle()
+		self.update_boxes()
+			
 class ControlPannel(QtGui.QWidget):
 	'''This controls the RCT boxer'''
 	def __init__(self, mediator):
@@ -287,6 +386,7 @@ class ControlPannel(QtGui.QWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
 		self.setWindowTitle("e2RCTboxer")
 		
+		# Here is where additional tools can be added
 		self.manual_tool = ManualPicker(self.mediator)
 		self.pair_picker_tool = PairPickerTool(self.mediator)
 		
@@ -306,18 +406,18 @@ class ControlPannel(QtGui.QWidget):
 		tlayout = QtGui.QVBoxLayout(twidget)
 		self.add_boxing_button_group(tlayout)	# add tool specific widgets
 		twidget.setLayout(tlayout)		
-		tsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		tsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
-		tsplitter.addWidget(twidget)
 		
 		vbox.addWidget(msplitter)
-		vbox.addWidget(tsplitter)
+		vbox.addWidget(twidget)
 		self.add_controls(vbox)			# add done button, among other things
 		
 		self.setLayout(vbox)
 		self.add_picker_tools()
-		#self.setMaximumSize(self.size())
-		#self.setMinimumSize(self.size())
+		self.updateGeometry()
+
+		# Initialize tools
+		self.tools_stacked_widget.setCurrentIndex(rctdb.get("toolidx",dfl=0))
+		self.current_tool_combobox.setCurrentIndex(rctdb.get("toolidx",dfl=0))
 
 	
 	def get_main(self, layout):
@@ -363,24 +463,29 @@ class ControlPannel(QtGui.QWidget):
 		
 	def current_tool_combobox_changed(self, idx):
 		self.tools_stacked_widget.setCurrentIndex(idx)
+		rctdb["toolidx"] = idx
+		
 		if self.current_tool_combobox.currentText() == "Manual":
-			self.mediator.set_strategy(Strategy2IMGMan)
-			print "Set strategy to Manual"
+			self.manual_tool.configure_widget()
+			#print "Set strategy to Manual"
 		if self.current_tool_combobox.currentText() == "Pair Picker":
-			self.mediator.set_strategy(Strategy2IMGPair)
-			print "Set strategy to Pair Picker"
-			
+			self.pair_picker_tool.configure_widget()
+			#print "Set strategy to Pair Picker"
+	
+	# Here is where additional tools can be added
 	def add_picker_tools(self):
 		self.tools_stacked_widget.addWidget(self.manual_tool.get_widget())
 		self.current_tool_combobox.addItem("Manual")
 		self.tools_stacked_widget.addWidget(self.pair_picker_tool.get_widget())
 		self.current_tool_combobox.addItem("Pair Picker")
+	
+	def configure_tools(self):
+		self.manual_tool.configure_widget()
+		self.pair_picker_tool.configure_widget()
 		
 	def new_boxsize(self):
 		self.mediator.boxsize = int(self.boxsize.text())
-		db = db_open_dict(EMBOXERRCT_DB)
-		db["box_size"] = self.mediator.boxsize
-		db_close_dict(db)
+		rctdb["box_size"] = self.mediator.boxsize
 		
 		for window in self.mediator.windowlist:
 			window.boxes.reset_images()
@@ -399,43 +504,122 @@ class ControlPannel(QtGui.QWidget):
 		for wid in self.mediator.widgetlist:
 			if wid != None:
 				wid.close()
-		
+
+# Current tools
 class ManualPicker(QtGui.QWidget):
 	def __init__(self, mediator):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
 		vbl = QtGui.QVBoxLayout()
-		vbl.setSpacing(60)
 		label = QtGui.QLabel("Manual Picker", self)
+		boldfont = QtGui.QFont()
+		boldfont.setBold(True)
+		label.setFont(boldfont)
+		label.setAlignment(QtCore.Qt.AlignTop)
 		self.clr_but = QtGui.QPushButton("Clear", self)
 		vbl.addWidget(label)
 		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
 		
+		self.mpsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		self.mpsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.mpsplitter.addWidget(self)
 		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
 	
 	def on_clear(self):
 		for window in self.mediator.windowlist:
 			window.boxes.clear_boxes()
 			window.update_mainwin()
-		
+			
+	def configure_widget(self):
+		self.mediator.set_strategy(Strategy2IMGMan)
+	
 	def get_widget(self):	
-		return self
+		return self.mpsplitter
 		
 class PairPickerTool(QtGui.QWidget):
 	def __init__(self, mediator):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
+		self.updateboxes = False
+		self.minpp_for_xfrom = 3
+		
+		# GUI code below here
+		ppwidget = QtGui.QWidget()
+		
 		vbl = QtGui.QVBoxLayout()
-		vbl.setSpacing(60)
 		label = QtGui.QLabel("Pair Picker", self)
-		clr_but = QtGui.QPushButton("Clear", self)
+		boldfont = QtGui.QFont()
+		boldfont.setBold(True)
+		label.setFont(boldfont)
 		vbl.addWidget(label)
-		vbl.addWidget(clr_but)
+
+		self.updateboxes_cb = QtGui.QCheckBox("Update box positions")
+		self.updateboxes_cb.setChecked(False)
+		vbl.addWidget(self.updateboxes_cb)
+		
+		hbl = QtGui.QHBoxLayout()
+		slabel = QtGui.QLabel("Min pairs for xfrom", self)
+		hbl.addWidget(slabel)
+		self.spinbox = QtGui.QSpinBox(self)
+		self.spinbox.setMinimum(self.minpp_for_xfrom)
+		self.spinbox.setMaximum(1000)
+		hbl.addWidget(self.spinbox)
+		vbl.addLayout(hbl)
+		
+		hta = QtGui.QHBoxLayout()
+		tlabel = QtGui.QLabel("Computed tilt angle", self)
+		hta.addWidget(tlabel)
+		self.tiltangle = QtGui.QLineEdit("", self)
+		self.tiltangle.setReadOnly(True)
+		hta.addWidget(self.tiltangle)
+		vbl.addLayout(hta)
+		
+		self.upboxes_but = QtGui.QPushButton("Update Boxes", self)
+		self.upboxes_but.setEnabled(False)
+		vbl.addWidget(self.upboxes_but)
+		
+		self.clr_but = QtGui.QPushButton("Clear", self)
+		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
 		
+		self.ppsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		self.ppsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.ppsplitter.addWidget(self)
+		
+		self.connect(self.spinbox,QtCore.SIGNAL("valueChanged(int)"),self.on_spinbox)
+		self.connect(self.updateboxes_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_updateboxes)
+		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
+		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
+	
+		# Initialize
+		self.spinbox.setValue(rctdb.get("ppspinbox",dfl=self.minpp_for_xfrom))
+		self.updateboxes_cb.setChecked(rctdb.get("ppcheckbox",dfl=self.updateboxes))
+		
+	def configure_widget(self):
+		self.mediator.set_strategy(Strategy2IMGPair)
+		self.mediator.strategy.initial_calculations()
+			
+	def on_spinbox(self, value):
+		rctdb["ppspinbox"] = value
+		self.minpp_for_xfrom = value
+		self.mediator.configure_strategy(self)
+		
+	def on_updateboxes(self):
+		rctdb["ppcheckbox"] = self.updateboxes_cb.isChecked()
+		self.updateboxes = self.updateboxes_cb.isChecked()
+		self.mediator.configure_strategy(self)
+		
+	def on_clear(self):
+		for window in self.mediator.windowlist:
+			window.boxes.clear_boxes()
+			window.update_mainwin()	
+			
+	def on_upboxes_but(self):
+		self.mediator.handle_strategy_signal("updateboxes")
+	
 	def get_widget(self):
-		return self
+		return self.ppsplitter
 
 class ParticlesWindow:
 	def __init__(self, rctwidget):
