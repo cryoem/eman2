@@ -233,7 +233,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					v=dct[k]
 					print "%s : "%k,
 					if isinstance (v,list) or isinstance(v,tuple)  :
-						for i in v: print "\n\t%s"%i,
+						for i in v: print "\n\t%s"%str(i),
 						print ""
 					elif isinstance(v,dict) :
 						ks2=v.keys()

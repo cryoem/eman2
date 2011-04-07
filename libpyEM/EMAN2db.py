@@ -36,6 +36,7 @@ import weakref
 from cPickle import loads,dumps
 from zlib import compress,decompress
 import os
+import os.path
 import signal
 import sys
 import time
@@ -424,13 +425,29 @@ def db_get_image_count(fsp):
 
 Takes a path or bdb: specifier and returns the number of images in the referenced stack."""
 	if fsp[:4].lower()=="bdb:" :
-		db,keys=db_open_dict(fsp,True,True)
-		if keys :			# if the user specifies the key in fsp, we ignore parms
+		path,dictname,keys=db_parse_path(fsp)
+		if keys==None :
+			# This dictionary contains image counts for the others in this directory
+			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
+			
+			# If this is true, we need to update the dictionary
+			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+				db=db_open_dict(fsp,True)
+				try: 
+					im=db[0]
+					sz=(im["nx"],im["ny"],im["nz"])
+				except : sz=(0,0,0)
+				db2[dictname]=(time.time(),len(db),sz)
+				
+			return db2[dictname][1]
+			
+		else :			# if the user specifies the key in fsp, we ignore parms
+			db=db_open_dict(fsp,True)
 			n=0
 			for i in keys:
 				if i in db : n+=1
 			return n
-		return len(db)
+		
 	return EMUtil.get_image_count_c(fsp)
 
 
@@ -1185,8 +1202,17 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
-			
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : 
+				self["maxrec"]=key
+				
+				# Updates the image count cache
+				db2=db_open_dict("bdb:%s#%s"%(self.path,"00image_counts"))
+				try: 
+					im=self[0]
+					sz=(im["nx"],im["ny"],im["nz"])
+				except : sz=(0,0,0)
+				db2[dictname]=(time.time(),len(self),sz)
+
 			# write the binary data
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
@@ -1370,8 +1396,17 @@ of these occasional errors"""
 			ad["timestamp"]="%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 			self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 
-			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
-			
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : 
+				self["maxrec"]=key
+
+				# update the image count cache
+				db2=db_open_dict("bdb:%s#%s"%(self.path,"00image_counts"))
+				try: 
+					im=self[0]
+					sz=(im["nx"],im["ny"],im["nz"])
+				except : sz=(0,0,0)
+				db2[dictname]=(time.time(),len(self),sz)
+
 			# write the binary data
 			if region:
 				val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"],region,ad["nx"],ad["ny"],ad["nz"])

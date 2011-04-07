@@ -60,7 +60,7 @@ def main():
 					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
-	parser.add_option("--autoinvert", action="store_true",help="Automatically decides whether to invert each stack of images to make particles white (EMAN2 convention). Decision is made for an entire stack.",default=False)
+	parser.add_option("--autoinvert", action="store_true",help="Automatically decides whether to invert each stack of images to make particles white (EMAN2 convention). Decision is made for an entire stack. Non-inverted images will NOT BET PROCESSED AT ALL !",default=False)
 	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
 	parser.add_option("--meanshrink", metavar="n", type="int", action="append",
 					help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
@@ -113,7 +113,6 @@ def main():
 		nimg = EMUtil.get_image_count(infile)
 
 		ld = EMData()
-		if options.verbose: print "%s : processing %d images"%(infile,nimg)
 
 		if options.autoinvert:
 			sumin,sumout=0,0
@@ -127,9 +126,12 @@ def main():
 				suminsig+=d1["sigma"]
 			
 			doinvert=sumin<sumout
-			if (sumin<sumout and fabs(sumin-sumout)/suminsig>.01) :print infile,sumin,sumout,suminsig,sumin>sumout
-			continue
+			if options.verbose and doinvert : print "Inverting ",infile
+			else : continue
+#			if (sumin<sumout and fabs(sumin-sumout)/suminsig>.01) :print infile,sumin,sumout,suminsig,sumin>sumout
+#			continue
 
+		if options.verbose: print "%s : processing %d images"%(infile,nimg)
 
 		lasttime=time.time()
 		for i in xrange(nimg):
@@ -181,6 +183,7 @@ def main():
 
 				elif option1 == "autoinvert" and doinvert:
 					d.mult(-1.0)
+					d["autoinvert"]=True
 
 
 				elif option1 == "multfile":
@@ -294,7 +297,7 @@ def main():
 					r = d.do_radon()
 					d = r
 				
-#			d.write_image(outfile,i)
+			d.write_image(outfile,i)
 			
 	E2end(logid)
 
