@@ -301,7 +301,7 @@ class Strategy2IMGPair(Strategy):
 					self.compute_tilt_angle()
 					
 					currX = [x,y,1]
-					currY = numpy.dot(numpy.linalg.inv(self.A),currX)
+					currY = numpy.dot(numpy.linalg.inv(self.A),currX)	# Inverse of A
 					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
 					self.mediator.untilt_win.update_mainwin()
 					
@@ -354,8 +354,8 @@ class Strategy2IMGPair(Strategy):
 			self.mediator.tilt_win.boxes.shapelist[i] = None
 			self.mediator.tilt_win.boxes.labellist[i] = None
 			
-		self.mediator.tilt_win.boxes.save_boxes_to_db()
 		# Update tilted window
+		self.mediator.tilt_win.boxes.save_boxes_to_db()
 		self.mediator.tilt_win.window.update_shapes(self.mediator.tilt_win.boxes.get_box_shapes(self.mediator.boxsize))
 		self.mediator.tilt_win.window.updateGL()
 		
@@ -497,6 +497,7 @@ class ControlPannel(QtGui.QWidget):
 		self.on_done()
 		
 	def on_write(self):
+		print "Saving Particles"
 		for window in self.mediator.windowlist:
 			window.boxes.write_particles(window.filename, ("bdb:particles#"+window.filename),self.mediator.boxsize,normproc="normalize.edgemean")
 	
@@ -703,10 +704,11 @@ class ParticlesWindow:
 			window.update_particles()
 		
 	def module_closed(self):
-		if not self.closed:
-			print "Saving particles"
-			self.rctwidget.control_window.on_write()
-			self.closed = True
+		pass
+		#if not self.closed:
+			#print "Saving particles"
+			#self.rctwidget.control_window.on_write()
+			#self.closed = True
 			
 class MainWin:
 	'''
