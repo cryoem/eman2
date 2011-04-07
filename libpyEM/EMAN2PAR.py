@@ -482,7 +482,7 @@ class EMLocalTaskHandler():
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
-		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"w"),-1)
+		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1
 		EMLocalTaskHandler.lock.release()
@@ -503,8 +503,8 @@ class EMLocalTaskHandler():
 #		print "Retrieve ",taskid
 		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
 		
-		task=load(file("%s/%07d"%(self.scratchdir,taskid),"r"))
-		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"r"))
+		task=load(file("%s/%07d"%(self.scratchdir,taskid),"rb"))
+		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"rb"))
 	
 		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
 		os.unlink("%s/%07d"%(self.scratchdir,taskid))
@@ -682,7 +682,7 @@ class EMMpiClient():
 					if com=="DONE" :
 						mpi_send("OK",src,2)
 						taskid=self.rankjobs[src]
-						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"w"),-1)
+						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"wb"),-1)
 						self.status[taskid]=100
 						self.rankjobs[src]=-1
 						self.log('Task %s complete on rank %d'%(taskid,src))
@@ -702,7 +702,7 @@ class EMMpiClient():
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d"%(self.nextjob,rank)
 						
-						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"r"))
+						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"rb"))
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
 						r=self.mpi_send_com(rank,"EXEC",task)
 						
@@ -1001,7 +1001,7 @@ class EMMpiTaskHandler():
 				task.modtimes[i[1]]=e2filemodtime(i[1])
 		task.taskid=self.maxid
 		
-		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"w"),-1)
+		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
 
@@ -1023,8 +1023,8 @@ class EMMpiTaskHandler():
 #		print "Retrieve ",taskid
 		
 		try :
-			task=load(file("%s/%07d"%(self.queuedir,taskid),"r"))
-			results=load(file("%s/%07d.out"%(self.queuedir,taskid),"r"))
+			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))
+			results=load(file("%s/%07d.out"%(self.queuedir,taskid),"rb"))
 			os.unlink("%s/%07d.out"%(self.queuedir,taskid))
 			os.unlink("%s/%07d"%(self.queuedir,taskid))
 			del self.completed[taskid]

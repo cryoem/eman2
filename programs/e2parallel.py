@@ -138,9 +138,9 @@ def runlocaltask(taskin,taskout):
 	from e2project3d import EMProject3DTaskDC
 #	from e2tomoaverage import EMTomoAlignTaskDC
 	
-	task=load(file(taskin,"r"))
+	task=load(file(taskin,"rb"))
 	
-	try: dump(task.execute(progcb),file(taskout,"w"),-1)
+	try: dump(task.execute(progcb),file(taskout,"wb"),-1)
 	except:
 		traceback.print_exc()
 		sys.exit(1)		# Error !
