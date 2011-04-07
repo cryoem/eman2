@@ -903,6 +903,7 @@ class EMBoxList:
 		for box in self.boxlist: box.reset_image()
 		
 	def write_particles(self,input_file_name,out_file_name,box_size,normproc=None):
+		db_remove_dict(out_file_name)	# Delete any old data
 		for i,box in enumerate(self.boxlist):
 			image = box.get_image(input_file_name,box_size)
 			if str(normproc) != "None": image.process_inplace(normproc)
