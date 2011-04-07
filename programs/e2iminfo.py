@@ -109,30 +109,44 @@ def main():
 		if options.all : imgn=xrange(nimg)
 		else : imgn=[options.number]
 
-		if options.stat :
-			for i in imgn:
-				d=EMData(imagefile,i)
-				print "%d.min=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(i,d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
+		nptcl=0
+		d=EMData()
+		for i in imgn:
+			d.read_image(imagefile,i)
+			print "%d. "%i,
+			try:
+				print "%d ptcl\t"%d["ptcl_repr"],
+				nptcl+=d["ptcl_repr"]
+			except:
+				print "\t"
+			
+			if options.stat :
+				print "min=%1.4g\tmax=%1.4g\tmean=%1.4g\tsigma=%1.4g\tskewness=%1.4g \tkurtosis=%1.4g"%(d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]),
 				try:
 					c=d["ctf"]
-					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor)
+					print "\tdefocus=%1.2f\tB=%1.0f"%(c.defocus,c.bfactor),
 				except:
 					print " "
-		if options.euler:
-			for i in imgn:
+						
+			if options.euler:
 				d=EMData(imagefile,i)
-				print "%d. %s"%(i,str(d["xform.projection"]))
+				try: print "%s"%(str(d["xform.projection"])),
+				except : print "No transform information",
 
-		if options.header :
-			for i in imgn:
+			if options.header :
 				d=EMData(imagefile,i)
-				print "%d."%i,
+				print ""
 				keys=d.get_attr_dict().keys()
 				keys.sort()
 				for k in keys:
 					print "\t%s: %s"%(k,str(d[k]))
-				print
+				print "======================"
+			
+			print ""
 	
 	if nimgs>1 : print "%d total images"%nimgs
+	try : print "representing %d particles"%nptcl
+	except: pass
+	
 if __name__ == "__main__":
 	main()

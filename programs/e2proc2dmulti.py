@@ -53,13 +53,11 @@ def main():
 	parser = OptionParser(usage,version=EMANVERSION)
 
 	
-	parser.add_option("--postfix", type="string", help="Adds this string to each input filename to produce output filename (avoid overwriting)",Default=None)
+	parser.add_option("--postfix", type="string", help="Adds this string to each input filename to produce output filename (avoid overwriting)",default=None)
 	parser.add_option("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory",default=False)
 	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
 	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
 					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
-	parser.add_option("--fftavg", metavar="filename", type="string",
-					help="Incoherent Fourier average of all images and write a single power spectrum image")
 	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_option("--autoinvert", action="store_true",help="Automatically decides whether to invert each stack of images to make particles white (EMAN2 convention). Decision is made for an entire stack.",default=False)
@@ -81,7 +79,7 @@ def main():
 	parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
 					help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_option("--translate", type="string", action="append", help="Translate by x,y pixels")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=0)
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
@@ -115,7 +113,23 @@ def main():
 		nimg = EMUtil.get_image_count(infile)
 
 		ld = EMData()
-		print "%s : processing %d images"%(infile,nimg)
+		if options.verbose: print "%s : processing %d images"%(infile,nimg)
+
+		if options.autoinvert:
+			sumin,sumout=0,0
+			suminsig=0
+			for i in xrange(nimg):
+				d.read_image(infile, i)
+				d1=d.process("mask.sharp",{"outer_radius":d["nx"]*2/7})
+				d2=d.process("mask.sharp",{"inner_radius":d["nx"]*2/7,"outer_radius":d["nx"]/2-2})
+				sumin+=d1["mean"]
+				sumout+=d2["mean"]
+				suminsig+=d1["sigma"]
+			
+			doinvert=sumin<sumout
+			if (sumin<sumout and fabs(sumin-sumout)/suminsig>.01) :print infile,sumin,sumout,suminsig,sumin>sumout
+			continue
+
 
 		lasttime=time.time()
 		for i in xrange(nimg):
@@ -128,40 +142,17 @@ def main():
 
 			d.read_image(infile, i)
 			
-			else:
-				if plane in xyplanes:
-					roi=Region(0,0,i,tomo_nx,tomo_ny,1)
-					d = threed.get_clip(roi)
-					#d.read_image(infile,0, HEADER_AND_DATA, roi)
-					d.set_size(tomo_nx,tomo_ny,1)
-				elif plane in xzplanes:
-					roi=Region(0,i,0,tomo_nx,1,tomo_nz)
-					d = threed.get_clip(roi)
-					#d.read_image(infile,0, HEADER_AND_DATA, roi)
-					d.set_size(tomo_nx,tomo_nz,1)
-				elif plane in yzplanes:
-					roi=Region(i,0,0,1,tomo_ny,tomo_nz)
-					d = threed.get_clip(roi)
-					#d.read_image(infile,0, HEADER_AND_DATA, roi)
-					d.set_size(tomo_ny,tomo_nz,1)
-
-			
 			sigma = d.get_attr("sigma").__float__()
 			if sigma == 0:
-				if options.threed2threed or options.threed2twod:
-					pass
-				else:
-					print "Warning: sigma = 0 for image ",i
-					if options.writejunk == False:
-						print "Use the writejunk option to force writing this image to disk"
-						continue
+				print "Warning: sigma = 0 for image ",i
+				if options.writejunk == False:
+					print "Use the writejunk option to force writing this image to disk"
+					continue
 
-			if not "outtype" in optionlist:
-				optionlist.append("outtype")
-			
 			index_d = {}
 			for append_option in append_options:
 				index_d[append_option] = 0
+				
 			for option1 in optionlist:
 				
 				nx = d.get_xsize()
@@ -188,13 +179,17 @@ def main():
 				elif option1 == "mult" :
 					d.mult(options.mult)
 
+				elif option1 == "autoinvert" and doinvert:
+					d.mult(-1.0)
+
+
 				elif option1 == "multfile":
 					mf=EMData(options.multfile[index_d[option1]],0)
 					d.mult(mf)
 					mf=None
 					index_d[option1] += 1
 					
-				elif option1 == "norefs" and d.get_average_nimg() <= 0:
+				elif option1 == "norefs" and d["ptcl_repr"] <= 0:
 					continue
 					
 				elif option1 == "setsfpairs":
@@ -217,9 +212,6 @@ def main():
 							d = dataf.do_ift();
 	#						dataf.gimme_fft();
 						
-				elif option1 == "rfp":
-					d = d.make_rotational_footprint()
-
 				elif option1 == "fp":
 					d = d.make_footprint(options.fp)
 
@@ -302,109 +294,9 @@ def main():
 					r = d.do_radon()
 					d = r
 				
-				elif option1 == "average":
-					if not average:
-						average = d.copy()
-					else:
-						average.add(d)
-					continue
-
-				elif option1 == "fftavg":
-					if not fftavg:
-						fftavg = EMData()
-						fftavg.set_size(nx+2, ny)
-						fftavg.set_complex(1)
-						fftavg.to_zero()
-					d.process_inplace("mask.ringmean")
-					d.process_inplace("normalize")
-					df = d.do_fft()
-					df.mult(df.get_ysize())
-					fftavg.add_incoherent(df)
-	#				d.gimme_fft
-					continue
-
-				elif option1 == "calcsf":
-					sfout_n = int(options.calcsf[0])
-					sfout = options.calcsf[1]
-					sf_amwid = 2 * math.pi / sfout_n
-						
-					dataf = d.do_fft()
-	#				d.gimme_fft()
-					curve = dataf.calc_radial_dist(ny, 0, 0.5)
-					outfile2 = sfout
-					
-					if n1 != 0:
-						outfile2 = sfout + ".%03d" % (i+100)
-						
-					sf_dx = 1.0 / (apix * 2.0 * ny)
-					Util.save_data(0, sf_dx, curve, outfile2)
-			
-					if sfout_n > 0:
-						for j in range(0, sfout_n):
-							curve = dataf.calc_radial_dist(ny, 0, 0.5, j * sf_amwid, sf_amwid)                    
-							outfile2 = os.path.basename(sfout) + "-" + str(j) + "-" + str(sfout_n) + ".pwr"
-							if n1 != 0:
-								outfile2 = outfile2 + ".%03d" % (i+100)
-							Util.save_data(0, sf_dx, curve, outfile2)
-					
-					
-				elif option1 == "interlv":
-					d.read_image(options.interlv, i)
-					d.append_image(outfile, IMAGIC)
-				
-				elif option1 == "outtype":
-					if not options.outtype:
-						options.outtype = "unknown"
-						
-					if options.outtype in ["mrc", "pif", "png", "pgm"]:
-						if n1 != 0:
-							outfile = "%03d." % (i + 100) + outfile
-					elif options.outtype == "spidersingle":
-						if n1 != 0:
-							if i==0:
-								if outfile.find('.spi')>0:
-									nameprefix = outfile[:-4]
-								else:
-									nameprefix = outfile
-							spiderformat = "%s%%0%dd.spi" % (nameprefix, int(math.log10(n1+1-n0))+1)						
-							outfile = spiderformat % i
-
-					#if options.inplace:
-							#d.write_image(outfile, i)
-					#elif options.mraprep:
-							#outfile = outfile + "%04d" % i + ".lst"
-							#options.outtype = "lst"
-					
-					#write processed image to file
-					if options.threed2threed or options.twod2threed:    #output a single 3D image
-						if i==0:
-							out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)		
-							
-						out3d_img.insert_clip(d, (0,0,i))
-						
-						if i==n1:
-							if 'mrc8bit' in optionlist:
-								out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-							elif 'mrc16bit' in optionlist:
-								out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-							else:
-								out3d_img.write_image(outfile)
-					else:   #output a single 2D image or a 2D stack			
-						if 'mrc8bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-						elif 'mrc16bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-						else:
-							if options.inplace:
-								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-							else: 
-								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-					
+#			d.write_image(outfile,i)
 			
 	E2end(logid)
-
-def doparallel(argv,parallel,args):
-	pass
 
 if __name__ == "__main__":
 	main()

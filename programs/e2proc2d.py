@@ -345,7 +345,7 @@ def main():
 				mf=None
 				index_d[option1] += 1
 				
-			elif option1 == "norefs" and d.get_average_nimg() <= 0:
+			elif option1 == "norefs" and d["ptcl_repr"] <= 0:
 				continue
 				
 			elif option1 == "setsfpairs":
