@@ -328,7 +328,7 @@ template <> Factory < Processor >::Factory()
 	force_add<DiffBlockProcessor>();
 
 	force_add<CutoffBlockProcessor>();
-	force_add<GradientRemoverProcessor>();
+//	force_add<GradientRemoverProcessor>();
 	force_add<GradientPlaneRemoverProcessor>();
 	force_add<FlattenBackgroundProcessor>();
 	force_add<VerticalStripeProcessor>();
