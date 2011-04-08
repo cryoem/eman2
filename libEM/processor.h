@@ -6860,6 +6860,33 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
+	class ConvolutionKernalProcessor : public Processor
+	{
+	public:
+		virtual EMData* process(const EMData* const image);
+		virtual void process_inplace(EMData * image);
+		
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ConvolutionKernalProcessor();
+		}
+		string get_desc() const
+		{
+			return "Filters an image with a convolution kernal.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("kernal", EMObject::FLOATARRAY, "the convolution kernal");
+			return d;
+		}
+		static const string NAME;	
+	};
+	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

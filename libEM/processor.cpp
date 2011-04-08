@@ -238,6 +238,7 @@ const string NewHighpassTanhProcessor::NAME = "filter.highpass.tanh";
 const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
 const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
+const string ConvolutionKernalProcessor::NAME = "convkernal";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -458,7 +459,8 @@ template <> Factory < Processor >::Factory()
 	force_add<RadialProcessor>();
 
 	force_add<DirectionalSumProcessor>();
-
+	force_add<ConvolutionKernalProcessor>();
+	
 	//Gorgon-related processors
 	force_add<ModelEMCylinderProcessor>();
 	force_add<ApplyPolynomialProfileToHelix>();
@@ -9696,6 +9698,7 @@ void ApplyPolynomialProfileToHelix::process_inplace(EMData * in)
 	}
 }
 
+//Do NOT use this code as an example, (const EMData* const image) needs to be used otherwise process_inplace is called and the params are throw out!
 EMData* BinarySkeletonizerProcessor::process(EMData * image)
 {
 	using namespace wustl_mm::GraySkeletonCPP;
@@ -9726,6 +9729,48 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 	image->update();
 	delete em_skel;
 	em_skel = NULL;
+	return;
+}
+
+EMData* ConvolutionKernalProcessor::process(const EMData* const image) 
+{
+	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
+	
+	EMData* conv = new EMData(image->get_xsize(),image->get_ysize(),1);
+	vector<float>kernal = params["kernal"];
+
+	if (fmod(float(sqrt(kernal.size())), 1.0f) != 0) throw InvalidParameterException("Convolution kernal must be square!!");
+	
+	float* data = image->get_data();
+	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
+	
+	//I could do the edges by wrapping around, but this is not necessary(such functionality can be iplemented later)
+	int ks = sqrt(kernal.size());
+	int n = (ks - 1)/2;
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	for (int i = n; i < (nx - n); i++) {
+		for (int j = n; j < (ny - n); j++) {
+			//now do the convolution
+			float cpixel = 0;
+			int idx = 0;
+			for (int cx = -n; cx <= n; cx++) {
+				for (int cy = -n; cy <= n; cy++) {
+					cpixel += data[(i+cx) + (j+cy) * nx]*kernal[idx];
+					idx++;
+				}
+			}
+			cdata[i + j * nx] = cpixel;
+		}
+	}
+	
+	return conv;
+}
+
+void ConvolutionKernalProcessor::process_inplace(EMData * image)
+{
+	throw UnexpectedBehaviorException("Not implemented yet");
+	
 	return;
 }
 
