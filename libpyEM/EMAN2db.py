@@ -1211,7 +1211,7 @@ of these occasional errors"""
 					im=self[0]
 					sz=(im["nx"],im["ny"],im["nz"])
 				except : sz=(0,0,0)
-				db2[dictname]=(time.time(),len(self),sz)
+				db2[self.name]=(time.time(),len(self),sz)
 
 			# write the binary data
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
@@ -1400,12 +1400,12 @@ of these occasional errors"""
 				self["maxrec"]=key
 
 				# update the image count cache
-				db2=db_open_dict("bdb:%s#%s"%(self.path,"00image_counts"))
+				db2=db_open_dict("bdb:%s#%s"%(self.path[:-8],"00image_counts"))
 				try: 
 					im=self[0]
 					sz=(im["nx"],im["ny"],im["nz"])
 				except : sz=(0,0,0)
-				db2[dictname]=(time.time(),len(self),sz)
+				db2[self.name]=(time.time(),len(self),sz)
 
 			# write the binary data
 			if region:
