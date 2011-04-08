@@ -1206,7 +1206,7 @@ of these occasional errors"""
 				self["maxrec"]=key
 				
 				# Updates the image count cache
-				db2=db_open_dict("bdb:%s#%s"%(self.path,"00image_counts"))
+				db2=db_open_dict("bdb:%s#%s"%(self.path[:-8],"00image_counts"))
 				try: 
 					im=self[0]
 					sz=(im["nx"],im["ny"],im["nz"])
