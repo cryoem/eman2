@@ -1490,7 +1490,7 @@ def get_3d_font_renderer():
 			print "unknown platform:",pfm
 		return font_renderer
 	except ImportError:
-		print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
+		#úprint "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
 		return None
 	
 class EMAbstractFactory:
