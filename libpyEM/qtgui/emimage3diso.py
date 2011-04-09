@@ -271,9 +271,9 @@ class EMIsosurfaceModel(EM3DModel):
 		
 		hist = data.calc_hist(256,self.minden,self.maxden)
 		self.inspector.set_hist(hist,self.minden,self.maxden) 
-	
-		self.inspector.set_thresholds(self.minden,self.maxden,mean+1.8*sigma)
-		self.isothr = mean+1.8*sigma
+		iso_threshold = mean+3.0*sigma
+		self.inspector.set_thresholds(self.minden,self.maxden,iso_threshold)
+		self.isothr = iso_threshold
 		self.brightness = -self.isothr
 		
 		self.isorender=MarchingCubes(data)
