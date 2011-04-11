@@ -1321,6 +1321,20 @@ def ali_vol_func(params, data):
 	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
 	x = rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
+	res = -x.cmp("ccc", data[1], {"mask":data[2]})
+	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
+	return res
+
+def ali_vol_func_julio(params, data):
+	from utilities    import model_gauss
+	from fundamentals import rot_shift3D, cyclic_shift
+	from morphology   import binarize
+	#print  params
+	#print  data[3]
+	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
+	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
+	x = rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+
 	if (data[3] == None):
 		mask = data[2]
 	elif (data[3] > 0.0):
@@ -1333,7 +1347,7 @@ def ali_vol_func(params, data):
 		x = rsconvolution(x, gker)
 		x = Util.decimate(x, data[5], data[5], data[5])
 		mask = Util.decimate(mask, data[5], data[5], data[5])
-		
+
 	#res = -x.cmp("ccc", data[1], {"mask":data[2]})
 	res = -x.cmp(data[4], data[1], {"mask":mask, "normalize":0})
 	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
