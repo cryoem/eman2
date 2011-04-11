@@ -45,6 +45,7 @@ else:
 
 mpi_barrier()
 
+if proc==0:
 	a="You should see nodes-1 of these lines"
 	mpi_bcast_send(a)
 	
