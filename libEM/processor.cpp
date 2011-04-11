@@ -9739,13 +9739,13 @@ EMData* ConvolutionKernalProcessor::process(const EMData* const image)
 	EMData* conv = new EMData(image->get_xsize(),image->get_ysize(),1);
 	vector<float>kernal = params["kernal"];
 
-	if (fmod(float(sqrt(kernal.size())), 1.0f) != 0) throw InvalidParameterException("Convolution kernal must be square!!");
+	if (fmod(sqrt((float)kernal.size()), 1.0f) != 0) throw InvalidParameterException("Convolution kernal must be square!!");
 	
 	float* data = image->get_data();
 	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
 	
 	//I could do the edges by wrapping around, but this is not necessary(such functionality can be iplemented later)
-	int ks = sqrt(kernal.size());
+	int ks = sqrt((float)kernal.size());
 	int n = (ks - 1)/2;
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
