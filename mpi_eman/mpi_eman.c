@@ -2,7 +2,7 @@
 
 // Simple MPI bindings for Python for use with EMAN2
 
-#include <python2.6/Python.h>
+#include <Python.h>
 #include <math.h>
 #include <mpi.h>
 
