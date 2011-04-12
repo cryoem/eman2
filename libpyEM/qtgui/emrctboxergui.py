@@ -457,10 +457,12 @@ class PairPickerTool(QtGui.QWidget):
 		self.mask_combobox.addItem("None")
 		self.mask_combobox.addItem("LineMask")
 		self.mask_combobox.addItem("SolidMask")
+		self.mask_combobox.setCurrentIndex(self.db.get("masktype",dfl=0))
 		
 		QtCore.QObject.connect(self.mask_combobox, QtCore.SIGNAL("activated(int)"), self.mask_combobox_changed)
 		
 	def mask_combobox_changed(self, idx):
+		self.db["masktype"] = idx
 		self.mediator.untilt_win.masktype = self.mask_combobox.currentText()
 		self.mediator.tilt_win.masktype = self.mask_combobox.currentText()
 		self.mediator.strategy.compute_mask()
@@ -468,6 +470,7 @@ class PairPickerTool(QtGui.QWidget):
 	def configure_widget(self):
 		self.mediator.set_strategy(Strategy2IMGPair)
 		self.mediator.strategy.initial_calculations()
+		self.mask_combobox_changed(self.mask_combobox.currentIndex())
 			
 	def on_spinbox(self, value):
 		self.db["ppspinbox"] = value
