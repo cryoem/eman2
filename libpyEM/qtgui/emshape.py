@@ -106,7 +106,7 @@ class EMShape:
 	
 	def __getitem__(self,key): return self.shape[key]
 		
-	def __setitem__(self,key,value): 
+	def __setitem__(self,key,value):
 		self.shape[key]=value
 	
 	def draw(self,d2s=None,col=None):
@@ -275,6 +275,24 @@ class EMShape:
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glEnd()
 		
+		elif s[0]=="mask":
+#			print "A line ",s[4],s[5],s[6],s[7]
+#			print "A line ",d2s(s[4],s[5]),d2s(s[6],s[7])
+			GL.glColor(*col)
+			GL.glBegin(GL.GL_TRIANGLE_STRIP)
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glVertex(*d2s(s[8],s[9]))
+			GL.glVertex(*d2s(s[10],s[11]))
+			GL.glVertex(*d2s(s[12],s[13]))
+			GL.glVertex(*d2s(s[14],s[15]))
+			GL.glVertex(*d2s(s[16],s[17]))
+			GL.glVertex(*d2s(s[18],s[19]))
+			#First Vertex
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glEnd()
+			
 		elif s[0]=="label":
 			
 			GL.glPushMatrix()

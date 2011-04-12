@@ -107,6 +107,7 @@ class Strategy2IMGPair(Strategy):
 	def __init__ (self, mediator):
 		Strategy.__init__(self, mediator)
 		self.A = None
+		self.invA = None
 		self.minpp_for_xfrom = 3
 		self.cont_update_boxes = False
 	
@@ -162,7 +163,7 @@ class Strategy2IMGPair(Strategy):
 					self.compute_tilt_angle()
 					
 					currX = [x,y,1]
-					currY = numpy.dot(numpy.linalg.inv(self.A),currX)	# Inverse of A
+					currY = numpy.dot(self.invA,currX)	# Inverse of A
 					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
 					self.mediator.untilt_win.update_mainwin()
 					
@@ -193,6 +194,21 @@ class Strategy2IMGPair(Strategy):
 		Y = numpy.array([Yrow1,Yrow2,Yrow3])
 		pinvX = numpy.linalg.pinv(X)	# Use pseduoinverse to find the best transformation matrix, A, in a least squares sense
 		self.A = numpy.dot(Y,pinvX)
+		self.invA = numpy.linalg.inv(self.A)
+
+		v1 = numpy.dot(self.A,[0,0,1])
+		v2 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,0,1])
+		v3 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,self.mediator.untilt_win.win_ysize,1])
+		v4 = numpy.dot(self.A,[0,self.mediator.untilt_win.win_ysize,1])
+		self.mediator.tilt_win.paint_mask(v1[0],v1[1], v2[0],v2[1],v3[0],v3[1],v4[0],v4[1])
+		self.mediator.tilt_win.update_mainwin()
+		
+		vinv1 = numpy.dot(self.invA,[0,0,1])
+		vinv2 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,0,1])
+		vinv3 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,self.mediator.tilt_win.win_ysize,1])
+		vinv4 = numpy.dot(self.invA,[0,self.mediator.tilt_win.win_ysize,1])
+		self.mediator.untilt_win.paint_mask(vinv1[0],vinv1[1], vinv2[0],vinv2[1],vinv3[0],vinv3[1],vinv4[0],vinv4[1])
+		self.mediator.untilt_win.update_mainwin()
 	
 	def compute_tilt_angle(self):
 		# Use the transformation matrix to compute the tilt angle

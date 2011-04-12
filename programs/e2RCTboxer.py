@@ -273,6 +273,8 @@ class MainWin:
 		self.connect_signals()
 		self.moving = None
 		self.data = None
+		self.win_xsize = 0
+		self.win_ysize = 0
 		
 	def connect_signals(self):
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousedown"),self.mouse_down)
@@ -282,6 +284,9 @@ class MainWin:
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousemove"),self.mouse_move)
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("module_closed"),self.module_closed)
+	
+	def paint_mask(self,v1x,v1y,v2x,v2y,v3x,v3y,v4x,v4y):
+		self.boxes.add_mask(0,0,v1x,v1y,self.win_xsize,0,v2x,v2y,self.win_xsize,self.win_ysize,v3x,v3y,0,self.win_ysize,v4x,v4y)
 		
 	def load_image(self, filename):
 		self.filename = filename
@@ -290,12 +295,17 @@ class MainWin:
 		self.window.force_display_update()
 		self.window.optimally_resize()
 		self.load_database()
+		self.win_xsize = self.window.data.get_xsize()
+		self.win_ysize = self.window.data.get_ysize()
 		
 	def reload_image(self, data, newfilename, mainonly=True):
 		self.window.set_data(data, self.filename)
 		self.window.force_display_update()
 		if mainonly == False:
 			self.filename = newfilename
+			
+		self.win_xsize = self.window.data.get_xsize()
+		self.win_ysize = self.window.data.get_ysize()
 		
 	def load_database(self):
 		self.boxes.set_boxes_db(name=self.name, entry=self.filename)	# set the name and entry of the db, the name reprents the window, and the entry, each instance of the window
@@ -378,6 +388,11 @@ class EMBoxList:
 		self.objectidx = EMBoxList.OBJECTIDX	# The index of the current object
 		self.fontsize = 60.0
 		EMBoxList.OBJECTIDX += 1
+		self.mask = None
+	
+	def add_mask(self, vo1x, vo1y, vi1x, vi1y, vo2x, vo2y, vi2x, vi2y, vo3x, vo3y, vi3x, vi3y, vo4x, vo4y, vi4x, vi4y):
+		from emshape import EMShape
+		self.mask = EMShape(["mask",0,0,0, vo1x, vo1y, vi1x, vi1y, vo2x, vo2y, vi2x, vi2y, vo3x, vo3y, vi3x, vi3y, vo4x, vo4y, vi4x, vi4y])
 	
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
@@ -449,6 +464,10 @@ class EMBoxList:
 				self.labellist[i] = label
 			d[i+lsize] = self.labellist[i]
 			
+		# Add a mask if requested
+		if self.mask != None:
+			d[2*lsize] = self.mask
+		
 		return d
 		
 	def reset_shapes(self):
