@@ -345,7 +345,7 @@ class ControlPannel(QtGui.QWidget):
 	def on_write(self):
 		print "Saving Particles"
 		for window in self.mediator.windowlist:
-			window.boxes.write_particles(window.filename, ("bdb:particles#"+window.filename),self.mediator.boxsize,normproc="normalize.edgemean")
+			window.boxes.write_particles(window.filename, ("bdb:RCTparticles#"+window.filename),self.mediator.boxsize,normproc="normalize.edgemean")
 	
 	def on_done(self):
 		for wid in self.mediator.widgetlist:
