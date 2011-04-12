@@ -424,6 +424,13 @@ class PairPickerTool(QtGui.QWidget):
 		hta.addWidget(self.tiltangle)
 		vbl.addLayout(hta)
 		
+		hmb = QtGui.QHBoxLayout()
+		mlabel = QtGui.QLabel("Mask Type", self)
+		hmb.addWidget(mlabel)
+		self.mask_combobox = QtGui.QComboBox()
+		hmb.addWidget(self.mask_combobox)
+		vbl.addLayout(hmb)
+		
 		self.upboxes_but = QtGui.QPushButton("Update Boxes", self)
 		self.upboxes_but.setEnabled(False)
 		vbl.addWidget(self.upboxes_but)
@@ -444,6 +451,19 @@ class PairPickerTool(QtGui.QWidget):
 		# Initialize
 		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xform))
 		self.updateboxes_cb.setChecked(self.db.get("ppcheckbox",dfl=self.updateboxes))
+		self.addmasks()
+	
+	def addmasks(self):
+		self.mask_combobox.addItem("None")
+		self.mask_combobox.addItem("LineMask")
+		self.mask_combobox.addItem("SolidMask")
+		
+		QtCore.QObject.connect(self.mask_combobox, QtCore.SIGNAL("activated(int)"), self.mask_combobox_changed)
+		
+	def mask_combobox_changed(self, idx):
+		self.mediator.untilt_win.masktype = self.mask_combobox.currentText()
+		self.mediator.tilt_win.masktype = self.mask_combobox.currentText()
+		self.mediator.strategy.compute_mask()
 		
 	def configure_widget(self):
 		self.mediator.set_strategy(Strategy2IMGPair)

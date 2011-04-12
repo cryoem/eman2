@@ -292,6 +292,19 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[5]))
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glEnd()
+		
+		elif s[0]=="linemask":
+#			print "A line ",s[4],s[5],s[6],s[7]
+#			print "A line ",d2s(s[4],s[5]),d2s(s[6],s[7])
+			assert self.shape[12] >= 0
+			GL.glLineWidth(s[12])
+			GL.glColor(*col)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glVertex(*d2s(s[8],s[9]))
+			GL.glVertex(*d2s(s[10],s[11]))
+			GL.glEnd()
 			
 		elif s[0]=="label":
 			

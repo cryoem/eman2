@@ -195,7 +195,10 @@ class Strategy2IMGPair(Strategy):
 		pinvX = numpy.linalg.pinv(X)	# Use pseduoinverse to find the best transformation matrix, A, in a least squares sense
 		self.A = numpy.dot(Y,pinvX)
 		self.invA = numpy.linalg.inv(self.A)
+		
+		self.compute_mask()
 
+	def compute_mask(self):
 		v1 = numpy.dot(self.A,[0,0,1])
 		v2 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,0,1])
 		v3 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,self.mediator.untilt_win.win_ysize,1])

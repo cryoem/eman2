@@ -275,6 +275,7 @@ class MainWin:
 		self.data = None
 		self.win_xsize = 0
 		self.win_ysize = 0
+		self.masktype = "None"
 		
 	def connect_signals(self):
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("mousedown"),self.mouse_down)
@@ -286,8 +287,16 @@ class MainWin:
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("module_closed"),self.module_closed)
 	
 	def paint_mask(self,v1x,v1y,v2x,v2y,v3x,v3y,v4x,v4y):
-		self.boxes.add_mask(0,0,v1x,v1y,self.win_xsize,0,v2x,v2y,self.win_xsize,self.win_ysize,v3x,v3y,0,self.win_ysize,v4x,v4y)
-		
+		from emshape import EMShape
+		if self.masktype == "None":
+			self.boxes.add_mask(None)
+		elif self.masktype == "LineMask":
+			self.boxes.add_mask(EMShape(["linemask",1,0,0,v1x, v1y,v2x,v2y,v3x,v3y,v4x,v4y,4.0]))
+		elif self.masktype == "SolidMask":
+			self.boxes.add_mask(EMShape(["mask",0,0,0, 0, 0, v1x, v1y, self.win_xsize, 0, v2x, v2y, self.win_xsize, self.win_ysize, v3x, v3y, 0, self.win_ysize, v4x, v4y]))
+		else:
+			self.boxes.add_mask(None)
+			
 	def load_image(self, filename):
 		self.filename = filename
 		self.data=BigImageCache.get_object(filename).get_image(use_alternate=True)
@@ -390,9 +399,8 @@ class EMBoxList:
 		EMBoxList.OBJECTIDX += 1
 		self.mask = None
 	
-	def add_mask(self, vo1x, vo1y, vi1x, vi1y, vo2x, vo2y, vi2x, vi2y, vo3x, vo3y, vi3x, vi3y, vo4x, vo4y, vi4x, vi4y):
-		from emshape import EMShape
-		self.mask = EMShape(["mask",0,0,0, vo1x, vo1y, vi1x, vi1y, vo2x, vo2y, vi2x, vi2y, vo3x, vo3y, vi3x, vi3y, vo4x, vo4y, vi4x, vi4y])
+	def add_mask(self, mask):
+		self.mask = mask
 	
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
