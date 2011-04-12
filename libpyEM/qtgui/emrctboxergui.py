@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 11/01/2007 (sludtke@bcm.edu)
+# Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -40,7 +40,7 @@ class ControlPannel(QtGui.QWidget):
 		self.mediator = mediator
 		self.db = db_open_dict("bdb:emboxerrctgui")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
-		self.setWindowTitle("e2RCTboxerr")
+		self.setWindowTitle("e2RCTboxer")
 		
 		# Here is where additional tools can be added
 		self.manual_tool = ManualPicker(self.mediator, self.db)
@@ -50,6 +50,7 @@ class ControlPannel(QtGui.QWidget):
 		
 		self.tab_widget = QtGui.QTabWidget()
 		self.tab_widget.addTab(self.get_main_tab(),"Main")
+		self.tab_widget.addTab(self.get_processor_tab(),"Processor")
 		self.tab_widget.addTab(self.get_filter_tab(),"Filter")
 		vbox.addWidget(self.tab_widget)
 		
@@ -123,6 +124,67 @@ class ControlPannel(QtGui.QWidget):
 		
 		return filterwidget
 	
+	def get_processor_tab(self):
+		processorwidget = QtGui.QWidget()
+		vboxa = QtGui.QVBoxLayout()
+		
+		vbox1 = QtGui.QVBoxLayout()
+		hbl=QtGui.QHBoxLayout()
+		flabel = QtGui.QLabel("Filter:",self)
+		hbl.addWidget(flabel)
+		self.processor_combobox = QtGui.QComboBox()
+		proc_data = dump_processors_list()
+		for key in proc_data.keys():
+			if len(key) >= 5 and key[:7] == "filter.":
+				#print key
+				self.processor_combobox.addItem(key)
+		self.processor_combobox.setCurrentIndex(int(self.db.get("processor",dfl=0)))
+		hbl.addWidget(self.processor_combobox)
+		vbox1.addLayout(hbl)
+		
+		hbl2=QtGui.QHBoxLayout()
+		plabel = QtGui.QLabel("Parameters:",self)
+		hbl2.addWidget(plabel)
+		self.params_listbox = QtGui.QLineEdit(str(self.db.get("processorparams",dfl="")), self)
+		hbl2.addWidget(self.params_listbox)
+		vbox1.addLayout(hbl2)
+		vbox1.setAlignment(QtCore.Qt.AlignTop)
+		vboxa.addLayout(vbox1)
+		
+		vbox2 = QtGui.QVBoxLayout()
+		self.processor_but=QtGui.QPushButton("Filter")
+		vbox2.addWidget(self.processor_but)
+		vboxa.addLayout(vbox2)
+		
+		processorwidget.setLayout(vboxa)
+		
+		self.connect(self.processor_but,QtCore.SIGNAL("clicked(bool)"),self.on_processor)
+		QtCore.QObject.connect(self.processor_combobox, QtCore.SIGNAL("activated(int)"), self.processor_combobox_changed)
+		QtCore.QObject.connect(self.params_listbox, QtCore.SIGNAL("editingFinished()"), self.params_listbox_changed)
+		
+		return processorwidget
+	
+	def on_processor(self):
+		filtertype = str(self.processor_combobox.currentText())
+		parstring = str(self.params_listbox.text())
+		pars = parstring.split(":")
+		pardict = {}
+		for par in pars:
+			parpair = par.split("=")
+			pardict[parpair[0]] = float(parpair[1])
+			
+		for window in self.mediator.windowlist:
+			fdata = window.data.process(filtertype,pardict)
+			print "filtered win"
+			window.reload_image(fdata, window.filename+"_filted")
+		
+	def processor_combobox_changed(self, idx):
+		self.db["processor"] = idx
+		self.processor_combobox.setCurrentIndex(idx)
+		
+	def params_listbox_changed(self):
+		self.db["processorparams"] = self.params_listbox.text()
+		
 	def on_filter(self):
 		
 		kernal = self.gridkernal[self.kernal_combobox.currentIndex()]
@@ -329,7 +391,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.mediator = mediator
 		self.db = db
 		self.updateboxes = False
-		self.minpp_for_xfrom = 3
+		self.minpp_for_xform = 3
 		
 		# GUI code below here
 		ppwidget = QtGui.QWidget()
@@ -346,10 +408,10 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addWidget(self.updateboxes_cb)
 		
 		hbl = QtGui.QHBoxLayout()
-		slabel = QtGui.QLabel("Min pairs for xfrom", self)
+		slabel = QtGui.QLabel("Min pairs for xform", self)
 		hbl.addWidget(slabel)
 		self.spinbox = QtGui.QSpinBox(self)
-		self.spinbox.setMinimum(self.minpp_for_xfrom)
+		self.spinbox.setMinimum(self.minpp_for_xform)
 		self.spinbox.setMaximum(1000)
 		hbl.addWidget(self.spinbox)
 		vbl.addLayout(hbl)
@@ -380,7 +442,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
 	
 		# Initialize
-		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xfrom))
+		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xform))
 		self.updateboxes_cb.setChecked(self.db.get("ppcheckbox",dfl=self.updateboxes))
 		
 	def configure_widget(self):
@@ -389,7 +451,7 @@ class PairPickerTool(QtGui.QWidget):
 			
 	def on_spinbox(self, value):
 		self.db["ppspinbox"] = value
-		self.minpp_for_xfrom = value
+		self.minpp_for_xform = value
 		self.mediator.configure_strategy(self)
 		
 	def on_updateboxes(self):

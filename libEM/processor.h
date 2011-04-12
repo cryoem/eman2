@@ -966,6 +966,102 @@ The basic design of EMAN Processors: <br>\
 		float slope;
 	};
 
+	/**processor radial function: f(x) = ((x^2 - s^2)/s^4)e^-(x^2/2s^2)
+	 *@param sigma LoG sigma 
+	 */
+	class LoGFourierProcessor:public FourierProcessor
+	{
+	  public:
+		LoGFourierProcessor():sigma(0)
+		{
+		}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new LoGFourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "processor radial function: f(x) = ((x^2 - s^2)/s^4)e^-(x^2/2s^2)";
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			sigma = params["sigma"];
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sigma", EMObject::FLOAT, "LoG sigma");
+			return d;
+		}
+
+		static const string NAME;
+
+	  protected:
+		void create_radial_func(vector < float >&radial_mask) const;
+
+	  private:
+		float sigma;
+	};
+	
+	/**processor radial function: f(x) = 1/sqrt(2*pi)*[1/sigma1*exp-(x^2/2*sigma1^2) - 1/sigma2*exp-(x^2/2*sigma2^2)]
+	 *@param sigma1 DoG sigma1
+	 *@param sigma1 DoG sigma2
+	 */
+	class DoGFourierProcessor:public FourierProcessor
+	{
+	  public:
+		DoGFourierProcessor():sigma1(0), sigma2(0)
+		{
+		}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new DoGFourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "processor radial function: f(x) = 1/sqrt(2*pi)*[1/sigma1*exp-(x^2/2*sigma1^2) - 1/sigma2*exp-(x^2/2*sigma2^2)]";
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			sigma1 = params["sigma1"];
+			sigma2 = params["sigma2"];
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sigma1", EMObject::FLOAT, "DoG sigma1");
+			d.put("sigma2", EMObject::FLOAT, "DoG sigma2");
+			return d;
+		}
+
+		static const string NAME;
+
+	  protected:
+		void create_radial_func(vector < float >&radial_mask) const;
+
+	  private:
+		float sigma1;
+		float sigma2;
+	};
+	
 	/**The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.
 	 */
 	class RealPixelProcessor:public Processor

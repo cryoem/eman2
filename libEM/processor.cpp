@@ -68,6 +68,8 @@ const string ZGradientProcessor::NAME = "math.edge.zgradient";
 const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
 const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
 const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
+const string LoGFourierProcessor::NAME = "filter.LoG";
+const string DoGFourierProcessor::NAME = "filter.DoG";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
@@ -254,6 +256,8 @@ template <> Factory < Processor >::Factory()
 {
 	force_add<HighpassAutoPeakProcessor>();
 	force_add<LinearRampFourierProcessor>();
+	force_add<LoGFourierProcessor>();
+	force_add<DoGFourierProcessor>();
 
 	force_add<AmpweightFourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
@@ -1225,6 +1229,31 @@ void LinearRampProcessor::create_radial_func(vector < float >&radial_mask) const
 	}
 }
 
+void LoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
+{
+	
+	Assert(radial_mask.size() > 0);
+	float x = 0.0f , nqstep = 0.5f/radial_mask.size();
+	size_t size=radial_mask.size();
+	float var = sigma*sigma;
+	for (size_t i = 0; i < size; i++) {
+		radial_mask[i] = ((x*x - var)/var*var)*exp(-x*x/2*var);
+		x += nqstep;
+	}
+}
+
+void DoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
+{
+	
+	Assert(radial_mask.size() > 0);
+	float x = 0.0f , nqstep = 0.5f/radial_mask.size();
+	size_t size=radial_mask.size();
+	float norm = 1.0f/sqrt(2*M_PI);
+	for (size_t i = 0; i < size; i++) {
+		radial_mask[i] = norm*((1.0f/sigma1*exp(-x*x/(2.0f*sigma1*sigma1))) - (1.0f/sigma2*exp(-x*x/(2.0f*sigma2*sigma2))));
+		x += nqstep;
+	}
+}
 
 void RealPixelProcessor::process_inplace(EMData * image)
 {
@@ -9754,6 +9783,7 @@ EMData* ConvolutionKernalProcessor::process(const EMData* const image)
 			//now do the convolution
 			float cpixel = 0;
 			int idx = 0;
+			// Perahps I could use some ofrm of Caching to speed things up?
 			for (int cx = -n; cx <= n; cx++) {
 				for (int cy = -n; cy <= n; cy++) {
 					cpixel += data[(i+cx) + (j+cy) * nx]*kernal[idx];
