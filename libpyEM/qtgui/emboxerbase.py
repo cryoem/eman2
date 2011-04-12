@@ -1840,7 +1840,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		box = EMBoxerModuleVitals.particle_selected(self,box_number)
 		if self.main_2d_window: self.main_2d_window.register_scroll_motion(box.x,box.y)
 
-current_tool_combobox_changed
+#current_tool_combobox_changed
 	# subclass methods
 
 	def has_thumbs(self):
