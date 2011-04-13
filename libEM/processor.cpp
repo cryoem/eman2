@@ -6131,8 +6131,8 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 
 	float apix=image->get_attr("apix_x");
 
-	sf->write_file("a.txt");
-	Util::save_data(0,sf->get_x(1),radial_mask,"b.txt");
+//	sf->write_file("a.txt");
+//	Util::save_data(0,sf->get_x(1),radial_mask,"b.txt");
 
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
@@ -6140,7 +6140,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *i
 		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
 
-	Util::save_data(0,sf->get_x(1),radial_mask,"c.txt");
+//	Util::save_data(0,sf->get_x(1),radial_mask,"c.txt");
 
 	delete sf;
 }

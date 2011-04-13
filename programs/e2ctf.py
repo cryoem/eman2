@@ -239,6 +239,7 @@ def get_gui_arg_img_sets(filenames):
 	else: return img_sets
 	for fsp in filenames:
 		name = get_file_tag(fsp)
+		if name[:3]=="00i" : continue
 		if not db_parms.has_key(name):
 			print "Warning, you must first run auto fit before running the gui - there are no parameters for",name
 			continue
