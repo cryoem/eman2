@@ -91,8 +91,9 @@ class TestProcessor(unittest.TestCase):
 		a = [test_image(0,(16,16)),test_image_3d(0,(16,16,16))]
 		for e in a:
 			af = e.do_fft()
-			b = af.process("threshold.binary.fourier",{"value":0})
-			self.assertAlmostEqual(b["mean"], 0.5, 8)
+			b = af.process("threshold.binary.fourier",{"value":0.0})
+			b.ri2ap()
+			self.assertTrue(b.get_attr("minimum") > 0)
 				
 		if(IS_TEST_EXCEPTION):
 			try:

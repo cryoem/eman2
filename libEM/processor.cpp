@@ -3844,7 +3844,6 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 }
 
-
 void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	ENTERFUNC;
 	if (!image->is_complex()) throw ImageFormatException("Fourier binary thresholding processor only works for complex images");
@@ -3852,50 +3851,18 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	float threshold = params.set_default("value",0.0f);
 	image->ri2ap(); //  works for cuda
 
-// This is rubbish!!! Needs fixing as does not do the same thing as below....
-//#ifdef EMAN2_USING_CUDA
-//	if (image->gpu_operation_preferred()) {
-//		EMDataForCuda tmp = image->get_data_struct_for_cuda();
-//		binarize_fourier_amp_processor(&tmp,threshold);
-//		image->set_ri(true); // So it can be used for fourier multiplaction, for example
-//		image->gpu_update();
-//		EXITFUNC;
-//		return;
-//	}
-//#endif
-        //compete rubbish!! doesn't work I need to fix this....
 	float* d = image->get_data();
 	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
-		//float v = *d;
 		if ( *d < threshold ) {
 			*d = 0;
 			*(d+1) = 0;
 		} 
 	}
-
         image->ap2ri();
 	image->set_ri(true); // So it can be used for fourier multiplaction, for example
 	image->update();
 	EXITFUNC;
-}
-
-//currently broken...
-//void BinarizeAmpProcessor::process_inplace(EMData* image) {
-// 	ENTERFUNC;
-//	if (image->is_complex()) throw ImageFormatException("Binary amp thresholding processor only works for real images");
-
-//	float fractamps = params.set_default("fractamps",0.0f);
-//	image->do_fft_inplace();
-//	float threshold = image->get_amplitude_thres(fractamps);
-//	cout << threshold << endl;
-//	Dict d;
-//	d["value"] = threshold;
-//	image->process_inplace("threshold.binary.fourier", d);
-//      image->do_ift_inplace();
-//	image->update();
-	
-//	EXITFUNC;
-//} 
+} 
   
 void BilateralProcessor::process_inplace(EMData * image)
 {

@@ -1861,46 +1861,6 @@ The basic design of EMAN Processors: <br>\
 
 			static const string NAME;
 		};
-		
-//	/** A thresholding processor for real images based on the amplitude component.
-//	 * All maps set below value are set to zero
-//	 * Useful in tomography when you want to toss complex components with low amplitides
-//	 *@author John Flanagan
-//	 *@date Oct 25th 2010
-//	 *@param value The Fourier amplitude threshold cutoff
-//	 */
-//	class BinarizeAmpProcessor:public Processor
-//		{
-//		  public:
-//			virtual string get_name() const
-//			{
-//				return NAME;
-//			}
-//			static Processor *NEW()
-//			{
-//				return new BinarizeAmpProcessor();
-//			}
-
-//			/**
-//			 * @exception ImageFormatException if the input image is not complex
-//			 * Note result is always in real-imaginary format
-//			 */
-//			virtual void process_inplace(EMData* image);
-
-//			virtual TypeDict get_param_types() const
-//			{
-//				TypeDict d;
-//				d.put("fractamps", EMObject::FLOAT, "Fractional Fourier amplitude threshold cutoff" );
-//				return d;
-//			}
-
-//			virtual string get_desc() const
-//			{
-//				return "A thresholding processor for real images based on the amplitude component";
-//			}
-
-//			static const string NAME;
-//		};
 
 	/**f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r
 	 *@param range The range about 'value' which will be collapsed to 'value'
