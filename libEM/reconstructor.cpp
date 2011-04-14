@@ -2076,7 +2076,7 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 
 	buildFFTVolume();
 	buildNormVolume();
-
+	
 }
 
 
@@ -2127,7 +2127,6 @@ void nn4Reconstructor::buildNormVolume() {
 		m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 		m_wptr->to_zero();
 	}
-
 	m_wptr->set_array_offsets(0,1,1);
 }
 
@@ -2210,13 +2209,17 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
-	// insert slice for all symmetry related positions
 
-	for (int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym(m_symmetry, isym);
-	
-		m_volume->nn( m_wptr, padfft, tsym, mult);
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < tsym.size(); isym++) {
+		//Transform tsym = t.get_sym_proj(m_symmetry, isym);
+		m_volume->nn( m_wptr, padfft, tsym[isym], mult);
         }
+	
+	/*for (int isym=0; isym < m_nsym; isym++) {
+		Transform tsym = t.get_sym(m_symmetry, isym);
+		m_volume->nn( m_wptr, padfft, tsym, mult);
+        }*/
 	return 0;
 }
 

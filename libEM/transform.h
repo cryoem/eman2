@@ -44,7 +44,6 @@
 #include "vec3.h"
 #include "emobject.h"
 #include <cstdio>
-
 // #include <vector>
 // using std::vector;
 //
@@ -411,12 +410,13 @@ namespace EMAN
 			/** get the number of symmetries associated with the given symmetry name
 			 */
 			static int get_nsym(const string & sym);
-
+			
 			/** Apply the symmetry deduced from the function arguments to this Transform and
 			 * return the result
 			 *
 			 */
 			Transform get_sym(const string & sym, int n) const;
+			vector<Transform > get_sym_proj(const string & sym) const;
 
 			/**
 			*/
