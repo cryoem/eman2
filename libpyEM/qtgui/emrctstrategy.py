@@ -196,32 +196,36 @@ class Strategy2IMGPair(Strategy):
 		self.A = numpy.dot(Y,pinvX)
 		self.invA = numpy.linalg.inv(self.A)
 		
+		# Enable masking
+		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(True)
 		self.compute_mask()
 
 	def compute_mask(self):
-		v1 = numpy.dot(self.A,[0,0,1])
-		v2 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,0,1])
-		v3 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,self.mediator.untilt_win.win_ysize,1])
-		v4 = numpy.dot(self.A,[0,self.mediator.untilt_win.win_ysize,1])
-		self.mediator.tilt_win.paint_mask(v1[0],v1[1], v2[0],v2[1],v3[0],v3[1],v4[0],v4[1])
-		self.mediator.tilt_win.update_mainwin()
+		if self.A != None:
+			v1 = numpy.dot(self.A,[0,0,1])
+			v2 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,0,1])
+			v3 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,self.mediator.untilt_win.win_ysize,1])
+			v4 = numpy.dot(self.A,[0,self.mediator.untilt_win.win_ysize,1])
+			self.mediator.tilt_win.paint_mask(v1[0],v1[1], v2[0],v2[1],v3[0],v3[1],v4[0],v4[1])
+			self.mediator.tilt_win.update_mainwin()
 		
-		vinv1 = numpy.dot(self.invA,[0,0,1])
-		vinv2 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,0,1])
-		vinv3 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,self.mediator.tilt_win.win_ysize,1])
-		vinv4 = numpy.dot(self.invA,[0,self.mediator.tilt_win.win_ysize,1])
-		self.mediator.untilt_win.paint_mask(vinv1[0],vinv1[1], vinv2[0],vinv2[1],vinv3[0],vinv3[1],vinv4[0],vinv4[1])
-		self.mediator.untilt_win.update_mainwin()
+			vinv1 = numpy.dot(self.invA,[0,0,1])
+			vinv2 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,0,1])
+			vinv3 = numpy.dot(self.invA,[self.mediator.tilt_win.win_xsize,self.mediator.tilt_win.win_ysize,1])
+			vinv4 = numpy.dot(self.invA,[0,self.mediator.tilt_win.win_ysize,1])
+			self.mediator.untilt_win.paint_mask(vinv1[0],vinv1[1], vinv2[0],vinv2[1],vinv3[0],vinv3[1],vinv4[0],vinv4[1])
+			self.mediator.untilt_win.update_mainwin()
 	
 	def compute_tilt_angle(self):
-		# Use the transformation matrix to compute the tilt angle
-		rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
-		detA = numpy.linalg.det(self.A)	# The determinate is is COS of the tilt angle
-		try:
-			tiltangle = math.degrees(math.acos(detA))
-			self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%tiltangle)+u'\u00B0')
-		except:
-			self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")	
+		if self.A != None:
+			# Use the transformation matrix to compute the tilt angle
+			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
+			detA = numpy.linalg.det(self.A)	# The determinate is is COS of the tilt angle
+			try:
+				tiltangle = math.degrees(math.acos(detA))
+				self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%tiltangle)+u'\u00B0')
+			except:
+				self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")	
 		
 	def update_boxes(self):
 		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):

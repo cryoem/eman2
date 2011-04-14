@@ -428,6 +428,7 @@ class PairPickerTool(QtGui.QWidget):
 		mlabel = QtGui.QLabel("Mask Type", self)
 		hmb.addWidget(mlabel)
 		self.mask_combobox = QtGui.QComboBox()
+		self.mask_combobox.setEnabled(False)
 		hmb.addWidget(self.mask_combobox)
 		vbl.addLayout(hmb)
 		
