@@ -285,15 +285,12 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	//  Gaussian bandpass is the only one with center for frequencies
 	if(filter_type == GAUSS_BAND_PASS) {
 		for ( iz = 1; iz <= nzp; iz++) {
-			jz=iz-1; if(jz>nzp2) jz=jz-nzp;
-			argz = (float(jz)-center)*(float(jz)-center)*dz2;
+			jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
 			for ( iy = 1; iy <= nyp; iy++) {
-				jy=iy-1; if(jy>nyp2) jy=jy-nyp;
-				argy = argz + (float(jy)-center)*(float(jy)-center)*dy2;
+				jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 				for ( ix = 1; ix <= lsd2; ix++) {
-					jx=ix-1; argx = argy + (float(jx)-center)*(float(jx)-center)/float((nxp-1)*(nxp-1));
-					// RHS of filter calculation for Gaussian bandpass
-					fp->cmplx(ix,iy,iz) *= exp(-0.125f*argx*omega);
+					jx=ix-1; argx = argy + float(jx*jx)*dx2;
+					fp->cmplx(ix,iy,iz) *= exp(-pow(sqrt(argx)-center,2)*omega);
 				}
 			}
 		}
