@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--match_loop_second",    type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
 	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information ")
 	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio ")
+	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
 	parser.add_option("--num_ali",        type="int",          default=5,       help="number of alignments when checking for stability ")
 	parser.add_option("--loops_reali",    type="int",          default=1,       help="number of iterations in ISAC before checking stability ")
 	parser.add_option("--th_err",         type="float",        default=1.0,     help="the threshold of stability ")
@@ -82,7 +83,7 @@ def main():
 	from development import iter_isac
 	global_def.BATCH = True
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.init_maxit, options.main_maxit, \
-		    options.match_loop_first, options.match_loop_second, options.CTF, options.snr, options.num_ali, options.loops_reali, \
+		    options.match_loop_first, options.match_loop_second, options.CTF, options.snr, options.dst, options.num_ali, options.loops_reali, \
 		    options.th_err, options.max_Iter, options.n_run, options.th_grp, options.img_per_grp, options.FL, options.FH)
 	global_def.BATCH = False
 
