@@ -753,9 +753,9 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 						k=int( ((phi2/2/cn) - phi1)/delta ) + 1
 				elif (symmetry_string[1] =="d"):
 					if cn%2 == 0:
-						k=int( ((phi2/2/cn) - phi1)/delta ) + 1
+						k=int( ((phi2/2/cn) - phi1)/delta ) + 2
 					else:
-						k=int( ((phi2/4/cn) - phi1)/delta ) + 1
+						k=int( ((phi2/4/cn) - phi1)/delta ) + 2
 				else:
 					ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 						

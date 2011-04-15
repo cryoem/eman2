@@ -1208,9 +1208,9 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 	int nsym = sym->get_nsym();
 	int n = nsym;
 	
-	if ((sym_name[0] == 'c' || sym_name[0] == 'd' ) &&  fabs(matrix[2][2]) < 1.e-10){
-		Dict d1,d2;
-				
+	if ((sym_name[0] == 'c' || sym_name[0] == 'd' ) &&  fabs(matrix[2][2]) < 1.e-6){
+		
+		Dict d1,d2;				
 		d2["theta"] = (double)90.0;
 		d2["psi"] = (double)0.0;
 		d2["phi"] = (double)0.0;
@@ -1246,7 +1246,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 					}
 					else	{
 							
-						if( ( fabs(1.0-matrix[2][0])>1.0e-10 )&& fabs( matrix[2][0]-cos_phi)>1.0e-10  ){
+						if( ( fabs(1.0-matrix[2][0])>1.0e-6 )&& fabs( matrix[2][0]-cos_phi)>1.0e-6  ){
 							//cout<<"jumped into"<<endl;
 							d2["phi"] = k/2*double(360.0)/ nsym +180 - (double)d1["phi"];
 							d2["psi"] = (double)d1["psi"] + 180;
@@ -1273,7 +1273,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 						ret.push_back( t );	
 					}
 					else if( k%4 ==1)	{
-						if( ( fabs(1.0-matrix[2][0])>1.0e-10 )&& fabs( matrix[2][0]-cos_phi)>1.0e-10  ){
+						if( ( fabs(1.0-matrix[2][0])>1.0e-6 )&& fabs( matrix[2][0]-cos_phi)>1.0e-6  ){
 						
 							d2["phi"] = k/4*360.0/nsym + 360.0/2/nsym+180 - (double)d1["phi"];
 							d2["psi"] = (double)d1["psi"] + 180;
@@ -1293,7 +1293,7 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 					}
 					
 					else if( k%4 ==3)	{
-						if( ( fabs(1.0-matrix[2][0])>1.0e-10 )&& fabs( matrix[2][0]-cos_phi)>1.0e-10  ) {
+						if( ( fabs(1.0-matrix[2][0])>1.0e-6 )&& fabs( matrix[2][0]-cos_phi)>1.0e-6  ) {
 							d2["phi"] = k/4*360.0/nsym+ 2.0*360.0/2/nsym - (double)d1["phi"];
 							d2["psi"] = (double)d1["psi"] + 180;
 							t.set_rotation(d2);
@@ -1305,12 +1305,14 @@ vector<Transform > Transform::get_sym_proj(const string & sym_name) const
 			}
 			
 		}
+		
 	}
 	else {
 		for (int k=0;k<nsym;k++) {
 			t =  sym->get_sym(k);
 			ret.push_back( (*this) * t );
 		}
+		
 	}
 	delete sym;
 	return ret;
