@@ -360,7 +360,7 @@ inline void set_rotation(const Transform& t3d)
  * @param nx  x size of this image.
  * @param ny  y size of this image.
  * @param nz  z size of this image.
- $ @exception BadAllocException if memory allocation returns a null pointer
+ * @exception BadAllocException if memory allocation returns a null pointer
  */
 void set_size(int nx, int ny=1, int nz=1);
 
@@ -370,7 +370,7 @@ void set_size(int nx, int ny=1, int nz=1);
  * @param nx  x size of this image.
  * @param ny  y size of this image.
  * @param nz  z size of this image./
- $ @exception BadAllocException if memory allocation returns a null pointer
+ * @exception BadAllocException if memory allocation returns a null pointer
  */
 void set_size_cuda(int nx, int ny=1, int nz=1);
 #endif //#EMAN2_USING_CUDA
