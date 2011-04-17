@@ -960,6 +960,8 @@ EMData *FourierReconstructor::finish(bool doift)
 
 	delete tmp_data;
 	tmp_data=0;
+	//Since we give up the ownership of the pointer to-be-returned,	it's caller's responsibility to delete the returned image.
+	//So we wrap this function with return_value_policy< manage_new_object >() in libpyReconstructor2.cpp to hand over ownership to Python.
 	EMData *ret=image;
 	image=0;
 	
