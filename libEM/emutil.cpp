@@ -41,6 +41,9 @@
 #include "emassert.h"
 #include "exception.h"
 
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+
 #ifdef WIN32
 	#include <windows.h>
 	#define MAXPATHLEN (MAX_PATH*4)
@@ -1487,8 +1490,8 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	vector<EMData *> vpImg = EMData::read_images(file_name, vector<int>(), true);
-	vector<EMData *>::iterator iter;
+	vector< shared_ptr<EMData> > vpImg = EMData::read_images(file_name, vector<int>(), true);
+	vector< shared_ptr<EMData> >::const_iterator iter;
 	for(iter = vpImg.begin(); iter!=vpImg.end(); ++iter) {
 		v.push_back((*iter)->get_attr_default(attr_name));
 	}

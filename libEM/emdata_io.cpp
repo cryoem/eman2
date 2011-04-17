@@ -43,6 +43,9 @@
 using std::cout;
 using std::endl;
 
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+
 using namespace EMAN;
 
 void EMData::read_image(const string & filename, int img_index, bool nodata,
@@ -341,7 +344,7 @@ void EMData::print_image(const string str, ostream& out) {
 	}
 }
 
-vector <EMData* > EMData::read_images(const string & filename, vector < int >img_indices,
+vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vector < int >img_indices,
 									   bool header_only)
 {
 	ENTERFUNC;
@@ -357,19 +360,14 @@ vector <EMData* > EMData::read_images(const string & filename, vector < int >img
 
 	size_t n = (num_img == 0 ? total_img : num_img);
 
-	vector<EMData* > v;
+	vector< shared_ptr<EMData> > v;
 	for (size_t j = 0; j < n; j++) {
-		EMData *d = new EMData();
+		shared_ptr<EMData> d(new EMData());
 		size_t k = (num_img == 0 ? j : img_indices[j]);
 		try {
 			d->read_image(filename, (int)k, header_only);
 		}
 		catch(E2Exception &e) {
-			if( d )
-			{
-				delete d;
-				d = 0;
-			}
 			throw(e);
 		}
 		if ( d != 0 )
@@ -385,7 +383,7 @@ vector <EMData* > EMData::read_images(const string & filename, vector < int >img
 }
 
 
-vector < EMData * >EMData::read_images_ext(const string & filename, int img_index_start,
+vector < shared_ptr<EMData> >EMData::read_images_ext(const string & filename, int img_index_start,
 										   int img_index_end, bool header_only,
 										   const string & ext)
 {
@@ -406,19 +404,14 @@ vector < EMData * >EMData::read_images_ext(const string & filename, int img_inde
 		img_index_end = num_img - 1;
 	}
 
-	vector < EMData * >v;
+	vector < shared_ptr<EMData> >v;
 
 	for (int i = img_index_start; i < img_index_end; i++) {
-		EMData *d = new EMData();
+		shared_ptr<EMData> d(new EMData());
 		try {
 			d->read_image(new_filename, i, header_only);
 		}
 		catch(E2Exception &e) {
-			if( d )
-			{
-				delete d;
-				d = 0;
-			}
 			throw(e);
 		}
 		v.push_back(d);
