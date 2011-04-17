@@ -87,7 +87,7 @@ IF (ENABLE_BOUNDS_CHECKING)
 ENDIF (ENABLE_BOUNDS_CHECKING)
 
 IF (ENABLE_DEBUG)
-    SET (OPT_FLAGS "-DDEBUG -O0 -g -ansi -Wall -W")
+    SET (OPT_FLAGS "-DDEBUG -O0 -g -ansi -Wall -W -fno-inline")
 ELSEIF(ENABLE_PROFILE)
     SET (OPT_FLAGS "-O2 -g -ansi")
     OPTION(ENABLE_DEBUG "enable debug support" OFF)
