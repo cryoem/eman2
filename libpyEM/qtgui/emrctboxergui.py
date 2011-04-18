@@ -458,7 +458,7 @@ class PairPickerTool(QtGui.QWidget):
 		# Initialize
 		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xform))
 		self.updateboxes_cb.setChecked(self.db.get("ppcheckbox",dfl=self.updateboxes))
-		self.centertilts_cb.setChecked(self.db.get("ppcheckbox",dfl=self.centertilts))
+		self.centertilts_cb.setChecked(self.db.get("tiltcheckbox",dfl=self.centertilts))
 		self.addmasks()
 	
 	def addmasks(self):

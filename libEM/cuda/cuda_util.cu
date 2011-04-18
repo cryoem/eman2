@@ -122,14 +122,17 @@ void unbind_cuda_textureB(const int ndims) {
 	}
 }
 
-void device_init() {
+bool device_init() {
 	static bool init = true;
 	
 	if (init) {
 		int deviceCount;
 		cudaGetDeviceCount(&deviceCount);
 		
-		if (deviceCount == 0) throw;
+		if (deviceCount == 0){
+			printf("WARNING NO CUDA DEVICES FOUND, NOT USING CUDA\n");
+			return 0;
+		}
 		
  		if (deviceCount > 1) {
  			printf("%d CUDA devices detected\n",deviceCount);
@@ -154,6 +157,7 @@ void device_init() {
 
 		init = false; //Force init everytime
 	}
+	return 1;
 }
 
 __global__ void get_edgemean_kernal(const float* data, float* edgemean, const int nx, const int ny, const int nz)

@@ -414,8 +414,14 @@ void EMData::cuda_cleanup()
 
 }
 
-void EMData::cuda_initialize()
+bool EMData::cuda_initialize()
 {
-	device_init();
+	if(device_init())
+	{
+		return 1;
+	} else {
+		switchoffcuda();
+		return 0;
+	}
 }
 #endif //EMAN2_USING_CUDA

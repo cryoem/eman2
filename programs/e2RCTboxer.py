@@ -293,7 +293,8 @@ class MainWin:
 		elif self.masktype == "LineMask":
 			self.boxes.add_mask(EMShape(["linemask",1,0,0,v1x, v1y,v2x,v2y,v3x,v3y,v4x,v4y,4.0]))
 		elif self.masktype == "SolidMask":
-			self.boxes.add_mask(EMShape(["mask",0,0,0, 0, 0, v1x, v1y, self.win_xsize, 0, v2x, v2y, self.win_xsize, self.win_ysize, v3x, v3y, 0, self.win_ysize, v4x, v4y]))
+			# 10 is used to prevent aliasing
+			self.boxes.add_mask(EMShape(["mask",0,0,0, -10, -10, v1x, v1y, self.win_xsize+10, -10, v2x, v2y, self.win_xsize+10, self.win_ysize+10, v3x, v3y, -10, self.win_ysize+10, v4x, v4y]))
 		else:
 			self.boxes.add_mask(None)
 			
@@ -452,29 +453,33 @@ class EMBoxList:
 			self.labellist.pop(i)
 			
 	def move_box(self,i,dx,dy):
-		self.boxlist[i].move(dx,dy)
-		self.shapelist[i] = None
-		self.labellist[i] = None
-		self.save_boxes_to_db()		# This is not the greatest way of doing things as the list should be appended, not rewritten
+		try:
+			self.boxlist[i].move(dx,dy)
+			self.shapelist[i] = None
+			self.labellist[i] = None
+			self.save_boxes_to_db()		# This is not the greatest way of doing things as the list should be appended, not rewritten
+		except:
+			pass
 		
 	def get_box_shapes(self,box_size):
 		d = {}
+		# Add a mask if requested
+		offset = 0
+		if self.mask != None:
+			d[0] = self.mask
+			offset = 1
 		for i in range(len(self.boxlist)):
 			if self.shapelist[i] == None:
 				shape = self.boxlist[i].get_shape(self.shape_string,box_size)
 				self.shapelist[i] = shape
-			d[i] = self.shapelist[i]
+			d[i+offset] = self.shapelist[i]
 		
 		lsize = len(self.boxlist)
 		for i in range(len(self.labellist)):
 			if self.labellist[i] == None:
 				label = self.boxlist[i].get_label(i,self.fontsize,box_size)
 				self.labellist[i] = label
-			d[i+lsize] = self.labellist[i]
-			
-		# Add a mask if requested
-		if self.mask != None:
-			d[2*lsize] = self.mask
+			d[i+offset+lsize] = self.labellist[i]
 		
 		return d
 		

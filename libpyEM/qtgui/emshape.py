@@ -62,20 +62,22 @@ class EMShape:
 	the programmer may create 'invisible' shapes for out-of-band use. Colors
 	are on the range 0-1.0 
 	
-		0               1  2  3  4  5     6     7     8        9
-		"rect"          R  G  B  x0 y0    x1    y1    linew
-		"rectpoint"     R  G  B  x0 y0    x1    y1    linew
-		"rectline"      R  G  B  x0 y0    x1    y1    boxw     linew
-		"rcircle"       R  G  B  x0 y0    x1    y1    linew
-		"rcirclepoint"  R  G  B  x0 y0    x1    y1    linew
-		"line"          R  G  B  x0 y0    x1    y1    linew
-		"label"         R  G  B  x0 y0    text  size  linew
-		"circle"        R  G  B  x0 y0    r     linew
-		"scrrect"       R  G  B  x0 y0    x1    y1    linew
-		"scrline"       R  G  B  x0 y0    x1    y1    linew
-		"scrlabel"      R  G  B  x0 y0    text  size  linew
-		"scrcircle"     R  G  B  x0 y0    r     linew
-		"point"         R  G  B  x0 y0    r
+		0               1  2  3  4   5     6     7     8        9  10  11  12  13  14  15  16  17  19  20
+		"rect"          R  G  B  x0  y0    x1    y1    linew
+		"rectpoint"     R  G  B  x0  y0    x1    y1    linew
+		"rectline"      R  G  B  x0  y0    x1    y1    boxw     linew
+		"rcircle"       R  G  B  x0  y0    x1    y1    linew
+		"rcirclepoint"  R  G  B  x0  y0    x1    y1    linew
+		"line"          R  G  B  x0  y0    x1    y1    linew
+		"label"         R  G  B  x0  y0    text  size  linew
+		"circle"        R  G  B  x0  y0    r     linew
+		"scrrect"       R  G  B  x0  y0    x1    y1    linew
+		"scrline"       R  G  B  x0  y0    x1    y1    linew
+		"scrlabel"      R  G  B  x0  y0    text  size  linew
+		"scrcircle"     R  G  B  x0  y0    r     linew
+		"point"         R  G  B  x0  y0    r
+		"mask"		R  G  B  xi0 yi0   xo0   yo0   xi1      yi1 xo1 yo1 xi2 yi2 xo2 yo2 xi3 yi3 xo3 yo3
+		"linemask"	R  G  B  x0  y0    x1    y1    x2       y2  x3  y3  x4  y4  linew
 		"hidden"		anything, not rendered
 	"""
 	font_renderer = None

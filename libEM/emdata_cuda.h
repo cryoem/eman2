@@ -141,7 +141,7 @@ public:
 	
 	static void cuda_cleanup();
 	
-	static void cuda_initialize();
+	static bool cuda_initialize();
 	
 	static bool usecuda;
 
