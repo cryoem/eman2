@@ -541,7 +541,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 {
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!slice->getcudarwdata()) slice->copy_to_cuda(); //copy slice to cuda using the const version
+		if(!slice->getcudarwdata()) slice->copy_to_cuda_keepcpu(); //copy slice to cuda using the const version
 	}
 #endif
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
@@ -586,7 +586,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
+		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda_keepcpu(); //copy slice to cuda using the const version
 	}
 #endif
 

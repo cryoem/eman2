@@ -54,7 +54,7 @@ bool EMData::usemempoolswitch = false;
 bool EMData::usecuda = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) ) ? 1 : 0;
 float* EMData::mempool[] = {0};
 
-bool EMData::copy_to_cuda() const
+bool EMData::copy_to_cuda_keepcpu() const
 {
 	//cout << "copying from host to device RW" << " " << num_bytes << endl;
 	if(rw_alloc()) {

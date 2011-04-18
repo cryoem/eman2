@@ -392,6 +392,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.db = db
 		self.updateboxes = False
 		self.minpp_for_xform = 3
+		self.centertilts = False
 		
 		# GUI code below here
 		ppwidget = QtGui.QWidget()
@@ -406,6 +407,10 @@ class PairPickerTool(QtGui.QWidget):
 		self.updateboxes_cb = QtGui.QCheckBox("Update box positions")
 		self.updateboxes_cb.setChecked(False)
 		vbl.addWidget(self.updateboxes_cb)
+		
+		self.centertilts_cb = QtGui.QCheckBox("Center tilted box positions")
+		self.centertilts_cb.setChecked(False)
+		vbl.addWidget(self.centertilts_cb)
 		
 		hbl = QtGui.QHBoxLayout()
 		slabel = QtGui.QLabel("Min pairs for xform", self)
@@ -446,12 +451,14 @@ class PairPickerTool(QtGui.QWidget):
 		
 		self.connect(self.spinbox,QtCore.SIGNAL("valueChanged(int)"),self.on_spinbox)
 		self.connect(self.updateboxes_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_updateboxes)
+		self.connect(self.centertilts_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_centertilts)
 		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
 		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
 	
 		# Initialize
 		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xform))
 		self.updateboxes_cb.setChecked(self.db.get("ppcheckbox",dfl=self.updateboxes))
+		self.centertilts_cb.setChecked(self.db.get("ppcheckbox",dfl=self.centertilts))
 		self.addmasks()
 	
 	def addmasks(self):
@@ -481,6 +488,11 @@ class PairPickerTool(QtGui.QWidget):
 	def on_updateboxes(self):
 		self.db["ppcheckbox"] = self.updateboxes_cb.isChecked()
 		self.updateboxes = self.updateboxes_cb.isChecked()
+		self.mediator.configure_strategy(self)
+	
+	def on_centertilts(self):
+		self.db["tiltcheckbox"] = self.centertilts_cb.isChecked()
+		self.centertilts = self.centertilts_cb.isChecked()
 		self.mediator.configure_strategy(self)
 		
 	def on_clear(self):

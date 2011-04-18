@@ -418,7 +418,7 @@ namespace EMAN
 		 * @exception ImageDimensionException if nx > 1 and nx < 2*radius + 1
 		 * @ingroup CUDA_ENABLED
 		 */
-		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT, bool center=false);
+		EMData *calc_ccf(EMData * with = 0, fp_flag fpflag = CIRCULANT, bool center=false);
 
 		/** Zero the pixels in the bottom left corner of the image
 		 *  If radius is greater than 1, than circulant zeroing occurs

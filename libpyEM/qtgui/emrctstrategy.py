@@ -108,19 +108,22 @@ class Strategy2IMGPair(Strategy):
 		Strategy.__init__(self, mediator)
 		self.A = None
 		self.invA = None
-		self.minpp_for_xfrom = 3
+		self.minpp_for_xform = 3
 		self.cont_update_boxes = False
+		self.centertilts = False
+		
 	
 	def initial_calculations(self):
 		if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
-				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xform:
 					self.compute_transform()
 					self.compute_tilt_angle()
 					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
 					
 	def configure_strategy(self, caller):
-		self.minpp_for_xfrom = caller.minpp_for_xfrom
+		self.minpp_for_xform = caller.minpp_for_xform
 		self.cont_update_boxes =  caller.updateboxes
+		self.centertilts = caller.centertilts
 	
 	def handle_strategy_signal(self, signal):
 		if signal == "updateboxes":
@@ -130,7 +133,7 @@ class Strategy2IMGPair(Strategy):
 		# Pick tilted particle
 		if caller == self.mediator.untilt_win:
 			if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
-				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xform:
 
 					# Compute transform
 					self.compute_transform()
@@ -143,6 +146,10 @@ class Strategy2IMGPair(Strategy):
 					currX = [x,y,1]
 					currY = numpy.dot(self.A,currX)
 					self.mediator.tilt_win.boxes.append_box(currY[0],currY[1])
+					
+					if self.centertilts:
+						self.centerboxes()
+						
 					self.mediator.tilt_win.update_mainwin()	
 					
 					#Talk back to GUI:
@@ -150,13 +157,14 @@ class Strategy2IMGPair(Strategy):
 					
 					if self.cont_update_boxes:
 						self.update_boxes()
+					
 		#pick untilted particle
 		if caller == self.mediator.tilt_win:
 			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
 				print "Error, you first need to pick an untilted particle"
 				return False
 			if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
-				if self.mediator.tilt_win.boxes.boxpopulation >= self.minpp_for_xfrom:
+				if self.mediator.tilt_win.boxes.boxpopulation >= self.minpp_for_xform:
 					# Compute transform
 					self.compute_transform()
 					# Compute tilt angle
@@ -166,7 +174,7 @@ class Strategy2IMGPair(Strategy):
 					currY = numpy.dot(self.invA,currX)	# Inverse of A
 					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
 					self.mediator.untilt_win.update_mainwin()
-					
+						
 					#Talk back to GUI:
 					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
 					
@@ -242,6 +250,14 @@ class Strategy2IMGPair(Strategy):
 		self.mediator.tilt_win.boxes.save_boxes_to_db()
 		self.mediator.tilt_win.window.update_shapes(self.mediator.tilt_win.boxes.get_box_shapes(self.mediator.boxsize))
 		self.mediator.tilt_win.window.updateGL()
+	
+	def centerboxes(self):
+		image = self.mediator.tilt_win.boxes.boxlist[len(self.mediator.tilt_win.boxes.boxlist)-1].get_image(self.mediator.tilt_win.filename,self.mediator.boxsize,"normalize.edgemean")
+		centerimg = image.process("xform.centeracf")
+		tv = centerimg.get_attr("xform.align2d").get_trans()
+		self.mediator.tilt_win.boxes.boxlist[len(self.mediator.tilt_win.boxes.boxlist)-1].move(-tv[0],-tv[1])
+		self.mediator.tilt_win.boxes.shapelist[len(self.mediator.tilt_win.boxes.boxlist)-1] = None
+		self.mediator.tilt_win.boxes.labellist[len(self.mediator.tilt_win.boxes.boxlist)-1] = None
 		
 	def unpickevent(self, caller, box_num):
 		if caller == self.mediator.untilt_win:

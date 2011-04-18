@@ -39,7 +39,7 @@ public:
 	
 	/** Copy data from host to GPU device (RW)
 	*/
-	bool copy_to_cuda() const;
+	bool copy_to_cuda_keepcpu() const;
 	
 	/** Overloaded version of the above but does not use const data
 	The diff being that in the const version rdata is not freed. */
