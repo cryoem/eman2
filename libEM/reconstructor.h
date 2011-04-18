@@ -478,6 +478,7 @@ namespace EMAN
 			d.put("mode", EMObject::STRING, "Optional. Fourier pixel insertion mode name (nearest_neighbor, gauss_2, gauss_3, gauss_5, gauss_5_slow, gypergeom_5, experimental) gauss_2 is the default.");
 			d.put("sqrtnorm", EMObject::BOOL, "Optional. When normalizing, additionally divides by the sqrt of the normalization factor to damp exaggerated features. Is this justifyable ? No idea (yet). Default is false.");
 			d.put("verbose", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
+			d.put("quiet", EMObject::BOOL, "Optional. If false, print verbose information.");
 			d.put("subvolume",EMObject::INTARRAY, "Optional. (xorigin,yorigin,zorigin,xsize,ysize,zsize) all in Fourier pixels. Useful for parallelism.");
 			d.put("savenorm",EMObject::STRING, "Debug. Will cause the normalization volume to be written directly to the specified file when finish() is called.");
 			return d;
