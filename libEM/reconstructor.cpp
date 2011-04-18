@@ -248,7 +248,9 @@ EMData *FourierReconstructorSimple2D::finish(bool)
 	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 
-	return  image;
+	EMData *ret = image;
+	image = 0;
+	return  ret;
 }
 
 void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool wiener)
@@ -1930,7 +1932,10 @@ EMData *BackProjectionReconstructor::finish(bool)
 
 	image->mult(1.0f/(float)sym->get_nsym());
 	delete sym;
-	return image;
+
+	EMData *ret = image;
+	image = 0 ;
+	return ret;
 }
 
 EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int npad )
