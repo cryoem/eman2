@@ -78,6 +78,11 @@ namespace EMAN
 				resize(starting_size);
 			}
 
+			~CustomVector()
+			{
+				if(data) {delete [] data; data=0;}
+			}
+
 			/** Clear
 			* clears all data and resizes
 			* @param starting_size the starting size of the underlying data
