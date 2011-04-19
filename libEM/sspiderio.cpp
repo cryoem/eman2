@@ -60,7 +60,7 @@ int SingleSpiderIO::write_header(const Dict & dict, int , const Region* area,
 //	if(!use_host_endian) {
 //		ByteOrder::swap_bytes((float*)first_h, NUM_FLOATS_IN_HEADER);
 //	}
-	return write_single_header(dict, area, image_index, offset, first_h, SINGLE_IMAGE_HEADER, use_host_endian);
+	return write_single_header(dict, area, image_index, offset, first_h, SINGLE_IMAGE_HEADER, 1, 1, use_host_endian);
 }
 
 
