@@ -724,6 +724,7 @@ class EMAN2DB:
 #		if not path : path=e2getcwd()
 		EMAN2DB.lock.acquire()
 
+		from EMAN2 import e2gethome, e2getcwd
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		if EMAN2DB.opendbs.has_key(path) : 
