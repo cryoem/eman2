@@ -404,7 +404,7 @@ A serious error occured in the database cache. This normally happens if you try 
 1. run "db_recover -h %s"   (note, this may be called db4.8_recover or something similar if not using the EMAN2 binary distribution)
 2. run e2bdb.py -c again
 3. If you are aware which image file caused this error to occur in the first place, you can try accessing it again. If it triggers this same failure, repeat steps 1 and 2 then manually delete the offending image database inside the EMAN2DB directory"""%path
-		system.exit(1)
+		sys.exit(1)
 	
 	if(sys.platform == 'win32'):
 		import shutil
