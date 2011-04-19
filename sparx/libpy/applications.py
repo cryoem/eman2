@@ -29,6 +29,7 @@
 #
 
 from global_def import *
+from EMAN2 import Transform
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):

@@ -741,7 +741,7 @@ class EMAN2DB:
 		global BDB_CACHE_DISABLE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
-		from EMAN2 import e2gethome
+		from EMAN2 import e2gethome, e2getcwd
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		self.path=path
