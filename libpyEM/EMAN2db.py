@@ -161,7 +161,7 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 
-	from EMAN2 import e2gethome
+	from EMAN2 import e2gethome, e2getcwd
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
 	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
@@ -880,6 +880,8 @@ class DBDict:
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
 		specified. Note that the database is not actually opened until it's used."""
+		
+		from EMAN2 import e2getcwd
 		
 		global dbopenflags
 		DBDict.alldicts[self]=1		# we keep a running list of all trees so we can close everything properly
