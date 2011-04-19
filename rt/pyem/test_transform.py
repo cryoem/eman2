@@ -823,7 +823,7 @@ class TestTransform(unittest.TestCase):
 		t2 = img.get_attr('trans')
 		self.assert_identity(t2)
 
-class TestSymmetry3D(unittest.TestCase):
+class TestSymmetry(unittest.TestCase):
 	def assert_reduction_works(self,i,az,alt,azmax,sym):
 		T = Transform({"type":"eman","az":az,"alt":alt,"phi":0})
 		T1 = sym.get_sym(i)
@@ -964,7 +964,7 @@ def test_main():
         IS_TEST_EXCEPTION = True
     Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
     suite1 = unittest.TestLoader().loadTestsFromTestCase(TestTransform)
-    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestSymmetry3D)
+    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestSymmetry)
     unittest.TextTestRunner(verbosity=2).run(suite1)
     unittest.TextTestRunner(verbosity=2).run(suite2)
 
