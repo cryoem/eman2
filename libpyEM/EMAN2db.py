@@ -161,7 +161,7 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 
-
+	from EMAN2 import e2gethome
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
 	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
