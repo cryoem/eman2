@@ -30,7 +30,7 @@
 #
 #
 
-from EMAN2 import *
+from EMAN2 import EMData, EMUtil
 import atexit
 import weakref
 from cPickle import loads,dumps
@@ -118,27 +118,6 @@ def e2filemodtime(path):
 		path=p[0]+"/EMAN2DB/"+p[1]+".bdb"
 
 	return int(os.stat(path)[8])
-
-def e2gethome() :
-	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("HOME")
-	else:
-		if(os.getenv("HOMEPATH") == '\\'):
-			#Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
-			url=os.getenv("USERPROFILE")
-			url=url.lstrip('CDEFG:') #could also use substr
-			url=url.replace("\\","/")
-		else:
-			url=os.getenv("HOMEPATH")
-			url=url.replace("\\","/")
-	return url
-
-def e2getcwd() :
-	"""platform independent path with '/'"""
-	url=os.getcwd()
-	url=url.replace("\\","/")
-	return url
 
 def db_convert_path(path):
 	'''
@@ -762,6 +741,7 @@ class EMAN2DB:
 		global BDB_CACHE_DISABLE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
+		from EMAN2 import e2gethome
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		self.path=path
