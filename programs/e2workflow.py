@@ -40,6 +40,7 @@ from emtprworkflow import *
 from emselector import EMBrowser
 from e2boxer import EMBoxerModule
 from EMAN2 import process_running,kill_process
+from EMAN2db import db_open_dict, EMTask
 from emanimationutil import Animator
 from emglobjects import EM3DGLWidget
 from emimage3d import EMImage3DWidget

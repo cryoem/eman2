@@ -36,6 +36,7 @@
 # This is a program for determining CTF parameters using the EMAN 1 model
 
 from EMAN2 import *
+from EMAN2db import db_open_dict
 from math import *
 from optparse import OptionParser
 from Simplex import Simplex

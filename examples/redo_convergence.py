@@ -34,10 +34,12 @@
 # This recomputes the convergence plot FSC curves, which prior to 4/2010 were not being
 # computed properly
 
-from EMAN2 import *
 import sys
 from math import *
 from os import *
+
+from EMAN2db import db_open_dict
+from EMAN2 import *
 
 if len(sys.argv)>1 : dirs=sys.argv[1:]
 else : dirs=[i for i in os.listdir(".") if "refine_"==i[:7] and len(i)==9]

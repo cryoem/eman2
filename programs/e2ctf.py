@@ -35,6 +35,7 @@
 # This is a program for determining CTF parameters and (optionally) phase flipping images
 
 from EMAN2 import *
+from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from optparse import OptionParser
 from OpenGL import GL,GLUT
 from math import *

@@ -34,6 +34,7 @@
 from optparse import OptionParser
 import pprint
 from EMAN2 import *
+from EMAN2db import db_open_dict
 
 def get_data_type_string(datatype):
 	dtstring = {

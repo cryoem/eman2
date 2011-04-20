@@ -39,6 +39,7 @@ import shelve
 import sys,os,time
 from optparse import OptionParser
 from EMAN2 import get_file_tag
+import EMAN2db
 
 # also defined in EMAN2, but we don't want to have to import it
 

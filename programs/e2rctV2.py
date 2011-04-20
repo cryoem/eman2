@@ -33,6 +33,7 @@
 
 
 from EMAN2 import *
+from EMAN2db import db_close_dict
 from optparse import OptionParser
 from os import system
 

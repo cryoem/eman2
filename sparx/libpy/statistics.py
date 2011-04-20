@@ -29,6 +29,7 @@
 #
 
 from global_def import *
+from EMAN2db import db_open_dict
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""

@@ -31,6 +31,7 @@
 #
 #
 from EMAN2 import *
+from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
 from optparse import OptionParser
 from PyQt4 import QtCore
 from emapplication import EMApp

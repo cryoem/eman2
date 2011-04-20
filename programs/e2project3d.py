@@ -38,6 +38,7 @@
 
 import sys, math, os, random
 from EMAN2 import *
+from EMAN2db import db_check_dict, EMTask
 from optparse import OptionParser
 deg2rad = math.pi / 180.0
 rad2deg = 180.0 / math.pi

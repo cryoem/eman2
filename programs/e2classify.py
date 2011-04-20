@@ -31,13 +31,12 @@
 #
 #
 
-from EMAN2 import *
 from optparse import OptionParser
 from math import *
 import os
 import sys
-
-
+from EMAN2db import db_check_dict
+from EMAN2 import *
 
 def main():
 	

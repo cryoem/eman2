@@ -30,10 +30,12 @@
 #
 #
 
-from EMAN2 import *
 from time import time
 from math import ceil
 from copy import copy
+import EMAN2db
+from EMAN2db import db_open_dict, db_close_dict, db_remove_dict, db_check_dict
+from EMAN2 import *
 
 class EMProjectDB:
 	"""

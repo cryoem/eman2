@@ -33,6 +33,7 @@
 
 
 from EMAN2 import *
+from EMAN2db import db_open_dict
 from optparse import OptionParser
 from math import *
 import os

@@ -39,6 +39,7 @@ from math import *
 import os
 import sys
 from e2simmx import cmponetomany
+from EMAN2db import db_open_dict, db_list_dicts
 
 def main():
 	progname = os.path.basename(sys.argv[0])

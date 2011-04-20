@@ -42,6 +42,7 @@ import string
 import commands
 import math
 from EMAN2 import *
+from EMAN2db import db_open_dict
 #import Numeric
 from math import *
 from sys import argv

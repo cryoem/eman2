@@ -32,6 +32,7 @@
 #
 
 from EMAN2 import *
+from EMAN2db import db_open_dict, db_check_dict
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *

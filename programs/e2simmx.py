@@ -34,6 +34,7 @@
 # e2simmx.py  02/03/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from EMAN2db import db_check_dict, EMTask
 from EMAN2 import *
 from optparse import OptionParser
 from math import *

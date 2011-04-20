@@ -37,6 +37,7 @@ import PyQt4
 from PyQt4 import QtCore, QtGui, Qt
 from PyQt4.QtCore import Qt
 from EMAN2 import *
+from EMAN2db import db_open_dict, db_close_dict, db_remove_dict, db_check_dict
 from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape

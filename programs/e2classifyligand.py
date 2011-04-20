@@ -42,6 +42,7 @@ from os import unlink
 from sys import argv
 from EMAN2 import *
 from optparse import OptionParser
+from EMAN2db import db_open_dict
 
 def main():
 	progname = os.path.basename(sys.argv[0])

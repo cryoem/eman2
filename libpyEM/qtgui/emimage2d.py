@@ -38,6 +38,7 @@ from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from valslider import ValSlider
 from math import *
+import EMAN2db
 from EMAN2 import *
 import EMAN2
 import sys

@@ -34,6 +34,7 @@
 # tasktest.py Steven Ludtke
 # This program implements, via various options, the parallelism system for EMAN2
 
+from EMAN2db import EMTask
 from EMAN2 import *
 from EMAN2PAR import *
 from optparse import OptionParser

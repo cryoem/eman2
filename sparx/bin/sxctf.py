@@ -38,6 +38,7 @@ import global_def
 from global_def import *
 
 from EMAN2 import *
+from EMAN2db import db_open_dict, db_check_dict
 from sparx import *
 from optparse import OptionParser
 from OpenGL import GL,GLUT

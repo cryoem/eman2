@@ -43,7 +43,7 @@ from random import choice
 
 READ_HEADER_ONLY = True
 
-from EMAN2db import EMTask
+from EMAN2db import EMTask, db_check_dict
 
 def main():
 	progname = os.path.basename(sys.argv[0])

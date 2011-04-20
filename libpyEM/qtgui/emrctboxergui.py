@@ -32,6 +32,7 @@
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
+from EMAN2db import db_open_dict
 
 class ControlPannel(QtGui.QWidget):
 	'''This controls the RCT boxer'''

@@ -34,7 +34,6 @@
 # e2bdb.py  11/13/2008 Steven Ludtke
 # This program allows manipulation and querying of the local database
 
-from EMAN2 import EMAN2DB, EMUtil, EMANVERSION
 from optparse import OptionParser
 from math import *
 import time
@@ -42,6 +41,9 @@ import os
 import sys
 import re
 import traceback
+
+from EMAN2 import EMAN2DB, EMUtil, EMANVERSION
+from EMAN2db import db_list_dicts, db_remove_dict
 
 def main():
 	global debug

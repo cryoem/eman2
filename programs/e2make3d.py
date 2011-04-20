@@ -35,6 +35,7 @@
 # initial version of make3d
 
 from EMAN2 import *
+from EMAN2db import db_open_dict
 from optparse import OptionParser
 from copy import deepcopy
 from math import ceil

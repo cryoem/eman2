@@ -33,6 +33,7 @@
 
 # $Id: e2proc2dmulti.py
 
+from EMAN2db import db_list_dicts
 from EMAN2 import *
 from optparse import OptionParser
 import sys

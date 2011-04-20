@@ -31,18 +31,20 @@
 #
 #
 
-from emapplication import EMApp, get_application
-from emglobjects import EM3DGLWidget
-from emimage3dsym import EM3DSymModel,EMSymInspector
+
 import os,sys
-from EMAN2 import *
 from optparse import OptionParser
 from PyQt4 import QtGui,QtCore
+from valslider import ValSlider
+
 from e2eulerxplor import get_eulers_from
 from emimagemx import EMImageMXModule
 from emplot2d import EMPlot2DModule
-from valslider import ValSlider
-
+from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
+from emapplication import EMApp, get_application
+from emglobjects import EM3DGLWidget
+from emimage3dsym import EM3DSymModel,EMSymInspector
+from EMAN2 import *
 	
 def main():
 	progname = os.path.basename(sys.argv[0])

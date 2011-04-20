@@ -30,7 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
-from EMAN2 import EMAN2db
+import EMAN2db
 from emdatastorage import ParamDef 
 
 from emsprworkflow import WorkFlowTask

@@ -30,6 +30,7 @@
 
 from global_def import *
 from EMAN2 import EMNumpy
+from EMAN2db import db_open_dict, db_remove_dict
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
