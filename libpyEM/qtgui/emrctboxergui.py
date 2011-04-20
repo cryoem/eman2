@@ -409,7 +409,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.updateboxes_cb.setChecked(False)
 		vbl.addWidget(self.updateboxes_cb)
 		
-		self.centertilts_cb = QtGui.QCheckBox("Center tilted box positions")
+		self.centertilts_cb = QtGui.QCheckBox("Center opposite box position")
 		self.centertilts_cb.setChecked(False)
 		vbl.addWidget(self.centertilts_cb)
 		

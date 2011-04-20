@@ -146,9 +146,10 @@ class Strategy2IMGPair(Strategy):
 					currX = [x,y,1]
 					currY = numpy.dot(self.A,currX)
 					self.mediator.tilt_win.boxes.append_box(currY[0],currY[1])
-					
+				
+					# Center boxes
 					if self.centertilts:
-						self.centerboxes()
+						self.centerboxes(self.mediator.tilt_win)
 						
 					self.mediator.tilt_win.update_mainwin()	
 					
@@ -173,6 +174,11 @@ class Strategy2IMGPair(Strategy):
 					currX = [x,y,1]
 					currY = numpy.dot(self.invA,currX)	# Inverse of A
 					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
+					
+					# Center boxes
+					if self.centertilts:
+						self.centerboxes(self.mediator.untilt_win)
+						
 					self.mediator.untilt_win.update_mainwin()
 						
 					#Talk back to GUI:
@@ -251,13 +257,13 @@ class Strategy2IMGPair(Strategy):
 		self.mediator.tilt_win.window.update_shapes(self.mediator.tilt_win.boxes.get_box_shapes(self.mediator.boxsize))
 		self.mediator.tilt_win.window.updateGL()
 	
-	def centerboxes(self):
-		image = self.mediator.tilt_win.boxes.boxlist[len(self.mediator.tilt_win.boxes.boxlist)-1].get_image(self.mediator.tilt_win.filename,self.mediator.boxsize,"normalize.edgemean")
+	def centerboxes(self, window):
+		image = window.boxes.boxlist[len(window.boxes.boxlist)-1].get_image(window.filename,self.mediator.boxsize,"normalize.edgemean")
 		centerimg = image.process("xform.centeracf")
 		tv = centerimg.get_attr("xform.align2d").get_trans()
-		self.mediator.tilt_win.boxes.boxlist[len(self.mediator.tilt_win.boxes.boxlist)-1].move(-tv[0],-tv[1])
-		self.mediator.tilt_win.boxes.shapelist[len(self.mediator.tilt_win.boxes.boxlist)-1] = None
-		self.mediator.tilt_win.boxes.labellist[len(self.mediator.tilt_win.boxes.boxlist)-1] = None
+		window.boxes.boxlist[len(window.boxes.boxlist)-1].move(-tv[0],-tv[1])
+		window.boxes.shapelist[len(window.boxes.boxlist)-1] = None
+		window.boxes.labellist[len(window.boxes.boxlist)-1] = None
 		
 	def unpickevent(self, caller, box_num):
 		if caller == self.mediator.untilt_win:
