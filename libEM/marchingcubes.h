@@ -80,7 +80,7 @@ namespace EMAN
 
 			~CustomVector()
 			{
-				if(data) {delete [] data; data=0;}
+				if(data) {free(data); data=0;}
 			}
 
 			/** Clear
@@ -89,11 +89,7 @@ namespace EMAN
 			*/
 			inline void clear(unsigned int starting_size=1024)
 			{
-				if ( data != 0 )
-				{
-					delete [] data;
-					data = 0;
-				}
+				if (data) {free(data); data = 0;}
 				size = 0;
 				elements = 0;
 				resize(starting_size);
