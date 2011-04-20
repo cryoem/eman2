@@ -61,7 +61,7 @@ ligand/no-ligand contrast in individual images:
 <raw particle file> should be the same file used in the refinement
 <class mx> is one of the classification matrix files from the refinement
 <projections> contains the projections used for class mx
-
+"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--maskfile",type="string",default=None,help="File containing a 3-D binary mask to use for data separation")

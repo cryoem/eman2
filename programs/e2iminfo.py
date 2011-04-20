@@ -91,7 +91,10 @@ def main():
 				image_index = -1
 				
 			d=EMData()
-			d.read_image(imagefile, options.number, True)
+			try: d.read_image(imagefile, options.number, True)
+			except :
+				print "Image read error (%s)"%imagefile
+				continue
 			if d["nz"]==1 : print "%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"])
 			else : print "%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"])
 			

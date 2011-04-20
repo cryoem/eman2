@@ -1,0 +1,12 @@
+#!/bin/bash
+# This is an example script for use with SGE (Sun Grid Engine).
+# The -pe line specifies the number of processors
+#$ -S /bin/bash
+#$ -V
+#$ -N akeytest
+#$ -cwd
+#$ -j y
+#$ -pe mpich 16
+
+mpirun -n 16 $HOME/EMAN2/Python/bin/python mpi_test.py
+
