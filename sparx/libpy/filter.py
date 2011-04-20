@@ -29,6 +29,7 @@
 #
 
 from global_def import *
+from EMAN2 import Processor
 
 def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 	"""

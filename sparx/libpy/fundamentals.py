@@ -29,6 +29,7 @@
 #
 
 from global_def import *
+from EMAN2 import Processor
 
 def absi(e):
 	if e.is_complex():
