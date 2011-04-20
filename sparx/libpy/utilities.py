@@ -29,6 +29,7 @@
 #
 
 from global_def import *
+from EMAN2 import EMNumpy
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
