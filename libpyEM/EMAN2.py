@@ -52,8 +52,8 @@ HOMEDB=None
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
 #try:
-import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path
+#import EMAN2db
+from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path, e2gethome, e2getcwd
 #except:
 #	HOMEDB=None
 
@@ -237,27 +237,6 @@ def e2getinstalldir() :
 	else:
 		url=os.getenv("EMAN2DIR")
 		url=url.replace("\\","/")
-	return url
-
-def e2gethome() :
-	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("HOME")
-	else:
-		if(os.getenv("HOMEPATH") == '\\'):
-			#Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
-			url=os.getenv("USERPROFILE")
-			url=url.lstrip('CDEFG:') #could also use substr
-			url=url.replace("\\","/")
-		else:
-			url=os.getenv("HOMEPATH")
-			url=url.replace("\\","/")
-	return url
-
-def e2getcwd() :
-	"""platform independent path with '/'"""
-	url=os.getcwd()
-	url=url.replace("\\","/")
 	return url
 
 def numbered_path(prefix,makenew):

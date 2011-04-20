@@ -30,7 +30,6 @@
 #
 #
 
-from EMAN2 import EMData, EMUtil
 import atexit
 import weakref
 from cPickle import loads,dumps
@@ -49,6 +48,9 @@ try:
 except:
 	from bsddb import db
 	print "WARNING: Using the out of date 'bsddb' module instead of bsddb3. Consider installing newer berkeleydb and bsddb3."
+
+from libpyEMData2 import EMData
+from libpyUtils2 import EMUtil
 
 try:
 	a=frozenset()
@@ -119,6 +121,27 @@ def e2filemodtime(path):
 
 	return int(os.stat(path)[8])
 
+def e2gethome() :
+	"""platform independent path with '/'"""
+	if(sys.platform != 'win32'):
+		url=os.getenv("HOME")
+	else:
+		if(os.getenv("HOMEPATH") == '\\'):
+			#Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
+			url=os.getenv("USERPROFILE")
+			url=url.lstrip('CDEFG:') #could also use substr
+			url=url.replace("\\","/")
+		else:
+			url=os.getenv("HOMEPATH")
+			url=url.replace("\\","/")
+	return url
+
+def e2getcwd() :
+	"""platform independent path with '/'"""
+	url=os.getcwd()
+	url=url.replace("\\","/")
+	return url
+
 def db_convert_path(path):
 	'''
 	Converts a path to bdb syntax. The path pass must contain "EMAN2DB".
@@ -161,7 +184,6 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 
-	from EMAN2 import e2gethome, e2getcwd
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
 	url=url.replace("~",e2gethome())
 	url=url[4:].rsplit('#',1)
@@ -724,7 +746,6 @@ class EMAN2DB:
 #		if not path : path=e2getcwd()
 		EMAN2DB.lock.acquire()
 
-		from EMAN2 import e2gethome, e2getcwd
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		if EMAN2DB.opendbs.has_key(path) : 
@@ -742,7 +763,6 @@ class EMAN2DB:
 		global BDB_CACHE_DISABLE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
-		from EMAN2 import e2gethome, e2getcwd
 		if not path : path=e2gethome()+"/.eman2"
 		if path=="." or path=="./" : path=e2getcwd()
 		self.path=path

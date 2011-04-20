@@ -31,11 +31,11 @@
 #
 #
 
-from EMAN2 import get_image_directory, e2getcwd, get_dtag, EMData, \
+from EMAN2 import get_image_directory, get_dtag, EMData, \
 	get_files_and_directories, db_open_dict, strip_file_tag, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, get_file_tag, \
 	file_exists, base_name
-from EMAN2db import EMAN2DB, db_convert_path, db_open_dict, db_check_dict
+from EMAN2db import EMAN2DB, db_convert_path, db_open_dict, db_check_dict, e2getcwd
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emapplication import ModuleEventsManager, EMApp, get_application

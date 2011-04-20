@@ -43,7 +43,7 @@ import re
 import traceback
 
 from EMAN2 import EMAN2DB, EMUtil, EMANVERSION
-from EMAN2db import db_list_dicts, db_remove_dict
+from EMAN2db import db_list_dicts, db_remove_dict, e2gethome
 
 def main():
 	global debug
