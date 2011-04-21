@@ -43,7 +43,8 @@ import re
 import traceback
 
 from EMAN2 import EMAN2DB, EMUtil, EMANVERSION
-from EMAN2db import db_list_dicts, db_remove_dict, e2gethome
+from EMAN2db import db_open_dict, db_list_dicts, db_remove_dict, e2gethome
+from EMAN2 import E2init, E2end
 
 def main():
 	global debug
@@ -84,10 +85,6 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 	(options, args) = parser.parse_args()
 
-	#import global_def
-	#if global_def.CACHE_DISABLE:
-		#from utilities import disable_bdb_cache
-		#disable_bdb_cache()
 	if options.nocache : BDB_CACHE_DISABLE=True
 
 	if options.cleanup : 
