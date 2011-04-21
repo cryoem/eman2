@@ -115,10 +115,9 @@ class Strategy2IMGPair(Strategy):
 	# This function is called after boxes are loaded from the DB (to intialize the strategy
 	def initial_calculations(self):
 		if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
-				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xform:
+				if self.mediator.untilt_win.boxes.boxpopulation > self.minpp_for_xform:
 					self.compute_transform()
 					self.compute_tilt_angle()
-					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
 	
 	# This function is called to configure or reconfigure the strategy alogorithm (sort of sets the state)
 	def configure_strategy(self, caller):
@@ -129,6 +128,8 @@ class Strategy2IMGPair(Strategy):
 	def handle_strategy_signal(self, signal):
 		if signal == "updateboxes":
 			self.on_update_boxes()
+		if signal == "centerboxes":
+			self.on_center_boxes()
 		
 	def pickevent(self, caller, x, y):
 		# Pick tilted particle
@@ -153,9 +154,6 @@ class Strategy2IMGPair(Strategy):
 						self.centerboxes(self.mediator.tilt_win)
 						
 					self.mediator.tilt_win.update_mainwin()	
-					
-					#Talk back to GUI:
-					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
 					
 					if self.cont_update_boxes:
 						self.update_boxes()
@@ -182,9 +180,6 @@ class Strategy2IMGPair(Strategy):
 						self.centerboxes(self.mediator.untilt_win)
 						
 					self.mediator.untilt_win.update_mainwin()
-						
-					#Talk back to GUI:
-					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
 					
 					if self.cont_update_boxes:
 						self.update_boxes()	
@@ -212,8 +207,8 @@ class Strategy2IMGPair(Strategy):
 		self.A = numpy.dot(Y,pinvX)
 		self.invA = numpy.linalg.inv(self.A)
 		
-		# Enable masking
-		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(True)
+		# Enable buttons
+		self.set_gui_buttons(True)
 		self.compute_mask()
 
 	def compute_mask(self):
@@ -271,12 +266,30 @@ class Strategy2IMGPair(Strategy):
 		if caller == self.mediator.untilt_win:
 			if len(self.mediator.tilt_win.boxes.boxlist)-1 >= box_num:
 				self.mediator.tilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				if self.mediator.untilt_win.boxes.boxpopulation <= self.minpp_for_xform or self.mediator.tilt_win.boxes.boxpopulation <= self.minpp_for_xform:
+					self.set_gui_buttons(False)
+					self.A = None
+					self.invA = None
 				self.mediator.tilt_win.update_mainwin()
 		if caller == self.mediator.tilt_win:
 			if len(self.mediator.untilt_win.boxes.boxlist)-1 >= box_num:
 				self.mediator.untilt_win.boxes.remove_box(box_num, self.mediator.boxsize)
+				if self.mediator.untilt_win.boxes.boxpopulation <= self.minpp_for_xform or self.mediator.tilt_win.boxes.boxpopulation <= self.minpp_for_xform:
+					self.set_gui_buttons(False)
+					self.A = None
+					self.invA = None
 				self.mediator.untilt_win.update_mainwin()
+			
 		return True
+	
+	# This toogle the contol buttons on and off (also controls the mask)
+	def set_gui_buttons(self, toogle):
+		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(toogle)
+		self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(toogle)
+		self.mediator.control_window.pair_picker_tool.centerboxes_but.setEnabled(toogle)
+		if toogle == False:
+			self.mediator.tilt_win.boxes.add_mask(None)
+			self.mediator.untilt_win.boxes.add_mask(None)
 		
 	def moveevent(self):
 		return True
@@ -285,3 +298,15 @@ class Strategy2IMGPair(Strategy):
 		self.compute_transform()
 		self.compute_tilt_angle()
 		self.update_boxes()
+		
+	def on_center_boxes(self):
+		for i,image in enumerate(self.mediator.tilt_win.boxes.get_particle_images(self.mediator.tilt_win.filename,self.mediator.boxsize)):
+			centerimg = image.process("xform.centeracf")
+			tv = centerimg.get_attr("xform.align2d").get_trans()
+			self.mediator.tilt_win.boxes.boxlist[i].move(-tv[0],-tv[1])
+			self.mediator.tilt_win.boxes.shapelist[i] = None
+			self.mediator.tilt_win.boxes.labellist[i] = None
+		# Update tilted window
+		self.mediator.tilt_win.boxes.save_boxes_to_db()
+		self.mediator.tilt_win.window.update_shapes(self.mediator.tilt_win.boxes.get_box_shapes(self.mediator.boxsize))
+		self.mediator.tilt_win.window.updateGL()

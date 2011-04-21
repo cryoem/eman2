@@ -439,9 +439,15 @@ class PairPickerTool(QtGui.QWidget):
 		hmb.addWidget(self.mask_combobox)
 		vbl.addLayout(hmb)
 		
+		hbb = QtGui.QHBoxLayout()
 		self.upboxes_but = QtGui.QPushButton("Update Boxes", self)
 		self.upboxes_but.setEnabled(False)
-		vbl.addWidget(self.upboxes_but)
+		hbb.addWidget(self.upboxes_but)
+		
+		self.centerboxes_but = QtGui.QPushButton("Center Boxes", self)
+		self.centerboxes_but.setEnabled(False)
+		hbb.addWidget(self.centerboxes_but)
+		vbl.addLayout(hbb)
 		
 		self.clr_but = QtGui.QPushButton("Clear", self)
 		vbl.addWidget(self.clr_but)
@@ -455,6 +461,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.connect(self.updateboxes_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_updateboxes)
 		self.connect(self.centertilts_cb,QtCore.SIGNAL("stateChanged(int)"),self.on_centertilts)
 		self.connect(self.clr_but,QtCore.SIGNAL("clicked(bool)"),self.on_clear)
+		self.connect(self.centerboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_centerboxes_but)
 		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
 	
 		# Initialize
@@ -506,6 +513,9 @@ class PairPickerTool(QtGui.QWidget):
 			
 	def on_upboxes_but(self):
 		self.mediator.handle_strategy_signal("updateboxes")
+		
+	def on_centerboxes_but(self):
+		self.mediator.handle_strategy_signal("centerboxes")
 	
 	def get_widget(self):
 		return self.ppsplitter
