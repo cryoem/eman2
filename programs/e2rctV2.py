@@ -53,7 +53,6 @@ def main():
 	parser.add_option("--path",type="string",default=None,help="Path for the rct reconstruction, default=auto")
 	parser.add_option("--tiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
 	parser.add_option("--untiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
-#	parser.add_option("--untiltdata",type="string",default=None,help="Name of the untilted dataset, default=auto")
 	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
 	parser.add_option("--stagetilt",type="float",default=None,help="Amount of tiliting of the cryo stage, default=auto")
 	parser.add_option("--careject",type="int",default=None,action="append",help="class averages to reject, default=None")
@@ -118,7 +117,7 @@ def main():
 				img.read_image(options.untiltdata, i)
 				imga = img.align('rotate_translate', a)
 				t = imga.get_attr("xform.align2d")
-				t.invert()
+				t.invert()	# Is this really necessary?
 				p = t.get_params("2d")
 				x = Transform()                
 				x.set_rotation({"type":"eman", "az":p["alpha"], "alt":tiltangle})
@@ -174,7 +173,7 @@ def run(command):
 		pass		    
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
-		print "Error running:\n%s"%comman		    
+		print "Error running:\n%s"%command		    
 		exit(1)
 		
 def processimage(image, optionspreprocess):

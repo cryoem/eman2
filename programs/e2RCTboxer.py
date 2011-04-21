@@ -135,8 +135,7 @@ class RCTboxer:
 	def load_tilt_image(self, filename):
 		self.tilt_win.load_image(filename)
 	
-	# handle pick events comming from the MainWin objects, and then send commands to the MainWin objects in responce (Mediator pattern)
-	
+	# Initialize the GUI
 	def init_control_pannel(self):
 		self.control_window = ControlPannel(self)
 		self.parent_window.show_specific(self.control_window)
@@ -150,6 +149,7 @@ class RCTboxer:
 	def set_strategy(self, strategy):
 		self.strategy = strategy(self)
 		
+	# handle pick events comming from the MainWin objects, and then send commands to the MainWin objects in responce (Mediator pattern)	
 	def handle_pick_event(self, caller, x=0, y=0):
 		if not self.strategy.pickevent(caller, x, y): return False
 		return True

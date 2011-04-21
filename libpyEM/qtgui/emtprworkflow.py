@@ -565,3 +565,127 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		self.form = None
 		self.write_db_entries(params)
 
+class EMTomoRawDataReportTask(EMRawDataReportTask):
+	'''The tools under this tab are highly experimental. ''' 
+	def __init__(self):
+		EMRawDataReportTask.__init__(self)
+		self.project_list = tpr_raw_data_dict
+		
+	def get_raw_data_table(self):
+		'''
+		Gets an EMTomographicFileTable - this is type of class that the emform knows how to handle 
+		'''
+		data_dict = EMProjectDataDict(self.project_list)
+		project_data = data_dict.get_data_dict()
+		project_names = project_data.keys()
+		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
+
+		from emform import EMTomographicFileTable,EMFileTable
+		table = EMTomographicFileTable(project_names,desc_short="Tomograms",desc_long="")
+		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
+		table.add_context_menu_data(context_menu_data)
+		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
+	
+		#p.append(pdims) # don't think this is really necessary
+		return table,len(project_names)
+		
+class E2TomoBoxerGuiTask(WorkFlowTask):
+	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		self.tomo_boxer_module = None
+		self.form_db_name = "bdb:emform.tomo.boxer"
+		self.window_title = "Launch e2tomoboxer"
+		self.report_task = None
+		
+	def get_tomo_boxer_basic_table(self):
+		'''
+		'''
+		
+		self.report_task = EMTomoRawDataReportTask()
+		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
+		from emform import EMFileTable,int_lt
+		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
+		
+		return table, n
+
+	def get_tomo_boxes_in_database(name):
+		print "checking for boxes, but this aspect of things is not working yet...."+get_file_tag(name)+" "+name
+		#from e2tomoboxer import tomo_db_name
+		#if db_check_dict(tomo_db_name):
+			#tomo_db = db_open_dict(tomo_db_name)
+			#image_dict = tomo_db.get(get_file_tag(name),dfl={})
+			#if image_dict.has_key("coords"):
+				#return str(len(image_dict["coords"]))
+		
+		return "0"
+	
+	get_tomo_boxes_in_database = staticmethod(get_tomo_boxes_in_database)
+	
+	def get_params(self):
+		params = []
+		db = db_open_dict(self.form_db_name)
+		
+		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2tomoboxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(p)
+		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=db.get("yshort",dfl=True),choices=None)
+		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=db.get("inmemory",dfl=True),choices=None)
+		papix = ParamDef(name="apix",vartype="float",desc_short=u"\u212B per pixel", desc_long="Angstroms per pixel",property=None,defaultunits=db.get("apix",dfl=1.0),choices=None )
+		params.append([pylong, pinmem, papix])
+#		db = db_open_dict(self.form_db_name)
+#		params.append(ParamDef(name="interface_boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=db.get("interface_boxsize",dfl=128),choices=[]))
+#		#db_close_dict(self.form_db_name)
+		return params
+	
+	def on_form_ok(self,params):
+		
+		if not params.has_key("filenames"):
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+		
+		if  params.has_key("filenames") and len(params["filenames"]) == 0:
+			EMErrorMessageDisplay.run(["Please select files for processing"])
+			return
+
+		self.write_db_entries(params)
+		
+		e2tblist = "e2tomoboxer.py"
+		e2tblist += " "+params['filenames'][0]
+		if params["yshort"]:
+			e2tblist += " --yshort"
+		if params["inmemory"]:
+			e2tblist += " --inmemory"
+		e2tblist += " --apix="+str(params["apix"])
+		
+		child = subprocess.Popen(e2tblist, shell=True)
+		
+		self.form.close()
+		self.form = None
+		self.write_db_entries(params)
+		
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.tomo_boxer_module == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+	
+	def on_boxer_closed(self): 
+		if self.tomo_boxer_module != None:
+			self.tomo_boxer_module = None
+			self.emit(QtCore.SIGNAL("gui_exit"))
+	
+	def on_boxer_idle(self):
+		'''
+		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
+		'''
+		self.tomo_boxer_module = None
+		self.emit(QtCore.SIGNAL("gui_exit"))
+		
+	def on_form_cancel(self):
+		if self.report_task:
+			self.report_task.recover_original_raw_data_list()
+		
+		self.form.close()
+		self.form = None
+		self.emit(QtCore.SIGNAL("task_idle"))

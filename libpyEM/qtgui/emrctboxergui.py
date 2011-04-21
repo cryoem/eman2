@@ -307,11 +307,11 @@ class ControlPannel(QtGui.QWidget):
 		
 		self.connect(self.write_but,QtCore.SIGNAL("clicked(bool)"),self.on_write)
 		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
-		
+	
+	# This function configures the tools up tool change
 	def current_tool_combobox_changed(self, idx):
 		self.tools_stacked_widget.setCurrentIndex(idx)
 		self.db["toolidx"] = idx
-		
 		if self.current_tool_combobox.currentText() == "Manual":
 			self.manual_tool.configure_widget()
 			#print "Set strategy to Manual"
@@ -326,6 +326,7 @@ class ControlPannel(QtGui.QWidget):
 		self.tools_stacked_widget.addWidget(self.pair_picker_tool.get_widget())
 		self.current_tool_combobox.addItem("Pair Picker")
 	
+	# This function configures the picking tools upon startup
 	def configure_tools(self):
 		self.manual_tool.configure_widget()
 		self.pair_picker_tool.configure_widget()
@@ -475,11 +476,13 @@ class PairPickerTool(QtGui.QWidget):
 		self.mediator.untilt_win.masktype = self.mask_combobox.currentText()
 		self.mediator.tilt_win.masktype = self.mask_combobox.currentText()
 		self.mediator.strategy.compute_mask()
-		
+	
+	# This function is called upon widget startup
 	def configure_widget(self):
 		self.mediator.set_strategy(Strategy2IMGPair)
 		self.mediator.strategy.initial_calculations()
 		self.mask_combobox_changed(self.mask_combobox.currentIndex())
+		self.mediator.configure_strategy(self)
 			
 	def on_spinbox(self, value):
 		self.db["ppspinbox"] = value

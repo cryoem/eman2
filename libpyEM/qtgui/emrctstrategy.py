@@ -112,14 +112,15 @@ class Strategy2IMGPair(Strategy):
 		self.cont_update_boxes = False
 		self.centertilts = False
 		
-	
+	# This function is called after boxes are loaded from the DB (to intialize the strategy
 	def initial_calculations(self):
 		if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
 				if self.mediator.untilt_win.boxes.boxpopulation >= self.minpp_for_xform:
 					self.compute_transform()
 					self.compute_tilt_angle()
 					self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(True)
-					
+	
+	# This function is called to configure or reconfigure the strategy alogorithm (sort of sets the state)
 	def configure_strategy(self, caller):
 		self.minpp_for_xform = caller.minpp_for_xform
 		self.cont_update_boxes =  caller.updateboxes
@@ -171,6 +172,7 @@ class Strategy2IMGPair(Strategy):
 					# Compute tilt angle
 					self.compute_tilt_angle()
 					
+					# Compute untilted box coords
 					currX = [x,y,1]
 					currY = numpy.dot(self.invA,currX)	# Inverse of A
 					self.mediator.untilt_win.boxes.append_box(currY[0],currY[1])
