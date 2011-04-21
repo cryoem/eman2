@@ -71,6 +71,8 @@ def dilation(f, mask = None, morphtype="BINARY"):
 		Output
 			dilated image
 	"""
+	from EMAN2 import morph_type, filt_dilation_
+
 	if not mask:
 		from utilities import model_blank
 		nx = f.get_xsize()
@@ -101,6 +103,8 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		Output
 			eroded image
 	"""
+	from EMAN2 import morph_type, filt_erosion_
+
 	if not mask:
 		from utilities import model_blank
 		nx = f.get_xsize()

@@ -29,7 +29,6 @@
 #
 
 from global_def import *
-from EMAN2 import Processor
 
 def absi(e):
 	if e.is_complex():
@@ -438,6 +437,8 @@ def fshift(e, delx=0, dely=0, delz=0):
 		Output
 			output image
 	"""
+	from EMAN2 import Processor
+
 	params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
 	return Processor.EMFourierFilter(e, params)
 
@@ -626,6 +627,8 @@ def prepi(image):
 			imageft: image prepared for gridding rotation and shift
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
+	from EMAN2 import Processor
+
 	M = image.get_xsize()
 # pad two times
 	npad = 2
@@ -657,6 +660,8 @@ def prepi3D(image):
 			imageft: image prepared for gridding rotation and shift
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
+	from EMAN2 import Processor
+
 	M = image.get_xsize()
 	# padding size:
 	npad = 2
@@ -687,6 +692,8 @@ def prepg(image, kb):
 		Output
 			imageft: image prepared for gridding rotation and shift
 	"""
+	from EMAN2 import Processor
+
 	M = image.get_xsize()
 # padd two times
 	npad = 2
@@ -804,6 +811,8 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
 	"""
 	from math import pi
+	from EMAN2 import Processor
+
 	M = image.get_xsize()
 	alpha = 1.75
 	K = 6
@@ -824,6 +833,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding on Fourier space.
 	"""
+	from EMAN2 import Processor
 	from fundamentals import fftip, fft
 
 	nx = image.get_xsize()

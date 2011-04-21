@@ -50,6 +50,8 @@ def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 	Output
 		median filtered image
 	"""
+	from EMAN2 import kernel_shape, filt_median_
+
 	if kernelshape=="BLOCK":
 		return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
 	elif kernelshape=="CIRCULAR":
