@@ -78,7 +78,7 @@ ligand/no-ligand contrast in individual images:
 	#parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 
 	(options, args) = parser.parse_args()
-	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")
+#	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")
 	
 
 	try:
