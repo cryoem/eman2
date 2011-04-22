@@ -121,6 +121,8 @@ ligand/no-ligand contrast in individual images:
 	out=file("plot.ligand.txt","w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
 	for i in range(nref):
+		if verbose>1 : print "--- Class %d"%i
+		
 		if options.maskfile : 
 			projm=mask.project("standard",{"transform":eulers[i]})
 			
@@ -196,7 +198,11 @@ ligand/no-ligand contrast in individual images:
 				#if result > 1.5 : p3.append(ali)
 				#elif result <.5 : p1.append(ali)
 				#else : p2.append(ali)
-				
+		
+		if len(statr)==0 and len(statm)==0 : 
+			if verbose>1 : print "No particles"
+			continue
+		
 		if options.maskfile :
 			# classify particles in this specific orientation
 			if len(statm)<20 : continue		# we don't try to classify unless we have at least 5 particles in this orientation
