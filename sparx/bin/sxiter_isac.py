@@ -64,6 +64,7 @@ def main():
 	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group ")
 	parser.add_option("--FL",             type="float",        default=0.1,     help="number of images per group ")
 	parser.add_option("--FH",             type="float",        default=0.3,     help="number of images per group ")
+	parser.add_option("--generation",     type="int",          default=0,       help="the n-th approach on the dataset ")
 	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version ")
 	(options, args) = parser.parse_args()
 
@@ -84,7 +85,7 @@ def main():
 	global_def.BATCH = True
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.init_maxit, options.main_maxit, \
 		    options.match_loop_first, options.match_loop_second, options.CTF, options.snr, options.dst, options.num_ali, options.loops_reali, \
-		    options.th_err, options.max_Iter, options.n_run, options.th_grp, options.img_per_grp, options.FL, options.FH)
+		    options.th_err, options.max_Iter, options.n_run, options.th_grp, options.img_per_grp, options.FL, options.FH, options.generation)
 	global_def.BATCH = False
 
 
