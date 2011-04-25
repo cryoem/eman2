@@ -2219,7 +2219,6 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, i
 
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (int isym=0; isym < tsym.size(); isym++) {
-		//Transform tsym = t.get_sym_proj(m_symmetry, isym);
 		m_volume->nn( m_wptr, padfft, tsym[isym], mult);
         }
 	
@@ -2667,11 +2666,11 @@ int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform&
 {
 	Assert( padded != NULL );
 	
-
-	for( int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym( m_symmetry, isym );
-		 m_volume->insert_rect_slice(m_wptr, padded, tsym, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
-		}
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < tsym.size(); isym++) {
+		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+        }
+	
 
 	return 0;
 
@@ -3370,13 +3369,15 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
-	for( int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym( m_symmetry, isym );
-
-		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
+	
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < tsym.size(); isym++) {
+		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);
 				
-		else            m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
-	}
+		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], mult);
+		
+        }
+
 
 	return 0;
 
@@ -3692,13 +3693,14 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
-	for( int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym( m_symmetry, isym );
+	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+	for (int isym=0; isym < tsym.size(); isym++) {
+		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
+				
+		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+		
+        }
 
-		if (ctf_applied)	m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym, m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
-	else			m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym, m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
-
-	}
 
 	return 0;
 
