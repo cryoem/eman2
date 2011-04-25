@@ -47,7 +47,6 @@ def rec2D(  lines, idrange=None, snr=None ):
         else: 
 	    params = {"size":size, "npad":4, "ndim":2, "snr":snr}
         
-	from EMAN2 import Reconstructors
 	r = Reconstructors.get("nn4", params)
 	r.setup()
 
@@ -291,7 +290,6 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	if size != proj.get_ysize():
 		ERROR("input data has to be square","recons3d_4nn",1)
 	# reconstructor
-	from EMAN2 import Reconstructors
 	if(xysize==-1):
 		if snr is None:
 			params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting}
@@ -348,7 +346,6 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	SSNR =  sum_rot [ wght*signal/Kn ]/sum_rot[ wght*variance /(Kn(Kn-1))] -1
 	Notice: wght is always turned on during SSNR calculation.
 	"""
-	from EMAN2 import Reconstructors
 	import types
 	from EMAN2 import Reconstructors
 
