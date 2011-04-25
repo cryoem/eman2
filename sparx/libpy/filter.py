@@ -332,7 +332,6 @@ def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-
 	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
@@ -368,6 +367,7 @@ def filt_kaisersinh(e, alpha):
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
+	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
 		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
 	return Processor.EMFourierFilter(e, params)
@@ -379,6 +379,7 @@ def filt_kaisersinhp(e, alpha):
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
+	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
 		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
 	return Processor.EMFourierFilter(e, params)
@@ -390,6 +391,7 @@ def filt_kaisersinhinv(e, alpha):
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
+	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
 	return Processor.EMFourierFilter(e, params)
@@ -401,6 +403,7 @@ def filt_kaisersinhinvp(e, alpha):
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
+	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
 	return Processor.EMFourierFilter(e, params)
