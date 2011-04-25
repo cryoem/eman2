@@ -48,9 +48,8 @@ Eulerian_Angles = "SPIDER"
 # he/she should first set the rand_seed to a fixed number and then run the program twice.
 from   EMAN2   import Util
 from   e2version import CVSDATESTAMP
-from   EMAN2db import *
-import EMAN2db
-from random  import seed
+from   random  import seed
+
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
 

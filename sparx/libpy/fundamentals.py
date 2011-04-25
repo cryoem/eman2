@@ -795,7 +795,6 @@ def rops_table(img, lng = False):
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
 	"""
-
 	e=periodogram(img)
 	ro=e.rotavg()
 	nr = ro.get_xsize()

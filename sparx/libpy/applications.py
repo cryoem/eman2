@@ -29,8 +29,6 @@
 #
 
 from global_def import *
-from EMAN2 import Transform
-from EMAN2db import EMAN2DB
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", dst=0.0, center=-1, maxit=0, \
 		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):
@@ -2360,7 +2358,8 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 	from utilities import write_header, file_type
 	ext = file_type(stack)
 	if(ext == "bdb"):
-		DB=EMAN2DB()
+		from EMAN2db import EMAN2DB
+		DB = EMAN2DB()
 		DB = EMAN2DB.open_db(ipath)
 	temp = EMData()
 	for im in xrange(nima):
@@ -2623,7 +2622,8 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 	from utilities import write_header, file_type
 	ext = file_type(stack)
 	if(ext == "bdb"):
-		DB=EMAN2DB()
+		from EMAN2db import EMAN2DB
+		DB = EMAN2DB()
 		DB = EMAN2DB.open_db(ipath)
 	temp = EMData()
 	for im in xrange(nima):
@@ -2876,7 +2876,8 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	from utilities import write_header, file_type
 	ext = file_type(stack)
 	if(ext == "bdb"):
-		DB=EMAN2DB()
+		from EMAN2db import EMAN2DB
+		DB = EMAN2DB()
 		DB = EMAN2DB.open_db(ipath)
 	for im in xrange(nima):
 		k=im%NG
