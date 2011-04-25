@@ -2776,6 +2776,7 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  set projection alignment parameters in the header
 	  phi  theta  psi  s2x  s2y
 	"""
+	from EMAN2 import Vec2f
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
@@ -2975,6 +2976,7 @@ def helical_consistency(p2i, p1):
 	from math import cos,pi
 	from utilities import getvec
 	from pixel_error import angle_error
+	from EMAN2 import Vec2f
 	n =len(p1[0])
 	print n
 	qtm = -1.0e10

@@ -4758,6 +4758,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from EMAN2 import Processor
 	import os
 	import sys
+	from EMAN2 import Vec2f
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -5157,6 +5158,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from EMAN2 import Processor
 	import os
 	import sys
+	from EMAN2 import Vec2f
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -5761,6 +5763,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from EMAN2 import Processor
 	import os
 	import sys
+	from EMAN2 import Vec2f
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -6574,6 +6577,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from projection     import prep_vol, prgs
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
+	from EMAN2 import Vec2f
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -9144,6 +9148,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	from utilities import write_header, file_type,generate_ctf
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
+	from EMAN2 import Vec2f
 
 
 	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete

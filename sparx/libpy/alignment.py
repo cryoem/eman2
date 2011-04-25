@@ -1030,6 +1030,7 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
+	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
 	if finfo:
@@ -1086,6 +1087,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
+	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
 
@@ -1143,6 +1145,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
 	from utilities    import compose_transform2
+	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
 	if finfo:
@@ -1202,6 +1205,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
+	from EMAN2 import Vec2f
 	
 	ID = data.get_attr("ID")
 	if finfo:
