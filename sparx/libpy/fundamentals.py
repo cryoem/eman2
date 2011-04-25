@@ -939,6 +939,7 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 		Output
 			The rotated, shifted, and scaled output 3D volume
 	"""
+	from EMAN2 import Transform
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
