@@ -882,7 +882,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		cyclic - use pixels from the image using wrap-around transformation
 		
 	"""
-	from EMAN2 import Transform
+
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift2D", 1)
 	if(interpolation_method):  use_method = interpolation_method
 	else:  use_method = interpolation_method_2D
@@ -939,7 +939,7 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 		Output
 			The rotated, shifted, and scaled output 3D volume
 	"""
-	from EMAN2 import Transform
+
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
 	T1 = Transform({'scale':scale})
 	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})

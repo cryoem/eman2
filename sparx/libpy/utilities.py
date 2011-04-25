@@ -570,7 +570,6 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
 	       angles in degrees
 	"""
-	from EMAN2 import Transform	
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":0,"scale":scale2})
@@ -587,7 +586,6 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 		Usage: compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
 		   angles in degrees
 	"""
-	from EMAN2 import Transform
 
 	R1 = Transform({"type":"spider","phi":float(phi1),"theta":float(theta1),"psi":float(psi1),"tx":float(sx1),"ty":float(sy1),"tz":float(sz1),"mirror":0,"scale":float(scale1)})
 	R2 = Transform({"type":"spider","phi":float(phi2),"theta":float(theta2),"psi":float(psi2),"tx":float(sx2),"ty":float(sy2),"tz":float(sz2),"mirror":0,"scale":float(scale2)})
@@ -599,7 +597,6 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
 	  Combine 2D alignent parameters including mirror
 	"""
-	from EMAN2 import Transform
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
@@ -934,7 +931,6 @@ def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 	        this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
 	"""
 	#from math import pi, sqrt, cos, acos, sin
-	from EMAN2 import Transform
 
 	RA   = Transform({'type': 'spider', 'phi': phiA, 'theta': thetaA, 'psi': psiA})
 	RB   = Transform({'type': 'spider', 'phi': phiB, 'theta': thetaB, 'psi': psiB})
@@ -1071,7 +1067,6 @@ def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, yt
 	return angt,sxst, syst, mirrort, peakt
 
 def get_sym(symmetry):
-	from EMAN2 import Transform
 
 	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
@@ -1192,7 +1187,6 @@ def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
 
 	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
 	"""
-	from EMAN2 import Transform
 
 	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
 	t = t.inverse()
@@ -1205,7 +1199,6 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror =
 	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
 	       angles in degrees
 	"""
-	from EMAN2 import Transform
 
 	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
 	d = d.inverse()
@@ -2020,7 +2013,6 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 		return 0.0, 0.0, 0.0, 0.0, 0.0	
 
 def rotate_3D_shift(data, shift3d):
-	from EMAN2 import Transform
 
 	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
 
@@ -2410,7 +2402,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
 	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
-	from EMAN2 import Transform
+
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
 	
@@ -2484,7 +2476,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	from utilities import get_arb_params
 	from mpi 	   import mpi_send
 	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
-	from EMAN2 import Transform
+
 	#  This function is called from a node other than the main node
 
 	if comm == -1: comm = MPI_COMM_WORLD
@@ -2750,7 +2742,6 @@ def set_params2D(ima, p, xform = "xform.align2d"):
 	  set 2D alignment parameters in the header
 	  alpha tx ty mirror scale
 	"""
-	from EMAN2 import Transform
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr(xform, t)
 
@@ -2768,7 +2759,6 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 	  set 3D alignment parameters in the header
 	  phi  theta  psi  tx  ty  tz mirror scale
 	"""
-	from EMAN2 import Transform
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
 
@@ -2786,7 +2776,6 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  set projection alignment parameters in the header
 	  phi  theta  psi  s2x  s2y
 	"""
-	from EMAN2 import Transform
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
@@ -2986,7 +2975,6 @@ def helical_consistency(p2i, p1):
 	from math import cos,pi
 	from utilities import getvec
 	from pixel_error import angle_error
-	from EMAN2 import Transform
 	n =len(p1[0])
 	print n
 	qtm = -1.0e10
@@ -3083,7 +3071,6 @@ def rotation_between_anglesets(agls1, agls2):
 	from math  import sin, cos, pi, sqrt, atan2, acos, atan
 	from numpy import array, linalg, matrix
 	import types
-	from EMAN2 import Transform
 
 	rad2deg = 180.0 / pi
 	deg2rad = 1.0 / rad2deg

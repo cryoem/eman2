@@ -9952,7 +9952,6 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 	from pixel_error import max_3D_pixel_error
 	from utilities  import read_text_file, rotation_between_anglesets
 	import types
-	from EMAN2 import Transform
 	
 	N = len(agls1)
 	if N != len(agls2):
