@@ -35,6 +35,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 	   Input: a set of 1D lines
 	   Output: a 2D image
 	"""
+	from EMAN2 import Reconstructors
 
 	assert len(lines) > 0
 
@@ -76,6 +77,8 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	     vol = do_reconstruction(filepattern, start, end, anglelist, symmetry)
 	"""
 	import types
+	from EMAN2 import Reconstructors
+
 	# read first image to determine the size to use
 	if list_proj == []:	
 		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
@@ -129,6 +132,8 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad = 4,xysize=-1):
 	from utilities import reduce_EMData_to_root
+	from EMAN2 import Reconstructors
+
 	if( len(prjlist) == 0 ):
 		ERROR("empty input list","recons3d_4nn_MPI",1)
 
@@ -190,6 +195,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
 	from utilities import reduce_EMData_to_root
+	from EMAN2 import Reconstructors
+
 	if( len(prjlist) == 0 ):
 	    ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
 
@@ -266,6 +273,8 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	     vol = recons3d_4nn(filepattern, list_proj, symmetry)
 	"""
 	import types
+	from EMAN2 import Reconstructors
+
 	if list_proj == []:
 		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
@@ -337,6 +346,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	SSNR =  sum_rot [ wght*signal/Kn ]/sum_rot[ wght*variance /(Kn(Kn-1))] -1
 	Notice: wght is always turned on during SSNR calculation.
 	"""
+	from EMAN2 import Reconstructors
 	import types
 
 	# Yang add a safety on 05/22/07
@@ -414,6 +424,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	from utilities import reduce_EMData_to_root, bcast_number_to_all
+	from EMAN2 import Reconstructors
 
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
@@ -501,6 +512,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 	from time   import time
 	from sys    import stdout
 	from utilities import set_ctf
+	from EMAN2 import Reconstructors
 
 	if(output == -1):
 		import sys
@@ -877,6 +889,8 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	from random     import randint
 	from utilities  import reduce_EMData_to_root
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
+	from EMAN2 import Reconstructors
+
 	nx = data[0].get_xsize()
 
 	fftvol_half = EMData()
@@ -923,6 +937,8 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 4):
 	from random import randint
 	from utilities import reduce_EMData_to_root
+	from EMAN2 import Reconstructors
+
 	nx = data[0].get_xsize()
 
 	fftvol_half = EMData()
@@ -949,6 +965,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	from random     import randint
 	from utilities  import reduce_EMData_to_root
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
+	from EMAN2 import Reconstructors
 
         
 	fftvol_half = EMData()
@@ -990,6 +1007,8 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	return None,None
 
 def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
+	from EMAN2 import Reconstructors
+
 	params = {"size":size, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get("nn4", params)
 	r.setup()
@@ -997,6 +1016,8 @@ def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
 
 
 def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 4):
+	from EMAN2 import Reconstructors
+
 	params = {"size":size, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
 	r = Reconstructors.get("nn4_ctf", params)
 	r.setup()
