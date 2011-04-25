@@ -2000,7 +2000,7 @@ nn4Reconstructor::~nn4Reconstructor()
 
 	if( m_delete_weight ) checked_delete( m_wptr );
 
-	checked_delete( m_result );
+	//checked_delete( m_result );
 }
 
 enum weighting_method { NONE, ESTIMATE, VORONOI };
@@ -2399,8 +2399,10 @@ EMData* nn4Reconstructor::finish(bool)
 	circumf( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
-	m_result = m_volume->copy();
-	return m_result;
+	//m_result = m_volume->copy();
+	EMData* tmp = m_volume;
+	m_volume = 0;
+	return tmp;
 }
 #undef  tw
 
