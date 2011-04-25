@@ -29,7 +29,6 @@
 #
 
 from global_def import *
-from EMAN2 import Processor
 
 def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 	"""
@@ -73,6 +72,7 @@ def filt_tophatl(e, freq, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : freq, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -89,6 +89,7 @@ def filt_tophath(e, freq, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
 		  "cutoff_abs" : freq, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -106,6 +107,7 @@ def filt_tophatb(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -125,6 +127,7 @@ def filt_tophato(e, freql, freqh, value, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "value_at_zero_frequency" : value, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -143,6 +146,7 @@ def filt_gaussl(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_LOW_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -159,6 +163,7 @@ def filt_gaussinv(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_INVERSE,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -175,6 +180,7 @@ def filt_gaussh(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -191,6 +197,7 @@ def filt_gaussb(e, sigma, center, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_BAND_PASS,
 		  "cutoff_abs" : sigma, "center" : center, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -207,6 +214,7 @@ def filt_gausso(e, sigma, value, pad = False):
 	Output
 		filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
 		  "cutoff_abs" : sigma, "value_at_zero_frequency" : value, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -226,6 +234,7 @@ def filt_btwl(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -244,6 +253,7 @@ def filt_btwh(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -263,6 +273,7 @@ def filt_btwo(e, freql, freqh, value, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
@@ -283,6 +294,7 @@ def filt_tanl(e, freq, fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_LOW_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -300,7 +312,7 @@ def filt_tanh(e, freq, fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_HIGH_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
 	return Processor.EMFourierFilter(e, params)
@@ -321,6 +333,7 @@ def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
 
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
 	    	  "high_cutoff_frequency" : freqh, "high_fall_off": high_fall_off, "dopad" : pad}
@@ -340,6 +353,7 @@ def filt_tano(e, freq, fall_off, value, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier.
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.TANH_HOMOMORPHIC,
 		  "cutoff_abs" : freq, "fall_off": fall_off,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
@@ -348,6 +362,7 @@ def filt_tano(e, freq, fall_off, value, pad = False):
 
   
 def filt_kaisersinh(e, alpha):
+	from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
@@ -358,6 +373,7 @@ def filt_kaisersinh(e, alpha):
 	return Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhp(e, alpha):
+	from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
@@ -368,6 +384,7 @@ def filt_kaisersinhp(e, alpha):
 	return Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhinv(e, alpha):
+	from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
@@ -378,6 +395,7 @@ def filt_kaisersinhinv(e, alpha):
 	return Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhinvp(e, alpha):
+	from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
@@ -400,6 +418,7 @@ def filt_table(e, table):
 			fast: use the fast method; may combust certain computers.
 			huge: gobble memory; there is plenty of it, anyway.
 	"""
+	from EMAN2 import Processor
 	params = {"filter_type" : Processor.fourier_filter_types.RADIAL_TABLE,
 			"table" : table}
 	return Processor.EMFourierFilter(e, params)
@@ -417,6 +436,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 		Output
 			image multiplied in Fourier space by the CTF, the output image has the same format as the input image.
 	"""
+	from EMAN2 import Processor
 	assert img.get_ysize() > 1
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
@@ -452,6 +472,7 @@ def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
 		b_factor: Angstrom^2
 		wgh: Unitless
 	"""	
+	from EMAN2 import Processor
 	params = {"filter_type": Processor.fourier_filter_types.CTF_,
 		"defocus" : dz,
 		"Cs" : cs,

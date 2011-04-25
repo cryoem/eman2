@@ -35,6 +35,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 	   Input: a set of 1D lines
 	   Output: a 2D image
 	"""
+	from EMAN2 import Transform
 
 	assert len(lines) > 0
 
@@ -338,6 +339,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	Notice: wght is always turned on during SSNR calculation.
 	"""
 	import types
+	from EMAN2 import Transform
 	# Yang add a safety on 05/22/07
 	if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
 	else :                                   nima = len(stack_name)
@@ -413,6 +415,8 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	from utilities import reduce_EMData_to_root, bcast_number_to_all
+	from EMAN2 import Transform
+
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:  ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
@@ -499,6 +503,8 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 	from time   import time
 	from sys    import stdout
 	from utilities import set_ctf
+	from EMAN2 import Transform
+
 	if(output == -1):
 		import sys
 		output=sys.stdout
@@ -725,6 +731,8 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		symmtry - point group symmetry of the object
 	""" 
 	import types
+	from EMAN2 import Transform
+
 	if type(stack_name) == types.StringType:
 		B = EMData()
 		B.read_image(stack_name,list_proj[0])
@@ -783,6 +791,7 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	""" 
+	from EMAN2 import Transform
 
 	nx = B.get_xsize()
 	RA = Transform()
@@ -814,6 +823,7 @@ def weight_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	""" 
+	from EMAN2 import Transform
 
 	nx = B.get_xsize()
 	RA = Transform()

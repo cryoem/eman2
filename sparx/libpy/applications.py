@@ -3512,6 +3512,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	from fundamentals   import fshift
 	from statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from EMAN2	    import Transform
 	import os
 	import types
 	# 2D alignment using rotational ccf in polar coords and linear
@@ -3741,6 +3742,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
 	from morphology     import binarize
+	from EMAN2	    import Transform
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -4340,6 +4342,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
+	from EMAN2	    import Transform
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -4752,6 +4755,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+	from EMAN2	    import Transform
 	import os
 	import sys
 
@@ -5150,6 +5154,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+	from EMAN2	    import Transform
 	import os
 	import sys
 
@@ -5752,6 +5757,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
+	from EMAN2	      import Transform
 	import os
 	import sys
 
@@ -6567,6 +6573,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from projection     import prep_vol, prgs
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
+	from EMAN2	    import Transform
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -8140,6 +8147,7 @@ def transform2d(stack_data, stack_data_ali):
 	from utilities 	    import set_arb_params, set_params2D, get_params2D
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
+	from EMAN2	    import Transform
 	
 	print_begin_msg("transform2d")	
 	print_msg("Input stack                 : %s\n"%(stack_data))
@@ -8485,6 +8493,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	from utilities      import bcast_EMData_to_all, model_blank, model_circle, get_im
 	from projection     import prep_vol, prgs
 	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from EMAN2	    import Transform
 
 	nima = EMUtil.get_image_count(stack)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
@@ -9137,6 +9146,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	from utilities import write_header, file_type,generate_ctf
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
+	from EMAN2     import Transform
 
 
 	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
