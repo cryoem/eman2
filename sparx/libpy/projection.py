@@ -44,8 +44,7 @@ def project(volume, params, radius):
         # angles phi, theta, psi
 	from fundamentals import rot_shift2D
 	from utilities import set_params_proj
-	from EMAN2 import Transform
-	
+	from EMAN2 import Processor
         myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
         proj = volume.project("pawel", myparams)
 	if(params[3]!=0. or params[4]!=0.): 
@@ -129,8 +128,7 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
 	from utilities import set_params_proj
-	from EMAN2 import Transform
-
+	from EMAN2 import Processor
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if kbx is None:
 		temp = volft.extract_plane(R,kb)
@@ -237,6 +235,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 def prgs1d( prjft, kb, params ):
 	from fundamentals import fft
 	from math import cos, sin, pi
+	from EMAN2 import Processor
 
 	alpha = params[0]
 	shift = params[1]

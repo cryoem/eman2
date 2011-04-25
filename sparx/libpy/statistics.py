@@ -7640,6 +7640,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	from alignment    import   Applyws, ang_n
 	from development  import   oned_search_func
 	from random       import   gauss
+	from EMAN2 import Processor
 	
 	mode = "F"
 	seed(this_seed)

@@ -4725,6 +4725,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		print_end_msg("mref_ali3d_MPI")
 
 def get_refiparams(nx):
+	from EMAN2 import Processor
 	M = nx
 	npad = 2
 	N = M*npad
@@ -4755,7 +4756,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
-	from EMAN2	    import Transform
+	from EMAN2 import Processor
 	import os
 	import sys
 
@@ -5154,7 +5155,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
-	from EMAN2	    import Transform
+	from EMAN2 import Processor
 	import os
 	import sys
 
@@ -5540,6 +5541,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	from math           import pi
 	from statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from EMAN2 import Processor
 	import os 
 	import sys
 
@@ -5757,7 +5759,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
-	from EMAN2	      import Transform
+	from EMAN2 import Processor
 	import os
 	import sys
 

@@ -125,7 +125,7 @@ def eqproj_cascaded_ccc(args, data):
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
 	from statistics    import ccc
-	from EMAN2	   import Transform
+	from EMAN2 import Processor
 
 	volft 	= data[0]
 	kb	= data[1]
@@ -143,7 +143,7 @@ def eqproj_cascaded_ccc(args, data):
 	if(shift[0]!=0. or shift[1]!=0.):
 		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
 				  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
-		refprj=Processor.EMFourierFilter(refprj, filt_params)
+		refprj = Processor.EMFourierFilter(refprj, filt_params)
 
 	refprj.do_ift_inplace()
 	MM = refprj.get_ysize()
