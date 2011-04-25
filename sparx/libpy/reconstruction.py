@@ -47,6 +47,7 @@ def rec2D(  lines, idrange=None, snr=None ):
         else: 
 	    params = {"size":size, "npad":4, "ndim":2, "snr":snr}
         
+	from EMAN2 import Reconstructors
 	r = Reconstructors.get("nn4", params)
 	r.setup()
 
@@ -290,6 +291,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	if size != proj.get_ysize():
 		ERROR("input data has to be square","recons3d_4nn",1)
 	# reconstructor
+	from EMAN2 import Reconstructors
 	if(xysize==-1):
 		if snr is None:
 			params = {"size":size, "npad":npad, "symmetry":symmetry, "weighting":weighting}
@@ -348,6 +350,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	"""
 	from EMAN2 import Reconstructors
 	import types
+	from EMAN2 import Reconstructors
 
 	# Yang add a safety on 05/22/07
 	if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
@@ -967,7 +970,6 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
 	from EMAN2 import Reconstructors
 
-        
 	fftvol_half = EMData()
 	weight_half = EMData()
 	half_params = {"size":nx, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
