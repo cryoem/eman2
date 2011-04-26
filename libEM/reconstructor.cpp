@@ -2431,7 +2431,7 @@ nn4_rectReconstructor::~nn4_rectReconstructor()
 
 	if( m_delete_weight ) checked_delete( m_wptr );
 
-	checked_delete( m_result );
+	//checked_delete( m_result );
 }
 
 
