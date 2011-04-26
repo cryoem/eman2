@@ -340,7 +340,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 			fftvol = model_blank(imgsize, imgsize, imgsize)
 		else:
 			fftvol = model_blank(xysize, xysize, imgsize)
-	return vol
+	return fftvol
 
 def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	
