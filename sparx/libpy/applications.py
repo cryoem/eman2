@@ -7220,7 +7220,8 @@ def cpy(ins_list, ous):
 
 	oextension = file_type(ous)	
 
-	if (oextension == "bdb"):
+	if oextension == "bdb":
+		from EMAN2db import db_open_dict
 		DB = db_open_dict(ous)
 
 	# iterate over all images in the list, even if it's only one...
@@ -10695,7 +10696,9 @@ def plot_projs_distrib(stack, outplot):
 
 	N    = EMUtil.get_image_count(stack)
 	ext  = file_type(stack)
-	if ext == 'bdb': DB = db_open_dict(stack)
+	if ext == 'bdb':
+		from EMAN2db import db_open_dict
+		DB = db_open_dict(stack)
 	agls = []
 	for n in xrange(N):
 		im = EMData()
