@@ -9168,6 +9168,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	nimage = EMUtil.get_image_count(stack)
 	ext = file_type(stack)
 	if ext == "bdb":
+		from EMAN2db import db_open_dict
 		DB = db_open_dict(stack)
 	for i in xrange(nimage):
 		if fimport != None:
