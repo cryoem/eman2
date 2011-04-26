@@ -1996,7 +1996,8 @@ nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
 
 nn4Reconstructor::~nn4Reconstructor()
 {
-	if( m_delete_volume ) checked_delete(m_volume);
+	if( m_delete_volume ) {checked_delete(m_volume);
+				std::cout<<"delete m_volume"<<std::endl;}
 
 	if( m_delete_weight ) checked_delete( m_wptr );
 
@@ -2097,7 +2098,7 @@ void nn4Reconstructor::buildFFTVolume() {
 		m_volume = new EMData();
 		m_delete_volume = true;
 	}
-
+	std::cout<<"m_delete_volume=="<<m_delete_volume<<std::endl;
 	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 		m_volume->to_zero();
@@ -2399,10 +2400,10 @@ EMData* nn4Reconstructor::finish(bool)
 	circumf( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
-	//m_result = m_volume->copy();
-	EMData* tmp = m_volume;
+	m_result = m_volume->copy();
+	//EMData* tmp = m_volume;
 	m_volume = 0;
-	return tmp;
+	return m_result;
 }
 #undef  tw
 
