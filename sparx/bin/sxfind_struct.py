@@ -42,7 +42,7 @@ def main():
 	parser   = OptionParser(usage, version = SPARXVERSION)
 	parser.add_option("--ir",         type="float",        default=-1,       help="Inner radius of particle (set to 1)")
 	parser.add_option("--ou",         type="float",        default=-1,       help="Outer radius of particle < int(nx/2)-1")
-	parser.add_option("--delta",      type="float",        default=5.0,      help="Angle ste " )
+	parser.add_option("--delta",      type="float",        default=5.0,      help="Angle step" )
 	parser.add_option("--dpsi",       type="int",          default=1,        help="Angle accuracy for sinogram (set to 1)")
 	parser.add_option("--lf",         type="float",        default=0.0,      help="Filter, minimum frequency (set to 0.0)")
 	parser.add_option("--hf",         type="float",        default=0.5,      help="Filter, maximum frequency (set to 0.5)")
@@ -99,42 +99,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-
-
-
-
-'''
-
-	--delta=angular_delta --rand_seed=random_seed --trials=number_of_trials --refine --MPI --ite --given --ou --ir"
-	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--delta",     type="float",        default=10.0,     help=" Angle step " )
-	parser.add_option("--ir",        type="float",        default=-1,       help=" Inner radius of particle (set to )")
-	parser.add_option("--ou",        type="float",        default=-1,       help=" Outer radius of particle < int(nx/2)-1")
-	parser.add_option("--ite",       type="int",          default=10,       help=" Maximum number of iterations (10)")
-	parser.add_option("--rand_seed", type="int",          default=-1,       help=" Random seed of initial" )
-	parser.add_option("--trials",    type="int",          default=1,        help=" Number of trials")
-	parser.add_option("--refine",    action="store_true", default=False,    help=" Angle refinement with simplex method")
-	parser.add_option("--MPI",       action="store_true", default=False,    help=" MPI version")
-	parser.add_option("--debug",     action="store_true", default=False,    help=" Activate debug")
-	parser.add_option("--given",     action="store_true", default=False,    help=" Start with given angles in the header")
-	(options, args) = parser.parse_args()
-    	if len(args) != 2:
-		print "usage: " + usage
-        	print "Please run '" + progname + " -h' for detailed options"
-	else:
-		if options.trials <= 0: ERROR('Number of trials must be > 0: %d' % options.trials, 'find_struct', 1)
-
-		from development import find_struct_dev
-		find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf)
-
-
-
-		
-		from  applications  import  find_struct
-		global_def.BATCH = True
-		find_struct(args[0], args[1], options.delta, options.ir, options.ou, options.ite, options.rand_seed, options.trials, options.refine, options.MPI, options.debug, options.given)
-		global_def.BATCH = False
-
-if __name__ == "__main__":
-	main()
-'''
