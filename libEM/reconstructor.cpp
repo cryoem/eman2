@@ -1981,14 +1981,12 @@ nn4Reconstructor::nn4Reconstructor()
 {
 	m_volume = NULL;
 	m_wptr   = NULL;
-	m_result = NULL;
 }
 
 nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
 {
 	m_volume = NULL;
 	m_wptr   = NULL;
-	m_result = NULL;
 	setup( symmetry, size, npad );
 	load_default_settings();
 	print_params();
@@ -1996,10 +1994,9 @@ nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
 
 nn4Reconstructor::~nn4Reconstructor()
 {
-	if( m_delete_volume ) {checked_delete(m_volume);
-				std::cout<<"delete m_volume"<<std::endl;}
+	//if( m_delete_volume ) checked_delete(m_volume); 
 
-	if( m_delete_weight ) checked_delete( m_wptr );
+	//if( m_delete_weight ) checked_delete( m_wptr );
 
 	//checked_delete( m_result );
 }
@@ -2091,14 +2088,8 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 void nn4Reconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
 
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"];
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
-	std::cout<<"m_delete_volume=="<<m_delete_volume<<std::endl;
+	m_volume = params["fftvol"];
+
 	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 		m_volume->to_zero();
@@ -2121,13 +2112,7 @@ void nn4Reconstructor::buildFFTVolume() {
 
 void nn4Reconstructor::buildNormVolume() {
 
-	if( params.has_key("weight") ) {
-		m_wptr = params["weight"];
-		m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+	m_wptr = params["weight"];
 
 	if( m_wptr->get_xsize() != m_vnxc+1 &&
 		m_wptr->get_ysize() != m_vnyp &&
@@ -2306,8 +2291,8 @@ void circumf( EMData* win , int npad)
 }
 
 
-EMData* nn4Reconstructor::finish(bool)
-{
+EMData* nn4Reconstructor::finish(bool) {
+
         if( m_ndim==3 ) {
 		m_volume->symplane0(m_wptr);
 	} else {
@@ -2400,10 +2385,7 @@ EMData* nn4Reconstructor::finish(bool)
 	circumf( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
-	m_result = m_volume->copy();
-	//EMData* tmp = m_volume;
-	m_volume = 0;
-	return m_result;
+	return 0;
 }
 #undef  tw
 
@@ -2412,14 +2394,12 @@ nn4_rectReconstructor::nn4_rectReconstructor()
 {
 	m_volume = NULL;
 	m_wptr   = NULL;
-	m_result = NULL;
 }
 
 nn4_rectReconstructor::nn4_rectReconstructor( const string& symmetry, int size, int npad )
 {
 	m_volume = NULL;
 	m_wptr   = NULL;
-	m_result = NULL;
 	setup( symmetry, size, npad );
 	load_default_settings();
 	print_params();
@@ -2427,9 +2407,9 @@ nn4_rectReconstructor::nn4_rectReconstructor( const string& symmetry, int size, 
 
 nn4_rectReconstructor::~nn4_rectReconstructor()
 {
-	if( m_delete_volume ) checked_delete(m_volume);
+	//if( m_delete_volume ) checked_delete(m_volume);
 
-	if( m_delete_weight ) checked_delete( m_wptr );
+	//if( m_delete_weight ) checked_delete( m_wptr );
 
 	//checked_delete( m_result );
 }
@@ -2486,10 +2466,6 @@ void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, i
 	m_xratio=float(m_vnx)/float(sizeprojection);	
 	m_yratio=float(m_vny)/float(sizeprojection);
 
-	//std::cout<<"dim==="<<m_ndim<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
-	//std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
-	
-
 	m_vnxp = m_vnx*npad;
 	m_vnyp = m_vny*npad;
 	m_vnzp = (m_ndim==3) ? m_vnz*npad : 1;
@@ -2500,21 +2476,13 @@ void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, i
 
 	buildFFTVolume();
 	buildNormVolume();
-
-
 }
 
 
 void nn4_rectReconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
 
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"];
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
+	m_volume = params["fftvol"];
 
 	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
@@ -2538,13 +2506,7 @@ void nn4_rectReconstructor::buildFFTVolume() {
 
 void nn4_rectReconstructor::buildNormVolume() {
 
-	if( params.has_key("weight") ) {
-		m_wptr = params["weight"];
-		m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+	m_wptr = params["weight"];
 
 	if( m_wptr->get_xsize() != m_vnxc+1 &&
 		m_wptr->get_ysize() != m_vnyp &&
@@ -2555,8 +2517,6 @@ void nn4_rectReconstructor::buildNormVolume() {
 
 	m_wptr->set_array_offsets(0,1,1);
 }
-
-
 
 int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
 	// sanity checks
@@ -2759,8 +2719,6 @@ void circumf_rect( EMData* win , int npad)
 }
 #undef tw 
 
-
-
 EMData* nn4_rectReconstructor::finish(bool)
 {
 	
@@ -2857,8 +2815,7 @@ EMData* nn4_rectReconstructor::finish(bool)
 	//circumf_rect_new( m_volume, npad,m_xratio,m_yratio);
  	m_volume->set_array_offsets( 0, 0, 0 );
 
-	m_result = m_volume->copy();
-	return m_result;
+	return 0;
 }
 
 
@@ -2871,7 +2828,6 @@ nnSSNR_Reconstructor::nnSSNR_Reconstructor()
 	m_volume = NULL;
 	m_wptr   = NULL;
 	m_wptr2  = NULL;
-	m_result = NULL;
 }
 
 nnSSNR_Reconstructor::nnSSNR_Reconstructor( const string& symmetry, int size, int npad)
@@ -2879,20 +2835,19 @@ nnSSNR_Reconstructor::nnSSNR_Reconstructor( const string& symmetry, int size, in
 	m_volume = NULL;
 	m_wptr   = NULL;
 	m_wptr2  = NULL;
-	m_result = NULL;
 
 	setup( symmetry, size, npad );
 }
 
 nnSSNR_Reconstructor::~nnSSNR_Reconstructor()
 {
-	if( m_delete_volume ) checked_delete(m_volume);
+	//if( m_delete_volume ) checked_delete(m_volume);
 
-	if( m_delete_weight ) checked_delete( m_wptr );
+	//if( m_delete_weight ) checked_delete( m_wptr );
 
-	if( m_delete_weight2 ) checked_delete( m_wptr2 );
+	//if( m_delete_weight2 ) checked_delete( m_wptr2 );
 
-	checked_delete( m_result );
+	//checked_delete( m_result );
 }
 
 void nnSSNR_Reconstructor::setup()
@@ -2938,13 +2893,7 @@ void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 
 void nnSSNR_Reconstructor::buildFFTVolume() {
 
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
+	m_volume = params["fftvol"]; 
 	m_volume->set_size(m_vnxp+ 2 - m_vnxp%2,m_vnyp,m_vnzp);
 	m_volume->to_zero();
 	if ( m_vnxp % 2 == 0 ) m_volume->set_fftodd(0);
@@ -2959,13 +2908,8 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 }
 
 void nnSSNR_Reconstructor::buildNormVolume() {
-	if( params.has_key("weight") ) {
-	 	m_wptr          = params["weight"];
-	 	m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+
+	m_wptr = params["weight"];
 
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->to_zero();
@@ -2975,13 +2919,7 @@ void nnSSNR_Reconstructor::buildNormVolume() {
 
 void nnSSNR_Reconstructor::buildNorm2Volume() {
 
-	if( params.has_key("weight2") ) {
-		m_wptr2          = params["weight2"];
-		m_delete_weight2 = false;
-	} else {
-		m_wptr2 = new EMData();
-		m_delete_weight2 = true;
-	}
+	m_wptr2 = params["weight2"];
 	m_wptr2->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr2->to_zero();
 	m_wptr2->set_array_offsets(0,1,1);
@@ -3194,7 +3132,6 @@ nn4_ctfReconstructor::nn4_ctfReconstructor()
 {
 	m_volume  = NULL;
 	m_wptr    = NULL;
-	m_result  = NULL;
 }
 
 nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign )
@@ -3204,11 +3141,11 @@ nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, in
 
 nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
-	if( m_delete_volume ) checked_delete(m_volume);
+	//if( m_delete_volume ) checked_delete(m_volume);
 
-	if( m_delete_weight ) checked_delete( m_wptr );
+	//if( m_delete_weight ) checked_delete( m_wptr );
 
-	checked_delete( m_result );
+	//checked_delete( m_result );
 }
 
 void nn4_ctfReconstructor::setup()
@@ -3266,13 +3203,8 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 
 void nn4_ctfReconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"];
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
+
+	m_volume = params["fftvol"];
 
 	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
@@ -3289,13 +3221,7 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 
 void nn4_ctfReconstructor::buildNormVolume()
 {
-	if( params.has_key("weight") ) {
-		m_wptr = params["weight"];
-		m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+	m_wptr = params["weight"];
 
 	if( m_wptr->get_xsize() != m_vnxc+1 && m_wptr->get_ysize() != m_vnyp && m_wptr->get_zsize() != m_vnzp ) {
                m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
@@ -3481,8 +3407,8 @@ EMData* nn4_ctfReconstructor::finish(bool)
 	m_volume->depad();
 	circumf( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
-	m_result = m_volume->copy();
-	return m_result;
+
+	return 0;
 }
 #undef  tw
 
@@ -3495,7 +3421,6 @@ nn4_ctf_rectReconstructor::nn4_ctf_rectReconstructor()
 {
 	m_volume  = NULL;
 	m_wptr    = NULL;
-	m_result  = NULL;
 }
 
 nn4_ctf_rectReconstructor::nn4_ctf_rectReconstructor( const string& symmetry, int size, int npad, float snr, int sign )
@@ -3505,11 +3430,11 @@ nn4_ctf_rectReconstructor::nn4_ctf_rectReconstructor( const string& symmetry, in
 
 nn4_ctf_rectReconstructor::~nn4_ctf_rectReconstructor()
 {
-	if( m_delete_volume ) checked_delete(m_volume);
+	//if( m_delete_volume ) checked_delete(m_volume);
 
-	if( m_delete_weight ) checked_delete( m_wptr );
+	//if( m_delete_weight ) checked_delete( m_wptr );
 
-	checked_delete( m_result );
+	//checked_delete( m_result );
 }
 
 void nn4_ctf_rectReconstructor::setup()
@@ -3536,8 +3461,6 @@ void nn4_ctf_rectReconstructor::setup( const string& symmetry, int sizeprojectio
 		if( tmp==0 ) m_weighting = NONE;
 	}
 
-
-
 	m_wghta = 0.2f;
 	m_wghtb = 0.004f;
 
@@ -3547,20 +3470,17 @@ void nn4_ctf_rectReconstructor::setup( const string& symmetry, int sizeprojectio
 	m_nsym = Transform::get_nsym(m_symmetry);
 
 	m_snr = snr;
-	if( params.has_key("sizex") )  m_vnx = params["sizex"];
-	else if(params.has_key("xratio")) 
-		{
+	if (params.has_key("sizex"))  m_vnx = params["sizex"];
+	else if (params.has_key("xratio")) {
 		float temp=params["xratio"];
 		m_vnx=int(float(sizeprojection)*temp);
-		}
-	else                           m_vnx=sizeprojection;
+	} else  m_vnx=sizeprojection;
 
-	if( params.has_key("sizey") )  m_vny = params["sizey"];
-	else if (params.has_key("yratio"))  
-               {
+	if (params.has_key("sizey"))  m_vny = params["sizey"];
+	else if (params.has_key("yratio")) {
 		float temp=params["yratio"];
-		 m_vny=int(float(sizeprojection)*temp);
-		}
+		m_vny=int(float(sizeprojection)*temp);
+	}
 	else m_vny=sizeprojection;
 
 	if( params.has_key("sizez") ) 
@@ -3588,13 +3508,8 @@ void nn4_ctf_rectReconstructor::setup( const string& symmetry, int sizeprojectio
 
 void nn4_ctf_rectReconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"];
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
+
+	m_volume = params["fftvol"];
 
 	if( m_volume->get_xsize() != m_vnxp+offset && m_volume->get_ysize() != m_vnyp && m_volume->get_zsize() != m_vnzp ) {
 		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
@@ -3611,13 +3526,7 @@ void nn4_ctf_rectReconstructor::buildFFTVolume() {
 
 void nn4_ctf_rectReconstructor::buildNormVolume()
 {
-	if( params.has_key("weight") ) {
-		m_wptr = params["weight"];
-		m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+	m_wptr = params["weight"];
 
 	if( m_wptr->get_xsize() != m_vnxc+1 && m_wptr->get_ysize() != m_vnyp && m_wptr->get_zsize() != m_vnzp ) {
                m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
@@ -3804,8 +3713,7 @@ EMData* nn4_ctf_rectReconstructor::finish(bool)
 	m_volume->depad();
 	circumf_rect( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
-	m_result = m_volume->copy();
-	return m_result;
+	return 0;
 }
 #undef  tw
 

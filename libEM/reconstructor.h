@@ -791,9 +791,6 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		EMData* m_wptr;
-		EMData* m_result;
-		bool m_delete_volume;
-		bool m_delete_weight;
 		string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
@@ -887,9 +884,6 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		EMData* m_wptr;
-		EMData* m_result;
-		bool m_delete_volume;
-		bool m_delete_weight;
 		string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
@@ -981,10 +975,6 @@ namespace EMAN
 		EMData* m_volume;
 		EMData* m_wptr;
 		EMData* m_wptr2;
-		EMData* m_result;
-		bool m_delete_volume;
-		bool m_delete_weight;
-		bool m_delete_weight2;
 		string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
@@ -1053,8 +1043,8 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-            d.put("weighting",  EMObject::INT);
-            d.put("varsnr",     EMObject::INT);
+			d.put("weighting",      EMObject::INT);
+			d.put("varsnr",         EMObject::INT);
 			return d;
 		}
 
@@ -1068,16 +1058,13 @@ namespace EMAN
 		
 	  private:
 		EMData* m_volume;
-		EMData* m_result;
 		EMData* m_wptr;
-		bool m_delete_volume;
-		bool m_delete_weight;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
 		int m_npad;
 		int m_sign;
-        int m_varsnr;
+		int m_varsnr;
 		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;
@@ -1113,7 +1100,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight=1.0);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1149,8 +1136,8 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-            d.put("weighting",  EMObject::INT);
-            d.put("varsnr",     EMObject::INT);
+			d.put("weighting",  EMObject::INT);
+			d.put("varsnr",     EMObject::INT);
 			return d;
 		}
 
@@ -1164,20 +1151,17 @@ namespace EMAN
 		
 	  private:
 		EMData* m_volume;
-		EMData* m_result;
 		EMData* m_wptr;
-		bool m_delete_volume;
-		bool m_delete_weight;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
 		int m_count;
-		float m_xratio,m_yratio,m_zratio;//ratio of x,y,z direction in the 3d volume comparing to the cubic case
-		float m_xscale,m_yscale;//ratior of x,y direction of 2D FFT after scaling and roatating operations
+		float m_xratio, m_yratio, m_zratio;//ratio of x,y,z direction in the 3d volume comparing to the cubic case
+		float m_xscale, m_yscale;//ratior of x,y direction of 2D FFT after scaling and roatating operations
 		int m_sizeofprojection;
 		int m_npad;
 		int m_sign;
-        int m_varsnr;
+	        int m_varsnr;
 		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;
@@ -1186,7 +1170,6 @@ namespace EMAN
 
 		void buildFFTVolume();
 		void buildNormVolume();
-
 	};
 
 
