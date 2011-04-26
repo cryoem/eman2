@@ -767,6 +767,7 @@ def rops(e):
 	   Returns a 1-D image containing a rotational average
 	   of the periodogram of image e.
 	"""
+	from EMAN2 import periodogram
 	ps = periodogram(e)
 	return ps.rotavg()
 
@@ -775,6 +776,7 @@ def rops_textfile(e, filename, helpful_string="", lng = False):
 	   Saves a text file (suitable for gnuplot) of the rotational average 
 	   of the periodogram of image e.
 	"""
+	from EMAN2 import periodogram
 	out = open(filename, "w")
 	out.write("#Rotational average: %s\n" % (helpful_string))
 	ps = periodogram(e)
@@ -795,6 +797,7 @@ def rops_table(img, lng = False):
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
 	"""
+	from EMAN2 import periodogram
 	e=periodogram(img)
 	ro=e.rotavg()
 	nr = ro.get_xsize()
@@ -1054,6 +1057,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
 	"""
 	from fundamentals import window2d, ramp
+	from EMAN2 import periodogram
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
@@ -1087,6 +1091,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 		2. The tilt micrograph is rotated such that the tilt axis is vertical (along Y axis)
 		3. edge_x and edge_y are removed from the micrograph
 	""" 
+	from EMAN2 import periodogram
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	num1 = int(nx-2*edge_x)

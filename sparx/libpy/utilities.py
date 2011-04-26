@@ -1897,6 +1897,7 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		Calculate 1D rotationally averaged power spectra from 
 		image stack listed in a directory
 	"""
+	from EMAN2 import periodogram
 	import os
 	flist = os.listdir(indir)
 	print flist

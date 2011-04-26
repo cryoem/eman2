@@ -1628,25 +1628,26 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 	
 def get_1dpw_table_stack(stack):
 	"""
-		calculate the 1D rotationally averaged power spectrum of one stack file
+		calculate 1D rotationally averaged power spectrum of images in stack file
 		Input
 			stack
 		Output
-			1dpwtable:a list contains 1D rotationally averaged power spectrum
+			a list containing 1D rotationally averaged power spectrum
 	"""
-	table=[]
-	nima  = EMUtil.get_image_count(stack)
-	img   = EMData()
-	rosum = EMData()
+	from utilities import get_im
+	from EMAN2 import periodogram
+	if  type(stack) == type(""): nima = EMUtil.get_image_count(stack)
+	else:                       nima = len(stack)
 	for i in xrange(nima):
-		img.read_image(stack,i)
+		img = get_im(stack,i)
 		e  = periodogram(img)
 		ro = e.rotavg()
 		if(i==0): rosum = ro.copy()
-		else: rosum += ro
-	rosum=rosum/nima
-	nr = ro.get_xsize()
-	for ir in xrange(nr):  table.append([ir/float(nr-1)/2, rosum.get_value_at(ir)])
+		else: Util.add_img(rosum, ro)
+	rosum /= nima
+	nr = rosum.get_xsize()
+	table = [0.0]*nr
+	for ir in xrange(nr):  table[ir] = rosum.get_value_at(ir)
 	return table
 
 def histogram(image, mask = None, nbins = 0, hmin = 0.0, hmax = 0.0):
