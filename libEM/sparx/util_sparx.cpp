@@ -3840,6 +3840,124 @@ Dict Util::Crosrng_psi_0_180(EMData* circ1p, EMData* circ2p, vector<int> numr, f
 	return retvals;
 }
 
+Dict Util::Crosrng_psi_0_180_no_mirror(EMData* circ1p, EMData* circ2p, vector<int> numr, float psi_max) {
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn; float tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
+
+	// dimension		 circ1(lcirc),circ2(lcirc)
+
+	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
+	double  *q, t7[7];
+
+	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
+	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+
+	qn  = 0.0f;
+	tot = 0.0f;
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+ 	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+  //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
+
+	//  c - straight  = circ1 * conjg(circ2)
+	//  zero q array
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (i=1; i<=nring; i++) {
+
+		numr3i = numr(3,i);   // Number of samples of this ring
+		numr2i = numr(2,i);   // The beginning point of this ring
+
+		t1   = circ1(numr2i) * circ2(numr2i);
+		q(1) += t1;
+		
+
+		t1   = circ1(numr2i+1) * circ2(numr2i+1);
+		if (numr3i == maxrin)  {
+			q(2) += t1;
+			
+		} else {
+			q(numr3i+1) += t1;
+		}
+
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
+
+// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
+//   			          ----- -----    ----- -----
+//      			   t1     t2      t3    t4
+// Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
+//     		                      ----- -----    ----- -----
+//     			               t1    t2       t3    t4
+
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
+
+			t1     = c1 * d1;
+			t2     = c2 * d2;
+			t3     = c1 * d2;
+			t4     = c2 * d1;
+
+			q(j)   += t1 + t2;
+			q(j+1) += -t3 + t4;
+		
+		}
+	}
+	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
+	fftr_d(q,ip);
+
+	int psi_range  = int(psi_max/360.0*maxrin+0.5);
+	const int psi_0 = 0;
+	int psi_180    = int(  180.0/360.0*maxrin+0.5);
+
+	qn  = -1.0e20;
+	for (k=-psi_range; k<=psi_range; k++) {
+		j = (k+psi_0+maxrin-1)%maxrin+1;//string modemo = "f";cout <<" 90   "<<j<<"   "<<ang_n(j,modemo,maxrin) <<"  "<<float(j)/maxrin*360.0<<" "<<q(j) <<endl;
+		if (q(j) >= qn) {
+			qn  = q(j);
+			jtot = j;
+		}
+	}
+
+	for (k=-psi_range; k<=psi_range; k++) {
+		j = (k+psi_180+maxrin-1)%maxrin+1; //cout <<" 270  "<<j<<"  "<<ang_n(j,modemo,maxrin) <<"  "<<float(j)/maxrin*360.0<<" "<<q(j) <<endl;
+		if (q(j) >= qn) {
+			qn  = q(j);
+			jtot = j;
+		}
+	}
+
+	for (k=-3; k<=3; k++) {
+		j = ((jtot+k+maxrin-1)%maxrin)+1;
+		t7(k+4) = q(j);
+	}
+
+	// interpolate
+	prb1d(t7,7,&pos);
+	tot = (float)(jtot)+pos;
+	// Do not interpolate
+	//tot = (float)(jtot);
+
+	free(q);
+
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	
+	return retvals;
+}
+
+
 
 Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float psi, int flag) {
 // flag 0 - straignt, 1 - mirror
@@ -18425,6 +18543,120 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 	res.push_back(peak);
 	return res;
 }
+
+vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float psi_max, string mode,
+                vector<int>numr, float cnx, float cny, int ynumber) {
+
+	size_t crefim_len = crefim.size();
+
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sx=0, sy=0;
+	float peak = -1.0E23f;
+	float ang=0.0f;
+	int   kx = int(2*xrng/step+0.5)/2;
+	//if ynumber==-1, use the old code which process x and y direction equally.
+	if(ynumber==-1) {
+		int   ky = int(2*yrng/step+0.5)/2;
+		for (int i = -ky; i <= ky; i++) {
+			iy = i * step ;
+			for (int j = -kx; j <= kx; j++)  {
+				ix = j*step ;
+				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+				Normalize_ring( cimage, numr );
+
+				Frngs(cimage, numr);
+				//  compare with all reference images
+				// for iref in xrange(len(crefim)):
+				for ( iref = 0; iref < (int)crefim_len; iref++) {
+					Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+					double qn = retvals["qn"];
+					if( qn >= peak) {
+						sx = -ix;
+						sy = -iy;
+						nref = iref;
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					}
+				}  
+				delete cimage; cimage = 0;
+			}
+		   }
+	}
+	//if ynumber is given, it should be even. We need to check whether it is zero
+	else if(ynumber==0) {
+		sy = 0.0f;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ;
+			iy = 0.0f ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+
+			Normalize_ring( cimage, numr );
+
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for ( iref = 0; iref < (int)crefim_len; iref++)  {
+				Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+				double qn = retvals["qn"];
+				if( qn >= peak ) {
+					sx = -ix;
+					nref = iref;
+					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					peak = static_cast<float>(qn);
+					mirror = 0;
+				}
+			} 
+			delete cimage; cimage = 0;
+		}		   	
+	} else {
+		int   ky = int(ynumber/2);		
+		float stepy=2*yrng/ynumber;
+		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
+		for (int i = -ky+1; i <= ky; i++) {
+			iy = i * stepy ;
+			for (int j = -kx; j <= kx; j++)	{
+				ix = j*step ;
+				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+				Normalize_ring( cimage, numr );
+
+				Frngs(cimage, numr);
+				//  compare with all reference images
+				// for iref in xrange(len(crefim)):
+				for ( iref = 0; iref < (int)crefim_len; iref++) {
+					Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+					double qn = retvals["qn"];
+					if( qn >= peak) {
+						sx = -ix;
+						sy = -iy;
+						nref = iref;
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					}
+				}
+				delete cimage; cimage = 0;
+			}
+		}
+	}
+	float co, so, sxs, sys;
+	co = static_cast<float>( cos(ang*pi/180.0) );
+	so = static_cast<float>( -sin(ang*pi/180.0) );
+	sxs = sx*co - sy*so;
+	sys = sx*so + sy*co;
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
+	res.push_back(peak);
+	return res;
+}
+
 
 void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			float xrng, float yrng, float step, string mode,

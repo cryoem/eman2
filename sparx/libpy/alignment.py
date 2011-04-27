@@ -1316,6 +1316,48 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0,
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
+def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0, finfo=None):
+	"""
+	  dpsi - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx,dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	iref = int(iref)
+	#print  " IN ", ang, sxs, sys, mirror, iref, peak
+	if iref > -1:
+		
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, phi, theta, psi, s2x, s2y, t1
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+
 def ali_vol_func(params, data):
 	from utilities    import model_gauss
 	from fundamentals import rot_shift3D, cyclic_shift

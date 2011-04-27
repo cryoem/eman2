@@ -554,6 +554,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * circ1 already multiplied by weights!
 	*/
 	static Dict Crosrng_psi_0_180(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
+	static Dict Crosrng_psi_0_180_no_mirror(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
 	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
 
 	/**
@@ -869,6 +870,9 @@ public:
 	 * Search for peaks only within +/-psi_max from 0 and 180 (helical)
 	 * */
 	static vector<float> multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float psi_max, string mode,
+                vector< int >numr, float cnx, float cny, int ynumber=-1);
+	static vector<float> multiref_polar_ali_helical_90(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1);
 
