@@ -1141,6 +1141,7 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 		2. Get clip starts from the top teft corner: "l" option  ( used for get fft-friendly image dimensions )
 		3. Get clip with arbituary point (ix, iy) as imge center point ( used for particle detection )
 	"""
+	from EMAN2 import Region
 	if(opt == "l"): reg = Region(ix, iy, isize_x, isize_y)
 	elif(opt == "c"):
 		lx = img.get_xsize()
