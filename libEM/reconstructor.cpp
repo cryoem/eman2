@@ -2204,7 +2204,7 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, i
 	Assert( padfft != NULL );
 
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (int isym=0; isym < tsym.size(); isym++) {
+	for (unsigned int isym=0; isym < tsym.size(); isym++) {
 		m_volume->nn( m_wptr, padfft, tsym[isym], mult);
         }
 	
@@ -2630,7 +2630,7 @@ int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform&
 	Assert( padded != NULL );
 	
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (int isym=0; isym < tsym.size(); isym++) {
+	for (unsigned int isym=0; isym < tsym.size(); isym++) {
 		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
         }
 	
@@ -3300,7 +3300,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	int   ctf_applied = (int) tmp;
 	
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (int isym=0; isym < tsym.size(); isym++) {
+	for (unsigned int isym=0; isym < tsym.size(); isym++) {
 		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);
 				
 		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], mult);
@@ -3606,7 +3606,7 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (int isym=0; isym < tsym.size(); isym++) {
+	for (unsigned int isym=0; isym < tsym.size(); isym++) {
 		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
 				
 		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
