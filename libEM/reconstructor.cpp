@@ -2910,10 +2910,8 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 void nnSSNR_Reconstructor::buildNormVolume() {
 
 	m_wptr = params["weight"];
-
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->to_zero();
-
 	m_wptr->set_array_offsets(0,1,1);
 }
 
@@ -2989,7 +2987,7 @@ EMData* nnSSNR_Reconstructor::finish(bool)
 	//#vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	//#vol_ssnr->to_zero();
 	//#  new line follow
-	EMData* vol_ssnr = new EMData();
+	EMData* vol_ssnr = params["vol_ssnr"];
 	vol_ssnr->set_size(m_vnxp+ 2 - m_vnxp%2, m_vnyp ,m_vnzp);
 	vol_ssnr->to_zero();
 	if ( m_vnxp % 2 == 0 ) vol_ssnr->set_fftodd(0);
@@ -3118,7 +3116,13 @@ EMData* nnSSNR_Reconstructor::finish(bool)
 		(*SSNR)(i,3,0) = static_cast<float>(ka[i]);
 	}
 	vol_ssnr->update();
-	return vol_ssnr;
+	
+	delete[] nom;
+	delete[] denom;
+	delete[] nn;
+	delete[] ka;
+
+	return 0;
 }
 #undef  tw
 
@@ -3729,7 +3733,6 @@ nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor()
 	m_wptr    = NULL;
 	m_wptr2   = NULL;
 	m_wptr3   = NULL;
-	m_result  = NULL;
 }
 
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign)
@@ -3738,7 +3741,6 @@ nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int si
 	m_wptr    = NULL;
 	m_wptr2   = NULL;
 	m_wptr3   = NULL;
-	m_result  = NULL;
 
 	setup( symmetry, size, npad, snr, sign );
 }
@@ -3746,11 +3748,11 @@ nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int si
 nnSSNR_ctfReconstructor::~nnSSNR_ctfReconstructor()
 {
 
-	if( m_delete_volume )  checked_delete(m_volume);
-	if( m_delete_weight )  checked_delete( m_wptr );
-	if( m_delete_weight2 ) checked_delete( m_wptr2 );
-	if( m_delete_weight3 ) checked_delete( m_wptr3 );
-	checked_delete( m_result );
+	//if( m_delete_volume )  checked_delete(m_volume);
+	//if( m_delete_weight )  checked_delete( m_wptr );
+	//if( m_delete_weight2 ) checked_delete( m_wptr2 );
+	//if( m_delete_weight3 ) checked_delete( m_wptr3 );
+	//checked_delete( m_result );
 }
 
 void nnSSNR_ctfReconstructor::setup()
@@ -3762,7 +3764,7 @@ void nnSSNR_ctfReconstructor::setup()
 	string symmetry;
 	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
 	else                              symmetry = "c1";
-
+	
 	setup( symmetry, size, npad, snr, sign );
 }
 void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
@@ -3801,13 +3803,7 @@ void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad,
 void nnSSNR_ctfReconstructor::buildFFTVolume() {
 
 	int offset = 2 - m_vnxp%2;
-	if( params.has_key("fftvol") ) {
-		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
-		m_delete_volume = false;
-	} else {
-		m_volume = new EMData();
-		m_delete_volume = true;
-	}
+	m_volume = params["fftvol"];
 
 	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 	m_volume->to_zero();
@@ -3825,13 +3821,7 @@ void nnSSNR_ctfReconstructor::buildFFTVolume() {
 
 void nnSSNR_ctfReconstructor::buildNormVolume()
 {
-	if( params.has_key("weight") ) {
-		 m_wptr          = params["weight"];
-		 m_delete_weight = false;
-	} else {
-		m_wptr = new EMData();
-		m_delete_weight = true;
-	}
+	m_wptr = params["weight"];
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->to_zero();
 	m_wptr->set_array_offsets(0,1,1);
@@ -3839,13 +3829,7 @@ void nnSSNR_ctfReconstructor::buildNormVolume()
 
 void nnSSNR_ctfReconstructor::buildNorm2Volume() {
 
-	if( params.has_key("weight2") ) {
-		m_wptr2          = params["weight2"];
-		m_delete_weight2 = false;
-	} else {
-		m_wptr2 = new EMData();
-		m_delete_weight2 = true;
-	}
+	m_wptr2 = params["weight2"];
 	m_wptr2->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr2->to_zero();
 	m_wptr2->set_array_offsets(0,1,1);
@@ -3853,13 +3837,7 @@ void nnSSNR_ctfReconstructor::buildNorm2Volume() {
 
 void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 
-	if( params.has_key("weight3") ) {
-		m_wptr3          = params["weight3"];
-		m_delete_weight3 = false;
-	} else {
-		m_wptr3 = new EMData();
-		m_delete_weight3 = true;
-	}
+	m_wptr3 = params["weight3"];
 	m_wptr3->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr3->to_zero();
 	m_wptr3->set_array_offsets(0,1,1);
@@ -3943,7 +3921,7 @@ EMData* nnSSNR_ctfReconstructor::finish(bool)
 	//#vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	//#vol_ssnr->to_zero();
 	//#  new linea follow
-	EMData* vol_ssnr = new EMData();
+	EMData* vol_ssnr = params["vol_ssnr"];
 	vol_ssnr->set_size(m_vnxp+ 2 - m_vnxp%2, m_vnyp ,m_vnzp);
 	vol_ssnr->to_zero();
 	if ( m_vnxp % 2 == 0 ) vol_ssnr->set_fftodd(0);
@@ -4053,8 +4031,13 @@ EMData* nnSSNR_ctfReconstructor::finish(bool)
 		(*SSNR)(i,3,0) = static_cast<float>(ka[i]);
 	}
 	vol_ssnr->update();
-	return vol_ssnr;
-//	}
+
+	delete[] nom;
+	delete[] denom;
+	delete[] nn;
+	delete[] ka;
+
+	return 0;
 }
 #undef  tw
 // -----------------------------------------------------------------------------------

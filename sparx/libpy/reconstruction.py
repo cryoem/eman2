@@ -381,11 +381,17 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	if size != proj.get_ysize(): ERROR("input data has to be square","recons3d_nn_SSNR",1)
 	# reconstructor
 	SSNR = EMData()
-	if CTF :
-		params = {"size":size, "npad":npad, "symmetry":symmetry, "SSNR":SSNR, "w":ring_width, "sign":sign}
+	fftvol = EMData()
+	weight = EMData()
+	weight2 = EMData()
+	vol_ssnr = EMData()
+	params = {"size":size, "npad":npad, "symmetry":symmetry, "SSNR":SSNR, "w":ring_width, "fftvol":fftvol, "weight":weight, "weight2":weight2, "vol_ssnr":vol_ssnr}
+	if CTF:
+		weight3 = EMData()
+		params["sign"] = sign
+		params["weight3"] = weight3
 		r = Reconstructors.get("nnSSNR_ctf", params)
-	else :
-		params = {"size":size, "npad":npad, "symmetry":symmetry, "SSNR":SSNR, "w":ring_width}
+	else:
 		r = Reconstructors.get("nnSSNR", params)
 	r.setup()
 
@@ -424,7 +430,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 				proj -= stats[0]
 				proj *= mask2D
 			r.insert_slice(proj, xform_proj)
-	vol_ssnr = r.finish(True)
+	dummy = r.finish(True)
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
 	for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
@@ -439,6 +445,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
 	return [outlist, vol_ssnr]
 
+
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	from utilities import reduce_EMData_to_root, bcast_number_to_all
 	from EMAN2 import Reconstructors
@@ -450,27 +457,28 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	weight   = EMData()
 	weight2  = EMData()
 	SSNR     = EMData()
+	vol_ssnr = EMData()
+	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "SSNR":SSNR, "fftvol":fftvol, "weight":weight, "weight2":weight2, "vol_ssnr":vol_ssnr, "w":ring_width }
 	if CTF:
 		weight3  = EMData()
-		params = { "size":imgsize, "npad":npad, "sign":sign, "symmetry":symmetry, "SSNR":SSNR,\
-		           "fftvol":fftvol, "weight":weight, "weight2":weight2, "weight3":weight3, "w":ring_width }
-		r = Reconstructors.get( "nnSSNR_ctf", params )
-	else   :
-		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "SSNR":SSNR,"fftvol":fftvol, "weight":weight, "weight2":weight2, "w":ring_width }
-		r = Reconstructors.get( "nnSSNR",     params )
+		params["sign"] = sign
+		params["weight3"] = weight3
+		r = Reconstructors.get("nnSSNR_ctf", params)
+	else:
+		r = Reconstructors.get("nnSSNR", params)
 	r.setup()
 
 	if prjlist[0].get_xsize() != imgsize or prjlist[0].get_ysize() != imgsize: ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
 	for prj in prjlist:
 		active = prj.get_attr_default('active', 1)
-		if(active == 1):
-			if(random_angles  == 2):
+		if active == 1:
+			if random_angles  == 2:
 				from  random import  random
 				phi	 = 360.0*random()
 				theta    = 180.0*random()
 				psi	 = 360.0*random()
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-			elif(random_angles  == 3):
+			elif random_angles  == 3:
 				from  random import  random
 				phi    = 360.0*random()
 				theta  = 180.0*random()
@@ -478,7 +486,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				tx     = 6.0*(random() - 0.5)
 				ty     = 6.0*(random() - 0.5)
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-			elif(random_angles  == 1):
+			elif random_angles  == 1:
 				from  random import  random
 				old_xform_proj = prj.get_attr( "xform.projection" )
 				dict = old_xform_proj.get_rotation( "spider" )
@@ -497,7 +505,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	reduce_EMData_to_root(weight2, myid, 0)
 	if CTF: reduce_EMData_to_root(weight3, myid, 0)
 	if myid == 0 :
-		vol_ssnr = r.finish(True)
+		dummy = r.finish(True)		
 		outlist = [[] for i in xrange(6)]
 		nn = SSNR.get_xsize()
 		for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))

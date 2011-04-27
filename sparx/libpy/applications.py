@@ -8416,39 +8416,41 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	print_msg("Padding factor              : %i\n"%(npad))
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("CTF sign                    : %i\n"%(sign))
-	print_msg("Symmetry group              : %s\n\n"%(sym))
+	print_msg("Symmetry group              : %s\n"%(sym))
 	
 	fring_width = float(rw)
 	if mask:
 		import  types
-		if(type(mask) is types.StringType):
+		if type(mask) is types.StringType:
 			print_msg("Maskfile                    : %s\n"%(mask))
 			mask2D=get_im(mask)
 		else:
-			print_msg("Maskfile                    : user provided in-core mask")
+			print_msg("Maskfile                    : user provided in-core mask\n")
 			mask2D = mask
 	else:
-		print_msg("Maskfile                    : None")
+		print_msg("Maskfile                    : None\n")
 		mask2D = None
 
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	vol_ssnr1.write_image(output_volume, 0)
 	del vol_ssnr1
 	# perform 3D reconstruction
-	if(reference_structure == None):
+	if reference_structure == None:
+		nima = EMUtil.get_image_count(stack)
 		if CTF:
 			snr = 1.0e20
 			vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
-		else :   vol = recons3d_4nn(stack, range(nima), sym)
+		else:   vol = recons3d_4nn(stack, range(nima), sym)
 	else:
 		vol = get_im(reference_structure)
+
 	# re-project the reconstructed volume
 	nx = vol.get_xsize()
 	if int(ou) == -1: radius = nx//2 - 1
 	else :            radius = int(ou)
 	#
 	vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = prep_vol(vol)
+	volft, kb = prep_vol(vol)
 	del vol
 	prjlist = []
 	from utilities import get_params_proj
@@ -8456,14 +8458,14 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		e = EMData()
 		e.read_image(stack, i, True)
 		e.set_attr('sign', 1)
-		phi,theta,psi,tx,ty = get_params_proj(e, img_dicts)
-		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		phi, theta, psi, tx, ty = get_params_proj(e)
+		proj = prgs(volft, kb, [phi, theta, psi, -tx, -ty])
 		if CTF :
-			ctf_params = proj.get_attr("ctf")			
+			ctf_params = e.get_attr("ctf")			
 			proj = filt_ctf(proj, ctf_params)
 		prjlist.append(proj)
 	del volft
-	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, CTF, sym, npad, sign, fring_width, filename=ssnr_text_file+"2.txt")
+	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	vol_ssnr2.write_image(output_volume, 1)
 	outf = file(ssnr_text_file, "w")
 	for i in xrange(len(ssnr2[0])):
@@ -8480,6 +8482,8 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		datstrings.append("\n")
 		outf.write("".join(datstrings))
 	outf.close()
+
+	print_end_msg('ssnr3d')
 	
 	'''
 	qt = 0.0
@@ -8506,7 +8510,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 
 	if mask:
 		import  types
-		if(type(mask) is types.StringType):  mask2D=get_im(mask)
+		if type(mask) is types.StringType: mask2D = get_im(mask)
 		else: mask2D = mask
 	else:
 		mask2D = None
@@ -8515,15 +8519,15 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	if random_angles > 0:
 		for prj in prjlist:
 			active = prj.get_attr_default('active', 1)
-			if(active == 1):
-				if(random_angles  == 2):
+			if active == 1:
+				if random_angles == 2:
 					from  random import  random
 					phi	 = 360.0*random()
 					theta	 = 180.0*random()
 					psi	 = 360.0*random()
 					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-					prj.set_attr( "xform.projection", xform_proj )
-				elif(random_angles  == 3):
+					prj.set_attr("xform.projection", xform_proj)
+				elif random_angles == 3:
 					from  random import  random
 					phi    = 360.0*random()
 					theta  = 180.0*random()
@@ -8531,14 +8535,14 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 					tx     = 6.0*(random() - 0.5)
 					ty     = 6.0*(random() - 0.5)
 					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-					prj.set_attr( "xform.projection", xform_proj )
-				elif(random_angles  == 1):
+					prj.set_attr("xform.projection", xform_proj)
+				elif random_angles  == 1:
 					from  random import  random
 					old_xform_proj = prj.get_attr( "xform.projection" )
 					dict = old_xform_proj.get_rotation( "spider" )
 					dict["psi"] = 360.0*random()
 					xform_proj = Transform( dict )
-					prj.set_attr( "xform.projection", xform_proj )
+					prj.set_attr("xform.projection", xform_proj)
 		random_angles = 0
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
@@ -8551,27 +8555,26 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	else:        radius = int(ou)
 	if(reference_structure == None):
 		vol = model_blank(nx, nx, nx)
-		if CTF :
+		if CTF:
 			snr = 1.0e20
 			if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
 			else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-		else  :
+		else:
 			if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
 			else:		     recons3d_4nn_MPI(myid, prjlist, sym)
 	else:
-		if  myid == 0: vol = get_im(reference_structure)
-	if  myid == 0:
-		vol.write_image("recof.hdf",0)
+		if myid == 0: vol = get_im(reference_structure)
+
 	bcast_EMData_to_all(vol, myid, 0)
 	re_prjlist = []
 	#vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = prep_vol(vol)
+	volft, kb = prep_vol(vol)
 	del vol
 	from utilities import get_params_proj
 	if CTF: from filter import filt_ctf
 	for prj in prjlist:
-		phi,theta,psi,tx,ty = get_params_proj(prj)
-		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		phi, theta, psi, tx, ty = get_params_proj(prj)
+		proj = prgs(volft, kb, [phi, theta, psi, -tx, -ty])
 		if CTF:
 			ctf_params = prj.get_attr("ctf")			
 			proj = filt_ctf(proj, ctf_params)
@@ -8608,7 +8611,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		vol_ssnr2, output_volume+"2.spi", "s")
 		"""
 
-def pca( input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, genbuf, maskfile="", MPI=False, verbose=False):
+def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, shuffle, genbuf, maskfile="", MPI=False, verbose=False):
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 

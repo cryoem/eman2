@@ -961,6 +961,7 @@ namespace EMAN
 			d.put("weight", EMObject::EMDATA);
 			d.put("weight2", EMObject::EMDATA);
 			d.put("SSNR", EMObject::EMDATA);
+			d.put("vol_ssnr", EMObject::EMDATA);
 			d.put("w", EMObject::FLOAT);
 			return d;
 		}
@@ -1231,6 +1232,7 @@ namespace EMAN
 			d.put("weight2",  EMObject::EMDATA);
 			d.put("weight3",  EMObject::EMDATA);
 			d.put("SSNR",     EMObject::EMDATA);
+			d.put("vol_ssnr", EMObject::EMDATA);
 			d.put("w",        EMObject::FLOAT);
 			d.put("sign",     EMObject::INT);
 			d.put("snr",      EMObject::FLOAT);
@@ -1247,11 +1249,6 @@ namespace EMAN
 		EMData* m_wptr;
 		EMData* m_wptr2;
 		EMData* m_wptr3;
-		EMData* m_result;
-		bool m_delete_volume;
-		bool m_delete_weight;
-		bool m_delete_weight2;
-		bool m_delete_weight3;
 	        string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
