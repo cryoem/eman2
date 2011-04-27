@@ -1028,7 +1028,8 @@ def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
 	params = {"size":size, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get("nn4", params)
 	r.setup()
-	return r.finish(True)
+	dummy = r.finish(True)
+	return fftvol
 
 
 def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 4):
@@ -1037,7 +1038,8 @@ def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npa
 	params = {"size":size, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
 	r = Reconstructors.get("nn4_ctf", params)
 	r.setup()
-	return r.finish(True)
+	dummy = r.finish(True)
+	return fftvol
 
 
 def get_image_size( imgdata, myid ):
@@ -1109,18 +1111,18 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		tag_volall     = 1005
 
 
-        if index !=-1 :
+        if index != -1 :
 		grpdata = []
-		for i in xrange( len(data) ):
-		    if data[i].get_attr( 'group' ) == index:
-		    	    grpdata.append( data[i] )
+		for i in xrange(len(data)):
+		    if data[i].get_attr('group') == index:
+		    	    grpdata.append(data[i])
         	imgdata = grpdata
         else:
 		imgdata = data
 
-	nx = get_image_size( imgdata, myid )
-	if nx==0:
-		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume","rec3D",0)
+	nx = get_image_size(imgdata, myid)
+	if nx == 0:
+		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
 		return model_blank( 2, 2, 2 ), None
 
 	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad)
