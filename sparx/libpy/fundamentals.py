@@ -119,6 +119,7 @@ def ccf(e, f, center=True):
 	Input images may be real or complex.  Output image is real.
 	1-D, 2-D, or 3-D images supported.
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.CIRCULANT, center)
 
 def ccfn(e, f, center=True):
