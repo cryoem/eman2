@@ -49,13 +49,11 @@ const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
 MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
-:	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0)
+:	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
+		isFEI(false), is_ri(0), is_new_file(false), initialized(false)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
-	is_ri = 0;
 	is_big_endian = ByteOrder::is_host_big_endian();
-	is_new_file = false;
-	initialized = false;
 }
 
 MrcIO::~MrcIO()
@@ -115,6 +113,12 @@ void MrcIO::init()
 
 		if (mrch.zlen == 0) {
 			mrch.zlen = 1.0;
+		}
+
+		if(mrch.nlabels>0) {
+			if( string(mrch.labels[0],3) == "Fei") {
+				isFEI = true;
+			}
 		}
 	}
 	EXITFUNC;
@@ -179,36 +183,31 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 	return false;
 }
 
-int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
+int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+{
+	init();
+
+	if(isFEI) {
+		return read_fei_header(dict, image_index, area, is_3d);
+	}
+	else {
+		return read_mrc_header(dict, image_index, area, is_3d);
+	}
+}
+
+int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	//single image format, index can only be zero
-	if(image_index == -1) {
+	if(image_index < 0) {
 		image_index = 0;
 	}
 	if(image_index != 0) {
 		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
 	}
 
-	init();
-
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file,false);
-
-	dict["apix_x"] = mrch.xlen / mrch.mx;
-	dict["apix_y"] = mrch.ylen / mrch.my;
-	dict["apix_z"] = mrch.zlen / mrch.mz;
-
-	dict["MRC.minimum"] = mrch.amin;
-	dict["MRC.maximum"] = mrch.amax;
-	dict["MRC.mean"] = mrch.amean;
-	dict["mean"] = mrch.amean;
-	dict["datatype"] = to_em_datatype(mrch.mode);
-
-	if (is_complex_mode()) {
-		dict["is_complex"] = 1;
-		dict["is_complex_ri"] = 1;
-	}
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
@@ -216,6 +215,43 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
+	dict["MRC.nx"] = mrch.nx;
+	dict["MRC.ny"] = mrch.ny;
+	dict["MRC.nz"] = mrch.nz;
+
+	dict["datatype"] = to_em_datatype(mrch.mode);
+
+	dict["MRC.nxstart"] = mrch.nxstart;
+	dict["MRC.nystart"] = mrch.nystart;
+	dict["MRC.nzstart"] = mrch.nzstart;
+
+	dict["MRC.mx"] = mrch.mx;
+	dict["MRC.my"] = mrch.my;
+	dict["MRC.mz"] = mrch.mz;
+
+	dict["MRC.xlen"] = mrch.xlen;
+	dict["MRC.ylen"] = mrch.ylen;
+	dict["MRC.zlen"] = mrch.zlen;
+
+	dict["MRC.alpha"] = mrch.alpha;
+	dict["MRC.beta"] = mrch.beta;
+	dict["MRC.gamma"] = mrch.gamma;
+
+	dict["MRC.mapc"] = mrch.mapc;
+	dict["MRC.mapr"] = mrch.mapr;
+	dict["MRC.maps"] = mrch.maps;
+
+	dict["MRC.minimum"] = mrch.amin;
+	dict["MRC.maximum"] = mrch.amax;
+	dict["MRC.mean"] = mrch.amean;
+	dict["mean"] = mrch.amean;
+
+	dict["MRC.ispg"] = mrch.ispg;
+	dict["MRC.nsymbt"] = mrch.nsymbt;
+
+	dict["apix_x"] = mrch.xlen / mrch.mx;
+	dict["apix_y"] = mrch.ylen / mrch.my;
+	dict["apix_z"] = mrch.zlen / mrch.mz;
 
 	if (area) {
 		dict["origin_x"] = mrch.xorigin + mrch.xlen * area->origin[0];
@@ -234,32 +270,11 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 		dict["origin_z"] = mrch.zorigin;
 	}
 
-	dict["MRC.nxstart"] = mrch.nxstart;
-	dict["MRC.nystart"] = mrch.nystart;
-	dict["MRC.nzstart"] = mrch.nzstart;
+	if (is_complex_mode()) {
+		dict["is_complex"] = 1;
+		dict["is_complex_ri"] = 1;
+	}
 
-	dict["MRC.mx"] = mrch.mx;
-	dict["MRC.my"] = mrch.my;
-	dict["MRC.mz"] = mrch.mz;
-
-	dict["MRC.nx"] = mrch.nx;
-	dict["MRC.ny"] = mrch.ny;
-	dict["MRC.nz"] = mrch.nz;
-
-	dict["MRC.xlen"] = mrch.xlen;
-	dict["MRC.ylen"] = mrch.ylen;
-	dict["MRC.zlen"] = mrch.zlen;
-
-	dict["MRC.alpha"] = mrch.alpha;
-	dict["MRC.beta"] = mrch.beta;
-	dict["MRC.gamma"] = mrch.gamma;
-
-	dict["MRC.mapc"] = mrch.mapc;
-	dict["MRC.mapr"] = mrch.mapr;
-	dict["MRC.maps"] = mrch.maps;
-
-	dict["MRC.ispg"] = mrch.ispg;
-	dict["MRC.nsymbt"] = mrch.nsymbt;
 	dict["MRC.machinestamp"] = mrch.machinestamp;
 
 	dict["MRC.rms"] = mrch.rms;
@@ -294,6 +309,139 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	}
 
 	if(trans) {delete trans; trans=0;}
+
+	EXITFUNC;
+	return 0;
+}
+
+int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bool)
+{
+	ENTERFUNC;
+
+	if(image_index < 0) {
+		image_index = 0;
+	}
+
+	if(area && area->get_depth() > 1) {
+		throw ImageDimensionException("FEI MRC image is 2D tile series, only 2D regional reading accepted.");
+	}
+
+	init();
+
+	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file,false);
+
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
+
+	dict["nx"] = xlen;
+	dict["ny"] = ylen;
+	dict["nz"] = 1;	//only read one 2D image from a tilt series
+	dict["FEIMRC.nx"] = feimrch.nx;
+	dict["FEIMRC.ny"] = feimrch.ny;
+	dict["FEIMRC.nz"] = feimrch.nz;
+
+	dict["datatype"] = to_em_datatype(feimrch.mode);	//=1, FEI-MRC file always use short for data type
+
+	dict["FEIMRC.nxstart"] = feimrch.nxstart;
+	dict["FEIMRC.nystart"] = feimrch.nystart;
+	dict["FEIMRC.nzstart"] = feimrch.nzstart;
+
+	dict["FEIMRC.mx"] = feimrch.mx;
+	dict["FEIMRC.my"] = feimrch.my;
+	dict["FEIMRC.mz"] = feimrch.mz;
+
+	dict["FEIMRC.xlen"] = feimrch.xlen;
+	dict["FEIMRC.ylen"] = feimrch.ylen;
+	dict["FEIMRC.zlen"] = feimrch.zlen;
+
+	dict["FEIMRC.alpha"] = feimrch.alpha;
+	dict["FEIMRC.beta"] = feimrch.beta;
+	dict["FEIMRC.gamma"] = feimrch.gamma;
+
+	dict["FEIMRC.mapc"] = feimrch.mapc;
+	dict["FEIMRC.mapr"] = feimrch.mapr;
+	dict["FEIMRC.maps"] = feimrch.maps;
+
+	dict["FEIMRC.minimum"] = feimrch.amin;
+	dict["FEIMRC.maximum"] = feimrch.amax;
+	dict["FEIMRC.mean"] = feimrch.amean;
+	dict["mean"] = feimrch.amean;
+
+	dict["FEIMRC.ispg"] = feimrch.ispg;
+	dict["FEIMRC.nsymbt"] = feimrch.nsymbt;
+
+	dict["apix_x"] = feimrch.xlen / feimrch.mx;
+	dict["apix_y"] = feimrch.ylen / feimrch.my;
+	dict["apix_z"] = feimrch.zlen / feimrch.mz;
+
+	dict["FEIMRC.next"] = feimrch.next;	//offset from end of header to the first dataset
+	dict["FEIMRC.dvid"] = feimrch.dvid;
+	dict["FEIMRC.numintegers"] = feimrch.numintegers;
+	dict["FEIMRC.numfloats"] = feimrch.numfloats;
+	dict["FEIMRC.sub"] = feimrch.sub;
+	dict["FEIMRC.zfac"] = feimrch.zfac;
+
+	dict["FEIMRC.min2"] = feimrch.min2;
+	dict["FEIMRC.max2"] = feimrch.max2;
+	dict["FEIMRC.min3"] = feimrch.min3;
+	dict["FEIMRC.max3"] = feimrch.max3;
+	dict["FEIMRC.min4"] = feimrch.min4;
+	dict["FEIMRC.max4"] = feimrch.max4;
+
+	dict["FEIMRC.idtype"] = feimrch.idtype;
+	dict["FEIMRC.lens"] = feimrch.lens;
+	dict["FEIMRC.nd1"] = feimrch.nd1;
+	dict["FEIMRC.nd2"] = feimrch.nd2;
+	dict["FEIMRC.vd1"] = feimrch.vd1;
+	dict["FEIMRC.vd2"] = feimrch.vd2;
+
+	for(int i=0; i<9; i++) {	//9 tilt angles
+		char label[32];
+		sprintf(label, "MRC.tiltangles%d", i);
+		dict[string(label)] = feimrch.tiltangles[i];
+	}
+
+	dict["FEIMRC.zorg"] = feimrch.zorg;
+	dict["FEIMRC.xorg"] = feimrch.xorg;
+	dict["FEIMRC.yorg"] = feimrch.yorg;
+
+	dict["FEIMRC.nlabl"] = feimrch.nlabl;
+	for (int i = 0; i < feimrch.nlabl; i++) {
+		char label[32];
+		sprintf(label, "MRC.label%d", i);
+		dict[string(label)] = string(feimrch.labl[i], 80);
+	}
+
+	/* Read extended image header by specified image index*/
+	FeiMrcExtHeader feiexth;
+	portable_fseek(mrcfile, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
+	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, mrcfile) != 1) {
+		throw ImageReadException(filename, "FEI MRC extended header");
+	}
+
+	dict["FEIMRC.a_tilt"] = feiexth.a_tilt;
+	dict["FEIMRC.b_tilt"] = feiexth.b_tilt;
+
+	dict["FEIMRC.x_stage"] = feiexth.x_stage;
+	dict["FEIMRC.y_stage"] = feiexth.y_stage;
+	dict["FEIMRC.z_stage"] = feiexth.z_stage;
+
+	dict["FEIMRC.x_shift"] = feiexth.x_shift;
+	dict["FEIMRC.y_shift"] = feiexth.y_shift;
+
+	dict["FEIMRC.defocus"] = feiexth.defocus;
+	dict["FEIMRC.exp_time"] = feiexth.exp_time;
+	dict["FEIMRC.mean_int"] = feiexth.mean_int;
+	dict["FEIMRC.tilt_axis"] = feiexth.tilt_axis;
+
+	dict["FEIMRC.pixel_size"] = feiexth.pixel_size;
+	dict["FEIMRC.magnification"] = feiexth.magnification;
+	dict["FEIMRC.ht"] = feiexth.ht;
+	dict["FEIMRC.binning"] = feiexth.binning;
+	dict["FEIMRC.appliedDefocus"] = feiexth.appliedDefocus;
+
+	//remainder 16 4-byte floats not used
+
 	EXITFUNC;
 	return 0;
 }
@@ -498,8 +646,11 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	image_index = 0;
+	if(!isFEI) {
+		//single image format, index can only be zero
+		image_index = 0;
+	}
+
 	check_read_access(image_index, rdata);
 
 	if (area && is_complex_mode()) {
@@ -507,22 +658,45 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		return 1;
 	}
 
-	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
-
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;
 	unsigned short *usdata = (unsigned short *) rdata;
 
-	portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
-
-	EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
-							  image_index, mode_size,
-							  mrch.nx, mrch.ny, mrch.nz, area);
-
+	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+	if(isFEI) {	//FEI extended MRC, read one 2D image from a tilt series
+		check_region(area, FloatSize(mrch.nx, mrch.ny, 1), is_new_file, false);
+		portable_fseek(mrcfile, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
 
-	size_t size = xlen * ylen * zlen;
+		Region * new_area;
+		if(area) {
+			new_area = new Region(area->x_origin(), area->y_origin(), (float)image_index, area->get_width(), area->get_height(), 1.0f);
+		}
+		else {
+			new_area = new Region(0, 0, image_index, feimrch.nx, feimrch.ny, 1);
+		}
+		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
+								  image_index, mode_size,
+								  feimrch.nx, feimrch.ny, feimrch.nz, new_area);
+
+		EMUtil::get_region_dims(new_area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
+
+		size = xlen * ylen * zlen;
+
+		delete new_area;
+	}
+	else {	//regular MRC
+		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
+		portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
+
+		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
+								  image_index, mode_size,
+								  mrch.nx, mrch.ny, mrch.nz, area);
+
+		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+
+		size = xlen * ylen * zlen;
+	}
 
 	if (mrch.mode != MRC_UCHAR) {
 		if (mode_size == sizeof(short)) {
@@ -1021,4 +1195,16 @@ void MrcIO::swap_header(MrcHeader& mrch)
 {
 	ByteOrder::swap_bytes((int *) &mrch, NUM_4BYTES_PRE_MAP);
 	ByteOrder::swap_bytes((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
+}
+
+int MrcIO::get_nimg()
+{
+	init();
+
+	if(isFEI) {
+		return feimrch.nz;
+	}
+	else {
+		return 0;
+	}
 }

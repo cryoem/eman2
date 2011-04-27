@@ -61,6 +61,8 @@ namespace EMAN
 		static int to_em_datatype(int mrcmode);
 		static int to_mrcmode(int em_datatype, int is_complex);
 
+		int get_nimg();
+
 	private:
 		enum MrcMode {
 			MRC_UCHAR = 0,
@@ -184,9 +186,9 @@ namespace EMAN
 			float amax;			/* maximum pixel value of all images in file */
 			float amean;		/* mean pixel value of all images in file */
 
-			int ispg;			/* set to 0: not used; space group number (0 for images) */
+			short ispg;			/* set to 0: not used; space group number (0 for images) */
 
-			int nsymbt;			/* set to 0: not used; number of bytes used for storing symmetry operators */
+			short nsymbt;			/* set to 0: not used; number of bytes used for storing symmetry operators */
 
 			int	next;			/* This value gives the offset (in bytes) from the end
 								of the file header to the first dataset (image).
@@ -194,7 +196,7 @@ namespace EMAN
 			short dvid;			/* set to 0: not used; creator id */
 			char extra[30];		/* set to 0: not used, extra 30 bytes data */
 			short numintegers;	/* set to 0: not used */
-			short numgfloats;	/* set to 32; we always expect a extended header of 32 floats */
+			short numfloats;	/* set to 32; we always expect a extended header of 32 floats */
 
 			short sub;
 			short zfac;
@@ -216,14 +218,15 @@ namespace EMAN
 			float xorg;
 			float yorg;
 
-			int nlabel;			/* number of labels */
-			char labels[MRC_NUM_LABELS][MRC_LABEL_SIZE]; 	/* Arrays of characters that can be used for description.
+			int nlabl;			/* number of labels */
+			char labl[MRC_NUM_LABELS][MRC_LABEL_SIZE]; 	/* Arrays of characters that can be used for description.
 			 	 	 	 	 	 	 	 	 	 	 	 	 Label0 is used for copyright information, always start with "Fei"*/
 		};
 
 		/** The extended header used by Fei MRC image. It contains the information about a maximum of 1024 images.
 		 * Each section is 128 bytes long. The extended header is thus 1024*128 bytes (always the same length,
-		 * reagrdless of how many images are present.) */
+		 * reagrdless of how many images are present.)
+		 * Not always 1024*128 bytes, but at least 128*nz. the length of extended header is defined in the regular header field "next" */
 		struct FeiMrcExtHeader
 		{
 			float a_tilt;		/* Alpha tilt, in degrees */
@@ -269,6 +272,9 @@ namespace EMAN
 			FeiMrcHeader feimrch;
 		};
 
+		/* the extended MRC format for tomography, used by FEI */
+		bool isFEI;
+
 		int is_ri;
 		bool is_big_endian;
 		bool is_new_file;
@@ -283,6 +289,9 @@ namespace EMAN
 		 * min/max/mean/sigma to mrch.
 		 * this function needs get the output data storage type from mrch.mode.*/
 		void update_stat(void* data);
+
+		int read_mrc_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
+		int read_fei_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
 	};
 }
 
