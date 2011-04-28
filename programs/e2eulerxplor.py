@@ -80,8 +80,10 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_option("--eulerdata", "-e", type="string",help="File for Eulerdata, if none is given, data is read from the DB.",default=None)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
+	global options
 	(options, args) = parser.parse_args()
 	
 	
@@ -96,8 +98,8 @@ def main():
 
 class EMEulerWidget(EMSymViewerWidget):
 	def __init__(self, auto=True,sparse_mode=False):
-		EMSymViewerWidget.__init__(self)
-		
+		EMSymViewerWidget.__init__(self, filename=options.eulerdata)
+			
 		#Replacing the EM3DSymModel that was created in the base class
 		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
 		euler_explorer.under_qt_control = True #TODO: still needed?
@@ -209,7 +211,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
 		
-		EM3DSymModel.__init__(self, gl_widget)
+		EM3DSymModel.__init__(self, gl_widget, eulerfilename=options.eulerdata)
 		Animator.__init__(self)
 		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
 		self.projection_file = None  # This is a string - the name of the projection images file

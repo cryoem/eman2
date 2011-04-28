@@ -40,6 +40,7 @@ from emimage2d import EMImage2DWidget
 from pyemtbx.boxertools import BigImageCache
 from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from emrctboxergui import ControlPannel
+from emshape import EMShape
 import os, sys, itertools
 
 EMBOXERRCT_DB = "bdb:emboxerrct"
@@ -161,6 +162,10 @@ class RCTboxer:
 	def handle_move_event(self):
 		if not self.strategy.moveevent(): return False
 		return True
+	
+	def handle_image_save(self, image):
+		if self.strategy != None:
+			self.strategy.imagesaveevent(image)
 		
 	def update_particles(self, particles, idx):
 		self.particles_window.update_particles(particles, idx)
@@ -288,7 +293,6 @@ class MainWin:
 		QtCore.QObject.connect(self.window,QtCore.SIGNAL("module_closed"),self.module_closed)
 	
 	def paint_mask(self,v1x,v1y,v2x,v2y,v3x,v3y,v4x,v4y):
-		from emshape import EMShape
 		if self.masktype == "None":
 			self.boxes.add_mask(None)
 		elif self.masktype == "LineMask":
@@ -382,7 +386,14 @@ class MainWin:
 	
 	def update_particles(self):
 		self.rctwidget.update_particles(self.boxes.get_particle_images(self.filename,self.rctwidget.boxsize),self.boxes.objectidx)
-
+		
+	def write_particles(self,input_file_name,out_file_name,box_size,normproc=None):
+		db_remove_dict(out_file_name)	# Delete any old data
+		for i,box in enumerate(self.boxes.boxlist):
+			image = box.get_image(input_file_name,box_size)
+			self.rctwidget.handle_image_save(image)
+			if str(normproc) != "None": image.process_inplace(normproc)
+			image.write_image(out_file_name,i)
 class EMBoxList:
 	'''
 	This is a container for the EMBox objects, this class follows the compiste pattern
@@ -490,13 +501,6 @@ class EMBoxList:
 		
 	def reset_images(self):
 		for box in self.boxlist: box.reset_image()
-		
-	def write_particles(self,input_file_name,out_file_name,box_size,normproc=None):
-		db_remove_dict(out_file_name)	# Delete any old data
-		for i,box in enumerate(self.boxlist):
-			image = box.get_image(input_file_name,box_size)
-			if str(normproc) != "None": image.process_inplace(normproc)
-			image.write_image(out_file_name,i)
 	
 	def detect_collision(self,x,y,box_size):
 		for i, box in enumerate(self.boxlist):
@@ -561,14 +565,12 @@ class EMBox:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pink, apparently ;)
-		from emshape import EMShape
 		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
 		return shape
 	
 	def reset_image(self): self.image = None
 	
 	def get_label(self, text, size, box_size):
-		from emshape import EMShape
 		label = EMShape(["label",1,1,1,self.x-box_size/2,self.y+box_size/2+10,str(text),size,2.0])
 		return label
 		

@@ -127,6 +127,7 @@ def main():
 	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
 	smoving = moving.process('xform.scale', {'scale':options.shrink})
         options.maskrad = options.maskrad*options.shrink
+        options.search = options.search*options.shrink		# must adjust the search range
 
 	#preprocess maps
 	if options.preprocess != None:
@@ -183,13 +184,15 @@ def main():
 	bestscore = 0
 	bestmodel = 0
 	galignedref = []
-
 	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
 	
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
 		# Fix this so that the transform is passed rather than the transfomed object.....
-		galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		if options.dotrans:
+			galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		else:
+			galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':0, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
 			#bestscore = score

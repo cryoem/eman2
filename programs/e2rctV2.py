@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
 	parser.add_option("--stagetilt",type="float",default=None,help="Amount of tiliting of the cryo stage, default=auto")
 	parser.add_option("--careject",type="int",default=None,action="append",help="class averages to reject, default=None")
-	parser.add_option("--align",type="string",help="Switch on image alignment (set to 1 for True)", default=None) 
+	parser.add_option("--align", action="store_true", help="Switch on image alignment (set to 1 for True).",default=False)
 #	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="frc")
 	parser.add_option("--aligngran",type="float",default=30.0,help="Fineness of global search in e2align3d.py, default=30.0")
 	parser.add_option("--weightrecons",type="int",default=1,help="weight reconstructions by ptcl_repr (before averaging), default=1")
@@ -64,11 +64,12 @@ def main():
 	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto")
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
+	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()
-	
+
 	if not options.path:
 		options.path = "bdb:rct/"
 	else:
@@ -129,37 +130,39 @@ def main():
 				imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))
 				for r in xrange(len(imglist)):
 					aligned = imglist[r].align("translational", imglist[r-1], {"maxshift":options.maxshift}) 
-					aligned.write_image("%srctccarejectlassesali_%02d" % (options.path,avnum), r)	            
+					aligned.write_image("%srctclassesali_%02d" % (options.path,avnum), r)	            
 				if options.verbose>0: print "Reconstructing: %srctreconali_%02d" % (options.path,avnum)
 				run("e2make3d.py --input=%srctclassesali_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
 			else:
 				if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
 				run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
-	#now make an averaged image    
-			if firstrecon:
-				run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='frc'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
-				arlist.append("%srctreconali_%02d" % (options.path,avnum))
-			else:
-				tmp = EMData()
-				tmp.read_image("%srctrecon_%02d" % (options.path,avnum))
-				processimage(tmp, options.preprocess)
-				tmp.write_image("%srctreconali_%02d" % (options.path,avnum),0)
-				firstrecon = ("%srctreconali_%02d" % (options.path,avnum))
-				arlist.append(firstrecon)
+	#now make an averaged image
+			if options.avgrcts:
+				if firstrecon:
+					run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='frc' --dotrans=0" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
+					arlist.append("%srctreconali_%02d" % (options.path,avnum))
+				else:
+					tmp = EMData()
+					tmp.read_image("%srctrecon_%02d" % (options.path,avnum))
+					processimage(tmp, options.preprocess)
+					tmp.write_image("%srctreconali_%02d" % (options.path,avnum),0)
+					firstrecon = ("%srctreconali_%02d" % (options.path,avnum))
+					arlist.append(firstrecon)
 		    
 	#now make the average
-	if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
-	avgr = Averagers.get('mean')		    
-	for r in arlist:
-		recon = EMData()
-		recon.read_image(r)
-		if options.weightrecons:
-			weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
-			if options.verbose>0: print "Weighting recon using %f" % weight
-			recon.mult(weight)
-		avgr.add_image(recon)
-	avged = avgr.finish()
-	avged.write_image("%srctrecon_avg" % (options.path), 0)
+	if options.avgrcts:
+		if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
+		avgr = Averagers.get('mean')		    
+		for r in arlist:
+			recon = EMData()
+			recon.read_image(r)
+			if options.weightrecons:
+				weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
+				if options.verbose>0: print "Weighting recon using %f" % weight
+				recon.mult(weight)
+			avgr.add_image(recon)
+		avged = avgr.finish()
+		avged.write_image("%srctrecon_avg" % (options.path), 0)
   
 	db_close_dict(options.classavg)    
 	        

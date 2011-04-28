@@ -29,10 +29,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
-from EMAN2 import *
+from EMAN2 import get_image_directory, dump_processors_list
 from PyQt4 import QtCore, QtGui
 from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from EMAN2db import db_open_dict
+import os
 
 class ControlPannel(QtGui.QWidget):
 	'''This controls the RCT boxer'''
@@ -347,7 +348,7 @@ class ControlPannel(QtGui.QWidget):
 	def on_write(self):
 		print "Saving Particles"
 		for window in self.mediator.windowlist:
-			window.boxes.write_particles(window.filename, ("bdb:RCTparticles#"+window.filename),self.mediator.boxsize,normproc="normalize.edgemean")
+			window.write_particles(window.filename, ("bdb:RCTparticles#"+os.path.splitext(window.filename)[0]),self.mediator.boxsize,normproc="normalize.edgemean")
 	
 	def on_done(self):
 		for wid in self.mediator.widgetlist:
@@ -430,6 +431,22 @@ class PairPickerTool(QtGui.QWidget):
 		self.tiltangle.setReadOnly(True)
 		hta.addWidget(self.tiltangle)
 		vbl.addLayout(hta)
+		
+		htax = QtGui.QHBoxLayout()
+		talabel = QtGui.QLabel("Computed tilt axis (Y)", self)
+		htax.addWidget(talabel)
+		self.tiltaxis = QtGui.QLineEdit("", self)
+		self.tiltaxis.setReadOnly(True)
+		htax.addWidget(self.tiltaxis)
+		vbl.addLayout(htax)
+		
+		hgamma = QtGui.QHBoxLayout()
+		gammalabel = QtGui.QLabel("Gamma angle", self)
+		hgamma.addWidget(gammalabel)
+		self.gamma = QtGui.QLineEdit("", self)
+		self.gamma.setReadOnly(True)
+		hgamma.addWidget(self.gamma)
+		vbl.addLayout(hgamma)
 		
 		hmb = QtGui.QHBoxLayout()
 		mlabel = QtGui.QLabel("Mask Type", self)

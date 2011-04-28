@@ -60,6 +60,9 @@ class Strategy:
 	def moveevent(self):
 		raise NotImplementedError("Subclass must implement abstract method")
 
+	def imagesaveevent(self, image):
+		raise NotImplementedError("Subclass must implement abstract method")
+		
 class Strategy2IMGMan(Strategy):
 	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
 	def __init__ (self, mediator):
@@ -74,6 +77,9 @@ class Strategy2IMGMan(Strategy):
 	def handle_strategy_signal(self, signal):
 		pass
 	
+	def imagesaveevent(self, image):
+		pass
+		
 	def pickevent(self, caller, x, y):
 		if caller == self.mediator.untilt_win:
 			if self.mediator.tilt_win.boxes.boxpopulation < self.mediator.untilt_win.boxes.boxpopulation:
@@ -108,6 +114,7 @@ class Strategy2IMGPair(Strategy):
 		Strategy.__init__(self, mediator)
 		self.A = None
 		self.invA = None
+		self.tiltangle = None
 		self.minpp_for_xform = 3
 		self.cont_update_boxes = False
 		self.centertilts = False
@@ -211,6 +218,21 @@ class Strategy2IMGPair(Strategy):
 		self.set_gui_buttons(True)
 		self.compute_mask()
 
+	def compute_tiltaxis(self):
+		if self.A != None and self.tiltangle != None:
+			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
+			tan_phi = (rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle)))/(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1])
+			phi = math.atan2((rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle))),(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1]))
+			self.dphi = math.degrees(phi)
+			
+			sin_gamma = rotA[0,0]*math.sin(phi) + rotA[0,1]*math.cos(phi)
+			gamma = math.asin(sin_gamma)
+			self.dgamma = math.degrees(gamma) 
+			print rotA
+			
+			self.mediator.control_window.pair_picker_tool.tiltaxis.setText(("%3.2f"%self.dphi)+u'\u00B0')
+			self.mediator.control_window.pair_picker_tool.gamma.setText(("%3.2f"%self.dgamma)+u'\u00B0')
+		
 	def compute_mask(self):
 		if self.A != None:
 			v1 = numpy.dot(self.A,[0,0,1])
@@ -233,10 +255,11 @@ class Strategy2IMGPair(Strategy):
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
 			detA = numpy.linalg.det(self.A)	# The determinate is is COS of the tilt angle
 			try:
-				tiltangle = math.degrees(math.acos(detA))
-				self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%tiltangle)+u'\u00B0')
+				self.tiltangle = math.degrees(math.acos(detA))
+				self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%self.tiltangle)+u'\u00B0')
 			except:
-				self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")	
+				self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")
+			self.compute_tiltaxis()
 		
 	def update_boxes(self):
 		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):
@@ -261,7 +284,13 @@ class Strategy2IMGPair(Strategy):
 		window.boxes.boxlist[len(window.boxes.boxlist)-1].move(-tv[0],-tv[1])
 		window.boxes.shapelist[len(window.boxes.boxlist)-1] = None
 		window.boxes.labellist[len(window.boxes.boxlist)-1] = None
-		
+	
+	def imagesaveevent(self, image):
+		if self.A != None:
+			image.set_attr("tiltaxis", self.dphi)
+			image.set_attr("tiltgamma", self.dgamma)
+			image.set_attr("tiltangle", self.tiltangle)
+	
 	def unpickevent(self, caller, box_num):
 		if caller == self.mediator.untilt_win:
 			if len(self.mediator.tilt_win.boxes.boxlist)-1 >= box_num:

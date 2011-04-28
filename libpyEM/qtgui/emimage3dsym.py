@@ -244,7 +244,7 @@ class EulerData:
 	
 	
 class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
-	def __init__(self, gl_widget):
+	def __init__(self, gl_widget, eulerfilename=None):
 		self.arc_anim_dl = None
 		self.arc_anim_points = None
 		self.window_title = "EulerXplor"
@@ -252,6 +252,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		Orientations.__init__(self)
 		ColumnGraphics.__init__(self)
 		
+		self.eulerfilename = eulerfilename # the file name that the Euler data is read from
 		self.vdtools = EMViewportDepthTools2(gl_widget)
 		self.eulers = [] # will eventually store Transform objects
 		#self.points = [] # will eventually store the points on the asymmetric unit
@@ -709,8 +710,8 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 #	def closeEvent(self,event):
 #		print "EM3DSymModel.closeEvent()!"
 #		self.close_image_display()
-
-	def generate_current_display_list(self,force=False):
+		
+	def generate_current_display_list(self,force=False): 
 		self.init_basic_shapes()
 		
 		l = dump_orientgens_list()
@@ -733,22 +734,27 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 					
 		[og_name,og_args] = parsemodopt(str(og))
 		
-		filedebug = False
+		if self.eulerfilename:
+			filedebug = True
+		else:
+			filedebug = False
+			
 		if ( not filedebug and not self.eulers_specified):
 			eulers = self.sym_object.gen_orientations(og_name, og_args)
 		elif self.eulers_specified:
 			eulers = self.specified_eulers
 		else:
-			f = file("angles.txt")
+			f = file(str(self.eulerfilename))
 			lines=f.readlines()
 			angles=[]
 			eulers = []
 			for line in lines:
 				angles = str.split(line)
-				alt = angles[0]
-				az = angles[1]
-				eulers.append(Transform({"type":"eman","az":az}))
-		
+				alt = angles[2]
+				az = angles[3]
+				#print alt, az
+				eulers.append(Transform({"type":"eman","az":float(az),"alt":float(alt)}))
+				
 		self.eulers = eulers
 		self.make_sym_dl_list(eulers)
 	
@@ -1140,7 +1146,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 
 class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	allim=WeakKeyDictionary()
-	def __init__(self, sym="d7"):
+	def __init__(self, sym="c1", filename=None):
 		EMSymViewerWidget.allim[self]=0
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -1151,13 +1157,14 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.setFormat(fmt)
 		EMGLProjectionViewMatrices.__init__(self)
 
+		self.filename = filename
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
 		self.cam = Camera()
 		self.cam.setCamTrans("default_z",-100)
 		
-		sym_model = EM3DSymModel(self)
+		sym_model = EM3DSymModel(self,eulerfilename=self.filename)
 		sym_model.under_qt_control = True #TODO: still needed?
 		self.model = sym_model
 		sym_model.set_symmetry(sym)
@@ -1574,6 +1581,7 @@ class SparseSymChoicesWidgets:
 		# warning - do not change the name of these keys unless you know what you're doing. The workflow refine forms assumes these keys exist, as they are
 		# see EMOrientationDistDialog in emform.py
 		d["sym"] = self.get_sym()
+		print self.get_sym()
 		d["orientgen"] = str(self.strategy_label.currentText())
 		d["approach"] = str(self.angle_label.currentText())
 		d["value"] = float(self.prop_text.text())

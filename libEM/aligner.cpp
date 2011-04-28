@@ -2132,7 +2132,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
-		Transform t(params);
+		
 		if (verbose) {
 			float alt = params["alt"];
 			float az = params["az"];
@@ -2140,7 +2140,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		}
 
 		for( float phi = lphi; phi < uphi; phi += dphi ) { 
-			
+			Transform t(params);
 			params["phi"] = phi;
 			t.set_rotation(params);
 			EMData* transformed = to->process("xform",Dict("transform",&t));
@@ -2151,7 +2151,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
 #ifdef EMAN2_USING_CUDA	
 				if(this_img->getcudarwdata()){
-					use_cpu = false;;
+					use_cpu = false;
 					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 					trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
 					t = trans*t;	//composite transform
@@ -2168,7 +2168,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					if(tomography) ccf->process_inplace("normalize");
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-					t = trans*t;	//composite transform
+					t = trans*t;	//composite transform 
 					best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 				}
 				delete ccf; ccf =0;
