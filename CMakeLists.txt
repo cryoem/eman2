@@ -469,7 +469,6 @@ INCLUDE_DIRECTORIES(.
             ${ACML_INCLUDE_PATH}
 			${BOOST_INCLUDE_PATH}
 			${PYTHON_INCLUDE_PATH}		
-            /usr/include/freetype2
             )
 
 IF(ENABLE_RT)
