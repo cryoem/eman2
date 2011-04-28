@@ -6279,9 +6279,9 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	int nxc = nx/2;
 	int nb = int(nz*(1.0f - section_use)/2.);
 	int ne = nz - nb -1;
-	int numst = int((ne - nb)/dp*pixel_size + 0.5);
-	// how many steps needed
-	int nst = int(nz*pixel_size/dp+0.5);
+	int numst = int(nz*section_use*pixel_size/dp);
+	// how many steps needed total, fewer will be used, only those that fall between nb and ne
+	int nst = int(nz*pixel_size/dp);
 	float r2, ir;
 	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
@@ -6295,7 +6295,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 				int ix = i - nxc;
 				float d2 = (float)(ix*ix + jj);
 				if(d2 <= r2 && d2>=ir) {
-					int nq = 1;
+					int nq = 0;
 					for ( int ist = -nst; ist <= nst; ist++) {
 						float zold = (k*pixel_size + ist*dp)/pixel_size;
 						int IOZ = int(zold);
@@ -6309,51 +6309,53 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 							nq++;
 
 
-					//  Do tri-linear interpolation
-					int IOX = int(xold);
-					int IOY = int(yold);
-					//int IOZ = int(zold);
+	//  Do tri-linear interpolation
+	int IOX = int(xold);
+	int IOY = int(yold);
+	//int IOZ = int(zold);
 
-					#ifdef _WIN32
-					int IOXp1 = _cpp_min( nx-1 ,IOX+1);
-					#else
-					int IOXp1 = std::min( nx-1 ,IOX+1);
-					#endif  //_WIN32
+	#ifdef _WIN32
+	int IOXp1 = _cpp_min( nx-1 ,IOX+1);
+	#else
+	int IOXp1 = std::min( nx-1 ,IOX+1);
+	#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOYp1 = _cpp_min( ny-1 ,IOY+1);
-					#else
-					int IOYp1 = std::min( ny-1 ,IOY+1);
-					#endif  //_WIN32
+	#ifdef _WIN32
+	int IOYp1 = _cpp_min( ny-1 ,IOY+1);
+	#else
+	int IOYp1 = std::min( ny-1 ,IOY+1);
+	#endif  //_WIN32
 
-					#ifdef _WIN32
-					int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
-					#else
-					int IOZp1 = std::min( nz-1 ,IOZ+1);
-					#endif  //_WIN32
+	#ifdef _WIN32
+	int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
+	#else
+	int IOZp1 = std::min( nz-1 ,IOZ+1);
+	#endif  //_WIN32
 
-					float dx = xold-IOX;
-					float dy = yold-IOY;
-					float dz = zold-IOZ;
+	float dx = xold-IOX;
+	float dy = yold-IOY;
+	float dz = zold-IOZ;
 
-					float a1 = (*this)(IOX,IOY,IOZ);
-					float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
-					float a3 = (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZ);
-					float a4 = (*this)(IOX,IOY,IOZp1) - (*this)(IOX,IOY,IOZ);
-					float a5 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) + (*this)(IOXp1,IOYp1,IOZ);
-					float a6 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOXp1,IOY,IOZp1);
-					float a7 = (*this)(IOX,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOX,IOYp1,IOZp1);
-					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1)
-							- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
-							- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
-					(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+	float a1 = (*this)(IOX,IOY,IOZ);
+	float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
+	float a3 = (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZ);
+	float a4 = (*this)(IOX,IOY,IOZp1) - (*this)(IOX,IOY,IOZ);
+	float a5 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) + (*this)(IOXp1,IOYp1,IOZ);
+	float a6 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOXp1,IOY,IOZp1);
+	float a7 = (*this)(IOX,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOX,IOYp1,IOZp1);
+	float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1)
+			- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
+			- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
 
+
+
+							(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
 							//(*result)(i,j,k) += (*this)(IOX, IOY, IOZ);
 							if(nq == numst) break;
 						}
 					}
 					if(nq != numst)
-						throw InvalidValueException(nq, "incorrect number of repeats encoutered.");
+						throw InvalidValueException(nq, "Helicise: incorrect number of repeats encoutered.");
 				}
 			}
 		}
@@ -6363,106 +6365,6 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	result->update();
 	return result;
 }
-
-
-EMData* EMData::helicise_rect(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {
-	if (3 != get_ndim())
-		throw ImageDimensionException("helicise needs a 3-D image.");
-	if (is_complex())
-		throw ImageFormatException("helicise requires a real image");
-
-	EMData* result = this->copy_head();
-	result->to_zero();
-	int nyc = ny/2;
-	int nxc = nx/2;
-	int nb = int(nz*(1.0f - section_use)/2.);
-	int ne = nz - nb -1;
-	int numst = int((ne - nb)/dp*pixel_size + 0.5);
-	// how many steps needed
-	int nst = int(nz*pixel_size/dp+0.5);
-	float r2, ir;
-	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
-	else r2 = radius*radius;
-	if(minrad < 0.0f) ir = 0.0f;
-	else ir = minrad*minrad;
-	for (int k = 0; k<nz; k++) {
-		for (int j = 0; j<ny; j++) {
-			int jy = j - nyc;
-			int jj = jy*jy;
-			for (int i = 0; i<nx; i++) {
-				int ix = i - nxc;
-				float d2 = (float)(ix*ix + jj);
-				if(d2 <= r2 && d2>=ir) {
-					int nq = 1;
-					for ( int ist = -nst; ist <= nst; ist++) {
-						float zold = (k*pixel_size + ist*dp)/pixel_size;
-						int IOZ = int(zold);
-						if(IOZ >= nb && IOZ <= ne) {
-							// now x-y position
-							float cphi = ist*dphi*(float)DGR_TO_RAD;
-							float ca = cos(cphi);
-							float sa = sin(cphi);
-							float xold = ix*ca - jy*sa + nxc;
-							float yold = ix*sa + jy*ca + nyc;
-							nq++;
-
-
-					//  Do tri-linear interpolation
-					int IOX = int(xold);
-					int IOY = int(yold);
-					//int IOZ = int(zold);
-
-					#ifdef _WIN32
-					int IOXp1 = _cpp_min( nx-1 ,IOX+1);
-					#else
-					int IOXp1 = std::min( nx-1 ,IOX+1);
-					#endif  //_WIN32
-
-					#ifdef _WIN32
-					int IOYp1 = _cpp_min( ny-1 ,IOY+1);
-					#else
-					int IOYp1 = std::min( ny-1 ,IOY+1);
-					#endif  //_WIN32
-
-					#ifdef _WIN32
-					int IOZp1 = _cpp_min( nz-1 ,IOZ+1);
-					#else
-					int IOZp1 = std::min( nz-1 ,IOZ+1);
-					#endif  //_WIN32
-
-					float dx = xold-IOX;
-					float dy = yold-IOY;
-					float dz = zold-IOZ;
-
-					float a1 = (*this)(IOX,IOY,IOZ);
-					float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
-					float a3 = (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZ);
-					float a4 = (*this)(IOX,IOY,IOZp1) - (*this)(IOX,IOY,IOZ);
-					float a5 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) + (*this)(IOXp1,IOYp1,IOZ);
-					float a6 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOXp1,IOY,IOZp1);
-					float a7 = (*this)(IOX,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOX,IOYp1,IOZp1);
-					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1)
-							- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
-							- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
-					(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
-
-							//(*result)(i,j,k) += (*this)(IOX, IOY, IOZ);
-							if(nq == numst) break;
-						}
-					}
-					if(nq != numst)
-						throw InvalidValueException(nq, "incorrect number of repeats encoutered.");
-				}
-			}
-		}
-	}
-	for (int k = 0; k<nz; k++) for (int j = 0; j<ny; j++) for (int i = 0; i<nx; i++) (*result)(i,j,k) /= numst ;
-
-	result->update();
-	return result;
-}
-
-
 
 /*
 Purpose: Depad and remove FT extension from a real image.
