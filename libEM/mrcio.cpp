@@ -1205,6 +1205,6 @@ int MrcIO::get_nimg()
 		return feimrch.nz;
 	}
 	else {
-		return 0;
+		return 1;
 	}
 }
