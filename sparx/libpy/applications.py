@@ -8929,7 +8929,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
-			
+
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
 	# Init the global vars
@@ -8938,7 +8938,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, 1)
 
 	ibest    = -1
-	bestdisc = 1e20
+	bestdisc = 1.0e20
 	MEM      = []
 	for itrial in xrange(trials):
 		# if not angles given select randomly orientation for each projection
@@ -8963,7 +8963,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
 		Ori, disc, ite = cml_find_structure(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights)
-		print_msg('trials %03i\tdisc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\n' % (itrial, disc_init, ite + 1, disc))
+		print_msg('Trial %03i\tdiscrepancy init: %10.7f\tnb ite: %i\tdiscrepancy end: %10.7f\n' % (itrial, disc_init, ite + 1, disc))
 		if disc < bestdisc:
 			bestdisc = disc
 			ibest    = itrial
@@ -8978,52 +8978,12 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	running_time(t_start)
 	print_end_msg('find_struct')
 
-# this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)
-def cml2_ori_collinearity(Ori):
-	from math  import sin, cos, pi
-	from numpy import array, linalg, matrix, zeros, power
-
-	# ori 3d sphere map to 2d plan
-	rad2deg = 180 / pi
-	deg2rad = 1 / rad2deg
-	nori    = len(Ori) // 4
-	lx, ly  = [], []
-	for n in xrange(nori):
-		ind     = n * 4
-		ph, th  = Ori[ind:ind+2]
-		ph     *= deg2rad
-		th     *= deg2rad
-		lx.append(sin(th) * sin(ph))
-		ly.append(sin(th) * cos(ph))
-
-	# direct least square fitting of ellipse (IEEE ICIP Pilu96)
-	D = zeros((nori, 6))
-	for c in xrange(nori):
-		D[c, :] = [lx[c]*lx[c], lx[c]*ly[c], ly[c]*ly[c], lx[c], ly[c], 1.0]
-	D = matrix(D)
-	S = D.transpose() * D
-	C = zeros((6, 6))
-	C[5, 5] = 0
-	C[0, 2] = -2
-	C[1, 2] = 1
-	C[2, 0] = -2
-	C = matrix(C)
-	val, vec = linalg.eig(S.getI() * C)
-	ell = vec[:, val.argmin()]
-	verr = D * ell
-	verr = power(verr, 2)
-	serr = sum(verr)
-
-	# sum squared error
-	return serr.getA()[0][0]
-
 
 # application find structure
 def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False, trials = 10):
 	from projection import cml_open_proj, cml_init_global_var, cml_head_log, cml_disc, cml_export_txtagls
-	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_rnd
+	from projection import cml_find_structure, cml_export_struc, cml_end_log, cml_init_rnd, cml2_ori_collinearity
 	from utilities  import print_begin_msg, print_msg, print_end_msg, start_time, running_time
-	from applications import cml2_ori_collinearity
 	from random     import seed, random
 	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_bcast
 	from mpi        import mpi_barrier, MPI_COMM_WORLD, mpi_reduce, MPI_FLOAT, MPI_INT, MPI_SUM
@@ -9054,12 +9014,11 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	flag = int(flag[0])
 	if flag != 0: sys.exit()
-	
+
 	N_start, N_stop = MPI_start_end(trials, ncpu, myid)
 	lrnd    = cml_init_rnd(trials, rand_seed)
 	out_dir = out_dir.rstrip('/')
 
-	
 	# Open and transform projections
 	Prj, Ori = cml_open_proj(stack, ir, ou, lf, hf, dpsi)
 
@@ -9113,17 +9072,17 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	ite       = ite.tolist()
 	coll      = mpi_reduce(coll, trials, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	coll      = coll.tolist()
-	
+
 	if myid == main_node:
 		score = [0.0] * trials
 		print_msg('\n')
 		for i in xrange(trials):
 			score[i] = disc_end[i] * (1 - coll[i])
-			print_msg('trials %03i\trnd %10i disc init: %10.7f\tnb ite: %i\tdisc end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
+			print_msg('Trial  %03i\trnd %10i discrepnacy init: %10.7f\tnb ite: %i\tdiscrepancy end: %10.7f\tcollinearity: %f\tscore: %f\n' % (i, lrnd[i], disc_init[i], ite[i] + 1, disc_end[i], coll[i], score[i]))
 			
 		ibest = disc_end.index(min(disc_end))
 		#ibest = score.index(min(score))
-		print_msg('\n Selected trial #%03i with disc %10.7f\n' % (ibest, disc_end[ibest]))
+		print_msg('\n Selected trial #%03i with discrepancy %10.7f\n' % (ibest, disc_end[ibest]))
 		os.system('cp %s/structure_%03i.hdf %s/structure.hdf' % (out_dir, ibest, out_dir))
 
 		running_time(t_start)

@@ -382,7 +382,7 @@ def plot_angles(agls):
 	return im
 
 # interface between the simplex function to refine the angles and the function to compute the discrepancy
-# not use yet
+# not used yet
 def cml_refine_agls_wrap(vec_in, data):
 	# vec_in: [phi_i, theta_i, psi_i]
 	# data:   [Prj, Ori, iprj]
@@ -402,7 +402,7 @@ def cml_refine_agls_wrap(vec_in, data):
 	return -disc
 
 # cml refines angles with simplex
-# not use yet
+# not used yet
 def cml_refine_agls(Prj, Ori, delta):
 	from copy      import deepcopy
 	from utilities import amoeba
@@ -459,7 +459,7 @@ def cml_disc(Prj, Ori, Rot):
 	weights = [1.0] * g_n_lines
 	com  = Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
 	disc = Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
-	
+
 	return disc
 
 # export the progress of the find_struc function
@@ -503,7 +503,7 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 	if v != int(v):
 		v    = int(v + 0.5)
 		dpsi = 180 // v
-	
+
 	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
 	g_d_psi    = dpsi
@@ -574,7 +574,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 		Util.mul_img(image, mask2D)
 
 		# sinogram
-		sino = cml_sinogram(image, diameter, dpsi) 
+		sino = cml_sinogram(image, diameter, dpsi)
 
 		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
 		ihf = min(int(2 * hf * diameter), diameter + (diameter + 1) % 2)
@@ -603,16 +603,16 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 
 		# store the projection
 		Prj.append(prj)
-	
+
 	return Prj, Ori
 
 # transform an image to sinogram (mirror include)
 def cml_sinogram(image2D, diameter, d_psi = 1):
 	from math         import cos, sin
 	from fundamentals import fft
-	
+
 	M_PI  = 3.141592653589793238462643383279502884197
-	
+
 	# prepare 
 	M = image2D.get_xsize()
 	# padd two times
@@ -632,7 +632,7 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	volft.fft_shuffle()
 
 	# get line projection
-	nangle = int(180.0 / d_psi)     
+	nangle = int(180.0 / d_psi)
 	dangle = M_PI / float(nangle)
 	e = EMData()
 	e.set_size(diameter, nangle, 1)
@@ -652,7 +652,7 @@ def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, 
 
 	# call global var
 	global g_anglst, g_n_prj, g_d_psi, g_n_anglst
-	
+
 	print_msg('Input stack                  : %s\n'     % stack)
 	print_msg('Number of projections        : %d\n'     % g_n_prj)
 	print_msg('Output directory             : %s\n'     % outdir)
@@ -681,7 +681,7 @@ def cml_end_log(Ori):
 def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
 	from projection import cml_export_progress, cml_disc, cml_export_txtagls
 	import time, sys
-	
+
 	# global vars
 	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
 
@@ -692,8 +692,8 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 		listprj = range(1, g_n_prj)
 		ocp[0]  = 0 
 	else:   listprj = range(g_n_prj)
-	
-	# to stop when the solution oscillate
+
+	# to stop when the solution oscillates
 	period_disc = [0, 0, 0]
 	period_ct   = 0
 	period_th   = 2
@@ -705,7 +705,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 		# loop over i prj
 		change = False
 		for iprj in listprj:
-			
+
 			# Store current the current orientation
 			ind          = 4*iprj
 			store_phi    = Ori[ind]
@@ -724,9 +724,9 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 						iw[ct] = c
 						ct += 1
 					c += 1
-			
+
 			# loop over all angles
-			best_disc = 1e20
+			best_disc = 1.0e20
 			best_psi  = -1
 			best_iagl = -1
 			for iagl in xrange(g_n_anglst):
@@ -754,13 +754,13 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 					# spin all psi
 					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
 					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
-					
+
 					# select the best
 					if res[0] < best_disc:
 						best_disc = res[0]
 						best_psi  = res[1]
 						best_iagl = iagl
-				
+
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, res[1], res[0], 'progress')
 				else:
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
@@ -781,18 +781,18 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 				Ori[ind+3]  = cur_agl
 
 			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
-	
+
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
 		disc = cml_disc(Prj, Ori, Rot)
-		
+
 		# display in the progress file
 		cml_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
 
 		if not change: break
 
-		# to stop when the solution oscillate
+		# to stop when the solution oscillates
 		period_disc.pop(0)
 		period_disc.append(disc)
 		if period_disc[0] == period_disc[2]:
@@ -800,13 +800,53 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			if period_ct >= period_th and min(period_disc) == disc:
 				angfile = open(outdir + '/' + outname, 'a')
 				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
-				angfile.write('Discrepancy periode: %s\n' % period_disc)
+				angfile.write('Discrepancy period: %s\n' % period_disc)
 				angfile.close()
 				break
 		else:
 			period_ct = 0
 
 	return Ori, disc, ite
+
+
+# this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)
+def cml2_ori_collinearity(Ori):
+	from math  import sin, cos, pi
+	from numpy import array, linalg, matrix, zeros, power
+
+	# ori 3d sphere map to 2d plan
+	rad2deg = 180.0 / pi
+	deg2rad = 1.0 / rad2deg
+	nori    = len(Ori) // 4
+	lx, ly  = [], []
+	for n in xrange(nori):
+		ind     = n * 4
+		ph, th  = Ori[ind:ind+2]
+		ph     *= deg2rad
+		th     *= deg2rad
+		lx.append(sin(th) * sin(ph))
+		ly.append(sin(th) * cos(ph))
+
+	# direct least square fitting of ellipse (IEEE ICIP Pilu96)
+	D = zeros((nori, 6))
+	for c in xrange(nori):
+		D[c, :] = [lx[c]*lx[c], lx[c]*ly[c], ly[c]*ly[c], lx[c], ly[c], 1.0]
+	D = matrix(D)
+	S = D.transpose() * D
+	C = zeros((6, 6))
+	C[5, 5] =  0
+	C[0, 2] = -2
+	C[1, 2] =  1
+	C[2, 0] = -2
+	C = matrix(C)
+	val, vec = linalg.eig(S.getI() * C)
+	ell = vec[:, val.argmin()]
+	verr = D * ell
+	verr = power(verr, 2)
+	serr = sum(verr)
+
+	# sum squared error
+	return serr.getA()[0][0]
 
 ## END COMMON LINES NEW VERSION ###############################################################
 ###############################################################################################
