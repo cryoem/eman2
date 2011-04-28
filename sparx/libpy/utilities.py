@@ -978,6 +978,7 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 		2. The convolution normalized
 	"""
 	from utilities import model_gauss
+	from EMAN2 import rsconvolution
 	nz = sharp_edge_image.get_ndim()
 	if(nz == 3):   kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size, kernel_size)
 	elif(nz == 2):  kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size)

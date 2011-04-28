@@ -1390,6 +1390,7 @@ def ali_vol_func_julio(params, data):
 		mask = cyclic_shift(data[2], int(round(params[3],0)), int(round(params[4],0)), int(round(params[5],0)))
 
 	if (data[5] > 1):
+		from EMAN2 import rsconvolution
 		gker = model_gauss(1, 7, 7, 7)
 		x = rsconvolution(x, gker)
 		x = Util.decimate(x, data[5], data[5], data[5])
