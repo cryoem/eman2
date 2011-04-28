@@ -468,7 +468,11 @@ INCLUDE_DIRECTORIES(.
             ${DJBFFT_INCLUDE_PATH}
             ${ACML_INCLUDE_PATH}
 			${BOOST_INCLUDE_PATH}
-			${PYTHON_INCLUDE_PATH}		
+			${PYTHON_INCLUDE_PATH}
+            
+            IF(WIN32)
+                ${FREETYPE_INCLUDE_PATH}
+            ENDIF(WIN32)		
             )
 
 IF(ENABLE_RT)
