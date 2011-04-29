@@ -1127,8 +1127,14 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 #			self.moving_box_data = [event.x(),event.y(),self.moving_box_data[2]]
 
 	def box_released(self,event,lc):
-		if self.mouse_handler == None: return
 		if lc == None or lc[0] == None: return
+		
+		if event.modifiers()&PyQt4.QtCore.Qt.ShiftModifier:
+			self.particle_window.remove_particle_image(lc[0],event,True)
+			self.particle_window.force_display_update()
+			return
+		
+		if self.mouse_handler == None: return
 		
 		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.x(),event.y())
 		except EMUnknownBoxType,data:
