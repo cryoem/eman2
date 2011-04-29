@@ -176,6 +176,7 @@ SET(INCLUDE_DIRS
 	/Developer/SDKs/MacOSX10.5.sdk/usr/X11/include
 	/usr/include 
 	/sw/include
+	/usr/include/freetype2
 	)
 
 SET(LIB_DIRS 
@@ -385,6 +386,7 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
+	CHECK_REQUIRED_LIB(FREETYPE freetype freetype/config/ftheader.h)
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
@@ -459,20 +461,17 @@ ENDIF(PYTHON_INCLUDE_PATH)
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 
 INCLUDE_DIRECTORIES(. 
-            ${EMAN_SOURCE_DIR} 
-			${EMAN_SOURCE_DIR}/libEM
-            ${GL_INCLUDE_PATH}
-            ${GSL_INCLUDE_PATH}
-            ${GSL_INCLUDE_PATH}/gsl
-            ${FFTW_INCLUDE_PATH}
-            ${DJBFFT_INCLUDE_PATH}
-            ${ACML_INCLUDE_PATH}
-			${BOOST_INCLUDE_PATH}
-			${PYTHON_INCLUDE_PATH}
-            
-            IF(WIN32)
-                ${FREETYPE_INCLUDE_PATH}
-            ENDIF(WIN32)		
+	    ${EMAN_SOURCE_DIR} 
+	    ${EMAN_SOURCE_DIR}/libEM
+	    ${GL_INCLUDE_PATH}
+	    ${GSL_INCLUDE_PATH}
+	    ${GSL_INCLUDE_PATH}/gsl
+	    ${FFTW_INCLUDE_PATH}
+	    ${DJBFFT_INCLUDE_PATH}
+	    ${ACML_INCLUDE_PATH}
+	    ${BOOST_INCLUDE_PATH}
+	    ${PYTHON_INCLUDE_PATH}
+	    ${FREETYPE_INCLUDE_PATH}		
             )
 
 IF(ENABLE_RT)
