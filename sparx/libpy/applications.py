@@ -6452,7 +6452,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 	#drop_image(vol, os.path.join(outdir,"ref_vol00.hdf"))
 	sym = "c1"
-	symref = "s"
+	symref = "s"+sym
 	ref_a= "P"
 
 
