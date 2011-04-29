@@ -48,7 +48,14 @@ EMBOXERRCT_DB = "bdb:emboxerrct"
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image> <image2>....
-This is a tilted - untilted particle particle picker, for use in RCT particle picking
+This is a tilted - untilted particle particle picker, for use in RCT particle picking. A tilted and untilted micrograph are loaded and the user picks a untilted particle and a corresponding tilted particle.
+After atleast 3 particle pairs are picked a transformation matrix is completed which can be used to predict the postion of the tilted or untilted particle from a untilted or tilted particle respectily.
+From the transform matrix, the tilt angle, tilit axis(with respect to Y) and the gamma angle are all computed. 
+The program uses the mediator pattern. The mediator, a RCTboxer object HAS A strategy(itself a strategy pattern), HAS A set of windows(in this case 2, but more can be added), HAS A control pannel, and
+HAS a particle list. The strategy object implements the strategy pattern(currently a maunal and a pair picker strategy are implemented). This code is in 'emrctstrategy'. The control pannel object HAS A strategy
+widget(so there must be one widget for each strategy) and the strategy GUI widget and the strategy itself are tightly coupled. The window object each HAS A EMBoxList, which is a composite of EMBox objects.
+(A class diagram is located in my lab notebook, page16)
+Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)

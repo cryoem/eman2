@@ -80,7 +80,7 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--eulerdata", "-e", type="string",help="File for Eulerdata, if none is given, data is read from the DB.",default=None)
+	parser.add_option("--eulerdata", "-e", type="string",help="File for Eulerdata, Ryan style, if none is given, data is read from the DB.",default=None)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options

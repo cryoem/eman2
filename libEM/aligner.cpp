@@ -248,7 +248,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		t.set_trans(cur_trans);
 		cf->set_attr("xform.align2d",&t);
 	}
-
 	return cf;
 }
 
@@ -2147,6 +2146,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score = 0.0f;
+			// Dotrans is effectievly ignored for tomography
 			if(dotrans || tomography){
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
 #ifdef EMAN2_USING_CUDA	

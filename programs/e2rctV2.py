@@ -123,23 +123,23 @@ def main():
 				x = Transform()                
 				x.set_rotation({"type":"eman", "az":p["alpha"], "alt":tiltangle})
 				tiltimgs[i].set_attr("xform.projection", x)
-				tiltimgs[i].write_image("%srctclasses_%02d" % (options.path,avnum), inum)
-				# Now do the reconstruction
+				
+			# Now do the reconstruction
 			if options.align:
-				imglist = EMData.read_images("%srctclasses_%02d" % (options.path,avnum))
-				imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))
-				for r in xrange(len(imglist)):
-					aligned = imglist[r].align("translational", imglist[r-1], {"maxshift":options.maxshift}) 
-					aligned.write_image("%srctclassesali_%02d" % (options.path,avnum), r)	            
-				if options.verbose>0: print "Reconstructing: %srctreconali_%02d" % (options.path,avnum)
-				run("e2make3d.py --input=%srctclassesali_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
+				centered_particles = center_particles(tiltimgs, avnum, 1)
+				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
+					centered_particles[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
 			else:
-				if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
-				run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
-	#now make an averaged image
+				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
+					tiltimgs[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
+				#imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))
+				
+			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
+			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
+			#now make an averaged image
 			if options.avgrcts:
 				if firstrecon:
-					run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='frc' --dotrans=0" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
+					run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='ccc.tomo'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
 					arlist.append("%srctreconali_%02d" % (options.path,avnum))
 				else:
 					tmp = EMData()
@@ -164,8 +164,29 @@ def main():
 		avged = avgr.finish()
 		avged.write_image("%srctrecon_avg" % (options.path), 0)
   
-	db_close_dict(options.classavg)    
-	        
+	db_close_dict(options.classavg)
+	
+def center_particles(particles, avnum, iterations):
+	if options.verbose>0: print "Centering tilted particles"
+	centeredimgs = []
+	radius = particles[0].get_attr("nx")/2 # nx = ny, always.....
+	for it in xrange(iterations):
+		ptclavgr = Averagers.get('mean')
+		# Make average
+		for img in particles:
+			ptclavgr.add_image(img)
+		ptclavg = ptclavgr.finish()
+		ptclavg.process_inplace("math.rotationalaverage")
+		ptclavg.write_image("%scentref_%02d" % (options.path,avnum), it)
+		#align translationally align particles
+		for img in particles:
+			#img.process_inplace("mask.noise", {"dx":0,"dy":0,"outer_radius":radius})
+			centeredimgs.append(img.align("translational", ptclavg, {"maxshift":options.maxshift}))
+		particles = centeredimgs # Change the reference (the source data will not be affected)
+		centeredimgs = []
+		
+	return particles # Not the same as was passed in (rereferenced)
+	
 def run(command):
 	"Execute a command with optional verbose output"
 	global options		    

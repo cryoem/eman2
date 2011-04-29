@@ -710,7 +710,8 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 #	def closeEvent(self,event):
 #		print "EM3DSymModel.closeEvent()!"
 #		self.close_image_display()
-		
+
+# Added capibility to read Euler angle files, Ryan style	
 	def generate_current_display_list(self,force=False): 
 		self.init_basic_shapes()
 		

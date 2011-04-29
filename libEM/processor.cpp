@@ -8396,7 +8396,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 #ifdef EMAN2_USING_CUDA
 	if(image->isrodataongpu()){	
 	        //cout << "using CUDA xform" << endl;
-		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize()); 
+		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict()); 
 		float * m = new float[12];
 		Transform inv = t->inverse();
 		inv.copy_matrix_into_array(m);
