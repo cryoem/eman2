@@ -1834,9 +1834,9 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	if myid == main_node:
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
-		print_msg("X search range              : %i\n"%(xrng))
-		print_msg("Y search range              : %i\n"%(yrng))
-		print_msg("Translational step          : %i\n"%(step))
+		print_msg("X search range              : %f\n"%(xrng))
+		print_msg("Y search range              : %f\n"%(yrng))
+		print_msg("Translational step          : %f\n"%(step))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
 		print_msg("CTF correction              : %s\n"%(CTF))
