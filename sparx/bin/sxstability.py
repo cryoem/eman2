@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+#
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
+
+
+import os
+import global_def
+from   global_def     import *
+from   user_functions import *
+from   optparse       import OptionParser
+import sys
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = progname + " stack averages --th_grp"
+	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--th_grp",       type="float",     default=5,         help="mininum number of objects to consider for stability")
+	parser.add_option("--num_ali",      type="float",     default=5,         help="mininum number of objects to consider for stability")
+	(options, args) = parser.parse_args()
+	if len(args) != 2:
+    		print "usage: " + usage
+    		print "Please run '" + progname + " -h' for detailed options"
+	else:
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+		
+		global_def.BATCH = True
+
+		data = EMData.read_images(args[0])
+		averages = EMData.read_images(args[1])
+
+		nx = data[0].get_xsize()
+		if ou == -1: ou = nx/2-2
+		from utilties import model_circle
+		mask = model_circle(ou, nx, nx)
+
+		for i in xrange(len(averages)):
+			print "Average %3d:"%i
+			mem = averages[i].get_attr('members')
+			if len(mem) < options.num_ali:
+				print "Group size too small to consider for stability."
+			else:
+				class_data = [data[im] for im in mem]
+
+				all_ali_params = []
+				for ii in xrange(num_ali):
+					ali_params = []
+					dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2 1], [2 1], [1 0.5], 90.0, 30, 0.3, -1)
+					for im in class_data:
+						alpha, sx, sy, mirror, scale = get_params2D(im)
+						ali_params.extend([alpha, sx, sy, mirror])
+					all_ali_params.append(ali_params)
+				stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 10000.0)
+				print mirror_consistent_rate, err
+
+
+		global_def.BATCH = False
+
+
+if __name__ == "__main__":
+	main()
