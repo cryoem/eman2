@@ -154,7 +154,6 @@ ligand/no-ligand contrast in individual images:
 				popt=parsemodopt(options.process)
 				ptcl.process_inplace(popt[0],popt[1])
 			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
-#			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]})
 			
 			statn.append(j)
 			if options.ref1 and options.ref2 :
@@ -166,7 +165,7 @@ ligand/no-ligand contrast in individual images:
 				cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
 				cmp2=ptcl2.cmp(simcmp[0],projc2,simcmp[1])
 				result=cmp1-cmp2
-				if options.debug: display((ptcl2,projc,projc2))
+				if options.debug: display((ptcl2,projc,projc2,proj))
 				
 				statr.append(result)
 				statr2.append((cmp1+cmp2,cmp1-cmp2))
