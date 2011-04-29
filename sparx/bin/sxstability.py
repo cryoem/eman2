@@ -42,8 +42,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack averages --th_grp"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--th_grp",       type="float",     default=5,         help="mininum number of objects to consider for stability")
-	parser.add_option("--num_ali",      type="float",     default=5,         help="mininum number of objects to consider for stability")
+	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
+	parser.add_option("--th_grp",       type="int",     default=5,         help=" mininum number of objects to consider for stability")
+	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -52,38 +53,54 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		
+
+		from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+		sys.argv = mpi_init(len(sys.argv),sys.argv)
+		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+		myid = mpi_comm_rank(MPI_COMM_WORLD)
+
+		from development import within_group_refinement
+		from pixel_error import multi_align_stability		
+
 		global_def.BATCH = True
 
 		data = EMData.read_images(args[0])
 		averages = EMData.read_images(args[1])
 
 		nx = data[0].get_xsize()
+		ou = options.ou
+		num_ali = options.num_ali
 		if ou == -1: ou = nx/2-2
-		from utilties import model_circle
+		from utilities import model_circle, get_params2D, set_params2D
 		mask = model_circle(ou, nx, nx)
 
+		if myid == 0:
+			print "%12s %20s %20s %20s %20s"%("", "Mirror cons rate", "Pixel error", "Size of stable set", "Size of set")
 		for i in xrange(len(averages)):
-			print "Average %3d:"%i
-			mem = averages[i].get_attr('members')
-			if len(mem) < options.num_ali:
-				print "Group size too small to consider for stability."
-			else:
-				class_data = [data[im] for im in mem]
-
-				all_ali_params = []
-				for ii in xrange(num_ali):
-					ali_params = []
-					dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2 1], [2 1], [1 0.5], 90.0, 30, 0.3, -1)
-					for im in class_data:
-						alpha, sx, sy, mirror, scale = get_params2D(im)
-						ali_params.extend([alpha, sx, sy, mirror])
-					all_ali_params.append(ali_params)
-				stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 10000.0)
-				print mirror_consistent_rate, err
-
+			if i%number_of_proc == myid:
+				mem = averages[i].get_attr('members')
+				mem = map(int, mem)
+				if len(mem) < options.num_ali:
+					print "Average %3d: Group size too small to consider for stability."%i
+				else:
+					class_data = [data[im] for im in mem]
+					for im in class_data: set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+					all_ali_params = []
+					for ii in xrange(num_ali):
+						ali_params = []
+						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2, 1], [2, 1], [1, 0.5], 90.0, 30, 0.3, CUDA = False, R = -1)
+						for im in class_data:
+							alpha, sx, sy, mirror, scale = get_params2D(im)
+							ali_params.extend([alpha, sx, sy, mirror])
+						all_ali_params.append(ali_params)
+					stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 1.0)
+					print "Average %3d: %20.3f %20.3f %20d %20d"%(i, mirror_consistent_rate, err, len(stable_set), len(mem))
 
 		global_def.BATCH = False
+
+		from mpi import mpi_finalize
+		mpi_finalize()
+
 
 
 if __name__ == "__main__":
