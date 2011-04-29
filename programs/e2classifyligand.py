@@ -73,6 +73,8 @@ ligand/no-ligand contrast in individual images:
 	parser.add_option("--badgroup",action="store_true",default=False,help="Split the data into 4 groups rather than 2. The extra two groups contain particles more likely to be bad.")
 	parser.add_option("--badqualsig",type="float",help="When identifying 'bad' particles, particles with similarities >mean+sigma*badqualsig will be considered bad. Default 0.5", default=.5)
 	parser.add_option("--badsepsig",type="float",help="When identifying 'bad' particles, if s1/s2 are the similarities to reference 1/2, then those where |s1-s2| < sigma*badsepsig will be excluded. Default 0.25 ", default=0.25)
+	parser.add_option("--postfix",type="string",default="",help="This string will be appended to each set name to help differentiate the results from multiple runs")
+	parser.add_option("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	
 	#parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	#parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
@@ -120,7 +122,7 @@ ligand/no-ligand contrast in individual images:
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
 	out=file("plot.ligand.txt","w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
-	for i in range(nref):
+	for i in range(nref-1,-1,-1):
 		if options.verbose>1 : print "--- Class %d"%i
 		
 		if options.maskfile : 
@@ -129,9 +131,9 @@ ligand/no-ligand contrast in individual images:
 		if options.ref1 and options.ref2 :
 #			print i,eulers[i]
 			proj=ref1.project("standard",{"transform":eulers[i]})
-			proj.process_inplace("normalize")
+#			proj.process_inplace("normalize")
 			proj2=ref2.project("standard",{"transform":eulers[i]})
-			proj2.process_inplace("normalize")
+#			proj2.process_inplace("normalize")
 		
 
 		#p1=[]
@@ -152,14 +154,19 @@ ligand/no-ligand contrast in individual images:
 				popt=parsemodopt(options.process)
 				ptcl.process_inplace(popt[0],popt[1])
 			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
+#			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]})
 			
 			statn.append(j)
 			if options.ref1 and options.ref2 :
+				ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
 				projc=proj.process("xform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
 				projc2=proj2.process("xform",{"transform":ptclxf})
-				cmp1=ptcl.cmp(simcmp[0],projc, simcmp[1])
-				cmp2=ptcl.cmp(simcmp[0],projc2,simcmp[1])
+				projc.process_inplace("normalize.toimage",{"to":ptcl2})
+				projc2.process_inplace("normalize.toimage",{"to":ptcl2})
+				cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
+				cmp2=ptcl2.cmp(simcmp[0],projc2,simcmp[1])
 				result=cmp1-cmp2
+				if options.debug: display((ptcl2,projc,projc2))
 				
 				statr.append(result)
 				statr2.append((cmp1+cmp2,cmp1-cmp2))
@@ -281,35 +288,35 @@ ligand/no-ligand contrast in individual images:
 				# or if the quality difference between images is within 1/4 sigma of zero
 				if statall[i][2][0]>avgq+avgqsq*options.badqualsig or fabs(statall[i][1])<avgcsq*options.badsepsig :
 					if statall[i][1]<0 : 
-						write_particle(args[0],"_ref1_bad",i)		# if the particle was more similar to ref1
+						write_particle(args[0],"_ref1_bad"+options.postfix,i)		# if the particle was more similar to ref1
 						counts[4]+=1
 					else : 
-						write_particle(args[0],"_ref2_bad",i)						# if the particle was more similar to ref2
+						write_particle(args[0],"_ref2_bad"+options.postfix,i)						# if the particle was more similar to ref2
 						counts[5]+=1
 				else :
 					if statall[i][1]<0 : 
-						write_particle(args[0],"_ref1_good",i)		# if the particle was more similar to ref1
+						write_particle(args[0],"_ref1_good"+options.postfix,i)		# if the particle was more similar to ref1
 						counts[2]+=1
 					else : 
-						write_particle(args[0],"_ref2_good",i)						# if the particle was more similar to ref2
+						write_particle(args[0],"_ref2_good"+options.postfix,i)						# if the particle was more similar to ref2
 						counts[3]+=1
 
 
 		for i in statall:
 			if statall[i][1]<0 : 
-				write_particle(args[0],"_ref1",i)		# if the particle was more similar to ref1
+				write_particle(args[0],"_ref1"+options.postfix,i)		# if the particle was more similar to ref1
 				counts[0]+=1
 			else : 
-				write_particle(args[0],"_ref2",i)						# if the particle was more similar to ref2
+				write_particle(args[0],"_ref2"+options.postfix,i)						# if the particle was more similar to ref2
 				counts[1]+=1
 	if options.maskfile:
 		for i in statall:
 			if statall[i][0]==None : continue
 			if statall[i][0]<0:
-				write_particle(args[0],"_low",i)		# low mask density
+				write_particle(args[0],"_low"+options.postfix,i)		# low mask density
 				counts[6]+=1
 			else : 
-				write_particle(args[0],"_high",i)		# high mask density
+				write_particle(args[0],"_high"+options.postfix,i)		# high mask density
 				counts[7]+=1
 
 	print counts

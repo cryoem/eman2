@@ -58,6 +58,7 @@ def main():
 
 	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
+	parser.add_option("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_option("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_option("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
@@ -108,7 +109,7 @@ def main():
 			if not file_exists(i):
 				print "%s doesn't exist" %i
 				sys.exit(1)
-			display_file(i,app)
+			display_file(i,app,options.singleimage)
 			
 	if options.fullrange:
 		revert_full_range(fullrangeparms)
@@ -209,8 +210,8 @@ def getmxim(fsp,fsp2,clsnum):
 	imgs=[i[0] for i in imgs]
 	return imgs
 
-def display_file(filename,app):
-	w = EMWidgetFromFile(filename,application=app)
+def display_file(filename,app,force_2d=False):
+	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
 	w.setWindowTitle(get_file_tag(filename))
 	
 	app.show_specific(w)

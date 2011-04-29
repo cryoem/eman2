@@ -511,7 +511,7 @@ def display(img,force_2d=False,force_plot=False):
 			d[0]=img
 		d.close()
 	#	os.system("v2 /tmp/img.hed")
-		os.system("e2display.py "+fsp)
+		os.system("e2display.py --singleimage "+fsp)
 
 def euler_display(emdata_list):
 	if len(emdata_list) == 0: return

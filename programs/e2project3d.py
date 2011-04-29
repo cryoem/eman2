@@ -168,7 +168,8 @@ class EMParallelProject3D:
 		for idx,image in rslts.items():
 			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
 			image["model_id"]=self.modeln
-			image.write_image(self.options.outfile,idx+self.start)
+			if self.options.append : image.write_image(self.options.outfile,-1)
+			else : image.write_image(self.options.outfile,idx+self.start)
 		
 		return True
 			
@@ -343,7 +344,8 @@ def generate_and_save_projections(options, data, eulers, smear=0,modeln=0):
 
 		p["model_id"]=modeln
 		try: 
-			p.write_image(options.outfile,-1)
+			if options.append: p.write_image(options.outfile,-1)
+			else : p.write_image(options.outfile,i)
 		except:
 			print "Error: Cannot write to file %s"%options.outfile
 			exit(1)
@@ -386,7 +388,7 @@ def check(options, verbose=0):
 		error = True
 		
 	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
-		if ( not options.force ):
+		if ( not options.force and not options.append):
 			if verbose>0:
 				print "Error: output file exists, use -f to overwrite or -a to append. No action taken"
 			error = True
