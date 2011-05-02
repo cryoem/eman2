@@ -71,7 +71,6 @@ def main():
 
 	window = EMSymViewerWidget()
 	explorer = EMSimmxExplorer(window)
-	explorer.under_qt_control = True
 	window.model = explorer
 	
 	if len(args) > 0: explorer.set_simmx_file(args[0])

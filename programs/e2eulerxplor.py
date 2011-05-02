@@ -102,7 +102,6 @@ class EMEulerWidget(EMSymViewerWidget):
 			
 		#Replacing the EM3DSymModel that was created in the base class
 		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
-		euler_explorer.under_qt_control = True #TODO: still needed?
 		self.model = euler_explorer
 		euler_explorer.regen_dl()
 

@@ -662,7 +662,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		window = EM3DGLWidget()
 		em_lights = EMLights(window)
-		em_lights.under_qt_control = True #TODO: still necessary?
 		window.set_model(em_lights)
 		self.emit(QtCore.SIGNAL("launching_module"),"EMLights",window)
 		get_application().show_specific(window)
