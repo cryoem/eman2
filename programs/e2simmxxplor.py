@@ -38,12 +38,12 @@ from PyQt4 import QtGui,QtCore
 from valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
-from emimagemx import EMImageMXModule
-from emplot2d import EMPlot2DModule
+from emimagemx import EMImageMXWidget
+from emplot2d import EMPlot2DWidget
 from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
 from emapplication import EMApp, get_application
 from emglobjects import EM3DGLWidget
-from emimage3dsym import EM3DSymModel,EMSymInspector
+from emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
 from EMAN2 import *
 	
 def main():
@@ -68,9 +68,11 @@ def main():
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	window = EM3DGLWidget() #TODO: see if this should be a subclass of EMSymViewerWidget instead
+
+	window = EMSymViewerWidget()
 	explorer = EMSimmxExplorer(window)
-	window.set_model(explorer)
+	window.model = explorer
+	
 	if len(args) > 0: explorer.set_simmx_file(args[0])
 	if len(args) > 1: explorer.set_projection_file(args[1])
 	if len(args) > 2: explorer.set_particle_file(args[2])
@@ -97,7 +99,7 @@ class EMSimmxExplorer(EM3DSymModel):
 		self.current_particle = 0 # keep track of the current particle
 		self.current_projection = None # keep track of the current projection
 		self.projections = None # a list of the projections - the initial design keeps them all in memory - this could be overcome
-		self.mx_display = None # mx display module for displaying projection and aligned particle
+		self.mx_display = None # mx display widget for displaying projection and aligned particle
 		self.frc_display = None # 2d plot for displaying comparison between particle and projection
 		self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymModel.make_sym_dl_lis
 		
@@ -184,12 +186,12 @@ class EMSimmxExplorer(EM3DSymModel):
 		self.current_projection = object_number
 		resize_necessary = False
 		if self.mx_display == None:
-			self.mx_display = EMImageMXModule()
+			self.mx_display = EMImageMXWidget()
 			QtCore.QObject.connect(self.mx_display,QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
 			resize_necessary = True
 
 		if self.frc_display == None:
-			self.frc_display = EMPlot2DModule()
+			self.frc_display = EMPlot2DWidget()
 #			QtCore.QObject.connect(self.frc_display,QtCore.SIGNAL("module_closed"),self.on_frc_display_closed)
 
 		self.update_display(False)
