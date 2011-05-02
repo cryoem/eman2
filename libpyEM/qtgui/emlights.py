@@ -1434,6 +1434,5 @@ if __name__ == '__main__':
 	window = EM3DGLWidget()
 	em_lights = EMLights(window)
 	window.set_model(em_lights) 
-	em_lights.under_qt_control = True #TODO: still necessary?
 	em_app.show()
 	em_app.execute()

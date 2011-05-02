@@ -136,7 +136,6 @@ class EMPDBValWidget(QtGui.QWidget):
 	def __set_model_contexts(self,model):
 		model.set_gl_widget(self.viewer_window)
 		model.set_dont_delete_parent() # stops a RunTimeError
-		model.under_qt_control = True #TODO: still needed?
 	
 	def browse_iso(self):
 		em_selector = EMSelectorDialog()

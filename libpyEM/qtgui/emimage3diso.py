@@ -720,9 +720,6 @@ if __name__ == '__main__':
 	iso_model = EMIsosurfaceModel(window, test_image_3d(1,size=(64,64,64)))
 	window.set_model(iso_model)
 	window.updateGL()
-		
-	#TODO: reconsider design so this line isn't necessary
-	iso_model.under_qt_control = True	
 	
 	app.show()
 	app.execute()

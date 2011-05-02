@@ -127,7 +127,6 @@ class EMPlot2DWidget(EMGLWidget):
 		EMGLWidget.__init__(self, winid=winid)
 		self.setFormat(fmt)
 		self.resize(480,480)
-		self.under_qt_control = True
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		
 		self.axes={}

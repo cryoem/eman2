@@ -62,7 +62,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	def add_model(self,model,num=0):
 		model.set_gl_widget(self)
 		model.set_dont_delete_parent() # stops a RunTimeError
-		model.under_qt_control = True
 		
 		if self.viewables: 
 			#TODO: find a better way to work with cameras
@@ -78,10 +77,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
-	#def __del__(self):
-		##if not self.dont_delete_parent:
-			##self.qt_parent.deleteLater()
-		#self.core_object.deleteLater()
 		
 	def __init__(self, parent=None, image=None,application=None,winid=None):
 		EMImage3DWidget.allim[self] = 0
@@ -134,10 +129,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.set_data(image)
 		
 		#From get_qt_widget...
-		for i in self.viewables:
-			i.set_gl_widget(self)
-			i.under_qt_control = True
-		
 		if isinstance(self.data,EMData):
 			self.set_cam_z_from_fov_image(self.get_fov(),self.data)
 		
@@ -850,6 +841,5 @@ if __name__ == '__main__':
 	else :
 		a=EMData(sys.argv[1])
 		window.set_data(a,sys.argv[1])
-
 	em_app.show()
 	em_app.execute()

@@ -611,9 +611,6 @@ if __name__ == '__main__':
 		a=EMData(sys.argv[1])
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
-
-	#TODO: reconsider design so these lines aren't necessary
-	slice_model.under_qt_control = True
 		
 	em_app.show()
 	em_app.execute()

@@ -723,7 +723,6 @@ if __name__ == '__main__':
 	em_app = EMApp()
 	window = EM3DGLWidget()
 	vol_model = EMVolumeModel(window)
-	vol_model.under_qt_control = True #TODO: still needed?
 	window.set_model(vol_model)
 	
 	if len(sys.argv)==1 : 

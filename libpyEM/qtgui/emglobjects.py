@@ -2024,7 +2024,6 @@ class EM3DModel(QtCore.QObject):
 		self.gl_widget = weakref.ref(gl_widget)	#A GL context must exist before OpenGL statements are used, so the constructor requires this.
 		
 		#TODO: Figure out which of these is needed
-		self.under_qt_control = False
 		self.emit_events = False
 		self.disable_inspector = False
 		
@@ -2230,7 +2229,7 @@ class EM3DModel(QtCore.QObject):
 	def updateGL(self):
 		if self.busy:
 			return
-		if self.get_gl_widget() != None and self.under_qt_control:
+		if self.get_gl_widget() != None:
 			self.get_gl_widget().updateGL()
 #		raise DeprecationWarning
 	def update_inspector_texture(self):

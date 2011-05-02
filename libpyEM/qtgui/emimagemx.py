@@ -377,13 +377,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		self.reroute_delete = False
 	
-	def qt_parent_destroyed(self,object):
-		self.under_qt_control = False
-	
 	def __del__(self):
 		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
-		if self.under_qt_control:
-			self.deleteLater()
+		self.deleteLater()
 
 	def get_emit_signals_and_connections(self):
 		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
@@ -1942,7 +1938,7 @@ class EMGLScrollBar:
 		self.target().updateGL()
 		
 class EMImageInspectorMX(QtGui.QWidget):
-	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
+	def __init__(self,target, allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
 		

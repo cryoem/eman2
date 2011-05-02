@@ -1166,7 +1166,6 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.cam.setCamTrans("default_z",-100)
 		
 		sym_model = EM3DSymModel(self,eulerfilename=self.filename)
-		sym_model.under_qt_control = True #TODO: still needed?
 		self.model = sym_model
 		sym_model.set_symmetry(sym)
 		sym_model.regen_dl()

@@ -248,13 +248,9 @@ class EMImage2DWidget(EMGLWidget):
 		if image : self.set_data(image)
 #		else:self.__load_display_settings_from_db()
 	
-	def qt_parent_destroyed(self,object):
-		self.under_qt_control = False
-	
 #	def __del__(self):
 #		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
-#		if self.under_qt_control:
-#			self.qt_parent.deleteLater()
+#		self.qt_parent.deleteLater()
 		
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
@@ -358,7 +354,7 @@ class EMImage2DWidget(EMGLWidget):
 		return [data.get_xsize(),data.get_ysize(),data.get_zsize()]
 	
 #	def updateGL(self):
-#		if self.gl_widget != None and self.under_qt_control:
+#		if self.gl_widget != None:
 #			self.gl_widget.updateGL()
 		
 	def set_frozen(self,frozen):
