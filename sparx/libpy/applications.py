@@ -6619,7 +6619,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo = None
 
 	sym = "c1"
-	symref = "s"
+	symref = "s" + sym
 	ref_a= "P"
 
 	xrng        = get_input_from_string(xr)
