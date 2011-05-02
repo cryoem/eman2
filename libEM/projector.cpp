@@ -886,9 +886,9 @@ EMData *StandardProjector::project3d(EMData * image) const
 			float * m = new float[12];
 			t3d->copy_matrix_into_array(m);
 			image->bindcudaarrayA(true);
-			EMData* e = new EMData(0,0,image->get_xsize(),image->get_ysize(),1);
-			//EMData *e = new EMData();
-			//e->set_size(image->get_xsize(), image->get_ysize(), 1);
+			//EMData* e = new EMData(0,0,image->get_xsize(),image->get_ysize(),1);
+			EMData *e = new EMData();
+			e->set_size_cuda(image->get_xsize(), image->get_ysize(), 1);
 			e->rw_alloc();
 			standard_project(m,e->getcudarwdata(), e->get_xsize(), e->get_ysize());
 			image->unbindcudaarryA();
@@ -896,6 +896,9 @@ EMData *StandardProjector::project3d(EMData * image) const
 		
 			e->update();
 			e->set_attr("xform.projection",t3d);
+			e->set_attr("apix_x",(float)image->get_attr("apix_x"));
+			e->set_attr("apix_y",(float)image->get_attr("apix_y"));
+			e->set_attr("apix_z",(float)image->get_attr("apix_z"));
 			//e_>copy_from_device();
 			if(t3d) {delete t3d; t3d=0;}
 			return e;

@@ -242,7 +242,7 @@ EMData *EMData::do_ift_cuda()
 	}
 
 	int offset = is_fftodd() ? 1 : 2;
-	EMData* dat = new EMData(0,0,nx-offset,ny,nz);
+	EMData* dat = new EMData(0,0,nx-offset,ny,nz,attr_dict);
 	if(!dat->rw_alloc()) throw ImageFormatException("Couldn't allocate memory.");
 	
 	if(cudarwdata == 0){copy_to_cuda();}

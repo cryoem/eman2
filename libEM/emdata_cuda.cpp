@@ -72,7 +72,10 @@ bool EMData::copy_to_cuda()
 	if(rw_alloc()) {
 		memused += num_bytes;
 		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
-		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
+		if ( error != cudaSuccess) {
+			cout << rdata << " " << cudarwdata << endl;
+			throw UnexpectedBehaviorException( "CudaMemcpy (host to device) failed:" + string(cudaGetErrorString(error)));
+		}
 	}else{return false;}
 	free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
 	

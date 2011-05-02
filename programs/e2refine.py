@@ -452,7 +452,7 @@ def get_projection_cmd(options,check=False):
 		model = options.filtered_model
 		
 	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projfile,options.orientgen)
-	
+
 	if options.parallel: e2projcmd += " --parallel=%s" %options.parallel
 	
 	if ( check ):

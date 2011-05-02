@@ -728,10 +728,11 @@ def main():
 	
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
-	
+
 	ret=[None for i in reflist]
 #	target.write_image("dbug.hdf",-1)
 	for i,r in enumerate(reflist):
+		
 		if r["sigma"]==0 : continue				# bad reference
 		if subset!=None and i not in subset : 
 			ret[i]=None
