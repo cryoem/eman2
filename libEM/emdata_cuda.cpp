@@ -77,7 +77,8 @@ bool EMData::copy_to_cuda()
 			throw UnexpectedBehaviorException( "CudaMemcpy (host to device) failed:" + string(cudaGetErrorString(error)));
 		}
 	}else{return false;}
-	free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
+	//Temporaly disabled, causes LOTS of bugs......
+	//free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
 	
 	return true;
 }
