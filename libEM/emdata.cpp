@@ -321,7 +321,10 @@ EMData::~EMData()
 	free_memory();
 
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata){rw_free();}
+	if(cudarwdata){
+		//cout << "rw free on object destory" << endl;
+		rw_free();
+	}
 	if(cudarodata){ro_free();}
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;

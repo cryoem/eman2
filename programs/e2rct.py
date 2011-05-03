@@ -33,10 +33,9 @@
 
 
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict
+from EMAN2db import db_close_dict
 from optparse import OptionParser
-from os import system, unlink, getcwd
-from glob import glob
+from os import system
 
 def main():
   
@@ -44,137 +43,180 @@ def main():
 	usage = """%prog [options] 
 	
 	This program is designed to generate a reconstruction via the random conical tilt technique.
-	Starting from a tilted and untilted dataset. The program interfaces with e2refine2d.py to 
+	Starting from a tilted and untilted dataset. Thce program interfaces with e2refine2d.py to 
 	find the azimuthal angles from the untilited dataset and e2make3d.py to make the 3D model
 	from the untilted dataset combined with the azimuthal angles and stage tilt. A model is made
 	foreach e2refine2d.py class(used for alignment)"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	#options associated with e2rct.py
+	#options associated with e2rctV2.py
 	parser.add_option("--path",type="string",default=None,help="Path for the rct reconstruction, default=auto")
 	parser.add_option("--tiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
-#	parser.add_option("--untiltdata",type="string",default=None,help="Name of the untilted dataset, default=auto")
-	parser.add_option("--simmx",type="string",default=None,help="Name of simmex file created by e2refine2d.py, default=auto")
+	parser.add_option("--untiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
+	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
 	parser.add_option("--stagetilt",type="float",default=None,help="Amount of tiliting of the cryo stage, default=auto")
-	parser.add_option("--align",type="string",help="Switch on image alignment (set to 1 for True)", default=None) 
-	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="frc")
+	parser.add_option("--careject",type="int",default=None,action="append",help="class averages to reject, default=None")
+	parser.add_option("--align", action="store_true", help="Switch on image alignment.",default=False)
+	parser.add_option("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph.",default=False)
 	parser.add_option("--maxshift",type="int",help="Maximun amout to shift the images during alignment", default=2)
-        parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections in each reconstruction, default=auto")
+	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto")
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
-	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
+	# Options for averaging RCTs
+	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
+	parser.add_option("--aligngran",type="float",default=30.0,help="Fineness of global search in e2align3d.py, default=30.0")
+	parser.add_option("--weightrecons",type="int",default=1,help="weight reconstructions by ptcl_repr (before averaging), default=1")
+	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
+
 	global options
 	(options, args) = parser.parse_args()
-	
+
 	if not options.path:
 		options.path = "bdb:rct/"
 	else:
 		options.path = "bdb:"+options.path+"/"
-	
-	if options.stagetilt:
-		tiltangle = options.stagetilt
-	else:
-		print "Error, stagetilt parameter not supplied! Crashing!"
-		exit(1)
 	    
 	if not options.tiltdata:
-		print "Error, tiltdata needed! Crashing!"		                #print aligned.get_attr("xform.align2d").get_params("2d")
+		print "Error, tiltdata needed! Crashing!"
 		exit(1)
 	
-	if not options.simmx:
-		print "Error, simmx needed! Crashing!"
-		exit(1)
-	
+	if not options.classavg:
+		print "Error, classavg needed! Crashing!"
+		exit(1)	    
+
+	#set up the preprocesses (otherwise bugs occur)
+	preprocess = ""
+	if options.preprocess != None:
+		for p in reversed(options.preprocess):
+			preprocess = ("--preprocess=%s " % str(p)) + preprocess 
+		
 	# Now get azimuthal data
-	smxdb = db_open_dict(options.simmx)
-	data = []
-	
-	for r in xrange(smxdb[0].get_attr('ny')):
-		bestscore = 1
-		bestclass = 0
-		for c in xrange(smxdb[0].get_attr('nx')):
-			score = smxdb[0].get_value_at(c, r)
-			if score < bestscore:
-				bestscore = score
-				bestclass = c
-		if options.verbose >1: print "The bestscore is: %f for class %d" % (bestscore, bestclass)        
-		data.append((bestclass, smxdb[3].get_value_at(bestclass, r)))
-		                #print aligned.get_attr("xform.align2d").get_params("2d")
+	cadb = EMData.read_images(options.classavg)
 	tiltimgs = EMData.read_images(options.tiltdata)
 	
-	# First delete any previous dicts and images from previous runs (prevents any data 'merging')
-	for c in xrange(smxdb[0].get_attr('nx')):
-		try:
-			for f in glob("%s/%sEMAN2DB/rctclasses_%02d*" % (getcwd(), options.path[4:len(options.path)],c)):
-				os.unlink(f)
-		except:
-			pass
-	   
-	# Now make the stacks and write the transforms
-	classpop = [0] * smxdb[0].get_attr('nx')
-	for r in xrange(smxdb[0].get_attr('ny')):
-		t = Transform()
-		t.set_rotation({"type":"eman", "az":data[r][1], "alt":tiltangle})
-		tiltimgs[r].set_attr("xform.projection", t)
-		#print tiltimgs[i], classpop[data[i][0]], data[i][0]
-		tiltimgs[r].write_image("%srctclasses_%02d" % (options.path,data[r][0]), classpop[data[r][0]])
-		classpop[data[r][0]] += 1
-	    
-	db_close_dict(options.simmx)
-	    	    	
-	# For each class average, sort the images by azimuthal angle, align to nearest neighbor, and reconstruct    	    	
-	for c in xrange(smxdb[0].get_attr('nx')):
-		if db_check_dict("%srctclasses_%02d"  % (options.path,c)):
-			if  classpop[c] >= options.minproj:
-				# Do an alignment of nieghboring images
-				if options.align != None:
-					if options.verbose>0: print "Starting alignment for %srctrecon_%02d" % (options.path,c)
-					# Now translatrionaly align the tilted images to each other
-					imglist = EMData.read_images("%srctclasses_%02d" % (options.path,c))
-					imglist.sort(lambda a, b: cmp(a.get_attr('xform.projection').get_rotation().get('az'), b.get_attr('xform.projection').get_rotation().get('az')))        
-					# Align each image to its nearest neighbor (in Fourier Space) and compute comparison, also make class averages(to check sanity)
-					avgr = Averagers.get('mean')
-					iniangle = imglist[0].get_attr('xform.projection').get_rotation().get('az')
-					ai = 0
-					for r in xrange(len(imglist)):
-						aligned = imglist[r].align("translational", imglist[r-1], {"maxshift":options.maxshift}) 
-						aligned.write_image("%srctclassesali_%02d" % (options.path,c), r)
-						sim = aligned.cmp(options.cmp, imglist[r-1])
-		            
-						if imglist[r].get_attr('xform.projection').get_rotation().get('az') > iniangle:
-							ref = avgr.finish()
-							if ref != None:
-								ref.set_attr('iniangle',iniangle)
-								ref.write_image("%srctclassavg_%02d" % (options.path,c), ai)
-								ai += 1
-							iniangle = imglist[r].get_attr('xform.projection').get_rotation().get('az')    
-							avgr = Averagers.get('mean')
-						else:
-							avgr.add_image(aligned)
-			        
-						if options.verbose>1: 
-							print "Image %d has an %s of %f with image %d" % (r,options.cmp,sim,(r-1)) 
-		        
-					# For now we will just use default parms
-					if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,c)
-					run("e2make3d.py --input=%srctclassesali_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
+	# Check to see if we need a tilt angle
+	if not options.stagetilt:
+		if not tiltimgs[0].get_attr_dict().has_key("tiltangle"):	
+			print "Error, stagetilt parameter not supplied and could find tiltangle as an attribute! Crashing!"
+			exit(1)
+	
+	#initialize some stuff
+	search = tiltimgs[0].get_attr('nx')/4 # the search range for the 3D aligner
+	arlist = []
+	totalptcls = 0
+	firstrecon = None
+
+	tiltcorrection = 0.0
+	for avnum, a in enumerate(cadb):
+		if a == None:
+			break # stupidly, enumerate keeps on going, even after it reachs the end of the 'list'
+		if options.careject and avnum in options.careject:
+			if options.verbose>0: print "Rejecting class average %d" % avnum
+			continue # do not use suboptimal classaverages
+		if a.get_attr('ptcl_repr') > options.minproj:
+			totalptcls = a.get_attr('ptcl_repr') + totalptcls
+			for inum, i in enumerate(a.get_attr('class_ptcl_idxs')):
+				img = EMData()  
+				img.read_image(options.untiltdata, i)
+				imga = img.align('rotate_translate', a)
+				t = imga.get_attr("xform.align2d")
+				t.invert()	# Is this really necessary?
+				p = t.get_params("2d")
+				x = Transform()
+				
+				# Use the supplied tilt angle and tilt axis if availabe
+				if not options.stagetilt:
+					options.stagetilt = tiltimgs[i].get_attr("tiltangle")
+				if options.tiltaxis:
+					tiltcorrection = tiltimgs[i].get_attr_default("tiltaxis",0.0)
+				x.set_rotation({"type":"eman", "az":(p["alpha"]-tiltcorrection), "alt":options.stagetilt}) # Use supplied if available
+				tiltimgs[i].set_attr("xform.projection", x)
+				
+			# Now do the reconstruction
+			if options.align:
+				centered_particles = center_particles(tiltimgs, avnum, 1)
+				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
+					centered_particles[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
+			else:
+				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
+					tiltimgs[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
+				
+			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
+			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
+			#now make an averaged image
+			if options.avgrcts:
+				if firstrecon:
+					run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='ccc.tomo'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
+					arlist.append("%srctreconali_%02d" % (options.path,avnum))
 				else:
-					# For now we will just use default parms  
-					if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,r)
-					run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,c,options.path,c,options.sym))
+					tmp = EMData()
+					tmp.read_image("%srctrecon_%02d" % (options.path,avnum))
+					processimage(tmp, options.preprocess)
+					tmp.write_image("%srctreconali_%02d" % (options.path,avnum),0)
+					firstrecon = ("%srctreconali_%02d" % (options.path,avnum))
+					arlist.append(firstrecon)
+		    
+	#now make the average
+	if options.avgrcts:
+		if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
+		avgr = Averagers.get('mean')		    
+		for r in arlist:
+			recon = EMData()
+			recon.read_image(r)
+			if options.weightrecons:
+				weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
+				if options.verbose>0: print "Weighting recon using %f" % weight
+				recon.mult(weight)
+			avgr.add_image(recon)
+		avged = avgr.finish()
+		avged.write_image("%srctrecon_avg" % (options.path), 0)
+  
+	db_close_dict(options.classavg)
+
+# I am not worried about interpoloation errors b/c the RCT resolution is very low anyways (80/20 rule....)
+def center_particles(particles, avnum, iterations):
+	if options.verbose>0: print "Centering tilted particles"
+	centeredimgs = []
+	radius = particles[0].get_attr("nx")/2 # nx = ny, always.....
+	for it in xrange(iterations):
+		ptclavgr = Averagers.get('mean')
+		# Make average
+		for img in particles:
+			ptclavgr.add_image(img)
+		ptclavg = ptclavgr.finish()
+		ptclavg.process_inplace("math.rotationalaverage")
+		ptclavg.write_image("%scentref_%02d" % (options.path,avnum), it)
+		#align translationally align particles
+		for img in particles:
+			#img.process_inplace("mask.noise", {"dx":0,"dy":0,"outer_radius":radius})
+			centeredimgs.append(img.align("translational", ptclavg, {"maxshift":options.maxshift}))
+		particles = centeredimgs # Change the reference (the source data will not be affected)
+		centeredimgs = []
+		
+	return particles # Not the same as was passed in (rereferenced)
 	
 def run(command):
 	"Execute a command with optional verbose output"
-	global options
+	global options		    
+	print command
 	if options.verbose>0 : print "***************",command
 	error = system(command)
 	if error==11 :
-		pass
+		pass		    
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
-		print "Error running:\n%s"%command
+		print "Error running:\n%s"%command		    
 		exit(1)
+		
+def processimage(image, optionspreprocess):
+	if optionspreprocess != None:
+	    for p in options.preprocess:
+	        try:
+		    (processorname, param_dict) = parsemodopt(p)
+		    if not param_dict : param_dict={}
+		    image.process_inplace(str(processorname), param_dict)
+		except:
+		    print "warning - application of the pre processor",p," failed. Continuing anyway"  
 	
 if __name__ == "__main__":
 	main()

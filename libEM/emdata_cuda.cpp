@@ -47,7 +47,7 @@ using namespace EMAN;
 const EMData* EMData::firstinlist = 0;
 const EMData* EMData::lastinlist = 0;
 int EMData::memused = 0;
-int EMData::fudgemem = 1.024E7; //let's leave 10 MB of 'fudge' memory on the device
+int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the device
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
@@ -73,7 +73,7 @@ bool EMData::copy_to_cuda()
 		memused += num_bytes;
 		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
 		if ( error != cudaSuccess) {
-			cout << rdata << " " << cudarwdata << endl;
+			//cout << rdata << " " << cudarwdata << endl;
 			throw UnexpectedBehaviorException( "CudaMemcpy (host to device) failed:" + string(cudaGetErrorString(error)));
 		}
 	}else{return false;}
@@ -258,7 +258,10 @@ void EMData::rw_free() const
 		return;
 	}
 	cudaError_t error = cudaFree(cudarwdata);
-	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaFree failed:" + string(cudaGetErrorString(error)));
+	if ( error != cudaSuccess){
+		cout << rdata << " " << cudarwdata << endl;
+		throw UnexpectedBehaviorException( "CudaFree failed:" + string(cudaGetErrorString(error)));
+	}
 	cudarwdata = 0;
 	memused -= num_bytes;
 	if(!cudarodata){removefromlist();}
@@ -294,7 +297,7 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 {
 	size_t freemem, totalmem;
 	cudaMemGetInfo(&freemem, &totalmem);
-	//cout  << "memusage" << " " << freemem << " " << totalmem << endl;
+	cout  << "memusage" << " " << freemem << " " << totalmem << endl;
 	if ((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){
 		return true;
 	}else{

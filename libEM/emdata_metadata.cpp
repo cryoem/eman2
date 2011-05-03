@@ -879,6 +879,7 @@ void EMData::set_size(int x, int y, int z)
 // once the object is resized, the CUDA need to be updated
 #ifdef EMAN2_USING_CUDA
 	if(cudarwdata) {
+		//cout << "rw free on set size" << endl;
 		rw_free();
 		rw_alloc();
 	}
