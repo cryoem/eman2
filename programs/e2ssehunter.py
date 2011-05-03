@@ -346,9 +346,9 @@ def model_mrc_helix(box_size, apix, res, length = 10.8, points = None, helixtype
 	
 def helixhunter_ccf(target, probe, da):
 	print "Running helix correlation routine"
-	bestCCF= EMData()
-	bestCCF.set_size(target.get_xsize(),target.get_ysize(),target.get_zsize())
-	bestCCF.to_zero()
+	bestCCF= target.copy() #To get metadata
+	bestCCF.to_zero() #Clearing the volume
+	
 	s = Symmetries.get("c1")
 	orients = s.gen_orientations("eman",{"delta":da,"inc_mirror":True})
 	counter=1
@@ -358,17 +358,15 @@ def helixhunter_ccf(target, probe, da):
 			print "%5.2f" % (i*100.0/N) + " %"
 		t = orients[i]
 		probeMRC= probe.process("xform",{"transform":t}) 
-		currentCCF=target.calc_ccf(probeMRC)
+		currentCCF=target.calc_mutual_correlation(probeMRC)
 		bestCCF.process_inplace("operate.max",{"with":currentCCF})
 
-	bestCCF.process_inplace("xform.phaseorigin.tocenter")
 	bestCCF.write_image("int-hh-coeff.mrc")
 	return bestCCF
 
 def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, da):
 	####This needs to be replaced 
 	
-	hhMrc=EMData()
 	if (coeff=="none") :
 		pdbHelix=model_pdb_helix(helixlength)	
 		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
@@ -380,7 +378,7 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 	else:	
 		hhMrc.read_image(coeff,-1)
 	
-	hhMrc.set_attr_dict(targetMRC.get_attr_dict())
+	#hhMrc.set_attr_dict(targetMRC.get_attr_dict())
 	coeffArray=[]
 	avghhvalue=0.0
 	maxValue=0.0
@@ -614,6 +612,8 @@ def write_composite_scores(target_volume_name, apix, patoms, atomNumber, coeffAr
 		score=0
 		
 		print "Atom Number: %s   "%(atomNumber[index4])
+		
+		print "Coordinates: (%.2f,%.2f,%.2f)"%(patoms[index4][0]*apix,patoms[index4][1]*apix,patoms[index4][2]*apix) #Debugging: by Ross
 		
 		print "	  Correlation:	   %s"%(coeffArray[index4]),
 		if coeffArray[index4] >= (0.9*avghhvalue):
