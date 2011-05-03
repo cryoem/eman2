@@ -893,7 +893,6 @@ class EMBrowseEventHandler:
 	def browse_pressed(self,bool):
 		if self.browser == None:
 			self.browser = EMSelectorDialog(False, False)
-			self.browser.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
 			self.browser.exec_()
 			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)

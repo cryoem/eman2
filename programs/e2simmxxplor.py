@@ -84,8 +84,6 @@ def main():
 
 
 class EMSimmxExplorer(EM3DSymModel):
-	def get_desktop_hint(self): return "image"
-	
 	def __init__(self, gl_widget, projection_file=None,simmx_file=None,particle_file=None):
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study	
@@ -293,9 +291,6 @@ class EMSimmxExplorer(EM3DSymModel):
 			self.update_display(True)
 		
 class EMSimmxXplorInspector(EMSymInspector):
-	def get_desktop_hint(self):
-		return "inspector"
-	
 	def __init__(self,target,enable_trace=False,enable_og=False) :
 		self.ptcl_slider = None
 		self.combo = None

@@ -189,7 +189,6 @@ class ParticlesWindow:
 		self.rctwidget = rctwidget
 		self.window=EMImageMXWidget(application=self.rctwidget.parent_window)
 		self.window.set_display_values(["tilt","PImg#"])
-		self.window.desktop_hint = "rotor" # this is to make it work in the desktop
 		self.window.set_mouse_mode("App")
 		self.window.setWindowTitle("Particles")
 		self.window.optimally_resize()

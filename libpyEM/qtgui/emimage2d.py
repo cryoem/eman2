@@ -159,7 +159,6 @@ class EMImage2DWidget(EMGLWidget):
 		#sizePolicy.setHeightForWidth(False)
 		#self.setSizePolicy(sizePolicy)
 		
-		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
@@ -1658,9 +1657,6 @@ class EMImage2DWidget(EMGLWidget):
 			self.font_render_mode = EMGLWidget.GLUT
 	
 class EMImageInspector2D(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
-	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)

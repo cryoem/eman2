@@ -1493,7 +1493,6 @@ class EMBoxerModule(QtCore.QObject):
 		except: emftgl_supported = False
 
 		self.guimx=EMImageMXModule(application=get_application())
-		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("App")
@@ -2008,7 +2007,6 @@ class EMBoxerModule(QtCore.QObject):
 		
 
 		self.guimxit=EMImageMXModule(application=get_application())
-		self.guimxit.desktop_hint = "rotor"
 			
 		try:
 			self.guimxit.setWindowTitle("Image Thumbs")
@@ -2733,7 +2731,6 @@ class AutoBoxerSelectionsMediator:
 	to adding and removing AutoBoxers, and changing which Boxables use which
 	AutoBoxer etc
 	'''
-	def get_desktop_hint(self): return "inspector"
 	def __init__(self,parent):
 		if not isinstance(parent,EMBoxerModule):
 			print "error, the AutoBoxerSelectionsMediator must be initialized with a EMBoxerModule type as its first constructor argument"
@@ -3035,9 +3032,6 @@ class CcfHistogram(QtGui.QWidget):
 			p.drawLine( i, self.height(), i, int(0.2*self.height()) )
 
 class EMBoxerModulePanel(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
-
 	def __init__(self,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)

@@ -1942,7 +1942,6 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 			from emimagemx import EMImageMXWidget
 			self.thumbs_window=EMImageMXWidget(application=get_application())
-#			self.thumbs_window.desktop_hint = "rotor" # this is to make it work in the desktop
 
 			self.thumbs_window.set_data(self.image_thumbs,soft_delete=True)
 			self.thumbs_window.set_mouse_mode("App")
@@ -1977,7 +1976,6 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.particles_window == None:
 			from emimagemx import EMImageMXWidget
 			self.particles_window=EMImageMXWidget(application=get_application())
-			self.particles_window.desktop_hint = "rotor" # this is to make it work in the desktop
 
 			self.particles_window.set_mouse_mode("App")
 			self.particles_window.setWindowTitle("Particles")
@@ -2582,9 +2580,6 @@ class EMBoxerInspector(QtGui.QWidget):
 		if self.busy: return
 		self.tools_stacked_widget.setCurrentIndex(idx)
 		self.target().set_main_2d_mouse_mode(str( self.current_tool_combobox.currentText() ))
-
-#	def get_desktop_hint(self):
-#		return "inspector"
 	
 	def set_box_size(self,value):
 		self.busy = True

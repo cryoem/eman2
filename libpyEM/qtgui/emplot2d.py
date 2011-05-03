@@ -111,11 +111,6 @@ class EMPlot2DWidget(EMGLWidget):
 				
 				if not self.browser.isVisible(): self.browser.show()
 			except: pass
-						
-			
-
-	def get_desktop_hint(self):
-		return "plot"
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
@@ -690,8 +685,6 @@ class EMPlot2DWidget(EMGLWidget):
 		pass
 
 class EMPlot2DInspector(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
 	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)

@@ -583,9 +583,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.updateGL()
 
 class EMImageInspector3D(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "inspector"
-	
 	def set_directional_light_dir(self,d):
 		self.advanced_tab.set_directional_light_dir(d)
 	

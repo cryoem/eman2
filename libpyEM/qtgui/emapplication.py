@@ -336,9 +336,6 @@ class EMProgressDialog(QtGui.QProgressDialog):
 	def __init__(self,label_text,cancel_button_text, minimum, maximum, parent = None):
 		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
-	def get_desktop_hint(self): #TODO: get_desktop_hint() functions should probably be removed everywhere--remnant of 3D desktop days --Ross
-		return "dialog"
-
 
 
 def error(msg,title="Almost"):

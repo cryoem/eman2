@@ -265,7 +265,6 @@ def EMSelectorBaseTemplate(Type):
 			Type.__init__(self,None)
 			self.setFocusPolicy(Qt.StrongFocus)
 #			self.module=weakref.ref(module) # Avoid strong cycle
-			self.desktop_hint = "dialog" # So the desktop knows how to display this
 			self.single_selection = single_selection # Flag indicating single selection in interface
 			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
 			
@@ -396,9 +395,6 @@ def EMSelectorBaseTemplate(Type):
 							
 			self.lock = False
 					
-		def get_desktop_hint(self):
-			return self.desktop_hint
-		
 		def __init_filter_combo(self):
 			self.filter_text = QtGui.QLabel("Filter:",self)
 			self.filter_combo = QtGui.QComboBox(None)

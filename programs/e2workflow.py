@@ -51,9 +51,6 @@ import weakref
 import traceback
 
 class EMTaskMonitorWidget(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "workflow"
-
 	def __init__(self):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "workflow.png"))
@@ -239,9 +236,6 @@ class EMTaskMonitorWidget(QtGui.QWidget):
 				#self.emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
 	
 class EMWorkFlowSelectorWidget(QtGui.QWidget):
-	def get_desktop_hint(self):
-		return "workflow"
-	
 	def __init__(self,task_monitor):
 		'''
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget

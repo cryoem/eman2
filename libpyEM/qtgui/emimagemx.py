@@ -295,8 +295,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		except:
 			self.font_render_mode = EMGLWidget.GLUT
 		
-	def get_desktop_hint(self):
-		return self.desktop_hint
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,application=None,winid=None, parent=None):
 		
@@ -309,7 +307,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		EMGLProjectionViewMatrices.__init__(self)
 		
 		
-		self.desktop_hint = "image"
 		self.init_size_flag = True
 		self.data=None
 #		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
@@ -2128,9 +2125,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 	
 	def animation_clicked(self,bool):
 		self.target().animation_enabled = bool
-	
-	def get_desktop_hint(self):
-		return "inspector"
 	
 	def get_image_manip_page(self):
 		self.impage = QtGui.QWidget()

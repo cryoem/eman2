@@ -949,7 +949,6 @@ if ENABLE_GUI:
             self.color_boxes()
             if not self.helix_viewer:
                 self.helix_viewer = EMImage2DWidget(application=get_application())
-                self.helix_viewer.desktop_hint = "rotor" # this is to make it work in the desktop
                 #self.helix_viewer.setWindowTitle("Current Helix")
                 self.helix_viewer.resize(300,800)
                 self.helix_viewer.set_scale(1)

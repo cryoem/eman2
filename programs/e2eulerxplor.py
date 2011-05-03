@@ -185,8 +185,6 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		return intersection
 
 	
-	
-	def get_desktop_hint(self): return "image"
 	def keyPressEvent(self,event):
 		
 		if event.key() == Qt.Key_F1:
@@ -719,8 +717,6 @@ def set_included_0(e):
 
 
 class EMAsymmetricUnitInspector(EMSymInspector):
-	def get_desktop_hint(self):
-		return "inspector"
 	def __init__(self,target,enable_trace=False,enable_og=False) :
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
 		
