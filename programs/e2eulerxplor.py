@@ -90,18 +90,18 @@ def main():
 	logid=E2init(sys.argv)
 	
 	em_app = EMApp()
-	window = EMEulerWidget()
+	window = EMEulerWidget(file_name = options.eulerdata)
 	em_app.show_specific(window)
 	em_app.execute()
 	
 	E2end(logid)
 
 class EMEulerWidget(EMSymViewerWidget):
-	def __init__(self, auto=True,sparse_mode=False):
-		EMSymViewerWidget.__init__(self, filename=options.eulerdata)
+	def __init__(self, auto=True,sparse_mode=False, file_name = ""):
+		EMSymViewerWidget.__init__(self, filename=file_name)
 			
 		#Replacing the EM3DSymModel that was created in the base class
-		euler_explorer = EMEulerExplorer(self, auto, sparse_mode)
+		euler_explorer = EMEulerExplorer(self, auto, sparse_mode, file_name = file_name)
 		self.model = euler_explorer
 		euler_explorer.regen_dl()
 
@@ -199,7 +199,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		else:
 			EM3DSymModel.keyPressEvent(self,event)
 	
-	def __init__(self, gl_widget, auto=True,sparse_mode=False):
+	def __init__(self, gl_widget, auto=True,sparse_mode=False, file_name = ""):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
 		self.events_mode = self.events_mode_list[1]
@@ -210,7 +210,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
 		
-		EM3DSymModel.__init__(self, gl_widget, eulerfilename=options.eulerdata)
+		EM3DSymModel.__init__(self, gl_widget, eulerfilename=file_name)
 		Animator.__init__(self)
 		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
 		self.projection_file = None  # This is a string - the name of the projection images file
