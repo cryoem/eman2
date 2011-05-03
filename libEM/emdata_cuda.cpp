@@ -297,7 +297,7 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 {
 	size_t freemem, totalmem;
 	cudaMemGetInfo(&freemem, &totalmem);
-	cout  << "memusage" << " " << freemem << " " << totalmem << endl;
+	//cout  << "memusage" << " " << freemem << " " << totalmem << endl;
 	if ((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){
 		return true;
 	}else{
