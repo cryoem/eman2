@@ -44,7 +44,7 @@ namespace EMAN
 	class Isosurface {
 	public:
 		Isosurface() : _emdata(0), _surf_value(1) {}
-		virtual ~Isosurface(){}
+		virtual ~Isosurface(){if(_emdata) delete _emdata; _emdata=0;}
 
 		/**
 		 * Sets Voxel data for Isosurface implementation
