@@ -107,7 +107,7 @@ bool EMData::rw_alloc() const
 		mempool[mempoolused] = 0;
 		mempoolused--;
 		return true;
-	}	
+	}
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudaError_t error = cudaMalloc((void**)&cudarwdata,num_bytes);
 	if ( error != cudaSuccess){return false;}

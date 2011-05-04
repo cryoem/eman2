@@ -184,7 +184,7 @@ EMData *EMData::do_fft_cuda()
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
-//	dat->gpu_update();
+	dat->update();
 
 	EXITFUNC;
 	return dat;
@@ -221,8 +221,7 @@ EMData *EMData::do_fft_inplace_cuda()
 	set_complex(true);
 	if(get_ysize()==1 && get_zsize()==1) set_complex_x(true);
 	set_ri(true);
-//	dat->gpu_update();
-	//perhaps is should call update() ????
+	update();
 
 	EXITFUNC;
 	return this;
@@ -267,7 +266,7 @@ EMData *EMData::do_ift_cuda()
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
 //	dat->gpu_update();
-//	dat->update(); // this is a hack to make diaplay work(will fix in future)
+	dat->update(); 
 	
 	EXITFUNC;
 	return dat;
@@ -315,7 +314,7 @@ EMData *EMData::do_ift_inplace_cuda()
 
 	if(ny==1 && nz==1) set_complex_x(false);
 	set_ri(false);
-	//update();
+	update();
 	
 	EXITFUNC;
 	return this;

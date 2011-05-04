@@ -8404,6 +8404,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 		p->runcuda(emdata_transform_cuda(m,image->get_xsize(),image->get_ysize(),image->get_zsize()));
 		image->unbindcudaarryA();
 		delete [] m;
+		p->update();
 	}
 #endif
 
@@ -8445,6 +8446,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 		image->unbindcudaarryA();
 		delete [] m;
 		use_cpu = false;
+		image->update();
 	}
 #endif
 	if ( use_cpu ) {

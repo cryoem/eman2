@@ -195,9 +195,9 @@ EMData& EMData::operator=(const EMData& that)
 		zoff = that.zoff;
 
 #ifdef EMAN2_USING_CUDA
-		cout << "That copy constructor #2" << endl;
-		// Need to free up old memory
 		if (num_bytes != 0 && that.cudarwdata != 0) {
+			if(cudarwdata){rw_free();}
+			if(cudarodata){ro_free();}
 			rw_alloc();
 			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
@@ -322,10 +322,7 @@ EMData::~EMData()
 	free_memory();
 
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata){
-		//cout << "rw free on object destory" << endl;
-		rw_free();
-	}
+	if(cudarwdata){rw_free();}
 	if(cudarodata){ro_free();}
 #endif // EMAN2_USING_CUDA
 	EMData::totalalloc--;
@@ -1489,6 +1486,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 		
 		EMData * conv = ifft->do_ift_cuda();
 		if(delifft) delete ifft;
+		conv->update();
 			
 		return conv;
 	}
@@ -1537,6 +1535,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 			EMData * corr = afft->do_ift_cuda();
 			if(delafft) delete afft;
 			//cor->do_ift_inplace_cuda();//a bit faster, but I'll alos need to rearrnage the mem structure for it to work, BUT this is very SLOW.
+			corr->update();
 			
 			return corr;
 		}
@@ -1634,7 +1633,8 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 		}
 		EMData* cf = new EMData(0,0,nx,1,1); //cuda constructor
 		cf->runcuda(emdata_column_sum(rslt.cudarwdata, nx, ny));
-
+		cf->update();
+		
 		EXITFUNC;
 		return cf;
 	}
@@ -2165,6 +2165,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 
 		f2->set_attr("label", "MCF");
 		f2->set_path("/tmp/eman.mcf");
+		f2->update();
 
 		EXITFUNC;
 		return f2;
@@ -2521,6 +2522,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 		bindcudaarrayA(true);
 		emdata_unwrap(result->cudarwdata, r1, r2, xs, p, dx, dy, weight_radial, nx, ny);
 		unbindcudaarryA();
+		result->update();
 		return result;
 	}
 #endif
