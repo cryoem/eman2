@@ -196,6 +196,7 @@ EMData& EMData::operator=(const EMData& that)
 
 #ifdef EMAN2_USING_CUDA
 		cout << "That copy constructor #2" << endl;
+		// Need to free up old memory
 		if (num_bytes != 0 && that.cudarwdata != 0) {
 			rw_alloc();
 			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);

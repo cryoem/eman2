@@ -596,6 +596,7 @@ void mcf_cuda(const float* data1, float* data2, const int nx, const int ny, cons
 		const dim3 gridSize(1,1,1);
 		mcfauto_kernal<<<gridSize,blockSize>>>(data1,data2,MAX_THREADS,grid_y*MAX_THREADS);
 	}
+	cudaThreadSynchronize();
 	
 }
 
@@ -708,6 +709,7 @@ void swap_central_slices_180(float* data, const int nx, const int ny, const int 
 			}
 
 		}
+		cudaThreadSynchronize();
 	}
 	else // nx && ny && nz are greater than 1
 	{
@@ -764,6 +766,7 @@ void swap_corners_180(float* data, const int nx, const int ny, const int nz)
 			swap_top_left_bot_right<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,grid_y*MAX_THREADS);
 
 		}
+		cudaThreadSynchronize();
 	}
 	else // nx && ny && nz are greater than 1
 	{
@@ -889,6 +892,7 @@ void subtract_cuda(float* data, float f, const int nx, const int ny, const int n
 		const dim3 gridSize(1,1,1);
 		subtract_kernal<<<gridSize,blockSize>>>(data,f,MAX_THREADS,grid_y*MAX_THREADS);
 	}
+	cudaThreadSynchronize();
 
 }
 
@@ -932,6 +936,7 @@ void emdata_unwrap(float* data, int r1, int r2, int xs, int num_pi, int dx, int 
 		const dim3 gridSize(1,1,1);
 		unwrap_kernel<<<gridSize,blockSize>>>(data,MAX_THREADS,r1, (float) num_pi/ (float)xs, nx,ny,xs,dx,dy,weight_radial,grid_y*MAX_THREADS);
 	}
+	cudaThreadSynchronize();
 
 }
 

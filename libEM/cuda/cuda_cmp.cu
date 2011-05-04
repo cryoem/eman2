@@ -318,6 +318,7 @@ void normalize_cuda(float * data, float mean, float var, const int nx, const int
 		int offset = grid_y*MAX_THREADS;
 		norm_kernal<<<gridSize,blockSize>>>(data, mean, var, MAX_THREADS, offset);	
 	}
+	cudaThreadSynchronize();
 }
 
 __global__ void stats_kernal(const float *data, float * device_soln, const int size, const int num_calcs, const int num_threads, const int offset)

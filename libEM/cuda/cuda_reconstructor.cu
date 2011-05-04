@@ -172,7 +172,6 @@ void insert_slice_cuda(const float* const matrix, const float* const slice_data,
 	const dim3 gridSize(iny/2,1, 1);
 	const dim3 blockSize((inx/2 + 1)/2,1,1);
 
-\
 	float3 mxx,myy,mzz;
 	
 	mxx.x=matrix[0];
