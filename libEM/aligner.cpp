@@ -64,7 +64,7 @@ const string RotateTranslateAlignerIterative::NAME = "rotate_translate_iterative
 const string RotateTranslateAlignerPawel::NAME = "rotate_translate_resample";
 const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
 const string RotateFlipAligner::NAME = "rotate_flip";
-const string RotateFlipAlignerIterative::NAME = "rotate_flip.iterative";
+const string RotateFlipAlignerIterative::NAME = "rotate_flip_iterative";
 const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
 const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip_iterative";
 const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resample";
@@ -460,7 +460,7 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 		delete tt;
 
 		//now do rotation
-		EMData * rottrans_align = trans_align->align("rotational.iterative", to, rot_params, cmp_name, cmp_params);
+		EMData * rottrans_align = trans_align->align("rotational_iterative", to, rot_params, cmp_name, cmp_params);
 		Transform * rt = rottrans_align->get_attr("xform.align2d");
 		t = *rt*t;
 		delete trans_align; trans_align = 0;
@@ -473,7 +473,7 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 		moving_img = this_img->process("xform",Dict("transform",&t));  //iterate
 	}
 	
-	//write the total transformation;	
+	//write the total transformation; Avoids interpolation erros 	
 	moving_img->set_attr("xform.align2d", &t);
 	
 	return moving_img;
@@ -529,9 +529,11 @@ EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
 	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
 				
 	//return the result
-	Transform tmp(Dict("type","2d","alpha",rot_angle,"tx",best_tx,"ty",best_ty));
-	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
-	rotimg->set_attr("xform.align2d",&tmp);
+	Transform tmptt(Dict("type","2d","alpha",0,"tx",-best_tx,"ty",-best_ty));
+	Transform tmprot(Dict("type","2d","alpha",rot_angle,"tx",0,"ty",0));
+	Transform total = tmprot*tmptt;
+	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&total));
+	rotimg->set_attr("xform.align2d",&total);
 	
 	return rotimg;
 	
@@ -669,7 +671,7 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 {
 	// Get the non flipped rotational, tranlsationally aligned image
 	Dict rt_params("maxshift", params["maxshift"],"r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
-	EMData *rot_trans_align = this_img->align("rotate_translate.iterative",to,rt_params,cmp_name, cmp_params);
+	EMData *rot_trans_align = this_img->align("rotate_translate_iterative",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
@@ -679,7 +681,7 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 		delete_flag = true;
 	}
 
-	EMData * rot_trans_align_flip = this_img->align("rotate_translate.iterative", flipped, rt_params, cmp_name, cmp_params);
+	EMData * rot_trans_align_flip = this_img->align("rotate_translate_iterative", flipped, rt_params, cmp_name, cmp_params);
 	Transform* t = rot_trans_align_flip->get_attr("xform.align2d");
 	t->set_mirror(true);
 	rot_trans_align_flip->set_attr("xform.align2d",t);
@@ -727,8 +729,14 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 	int r1 = params.set_default("r1",-1);
 	int r2 = params.set_default("r2",-1);
 	
-	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)) throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
-	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)) throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
+	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)){
+		cout << "\nRunTimeError: nx/2 - 1 - r2 - tx must be greater than or = 0\n" << endl; // For some reason the expection message is not being print, stupid C++
+		throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
+	}
+	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)){
+		cout << "\nRunTimeError:ny/2 - 1 - r2 - ty must be greater than or = 0\n" << endl; // For some reason the expection message is not being print, stupid C++
+		throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
+	}
 	
 	float best_peak = -numeric_limits<float>::infinity();
 	int best_peak_index = 0;
@@ -782,9 +790,11 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
 				
 	//return the result
-	Transform tmp(Dict("type","2d","alpha",rot_angle,"tx",best_tx,"ty",best_ty));
-	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
-	rotimg->set_attr("xform.align2d",&tmp);
+	Transform tmptt(Dict("type","2d","alpha",0,"tx",-best_tx,"ty",-best_ty));
+	Transform tmprot(Dict("type","2d","alpha",rot_angle,"tx",0,"ty",0));
+	Transform total = tmprot*tmptt;
+	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&total));
+	rotimg->set_attr("xform.align2d",&total);
 	if(flip == true) {
 		rotimg->process_inplace("xform.flip",Dict("axis", "x"));
 	}
@@ -839,10 +849,10 @@ EMData *RotateFlipAlignerIterative::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
 	Dict rot_params("r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
-	EMData *r1 = this_img->align("rotational.iterative", to, rot_params,cmp_name, cmp_params);
+	EMData *r1 = this_img->align("rotational_iterative", to, rot_params,cmp_name, cmp_params);
 
 	EMData* flipped =to->process("xform.flip", Dict("axis", "x"));
-	EMData *r2 = this_img->align("rotational.iterative", flipped,rot_params, cmp_name, cmp_params);
+	EMData *r2 = this_img->align("rotational_iterative", flipped,rot_params, cmp_name, cmp_params);
 	Transform* t = r2->get_attr("xform.align2d");
 	t->set_mirror(true);
 	r2->set_attr("xform.align2d",t);
@@ -1805,7 +1815,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 						tran.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
 						//CudaPeakInfoFloat* data = calc_max_location_wrap_intp_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						//tran.set_trans(-data->xintp, -data->yintp, -data->zintp);
-						tr = tran*tr;
+						tr = tran*tr; // to reflect the fact that we have done a rotation first and THEN a transformation
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1823,7 +1833,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						tran.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
 						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
-						tr = tran*tr;
+						tr = tran*tr;// to reflect the fact that we have done a rotation first and THEN a transformation
 						
 					}
 					delete ccf; ccf =0;
@@ -1976,7 +1986,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						use_cpu = false;;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-						t = trans*t;	//composite transfrom
+						t = trans*t;	//composite transfrom to reflect the fact that we have done a rotation first and THEN a transformation
 						if (tomography) {
 							float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 							best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -1990,7 +2000,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						if(tomography) ccf->process_inplace("normalize");	
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-						t = trans*t;	//composite transfrom
+						t = trans*t;	//composite transfrom to reflect the fact that we have done a rotation first and THEN a transformation
 						best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 					}
 					delete ccf; ccf =0;
@@ -2154,7 +2164,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					use_cpu = false;
 					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 					trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
-					t = trans*t;	//composite transform
+					t = trans*t;	//composite transform to reflect the fact that we have done a rotation first and THEN a transformation
 					if (tomography) {
 						float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 						best_score = -(data->peak - stats.x)/sqrt(stats.y); // Normalize, this is better than calling the norm processor since we only need to normalize one point
@@ -2168,7 +2178,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 					if(tomography) ccf->process_inplace("normalize");
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
-					t = trans*t;	//composite transform 
+					t = trans*t;	//composite transform to reflect the fact that we have done a rotation first and THEN a transformation
 					best_score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 				}
 				delete ccf; ccf =0;

@@ -472,7 +472,7 @@ namespace EMAN
 			TypeDict d;
 			//d.put("usedot", EMObject::INT);
 			d.put("tx", EMObject::INT, "Maximum x translation in pixels, Default = 0");
-			d.put("ty", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("ty", EMObject::INT, "Maximum y translation in pixels, Default = 0");
 			d.put("r1", EMObject::INT, "Inner ring, pixels");
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
@@ -754,7 +754,7 @@ namespace EMAN
 			TypeDict d;
 			//d.put("usedot", EMObject::INT);
 			d.put("tx", EMObject::INT, "Maximum x translation in pixels, Default = 0");
-			d.put("ty", EMObject::INT, "Maximum x translation in pixels, Default = 0");
+			d.put("ty", EMObject::INT, "Maximum y translation in pixels, Default = 0");
 			d.put("r1", EMObject::INT, "Inner ring, pixels");
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;

@@ -230,6 +230,7 @@ bool EMData::copy_rw_to_ro() const
 	//this will copy over any prexisting data (saves a malloc)....
 	copy_to_array(cudarwdata, cudarodata, nx, ny, nz, cudaMemcpyDeviceToDevice);
 	roneedsupdate = 0; //just copied, so no longer need an update
+	elementaccessed(); //To move the image to the top of the stack, prevents deletion before useage(If the image is at the stack bottom, and then anoth image is moved on....)
 	
 	return true;
 	
@@ -297,7 +298,7 @@ bool EMData::isrodataongpu() const
 }
 bool EMData::freeup_devicemem(const int& num_bytes) const
 {
-	size_t freemem=0, totalmem=0;
+	size_t freemem=0, totalmem=0; //initialize to prevent undefined behaviour
 	cudaMemGetInfo(&freemem, &totalmem);
 	//cout  << "memusage" << " " << freemem << " " << totalmem << endl;
 	if ((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){

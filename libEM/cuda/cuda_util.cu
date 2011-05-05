@@ -78,7 +78,6 @@ bool copy_to_array(const float * data, cudaArray * array, const int nx, const in
 		if ( error != cudaSuccess) {
 			const char* e = cudaGetErrorString(error);
 			printf("CUDA error from cudaMemcpy3D: %s\n",e);
-			cudaFreeArray(array);
 			return 0;	
 		}
 	} else if ( ny > 1) {
@@ -87,7 +86,6 @@ bool copy_to_array(const float * data, cudaArray * array, const int nx, const in
 		{
 			const char* e = cudaGetErrorString(error);
 			printf("CUDA error from cudaMemcpyToArray: %s\n",e);
-			cudaFreeArray(array);
 			return 0;	
 		}
 	}

@@ -1138,9 +1138,9 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 	vector < float >fsc;
 	bool use_cpu = true;
-#ifdef EMAN2_USING_CUDA
-	if(image->getcudarwdata() && with->getcudarwdata()) {
-		UnexpectedBehaviorException("CUDA FRC cmp under construction....");
+//#ifdef EMAN2_USING_CUDA
+	//if(image->getcudarwdata() && with->getcudarwdata()) {
+		//throw UnexpectedBehaviorException("CUDA FRC cmp under construction....");
 		/*
 		if (zeromask) throw UnexpectedBehaviorException("ZeroMask is not yet supported in CUDA"); 
 			
@@ -1161,9 +1161,9 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		
 		use_cpu = false;
 		*/
-	}
+	//}
 	
-#endif
+//#endif
 	if (use_cpu) {
 		if (zeromask) {
 			image=image->copy();
