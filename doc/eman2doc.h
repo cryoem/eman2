@@ -11,7 +11,7 @@
  *
  *
  * \section install_sec Installation
- *  Here are the <a href="../INSTALL"> Installation Instruction</a>.
+ *  Here are the <a href="http://blake.bcm.edu/emanwiki/EMAN2/Install"> Installation Instruction</a>.
  *
  * \section manual_sec Manuals
  *  <ul>
