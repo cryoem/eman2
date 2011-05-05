@@ -148,7 +148,7 @@ EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
 	if (num_bytes != 0 && that.cudarwdata != 0) {
 		//cout << "That copy constructor" << endl;
-		rw_alloc();
+		if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");;
 		cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
@@ -197,8 +197,7 @@ EMData& EMData::operator=(const EMData& that)
 #ifdef EMAN2_USING_CUDA
 		if (num_bytes != 0 && that.cudarwdata != 0) {
 			if(cudarwdata){rw_free();}
-			if(cudarodata){ro_free();}
-			rw_alloc();
+			if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");;
 			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 			

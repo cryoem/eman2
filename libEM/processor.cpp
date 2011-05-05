@@ -9743,7 +9743,7 @@ EMData* ConvolutionKernalProcessor::process(const EMData* const image)
 	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
 	
 	//I could do the edges by wrapping around, but this is not necessary(such functionality can be iplemented later)
-	int ks = sqrt((float)kernal.size());
+	int ks = int(sqrt(float(kernal.size())));
 	int n = (ks - 1)/2;
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();

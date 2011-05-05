@@ -172,7 +172,7 @@ EMData *EMData::do_fft_cuda()
 
 	int offset = 2 - nx%2;
 	EMData* dat = new EMData(0,0,nx+offset,ny,nz,attr_dict);
-	if(!dat->rw_alloc()) throw ImageFormatException("Couldn't allocate memory.");
+	if(!dat->rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");
 	//cout << "Doing CUDA FFT " << cudarwdata << endl;
 	if(cudarwdata == 0){copy_to_cuda();}
 	cuda_dd_fft_real_to_complex_nd(cudarwdata, dat->cudarwdata, nx, ny,nz, 1);
@@ -242,7 +242,7 @@ EMData *EMData::do_ift_cuda()
 
 	int offset = is_fftodd() ? 1 : 2;
 	EMData* dat = new EMData(0,0,nx-offset,ny,nz,attr_dict);
-	if(!dat->rw_alloc()) throw ImageFormatException("Couldn't allocate memory.");
+	if(!dat->rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");
 	
 	if(cudarwdata == 0){copy_to_cuda();}
 
