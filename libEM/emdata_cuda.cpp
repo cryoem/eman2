@@ -123,6 +123,7 @@ bool EMData::ro_alloc() const
 	if(cudarodata){return true;} // already exists
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudarodata = get_cuda_array(nx, ny, nz);
+	if(cudarodata == 0) throw UnexpectedBehaviorException("Bad Array alloc");
 	if(!cudarwdata){addtolist();}
 	//cout << "ro alloc finish " << " " <<  cudarodata << endl;
 	return true;
@@ -223,6 +224,7 @@ bool EMData::copy_rw_to_ro() const
 	if(cudarodata == 0){
 		if(!freeup_devicemem(num_bytes)){return false;}
 		cudarodata = get_cuda_array(nx, ny, nz);
+		if(cudarodata == 0) throw UnexpectedBehaviorException("Bad Array alloc");
 		memused += num_bytes;
 	}
 	//this will copy over any prexisting data (saves a malloc)....

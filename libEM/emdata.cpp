@@ -148,7 +148,7 @@ EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
 	if (num_bytes != 0 && that.cudarwdata != 0) {
 		//cout << "That copy constructor" << endl;
-		if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");;
+		if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");
 		cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 		if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
 	}
@@ -2517,7 +2517,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	if (isrodataongpu()){
 		//cout << " CUDA unwrap" << endl;
 		EMData* result = new EMData(0,0,xs,(r2-r1),1);
-		result->rw_alloc();
+		if(!result->rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");
 		bindcudaarrayA(true);
 		emdata_unwrap(result->cudarwdata, r1, r2, xs, p, dx, dy, weight_radial, nx, ny);
 		unbindcudaarryA();

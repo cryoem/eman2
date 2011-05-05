@@ -48,11 +48,19 @@ cudaArray* get_cuda_array(const int nx, const int ny, const int nz)
 	
 	if (nz > 1) {
 		cudaExtent VS = make_cudaExtent(nx,ny,nz);
-		cudaMalloc3DArray(&array, &channelDesc, VS);
+		cudaError_t error = cudaMalloc3DArray(&array, &channelDesc, VS);
+		if ( error != cudaSuccess) {
+			printf("Could not allocate array\n");
+			return 0;
+		}
 	} else if ( ny > 1) {
-		cudaMallocArray(&array,&channelDesc,nx,ny);
+		cudaError_t error = cudaMallocArray(&array,&channelDesc,nx,ny);
+		if ( error != cudaSuccess) {
+			printf("Could not allocate array\n");
+			return 0;
+		}
 	}
-	
+
 	return array;
 }
 
