@@ -392,7 +392,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 }
 
 
-int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUtil::EMDataType, bool)
+int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUtil::EMDataType datatype, bool)
 {
 	ENTERFUNC;
 
@@ -413,7 +413,7 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 		return 1;
 	}
 
-	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
+//	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 	if (datatype == EMUtil::EM_UCHAR) {
 		bitspersample = CHAR_BIT;
 	}
