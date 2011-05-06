@@ -136,13 +136,13 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
-		if(to && !to->getcudarwdata()) to->copy_to_cuda();
-		if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
-		if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
+		//if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		//if(to && !to->getcudarwdata()) to->copy_to_cuda();
+		//if (masked) throw UnexpectedBehaviorException("Masked is not yet supported in CUDA");
+		//if (useflcf) throw UnexpectedBehaviorException("Useflcf is not yet supported in CUDA");
  		//cout << "Translate on GPU" << endl;
-		use_cpu = false;
-		cf = this_img->calc_ccf(to);
+		//use_cpu = false;
+		//cf = this_img->calc_ccf(to);
 	}
 #endif // EMAN2_USING_CUDA
 	
@@ -306,8 +306,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
-		if(!to->getcudarwdata()) to->copy_to_cuda();
+		//if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		//if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 #endif
 
@@ -545,8 +545,8 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
-		if(!to->getcudarwdata()) to->copy_to_cuda();
+		//if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		//if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 #endif
 
@@ -1718,6 +1718,13 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_multimin_fminimizer_free(s);
 
 	if ( c != 0 ) delete c;
+	
+	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
+	#ifdef EMAN2_USING_CUDA
+		to->copy_from_device();
+		this_img->ro_free();
+	#endif
+	
 	return result;
 }
 
@@ -1774,7 +1781,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
-		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
+		if(!this_img->getcudarodata()) this_img->copy_to_cudaro(); // This is safer
 		if(!to->getcudarwdata()) to->copy_to_cuda();
 		if(to->getcudarwdata()){if(tofft) tofft->copy_to_cuda();}
 	}
@@ -1861,10 +1868,17 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	best_match->set_attr("xform.align3d", best["xform.align3d"]);
 	best_match->set_attr("score", float(best["score"]));
 	
+	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
+	#ifdef EMAN2_USING_CUDA
+		to->copy_from_device();
+		this_img->ro_free();
+		// May move best_match to device?
+	#endif
+	
 	//debug....
-	Transform* zz = best_match->get_attr("xform.align3d");
-	Vec3f zzz = zz->get_trans();
-	cout << "x " << float(zzz[0]) << " y " << float(zzz[1]) << " z " << float(zzz[2]) << endl;
+	//Transform* zz = best_match->get_attr("xform.align3d");
+	//Vec3f zzz = zz->get_trans();
+	//cout << "x " << float(zzz[0]) << " y " << float(zzz[1]) << " z " << float(zzz[2]) << endl;
 	
 	return best_match;
 	
@@ -1953,7 +1967,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
-		if(!this_img->isrodataongpu()) this_img->copy_to_cudaro();
+		if(!this_img->getcudarodata()) this_img->copy_to_cudaro();  // safer call
 		if(!to->getcudarwdata()) to->copy_to_cuda();
 		if(to->getcudarwdata()){if(tofft) tofft->copy_to_cuda();}
 	}
@@ -2028,6 +2042,12 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		}
 	}
 
+	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
+	#ifdef EMAN2_USING_CUDA
+		to->copy_from_device();
+		this_img->ro_free();
+	#endif
+	
 	if(tofft) {delete tofft; tofft = 0;}
 	return solns;
 
@@ -2131,7 +2151,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		cout << "Using CUDA for 3D alignment" << endl;
-		if(!to->isrodataongpu()) to->copy_to_cudaro();
+		if(!to->getcudarodata()) to->copy_to_cudaro(); // Safer call
 		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
 		if(this_imgfft) this_imgfft->copy_to_cuda();
 	}
@@ -2209,6 +2229,13 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	delete sym; sym = 0;
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
+	
+	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
+	#ifdef EMAN2_USING_CUDA
+		this_img->copy_from_device();
+		to->ro_free();
+	#endif
+	
 	return solns;
 
 }

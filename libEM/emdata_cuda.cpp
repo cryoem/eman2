@@ -184,10 +184,11 @@ bool EMData::copy_from_device(const bool rocpy)
 	//maybe we should check to see if rdata is still allocated? If not we would need to do either a malloc or new (also assumes that the size of rdata has not changed)
 	if(cudarwdata && !rocpy){
 		//cout << "rw copy back " << rdata << " numbytes " << num_bytes << endl;
-		if(rdata == 0){rdata = (float*)malloc(num_bytes);} //allocate space if needed
+		if(rdata == 0){rdata = (float*)malloc(num_bytes);} //allocate space if needed, assumes size hasn't changed(Which is hasn't so far)
 		cudaError_t error = cudaMemcpy(rdata,cudarwdata,num_bytes,cudaMemcpyDeviceToHost);
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 		rw_free(); //we have the data on either the host or device, not both (prevents concurrency issues)
+		if(cudarodata) ro_free(); // clear any RO data, for call safety
 	} else if (cudarodata && rocpy) {
 		if (nz > 1){
 			//cout << "ro copy back 3D" << endl;
@@ -227,7 +228,7 @@ bool EMData::copy_rw_to_ro() const
 		if(cudarodata == 0) throw UnexpectedBehaviorException("Bad Array alloc");
 		memused += num_bytes;
 	}
-	//this will copy over any prexisting data (saves a malloc)....
+	//this will copy over any prexisting data (saves a malloc)....(but sometimes not a safe call.....)
 	copy_to_array(cudarwdata, cudarodata, nx, ny, nz, cudaMemcpyDeviceToDevice);
 	roneedsupdate = 0; //just copied, so no longer need an update
 	elementaccessed(); //To move the image to the top of the stack, prevents deletion before useage(If the image is at the stack bottom, and then anoth image is moved on....)
