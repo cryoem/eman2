@@ -156,6 +156,10 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 		 throw ImageWriteException("N/A", "No region writing for JPEG images");
 	int nx=cinfo.image_width,ny=cinfo.image_height;
 
+	/**Flip the image vertically, since EMAN use top-left corner as image origin
+	* But PNG use bottom-left corner as image origin */
+	Util::flip_image(data, nx, ny);
+
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
