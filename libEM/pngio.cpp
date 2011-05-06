@@ -306,7 +306,9 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 	}
 
-	//Util::flip_image(data, nx, ny);
+	/**Flip the image vertically, since EMAN use top-left corner as image origin
+	 * But PNG use bottom-left corner as image origin */
+	Util::flip_image(data, nx, ny);
 
 	if( cdata )
 	{
@@ -324,6 +326,10 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+
+	/**Flip the image vertically, since EMAN use top-left corner as image origin
+	* But PNG use bottom-left corner as image origin */
+	Util::flip_image(data, nx, ny);
 
 	//single image format, index can only be zero
 	image_index = 0;
