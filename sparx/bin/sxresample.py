@@ -88,7 +88,7 @@ def resample_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None 
 		dummy = rectors[ivol].finish(True)
 		# Here add multiplication as per Kimmel-Penczek formula
 		Util.mul_scalar( fftvols[ivol], float(nprj) )          # ??????????
-		vol.write_image( volfile, iwrite )
+		fftvols[ivol].write_image( volfile, iwrite )
 		if not(info is None):
 			t = time()
 			info.write( "        vol %d reconstred.\t time: %10.3f %10.3f\n" % (ivol, t-start_time, t-overall_start) )
