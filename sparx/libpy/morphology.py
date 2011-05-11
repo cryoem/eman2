@@ -820,6 +820,7 @@ def flcc(t, e):
 		See Alan Roseman's paper in Ultramicroscopy
 	"""
 	from utilities import model_blank
+	from fundamentals import ccf
 	tmp        = EMData()
 	mic_avg_sq = EMData()
 	mic_sq     = EMData()
@@ -831,8 +832,8 @@ def flcc(t, e):
 	n_pixelt   = t.get_xsize()*t.get_ysize()  # get total pixels in template   
 	n_pixele   = nx*ny  # get total pixels in mic
 	t          = (t-mean_t)/sigma_t # normalize the template such that the average of template is zero.
-	t_pad      = Util.pad(t,    {"background":0}, nx, ny, 1, 0, 0, 0)
-	m_pad      = Util.pad(mask, {"background":0}, nx, ny, 1, 0, 0, 0) # create a mask (blank, value=1 )file and pad to size of mic   	 	
+	t_pad      = Util.pad(t,    nx, ny, 1, {"background":0}, 0, 0, 0)
+	m_pad      = Util.pad(mask, nx, ny, 1, {"background":0}, 0, 0, 0) # create a mask (blank, value=1 )file and pad to size of mic   	 	
 	tmp        = ccf(e, m_pad)/n_pixele # calculate the local average
 	mic_avg_sq = tmp*tmp    # calculate average square
 	tmp        = e*e
@@ -841,10 +842,6 @@ def flcc(t, e):
 	mic_var    = tmp.get_pow(.5)          # Calculate the local variance of the image 
 	cc_map     = ccf(e,t_pad)
 	cc_map    /= (mic_var*n_pixelt) # Normalize the cross correlation map 
-	del tmp
-	del mic_var
-	del mic_sq
-	del mic_avg_sq
 	return cc_map
 
 ##-----------------------------img formation parameters related functions---------------------------------
