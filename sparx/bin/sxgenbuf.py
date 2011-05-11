@@ -55,6 +55,7 @@ def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
 def main():
 
 	import sys
+	import os
 
         arglist = []
         for arg in sys.argv:
