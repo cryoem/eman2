@@ -487,9 +487,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	else {
 		mrch.alpha = mrch.beta = mrch.gamma = 90.0f;
-		mrch.mapc = 1;
-		mrch.mapr = 2;
-		mrch.maps = 3;
+		mrch.mapc = dict.has_key("MRC.mapc") ? (int)dict["MRC.mapc"] : 1;
+		mrch.mapr = dict.has_key("MRC.mapr") ? (int)dict["MRC.mapr"] : 2;
+		mrch.maps = dict.has_key("MRC.maps") ? (int)dict["MRC.maps"] : 3;
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
@@ -564,7 +564,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nz = image_index + 1;
 	}
 
-	mrch.ispg = 0;
+	mrch.ispg = dict.has_key("MRC.ispg") ? (int)dict["MRC.ispg"] : 0;
 	mrch.nsymbt = 0;
 	mrch.amin = dict["minimum"];
 	mrch.amax = dict["maximum"];
