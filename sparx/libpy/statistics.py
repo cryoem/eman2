@@ -9149,7 +9149,7 @@ class pcanalyzer:
 		self.writedat( tmpdat )                                   #   WRITEDAT
 		self.nimg +=1
 		self.ncov = tmpimg.get_xsize()
-	
+
 	def analyze( self ):
 		#if self.myid==0:
 		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
@@ -9188,7 +9188,7 @@ class pcanalyzer:
 				Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
 
 				eigimg = Util.reconstitute_image_mask(tmpimg, self.mask)
-				eigimg.set_attr( "eigval", float(eigval[j]) )
+				eigimg.set_attr( "eigval", float(eigval[j])/(self.nimg - 1) )
 				eigimgs.append( eigimg )
 
 			return eigimgs
