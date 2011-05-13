@@ -219,7 +219,7 @@ get_application = em_app_instance.get_instance
 
 
 class EMApp(QtGui.QApplication):
-	def __init__(self,qt_application_control=True):
+	def __init__(self):
 		self.children = []
 		
 		# Stuff for display synchronization in e2.py
@@ -231,24 +231,22 @@ class EMApp(QtGui.QApplication):
 		if em_app_instance.get_instance() == None:
 			em_app_instance.set_instance(self)
 	
-#	def __del__(self):
-#		print "stand alone application death"
+
 	def child_is_attached(self,query_child):
-		if query_child in self.children: return True
-		else: return False
+		return (query_child in self.children)
+
 	def detach_child(self,child):
-		for i,child_ in enumerate(self.children):
-			if child_ == child:
-				self.children.pop(i)
-				return
-	
-		print "error, can't detach a child that doesn't belong to this", child
-	
+		if child not in self.children:
+			print "EMApp.detach_child() error, EMApp instance doesn't contain this child:", child
+			return
+		
+		while child in self.children:
+			self.children.remove(child)
+			
 	def attach_child(self,child):
-		for i in self.children:
-			if i == child:
-				print "error, can't attach the same child twice",child
-				return
+		if child in self.children:
+			print "error, can't attach the same child twice:", child
+			return
 			
 		self.children.append(child)
 		
