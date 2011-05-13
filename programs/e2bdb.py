@@ -85,7 +85,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 	(options, args) = parser.parse_args()
 
-	if options.nocache : BDB_CACHE_DISABLE=True
+	if options.nocache : EMAN2db.BDB_CACHE_DISABLE=True
 
 	if options.cleanup : 
 		db_cleanup(options.force)
