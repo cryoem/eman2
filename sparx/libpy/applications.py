@@ -7231,11 +7231,15 @@ def cpy(ins_list, ous):
 		nima = EMUtil.get_image_count(ins)
 		data = EMData()
 		iextension = file_type(ins)
-		if(nima == 1 and oextension == "spi"):
+
+		if iextension == "bdb":
+			from EMAN2db import db_open_dict
+
+		if nima == 1 and oextension == "spi":
 			data.read_image(ins)
 			data.write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 			
-		elif(iextension == "bdb" and oextension == "bdb"):
+		elif iextension == "bdb" and oextension == "bdb":
 			
 			OB = db_open_dict(ins)
 			for i in range(nima):
@@ -7243,7 +7247,7 @@ def cpy(ins_list, ous):
 				gl_index += 1
 			OB.close()
 
-		elif(iextension == "bdb"):
+		elif iextension == "bdb":
 			
 			DB = db_open_dict(ins)
 			for i in range(nima):
@@ -7252,7 +7256,7 @@ def cpy(ins_list, ous):
 				gl_index += 1
 			DB.close()
 			
-		elif(oextension == "bdb"):
+		elif oextension == "bdb":
 			
 			for i in range(nima):
 				a = EMData()
@@ -7266,7 +7270,7 @@ def cpy(ins_list, ous):
 				data.write_image(ous, gl_index)
 				gl_index += 1
 
-	if (oextension == "bdb"):
+	if oextension == "bdb":
 		DB.close()
 
 def dele_flist(flist):
