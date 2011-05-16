@@ -133,7 +133,7 @@ def runlocaltask(taskin,taskout):
 	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to taskout. """
 	from cPickle import load,dump
 
-	print "Executing %s (%s)"%(taskin,taskout)
+#	print "Executing %s (%s)"%(taskin,taskout)
 	from e2classaverage import ClassAvTask
 	from e2simmx import EMSimTaskDC
 	from e2project3d import EMProject3DTaskDC
@@ -145,7 +145,7 @@ def runlocaltask(taskin,taskout):
 	except:
 		traceback.print_exc()
 		sys.exit(1)		# Error !
-	print "Done %s (%s)"%(taskin,taskout)
+#	print "Done %s (%s)"%(taskin,taskout)
 	
 	sys.exit(0)
 
