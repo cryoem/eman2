@@ -150,7 +150,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			vspath=os.path.realpath(vstack.path)+"/"
 			if options.verbose>2 : print "vspath: ",vspath
 			for db in dbs:
-				dct,keys=db_open_dict(path+db,with_keys=True)
+				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
 				vals = keys
 				if keys == None: vals = range(len(dct))
@@ -204,7 +204,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				ID = source["data_n"]
 				if( data_old != data_source):
 					if( data_old != None):  DB.close()
-					DB = db_open_dict(data_source)
+					DB = db_open_dict(data_source,ro=True)
 					data_old = data_source
 				target = DB.get_header( ID )
 				try:
@@ -223,7 +223,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		if options.dump :
 			for db in dbs:
 				print "##### ",db
-				dct=db_open_dict(path+db)
+				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
 				keys=dct.keys()
@@ -250,7 +250,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			fmt2="%%-%ds (not an image stack)"%width
 			total=[0,0]
 			for db in dbs:
-				dct=db_open_dict(path+db)
+				dct=db_open_dict(path+db,True)
 								
 				### Info on all particles
 				if options.all :
@@ -277,7 +277,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		elif options.check :
 			from cPickle import loads
 			for db in dbs:
-				dct=db_open_dict(path+db)
+				dct=db_open_dict(path+db,ro=True)
 				dct.realopen()
 				keys=dct.bdb.keys()
 				allkvp={}
