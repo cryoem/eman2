@@ -143,6 +143,11 @@ namespace EMAN
 			 */
 			void set_rotation(const Vec3f & v);
 
+			/** Increment the rotation by multipling the rotation bit of the argument transfrom by the rotation part of the current transfrom
+			* @param rotation multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
+			*/
+			void increment_rotation(const Transform& multiplican);
+			
 			/** Get a rotation in any Euler format
 			 * @param euler_type the requested Euler type
 			 * @return a dictionary containing the key-entry pairs describing the rotations in terms of the requested Euler type
@@ -215,6 +220,23 @@ namespace EMAN
 			 */
 			Vec3f get_trans() const;
 
+			/** Increment the current translation by tx, ty, tz
+			* @param tx the x incrementation
+			* @param ty the y incrementation
+			* @param tz the z incrementation
+			*/
+			void increment_trans(const float& tx, const float& ty, const float& tz=0);
+			
+			/** Increment the current translation using vec3f& v
+			* @param v the 3D translation vector
+			*/
+			inline void increment_trans(const Vec3f& v) { increment_trans(v[0],v[1],v[2]); }
+			
+			/** Increment the current translation using vec2f& v
+			* @param v the @D translation vector
+			*/
+			inline void increment_trans(const Vec2f& v) { increment_trans(v[0],v[1]); }
+			
 			/** Get the degenerant 2D post trans as a vec2f
 			 * @return the 2D translation vector
 			 */
@@ -252,6 +274,11 @@ namespace EMAN
 			 */
 			float get_scale() const;
 
+			/** Increment the scale 
+			* @param scale the amount increment by
+			*/
+			void increment_scale(const float& scale);
+			
 			//=============== set and get post x mirror =============
 			/** Query whether x_mirroring is occuring
 			 * @return whether x_mirroring is occuring
@@ -313,6 +340,11 @@ namespace EMAN
 			 */
 			vector<float> get_matrix() const;
 
+			/** Get the 4x4 transformation matrix using a vector.
+			* @return a vector - 4 rows of 4 - that stores the values of the transformation matrix
+			**/
+			vector<float> get_matrix_4x4() const;
+			
 			/** Get the inverse of this transformation matrix
 			 * @return the inverse of this transformation matrix
 			 */
