@@ -312,21 +312,14 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		dict["MRC.nystart"] = mrch.nxstart;
 	}
 
-	Dict dic;
-	dic.put("type", "imagic");
-	dic.put("alpha", mrch.alpha);
-	dic.put("beta", mrch.beta);
-	dic.put("gamma", mrch.gamma);
+	Transform * trans = new Transform();
 	if(is_transpose) {
-		dic.put("ty", mrch.nxstart);
-		dic.put("tx", mrch.nystart);
+		trans->set_trans(mrch.nystart, mrch.nxstart, mrch.nzstart);
 	}
 	else {
-		dic.put("tx", mrch.nxstart);
-		dic.put("ty", mrch.nystart);
+		trans->set_trans(mrch.nxstart, mrch.nystart, mrch.nzstart);
 	}
-	dic.put("tz", mrch.nzstart);
-	Transform * trans = new Transform(dic);
+	
 	if(zlen<=1) {
 		dict["xform.projection"] = trans;
 	}
