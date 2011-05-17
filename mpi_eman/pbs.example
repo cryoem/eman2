@@ -8,7 +8,8 @@
 
 cd $PBS_O_WORKDIR
 
-mpirun python mpi_test_basic.py 
+#mpirun python mpi_test_basic.py 
+mpirun python mpi_test.py 
 
 # NOTE : if you want to run an EMAN2 refinement or somesuch using PBS, you do NOT call mpirun directly
 # as in the above statment. Instead, you use the native --parallel option, and EMAN2 will call
