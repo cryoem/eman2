@@ -279,6 +279,7 @@ namespace EMAN
 		bool is_big_endian;
 		bool is_new_file;
 		bool initialized;
+		bool is_transpose;
 		
 		/** generate the machine stamp used in MRC image format. */
 		static int generate_machine_stamp();
@@ -292,6 +293,9 @@ namespace EMAN
 
 		int read_mrc_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
 		int read_fei_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
+
+		//utility funciton to tranpose x and y dimension in case the source mrc image is mapc=2,mapr=1
+		int transpose(float *data, int nx, int ny, int nz) const;
 	};
 }
 

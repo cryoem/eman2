@@ -50,7 +50,8 @@ const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
 MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
-		isFEI(false), is_ri(0), is_new_file(false), initialized(false)
+		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
+		is_transpose(false)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -119,6 +120,10 @@ void MrcIO::init()
 			if( string(mrch.labels[0],3) == "Fei") {
 				isFEI = true;
 			}
+		}
+
+		if(mrch.mapc==2 && mrch.mapr==1) {
+			is_transpose = true;
 		}
 	}
 	EXITFUNC;
@@ -207,7 +212,7 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
 	}
 
-	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file,false);
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
@@ -292,14 +297,35 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		dict["ctf"] = vctf;
 	}
 
+	if(is_transpose) {
+		dict["nx"] = ylen;
+		dict["ny"] = xlen;
+		dict["MRC.nx"] = mrch.ny;
+		dict["MRC.ny"] = mrch.nx;
+		dict["MRC.mx"] = mrch.my;
+		dict["MRC.my"] = mrch.mx;
+		dict["apix_x"] = mrch.ylen / mrch.my;
+		dict["apix_y"] = mrch.xlen / mrch.mx;
+		dict["origin_x"] = mrch.yorigin;
+		dict["origin_y"] = mrch.xorigin;
+		dict["MRC.nxstart"] = mrch.nystart;
+		dict["MRC.nystart"] = mrch.nxstart;
+	}
+
 	Dict dic;
 	dic.put("type", "imagic");
 	dic.put("alpha", mrch.alpha);
 	dic.put("beta", mrch.beta);
 	dic.put("gamma", mrch.gamma);
-	dic.put("tx", mrch.xorigin);
-	dic.put("ty", mrch.yorigin);
-	dic.put("tz", mrch.zorigin);
+	if(is_transpose) {
+		dic.put("ty", mrch.nxstart);
+		dic.put("tx", mrch.nystart);
+	}
+	else {
+		dic.put("tx", mrch.nxstart);
+		dic.put("ty", mrch.nystart);
+	}
+	dic.put("tz", mrch.nzstart);
 	Transform * trans = new Transform(dic);
 	if(zlen<=1) {
 		dict["xform.projection"] = trans;
@@ -487,9 +513,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	else {
 		mrch.alpha = mrch.beta = mrch.gamma = 90.0f;
-		mrch.mapc = dict.has_key("MRC.mapc") ? (int)dict["MRC.mapc"] : 1;
-		mrch.mapr = dict.has_key("MRC.mapr") ? (int)dict["MRC.mapr"] : 2;
-		mrch.maps = dict.has_key("MRC.maps") ? (int)dict["MRC.maps"] : 3;
+		mrch.mapc = 1;
+		mrch.mapr = 2;
+		mrch.maps = 3;
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
@@ -651,6 +677,10 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		image_index = 0;
 	}
 
+	if(is_transpose && area!=0) {
+		printf("Warning: This image dimension is in (y,x,z), region I/O not supported, return the whole image instead.");
+	}
+
 	check_read_access(image_index, rdata);
 
 	if (area && is_complex_mode()) {
@@ -681,7 +711,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 
 		EMUtil::get_region_dims(new_area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
 
-		size = xlen * ylen * zlen;
+		size = (size_t)xlen * ylen * zlen;
 
 		delete new_area;
 	}
@@ -725,6 +755,10 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 			size_t j = size - 1 - i;
 			rdata[j] = static_cast < float >(usdata[j]);
 		}
+	}
+
+	if(is_transpose) {
+		transpose(rdata, xlen, ylen, zlen);
 	}
 
 	if (is_complex_mode()) {
@@ -1207,4 +1241,22 @@ int MrcIO::get_nimg()
 	else {
 		return 1;
 	}
+}
+
+int MrcIO::transpose(float *data, int xlen, int ylen, int zlen) const
+{
+	float * tmp = new float[xlen*ylen];
+
+	for(size_t z=0; z<(size_t)zlen; ++z) {
+		for(size_t y=0; y<(size_t)ylen; ++y) {
+			for(size_t x=0; x<(size_t)xlen; ++x) {
+				tmp[x*ylen+y] = data[z*xlen*ylen+y*xlen+x];
+			}
+		}
+		std::copy(tmp, tmp+xlen*ylen, data+z*xlen*ylen);
+	}
+
+	delete [] tmp;
+
+	return 0;
 }
