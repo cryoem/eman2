@@ -1014,8 +1014,11 @@ float Transform::get_scale() const {
 
 void Transform::increment_scale(const float& scale)
 {
-	float newscale = get_scale() + scale;
-	if(newscale > 0) set_scale(newscale);
+	float determinant = get_determinant();
+	//if (isnan(determinant)) determinant = 0.0f;	// Happens if det ~ 0
+	if (determinant < 0) determinant *= -1.0f;
+	float newscale = std::pow(determinant,1.0f/3.0f) + scale;
+	if(newscale > 0.0001) set_scale(newscale);
 }
 
 void print_matrix(gsl_matrix* M, unsigned int r, unsigned int c, const string& message ) {
