@@ -693,7 +693,7 @@ class EMMpiClient():
 						# broadcast the data if necessary
 						if needed:
 							writers=set(self.noderanks.values())
-							if verbose>! : print "These ranks will write: ",writers
+							if verbose>1 : print "These ranks will write: ",writers
 							
 							# start by putting all of the ranks in caching mode
 							for i in xrange(1,self.nrank):
