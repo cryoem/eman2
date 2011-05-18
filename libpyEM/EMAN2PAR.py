@@ -610,8 +610,6 @@ class EMMpiClient():
 				self.noderanks[str(b)[3:]]=src		# we just need 1 random rank on each node
 				allsrc.remove(src)
 			
-			for i in nameset
-
 			if verbose>1 : print "Successful HELO to all MPI nodes !"
 		else:
 			a=mpi_bcast_recv(0)
