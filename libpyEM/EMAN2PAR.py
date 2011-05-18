@@ -693,16 +693,18 @@ class EMMpiClient():
 						# broadcast the data if necessary
 						if needed:
 							writers=set(self.noderanks.values())
+							if verbose>! : print "These ranks will write: ",writers
 							
 							# start by putting all of the ranks in caching mode
 							for i in xrange(1,self.nrank):
-								r=self.mpi_send_com(i,"CACH")
+								r=self.mpi_send_com(i,"CACH",(data,writers))
 								if r!="OK" : print "ERROR: Rank %d won't cache !"%i
 								
 							# now send the actual cache data
 							im0=EMData(data,0)
-							ningrp=max(1,50000000/(im[0]["nx"]*im[0]["ny"]*im[0]["nz"]))	# how many images will it take to get 200 megs
+							ningrp=max(1,50000000/(im0["nx"]*im0["ny"]*im0["nz"]))	# how many images will it take to get 200 megs
 						
+							if verbose>1 : print "Caching %d images in chunks of %d"%(cacheinfo[2],ningrp)
 							# send in ~200 meg chunks
 							strt=time.time()
 							for i in xrange(0,cacheinfo[2],ningrp):
@@ -812,17 +814,20 @@ class EMMpiClient():
 					if com=="CHKC":				# check cache for complete file
 						# data will contain (name,date,#images)
 						lname=self.pathtocachename(data[0])
-						cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
-						parm=cdict[lname]
-						if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
-						else : mpi_send("DONT",0,2)											# otherwise don't
+						try:
+							cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
+							parm=cdict[lname]
+							if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+							else : mpi_send("DONT",0,2)											# otherwise don't
+						except:
+							mpi_send("NEED",0,2)
 
 					if com=="CACH":				# precaching stage
+						mpi_send("OK",0,2)		# say we're entering cache reception mode
 						# data is (filename,rankwriters)
-						if self.rank in rankwriters : fsp=self.pathtocache(data[0])			# all ranks must receive, but not all ranks actually store the data
+						if self.rank in data[1] : fsp=self.pathtocache(data[0])			# all ranks must receive (since this is a broadcast), but not all ranks actually store the data
 						else: fsp=None
 						
-						mpi_send("OK",0,2)		# say we're entering cache reception mode
 						
 						n=0
 						while 1:
@@ -831,6 +836,8 @@ class EMMpiClient():
 
 							if chunk=="DONE" : break
 							if fsp!=None:
+								try: print "Chunk with %d images"%len(chunk)
+								except: pass
 								for im in chunk:
 									im.write_image(fsp,n)
 									n+=1
