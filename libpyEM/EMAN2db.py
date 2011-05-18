@@ -296,7 +296,7 @@ def db_list_dicts(url):
 		ld=os.listdir(path+"/EMAN2DB")
 	except: return []
 	
-	ld=[i[:-4] for i in ld if i[-4:]==".bdb"]
+	ld=[i[:-4] for i in ld if i[-4:]==".bdb" and i!="00image_counts.bdb"]
 	
 	return ld
 	

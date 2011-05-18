@@ -573,6 +573,9 @@ class EMMpiClient():
 		self.lastupdate=0		# last time we sent an update to rank 0
 		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","a")
 		else: self.logfile=None
+		
+		self.rankmap={}			# key=rank, value=hostname
+		self.noderanks={}		# key=hostname, value=rank. Provides one rank/node to be used when precaching
 
 	def log(self,s):
 		if self.logfile!=None:
@@ -585,8 +588,8 @@ class EMMpiClient():
 		
 		if verbose and self.rank==0: print "Testing MPI Communications"
 
-		# A little test to make sure MPI communications are really established. Should not be necessary
-		# but if MPI isn't set up properly, then it would be better to fail here than later
+		# A little test to make sure MPI communications are really established. Also identifies node names
+		# for each rank
 		if self.rank==0:
 			mpi_bcast_send("HELO")
 			
@@ -602,7 +605,12 @@ class EMMpiClient():
 					sys.stderr.flush()
 					sys.stdout.flush()
 					os._exit(1)
+				
+				self.rankmap[src]=str(b)[3:]
+				self.noderanks[str(b)[3:]]=src		# we just need 1 random rank on each node
 				allsrc.remove(src)
+			
+			for i in nameset
 
 			if verbose>1 : print "Successful HELO to all MPI nodes !"
 		else:
@@ -629,13 +637,13 @@ class EMMpiClient():
 			if verbose: print "MPI running on %d processors"%self.nrank
 			self.log("MPI on %d processors"%self.nrank)
 			
-			# FIFOs to talk to the controlling process, order is important !
+			# FIFOs to talk to the controlling process, creation order is important !
 			self.fmcon=file("%s/tompi"%self.scratchdir,"rb",0)
 			self.tocon=file("%s/fmmpi"%self.scratchdir,"wb",0)
 			
-			# Initial handshake to make sure we're both there
+			# Initial handshake to make sure we're both here
 			if (self.fmcon.read(4)!="HELO") :
-				print "Fatal error establishing MPI communications"
+				print "Fatal error establishing MPI controller communications"
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
@@ -671,6 +679,43 @@ class EMMpiClient():
 							else: data[i]=self.status[data[i]]
 				
 						dump(data,self.tocon,-1)
+					elif com=="CACH" :
+						if verbose>1 : print "Cache request from customer: ",data
+						
+						# check each node to see if it needs the data
+						needed=False
+						cacheinfo=(data,e2filemodtime(data),EMUtil.get_image_count(data))	# we send the client (name,date,#images)
+						for i in self.noderanks.values():
+							r=self.mpi_send_com(i,"CHKC",cacheinfo)
+							if r=="NEED" :
+								if verbose>1: print "Rank %d needs the data"%i
+								needed=True
+								break
+						
+						# broadcast the data if necessary
+						if needed:
+							writers=set(self.noderanks.values())
+							
+							# start by putting all of the ranks in caching mode
+							for i in xrange(1,self.nrank):
+								r=self.mpi_send_com(i,"CACH")
+								if r!="OK" : print "ERROR: Rank %d won't cache !"%i
+								
+							# now send the actual cache data
+							im0=EMData(data,0)
+							ningrp=max(1,50000000/(im[0]["nx"]*im[0]["ny"]*im[0]["nz"]))	# how many images will it take to get 200 megs
+						
+							# send in ~200 meg chunks
+							strt=time.time()
+							for i in xrange(0,cacheinfo[2],ningrp):
+								if verbose>1: 
+									print " %d - %d (%d)"%(i,i+ningrp,time.time()-strt)
+								mpi_bcast_send(EMData.read_images(data,i,i+ningrp))
+								
+							mpi_bcast_send("DONE")
+							
+							print "Caching %s done in %d seconds"%(data,time.time()-strt)
+							
 					else : print "Unknown command from client '%s'"%com
 					continue
 					
@@ -765,6 +810,33 @@ class EMMpiClient():
 						mpi_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
 						
 						break
+
+					if com="CHKC":				# check cache for complete file
+						# data will contain (name,date,#images)
+						lname=self.pathtocachename(data[0])
+						cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
+						parm=cdict[lname]
+						if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+						else : mpi_send("DONT",0,2)											# otherwise don't
+
+					if com=="CACH":				# precaching stage
+						# data is (filename,rankwriters)
+						if self.rank in rankwriters : fsp=self.pathtocache(data[0])			# all ranks must receive, but not all ranks actually store the data
+						else: fsp=None
+						
+						mpi_send("OK",0,2)		# say we're entering cache reception mode
+						
+						n=0
+						while 1:
+							# chunk will be "DONE" or (EMData,EMData,...)
+							chunk=mpi_bcast_recv(0)
+
+							if chunk=="DONE" : break
+							if fsp!=None:
+								for im in chunk:
+									im.write_image(fsp,n)
+									n+=1
+							
 
 					if com=="EXEC":
 						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
@@ -890,10 +962,16 @@ class EMMpiClient():
 		return True
 
 	def pathtocache(self,path):
-		"""This will convert a remote filename to a local (unique) cache-file name"""
+		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
 		
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 		return "bdb:%s#%s"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
+
+	def pathtocachename(self,path):
+		"""This will convert a remote filename to a local (unique) cache-file name"""
+		
+		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
+		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 def filesenum(lst):
 	"""This is a generator that takes a list of (name,#), (name,(#,#,#)), or (name,min,max) specifiers
@@ -979,8 +1057,9 @@ class EMMpiTaskHandler():
 		shutil.rmtree(self.queuedir,True)
 
 	def precache(self,filelist):
-		"""Called by the customer to initiate precaching on the nodes. 
-		currently disabled."""
+		"""Called by the customer to initiate precaching on the nodes. """
+		for i in filelist:
+			self.sendcom("CACH",i)
 		
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
