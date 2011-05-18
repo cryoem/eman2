@@ -809,7 +809,7 @@ class EMMpiClient():
 						
 						break
 
-					if com="CHKC":				# check cache for complete file
+					if com=="CHKC":				# check cache for complete file
 						# data will contain (name,date,#images)
 						lname=self.pathtocachename(data[0])
 						cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
