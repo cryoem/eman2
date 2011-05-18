@@ -64,6 +64,8 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
 		.def("render_amp8", &EMAN::GLUtil::render_amp8)
 		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_3())
+		.def("glLoadTransposeMatrixFast", &EMAN::GLUtil::glLoadTransposeMatrixFast)
+		.def("glMultTransposeMatrixFast", &EMAN::GLUtil::glMultTransposeMatrixFast)
 		.staticmethod("gen_glu_mipmaps")
 		.staticmethod("gen_gl_texture")
 		.staticmethod("render_amp8_gl_texture")
@@ -72,6 +74,8 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.staticmethod("mx_bbox")
 		.staticmethod("render_amp8")
 		.staticmethod("get_isosurface_dl")
+		.staticmethod("glLoadTransposeMatrixFast")
+		.staticmethod("glMultTransposeMatrixFast")
 	);
 
 	delete EMAN_GLUtil_scope;

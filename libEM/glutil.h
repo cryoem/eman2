@@ -37,6 +37,7 @@
 
 #include <vector>
 #include "vec3.h"
+#include "transform.h"
 
 using std::vector;
 
@@ -97,6 +98,16 @@ namespace EMAN
 		* @return an OpenGL display list number
 		*/
 		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false);
+		
+		/** Load a EMAN style transform to open GL w/o having to go through python
+		* @param xform The Transform to apply
+		**/
+		static void glLoadTransposeMatrixFast(const Transform& xform);
+		
+		/** Mult a EMAN style transform to open GL w/o having to go through python
+		* @param xform The Transform to apply
+		**/
+		static void glMultTransposeMatrixFast(const Transform& xform);
 	};
 }
 

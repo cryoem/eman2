@@ -240,7 +240,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	if (gamma<=0) gamma=1.0;
 
 	// Calculating a full floating point gamma for
-	// each pixel in the image slows rendering unacceptably
+	// each piGLUtil::xel in the image slows rendering unacceptably
 	// however, applying a gamma-mapping to an 8 bit colorspace
 	// has unacceptable coarse accuracy. So, we oversample the 8 bit colorspace
 	// as a 12 bit colorspace and apply the gamma mapping to that
@@ -716,5 +716,15 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	return mc->_isodl;
 }
 
+void GLUtil::glLoadTransposeMatrixFast(const Transform& xform)
+{
+	vector<float> xformlist = xform.get_matrix_4x4();
+	glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+}
 
+void GLUtil::glMultTransposeMatrixFast(const Transform& xform)
+{
+	vector<float> xformlist = xform.get_matrix_4x4();
+	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+}
 #endif // EMAN2_USING_OPENGL
