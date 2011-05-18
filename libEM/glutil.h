@@ -100,14 +100,16 @@ namespace EMAN
 		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false);
 		
 		/** Load a EMAN style transform to open GL w/o having to go through python
+		* Calls glLoadTransposeMatrix rather than glLoadMatrix to convert between C/C++/Python row-major format and openGL's Column major format
 		* @param xform The Transform to apply
 		**/
-		static void glLoadTransposeMatrixFast(const Transform& xform);
+		static void glLoadMatrix(const Transform& xform);
 		
 		/** Mult a EMAN style transform to open GL w/o having to go through python
+		* Calls glMultTransposeMatrix rather than glMultMatrix to convert between C/C++/Python row-major format and openGL's Column major format
 		* @param xform The Transform to apply
 		**/
-		static void glMultTransposeMatrixFast(const Transform& xform);
+		static void glMultMatrix(const Transform& xform);
 	};
 }
 

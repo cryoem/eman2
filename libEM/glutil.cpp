@@ -716,13 +716,13 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	return mc->_isodl;
 }
 
-void GLUtil::glLoadTransposeMatrixFast(const Transform& xform)
+void GLUtil::glLoadMatrix(const Transform& xform)
 {
 	vector<float> xformlist = xform.get_matrix_4x4();
 	glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
 
-void GLUtil::glMultTransposeMatrixFast(const Transform& xform)
+void GLUtil::glMultMatrix(const Transform& xform)
 {
 	vector<float> xformlist = xform.get_matrix_4x4();
 	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
