@@ -682,9 +682,9 @@ void Transform::set_rotation(const Vec3f & v)
 
 }
 
-void Transform::increment_rotation(const Transform& multiplican)
+void Transform::rotate_origin(const Transform& by)
 {
-	vector<float> multmatrix = multiplican.get_matrix();
+	vector<float> multmatrix = by.get_matrix();
 	// First Multiply and put the result in a temp matrix
 	Transform result;
 	for (int i=0; i<3; i++) {
@@ -695,6 +695,24 @@ void Transform::increment_rotation(const Transform& multiplican)
 	//Then put the result from the tmep matrix in the original one
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<3; j++) {
+			matrix[i][j] = result[i][j];
+		}
+	}
+}
+
+void Transform::rotate(const Transform& by)
+{
+	vector<float> multmatrix = by.get_matrix();
+	// First Multiply and put the result in a temp matrix
+	Transform result;
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<4; j++) {
+			result[i][j] = multmatrix[i*4]*matrix[0][j] +  multmatrix[i*4+1]*matrix[1][j] + multmatrix[i*4+2]*matrix[2][j];
+		}
+	}
+	//Then put the result from the tmep matrix in the original one
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<4; j++) {
 			matrix[i][j] = result[i][j];
 		}
 	}
@@ -932,7 +950,7 @@ Vec3f Transform::get_trans() const
 	return v;
 }
 
-void Transform::increment_trans(const float& tx, const float& ty, const float& tz)
+void Transform::translate(const float& tx, const float& ty, const float& tz)
 {
 	bool x_mirror = get_mirror();
 	if (x_mirror) matrix[0][3] = -matrix[0][3] + tx;
@@ -1012,7 +1030,7 @@ float Transform::get_scale() const {
 	return scale;
 }
 
-void Transform::increment_scale(const float& scale)
+void Transform::scale(const float& scale)
 {
 	float determinant = get_determinant();
 	if (determinant < 0) determinant *= -1.0f;

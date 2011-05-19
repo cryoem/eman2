@@ -1708,6 +1708,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	} else { // The refine aligner failed - this shift went beyond the max shift
 		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
+		result->set_attr("score",0.0);
 	}
 	
 	//EMData *result = this_img->process("xform",Dict("transform",t));

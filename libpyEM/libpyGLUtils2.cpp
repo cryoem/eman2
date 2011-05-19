@@ -76,6 +76,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.staticmethod("get_isosurface_dl")
 		.staticmethod("glLoadMatrix")
 		.staticmethod("glMultMatrix")
+		
 	);
 
 	delete EMAN_GLUtil_scope;

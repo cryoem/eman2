@@ -110,6 +110,7 @@ namespace EMAN
 		* @param xform The Transform to apply
 		**/
 		static void glMultMatrix(const Transform& xform);
+		
 	};
 }
 

@@ -50,6 +50,27 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.children.remove(node)
 		node.parent = None
 
+	def update_matrices(self, params, xformtype):
+		"""
+		@type params: List
+		@param params: A list defining how the transform in each active node is modified
+		@type xfromtype: sting
+		@param xformtype: The sort of transform we wish to do
+		"""
+		if self.is_selected:
+			if xformtype == "rotate":
+				self.transform.rotate_origin(Transform({"type":"spin","Omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
+			elif xformtype == "translate":
+				self.transform.translate(params[0], params[1], params[2])
+			elif xformtype == "scale":
+				self.transform.scale(params[0])
+			else:
+				raise Exception,"Invalid transformation type"
+		
+		# Now tell all children to update
+		for child in self.children:
+			child.update_matrices(params, xformtype)
+			
 	def render(self):
 		"""
 		This is the method to call to render the node and its child nodes. 
@@ -63,18 +84,18 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			GL.glPushMatrix()
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
-			self.render_node(is_selected)
+			self.render_node(self.is_selected)
 			for child in self.children:
 				child.render()
 		
 			GL.glPopMatrix()
 			
 		else:
-			self.render_node(is_selected)
+			self.render_node(self.is_selected)
 			for child in self.children:
 				child.render()
 
-	def render_node(self):
+	def render_node(self, is_selected):
 		"""
 		This method, which is called by self.render(), renders the current node.
 		It should be implemented in subclasses that represent visible objects.

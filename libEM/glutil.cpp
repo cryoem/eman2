@@ -716,6 +716,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	return mc->_isodl;
 }
 
+// This crap could be avoided and speed up(A lot) if we implemented an openGL shader........
 void GLUtil::glLoadMatrix(const Transform& xform)
 {
 	vector<float> xformlist = xform.get_matrix_4x4();
@@ -727,4 +728,5 @@ void GLUtil::glMultMatrix(const Transform& xform)
 	vector<float> xformlist = xform.get_matrix_4x4();
 	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
+
 #endif // EMAN2_USING_OPENGL
