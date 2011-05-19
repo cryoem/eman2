@@ -814,7 +814,7 @@ class EMAN2DB:
 				traceback.print_exc()
 				print """
 ========
-ERROR OPENING DATABASE CACHE      (This often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
+ERROR OPENING DATABASE CACHE      (This most often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
 also indicate that a program crashed in a bad way causing potential database corruption. You can try running 'e2bdb.py -c', and
 see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*' (or on windows remove the corresponding folder).
 While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the

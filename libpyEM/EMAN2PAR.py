@@ -572,6 +572,8 @@ class EMMpiClient():
 		
 		self.lastupdate=0		# last time we sent an update to rank 0
 		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","a")
+		elif self.rank==1 : self.logfile=file(self.scratchdir+"/rank1.log","a")
+		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
 		else: self.logfile=None
 		
 		self.rankmap={}			# key=rank, value=hostname
@@ -699,6 +701,7 @@ class EMMpiClient():
 							for i in xrange(1,self.nrank):
 								r=self.mpi_send_com(i,"CACH",(data,writers))
 								if r!="OK" : print "ERROR: Rank %d won't cache !"%i
+								if verbose>1 : print "rank %d ready"%i
 								
 							# now send the actual cache data
 							im0=EMData(data,0)
@@ -710,7 +713,7 @@ class EMMpiClient():
 							for i in xrange(0,cacheinfo[2],ningrp):
 								if verbose>1: 
 									print " %d - %d (%d)"%(i,i+ningrp,time.time()-strt)
-								mpi_bcast_send(EMData.read_images(data,i,i+ningrp))
+								mpi_bcast_send(EMData.read_images(data,range(i,i+ningrp)))
 								
 							mpi_bcast_send("DONE")
 							
@@ -801,7 +804,9 @@ class EMMpiClient():
 		else :
 
 			while 1:
-				r=mpi_iprobe(0,-1)		# listen for a message from rank 0
+#				r=mpi_iprobe(0,-1)		# listen for a message from rank 0, this one doesn't block
+				r=mpi_probe(0,-1)		# listen for a message from rank 0
+				if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
 				if r!=None :
 					com,data=mpi_recv(r[1],r[2])[0]
 					
@@ -812,6 +817,7 @@ class EMMpiClient():
 						break
 
 					if com=="CHKC":				# check cache for complete file
+						if self.logfile!=None : self.logfile.write( "CHKC\n")
 						# data will contain (name,date,#images)
 						lname=self.pathtocachename(data[0])
 						try:
@@ -823,6 +829,7 @@ class EMMpiClient():
 							mpi_send("NEED",0,2)
 
 					if com=="CACH":				# precaching stage
+						if self.logfile!=None : self.logfile.write( "CACH\n")
 						mpi_send("OK",0,2)		# say we're entering cache reception mode
 						# data is (filename,rankwriters)
 						if self.rank in data[1] : fsp=self.pathtocache(data[0])			# all ranks must receive (since this is a broadcast), but not all ranks actually store the data
@@ -836,14 +843,15 @@ class EMMpiClient():
 
 							if chunk=="DONE" : break
 							if fsp!=None:
-								try: print "Chunk with %d images"%len(chunk)
-								except: pass
+				#				try: print "Chunk with %d images"%len(chunk)
+				#				except: pass
 								for im in chunk:
 									im.write_image(fsp,n)
 									n+=1
 							
 
 					if com=="EXEC":
+						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
 						task=data		# just for clarity
 						if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to MPI for execution !"
@@ -937,6 +945,7 @@ class EMMpiClient():
 #						if verbose>2 : print "rank %d: running but not done"%self.rank
 				else: 
 					time.sleep(1)
+					if self.logfile!=None : self.logfile.write( "Sleep\n")
 #					if verbose>2 : print "rank %d: waiting"%self.rank
 
 		mpi_finalize()
