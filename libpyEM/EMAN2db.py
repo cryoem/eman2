@@ -810,9 +810,18 @@ class EMAN2DB:
 				else:
 					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 			except:
-				print "/tmp/eman2db-%s"%os.getenv("USER","anyone")
-				traceback.print_exc()
-				print """
+				try:
+					print """Cache open failed. Retyring one time."""
+					# retry once 
+					time.sleep(2)
+					if(sys.platform != 'win32'):
+						self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
+					else:
+						self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
+				except:
+					print "/tmp/eman2db-%s"%os.getenv("USER","anyone")
+					traceback.print_exc()
+					print """
 ========
 ERROR OPENING DATABASE CACHE      (This most often occurs if you upgrade EMAN2 without running 'e2bdb.py -c' first. It could
 also indicate that a program crashed in a bad way causing potential database corruption. You can try running 'e2bdb.py -c', and
@@ -820,7 +829,7 @@ see if that fixes the problem, otherwise you may need to 'rm -rf /tmp/eman2db-*'
 While there is a small possibility that this will prevent recovery of image files that were corrupted by the crash, it may be the
 only practical option.)
 """
-				os._exit(1)
+					os._exit(1)
 
 		self.dicts={}
 		#if self.__dbenv.DBfailchk(flags=0) :
