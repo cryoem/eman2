@@ -429,7 +429,7 @@ class glCube(EMItem3D):
 		self.nodematrix = Transform()
 		self.parent = None
 		
-	def render_node(self, is_selected):
+	def render_node(self):
 		# So I can see the box
 		
 		glPushMatrix()
