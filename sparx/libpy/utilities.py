@@ -3076,8 +3076,7 @@ def rotation_between_anglesets(agls1, agls2):
 	from numpy import array, linalg, matrix
 	import types
 
-	rad2deg = 180.0 / pi
-	deg2rad = 1.0 / rad2deg
+	deg2rad = pi/180.0
 
 	def ori2xyz(ori):
 		if(type(ori) == types.ListType):
@@ -3089,18 +3088,14 @@ def rotation_between_anglesets(agls1, agls2):
 			theta = d["theta"]
 			psi = d["psi"]
 
-		mapt = False
-		if theta > 90:
-			theta = theta - 2 * (theta - 90.0)
-			mapt   = True
+		if theta > 90.0:
+			phi += 180.0
+			theta = 180.0-theta
 		phi   *= deg2rad
 		theta *= deg2rad
 		x = sin(theta) * sin(phi)
 		y = sin(theta) * cos(phi)
-		val = 1.0 - x*x - y*y
-		if val < 0.0: val = 0.0
-		z = sqrt(val)
-		if mapt: z = -z
+		z = cos(theta)
 
 		return [x, y, z]
 

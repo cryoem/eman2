@@ -564,6 +564,13 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	if val > error_threshold: return [], mirror_consistent_rate, val
 	err = stable(ps, ali_params_mir_cons)
 	#  Here all errors could be printed, PAP.
+	'''
+	for i in xrange(nima):
+		print "Particle %3d :"%i,
+		if i in mir_cons_part:
+			print "error = %6.4f"%err[mir_cons_part.index(i)]
+		else: print "Mirror inconsistent"
+	'''
 	stable_set = []
 	for i in xrange(len(mir_cons_part)):
 		if err[i] < individual_error_threshold: stable_set.append([err[i], mir_cons_part[i]])
