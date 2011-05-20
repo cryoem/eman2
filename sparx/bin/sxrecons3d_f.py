@@ -43,7 +43,7 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack vol_stack fsc_curve <mask> --CTF --snr=signal_noise_ratio --list=file --group=ID --sym=symmetry -verbose=(0|1) --MPI"
+	usage = progname + " prj_stack volume fsc_curve <mask> --CTF --snr=signal_noise_ratio --list=file --group=ID --sym=symmetry -verbose=(0|1) --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",     action="store_true", default=False, help="perform ctf correction")
