@@ -103,6 +103,27 @@ crosshairscursor = [
     'cccccccbbcccccccc'
 ]   
  
+zhaircursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'cccccccbbcccccccc',
+    'ccccccbbbbccccccc',
+    'cccccbbbbbbcccccc',
+    'ccccbbcbbcbbccccc',
+    'cccbbccbbccbbcccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccbbccbbccbbcccc',
+    'ccccbbcbbcbbccccc',
+    'cccccbbbbbbcccccc',
+    'ccccccbbbbccccccc',
+    'cccccccbbcccccccc'
+]   
 scalecursor = [
     '16 16 2 1',
     'b c #00ff00',
@@ -140,6 +161,7 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0, -1000.0)	# Default near,far, and zclip values
+		self.camera.useprespective(50, 0.5)
 		self.SGnodelist = SGnodelist				# List of SG nodes (Ross will build these)
 		self.SGactivenodeset = SGactivenodeset			# A set of all active nodes
 		self.scalestep = scalestep				# The scale factor stepsize
@@ -147,6 +169,7 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
 		self.scalecursor = QtGui.QCursor(QtGui.QPixmap(scalecursor),-1,-1)
+		self.zhaircursor = QtGui.QCursor(QtGui.QPixmap(zhaircursor),-1,-1)
 
 	def initializeGL(self):
 		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
@@ -203,7 +226,10 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 			else:
 				self.setCursor(self.xyrotatecursor)
 		if event.buttons()&Qt.MidButton:
-			self.setCursor(self.crosshaircursor)
+			if event.modifiers()&Qt.ControlModifier:
+				self.setCursor(self.zhaircursor)
+			else:
+				self.setCursor(self.crosshaircursor)
 		if event.buttons()&Qt.RightButton:
 			self.setCursor(self.scalecursor)		
 			
@@ -224,7 +250,10 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
 			self.updateSG()
 		if event.buttons()&Qt.MidButton:
-			self.update_matrices([dx,-dy,0], "translate")
+			if event.modifiers()&Qt.ControlModifier:
+				self.update_matrices([0,0,(dx+dy)], "translate")
+			else:
+				self.update_matrices([dx,-dy,0], "translate")
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton:
 			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
@@ -372,21 +401,27 @@ class EMCamera:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			GLU.gluPerspective(self.fovy, width/height, self.near, self.far);
+			GLU.gluPerspective(self.fovy, (float(width)/float(height)), self.near, self.far);
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
+			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
 			
-	def useprespective(self):
+	def useprespective(self, boundingbox, screenfraction):
 		""" 
+		@param boundingbox: The dimension of the bounding for the object to be rendered
+		@param screenfraction: The fraction of the screen height to occupy
 		Changes projection matrix to perspective
 		"""
+		self.perspective_z = (boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
 		self.useothro = False
+		
 
-	def useortho(self):
+	def useortho(self, zclip):
 		"""
 		Changes projection matrix to orthographic
 		"""
 		self.useothro = True
+		self.zclip = zclip
 
 	def setclipfar(self, far):
 		"""
