@@ -84,7 +84,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			GL.glPushMatrix()
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
-			self.render_node(self.is_selected)
+			self.render_node()
 			for child in self.children:
 				child.render()
 		
@@ -95,7 +95,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			for child in self.children:
 				child.render()
 
-	def render_node(self, is_selected):
+	def render_node(self):
 		"""
 		This method, which is called by self.render(), renders the current node.
 		It should be implemented in subclasses that represent visible objects.
