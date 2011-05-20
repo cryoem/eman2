@@ -8270,7 +8270,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 		pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
 		pid_list = map(int, pid_list)
 	else:
-		pid_list = range(nima)
+		if(not pid_list):  pid_list = range(nima)
 
 	if verbose==0:
 		finfo = None

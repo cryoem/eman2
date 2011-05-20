@@ -73,7 +73,7 @@ def main():
 		prj_stack = args[0]
 		vol_stack = args[1]
 		nimage = EMUtil.get_image_count( prj_stack )
-		pid_list = range(0, nimage)        
+		pid_list = range(0, nimage) 
 	elif len(args) == 5:
 		prj_stack = args[0]
 		vol_stack = args[1]
@@ -88,13 +88,13 @@ def main():
 	if(options.list and options.group > -1):
 		ERROR("options group and list cannot be used together","recon3d_n",1)
 		sys.exit()
-	
+
 	from applications import recons3d_n
 
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize)
 	global_def.BATCH = False
-        
+
 	if options.MPI:
 		from mpi import mpi_finalize
 		mpi_finalize()
