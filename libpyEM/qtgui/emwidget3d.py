@@ -150,7 +150,7 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
 	"""
-	def __init__(self, parentwidget=None, SGnodelist=[], SGactivenodeset=set(), scalestep=0.5):
+	def __init__(self, parentwidget=None, SGactivenodeset=set(), scalestep=0.5):
 		"""
 		@param parent: The parent of the widget
 		@param SGnodelist: a list enumerating all the SGnodes
@@ -160,10 +160,8 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
-		self.camera = EMCamera(1.0, 10000.0, -1000.0)	# Default near,far, and zclip values
-		self.camera.useprespective(50, 0.5)
-		self.SGnodelist = SGnodelist				# List of SG nodes (Ross will build these)
-		self.SGactivenodeset = SGactivenodeset			# A set of all active nodes
+		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
+		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
@@ -368,19 +366,22 @@ class EMLight:
 			glDisable(self.light)
 class EMCamera:
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, zclip, useothro=True, fovy=60.0):
+	def __init__(self, near, far, zclip=-1000.0, useothro=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
 		@param far: The volume view far position
 		@param zclip: The zclipping plane (basicaly how far back the camera is)
 		@param useothro: Use orthographic projection
+		@param boundingbox: The dimension of the bounding for the object to be rendered
+		@param screenfraction: The fraction of the screen height to occupy
 		"""
-		self.fovy = fovy
 		self.far = far
 		self.near = near
-		self.zclip = zclip
-		self.useothro = useothro
+		if useothro:
+			self.useortho(zclip)
+		else:
+			self.useprespective(boundingbox, screenfraction, fovy)
 
 	def update(self, width, height):
 		"""
@@ -406,12 +407,13 @@ class EMCamera:
 			glLoadIdentity()
 			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
 			
-	def useprespective(self, boundingbox, screenfraction):
+	def useprespective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
 		Changes projection matrix to perspective
 		"""
+		self.fovy = fovy
 		self.perspective_z = (boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
 		self.useothro = False
 		
@@ -539,6 +541,7 @@ class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3DWidget()
+		self.widget.camera.useprespective(50, 0.5)
 		self.cube1 = glCube(100.0, 100.0, -1000.0, 50.0)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)
