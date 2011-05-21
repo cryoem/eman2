@@ -681,6 +681,7 @@ class EMMpiClient():
 						dump(data,self.tocon,-1)
 					elif com=="CACH" :
 						if verbose>1 : print "Cache request from customer: ",data
+						dump("OK",self.tocon,-1)
 						
 						# check each node to see if it needs the data
 						needed=False
@@ -691,6 +692,7 @@ class EMMpiClient():
 								if verbose>1: print "Rank %d needs the data"%i
 								needed=True
 								break
+						if not needed and verbose>1: print "Nobody needs the data"
 						
 						# broadcast the data if necessary
 						if needed:
@@ -701,7 +703,7 @@ class EMMpiClient():
 							for i in xrange(1,self.nrank):
 								r=self.mpi_send_com(i,"CACH",(data,writers))
 								if r!="OK" : print "ERROR: Rank %d won't cache !"%i
-								if verbose>1 : print "rank %d ready"%i
+#								if verbose>1 : print "rank %d ready"%i
 								
 							# now send the actual cache data
 							im0=EMData(data,0)
@@ -712,10 +714,17 @@ class EMMpiClient():
 							strt=time.time()
 							for i in xrange(0,cacheinfo[2],ningrp):
 								if verbose>1: 
-									print " %d - %d (%d)"%(i,i+ningrp,time.time()-strt)
-								mpi_bcast_send(EMData.read_images(data,range(i,i+ningrp)))
-								
+									print " %d - %d\t%d\t%d\t"%(i,i+ningrp,i/ningrp,int(time.time()-strt)),
+								dts=EMData.read_images(data,range(i,i+ningrp))
+								if verbose>1: 
+									print "%d\t"%(time.time()-strt),
+								mpi_bcast_send(dts)
+								if verbose>1: 
+									print "%d"%(time.time()-strt)
+								mpi_barrier()
+							dts=None	
 							mpi_bcast_send("DONE")
+							mpi_barrier()
 							
 							print "Caching %s done in %d seconds"%(data,time.time()-strt)
 							
@@ -819,11 +828,16 @@ class EMMpiClient():
 					if com=="CHKC":				# check cache for complete file
 						if self.logfile!=None : self.logfile.write( "CHKC\n")
 						# data will contain (name,date,#images)
-						lname=self.pathtocachename(data[0])
+						lname=self.pathtocache(data[0])
 						try:
-							cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
-							parm=cdict[lname]
-							if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+							mtime=e2filemodtime(lname)
+							numim=EMUtil.get_image_count(lname)
+							#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
+							#parm=cdict[lname]
+							#if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+							if mtime<data[1] or numim<data[2] : 
+								mpi_send("NEED",0,2)
+								print "need ",data[0],lname,mtime,data[1],numim,data[2]	
 							else : mpi_send("DONT",0,2)											# otherwise don't
 						except:
 							mpi_send("NEED",0,2)
@@ -840,13 +854,16 @@ class EMMpiClient():
 						while 1:
 							# chunk will be "DONE" or (EMData,EMData,...)
 							chunk=mpi_bcast_recv(0)
+							mpi_barrier()			# We do this here so we can write while new data is arriving
 
 							if chunk=="DONE" : break
 							if fsp!=None:
 				#				try: print "Chunk with %d images"%len(chunk)
 				#				except: pass
 								for im in chunk:
-									im.write_image(fsp,n)
+									try:
+										im.write_image(fsp,n)
+									except: pass
 									n+=1
 							
 
@@ -979,13 +996,25 @@ class EMMpiClient():
 		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
 		
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
-		return "bdb:%s#%s"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
+		return "%s/%s.hdf"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 	def pathtocachename(self,path):
 		"""This will convert a remote filename to a local (unique) cache-file name"""
 		
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
-		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
+		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:]+".hdf")
+
+#	def pathtocache(self,path):
+#		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
+		
+#		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
+#		return "bdb:%s#%s"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
+
+#	def pathtocachename(self,path):
+#		"""This will convert a remote filename to a local (unique) cache-file name"""
+		
+#		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
+#		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 def filesenum(lst):
 	"""This is a generator that takes a list of (name,#), (name,(#,#,#)), or (name,min,max) specifiers
