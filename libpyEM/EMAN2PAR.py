@@ -731,26 +731,6 @@ class EMMpiClient():
 					else : print "Unknown command from client '%s'"%com
 					continue
 					
-				# Now look for any requests from existing running jobs
-				info=mpi_iprobe(-1,-1)
-				if info != None:
-					data,src,tag=mpi_recv(info[1],info[2])
-					com,data=data
-					if com=="DONE" :
-						mpi_send("OK",src,2)
-						taskid=self.rankjobs[src]
-						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"wb"),-1)
-						self.status[taskid]=100
-						self.rankjobs[src]=-1
-						self.log('Task %s complete on rank %d'%(taskid,src))
-					elif com=="PROG" :
-						mpi_send("OK",src,2)
-						if data[1]<0 or data[1]>99 :
-							print "Warning: Invalid progress report :",data
-						else : 
-							try : self.status[data[0]]=data[1]
-							except: print "Warning: Invalid progress report :",data
-					continue
 				
 				# Finally, see if we have any jobs that need to be executed
 				if self.nextjob<=self.maxjob :
@@ -800,12 +780,33 @@ class EMMpiClient():
 								sys.stdout.flush()
 								os._exit(1)
 						
-							if verbose>2 : print "Send requested data to rank %d"%rank
+							if verbose>1 : print "Send requested data to rank %d"%rank
 							
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
 						self.nextjob+=1
 						continue
+				
+				# Now look for any requests from existing running jobs
+				info=mpi_iprobe(-1,-1)
+				if info != None:
+					data,src,tag=mpi_recv(info[1],info[2])
+					com,data=data
+					if com=="DONE" :
+						mpi_send("OK",src,2)
+						taskid=self.rankjobs[src]
+						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"wb"),-1)
+						self.status[taskid]=100
+						self.rankjobs[src]=-1
+						self.log('Task %s complete on rank %d'%(taskid,src))
+					elif com=="PROG" :
+						mpi_send("OK",src,2)
+						if data[1]<0 or data[1]>99 :
+							print "Warning: Invalid progress report :",data
+						else : 
+							try : self.status[data[0]]=data[1]
+							except: print "Warning: Invalid progress report :",data
+					continue
 				
 				time.sleep(2)
 				
