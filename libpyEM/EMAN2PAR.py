@@ -1059,8 +1059,7 @@ class EMMpiTaskHandler():
 		self.cachedir=self.scratchdir+"/cache"
 		try: os.makedirs(self.queuedir)
 		except: 
-			print "mkdir queue failed ",self.queuedir
-			pass
+			print "makedirs queue failed (%s). May have failed because already exists. "%self.queuedir
 
 		self.maxid=1			# Current task counter, points to the next open number
 		self.completed={}		# set of completed tasks, key is task id, value is completion status
@@ -1070,10 +1069,12 @@ class EMMpiTaskHandler():
 		
 		# Named pipes we use to communicate with rank 0 of the MPI job
 		# Unfortunately this isn't windows compatible as far as I know :^(
-		try : os.mkfifo("%s/tompi"%self.scratchdir)
+		try : os.unlink("%s/tompi"%self.scratchdir)
 		except : pass
-		try : os.mkfifo("%s/fmmpi"%self.scratchdir)
+		try : os.unlink("%s/fmmpi"%self.scratchdir)
 		except : pass
+		os.mkfifo("%s/tompi"%self.scratchdir)
+		os.mkfifo("%s/fmmpi"%self.scratchdir)
 
 		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2 </dev/null"%(ncpus,self.scratchdir)
 		
@@ -1085,8 +1086,9 @@ class EMMpiTaskHandler():
 		
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
 		self.tompi.write("HELO")
-		if (self.fmmpi.read(4)!="HELO") :
-			print "Fatal error establishing MPI communications"
+		rd=self.fmmpi.read(4)
+		if (rd!="HELO") :
+			print "Fatal error establishing MPI communications (%s)",rd
 			sys.stderr.flush()
 			sys.stdout.flush()
 			os._exit(1)

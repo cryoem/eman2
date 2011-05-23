@@ -38,6 +38,7 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])

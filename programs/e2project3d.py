@@ -66,11 +66,13 @@ class EMParallelProject3D:
 		
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
+		print "Precache ",fsp
 		etc.precache([fsp])
 		
 		self.num_cpus = etc.cpu_est()
-		if self.num_cpus > 32: # upper limit 
-			self.num_cpus = 32
+		print self.num_cpus," total CPUs available"
+		if self.num_cpus > 64: # upper limit 
+			self.num_cpus = 64
 		
 		self.__task_options = None
 	
@@ -244,6 +246,8 @@ def main():
 	
 	if ( options.check ): options.verbose = 9
 	
+	print "project3d: ",str(options)
+
 	if len(args) < 1:
 		parser.error("Error: No input file given")
 	
@@ -280,6 +284,13 @@ def main():
 	
 		
 	if options.parallel:
+		try:
+			p=options.parallel.split(":")
+			if p[0]=="mpi" and int(p[1])>64:
+				print "Modified parallelism in projection to use 64 cores"
+				options.parallel="%s:64:%s"%(p[0],p[2])
+		except: pass
+
 		n=0
 		for i,fsp in enumerate(args) :
 			job = EMParallelProject3D(options,fsp,options.sym[i],n,i,logger)
