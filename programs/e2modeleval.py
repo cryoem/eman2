@@ -62,7 +62,7 @@ Evaluates density at C-alpha positions from a PDB model
 				resID.append(line[17:20].strip())
 	#do watershed where seeds are x,y,z
 	print "doing watershed"
-	watershed = inputmrc.process("watershed",{"xpoints":x,"ypoints":y,"zpoints":z,"minval":thresh})
+	watershed = inputmrc.process("segment.watershed",{"xpoints":x,"ypoints":y,"zpoints":z,"minval":thresh})
 	print "done watershed"
 	watershed.write_image("watershed.mrc")
 

@@ -359,7 +359,7 @@ def helixhunter_ccf(target, probe, da):
 		t = orients[i]
 		probeMRC= probe.process("xform",{"transform":t}) 
 		currentCCF=target.calc_mutual_correlation(probeMRC)
-		bestCCF.process_inplace("operate.max",{"with":currentCCF})
+		bestCCF.process_inplace("math.max",{"with":currentCCF})
 
 	bestCCF.write_image("int-hh-coeff.mrc")
 	return bestCCF

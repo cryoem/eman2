@@ -1145,13 +1145,13 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
+        e.process_inplace('filter.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
         
         e2 = EMData()
         e2.set_size(32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
-        e.process_inplace('bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
+        e.process_inplace('filter.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
             
         
     def test_normalize_unitlen(self):
@@ -1540,7 +1540,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
+        e.process_inplace('math.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                     'y':(1.3,2.4), 'interpolation':1})
         
         if(IS_TEST_EXCEPTION):
@@ -1549,10 +1549,10 @@ class TestProcessor(unittest.TestCase):
             e2.set_size(32,32,32)
             e2.process_inplace('testimage.noise.uniform.rand')
             self.assertEqual(e2.is_complex(), False)
-            self.assertRaises( RuntimeError, e2.process_inplace, 'addspectralnoise', \
+            self.assertRaises( RuntimeError, e2.process_inplace, 'math.addspectralnoise', \
                                 {'n':2, 'x0':9.8, 'dx':1.2, 'y':(1.3,2.4), 'interpolation':1})
             try:
-                e2.process_inplace('addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
+                e2.process_inplace('math.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                         'y':(1.3,2.4), 'interpolation':1})
             except RuntimeError, runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
