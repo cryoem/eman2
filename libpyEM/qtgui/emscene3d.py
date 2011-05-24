@@ -462,12 +462,6 @@ class glCube(EMItem3D):
 		self.yf = size/2
 		self.zf = size/2
 		
-		self.isactive = False
-				
-		# Matrix initialization
-		self.nodematrix = Transform()
-		self.parent = None
-		
 	def render_node(self):
 		# So I can see the box
 		
