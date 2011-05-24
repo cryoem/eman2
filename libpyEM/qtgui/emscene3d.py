@@ -146,7 +146,7 @@ scalecursor = [
     'ccccccccbbbbbbbb'
 ]   
 
-class EMScene3DWidget(EMItem3D, EMGLWidget):
+class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
 	"""
@@ -564,7 +564,7 @@ class GLdemo(QtGui.QWidget):
 		vbox.addLayout(hbox)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)
-		self.setWindowTitle('BCM Chimera')
+		self.setWindowTitle('BCM EM Viewer')
 		
 		self.connect(self.cube1box,QtCore.SIGNAL("stateChanged(int)"),self.on_updatecb1)
 		self.connect(self.cube2box,QtCore.SIGNAL("stateChanged(int)"),self.on_updatecb2)
