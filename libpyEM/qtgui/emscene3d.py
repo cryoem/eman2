@@ -465,8 +465,7 @@ class glCube(EMItem3D):
 	def render_node(self):
 		# So I can see the box
 		
-		glPushMatrix()
-		GLUtil.glMultMatrix(self.transform)
+
 		
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.5,0.5,0.5,1.0])
@@ -531,7 +530,7 @@ class glCube(EMItem3D):
 		glVertex3f(self.xf, self.yi, self.zi)
 
 		glEnd()
-		glPopMatrix()
+
 		
 class GLdemo(QtGui.QWidget):
 	def __init__(self):
