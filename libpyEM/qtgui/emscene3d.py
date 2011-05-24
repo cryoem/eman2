@@ -466,7 +466,7 @@ class glCube(EMItem3D):
 		# So I can see the box
 		
 		glPushMatrix()
-		GLUtil.glMultMatrix(self.nodematrix)
+		GLUtil.glMultMatrix(self.transform)
 		
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.5,0.5,0.5,1.0])
@@ -536,7 +536,7 @@ class glCube(EMItem3D):
 class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
-		self.widget = EMScene3DWidget()
+		self.widget = EMScene3D()
 		self.widget.camera.useprespective(50, 0.5)
 		self.cube1 = glCube(100.0, 100.0, -1000.0, 50.0)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
