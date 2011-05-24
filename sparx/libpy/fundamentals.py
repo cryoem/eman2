@@ -358,7 +358,7 @@ def mirror(img, axis = 'x'):
 	"""Mirror of an image about by changing the sign of the specified axis
 	"""
 	e = img.copy()
-	e.process_inplace("mirror",{"axis":axis})
+	e.process_inplace("xform.mirror",{"axis":axis})
 	return e 
 
 # FFT functions
