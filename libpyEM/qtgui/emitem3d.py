@@ -53,6 +53,49 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		self.children.remove(node)
 		node.parent = None
+		
+	def get_all_selected_nodes(self): #TODO: test!
+		"""
+		For the tree rooted at self, this recursive method returns a list of all the selected nodes.
+		@return: a list of selected nodes
+		"""
+		selected_list = []
+		if self.is_selected:
+			selected_list.append(self)
+		for child in self.children: #Recursion ends on leaf nodes here
+			selected_list.extend(child.get_all_selected_nodes()) #Recursion
+		
+		return selected_list
+	
+	def get_nearest_selected_nodes(self): #TODO: test!
+		"""
+		For the tree rooted at self, this recursive method returns a list of the selected nodes that are nearest to self.
+		A selected node will not be in the returned list if one of its ancestor nodes is also selected. 
+		@return: a list of selected nodes
+		"""
+		selected_list = []
+		if self.is_selected:
+			return [self]
+		else:
+			for child in self.children:
+				selected_list.extend(child.get_nearest_selected_nodes())
+		
+		return selected_list
+	
+	def get_farthest_selected_nodes(self): #TODO: test!
+		"""
+		For the tree rooted at self, this recursive method returns a list of the selected nodes that are farthest from self.
+		A selected node will not be in the returned list if one of its descendant nodes is also selected. 
+		@return: a list of selected nodes
+		"""
+		selected_list = []
+		for child in self.children:
+			selected_list.extend(child.get_farthest_selected_nodes())
+		if not selected_list: #either this is a leaf node, or there are no selected nodes in the child subtrees
+			if self.is_selected:
+				selected_list.append(self)
+		
+		return selected_list
 
 	def update_matrices(self, params, xformtype):
 		"""
