@@ -7,8 +7,11 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	"""
 	The base class for nodes in our scene graph, which is used in our 3D scene viewer.
 	In our case, the scene graph is a tree data structure.
-	"""	
-	def __init__(self, parent = None, children = set(), transform = None):
+	"""
+	# Class attrib to connect openGL int identifiers to class instances
+	selection_idx_dict = {}
+	
+	def __init__(self, intname, parent = None, children = set(), transform = None):
 		"""
 		@type parent: EMItem3D
 		@param parent: the parent node to the current node or None for the root node
@@ -23,6 +26,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
+		self.intname = intname
 	
 	def add_child(self, node):
 		"""
@@ -71,7 +75,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		for child in self.children:
 			child.update_matrices(params, xformtype)
 			
-	def render(self):
+	def render(self, selectionmode=False):
 		"""
 		This is the method to call to render the node and its child nodes. 
 		It calls self.render_node() to render the current node. 
@@ -80,20 +84,22 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		if not self.is_visible:
 			return #Also applies to subtree rooted at this node
 		
+		if selectionmode: GL.glPushName(self.intname)
 		if self.transform != None:
 			GL.glPushMatrix()
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
 			self.render_node()
 			for child in self.children:
-				child.render()
+				child.render(selectionmode)
 		
 			GL.glPopMatrix()
 			
 		else:
-			self.render_node(self.is_selected)
+			self.render_node()
 			for child in self.children:
-				child.render()
+				child.render(selectionmode)
+		if selectionmode: GL.glPopName()
 
 	def render_node(self):
 		"""

@@ -157,7 +157,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param SGactivenodeset: a set enumerating the list of active nodes
 		@param scalestep: The step to increment the object scaling
 		"""
-		EMItem3D.__init__(self, parent=None, transform=Transform())
+		EMItem3D.__init__(self, 0, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
@@ -175,7 +175,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glEnable(GL_DEPTH_TEST)
 		self.firstlight = EMLight(GL_LIGHT0)
 		self.firstlight.enablelighting()
-		#self.setAutoBufferSwap(False)
         
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -183,35 +182,43 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		#Call rendering
 		self.render()		# SG nodes must have a render method
 		glFlush()			# Finish rendering
-		#self.swapBuffers()
 
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 	
-	# Functions to control the list of nodes whose transforms will be updated
-	#def activatenode(self, node):
-	#	"""
-	#	@param node: A SG node to activate
-	#	Adds a node to the set, SGactivenodeset, enumerating the active nodes
-	#	"""
-	#	self.SGactivenodeset.add(node)
-	#	node.isactive = True
-	#	# When a node is actived we need to do some error checking to make sure that both parent and child node are in the set (otherwise thing will be moved multiple times)
-	#	parentnode = node.parent
-	#	while(parentnode):
-	#		if parentnode.isactive:
-	#			self.deactivatenode(parentnode)
-	#		parentnode = parentnode.parent
-	#	# Remove any children of the active nodelist.......
-	#	
-	#def deactivatenode(self, node):
-	#	"""
-	#	@param node: A SG node to deactivatenodeDeactivate the nodelist"
-	#	"""
-	#	if node.isactive:
-	#		self.SGactivenodeset.remove(node)
-	#		node.isactive = False
-	#
+	def pickItem(self, x, y):
+		viewport = glGetIntegerv(GL_VIEWPORT)
+		glSelectBuffer(1024)	# The buffer size for selection
+		glRenderMode(GL_SELECT)
+		glInitNames()
+		#glPushName(0)
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		GLU.gluPickMatrix(x, viewport[3] - y, 10.0, 10.0, viewport)
+		self.camera.setprojectionmatrix()
+		#drawstuff
+		self.render(selectionmode=True)
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		records = glRenderMode(GL_RENDER)
+		self.processselection(records)
+	
+	def processselection(self, records):
+		closestitem = None
+		bestdistance = 1.0
+		for record in records:
+			if record.near < bestdistance:
+				bestdistance = record.near
+				closestitem = record.names
+		print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
+			#print record.names, record.near, record.far
+			#print record.DISTANCE_DIVISOR
+			#selecteditem = EMItem3D.selection_idx_dict[record.names[0]]
+			#print selecteditem, record.names, record.near, record.far
+			#selecteditem.on_selection()
+		#self.updateSG()
 			
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -221,10 +228,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.previous_x = event.x()
 		self.previous_y = event.y()
 		if event.buttons()&Qt.LeftButton:
-			if  event.y() > 0.95*self.size().height():
-				self.setCursor(self.zrotatecursor)
+			if event.modifiers()&Qt.ControlModifier:
+				self.pickItem(event.x(), event.y())
 			else:
-				self.setCursor(self.xyrotatecursor)
+				if  event.y() > 0.95*self.size().height():
+					self.setCursor(self.zrotatecursor)
+				else:
+					self.setCursor(self.xyrotatecursor)
 		if event.buttons()&Qt.MidButton:
 			if event.modifiers()&Qt.ControlModifier:
 				self.setCursor(self.zhaircursor)
@@ -391,11 +401,13 @@ class EMCamera:
 		@param height: The height of the window in pixels
 		updates the camera and viewport after windowresize
 		"""
+		self.width = width
+		self.height = height
 		if self.useothro:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			glOrtho(-width/2, width/2, -height/2, height/2, self.near, self.far);
+			self.setprojectionmatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,self.zclip)
@@ -404,10 +416,16 @@ class EMCamera:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			GLU.gluPerspective(self.fovy, (float(width)/float(height)), self.near, self.far);
+			self.setprojectionmatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
+	
+	def setprojectionmatrix(self):
+		if self.useothro:
+			glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far);
+		else:
+			GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
 			
 	def useprespective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
@@ -453,22 +471,35 @@ class EMCamera:
 # All object that are rendered inherit from abstractSGnode and implement the render method
 # In this example I use a cube, but any object can be drawn and so long as the object class inherits from abstractSGnode
 class glCube(EMItem3D):
-	def __init__(self, size):
-		EMItem3D.__init__(self, parent=None, transform=Transform())
+	def __init__(self, size, intname):
+		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+		# size
 		self.xi = -size/2
 		self.yi = -size/2
 		self.zi = -size/2
 		self.xf = size/2
 		self.yf = size/2
-		self.zf = size/2
+		self.zf = size/2	
+		# color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		
+		# This stuff is only for leaf nodes
+		EMItem3D.selection_idx_dict[self.intname] = self
+	
+	def on_selection(self):
+		self.diffuse = [0.0,0.5,0.0,1.0]
+		self.specular = [0.0,1.0,0.0,1.0]
+		self.ambient = [0.0, 1.0, 0.0, 1.0]
 		
 	def render_node(self):
-		
+			
 		# Material properties of the box
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.5,0.5,0.5,1.0])
-		glMaterialfv(GL_FRONT, GL_SPECULAR, [1.0,1.0,1.0,1.0])
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
-		glMaterialfv(GL_FRONT, GL_AMBIENT, [1.0, 1.0, 1.0, 1.0])
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		# The box itself anlong with normal vectors
 		glBegin(GL_QUADS)
 
@@ -534,10 +565,10 @@ class GLdemo(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3D()
 		self.widget.camera.useprespective(50, 0.5)
-		self.cube1 = glCube(50.0)
+		self.cube1 = glCube(50.0, 1)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)
-		self.cube2 = glCube(50.0)
+		self.cube2 = glCube(50.0, 2)
 		self.widget.add_child(self.cube2)
 		#self.widget.activatenode(cube2)
 
