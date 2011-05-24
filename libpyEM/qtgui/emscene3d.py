@@ -453,7 +453,7 @@ class EMCamera:
 # All object that are rendered inherit from abstractSGnode and implement the render method
 # In this example I use a cube, but any object can be drawn and so long as the object class inherits from abstractSGnode
 class glCube(EMItem3D):
-	def __init__(self, x, y, z, size):
+	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		self.xi = -size/2
 		self.yi = -size/2
@@ -463,9 +463,6 @@ class glCube(EMItem3D):
 		self.zf = size/2
 		
 	def render_node(self):
-		# So I can see the box
-		
-
 		
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.5,0.5,0.5,1.0])
