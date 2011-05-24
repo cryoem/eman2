@@ -6916,7 +6916,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
-	class ConvolutionKernalProcessor : public Processor
+	class ConvolutionKernelProcessor : public Processor
 	{
 	public:
 		virtual EMData* process(const EMData* const image);
@@ -6928,16 +6928,16 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 		static Processor *NEW()
 		{
-			return new ConvolutionKernalProcessor();
+			return new ConvolutionKernelProcessor();
 		}
 		string get_desc() const
 		{
-			return "Filters an image with a convolution kernal.";
+			return "Filters an image with a convolution kernel in real space.";
 		}
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("kernal", EMObject::FLOATARRAY, "the convolution kernal");
+			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
 			return d;
 		}
 		static const string NAME;	

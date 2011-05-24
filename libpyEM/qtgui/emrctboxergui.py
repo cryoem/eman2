@@ -102,26 +102,26 @@ class ControlPannel(QtGui.QWidget):
 		hbl=QtGui.QHBoxLayout()
 		klabel = QtGui.QLabel("Kernal Size:",self)
 		hbl.addWidget(klabel)
-		self.kernal_combobox = QtGui.QComboBox()
-		hbl.addWidget(self.kernal_combobox)
+		self.kernel_combobox = QtGui.QComboBox()
+		hbl.addWidget(self.kernel_combobox)
 		vbox.addLayout(hbl)
 		
-		self.kernal_stacked_widget = QtGui.QStackedWidget()
-		vbox.addWidget(self.kernal_stacked_widget)
+		self.kernel_stacked_widget = QtGui.QStackedWidget()
+		vbox.addWidget(self.kernel_stacked_widget)
 		
 		self.filter_but=QtGui.QPushButton("Filter")
 		vbox.addWidget(self.filter_but)
 		
 		filterwidget.setLayout(vbox)
 		
-		self.gridkernal = []
-		self.gridkernal.append(self.add_custom_kernals(3))
-		self.gridkernal.append(self.add_custom_kernals(5))
-		self.gridkernal.append(self.add_custom_kernals(7))
-		self.add_kernal_sizes()
+		self.gridkernel = []
+		self.gridkernel.append(self.add_custom_kernels(3))
+		self.gridkernel.append(self.add_custom_kernels(5))
+		self.gridkernel.append(self.add_custom_kernels(7))
+		self.add_kernel_sizes()
 		
 		self.connect(self.filter_but,QtCore.SIGNAL("clicked(bool)"),self.on_filter)
-		QtCore.QObject.connect(self.kernal_combobox, QtCore.SIGNAL("activated(int)"), self.kernal_combobox_changed)
+		QtCore.QObject.connect(self.kernel_combobox, QtCore.SIGNAL("activated(int)"), self.kernel_combobox_changed)
 		QtCore.QObject.connect(self.filter_combobox, QtCore.SIGNAL("activated(int)"), self.filter_combobox_changed)
 		
 		return filterwidget
@@ -189,32 +189,32 @@ class ControlPannel(QtGui.QWidget):
 		
 	def on_filter(self):
 		
-		kernal = self.gridkernal[self.kernal_combobox.currentIndex()]
+		kernel = self.gridkernel[self.kernel_combobox.currentIndex()]
 		kt = []
-		for i in kernal:
+		for i in kernel:
 			if i.text():
 				kt.append(float(i.text()))
 			else:
 				kt.append(0.0)
 		#filter each window
 		for window in self.mediator.windowlist:
-			fdata = window.data.process("convkernal",{"kernal":kt})
+			fdata = window.data.process("filter.convolution.kernel",{"kernel":kt})
 			print "filtered win"
 			window.reload_image(fdata, window.filename+"_filted")
 
 	
-	def add_kernal_sizes(self):
-		self.kernal_combobox.addItem("3x3")
-		self.kernal_combobox.addItem("5x5")
-		self.kernal_combobox.addItem("7x7")
+	def add_kernel_sizes(self):
+		self.kernel_combobox.addItem("3x3")
+		self.kernel_combobox.addItem("5x5")
+		self.kernel_combobox.addItem("7x7")
 		# Load data
-		idx = self.db.get("kernalsizeidx",dfl=0)
-		self.kernal_combobox.setCurrentIndex(idx)
-		self.kernal_combobox_changed(idx)
+		idx = self.db.get("kernelsizeidx",dfl=0)
+		self.kernel_combobox.setCurrentIndex(idx)
+		self.kernel_combobox_changed(idx)
 		
-	def kernal_combobox_changed(self, idx):
-		self.kernal_stacked_widget.setCurrentIndex(idx)
-		self.db["kernalsizeidx"] = idx
+	def kernel_combobox_changed(self, idx):
+		self.kernel_stacked_widget.setCurrentIndex(idx)
+		self.db["kernelsizeidx"] = idx
 		self.load_filters(idx)
 	
 	def load_filters(self, idx):
@@ -236,37 +236,37 @@ class ControlPannel(QtGui.QWidget):
 			
 	def filter_combobox_changed(self, idx):
 		# 3x3 Filters
-		if self.kernal_combobox.currentIndex() == 0:
+		if self.kernel_combobox.currentIndex() == 0:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
 				for i in xrange(9):
-					self.gridkernal[0][i].setText("1")
+					self.gridkernel[0][i].setText("1")
 		# 5x5 Filters
-		if self.kernal_combobox.currentIndex() == 1:
+		if self.kernel_combobox.currentIndex() == 1:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
 				for i in xrange(25):
-					self.gridkernal[1][i].setText("1")	
+					self.gridkernel[1][i].setText("1")	
 		# 7x7 Filters
-		if self.kernal_combobox.currentIndex() == 2:
+		if self.kernel_combobox.currentIndex() == 2:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
 				for i in xrange(49):
-					self.gridkernal[2][i].setText("1")	
+					self.gridkernel[2][i].setText("1")	
 			
-	def add_custom_kernals(self, size):
-		self.kernalwidget = QtGui.QWidget()
+	def add_custom_kernels(self, size):
+		self.kernelwidget = QtGui.QWidget()
 		grid3 = QtGui.QGridLayout()
-		kernalwidgetidx = []
+		kernelwidgetidx = []
 		for i in xrange(size):
 			for j in xrange(size):
 				kw = QtGui.QLineEdit("",self)
 				kw.setFixedSize(40,25)	# This could be an issue......
-				kernalwidgetidx.append(kw)
+				kernelwidgetidx.append(kw)
 				grid3.addWidget(kw, i, j)
 		
 		grid3.setAlignment(QtCore.Qt.AlignCenter)
-		self.kernalwidget.setLayout(grid3)
-		self.kernal_stacked_widget.addWidget(self.kernalwidget)
+		self.kernelwidget.setLayout(grid3)
+		self.kernel_stacked_widget.addWidget(self.kernelwidget)
 		
-		return kernalwidgetidx
+		return kernelwidgetidx
 		
 	def get_main(self, layout):
 		hbl=QtGui.QHBoxLayout()

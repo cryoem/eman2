@@ -240,7 +240,7 @@ const string NewHighpassTanhProcessor::NAME = "filter.highpass.tanh";
 const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
 const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
-const string ConvolutionKernalProcessor::NAME = "convkernal";
+const string ConvolutionKernelProcessor::NAME = "filter.convolution.kernel";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -463,7 +463,7 @@ template <> Factory < Processor >::Factory()
 	force_add<RadialProcessor>();
 
 	force_add<DirectionalSumProcessor>();
-	force_add<ConvolutionKernalProcessor>();
+	force_add<ConvolutionKernelProcessor>();
 	
 	//Gorgon-related processors
 	force_add<ModelEMCylinderProcessor>();
@@ -9730,20 +9730,20 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 	return;
 }
 
-EMData* ConvolutionKernalProcessor::process(const EMData* const image) 
+EMData* ConvolutionKernelProcessor::process(const EMData* const image) 
 {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
 	
 	EMData* conv = new EMData(image->get_xsize(),image->get_ysize(),1);
-	vector<float>kernal = params["kernal"];
+	vector<float>kernel = params["kernel"];
 
-	if (fmod(sqrt((float)kernal.size()), 1.0f) != 0) throw InvalidParameterException("Convolution kernal must be square!!");
+	if (fmod(sqrt((float)kernel.size()), 1.0f) != 0) throw InvalidParameterException("Convolution kernel must be square!!");
 	
 	float* data = image->get_data();
 	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
 	
 	//I could do the edges by wrapping around, but this is not necessary(such functionality can be iplemented later)
-	int ks = int(sqrt(float(kernal.size())));
+	int ks = int(sqrt(float(kernel.size())));
 	int n = (ks - 1)/2;
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -9755,7 +9755,7 @@ EMData* ConvolutionKernalProcessor::process(const EMData* const image)
 			// Perahps I could use some ofrm of Caching to speed things up?
 			for (int cx = -n; cx <= n; cx++) {
 				for (int cy = -n; cy <= n; cy++) {
-					cpixel += data[(i+cx) + (j+cy) * nx]*kernal[idx];
+					cpixel += data[(i+cx) + (j+cy) * nx]*kernel[idx];
 					idx++;
 				}
 			}
@@ -9766,7 +9766,7 @@ EMData* ConvolutionKernalProcessor::process(const EMData* const image)
 	return conv;
 }
 
-void ConvolutionKernalProcessor::process_inplace(EMData * image)
+void ConvolutionKernelProcessor::process_inplace(EMData * image)
 {
 	throw UnexpectedBehaviorException("Not implemented yet");
 	

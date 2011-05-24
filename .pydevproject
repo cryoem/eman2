@@ -1,5 +1,6 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?eclipse-pydev version="1.0"?>
+
 <pydev_project>
   
   
@@ -117,4 +118,8 @@
 
 
 
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/home/john/EMAN2/lib</path>
+<path>/home/john/EMAN2/bin</path>
+</pydev_pathproperty>
 </pydev_project>

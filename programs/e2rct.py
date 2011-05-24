@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--aligngran",type="float",default=30.0,help="Fineness of global search in e2align3d.py, default=30.0")
 	parser.add_option("--weightrecons",type="int",default=1,help="weight reconstructions by ptcl_repr (before averaging), default=1")
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--verbose", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()

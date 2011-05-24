@@ -175,13 +175,15 @@ class EMScene3DWidget(EMItem3D, EMGLWidget):
 		glEnable(GL_DEPTH_TEST)
 		self.firstlight = EMLight(GL_LIGHT0)
 		self.firstlight.enablelighting()
-
+		#self.setAutoBufferSwap(False)
+        
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
 		self.render()		# SG nodes must have a render method
 		glFlush()			# Finish rendering
+		#self.swapBuffers()
 
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
