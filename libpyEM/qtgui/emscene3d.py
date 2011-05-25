@@ -146,6 +146,28 @@ scalecursor = [
     'ccccccccbbbbbbbb'
 ]   
 
+selectorcursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'cbbbbbbbbbcccccc',
+    'bcccccccccbccccc',
+    'cbbbbbbbcccbcccc',
+    'cccbccccccccbccc',
+    'ccccbbbbccccbccc',
+    'cccbccccccccbccc',
+    'ccccbbbbcccbcbcc',
+    'cccbccccccbcccbc',
+    'ccccbbbbbbcccccb',
+    'cccccccbccbcccbc',
+    'ccccccccbccccbcc',
+    'cccccccccbccbccc',
+    'ccccccccccbbcccc',
+    'cccccccccccccccc',
+    'cccccccccccccccc',
+    'cccccccccccccccc'
+]
+    
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
@@ -163,11 +185,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
+		self.toggle_render_selectedarea = False			# Don't render the selection box by default
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
 		self.scalecursor = QtGui.QCursor(QtGui.QPixmap(scalecursor),-1,-1)
 		self.zhaircursor = QtGui.QCursor(QtGui.QPixmap(zhaircursor),-1,-1)
+		self.selectorcursor = QtGui.QCursor(QtGui.QPixmap(selectorcursor),-1,-1)
 
 	def initializeGL(self):
 		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
@@ -177,60 +201,119 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.firstlight.enablelighting()
         
 	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
-		self.render()		# SG nodes must have a render method
+		self.render()							# SG nodes must have a render method
 		glFlush()			# Finish rendering
 
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 	
-	def pickItem(self, x, y):
+	def render_node(self):
+		if self.toggle_render_selectedarea: self.render_selectedarea() 	# Draw the selection box if needed
+		
+	def pickItem(self):
+		"""
+		Pick an item on the screen using openGL's selection mechanism
+		"""
 		viewport = glGetIntegerv(GL_VIEWPORT)
 		glSelectBuffer(1024)	# The buffer size for selection
 		glRenderMode(GL_SELECT)
 		glInitNames()
-		#glPushName(0)
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		GLU.gluPickMatrix(x, viewport[3] - y, 10.0, 10.0, viewport)
+		x = self.sa_xi + self.camera.get_width()/2
+		y = self.camera.get_height()/2 - self.sa_yi
+		dx = 2*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
+		dy = 2*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
 		self.camera.setprojectionmatrix()
-		#drawstuff
+		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		glLoadIdentity()
 		self.render()
+		glPopMatrix()
+		# Return to default state
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
 		records = glRenderMode(GL_RENDER)
 		self.processselection(records)
 	
+	def selectarea(self, xi, xf, yi, yf):
+		"""
+		Set an area for selection
+		"""
+		self.sa_xi = xi - self.camera.get_width()/2
+		self.sa_xf = xf - self.camera.get_width()/2
+		self.sa_yi = -yi + self.camera.get_height()/2
+		self.sa_yf = -yf + self.camera.get_height()/2
+		self.toggle_render_selectedarea = True
+		
+	def deselectarea(self):
+		"""
+		Turn off selectin box
+		"""
+		self.sa_xi = 0.0
+		self.sa_xf = 0.0
+		self.sa_yi = 0.0
+		self.sa_yf = 0.0
+		self.toggle_render_selectedarea = False
+		
+	def render_selectedarea(self):
+		"""
+		Draw the selection box
+		"""
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		self.camera.set_ortho_projectionmatrix()
+		glColor3f(0.0,1.0,0.0)
+		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
+		glBegin(GL_LINE_LOOP)
+		z = -self.camera.get_zclip() - 1
+		glVertex3f(self.sa_xi, self.sa_yi, z)
+		glVertex3f(self.sa_xi, self.sa_yf, z)
+		glVertex3f(self.sa_xf, self.sa_yf, z)
+		glVertex3f(self.sa_xf, self.sa_yi, z)
+		glEnd()
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
+		
 	def processselection(self, records):
+		"""
+		Process the selection records
+		"""
 		closestitem = None
 		bestdistance = 1.0
 		for record in records:
+			print record.names
 			if record.near < bestdistance:
 				bestdistance = record.near
 				closestitem = record.names
 		if closestitem:
-			print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
-			#print record.names, record.near, record.far
-			#print record.DISTANCE_DIVISOR
-			#selecteditem = EMItem3D.selection_idx_dict[record.names[0]]
-			#print selecteditem, record.names, record.near, record.far
-			#selecteditem.on_selection()
-		#self.updateSG()
+			pass
+			#print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
+			
 			
 	# Event subclassing
 	def mousePressEvent(self, event):
 		"""
 		QT event handler. Records the coords when a mouse button is pressed and sets the cursor depending on what button(s) are pressed
 		"""
+		# The previous x,y records where the mouse was prior to mouse move, rest upon mouse move
 		self.previous_x = event.x()
 		self.previous_y = event.y()
+		# The first x,y records where the mouse was first pressed
+		self.first_x = self.previous_x
+		self.first_y = self.previous_y
 		if event.buttons()&Qt.LeftButton:
 			if event.modifiers()&Qt.ControlModifier:
-				self.pickItem(event.x(), event.y())
+				self.setCursor(self.selectorcursor)
 			else:
 				if  event.y() > 0.95*self.size().height():
 					self.setCursor(self.zrotatecursor)
@@ -251,14 +334,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
 		if event.buttons()&Qt.LeftButton:
-			magnitude = math.sqrt(dx*dx + dy*dy)
-			#Check to see if the cursor is in the 'virtual slider pannel'
-			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.setCursor(self.zrotatecursor)
-				self.update_matrices([magnitude,0,0,-dx/magnitude], "rotate")
+			if event.modifiers()&Qt.ControlModifier:
+				self.setCursor(self.selectorcursor)
+				self.selectarea(self.first_x, event.x(), self.first_y, event.y())
 			else:
-				self.setCursor(self.xyrotatecursor) 
-				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
+				magnitude = math.sqrt(dx*dx + dy*dy)
+				#Check to see if the cursor is in the 'virtual slider pannel'
+				if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
+					self.setCursor(self.zrotatecursor)
+					self.update_matrices([magnitude,0,0,-dx/magnitude], "rotate")
+				else:
+					self.setCursor(self.xyrotatecursor) 
+					self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
 			self.updateSG()
 		if event.buttons()&Qt.MidButton:
 			if event.modifiers()&Qt.ControlModifier:
@@ -279,6 +366,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Qt event handler. Returns the cursor to arrow unpn mouse button release
 		"""
 		self.setCursor(Qt.ArrowCursor)
+		if self.toggle_render_selectedarea:
+			self.pickItem()
+			self.deselectarea()
+			self.updateSG()
 	
 	def wheelEvent(self, event):
 		"""
@@ -408,7 +499,7 @@ class EMCamera:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			self.setprojectionmatrix()
+			self.set_ortho_projectionmatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,self.zclip)
@@ -417,16 +508,22 @@ class EMCamera:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			self.setprojectionmatrix()
+			self.set_perspective_projectionmatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
-	
+			
 	def setprojectionmatrix(self):
 		if self.useothro:
-			glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far);
+			self.set_ortho_projectionmatrix()
 		else:
-			GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
+			self.set_perspective_projectionmatrix()
+			
+	def set_ortho_projectionmatrix(self):
+		glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
+		
+	def set_perspective_projectionmatrix(self):
+		GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
 			
 	def useprespective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
@@ -463,7 +560,18 @@ class EMCamera:
 		Set the field of view angle aspect of the viewing volume
 		"""
 		self.fovy = fovy
-
+		
+	def get_height(self):
+		""" Get the viewport height """
+		return self.height
+	
+	def get_width(self):
+		""" Get the viewport width"""
+		return self.width
+		
+	def get_zclip(self):
+		""" Get the zclip """
+		return self.zclip
 	# Maybe other methods to control the camera
 			
 
@@ -480,16 +588,17 @@ class glCube(EMItem3D):
 		self.zi = -size/2
 		self.xf = size/2
 		self.yf = size/2
-		self.zf = size/2	
+		self.zf = size/2
+		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 	
-	def on_selection(self):
-		self.diffuse = [0.0,0.5,0.0,1.0]
-		self.specular = [0.0,1.0,0.0,1.0]
-		self.ambient = [0.0, 1.0, 0.0, 1.0]
+	#def on_selection(self):
+		#self.diffuse = [0.0,0.5,0.0,1.0]
+		#self.specular = [0.0,1.0,0.0,1.0]
+		#self.ambient = [0.0, 1.0, 0.0, 1.0]
 		
 	def render_node(self):
 			
@@ -499,6 +608,7 @@ class glCube(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		# The box itself anlong with normal vectors
+		
 		glBegin(GL_QUADS)
 
 		glNormal3f(self.xi, self.yi, self.zi + 1)
@@ -562,7 +672,7 @@ class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3D()
-		self.widget.camera.useprespective(50, 0.5)
+		#self.widget.camera.useprespective(50, 0.5)
 		self.cube1 = glCube(50.0)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)

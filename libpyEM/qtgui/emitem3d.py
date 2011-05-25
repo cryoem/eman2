@@ -154,22 +154,24 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		if not self.is_visible:
 			return #Also applies to subtree rooted at this node
 		
-		GL.glPushName(self.intname)
 		if self.transform != None:
 			GL.glPushMatrix()
+			GL.glPushName(self.intname)
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
 			self.render_node()
 			for child in self.children:
 				child.render()
-		
+			GL.glPopName()
 			GL.glPopMatrix()
 			
 		else:
+			GL.glPushName(self.intname)
 			self.render_node()
 			for child in self.children:
 				child.render()
-		GL.glPopName()
+			GL.glPopName()
+		
 
 	def render_node(self):
 		"""
