@@ -224,10 +224,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
+		# Find the selection box
 		x = self.sa_xi + self.camera.get_width()/2
 		y = self.camera.get_height()/2 - self.sa_yi
 		dx = 2*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
 		dy = 2*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		# Apply selection box
 		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
 		self.camera.setprojectionmatrix()
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -241,6 +243,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
 		records = glRenderMode(GL_RENDER)
+		# process records
 		self.processselection(records)
 	
 	def selectarea(self, xi, xf, yi, yf):
@@ -470,19 +473,19 @@ class EMLight:
 			glDisable(self.light)
 class EMCamera:
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, zclip=-1000.0, useothro=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
+	def __init__(self, near, far, zclip=-1000.0, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
 		@param far: The volume view far position
 		@param zclip: The zclipping plane (basicaly how far back the camera is)
-		@param useothro: Use orthographic projection
+		@param usingortho: Use orthographic projection
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
 		"""
 		self.far = far
 		self.near = near
-		if useothro:
+		if usingortho:
 			self.useortho(zclip)
 		else:
 			self.useprespective(boundingbox, screenfraction, fovy)
@@ -495,7 +498,7 @@ class EMCamera:
 		"""
 		self.width = width
 		self.height = height
-		if self.useothro:
+		if self.usingortho:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
@@ -514,7 +517,7 @@ class EMCamera:
 			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
 			
 	def setprojectionmatrix(self):
-		if self.useothro:
+		if self.usingortho:
 			self.set_ortho_projectionmatrix()
 		else:
 			self.set_perspective_projectionmatrix()
@@ -533,14 +536,14 @@ class EMCamera:
 		"""
 		self.fovy = fovy
 		self.perspective_z = (boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
-		self.useothro = False
+		self.usingortho = False
 		
 
 	def useortho(self, zclip):
 		"""
 		Changes projection matrix to orthographic
 		"""
-		self.useothro = True
+		self.usingortho = True
 		self.zclip = zclip
 
 	def setclipfar(self, far):
@@ -571,7 +574,10 @@ class EMCamera:
 		
 	def get_zclip(self):
 		""" Get the zclip """
-		return self.zclip
+		if self.usingortho:
+			return self.zclip
+		else:
+			return self.perspective_z
 	# Maybe other methods to control the camera
 			
 
