@@ -157,7 +157,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param SGactivenodeset: a set enumerating the list of active nodes
 		@param scalestep: The step to increment the object scaling
 		"""
-		EMItem3D.__init__(self, 0, parent=None, transform=Transform())
+		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
@@ -198,7 +198,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		GLU.gluPickMatrix(x, viewport[3] - y, 10.0, 10.0, viewport)
 		self.camera.setprojectionmatrix()
 		#drawstuff
-		self.render(selectionmode=True)
+		self.render()
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
@@ -212,7 +212,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if record.near < bestdistance:
 				bestdistance = record.near
 				closestitem = record.names
-		print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
+		if closestitem:
+			print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
 			#print record.names, record.near, record.far
 			#print record.DISTANCE_DIVISOR
 			#selecteditem = EMItem3D.selection_idx_dict[record.names[0]]
@@ -471,8 +472,8 @@ class EMCamera:
 # All object that are rendered inherit from abstractSGnode and implement the render method
 # In this example I use a cube, but any object can be drawn and so long as the object class inherits from abstractSGnode
 class glCube(EMItem3D):
-	def __init__(self, size, intname):
-		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+	def __init__(self, size):
+		EMItem3D.__init__(self, parent=None, transform=Transform())
 		# size
 		self.xi = -size/2
 		self.yi = -size/2
@@ -484,9 +485,6 @@ class glCube(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		
-		# This stuff is only for leaf nodes
-		EMItem3D.selection_idx_dict[self.intname] = self
 	
 	def on_selection(self):
 		self.diffuse = [0.0,0.5,0.0,1.0]
@@ -565,10 +563,10 @@ class GLdemo(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3D()
 		self.widget.camera.useprespective(50, 0.5)
-		self.cube1 = glCube(50.0, 1)
+		self.cube1 = glCube(50.0)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)
-		self.cube2 = glCube(50.0, 2)
+		self.cube2 = glCube(50.0)
 		self.widget.add_child(self.cube2)
 		#self.widget.activatenode(cube2)
 

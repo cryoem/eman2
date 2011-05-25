@@ -1,6 +1,7 @@
 from OpenGL import GL
 from EMAN2 import Transform
 from libpyGLUtils2 import GLUtil
+import weakref
 
 
 class EMItem3D(object): #inherit object for new-style class (new-stype classes required for super() and Python properties)
@@ -10,8 +11,10 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	"""
 	# Class attrib to connect openGL int identifiers to class instances
 	selection_idx_dict = {}
+	selection_recycle = []
+	selection_intname = -1
 	
-	def __init__(self, intname, parent = None, children = set(), transform = None):
+	def __init__(self, parent = None, children = set(), transform = None):
 		"""
 		@type parent: EMItem3D
 		@param parent: the parent node to the current node or None for the root node
@@ -26,8 +29,22 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
-		self.intname = intname
+		self.getnset_unique_integer()
+		
+	def __del__(self):
+		EMItem3D.selection_recycle.append(self.intname)
 	
+	def getnset_unique_integer(self):
+		"""
+		Stuff for the selection mechanism
+		"""
+		if len(EMItem3D.selection_recycle) > 0:
+			self.intname = EMItem3D.selection_recycle.pop()
+		else:
+			EMItem3D.selection_intname += 1
+			self.intname = EMItem3D.selection_intname
+		EMItem3D.selection_idx_dict[self.intname] = weakref.ref(self)
+		
 	def add_child(self, node):
 		"""
 		Adds a child node, if not already in the set of child nodes.
@@ -128,7 +145,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		for child in self.children:
 			child.update_matrices(params, xformtype)
 			
-	def render(self, selectionmode=False):
+	def render(self):
 		"""
 		This is the method to call to render the node and its child nodes. 
 		It calls self.render_node() to render the current node. 
@@ -137,22 +154,22 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		if not self.is_visible:
 			return #Also applies to subtree rooted at this node
 		
-		if selectionmode: GL.glPushName(self.intname)
+		GL.glPushName(self.intname)
 		if self.transform != None:
 			GL.glPushMatrix()
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
 			self.render_node()
 			for child in self.children:
-				child.render(selectionmode)
+				child.render()
 		
 			GL.glPopMatrix()
 			
 		else:
 			self.render_node()
 			for child in self.children:
-				child.render(selectionmode)
-		if selectionmode: GL.glPopName()
+				child.render()
+		GL.glPopName()
 
 	def render_node(self):
 		"""
