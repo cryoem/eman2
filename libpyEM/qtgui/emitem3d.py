@@ -36,6 +36,16 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		self.children.add(node)
 		node.parent = self
+	
+	def add_children(self, nodes):
+		"""
+		Adds all the provided child nodes which are not already in the set of child nodes.
+		@type nodes: an iterable collection of EMItem3D (or subclass) objects
+		@param nodes: the nodes which will be added as child nodes
+		"""
+		for node in nodes:
+			self.children.add(node)
+			node.parent = self
 			
 	def has_child(self, node):
 		"""
@@ -54,7 +64,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.children.remove(node)
 		node.parent = None
 		
-	def get_all_selected_nodes(self): #TODO: test!
+	def get_all_selected_nodes(self):
 		"""
 		For the tree rooted at self, this recursive method returns a list of all the selected nodes.
 		@return: a list of selected nodes
@@ -67,7 +77,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 		return selected_list
 	
-	def get_nearest_selected_nodes(self): #TODO: test!
+	def get_nearest_selected_nodes(self):
 		"""
 		For the tree rooted at self, this recursive method returns a list of the selected nodes that are nearest to self.
 		A selected node will not be in the returned list if one of its ancestor nodes is also selected. 
@@ -82,7 +92,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 		return selected_list
 	
-	def get_farthest_selected_nodes(self): #TODO: test!
+	def get_farthest_selected_nodes(self):
 		"""
 		For the tree rooted at self, this recursive method returns a list of the selected nodes that are farthest from self.
 		A selected node will not be in the returned list if one of its descendant nodes is also selected. 
@@ -158,3 +168,42 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def mousePressEvent(self, event): pass
 	def mouseReleaseEvent(self, event): pass
 	def wheelEvent(self, event): pass
+
+if __name__ == '__main__':
+	#Test code
+	root = EMItem3D(0)
+	a = EMItem3D(1,root)
+	b = EMItem3D(2,root)
+	c = EMItem3D(3,root)
+	root.add_children([a,b,c])
+	aa = EMItem3D(4)
+	ab = EMItem3D(5)
+	ac = EMItem3D(6)
+	a.add_children([aa,ab,ac])
+	ba = EMItem3D(7)
+	bb = EMItem3D(8)
+	bc = EMItem3D(9)
+	b.add_children([ba,bb,bc])
+	ca = EMItem3D(10)
+	cb = EMItem3D(11)
+	cc = EMItem3D(12)
+	c.add_children([ca,cb,cc])
+	
+	aaa = EMItem3D(13)
+	aab = EMItem3D(14)
+	aac = EMItem3D(15)
+	aa.add_children([aaa,aab,aac])
+	
+	a.is_selected = True
+	aab.is_selected = True
+	ba.is_selected = True
+	bc.is_selected = True
+	c.is_selected = True
+	cc.is_selected = True
+	
+	print "get_all_selected_nodes() test: "
+	print "\tpassed?  ", set(root.get_all_selected_nodes()) == set([a,aab,ba,bc,c,cc])
+	print "get_nearest_selected_nodes() test: "
+	print "\tpassed?  ", set(root.get_nearest_selected_nodes()) == set([a,ba,bc,c])
+	print "get_farthest_selected_nodes() test: "
+	print "\tpassed?  ", set(root.get_farthest_selected_nodes()) == set([aab,ba,bc,cc])
