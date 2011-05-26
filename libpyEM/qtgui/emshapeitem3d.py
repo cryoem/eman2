@@ -42,65 +42,29 @@ from EMAN2 import Transform
 
 class EMCube(EMItem3D):
     def __init__(self, size, intname):
-        EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
         # size
-        self.xi = -size/2
-        self.yi = -size/2
-        self.zi = -size/2
-        self.xf = size/2
-        self.yf = size/2
-        self.zf = size/2    
+#        self.xi = -size/2
+#        self.yi = -size/2
+#        self.zi = -size/2
+#        self.xf = size/2
+#        self.yf = size/2
+#        self.zf = size/2
+		self.size = size    
         # color
-        self.diffuse = [0.5,0.5,0.5,1.0]
-        self.specular = [1.0,1.0,1.0,1.0]
-        self.ambient = [1.0, 1.0, 1.0, 1.0]
-        
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		
     def render_node(self):        
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-        # The box itself anlong with normal vectors
-		glBegin(GL_QUADS)	# Start Drawing The Cube
-
-		# Front Face (note that the texture's corners have to match the quad's corners)
-		glNormal3f(self.xi, self.yi, self.zi + 1); glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xf, self.yi, self.zi + 1); glVertex3f(self.xf, self.yi, self.zi)
-		glNormal3f(self.xf, self.yf, self.zi + 1); glVertex3f(self.xf, self.yf, self.zi)
-		glNormal3f(self.xi, self.yf, self.zi + 1); glVertex3f(self.xi, self.yf, self.zi)
-
-		# Back Face
-		glNormal3f(self.xi - 1, self.yi, self.zi); glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xi - 1, self.yi, self.zf); glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xi - 1, self.yf, self.zf); glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xi - 1, self.yf, self.zi); glVertex3f(self.xi, self.yf, self.zi)
-
-		# Top Face
-		glNormal3f(self.xi, self.yi, self.zf - 1); glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xi, self.yf, self.zf - 1); glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf, self.zf - 1); glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf, self.yi, self.zf - 1); glVertex3f(self.xf, self.yi, self.zf)
-
-		# Bottom Face
-		glNormal3f(self.xf + 1, self.yf, self.zf); glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf + 1, self.yf, self.zi); glVertex3f(self.xf, self.yf, self.zi)
-		glNormal3f(self.xf + 1, self.yi, self.zi); glVertex3f(self.xf, self.yi, self.zi)
-		glNormal3f(self.xf + 1, self.yi, self.zf); glVertex3f(self.xf, self.yi, self.zf)
-
-		# Right face
-		glNormal3f(self.xi, self.yf + 1, self.zi); glVertex3f(self.xi, self.yf, self.zi)
-		glNormal3f(self.xi, self.yf + 1, self.zf); glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf + 1, self.zf); glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf + 1, self.zi); glVertex3f(self.xf, self.yf, self.zi)
-
-		# Left Face
-		glNormal3f(self.xi, self.yi - 1, self.zi); glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xi, self.yi - 1, self.zf); glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xf, self.yi - 1, self.zf); glVertex3f(self.xf, self.yi, self.zf)
-		glNormal3f(self.xf, self.yi - 1, self.zi); glVertex3f(self.xf, self.yi, self.zi)
-
-		glEnd()	# Done Drawing The Cube
+		
+		init_glut()
+		GLUT.glutSolidCube(self.size)
 
 
 class EMSphere(EMItem3D):
@@ -115,21 +79,15 @@ class EMSphere(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		
-		init_glut()
-		
+				
 	def render_node(self):
 		# Material properties of the sphere
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		 
-#		quadratic = gluNewQuadric()
-#		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
-#		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
-
-#		gluSphere(quadratic,self.radius,self.slices,self.stacks)
+		
+		init_glut()
 		GLUT.glutSolidSphere(self.radius, self.slices, self.stacks)
 
 class EMCylinder(EMItem3D):
@@ -144,9 +102,7 @@ class EMCylinder(EMItem3D):
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		
-		init_glut()
+		self.ambient = [1.0, 1.0, 1.0, 1.0]		
 		
 	def render_node(self):
 		# Material properties of the cylinder
@@ -154,14 +110,8 @@ class EMCylinder(EMItem3D):
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-
-#		quadratic = gluNewQuadric()
-#		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
-#		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
-#		
-#		gluQuadricDrawStyle(quadratic, GLU_FILL)
-#		gluCylinder(quadratic, self.radius, self.radius, self.height, self.slices, self.stacks)		
-
+		
+		init_glut()
 		GLUT.glutSolidCylinder(self.radius, self.height, self.slices, self.stacks)
 
 class EMLine(EMItem3D):
