@@ -82,14 +82,15 @@ def main():
 	tiltimgs = EMData.read_images(options.tiltdata)
 	untiltimgs = EMData.read_images(options.untiltdata)
 	if len(tiltimgs) != len(untiltimgs):
-		print "The untilted image stack is not the same lenght asthe tilted stack!!!"
+		print "The untilted image stack is not the same lenght as the tilted stack!!!"
 		exit(1)
 
 	# Make a new dir for each run
 	dirindex = 1
 	while os.path.exists("./%s_%d"%(options.path,dirindex)):
 		dirindex += 1
-	global workingdir = "%s_%d"%(options.path,dirindex)
+	global workingdir
+	workingdir = "%s_%d"%(options.path,dirindex)
 	os.mkdir(workingdir)
 	
 	# Do projections

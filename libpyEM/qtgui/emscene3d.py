@@ -205,7 +205,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
 		self.render_selectedarea() 	# Draw the selection box if needed
-		self.render()							# SG nodes must have a render method
+		self.render()			# SG nodes must have a render method
 		glFlush()			# Finish rendering
 
 	def resizeGL(self, width, height):
@@ -240,7 +240,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslate(0,0,2*self.camera.get_zclip()) # Factor of two to compensate for the samera already being set
+		self.camera.set_camera_position(sfactor=2) # Factor of two to compensate for the samera already being set
 		self.render()
 		glPopMatrix()
 		
@@ -527,11 +527,11 @@ class EMCamera:
 			glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
 			self.set_camera_position()
 	
-	def set_camera_position(self):
+	def set_camera_position(self, sfactor=1):
 		"""
 		Set the default camera position
 		"""
-		glTranslate(0,0,self.get_zclip())
+		glTranslate(0,0,sfactor*self.get_zclip())
 		
 	def setprojectionmatrix(self):
 		"""
