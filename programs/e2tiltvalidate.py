@@ -106,7 +106,7 @@ def main():
 	run(e2simmxcmd)
 	
 	# Now that we have the simmx, lets validate each particles
-	global workingdir = "TiltValidate_2"
+	#global workingdir = "TiltValidate_2"
 	# Read in files
 	simmx= EMData.read_images("bdb:%s#simmx"%workingdir)
 	projections = EMData.read_images("bdb:%s#projections"%workingdir)
@@ -148,8 +148,8 @@ def main():
 		
 def compare_to_tilt(volume, tilted, imgnum, eulerxform, tiltrange, tiltstep):
 	scoremx = EMData(2*tiltrange,2*tiltrange+1)
-	for rotx in xrange(-tiltrange, tiltrange=1,tiltstep):
-		for roty in xrange(-tiltrange, tiltrange=1,tiltstep):
+	for rotx in xrange(-tiltrange, tiltrange+1,tiltstep):
+		for roty in xrange(-tiltrange, tiltrange+1,tiltstep):
 			# First make the projection
 			tiltangle = math.sqrt(rotx*rotx + roty*roty)
 			tiltangle = math.atan2(roty/rotx)
