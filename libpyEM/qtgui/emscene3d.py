@@ -204,6 +204,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
+		self.render_selectedarea() 	# Draw the selection box if needed
 		self.render()							# SG nodes must have a render method
 		glFlush()			# Finish rendering
 
@@ -211,7 +212,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera.update(width, height)
 	
 	def render_node(self):
-		if self.toggle_render_selectedarea: self.render_selectedarea() 	# Draw the selection box if needed
+		pass
 		
 	def pickItem(self):
 		"""
@@ -224,31 +225,38 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		# Find the selection box
+		
+		# Find the selection box. Go from Volume view coords to viewport coords
 		x = self.sa_xi + self.camera.get_width()/2
 		y = self.camera.get_height()/2 - self.sa_yi
 		dx = 2*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
 		dy = 2*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		
 		# Apply selection box
 		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
 		self.camera.setprojectionmatrix()
+		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
+		glTranslate(0,0,2*self.camera.get_zclip()) # Factor of two to compensate for the samera already being set
 		self.render()
 		glPopMatrix()
+		
 		# Return to default state
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
 		records = glRenderMode(GL_RENDER)
+		
 		# process records
 		self.processselection(records)
 	
 	def selectarea(self, xi, xf, yi, yf):
 		"""
-		Set an area for selection
+		Set an area for selection. Need to switch bewteen viewport coords, where (0,0 is bottom left) to
+		volume view coords where 0,0) is center of the screen.
 		"""
 		self.sa_xi = xi - self.camera.get_width()/2
 		self.sa_xf = xf - self.camera.get_width()/2
@@ -268,24 +276,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def render_selectedarea(self):
 		"""
-		Draw the selection box
+		Draw the selection box, box is always drawn orthographically
 		"""
-		glMatrixMode(GL_PROJECTION)
-		glPushMatrix()
-		glLoadIdentity()
-		self.camera.set_ortho_projectionmatrix()
-		glColor3f(0.0,1.0,0.0)
-		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
-		glBegin(GL_LINE_LOOP)
-		z = -self.camera.get_zclip() - 1
-		glVertex3f(self.sa_xi, self.sa_yi, z)
-		glVertex3f(self.sa_xi, self.sa_yf, z)
-		glVertex3f(self.sa_xf, self.sa_yf, z)
-		glVertex3f(self.sa_xf, self.sa_yi, z)
-		glEnd()
-		glPopMatrix()
-		glMatrixMode(GL_MODELVIEW)
-		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
+		if self.toggle_render_selectedarea: 
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix()
+			glLoadIdentity()
+			self.camera.set_ortho_projectionmatrix()
+			glColor3f(0.0,1.0,0.0)
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
+			glBegin(GL_LINE_LOOP)
+			z = -self.camera.get_zclip() - 1
+			glVertex3f(self.sa_xi, self.sa_yi, z)
+			glVertex3f(self.sa_xi, self.sa_yf, z)
+			glVertex3f(self.sa_xf, self.sa_yf, z)
+			glVertex3f(self.sa_xf, self.sa_yi, z)
+			glEnd()
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
 		
 	def processselection(self, records):
 		"""
@@ -506,6 +515,7 @@ class EMCamera:
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,self.zclip)
+			self.set_camera_position()
 		else:
 			# This may need some work to get it to behave
 			glViewport(0,0,width,height)
@@ -514,18 +524,34 @@ class EMCamera:
 			self.set_perspective_projectionmatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			glTranslate(0,0,-self.perspective_z) #How much to set the camera back depends on how big the object is
-			
+			glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
+			self.set_camera_position()
+	
+	def set_camera_position(self):
+		"""
+		Set the default camera position
+		"""
+		glTranslate(0,0,self.get_zclip())
+		
 	def setprojectionmatrix(self):
+		"""
+		Set the projection matrix
+		"""
 		if self.usingortho:
 			self.set_ortho_projectionmatrix()
 		else:
 			self.set_perspective_projectionmatrix()
 			
 	def set_ortho_projectionmatrix(self):
+		"""
+		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
+		"""
 		glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
 		
 	def set_perspective_projectionmatrix(self):
+		"""
+		Set the perspective projection matrix. Volume view origin (0,0) is center of screen
+		"""
 		GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
 			
 	def useprespective(self, boundingbox, screenfraction, fovy=60.0):
@@ -535,7 +561,7 @@ class EMCamera:
 		Changes projection matrix to perspective
 		"""
 		self.fovy = fovy
-		self.perspective_z = (boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
+		self.perspective_z = -(boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
 		self.usingortho = False
 		
 
