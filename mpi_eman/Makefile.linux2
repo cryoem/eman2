@@ -1,9 +1,14 @@
 # This is an example makefile for slightly older linux distributions often used on clusters
 # (where slightly older means 'more stable'
 
+# Set this to the python you use with EMAN2, the first option should work with binary EMAN2 releases
+INCLUDE = ${EMAN2DIR}/Python/include/python2.7
+#INCLUDE = /usr/local/include/python2.6
+#INCLUDE = /usr/include/python2.7
+
 mpi_eman_c.so: mpi_eman_c.o
 mpi_eman_c.o: mpi_eman.c
-	mpicc -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -I/usr/local/include/python2.6 -c mpi_eman.c -o mpi_eman_c.o
+	mpicc -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -I${INCLUDE} -c mpi_eman.c -o mpi_eman_c.o
 	mpicc -pthread -shared -Wl,-O1 -Wl mpi_eman_c.o -o mpi_eman_c.so
 
 install: mpi_eman_c.so mpi_eman.py
