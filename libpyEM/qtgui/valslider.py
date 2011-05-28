@@ -39,15 +39,19 @@ def clamp(x0,val,x1):
 
 class ValSlider(QtGui.QWidget):
 	"""The valslider class represents a connected text widget and horizontal slider.
+	showenable - if -1, no enable box shown, if 0, shown unchecked, if 1 shown and checked
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30):
+	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
+		#print label, "allocated"
+		
 		if rng : self.rng=list(rng)
 		else : self.rng=[0,1.0]
+		if value==None : value=0.0
 		self.value=value
 		self.oldvalue=value-1.0
 		self.ignore=0
@@ -57,6 +61,12 @@ class ValSlider(QtGui.QWidget):
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
+		
+		if showenable>=0 :
+			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox.setChecked(showenable)
+			self.hboxlayout.addWidget(self.enablebox)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
 		
 		if label:
 			self.label = QtGui.QLabel(self)
@@ -106,6 +116,16 @@ class ValSlider(QtGui.QWidget):
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderPressed()"), self.sliderPressed)
 		
 		self.updateboth()
+		if showenable>=0 : self.enabletog(showenable)
+		
+	#def __del__(self):
+		#print self.getLabel(), " freed"
+#		QtGui.QWidget.__del__(self)
+
+	def enabletog(self,ena):
+		self.slider.setEnabled(ena)
+		self.text.setEnabled(ena)
+		self.emit(QtCore.SIGNAL("enablechange"),ena) 
 
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
@@ -212,12 +232,13 @@ class ValBox(QtGui.QWidget):
 	"""A ValSlider without the slider part. Everything is the same except that the slider doesn't exist,
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
-	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30):
+	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
 		if rng : self.rng=list(rng)
 		else : self.rng=[0,1.0]
+		if value==None : value=0
 		self.value=value
 		self.ignore=0
 		self.intonly=0
@@ -227,6 +248,13 @@ class ValBox(QtGui.QWidget):
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		
+		if showenable>=0 :
+			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox.setChecked(showenable)
+			self.hboxlayout.addWidget(self.enablebox)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
+			self.enabletog(showenable)
+			
 		if label:
 			self.label = QtGui.QLabel(self)
 			self.setLabel(label)
@@ -258,6 +286,10 @@ class ValBox(QtGui.QWidget):
 		
 		self.updateboth()
 
+	def enabletog(self,ena):
+		self.text.setEnabled(ena)
+		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
 		self.rng=[float(minv),float(maxv)]
@@ -330,7 +362,96 @@ class ValBox(QtGui.QWidget):
 		
 	def updateboth(self):
 		self.updatet()
+
+class StringBox(QtGui.QWidget):
+	"""A ValBox but it takes arbitrary text. Basically maintains the label/enable functionality for a QLineEdit widget
+	"""
+	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
+		#if not parent: raise Exception,"ValSliders must have parents"
+		QtGui.QWidget.__init__(self,parent)
 		
+		if value==None : value=""
+		self.value=value
+		self.ignore=0
+		
+		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setSpacing(6)
+		self.hboxlayout.setObjectName("hboxlayout")
+		
+		if showenable>=0 :
+			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox.setChecked(showenable)
+			self.hboxlayout.addWidget(self.enablebox)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
+			self.enabletog(showenable)
+			
+		if label:
+			self.label = QtGui.QLabel(self)
+			self.setLabel(label)
+			
+			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+#			sizePolicy.setHorizontalStretch(1)
+#			sizePolicy.setVerticalStretch(0)
+#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
+			self.label.setSizePolicy(sizePolicy)
+#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
+			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
+			self.label.setObjectName("label")
+			self.hboxlayout.addWidget(self.label)
+		
+		
+		self.text = QtGui.QLineEdit(self)
+		
+		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
+		sizePolicy.setHorizontalStretch(1)
+		sizePolicy.setVerticalStretch(0)
+		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
+		self.text.setSizePolicy(sizePolicy)
+		self.text.setMinimumSize(QtCore.QSize(80,0))
+		self.text.setObjectName("text")
+		self.hboxlayout.addWidget(self.text)
+		
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
+		
+		self.updateboth()
+
+	def enabletog(self,ena):
+		self.text.setEnabled(ena)
+		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		
+	def setValue(self,val,quiet=0):
+		if self.value==val : return
+		self.value=val
+		self.updateboth()
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+	
+	def getValue(self):
+		return self.value
+	
+		
+	def textChange(self):
+		if self.ignore : return
+		self.value=self.text.text()
+		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		self.emit(QtCore.SIGNAL("textChanged"),self.value)
+				
+	def setLabel(self,label):
+		self.label.setText(label)
+	
+	def getLabel(self):
+		return str(self.label.text())
+		
+	def updatet(self):
+		self.ignore=1
+#		if self.validate!=None : self.validate()
+		self.ignore=0
+		
+	def updateboth(self):
+		self.updatet()
+
+
 class RangeSlider(QtGui.QWidget):
 	"""This is an int slider with two values in a fixed range (v0,v1) in a fixed range (min,max). Each value
 	can be set individually or the pair can be moved up and down together. The values are displayed at

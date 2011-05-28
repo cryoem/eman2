@@ -76,6 +76,9 @@ def main():
 	app.execute()
 #	E2end(logid)
 
+def filtchange(name,value):
+	return {}
+
 class EMProcessorWidget(QtGui.QWidget):
 	"""A single processor with parameters"""
 	
@@ -86,56 +89,116 @@ class EMProcessorWidget(QtGui.QWidget):
 	cats=list(cats)
 	cats.sort()
 	
+	# For some parameters we will try to assign sensible default values and ranges. This information should probably be a part
+	# of the processor objects themselves, but isn't at present.
+	# (start enabled, range, default value, change callback)
+	parmdefault= {
+		"cutoff_abs":(1,(0,.5),.1,filtchange),
+		"cutoff_freq":(0,(0,1.0),None,filtchange),
+		"cutoff_pixels":(0,(0,128),None,filtchange),
+		"cutoff_resolv":(0,(0,1.0),None,filtchange),
+		"apix":(0,(0.2,10.0),2.0,None)
+	}
+	
 	def __init__(self,parent=None):
 		app=QtGui.qApp
 		
 		QtGui.QWidget.__init__(self,parent)
 		self.gbl = QtGui.QGridLayout(self)
+		self.gbl.setColumnStretch(0,0)
+		self.gbl.setColumnStretch(1,0)
+		self.gbl.setColumnStretch(2,1)
+		self.gbl.setColumnStretch(3,3)
+		
+		# Enable checkbox
+		self.wenable=QtGui.QCheckBox(self)
+		self.wenable.setChecked(True)
+		self.gbl.addWidget(self.wenable,0,1)
 		
 		# List of processor categories
 		self.wcat=QtGui.QComboBox(self)
+		self.wcat.addItem("")
 		for i in self.cats: self.wcat.addItem(i)
 #		self.wcat.setCurrentindex(self.wcat.findText("filter"))
-		self.gbl.addWidget(self.wcat,0,0)
+		self.gbl.addWidget(self.wcat,0,2)
 		
 		# List of processor subcategories
 		self.wsubcat=QtGui.QComboBox(self)
-		self.gbl.addWidget(self.wsubcat,0,1)
+		self.gbl.addWidget(self.wsubcat,0,3)
 #		self.update_subcat()
 
 		#button grid
 		self.gbl2=QtGui.QGridLayout()
+		self.gbl.addLayout(self.gbl2,0,0,1,1)
+		self.gbl2.setSpacing(1)
 		
-		self.wup = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
+		self.gbl2.setColumnStretch(0,1)
+		self.gbl2.setColumnStretch(1,1)
+		
+#		self.wup = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
+		self.wup = QtGui.QPushButton(pix_up,"",self)
+		self.wup.setMaximumSize(QtCore.QSize(17, 17))
+#		self.wup.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
 		self.gbl2.addWidget(self.wup,0,0)
 		
-		self.wdown = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowDown),"")
+		self.wdown = QtGui.QPushButton(pix_down,"",self)
+		self.wdown.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wdown,1,0)
 		
-		self.wplus = QtGui.QPushButton("+")
-		self.gbl2.addWidget(self.wplus,0,1)
+		self.wplus = QtGui.QPushButton(pix_plus,"",self)
+		self.wplus.setMaximumSize(QtCore.QSize(17, 17))
+		self.gbl2.addWidget(self.wplus,1,1)
 		
-		self.wminus= QtGui.QPushButton("-")
-		self.gbl2.addWidget(self.wminus,1,1)
+		self.wminus= QtGui.QPushButton(pix_minus,"",self)
+		self.wminus.setMaximumSize(QtCore.QSize(17, 17))
+		self.gbl2.addWidget(self.wminus,0,1)
 		
-		self.gbl.addLayout(self.gbl2,0,2,2,1)
 		
 		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_cat_sel)
 		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_subcat_sel)
 		
+		self.parmw=[]
 
 	def event_cat_sel(self,idx):
 		cat=str(self.wcat.currentText())
 		scats=[i.split('.',1)[1] for i in self.plist if i.split(".")[0]==cat]
 		scats.sort()
 		self.wsubcat.clear()
-		self.wsubcat.addItems(scats)
+		self.wsubcat.addItem("")
+		if len(scats)>0 : self.wsubcat.addItems(scats)
 
 	def event_subcat_sel(self,idx):
 		cat=str(self.wcat.currentText())
 		scat=str(self.wsubcat.currentText())
 		proc=cat+"."+scat
-		print proc
+		
+		try: parms=self.plist[proc]
+		except: parms=["Please select a processor"]
+		
+		self.wsubcat.setToolTip(parms[0])
+		
+		# Remove old parameter widgets
+		for w in self.parmw:
+			self.gbl.removeWidget(w)
+			w.close()				# get it off the screen
+			w.setParent(None)		# do this before we can actually delete the widget
+			del(w)					# finally, get it deleted (may not take effect until parmw=[] below
+		
+		# Iterate over the parameters
+		# parms[i] - name of the parameter
+		# parms[i+1] - type of parameter
+		# parms[i+2] - helpstring for parameter
+		self.parmw=[]
+		self.ninput=0
+		for i in range(1,len(parms),3):
+			self.ninput+=1  
+			try: dflt=self.parmdefault[parms[i]]		# contains (start enabled, range, default value, change callback)
+			except: dflt=(1,(0,1.0),None,None)			# default parameter settings if we don't have anything predefined
+			
+			self.parmw.append(ValSlider(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+#			self.parmw[-1].hboxlayout.setContentsMargins ( 11.0,5.0,5.0,5.0 )
+			self.parmw[-1].setToolTip(parms[i+2])
+			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
 	
 class EMFilterTool(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
@@ -245,6 +308,90 @@ class EMFilterTool(QtGui.QMainWindow):
 	#def closeEvent(self,event):
 		#self.target().done()
 
+
+pix_plus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+" 	c None",
+".	c black",
+"X	c grey",
+"               ",
+"               ",
+"               ",
+"               ",
+"       .       ",
+"       .X      ",
+"       .X      ",
+"    .......    ",
+"     XX.XXXX   ",
+"       .X      ",
+"       .X      ",
+"        X      ",
+"               ",
+"               ",
+"               "
+]))
+
+pix_up=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+" 	c None",
+".	c black",
+"X	c grey",
+"               ",
+"               ",
+"               ",
+"       .       ",
+"      ...      ",
+"     .....     ",
+"    .......    ",
+"    XXX.XXXX   ",
+"       .X      ",
+"       .X      ",
+"       .X      ",
+"       .X      ",
+"        X      ",
+"               ",
+"               "
+]))
+
+pix_down=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+" 	c None",
+".	c black",
+"X	c grey",
+"               ",
+"               ",
+"               ",
+"       .       ",
+"       .X      ",
+"       .X      ",
+"       .X      ",
+"       .X      ",
+"    .......    ",
+"     .....X    ",
+"      ...X     ",
+"       .X      ",
+"               ",
+"               ",
+"               "
+]))
+
+pix_minus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+" 	c None",
+".	c black",
+"X	c grey",
+"               ",
+"               ",
+"               ",
+"               ",
+"               ",
+"               ",
+"               ",
+"   .........   ",
+"    XXXXXXXXX  ",
+"               ",
+"               ",
+"               ",
+"               ",
+"               ",
+"               "
+]))
 
 if __name__ == "__main__":
 	main()
