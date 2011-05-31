@@ -29,6 +29,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
+		self.widget = None
 		self.getnset_unique_integer()
 		
 	def __del__(self):
@@ -36,7 +37,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	
 	def getnset_unique_integer(self):
 		"""
-		Stuff for the selection mechanism
+		Stuff for the selection mechanism, return a unique int for each instance of EMItem3D
 		"""
 		if len(EMItem3D.selection_recycle) > 0:
 			self.intname = EMItem3D.selection_recycle.pop()
@@ -124,6 +125,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 		return selected_list
 
+	def get_scene_gui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		raise NotImplementedError("GUI controls must be implented in the subclasses")
+		
 	def update_matrices(self, params, xformtype):
 		"""
 		@type params: List

@@ -38,6 +38,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emapplication import EMGLWidget
 from emitem3d import EMItem3D
+from eminspector3d import EMInspector3D, EMInspectorControl
 from libpyGLUtils2 import GLUtil
 import math
 
@@ -183,6 +184,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
+		self.main_3d_inspector = None
+		self.widget = EMInspectorControl("SG", self)	# Get the inspector GUI
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
@@ -211,8 +214,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 	
+	def get_scene_gui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""	
+		return self.widget
+		
 	def render_node(self):
 		pass
+	
+	def set_inspector(self, inspector):
+		"""
+		Set the main 3d inspector
+		"""
+		self.main_3d_inspector = inspector
 		
 	def pickItem(self):
 		"""
@@ -304,13 +319,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		bestdistance = 1.0
 		for record in records:
 			print record.names
-			if record.near < bestdistance:
-				bestdistance = record.near
-				closestitem = record.names
-		if closestitem:
-			pass
-			#print closestitem, EMItem3D.selection_idx_dict[closestitem[len(closestitem)-1]]
-			
+			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
+			selecteditem.is_selected = self.positiveselection
+			selecteditem.widget.update_gui()
+			try:
+				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.widget)
+				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.widget.treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
+			except:
+				pass
+			#if record.near < bestdistance:
+				#bestdistance = record.near
+				#closestitem = record.names
 			
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -326,6 +345,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.buttons()&Qt.LeftButton:
 			if event.modifiers()&Qt.ControlModifier:
 				self.setCursor(self.selectorcursor)
+				self.positiveselection = True
+				if event.modifiers()&Qt.ShiftModifier:
+					self.positiveselection = False
 			else:
 				if  event.y() > 0.95*self.size().height():
 					self.setCursor(self.zrotatecursor)
@@ -405,7 +427,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Update the SG
 		"""
 		QtOpenGL.QGLWidget.updateGL(self)
-		
+	
 	# Maybe add methods to control the lights
 
 class EMLight:
@@ -605,8 +627,7 @@ class EMCamera:
 		else:
 			return self.perspective_z
 	# Maybe other methods to control the camera
-			
-
+	
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
@@ -626,11 +647,20 @@ class glCube(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		
+		# GUI contols
+		self.widget = EMInspectorControl("CUBE", self)
 	
 	#def on_selection(self):
 		#self.diffuse = [0.0,0.5,0.0,1.0]
 		#self.specular = [0.0,1.0,0.0,1.0]
 		#self.ambient = [0.0, 1.0, 0.0, 1.0]
+		
+	def get_scene_gui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		return self.widget	
 		
 	def render_node(self):
 			
@@ -712,56 +742,27 @@ class GLdemo(QtGui.QWidget):
 		self.widget.add_child(self.cube2)
 		#self.widget.activatenode(cube2)
 
+		self.inspector = EMInspector3D()
+		self.widget.set_inspector(self.inspector)
+		
+		rootnode = self.inspector.add_tree_node("root node", self.widget)
+		self.inspector.add_tree_node("cube1", self.cube1, rootnode)
+		self.inspector.add_tree_node("cube2", self.cube2, rootnode)
+		
 		# QT stuff to display the widget
-		self.cube1box = QtGui.QCheckBox("Cube1")
-		self.cube2box = QtGui.QCheckBox("Cube2")
-		self.rootbox = QtGui.QCheckBox("root")
 		vbox = QtGui.QVBoxLayout()
 		vbox.addWidget(self.widget)
-		hbox = QtGui.QHBoxLayout()
-		hbox.addWidget(self.cube1box)
-		hbox.addWidget(self.cube2box)
-		hbox.addWidget(self.rootbox)
-		vbox.addLayout(hbox)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)
 		self.setWindowTitle('BCM EM Viewer')
-		
-		self.connect(self.cube1box,QtCore.SIGNAL("stateChanged(int)"),self.on_updatecb1)
-		self.connect(self.cube2box,QtCore.SIGNAL("stateChanged(int)"),self.on_updatecb2)
-		self.connect(self.rootbox,QtCore.SIGNAL("stateChanged(int)"),self.on_updatecb3)
-		
-	def on_updatecb1(self):
-		if self.cube1box.isChecked():
-			self.cube1.is_selected = True
-			self.rootbox.setCheckState(0)
-			self.widget.is_selected = False
-			
-		else:
-			self.cube1.is_selected = False
 	
-	def on_updatecb2(self):
-		if self.cube2box.isChecked():
-			self.cube2.is_selected = True
-			self.rootbox.setCheckState(0)
-			self.widget.is_selected = False
-			
-		else:
-			self.cube2.is_selected = False
-			
-	def on_updatecb3(self):
-		if self.rootbox.isChecked():
-			self.widget.is_selected = True
-			self.cube1box.setCheckState(0)
-			self.cube2box.setCheckState(0)
-			self.cube1.is_selected = False
-			self.cube2.is_selected = False
-		else:
-			self.widget.is_selected = False
-			
+	def show_inspector(self):
+		self.inspector.show()
+		
 if __name__ == "__main__":
 	import sys
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
+	window.show_inspector()
 	app.exec_()

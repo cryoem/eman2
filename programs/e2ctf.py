@@ -259,7 +259,7 @@ def get_gui_arg_img_sets(filenames):
 def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
-	
+
 	if options.phaseflip or options.wiener or options.phasefliphp :
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
