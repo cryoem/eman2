@@ -451,6 +451,85 @@ class StringBox(QtGui.QWidget):
 	def updateboth(self):
 		self.updatet()
 
+class CheckBox(QtGui.QWidget):
+	"""A QCheckBox with a label
+	"""
+	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
+		#if not parent: raise Exception,"ValSliders must have parents"
+		QtGui.QWidget.__init__(self,parent)
+		
+		if value==None : value=""
+		self.value=value
+		self.ignore=0
+		
+		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setSpacing(6)
+		self.hboxlayout.setObjectName("hboxlayout")
+		
+		if showenable>=0 :
+			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox.setChecked(showenable)
+			self.hboxlayout.addWidget(self.enablebox)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
+			self.enabletog(showenable)
+			
+		if label:
+			self.label = QtGui.QLabel(self)
+			self.setLabel(label)
+			
+			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+#			sizePolicy.setHorizontalStretch(1)
+#			sizePolicy.setVerticalStretch(0)
+#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
+			self.label.setSizePolicy(sizePolicy)
+#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
+			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
+			self.label.setObjectName("label")
+			self.hboxlayout.addWidget(self.label)
+		
+		
+		self.check = QtGui.QCheckBox(self)
+		self.hboxlayout.addWidget(self.check)
+		
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("stateChanged(bool)"), self.boolChange)
+		
+		self.updateboth()
+
+	def enabletog(self,ena):
+		self.text.setEnabled(ena)
+		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		
+	def setValue(self,val,quiet=0):
+		if self.value==val : return
+		self.value=val
+		self.updateboth()
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+	
+	def getValue(self):
+		return self.value
+	
+		
+	def boolChanged(self,bool):
+		if self.ignore : return
+		self.value=self.text.text()
+		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+				
+	def setLabel(self,label):
+		self.label.setText(label)
+	
+	def getLabel(self):
+		return str(self.label.text())
+		
+	def updatet(self):
+		self.ignore=1
+#		if self.validate!=None : self.validate()
+		self.ignore=0
+		
+	def updateboth(self):
+		self.updatet()
+
 
 class RangeSlider(QtGui.QWidget):
 	"""This is an int slider with two values in a fixed range (v0,v1) in a fixed range (min,max). Each value

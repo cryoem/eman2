@@ -156,8 +156,27 @@ class EMProcessorWidget(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_cat_sel)
 		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_subcat_sel)
-		
+		QtCore.QObject.connect(self.wup,QtCore.SIGNAL("clicked(bool)"),self.butup)
+		QtCore.QObject.connect(self.wdown,QtCore.SIGNAL("clicked(bool)"),self.butdown)
+		QtCore.QObject.connect(self.wplus,QtCore.SIGNAL("clicked(bool)"),self.butplus)
+		QtCore.QObject.connect(self.wminus,QtCore.SIGNAL("clicked(bool)"),self.butminus)
+
 		self.parmw=[]
+
+	def butup(self):
+		self.emit(QtCore.SIGNAL("upPress"))
+
+	def butdown(self):
+		self.emit(QtCore.SIGNAL("downPress"))
+
+	def butplus(self):
+		self.emit(QtCore.SIGNAL("plusPress"))
+
+	def butminus(self):
+		self.emit(QtCore.SIGNAL("minusPress"))
+
+
+
 
 	def event_cat_sel(self,idx):
 		cat=str(self.wcat.currentText())
@@ -193,10 +212,30 @@ class EMProcessorWidget(QtGui.QWidget):
 		for i in range(1,len(parms),3):
 			self.ninput+=1  
 			try: dflt=self.parmdefault[parms[i]]		# contains (start enabled, range, default value, change callback)
-			except: dflt=(1,(0,1.0),None,None)			# default parameter settings if we don't have anything predefined
+			except: dflt=(1,(0,5.0),None,None)			# default parameter settings if we don't have anything predefined
 			
-			self.parmw.append(ValSlider(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
-#			self.parmw[-1].hboxlayout.setContentsMargins ( 11.0,5.0,5.0,5.0 )
+			if parms[i+1] in ("FLOAT","INT"):
+				self.parmw.append(ValSlider(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				if parms[i+1]=="INT" : 
+					self.parmw[-1].setIntonly(1)
+	#			self.parmw[-1].hboxlayout.setContentsMargins ( 11.0,5.0,5.0,5.0 )
+			elif parms[i+1]=="BOOL" :
+				self.parmw.append(CheckBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				
+			elif parms[i+1]=="STRING" :
+				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				
+			elif parms[i+1]=="TRANSFORM" :
+				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+			
+			elif parms[i+1]=="EMDATA" :
+				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				
+			elif parms[i+1]=="FLOATARRAY" :
+				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+
+		else: print "Unknown parameter type",parms[i+1],parms
+			
 			self.parmw[-1].setToolTip(parms[i+2])
 			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
 	
@@ -383,8 +422,8 @@ pix_minus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
 "               ",
 "               ",
 "               ",
-"   .........   ",
-"    XXXXXXXXX  ",
+"    .......    ",
+"     XXXXXXX   ",
 "               ",
 "               ",
 "               ",
