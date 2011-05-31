@@ -112,7 +112,7 @@ def crit2d(args, data):
 	from fundamentals import rtshgkb
 	mn = data[4].get_attr('mirror')
 	temp = rtshgkb(data[4], args[0], args[1], args[2], data[0])
-	if  mn: temp.process_inplace("mirror", {"axis":'x'})
+	if  mn: temp.process_inplace("xform.mirror", {"axis":'x'})
 	#temp2 = data[3] + temp/data[2]
 	temp2 = Util.madn_scalar(data[3], temp, 1.0/data[2]) 
 	v = temp2.cmp("dot", temp2, {"negative":0, "mask":data[1]})
@@ -1627,7 +1627,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		ddata  = prepg(data[im], kb)
 		ddata.set_attr_dict({'alpha': alpha, 'sx':sx, 'sy':sy, 'mirror': mirror})
 		temp   = rtshgkb(ddata, alpha, sx, sy, kb)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
 		#  Subtract current image from the average
 		refim = Util.madn_scalar(tavg, temp, -1.0/float(nima)) 
 		stuff.append(refim)  # curent ave-1
@@ -1641,7 +1641,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		data[im].set_attr_dict({'alpha':outparams[0][0], 'sx':outparams[0][1], 'sy':outparams[0][2],'mirror': mirror})
 		# update the average
 		temp = rtshgkb(ddata, outparams[0][0], outparams[0][1], outparams[0][2], kb)
-		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+		if  mirror: temp.process_inplace("xform.mirror",{"axis":'x'})
 		#check whether the criterion actually increased
 		# add current image to the average
 		tavg = Util.madn_scalar(refim, temp, 1.0/float(nima))

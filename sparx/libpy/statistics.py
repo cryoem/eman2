@@ -369,7 +369,7 @@ def ave_var_series(data, kb):
 		sy    =  data[i].get_attr('sy')
 		mirror =  data[i].get_attr('mirror')
 		temp = rotshift2dg(data[i], alpha, sx, sy, kb)
-		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+		if  mirror: temp.process_inplace("xform.mirror",{"axis":'x'})
 		Util.add_img(ave, temp)
 		Util.add_img2(var, temp)
 
@@ -394,7 +394,7 @@ def ave_var_series_g(data, kb):
 		sy =  data[i].get_attr('sy')
 		mirror =  data[i].get_attr('mirror')
 		temp = rtshgkb(data[i], alpha, sx, sy, kb)
-		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+		if  mirror: temp.process_inplace("xform.mirror",{"axis":'x'})
 		Util.add_img(ave, temp)
 		Util.add_img2(var, temp)
 
@@ -419,7 +419,7 @@ def ave_oe_series_g(data, kb):
 		sy     =  data[i].get_attr('sy')
 		mirror =  data[i].get_attr('mirror')
 		temp = rtshgkb(data[i], alpha, sx, sy, kb)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
 		if i%2 == 0: Util.add_img(ave1, temp)
 		else:        Util.add_img(ave2, temp)
 	ave1 /= (n/2+(n%2))
@@ -535,7 +535,7 @@ def ave_var_series_one(data, skip, kb):
 			sy     = data[i].get_attr('sy')
 			mirror = data[i].get_attr('mirror')
 			temp = rotshift2dg(data[i], alpha, sx, sy, kb)
-			if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+			if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
 			Util.add_img(ave, temp)
 			Util.add_img2(var, temp)
 
@@ -1906,7 +1906,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 	        		try:
 	        			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
 	        			IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
-	        			if mirror: IM[i].process_inplace('mirror', {'axis':'x'})
+	        			if mirror: IM[i].process_inplace('xform.mirror', {'axis':'x'})
 	        		except:
 	        			#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
 	        			#sys.exit()
@@ -5087,7 +5087,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 			try:
 				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
 				image = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
+				if mirror: image.process_inplace('xfrom.mirror', {'axis':'x'})
 			except:
 				ERROR('K-MEANS no 3D alignment parameters found', "k_means_cuda_open_im", 1)
 				sys.exit()

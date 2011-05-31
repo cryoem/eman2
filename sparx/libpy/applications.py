@@ -10701,7 +10701,7 @@ def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
 		if nz > 1:
 			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[n])
 			IM[n]  = rot_shift3D(IM[n], phi, theta, psi, s3x, s3y, s3z, scale)
-			if mirror: IM[n].process_inplace('mirror', {'axis':'x'})
+			if mirror: IM[n].process_inplace('xform.mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
 			alpha, sx, sy, mirror, scale = get_params2D(IM[n])
@@ -10778,7 +10778,7 @@ def HAC_averages(stack, dendoname, avename, K):
 		if nz > 1:
 			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[n])
 			IM[n]  = rot_shift3D(IM[n], phi, theta, psi, s3x, s3y, s3z, scale)
-			if mirror: IM[n].process_inplace('mirror', {'axis':'x'})
+			if mirror: IM[n].process_inplace('xform.mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
 			alpha, sx, sy, mirror, scale = get_params2D(IM[n])
