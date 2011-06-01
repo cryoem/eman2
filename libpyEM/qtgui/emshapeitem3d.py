@@ -38,11 +38,12 @@ from OpenGL import GLUT
 
 from emglobjects import init_glut
 from emitem3d import EMItem3D
+from emscene3d import EMScene3D, EMInspector3D, EMInspectorControl
 from EMAN2 import Transform
 
 class EMCube(EMItem3D):
-    def __init__(self, size, intname):
-		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+	def __init__(self, size):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
         # size
 #        self.xi = -size/2
 #        self.yi = -size/2
@@ -56,7 +57,10 @@ class EMCube(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		
-    def render_node(self):        
+		# GUI contols
+		self.widget = EMInspectorControl("CUBE", self)
+		
+	def render_node(self):        
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -68,8 +72,8 @@ class EMCube(EMItem3D):
 
 
 class EMSphere(EMItem3D):
-	def __init__(self, radius, intname):
-		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+	def __init__(self, radius):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
         # size
 		self.radius = radius
 		self.slices = int(radius)*16
@@ -79,6 +83,11 @@ class EMSphere(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		
+		# GUI contols
+		self.widget = EMInspectorControl("SPHERE", self)
+		
+	
 				
 	def render_node(self):
 		# Material properties of the sphere
@@ -91,8 +100,8 @@ class EMSphere(EMItem3D):
 		GLUT.glutSolidSphere(self.radius, self.slices, self.stacks)
 
 class EMCylinder(EMItem3D):
-	def __init__(self, radius, height, intname):
-		EMItem3D.__init__(self, intname, parent=None, transform=Transform())
+	def __init__(self, radius, height):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		#size
 		self.radius = radius
 		self.height = height
@@ -103,6 +112,9 @@ class EMCylinder(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]		
+		
+		# GUI contols
+		self.widget = EMInspectorControl("CYLINDER", self)
 		
 	def render_node(self):
 		# Material properties of the cylinder
