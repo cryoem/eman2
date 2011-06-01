@@ -96,7 +96,7 @@ def main():
 	os.mkdir(workingdir)
 	
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1 --outfile=bdb:%s#projections --projector=standard" % (options.volume,options.delta,workingdir)
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard" % (options.volume,options.delta,workingdir)
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
