@@ -66,7 +66,7 @@ class ValSlider(QtGui.QWidget):
 			self.enablebox=QtGui.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.setEnabled)
 		
 		if label:
 			self.label = QtGui.QLabel(self)
@@ -116,16 +116,20 @@ class ValSlider(QtGui.QWidget):
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderPressed()"), self.sliderPressed)
 		
 		self.updateboth()
-		if showenable>=0 : self.enabletog(showenable)
+		if showenable>=0 : self.setEnabled(showenable)
 		
 	#def __del__(self):
 		#print self.getLabel(), " freed"
 #		QtGui.QWidget.__del__(self)
 
-	def enabletog(self,ena):
+	def setEnabled(self,ena):
 		self.slider.setEnabled(ena)
 		self.text.setEnabled(ena)
-		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
+
+	def getEnabled(self):
+		try : return self.enablebox.isChecked()
+		except: return True
 
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
@@ -252,8 +256,7 @@ class ValBox(QtGui.QWidget):
 			self.enablebox=QtGui.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
-			self.enabletog(showenable)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.setEnabled)
 			
 		if label:
 			self.label = QtGui.QLabel(self)
@@ -284,11 +287,16 @@ class ValBox(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
 		
+		if showenable>=0 : self.setEnabled(showenable)
 		self.updateboth()
 
-	def enabletog(self,ena):
+	def setEnabled(self,ena):
 		self.text.setEnabled(ena)
-		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
+
+	def getEnabled(self):
+		try : return self.enablebox.isChecked()
+		except: return True
 		
 	def setRange(self,minv,maxv):
 		if maxv<=minv : maxv=minv+.001
@@ -383,8 +391,7 @@ class StringBox(QtGui.QWidget):
 			self.enablebox=QtGui.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
-			self.enabletog(showenable)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.setEnabled)
 			
 		if label:
 			self.label = QtGui.QLabel(self)
@@ -415,12 +422,17 @@ class StringBox(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
 		
+		if showenable>=0 : self.setEnabled(showenable)
 		self.updateboth()
 
-	def enabletog(self,ena):
+	def setEnabled(self,ena):
 		self.text.setEnabled(ena)
-		self.emit(QtCore.SIGNAL("enablechange"),ena) 
-		
+		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
+
+	def getEnabled(self):
+		try : return self.enablebox.isChecked()
+		except: return True
+
 	def setValue(self,val,quiet=0):
 		if self.value==val : return
 		self.value=val
@@ -428,7 +440,7 @@ class StringBox(QtGui.QWidget):
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def getValue(self):
-		return self.value
+		return str(self.value)
 	
 		
 	def textChange(self):
@@ -471,8 +483,7 @@ class CheckBox(QtGui.QWidget):
 			self.enablebox=QtGui.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.enabletog)
-			self.enabletog(showenable)
+			QtCore.QObject.connect(self.enablebox, QtCore.SIGNAL("toggled(bool)"), self.setEnabled)
 			
 		if label:
 			self.label = QtGui.QLabel(self)
@@ -495,11 +506,16 @@ class CheckBox(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("stateChanged(bool)"), self.boolChange)
 		
+		if showenable>=0 : self.setEnabled(showenable)
 		self.updateboth()
 
-	def enabletog(self,ena):
+	def setEnabled(self,ena):
 		self.text.setEnabled(ena)
-		self.emit(QtCore.SIGNAL("enablechange"),ena) 
+		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
+		
+	def getEnabled(self):
+		try : return self.enablebox.isChecked()
+		except: return True
 		
 	def setValue(self,val,quiet=0):
 		if self.value==val : return
@@ -508,7 +524,7 @@ class CheckBox(QtGui.QWidget):
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def getValue(self):
-		return self.value
+		return bool(self.value)
 	
 		
 	def boolChanged(self,bool):

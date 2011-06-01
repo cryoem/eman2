@@ -32,6 +32,8 @@
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
+from PyQt4.QtCore import QTimer
+
 from optparse import OptionParser
 import sys
 import os
@@ -50,7 +52,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image file>
 
-	Provides a GUI interface for applying a sequence of filters to an image, stack of images or a volume."""
+	Provides a GUI interface for applying a sequence of processors to an image, stack of images or a volume."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -70,8 +72,8 @@ def main():
 #	logid=E2init(sys.argv)
 	
 	app = EMApp()
-	
-	control=EMFilterTool(datafile=args[0],apix=options.apix,verbose=options.verbose)
+	pix_init()
+	control=EMProcessorTool(datafile=args[0],apix=options.apix,verbose=options.verbose)
 	control.show()
 	app.execute()
 #	E2end(logid)
@@ -97,10 +99,11 @@ class EMProcessorWidget(QtGui.QWidget):
 		"cutoff_freq":(0,(0,1.0),None,filtchange),
 		"cutoff_pixels":(0,(0,128),None,filtchange),
 		"cutoff_resolv":(0,(0,1.0),None,filtchange),
+		"sigma":(0,(0,3.0),.5,None),
 		"apix":(0,(0.2,10.0),2.0,None)
 	}
 	
-	def __init__(self,parent=None):
+	def __init__(self,parent=None,tag=None):
 		app=QtGui.qApp
 		
 		QtGui.QWidget.__init__(self,parent)
@@ -119,7 +122,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.wcat=QtGui.QComboBox(self)
 		self.wcat.addItem("")
 		for i in self.cats: self.wcat.addItem(i)
-#		self.wcat.setCurrentindex(self.wcat.findText("filter"))
+#		self.wcat.setCurrentindex(self.wcat.findText("processor"))
 		self.gbl.addWidget(self.wcat,0,2)
 		
 		# List of processor subcategories
@@ -154,31 +157,41 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.gbl2.addWidget(self.wminus,0,1)
 		
 		
-		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_cat_sel)
-		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.event_subcat_sel)
-		QtCore.QObject.connect(self.wup,QtCore.SIGNAL("clicked(bool)"),self.butup)
-		QtCore.QObject.connect(self.wdown,QtCore.SIGNAL("clicked(bool)"),self.butdown)
-		QtCore.QObject.connect(self.wplus,QtCore.SIGNAL("clicked(bool)"),self.butplus)
+		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.eventCatSel)
+		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.eventSubcatSel)
+		QtCore.QObject.connect(self.wup,QtCore.SIGNAL("clicked(bool)"),self.butUp)
+		QtCore.QObject.connect(self.wdown,QtCore.SIGNAL("clicked(bool)"),self.butDown)
+		QtCore.QObject.connect(self.wplus,QtCore.SIGNAL("clicked(bool)"),self.butPlus)
 		QtCore.QObject.connect(self.wminus,QtCore.SIGNAL("clicked(bool)"),self.butminus)
+		QtCore.QObject.connect(self.wenable,QtCore.SIGNAL("clicked(bool)"),self.updateFilt)
 
 		self.parmw=[]
+		
+		self.setTag(tag)
+#		print "Alloc filter ",self.tag
+	
+#	def __del__(self):
+#		print "Free filter ",self.tag
+#		QtGui.QWidget.__del__(self)
 
-	def butup(self):
-		self.emit(QtCore.SIGNAL("upPress"))
+	def setTag(self,tag):
+		self.tag=tag
 
-	def butdown(self):
-		self.emit(QtCore.SIGNAL("downPress"))
+	def butUp(self):
+		self.emit(QtCore.SIGNAL("upPress"),self.tag)
 
-	def butplus(self):
-		self.emit(QtCore.SIGNAL("plusPress"))
+	def butDown(self):
+		self.emit(QtCore.SIGNAL("downPress"),self.tag)
+
+	def butPlus(self):
+		self.emit(QtCore.SIGNAL("plusPress"),self.tag)
 
 	def butminus(self):
-		self.emit(QtCore.SIGNAL("minusPress"))
+		self.emit(QtCore.SIGNAL("minusPress"),self.tag)
 
 
-
-
-	def event_cat_sel(self,idx):
+	def eventCatSel(self,idx):
+		"Called when the user selects a processor category"
 		cat=str(self.wcat.currentText())
 		scats=[i.split('.',1)[1] for i in self.plist if i.split(".")[0]==cat]
 		scats.sort()
@@ -186,10 +199,9 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.wsubcat.addItem("")
 		if len(scats)>0 : self.wsubcat.addItems(scats)
 
-	def event_subcat_sel(self,idx):
-		cat=str(self.wcat.currentText())
-		scat=str(self.wsubcat.currentText())
-		proc=cat+"."+scat
+	def eventSubcatSel(self,idx):
+		"Called when the user selects a processor subcategory. Updates the parameter widget set."
+		proc=self.processorName()
 		
 		try: parms=self.plist[proc]
 		except: parms=["Please select a processor"]
@@ -220,88 +232,185 @@ class EMProcessorWidget(QtGui.QWidget):
 					self.parmw[-1].setIntonly(1)
 	#			self.parmw[-1].hboxlayout.setContentsMargins ( 11.0,5.0,5.0,5.0 )
 			elif parms[i+1]=="BOOL" :
-				self.parmw.append(CheckBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				self.parmw.append(CheckBox(self,parms[i],dflt[2],100,dflt[0]))
 				
 			elif parms[i+1]=="STRING" :
-				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 				
 			elif parms[i+1]=="TRANSFORM" :
-				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 			
 			elif parms[i+1]=="EMDATA" :
-				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 				
 			elif parms[i+1]=="FLOATARRAY" :
-				self.parmw.append(StringBox(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
+				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 
-		else: print "Unknown parameter type",parms[i+1],parms
+			else: print "Unknown parameter type",parms[i+1],parms
 			
 			self.parmw[-1].setToolTip(parms[i+2])
 			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
+			QtCore.QObject.connect(self.parmw[-1], QtCore.SIGNAL("valueChanged"), self.updateFilt)
+			QtCore.QObject.connect(self.parmw[-1], QtCore.SIGNAL("enableChanged"), self.updateFilt)
+		
+		self.updateFilt()
 	
-class EMFilterTool(QtGui.QMainWindow):
+	def updateFilt(self,val=None):
+		"Called whenever the processor changes"
+		self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
+	
+	def processorName(self):
+		"Returns the name of the currently selected processor"
+		cat=str(self.wcat.currentText())
+		scat=str(self.wsubcat.currentText())
+		if scat=="" :  return cat
+		else : return cat+"."+scat
+		
+	def processorParms(self):
+		"Returns the currently defined processor as (name,dict) or None if not set to a valid state"
+		if not self.wenable.isChecked() : return None		# disabled, so we return None
+		
+		proc=self.processorName()
+		if not self.plist.has_key(proc) : return None		# invalid processor selection 
+		
+
+		parms={}
+		for w in self.parmw:
+			if w.getEnabled() : parms[w.getLabel()]=w.getValue()
+			
+		return (proc,parms)
+	
+class EMProcessorTool(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,data=None,apix=0.0,verbose=0):
+	def __init__(self,datafile=None,apix=0.0,verbose=0):
 		QtGui.QWidget.__init__(self)
 		
 		app=QtGui.qApp
 		self.apix=apix
-		self.setWindowTitle("e2filtertool.py")
+		self.setWindowTitle("e2processortool.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
 		self.mfile_save_processed=self.mfile.addAction("Save processed data")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.setCentralWidget(QtGui.QScrollArea())
+		self.filterpanel=QtGui.QWidget()
+		self.centralWidget().setWidget(self.filterpanel)
+		self.centralWidget().setWidgetResizable(True)
+		self.vbl = QtGui.QVBoxLayout(self.filterpanel)
 
-		# relative stretch factors
-		#self.gbl.setColumnStretch(0,1)
-		#self.gbl.setColumnStretch(1,4)
-		#self.gbl.setColumnStretch(2,0)
-		#self.gbl.setRowStretch(1,1)
-		#self.gbl.setRowStretch(0,4)
-		
-		#self.xyview = EMImage2DWidget()
-		#self.gbl.addWidget(self.xyview,0,1)
-
+		self.filterlist=[]
+		self.addFilter()
 		
 		# file menu
 		QtCore.QObject.connect(self.mfile_save_processed,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_processed  )
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
-		# all other widgets
-		#QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.event_depth)
-		#QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.event_nlayers)
-		#QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
-		#QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
-		#QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
-		#QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-		#QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
-		
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_scale"),self.xy_scale)
-		#QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("origin_update"),self.xy_origin)
-
 		self.viewer=None			# viewer window for data
-		self.filters=[]				# list of filter specifications (name,dict)
+		self.processors=[]				# list of processor specifications (name,dict)
 		self.origdata=[]
 		self.filtdata=[]
 		self.nx=0
 		self.ny=0
 		self.nz=0
 
-		if data!=None : self.set_data(data)
+		if datafile!=None : self.setData(datafile)
 		
+		self.needupdate=1
+		self.needredisp=0
+		self.procthread=None
 		
+		self.timer=QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
+		self.timer.start(0.1)
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
+
+	def addFilter(self,after=-1):
+		after+=1
+		if after==0 : after=len(self.filterlist)
+		epw=EMProcessorWidget(self.filterpanel,tag=after)
+		self.filterlist.insert(after,epw)
+		self.vbl.insertWidget(after,epw)
+		QtCore.QObject.connect(epw,QtCore.SIGNAL("upPress"),self.upPress)
+		QtCore.QObject.connect(epw,QtCore.SIGNAL("downPress"),self.downPress)
+		QtCore.QObject.connect(epw,QtCore.SIGNAL("plusPress"),self.plusPress)
+		QtCore.QObject.connect(epw,QtCore.SIGNAL("minusPress"),self.minusPress)
+		QtCore.QObject.connect(epw,QtCore.SIGNAL("processorChanged"),self.procChange)
+
+		# Make sure all the tags are correct
+		for i in range(len(self.filterlist)): self.filterlist[i].setTag(i)
+
+	def delFilter(self,idx):
+		self.vbl.removeWidget(self.filterlist[idx])
+		del self.filterlist[idx]
 		
-	def set_data(self,data):
+		# Make sure all the tags are correct
+		for i in range(len(self.filterlist)): self.filterlist[i].setTag(i)
+
+	def swapFilters(self,tag):
+		"This swaps 2 adjacent filters, tag and tag+1"
+		w=self.filterlist[tag]
+		self.filterlist[tag-1:tag+1]=self.filterlist[tag:tag-2:-1]		#swap the entries in the list
+		w=self.vbl.removeWidget(w)
+		self.vbl.insertWidget(tag-1,w)
+		
+		# Make sure all the tags are correct
+		for i in range(len(self.filterlist)): self.filterlist[i].setTag(i)
+
+	def upPress(self,tag):
+		if tag==0 : return
+		self.swapfilters(tag)
+	
+	def downPress(self,tag):
+		if tag==len(self.filterlist)-1 : return
+
+		self.swapFilters(tag+1)
+	
+	def plusPress(self,tag):
+		self.addFilter(tag)
+		
+	def minusPress(self,tag):
+		if len(self.filterlist)==1 : return		# Can't delete the last filter
+		self.delFilter(tag)
+		
+	def timeOut(self):
+		# Spawn a thread to reprocess the data
+		if self.needupdate and self.procthread==None: 
+			self.procthread=threading.Thread(target=self.reprocess)
+			self.procthread.start()
+		
+		# When reprocessing is done, we want to redisplay from the main thread
+		if self.needredisp :
+			self.needredisp=0
+			self.viewer.show()
+			if self.nz==1: self.viewer.set_data(self.procdata)
+			else : self.viewer.set_data(self.procdata[0])
+		
+		
+	def procChange(self,tag):
+		self.needupdate=1
+		
+	def reprocess(self):
+		"Called when something about a processor changes (or when the data changes)"
+		
+		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
+		self.procdata=[im.copy() for im in self.origdata]
+		
+		for p in self.filterlist:
+			pp=p.processorParms()				# processor parameters
+			if pp==None: continue				# disabled processor
+			proc=Processors.get(pp[0],pp[1])	# the actual processor object
+			
+			for im in self.procdata:
+				proc.process_inplace(im)
+				
+		self.needredisp=1
+		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
+		
+	
+	def setData(self,data):
 		if data==None :
 			self.data=None
 			return
@@ -310,7 +419,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.datafile=data
 			self.nimg=EMUtil.get_image_count(data)
 			
-			self.origdata=self.read_image(data,0)
+			self.origdata=EMData(data,0)
 			
 			if self.nz==1:
 				if self.n>20 : 
@@ -326,10 +435,16 @@ class EMFilterTool(QtGui.QMainWindow):
 			if isinstance(data,EMData) : self.origdata=[data]
 			else : self.origdata=data
 			
-			self.nx=self.origdata["nx"]
-			self.ny=self.origdata["ny"]
-			self.nz=self.origdata["nz"]
+		self.nx=self.origdata[0]["nx"]
+		self.ny=self.origdata[0]["ny"]
+		self.nz=self.origdata[0]["nz"]
+		if self.apix<=0.0 : self.apix=self.origdata[0]["apix_x"]
 
+		if self.viewer!=None : self.viewer.close()
+		if self.nz==1 : self.viewer=EMImageMXWidget()
+		else : self.viewer=EMImage3DWidget()
+		
+		self.procChange(-1)
 
 	def menu_file_save_processed(self):
 		"incomplete"
@@ -348,89 +463,97 @@ class EMFilterTool(QtGui.QMainWindow):
 		#self.target().done()
 
 
-pix_plus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
-" 	c None",
-".	c black",
-"X	c grey",
-"               ",
-"               ",
-"               ",
-"               ",
-"       .       ",
-"       .X      ",
-"       .X      ",
-"    .......    ",
-"     XX.XXXX   ",
-"       .X      ",
-"       .X      ",
-"        X      ",
-"               ",
-"               ",
-"               "
-]))
+pix_plus=None
+pix_up=None
+pix_down=None
+pix_minus=None
 
-pix_up=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
-" 	c None",
-".	c black",
-"X	c grey",
-"               ",
-"               ",
-"               ",
-"       .       ",
-"      ...      ",
-"     .....     ",
-"    .......    ",
-"    XXX.XXXX   ",
-"       .X      ",
-"       .X      ",
-"       .X      ",
-"       .X      ",
-"        X      ",
-"               ",
-"               "
-]))
+def pix_init():
+	global pix_plus,pix_minus,pix_up,pix_down
+	
+	pix_plus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+	" 	c None",
+	".	c black",
+	"X	c grey",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"       .       ",
+	"       .X      ",
+	"       .X      ",
+	"    .......    ",
+	"     XX.XXXX   ",
+	"       .X      ",
+	"       .X      ",
+	"        X      ",
+	"               ",
+	"               ",
+	"               "
+	]))
 
-pix_down=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
-" 	c None",
-".	c black",
-"X	c grey",
-"               ",
-"               ",
-"               ",
-"       .       ",
-"       .X      ",
-"       .X      ",
-"       .X      ",
-"       .X      ",
-"    .......    ",
-"     .....X    ",
-"      ...X     ",
-"       .X      ",
-"               ",
-"               ",
-"               "
-]))
+	pix_up=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+	" 	c None",
+	".	c black",
+	"X	c grey",
+	"               ",
+	"               ",
+	"               ",
+	"       .       ",
+	"      ...      ",
+	"     .....     ",
+	"    .......    ",
+	"    XXX.XXXX   ",
+	"       .X      ",
+	"       .X      ",
+	"       .X      ",
+	"       .X      ",
+	"        X      ",
+	"               ",
+	"               "
+	]))
 
-pix_minus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
-" 	c None",
-".	c black",
-"X	c grey",
-"               ",
-"               ",
-"               ",
-"               ",
-"               ",
-"               ",
-"               ",
-"    .......    ",
-"     XXXXXXX   ",
-"               ",
-"               ",
-"               ",
-"               ",
-"               ",
-"               "
-]))
+	pix_down=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+	" 	c None",
+	".	c black",
+	"X	c grey",
+	"               ",
+	"               ",
+	"               ",
+	"       .       ",
+	"       .X      ",
+	"       .X      ",
+	"       .X      ",
+	"       .X      ",
+	"    .......    ",
+	"     .....X    ",
+	"      ...X     ",
+	"       .X      ",
+	"               ",
+	"               ",
+	"               "
+	]))
+
+	pix_minus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
+	" 	c None",
+	".	c black",
+	"X	c grey",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"    .......    ",
+	"     XXXXXXX   ",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"               ",
+	"               "
+	]))
 
 if __name__ == "__main__":
 	main()

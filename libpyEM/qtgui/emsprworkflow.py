@@ -6107,14 +6107,16 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 			else:
 				idx += 1
 		
-		if soln == -1:
+		try:
+			if soln == -1:
+				return "???"
+			elif int(soln) == soln:
+				return "%.1f" %(1.0/xaxis(soln))
+			else:
+				# interpolated frequency
+				return "%.1f" %(1.0/(soln/len(yaxis)*xaxis[-1]))
+		except:
 			return "invalid"
-		elif int(soln) == soln:
-			return "%.1f" %(1.0/xaxis(soln))
-		else:
-			# interpolated frequency
-			return "%.1f" %(1.0/(soln/len(yaxis)*xaxis[-1]))
-				
 		
 				
 	def get_resolution_table(self):

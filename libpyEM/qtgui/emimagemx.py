@@ -202,6 +202,84 @@ class EMMatrixPanel:
 		
 
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
+	def __init__(self, data=None,application=None,winid=None, parent=None):
+		
+		self.emit_events = False
+
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		#fmt.setSampleBuffers(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMGLProjectionViewMatrices.__init__(self)
+		
+		
+		self.init_size_flag = True
+		self.data=None
+#		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
+		EMGLWidget.__init__(self,winid=winid)
+		EMImageMXWidget.allim[self] = 0
+		self.file_name = ''
+		self.datasize=(1,1)
+		self.scale=1.0
+		self.minden=0
+		self.maxden=1.0
+		self.invert=0
+		self.fft=None
+		self.mindeng=0
+		self.maxdeng=1.0
+		self.gamma=1.0
+		self.nshow=-1
+		self.mousedrag=None
+		self.nimg=0
+		self.changec={}
+		self.selected=[]
+		self.hist = []
+		self.targetorigin=None
+		self.targetspeed=20.0
+		self.mag = 1.1				# magnification factor
+		self.invmag = 1.0/self.mag	# inverse magnification factor
+		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
+		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
+		self.image_file_name = None
+		self.first_render = True # a hack, something is slowing us down in FTGL
+		self.scroll_bar = EMGLScrollBar(self)
+		self.draw_scroll = True
+		self.scroll_bar_has_mouse = False
+		self.matrix_panel = EMMatrixPanel()
+		self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
+		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
+		self.animation_enabled = False
+		self.line_animation = None
+		self.sets_manager = EMMXSetsManager(self) # we need this for managing sets
+		self.deletion_manager = EMMXDeletionManager(self) # we need this for managing deleted particles
+		self.mouse_modes = ["App", "Del", "Drag", self.sets_manager.unique_name()]
+		self.mmode="Drag"
+		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
+		
+		self.coords={}
+		self.nshown=0
+		self.valstodisp=["Img #"]
+		
+		self.inspector=None
+		
+		self.font_size = 11
+		self.load_font_renderer()
+		if data:
+			self.set_data(data,False)
+			
+		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
+		
+		self.use_display_list = True # whether or not a display list should be used to render the main view - if on, this will save on time if the view is unchanged
+		self.main_display_list = 0	# if using display lists, the stores the display list
+		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
+		self.draw_background = False # if true  will paint the background behind the images black using a polygon - useful in 3D contexts, ie i the emimagemxrotary
+		
+		
+		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
+		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
+		
+		self.reroute_delete = False
+		
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 				
@@ -296,83 +374,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.font_render_mode = EMGLWidget.GLUT
 		
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,application=None,winid=None, parent=None):
-		
-		self.emit_events = False
-
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMGLProjectionViewMatrices.__init__(self)
-		
-		
-		self.init_size_flag = True
-		self.data=None
-#		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
-		EMGLWidget.__init__(self,winid=winid)
-		EMImageMXWidget.allim[self] = 0
-		self.file_name = ''
-		self.datasize=(1,1)
-		self.scale=1.0
-		self.minden=0
-		self.maxden=1.0
-		self.invert=0
-		self.fft=None
-		self.mindeng=0
-		self.maxdeng=1.0
-		self.gamma=1.0
-		self.nshow=-1
-		self.mousedrag=None
-		self.nimg=0
-		self.changec={}
-		self.selected=[]
-		self.hist = []
-		self.targetorigin=None
-		self.targetspeed=20.0
-		self.mag = 1.1				# magnification factor
-		self.invmag = 1.0/self.mag	# inverse magnification factor
-		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
-		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
-		self.image_file_name = None
-		self.first_render = True # a hack, something is slowing us down in FTGL
-		self.scroll_bar = EMGLScrollBar(self)
-		self.draw_scroll = True
-		self.scroll_bar_has_mouse = False
-		self.matrix_panel = EMMatrixPanel()
-		self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
-		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
-		self.animation_enabled = False
-		self.line_animation = None
-		self.sets_manager = EMMXSetsManager(self) # we need this for managing sets
-		self.deletion_manager = EMMXDeletionManager(self) # we need this for managing deleted particles
-		self.mouse_modes = ["App", "Del", "Drag", self.sets_manager.unique_name()]
-		self.mmode="Drag"
-		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
-		
-		self.coords={}
-		self.nshown=0
-		self.valstodisp=["Img #"]
-		
-		self.inspector=None
-		
-		self.font_size = 11
-		self.load_font_renderer()
-		if data:
-			self.set_data(data,False)
-			
-		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
-		
-		self.use_display_list = True # whether or not a display list should be used to render the main view - if on, this will save on time if the view is unchanged
-		self.main_display_list = 0	# if using display lists, the stores the display list
-		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
-		self.draw_background = False # if true  will paint the background behind the images black using a polygon - useful in 3D contexts, ie i the emimagemxrotary
-		
-		
-		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
-		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
-		
-		self.reroute_delete = False
 	
 	def __del__(self):
 		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
