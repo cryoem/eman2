@@ -254,9 +254,27 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.ispg"] = mrch.ispg;
 	dict["MRC.nsymbt"] = mrch.nsymbt;
 
-	dict["apix_x"] = mrch.xlen / mrch.mx;
-	dict["apix_y"] = mrch.ylen / mrch.my;
-	dict["apix_z"] = mrch.zlen / mrch.mz;
+	float apx = mrch.xlen / mrch.mx;
+	float apy = mrch.ylen / mrch.my;
+	float apz = mrch.zlen / mrch.mz;
+	if(apx>1000 || apx<0.01) {
+		dict["apix_x"] = 1.0f;
+	}
+	else {
+		dict["apix_x"] = apx;
+	}
+	if(apy>1000 || apy<0.01) {
+		dict["apix_y"] = 1.0f;
+	}
+	else {
+		dict["apix_y"] = apy;
+	}
+	if(apz>1000 || apz<0.01) {
+		dict["apix_z"] = 1.0f;
+	}
+	else {
+		dict["apix_z"] = apz;
+	}
 
 	if (area) {
 		dict["origin_x"] = mrch.xorigin + mrch.xlen * area->origin[0];
