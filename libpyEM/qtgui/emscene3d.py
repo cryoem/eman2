@@ -351,12 +351,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Process the selection records
 		"""
+		# Remove old selection if not in append mode
+		if not self.appendselection:
+			for selected in self.get_all_selected_nodes():
+				selected.is_selected = False
+				selected.widget.update_gui()
+		# Select the desired items	
 		closestitem = None
 		bestdistance = 1.0
 		for record in records:
-			print record.names
 			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-			selecteditem.is_selected = self.positiveselection
+			selecteditem.is_selected = True
 			selecteditem.widget.update_gui()
 			try:
 				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.widget)
@@ -381,9 +386,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.buttons()&Qt.LeftButton:
 			if event.modifiers()&Qt.ControlModifier:
 				self.setCursor(self.selectorcursor)
-				self.positiveselection = True
+				self.appendselection = False
 				if event.modifiers()&Qt.ShiftModifier:
-					self.positiveselection = False
+					self.appendselection = True
 			else:
 				if  event.y() > 0.95*self.size().height():
 					self.setCursor(self.zrotatecursor)
@@ -713,7 +718,6 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.tree_widget)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_doubleclick)
 		
 		return tvbox
 	
@@ -729,7 +733,7 @@ class EMInspector3D(QtGui.QWidget):
 		sgnodegui.set_treeitem(node)					# Relate the SG node GUI controls to the QTreeItem
 		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
 		# Set icon status
-		node.set_selection_state_icon()
+		node.set_selection_state_box()
 		# Set parent if one exists	
 		if not parentnode:
 			self.tree_widget.insertTopLevelItem(0, node)
@@ -739,9 +743,7 @@ class EMInspector3D(QtGui.QWidget):
 			
 	def tree_widget_click(self, item, col):
 		self.stacked_widget.setCurrentWidget(item.sgnode.get_scene_gui())
-	
-	def tree_widget_doubleclick(self, item, col):
-		item.toogle_selection_state()
+		item.set_selection_state(item.checkState(0))
 		
 	def get_controler_layout(self, parent):
 		"""
@@ -775,6 +777,7 @@ class EMInspector3D(QtGui.QWidget):
 		uwidget = QtGui.QWidget()
 		
 		return uwidget
+
 		
 class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
@@ -785,169 +788,27 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
 		self.sgnode = sgnode
 		self.sgnodegui = sgnodegui
+		self.setCheckState(0, QtCore.Qt.Unchecked)
 	
-	def toogle_selection_state(self):
+	def set_selection_state(self, state):
 		""" 
 		Toogle selection state on and off
 		"""
-		if self.sgnode.is_selected:
-			self.sgnode.is_selected = False
-		else:
+		if state == QtCore.Qt.Checked:
 			self.sgnode.is_selected = True
-		self.set_selection_state_icon() # set state of TreeItemwidget
+		else:
+			self.sgnode.is_selected = False
+		self.set_selection_state_box() # set state of TreeItemwidget
 		self.sgnodegui.set_selection_checkbox()	# Set the GUI checked box
 		
-	def set_selection_state_icon(self):
+	def set_selection_state_box(self):
 		"""
 		Set the selection state icon
 		"""
 		if self.sgnode.is_selected:
-			self.setIcon(0, QtGui.QIcon(QtGui.QPixmap(selectedicon)))
+			self.setCheckState(0, QtCore.Qt.Checked)
 		else:
-			self.setIcon(0, QtGui.QIcon(QtGui.QPixmap(deselectedicon)))
-		
-class EMInspectorControl(QtGui.QWidget):
-	"""
-	Class to make the EMItem GUI controls
-	"""
-	def __init__(self):
-		"""
-		"""
-		QtGui.QWidget.__init__(self)
-		
-		vbox = QtGui.QVBoxLayout(self)
-		
-		self.inspectortab = QtGui.QTabWidget()
-		self.inspectortab.addTab(self.get_tree_widget(), "Tree View")
-		self.inspectortab.addTab(self.get_lights_widget(), "Lights")
-		self.inspectortab.addTab(self.get_camera_widget(), "Camera")
-		self.inspectortab.addTab(self.get_utils_widget(), "Utils")
-
-		vbox.addWidget(self.inspectortab)
-		
-		self.setLayout(vbox)
-		self.updateGeometry()
-
-	def get_tree_widget(self):
-		"""
-		This returns the treeview-control panel widget
-		"""
-		widget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout(widget)
-		treesplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		treesplitter.setFrameShape(QtGui.QFrame.StyledPanel)
-		treesplitter.setLayout(self.get_tree_layout(widget))
-		hbox.addWidget(treesplitter)
-		controlsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		controlsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
-		controlsplitter.setLayout(self.get_controler_layout(widget))
-		hbox.addWidget(controlsplitter)
-		widget.setLayout(hbox)
-		
-		return widget
-		
-	def get_tree_layout(self, parent):
-		"""
-		Returns the tree layout
-		"""
-		tvbox = QtGui.QVBoxLayout()
-		self.tree_widget = QtGui.QTreeWidget(parent)
-		self.tree_widget.setHeaderLabel("Choose a item")
-		tvbox.addWidget(self.tree_widget)
-		
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_doubleclick)
-		
-		return tvbox
-	
-	def add_tree_node(self, name, sgnode, parentnode=None):
-		"""
-		Add a node to the TreeWidget if not parent node, otherwise add a child to parent node
-		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
-		The Treeitem also needs to know the SGnode, so it can talk to the SGnode.
-		You can think of this as a three way conversation(the alterative it to use a meniator, but that is not worth it w/ only three players
-		"""
-		sgnodegui = sgnode.get_scene_gui()				# Get the SG node GUI controls 
-		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode, sgnodegui)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI 
-		sgnodegui.set_treeitem(node)					# Relate the SG node GUI controls to the QTreeItem
-		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
-		# Set icon status
-		node.set_selection_state_icon()
-		# Set parent if one exists	
-		if not parentnode:
-			self.tree_widget.insertTopLevelItem(0, node)
-		else:
-			parentnode.addChild(node)
-		return node
-			
-	def tree_widget_click(self, item, col):
-		self.stacked_widget.setCurrentWidget(item.sgnode.get_scene_gui())
-	
-	def tree_widget_doubleclick(self, item, col):
-		item.toogle_selection_state()
-		
-	def get_controler_layout(self, parent):
-		"""
-		Returns the control layout
-		"""
-		cvbox = QtGui.QVBoxLayout()
-		self.stacked_widget = QtGui.QStackedWidget()
-		cvbox.addWidget(self.stacked_widget)
-		return cvbox
-		
-	def get_lights_widget(self):
-		"""
-		Returns the lights control widget
-		"""
-		lwidget = QtGui.QWidget()
-		
-		return lwidget
-		
-	def get_camera_widget(self):
-		"""
-		Returns the camera control widget
-		"""
-		cwidget = QtGui.QWidget()
-		
-		return cwidget
-	
-	def get_utils_widget(self):
-		"""
-		Retrusn the utilites widget
-		"""
-		uwidget = QtGui.QWidget()
-		
-		return uwidget
-		
-class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
-	"""
-	Subclass of QTreeWidgetItem
-	adds functionality
-	"""
-	def __init__(self, qstring, sgnode, sgnodegui):
-		QtGui.QTreeWidgetItem.__init__(self, qstring)
-		self.sgnode = sgnode
-		self.sgnodegui = sgnodegui
-	
-	def toogle_selection_state(self):
-		""" 
-		Toogle selection state on and off
-		"""
-		if self.sgnode.is_selected:
-			self.sgnode.is_selected = False
-		else:
-			self.sgnode.is_selected = True
-		self.set_selection_state_icon() # set state of TreeItemwidget
-		self.sgnodegui.set_selection_checkbox()	# Set the GUI checked box
-		
-	def set_selection_state_icon(self):
-		"""
-		Set the selection state icon
-		"""
-		if self.sgnode.is_selected:
-			self.setIcon(0, QtGui.QIcon(QtGui.QPixmap(selectedicon)))
-		else:
-			self.setIcon(0, QtGui.QIcon(QtGui.QPixmap(deselectedicon)))
+			self.setCheckState(0, QtCore.Qt.Unchecked)
 		
 class EMInspectorControl(QtGui.QWidget):
 	"""
@@ -962,6 +823,8 @@ class EMInspectorControl(QtGui.QWidget):
 		self.isselectedbox = QtGui.QCheckBox("Is Selected", self)
 		self.set_selection_checkbox()
 		igvbox.addWidget(self.isselectedbox)
+		test =  EMColorWidget(150, 150, 0)
+		igvbox.addWidget(test)
 		self.setLayout(igvbox)
 		
 		self.connect(self.isselectedbox,QtCore.SIGNAL("stateChanged(int)"),self.on_isselected)
@@ -989,52 +852,159 @@ class EMInspectorControl(QtGui.QWidget):
 			self.sgnode.is_selected = True
 		else:
 			self.sgnode.is_selected = False
-		self.treeitem.set_selection_state_icon()
+		self.treeitem.set_selection_state_box()
 		
 	def update_gui(self):
 		self.set_selection_checkbox()
-		self.treeitem.set_selection_state_icon()
+		self.treeitem.set_selection_state_box()
+
+class EMColorWidget(QtGui.QWidget):
+	def __init__(self, redcolor, greencolor, bluecolor):
 		QtGui.QWidget.__init__(self)
-		self.sgnode = sgnode
+		# Make redbar
+		cvbox = QtGui.QVBoxLayout()
+		# Red
+		rhbox = QtGui.QHBoxLayout()
+		self.redbar = EMColorBar("red", redcolor)
+		self.redspin = QtGui.QSpinBox(self)
+		self.redspin.setRange(0,255)
+		self.redspin.setMaximumWidth(60)
+		self.redspin.setValue(redcolor)
+		self.redbar.setHeight(self.redspin.height())
+		rhbox.addWidget(self.redbar)
+		rhbox.addWidget(self.redspin)
+		cvbox.addLayout(rhbox)
+		# Green
+		ghbox = QtGui.QHBoxLayout()
+		self.greenbar = EMColorBar("green", greencolor)
+		self.greenspin = QtGui.QSpinBox(self)
+		self.greenspin.setRange(0,255)
+		self.greenspin.setMaximumWidth(60)
+		self.greenspin.setValue(greencolor)
+		self.greenbar.setHeight(self.greenspin.height())
+		ghbox.addWidget(self.greenbar)
+		ghbox.addWidget(self.greenspin)
+		cvbox.addLayout(ghbox)
+		# Blue
+		bhbox = QtGui.QHBoxLayout()
+		self.bluebar = EMColorBar("blue", bluecolor)
+		self.bluespin = QtGui.QSpinBox(self)
+		self.bluespin.setRange(0,255)
+		self.bluespin.setMaximumWidth(60)
+		self.bluespin.setValue(bluecolor)
+		self.bluebar.setHeight(self.bluespin.height())
+		bhbox.addWidget(self.bluebar)
+		bhbox.addWidget(self.bluespin)
+		cvbox.addLayout(bhbox)
 		
-		igvbox = QtGui.QVBoxLayout()
-		igvbox.addWidget(QtGui.QLabel(name,self))
-		self.isselectedbox = QtGui.QCheckBox("Is Selected", self)
-		self.set_selection_checkbox()
-		igvbox.addWidget(self.isselectedbox)
-		self.setLayout(igvbox)
+		self.setLayout(cvbox)
 		
-		self.connect(self.isselectedbox,QtCore.SIGNAL("stateChanged(int)"),self.on_isselected)
+		QtCore.QObject.connect(self.redbar,QtCore.SIGNAL("colorChanged(int)"),self.on_redbar)
+		QtCore.QObject.connect(self.redspin,QtCore.SIGNAL("valueChanged(int)"),self.on_redspin)
+		QtCore.QObject.connect(self.greenbar,QtCore.SIGNAL("colorChanged(int)"),self.on_greenbar)
+		QtCore.QObject.connect(self.greenspin,QtCore.SIGNAL("valueChanged(int)"),self.on_greenspin)
+		QtCore.QObject.connect(self.bluebar,QtCore.SIGNAL("colorChanged(int)"),self.on_bluebar)
+		QtCore.QObject.connect(self.bluespin,QtCore.SIGNAL("valueChanged(int)"),self.on_bluespin)
 		
-	def set_treeitem(self, treeitem):
-		"""
-		Relate the GUI to the treeitem so it can talk directy to the tree item
-		"""
-		self.treeitem = treeitem
+	def on_redbar(self, color):
+		self.redspin.setValue(color)
+		self.redbar.setMarker(color)
+		self.emit(QtCore.SIGNAL("redcolorChanged(int)"),color)
+		self.redbar.update()
 		
-	def set_selection_checkbox(self):
-		"""
-		Set the selection state
-		"""
-		if self.sgnode.is_selected:	
-			self.isselectedbox.setCheckState(QtCore.Qt.Checked)
-		else:
-			self.isselectedbox.setCheckState(QtCore.Qt.Unchecked)
+	def on_redspin(self, value):
+		self.redbar.setMarker(value)
+		self.emit(QtCore.SIGNAL("redcolorChanged(int)"),value)
+		self.redbar.update()
 		
-	def on_isselected(self):
-		"""
-		Set the selection state when the check boix is clicked
-		"""
-		if self.isselectedbox.isChecked():
-			self.sgnode.is_selected = True
-		else:
-			self.sgnode.is_selected = False
-		self.treeitem.set_selection_state_icon()
+	def on_greenbar(self, color):
+		self.greenspin.setValue(color)
+		self.greenbar.setMarker(color)
+		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),color)
+		self.greenbar.update()
 		
-	def update_gui(self):
-		self.set_selection_checkbox()
-		self.treeitem.set_selection_state_icon()
+	def on_greenspin(self, value):
+		self.greenbar.setMarker(value)
+		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),value)
+		self.greenbar.update()
 		
+	def on_bluebar(self, color):
+		self.bluespin.setValue(color)
+		self.bluebar.setMarker(color)
+		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),color)
+		self.bluebar.update()
+		
+	def on_bluespin(self, value):
+		self.bluebar.setMarker(value)
+		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),value)
+		self.bluebar.update()
+	
+class EMColorBar(QtGui.QWidget):
+	def __init__(self, color, brightness):
+		QtGui.QWidget.__init__(self)
+		minwidth = 50
+		self.setMinimumSize(minwidth, 2)
+		self.color = color
+		self.radius = 6
+		self.w = minwidth
+		self.setMarker(brightness)
+		
+	def setHeight(self, height):
+		self.setMaximumHeight(height+self.radius/2)
+		
+	def setMarker(self, position):
+		self.absposition = position
+		self.position = int((float(self.w-self.radius)/255.0)*position)
+		if self.position < 0: self.position = 0
+		if self.position > (self.w-self.radius): self.position = (self.w-self.radius)
+		
+	def paintEvent(self, e):
+		qp = QtGui.QPainter()
+		qp.begin(self)
+		self.drawWidget(qp)
+		qp.end()
+		
+	def drawWidget(self, qp):
+		size = self.size()
+		self.w = size.width()
+		self.h = size.height()
+		self.setMarker(self.absposition)
+		
+
+		qp.setPen(QtGui.QColor(255, 255, 255))
+		qp.setBrush(QtGui.QColor(0, 0, 0))
+		qp.drawEllipse(self.position,0,self.radius,self.radius)
+		
+		if self.color == "red":
+			for i in xrange(self.w-self.radius):
+				color = int((255.0/float(self.w))*i)
+				qcolor = QtGui.QColor(color, 0, 0)
+				qp.setPen(qcolor)
+				qp.setBrush(qcolor)
+				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)
+		if self.color == "green":
+			for i in xrange(self.w-self.radius):
+				color = int((255.0/float(self.w))*i)
+				qcolor = QtGui.QColor(0, color, 0)
+				qp.setPen(qcolor)
+				qp.setBrush(qcolor)
+				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)
+		if self.color == "blue":
+			for i in xrange(self.w-self.radius):
+				color = int((255.0/float(self.w))*i)
+				qcolor = QtGui.QColor(0, 0, color)
+				qp.setPen(qcolor)
+				qp.setBrush(qcolor)
+				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)	
+	
+	def mousePressEvent(self, event):
+		color = int((255.0/float(self.w-self.radius))*event.x())
+		self.emit(QtCore.SIGNAL("colorChanged(int)"),color)
+		
+	def mouseMoveEvent(self, event):
+		color = int((255.0/float(self.w-self.radius))*event.x())
+		self.emit(QtCore.SIGNAL("colorChanged(int)"),color)
+
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
@@ -1150,6 +1120,7 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D()
+		self.inspector.setGeometry(300, 300, 400, 300)
 		self.widget.set_inspector(self.inspector)
 		
 		rootnode = self.inspector.add_tree_node("root node", self.widget)

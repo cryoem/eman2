@@ -49,16 +49,17 @@ def main():
 	parser.add_option("--volume", type="string",help="3D volume to validate",default=None)
 	parser.add_option("--untiltdata", type="string",help="Stack of untilted images",default=None)
 	parser.add_option("--tiltdata", type="string",help="Stack of tilted images",default=None)
+	parser.add_option("--align", type="string",help="The name of a aligner to be used in comparing the aligned images",default="rotate_translate")
 	parser.add_option("--cmp", type="string",help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc")
 	parser.add_option("--tiltrange", type="int",help="The anglular tiltranger to search",default=15)
 	# options associated with e2projector3d.py
 	parser.add_option("--delta", type="float",help="The angular step size for alingment", default=20.0)
 	# options associated with e2simmx.py
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc")
+	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="frc")
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="frc")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc")
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
 	
 	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
@@ -78,7 +79,8 @@ def main():
 		exit(1)
 	
 	options.cmp=parsemodopt(options.cmp)
-
+	options.align=parsemodopt(options.align)
+	
 	#Read in the images
 	tiltimgs = EMData.read_images(options.tiltdata)
 	untiltimgs = EMData.read_images(options.untiltdata)
@@ -115,7 +117,7 @@ def main():
 	projections = EMData.read_images("bdb:%s#projections"%workingdir)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
-	avgers = {}
+	#avgers = {}
 	ac = 0
 	for imgnum in xrange(simmx[0].get_ysize()):
 		bestscore = float('inf')
@@ -134,16 +136,16 @@ def main():
 		imgprocess.write_image("aligneddata.hdf",ac)
 		projections[bestrefnum].write_image("aligneddata.hdf",ac+1)
 		ac+=2
-		try:
-			avgers[bestrefnum].add_image(imgprocess)
-		except:
-			avgers[bestrefnum] = Averagers.get('mean')
-			avgers[bestrefnum].add_image(imgprocess)
+		#try:
+		#	avgers[bestrefnum].add_image(imgprocess)
+		#except:
+		#	avgers[bestrefnum] = Averagers.get('mean')
+		#	avgers[bestrefnum].add_image(imgprocess)
 			
 	# Make and write class avgs
-	for i, avgeridx in enumerate(avgers):
-		avg = avgers[avgeridx].finish()
-		avg.write_image("bdb:%s#classavgs.hdf"%workingdir,i)
+	#for i, avgeridx in enumerate(avgers):
+		#avg = avgers[avgeridx].finish()
+		#avg.write_image("bdb:%s#classavgs.hdf"%workingdir,i)
 		
 	# Make scoremx avg
 	scoremxs = EMData.read_images("bdb:%s#scorematrix"%workingdir)
@@ -165,7 +167,8 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, tiltrange, tiltstep):
 			tiltxform = Transform({"type":"eman","az":tiltaxis,"alt":tiltangle,"phi":-tiltaxis})
 			totalxform = tiltxform*eulerxform
 			testprojection = volume.project("standard",totalxform)
-			score = tilted.cmp(options.cmp[0],testprojection,options.cmp[1])
+			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
+			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
 		
