@@ -627,6 +627,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New image
 		 */
 		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f, float minrad = -1.0f);
+		EMData* helicise_grid(float pixel_size, float dp, float dphi, Util::KaiserBessel& kb, float section_use = 1.0f, float radius = -1.0f, float minrad = -1.0f);
 
       /** De-pad, and and remove Fourier extension convenience function.
 	 *

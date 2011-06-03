@@ -6272,7 +6272,6 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 		throw ImageDimensionException("helicise needs a 3-D image.");
 	if (is_complex())
 		throw ImageFormatException("helicise requires a real image");
-
 	EMData* result = this->copy_head();
 	result->to_zero();
 	int nyc = ny/2;
@@ -6365,6 +6364,152 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	result->update();
 	return result;
 }
+
+
+
+EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::KaiserBessel& kb, float section_use, float radius, float minrad) {
+	std::cout<<"111111"<<std::endl;
+	if (3 != get_ndim())
+		throw ImageDimensionException("helicise needs a 3-D image.");
+	if (is_complex())
+		throw ImageFormatException("helicise requires a real image");
+	//begin griding
+	//if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = 0.5f;//*scale_input;
+
+	
+	int nxn = nx/2; int nyn = ny/2; int nzn = nz/2;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32
+	ret->to_zero();  //we will leave margins zeroed.
+
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	int zc = nzn;
+	int izs = nzn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	int zcn = nzn/2;
+	// shifted center for rotation
+	float shiftxc = xcn; // + delx;
+	float shiftyc = ycn; // + dely;
+	float shiftzc = zcn; // + delz;
+	// bounds if origin at center
+	float zmin = -nz/2.0f;
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float zmax = -zmin;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	if (0 == nz%2) zmax--;
+
+	float* data = this->get_data();
+
+	
+	// rotation matrix (the transpose is used in the loop to get (xold,yold,zold)):
+	 
+	float a13 = -0.0f;	float a23 =  0.0f;
+	float a31 =  0.0f;          float a32 =  0.0f;          float a33 =  1.0f;
+		
+	//end gridding
+
+	
+	int nyc = nyn/2;
+	int nxc = nxn/2;
+	int nb = int(nzn*(1.0f - section_use)/2.);
+	int ne = nzn - nb -1;
+	int numst = int(nzn*section_use*pixel_size/dp);
+	// how many steps needed total, fewer will be used, only those that fall between nb and ne
+	int nst = int(nzn*pixel_size/dp);
+	float r2, ir;
+	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
+	else r2 = radius*radius;
+	if(minrad < 0.0f) ir = 0.0f;
+	else ir = minrad*minrad;
+	std::cout<<"numst=="<<numst<<"nb=="<<nb<<"ne=="<<ne<<"nst=="<<nst<<std::endl;
+	std::cout<<"radius=="<<radius<<"minrad=="<<minrad<<std::endl;
+	std::cout<<"nxn=="<<nxn<<"nyn=="<<nyn<<"nzn=="<<nzn<<std::endl;
+	std::cout<<"nx=="<<nx<<"ny=="<<ny<<"nz=="<<nz<<std::endl;
+	std::cout<<"data[200,200,200]==="<<*(data+ 200+200*nx+200*nx*ny)<<"Util_con[200,200,200]=="<<Util::get_pixel_conv_new(nx, ny, nz, 200, 200, 200, data, kb)<<std::endl;
+	for (int k = 0; k<nzn; k++) {
+		for (int j = 0; j<nyn; j++) {
+			int jy = j - nyc;
+			int jj = jy*jy;
+			for (int i = 0; i<nxn; i++) {
+				int ix = i - nxc;
+				float d2 = (float)(ix*ix + jj);
+				if(d2 <= r2 && d2>=ir) {
+					int nq = 0;
+					for ( int ist = -nst; ist <= nst; ist++) {
+						float zold = (k*pixel_size + ist*dp)/pixel_size;
+						int IOZ = int(zold);
+						if(IOZ >= nb && IOZ <= ne) {
+						
+							float cphi = ist*dphi*(float)DGR_TO_RAD;
+							float ca = cos(cphi);
+							float sa = sin(cphi);
+							
+							float xold = ix*ca - jy*sa + nxc;
+							float yold = ix*sa + jy*ca + nyc;
+							
+							float xold_big = (xold-shiftxc)/scale - ixs + xc;
+							float yold_big = (yold-shiftyc)/scale - iys + yc;
+							float zold_big = (zold-shiftzc)/scale - izs + zc;
+							
+							/*float a11 =  ca; float a12 =  sa;
+							float a21 = -sa; float a22 = ca;
+							
+							float z = (zold - shiftzc)/scale;
+							float zco1 = a31*z+xc;
+							float zco2 = a32*z+yc;
+							float zco3 = a33*z+zc;
+														
+							float y = (float(j) - shiftyc)/scale;
+							float yco1 = zco1+a21*y;
+							float yco2 = zco2+a22*y;
+							float yco3 = zco3+a23*y;
+							
+							float x = (float(i) - shiftxc)/scale;
+							float xold_big = yco1+a11*x-ixs; //have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
+							float yold_big = yco2+a12*x-iys;
+							float zold_big = yco3+a13*x-izs;*/
+							
+												
+							nq++;
+							
+								
+							(*ret)(i,j,k) += Util::get_pixel_conv_new(nx, ny, nz, xold_big, yold_big, zold_big, data, kb);
+							
+							
+							if(nq == numst) break;
+						}
+					}
+					if(nq != numst)
+						throw InvalidValueException(nq, "Helicise: incorrect number of repeats encoutered.");
+				}
+			}
+		}
+	}
+	
+	for (int k = 0; k<nzn; k++) for (int j = 0; j<nyn; j++) for (int i = 0; i<nxn; i++) (*ret)(i,j,k) /= numst ;
+	set_array_offsets(saved_offsets);
+	ret->update();
+	return ret;
+}
+
 
 /*
 Purpose: Depad and remove FT extension from a real image.
