@@ -783,8 +783,8 @@ def rops_textfile(e, filename, helpful_string="", lng = False):
 	ps = periodogram(e)
 	f = ps.rotavg()
 	nr = f.get_xsize()
-	table=[0.0]*nr
-	for ir in xrange(nr): table[ir] = ro.get_value_at(ir)
+	table = [0.0]*nr
+	for ir in xrange(nr): table[ir] = f.get_value_at(ir)
 	if lng:
 		from math import log
 		for ir in xrange(1,nr): table[ir] = log(table[ir])
