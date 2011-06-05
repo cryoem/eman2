@@ -779,7 +779,7 @@ def rops_textfile(e, filename, helpful_string="", lng = False):
 	"""
 	from EMAN2 import periodogram
 	out = open(filename, "w")
-	out.write("#Rotational average: %s\n" % (helpful_string))
+	if helpful_string != "": out.write("#Rotational average: %s\n" % (helpful_string))
 	ps = periodogram(e)
 	f = ps.rotavg()
 	nr = f.get_xsize()
@@ -799,10 +799,10 @@ def rops_table(img, lng = False):
 		power spectrum and save it in list
 	"""
 	from EMAN2 import periodogram
-	e=periodogram(img)
-	ro=e.rotavg()
+	e = periodogram(img)
+	ro = e.rotavg()
 	nr = ro.get_xsize()
-	table=[0.0]*nr
+	table = [0.0]*nr
 	for ir in xrange(nr): table[ir] = ro.get_value_at(ir)
 	if lng:
 		from math import log
