@@ -56,8 +56,8 @@ def main():
 	parser.add_option("--delta", type="float",help="The angular step size for alingment", default=20.0)
 	# options associated with e2simmx.py
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="frc")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="frc")
+	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc")
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot")
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
@@ -108,7 +108,7 @@ def main():
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
-	
+
 	# Now that we have the simmx, lets validate each particles
 	#global workingdir
 	#workingdir = "TiltValidate_3"
@@ -128,7 +128,7 @@ def main():
 				bestrefnum = refnum
 		# Get the euler angle for this particle and call compare to tilt"bdb:%s#
 		euler_xform = projections[bestrefnum].get_attr('xform.projection')
-		compare_to_tilt(volume, tiltimgs[imgnum], imgnum, euler_xform, options.tiltrange, 1) # For now only ints
+		compare_to_tilt(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), options.tiltrange, 1) # For now only ints
 		#Get 2D xfrom and transform, then add the image to its class avg"bdb:%s#
 		xform = Transform({"type":"2d","alpha":simmx[3].get_value_at(bestrefnum, imgnum),"tx":simmx[1].get_value_at(bestrefnum, imgnum),"ty":simmx[2].get_value_at(bestrefnum, imgnum)})
 		imgprocess = untiltimgs[imgnum].process("xform", {"transform":xform})
@@ -157,21 +157,25 @@ def main():
 	avgmx.write_image("%s/contour.hdf"%workingdir)
 		
 		
-def compare_to_tilt(volume, tilted, imgnum, eulerxform, tiltrange, tiltstep):
+def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltstep):
 	scoremx = EMData(2*tiltrange+1,2*tiltrange+1)
+	bestscore = float('inf')
 	for rotx in xrange(-tiltrange, tiltrange+1,tiltstep):
 		for roty in xrange(-tiltrange, tiltrange+1,tiltstep):
 			# First make the projection
 			tiltangle = math.sqrt(rotx*rotx + roty*roty)
 			tiltaxis = math.degrees(math.atan2(roty, rotx))
 			tiltxform = Transform({"type":"eman","az":tiltaxis,"alt":tiltangle,"phi":-tiltaxis})
-			totalxform = tiltxform*eulerxform
+			inplane = Transform({"type":"eman", "phi":-zrot})
+			totalxform = tiltxform*inplane*eulerxform
 			testprojection = volume.project("standard",totalxform)
-			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
-			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
+			#tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
+			#score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
+			score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
+
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
-		
+
 def run(command):
 	"Execute a command with optional verbose output"		    
 	print command

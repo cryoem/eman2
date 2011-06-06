@@ -39,6 +39,7 @@ from PyQt4.QtCore import Qt
 from emapplication import EMGLWidget
 from emitem3d import EMItem3D
 from libpyGLUtils2 import GLUtil
+from valslider import ValSlider
 import math
 import weakref
 
@@ -204,7 +205,47 @@ selectorcursor = [
     'cccccccccccccccc',
     'cccccccccccccccc'
 ]
-    
+
+leftarrow = [
+    '13 14 2 1',
+    'b c #0000ff',
+    'c c None',
+    'ccccccccccccbb',
+    'ccccccccccbbbb',
+    'ccccccccbbbbbc',
+    'ccccccbbbbbccc',
+    'ccccbbbbbccccc',
+    'ccbbbbbccccccc',
+    'bbbbbccccccccc',
+    'bbbbbccccccccc',
+    'ccbbbbbccccccc',
+    'ccccbbbbbccccc',
+    'ccccccbbbbbccc',
+    'ccccccccbbbbbc',
+    'ccccccccccbbbb',
+    'ccccccccccccbb'
+]    
+
+rightarrow = [
+    '13 14 2 1',
+    'b c #0000ff',
+    'c c None',
+    'bbcccccccccccc',
+    'bbbbcccccccccc',
+    'cbbbbbcccccccc',
+    'cccbbbbbcccccc',
+    'cccccbbbbbcccc',
+    'cccccccbbbbbcc',
+    'cccccccccbbbbb',
+    'cccccccccbbbbb',
+    'cccccccbbbbbcc',
+    'cccccbbbbbcccc',
+    'cccbbbbbcccccc',
+    'cbbbbbcccccccc',
+    'bbbbcccccccccc',
+    'bbcccccccccccc'
+]
+
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
@@ -221,7 +262,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
 		self.main_3d_inspector = None
-		self.widget = EMInspectorControl("SG", self)	# Get the inspector GUI
+		self.widget = EMInspectorControlBasic("SG", self)	# Get the inspector GUI
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
@@ -676,6 +717,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		"""
 		QtGui.QWidget.__init__(self)
+		self.mintreewidth = 200		# minimum width of the tree
 		
 		vbox = QtGui.QVBoxLayout(self)
 		
@@ -699,6 +741,7 @@ class EMInspector3D(QtGui.QWidget):
 		treesplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		treesplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		treesplitter.setLayout(self.get_tree_layout(widget))
+		treesplitter.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treesplitter)
 		controlsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		controlsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -752,6 +795,7 @@ class EMInspector3D(QtGui.QWidget):
 		cvbox = QtGui.QVBoxLayout()
 		self.stacked_widget = QtGui.QStackedWidget()
 		cvbox.addWidget(self.stacked_widget)
+		
 		return cvbox
 		
 	def get_lights_widget(self):
@@ -810,25 +854,84 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
 		
-class EMInspectorControl(QtGui.QWidget):
+class EMInspectorControlBasic(QtGui.QWidget):
 	"""
 	Class to make the EMItem GUI controls
 	"""
 	def __init__(self, name, sgnode):
 		QtGui.QWidget.__init__(self)
 		self.sgnode = sgnode
+		self.name = name
 		
 		igvbox = QtGui.QVBoxLayout()
-		igvbox.addWidget(QtGui.QLabel(name,self))
+		self.add_basic_controls(igvbox)
+		self.add_controls(igvbox)
+		self.setLayout(igvbox)
+		
+	def add_basic_controls(self, igvbox):
+		# selection box and label
+		font = QtGui.QFont()
+		font.setBold(True)
+		label = QtGui.QLabel(self.name,self)
+		label.setFont(font)
+		label.setAlignment(QtCore.Qt.AlignCenter)
+		igvbox.addWidget(label)
 		self.isselectedbox = QtGui.QCheckBox("Is Selected", self)
 		self.set_selection_checkbox()
 		igvbox.addWidget(self.isselectedbox)
-		test =  EMColorWidget(150, 150, 0)
-		igvbox.addWidget(test)
-		self.setLayout(igvbox)
+		# angluar controls
+		xformframe = QtGui.QFrame()
+		xformframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		xformbox = QtGui.QVBoxLayout()
+		xformlabel = QtGui.QLabel("Transformation", xformframe)
+		xformlabel.setFont(font)
+		xformlabel.setAlignment(QtCore.Qt.AlignCenter)
+		xformbox.addWidget(xformlabel)
+		self.azslider = ValSlider(xformframe, (0.0, 360.0), "AZ")
+		self.altslider = ValSlider(xformframe, (0.0, 180.0), "ALT")
+		self.phislider = ValSlider(xformframe, (0.0, 360.0), "PHI")
+		xformbox.addWidget(self.azslider)
+		xformbox.addWidget(self.altslider)
+		xformbox.addWidget(self.phislider)
+		#translations
+		textbox = QtGui.QHBoxLayout()
+		txlabel = QtGui.QLabel("TX",xformframe)
+		txlabel.setAlignment(QtCore.Qt.AlignCenter)
+		textbox.addWidget(txlabel)
+		tylabel = QtGui.QLabel("TY",xformframe)
+		tylabel.setAlignment(QtCore.Qt.AlignCenter)
+		textbox.addWidget(tylabel)
+		xformbox.addLayout(textbox)
+		box = QtGui.QHBoxLayout()
+		tx = EMSpinWidget(0.0, 0.1)
+		ty = EMSpinWidget(0.0, 0.1)
+		box.addWidget(tx)
+		box.addWidget(ty)
+		xformbox.addLayout(box)
+		zoombox = QtGui.QHBoxLayout()
+		tzlabel = QtGui.QLabel("TZ",xformframe)
+		tzlabel.setAlignment(QtCore.Qt.AlignCenter)
+		zoombox.addWidget(tzlabel)
+		zoomlabel = QtGui.QLabel("Zoom",xformframe)
+		zoomlabel.setAlignment(QtCore.Qt.AlignCenter)
+		zoombox.addWidget(zoomlabel)
+		xformbox.addLayout(zoombox)
+		zoomwidgetbox = QtGui.QHBoxLayout()
+		tz = EMSpinWidget(0.0, 0.1)
+		zoom = EMSpinWidget(0.0, 0.1)
+		zoomwidgetbox.addWidget(tz)
+		zoomwidgetbox.addWidget(zoom)
+		xformbox.addLayout(zoomwidgetbox)
+		
+				
+		xformframe.setLayout(xformbox)
+		igvbox.addWidget(xformframe)
 		
 		self.connect(self.isselectedbox,QtCore.SIGNAL("stateChanged(int)"),self.on_isselected)
 		
+	def add_controls(self, igvbox):
+		pass
+	
 	def set_treeitem(self, treeitem):
 		"""
 		Relate the GUI to the treeitem so it can talk directy to the tree item
@@ -858,6 +961,91 @@ class EMInspectorControl(QtGui.QWidget):
 		self.set_selection_checkbox()
 		self.treeitem.set_selection_state_box()
 
+class EMInspectorControlShape(EMInspectorControlBasic):
+	"""
+	Class to make EMItem GUI SHAPE
+	"""
+	def __init__(self, name, sgnode):
+		EMInspectorControlBasic.__init__(self, name, sgnode)
+		
+	def add_controls(self, igvbox):
+		self.addcolor_controls(igvbox)
+		
+	def addcolor_controls(self, box):
+		colorframe = QtGui.QFrame()
+		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		colorvbox = QtGui.QVBoxLayout()
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		colorlabel = QtGui.QLabel("Color",colorframe)
+		colorlabel.setFont(lfont)
+		colorlabel.setAlignment(QtCore.Qt.AlignCenter)
+		self.colorslider = EMColorWidget(150, 150, 0)
+		colorhbox = QtGui.QHBoxLayout()
+		self.ambientbut = QtGui.QRadioButton("Ambient", colorframe)
+		self.diffusebut = QtGui.QRadioButton("Diffuse", colorframe)
+		self.specularbut = QtGui.QRadioButton("Specular", colorframe)
+		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shininess")
+		colorhbox.addWidget(self.ambientbut)
+		colorhbox.addWidget(self.diffusebut)
+		colorhbox.addWidget(self.specularbut)
+		colorvbox.addWidget(colorlabel)
+		colorvbox.addWidget(self.colorslider)
+		colorvbox.addLayout(colorhbox)
+		colorvbox.addWidget(self.shininess)
+		colorframe.setLayout(colorvbox)
+		box.addWidget(colorframe)
+
+class EMSpinWidget(QtGui.QWidget):
+	def __init__(self, value, coeff):
+		QtGui.QWidget.__init__(self)
+		self.value = value
+		self.coeff = coeff
+		self.powercoeff = 0.0
+		
+		shbox = QtGui.QHBoxLayout()
+		self.lbutton = QtGui.QPushButton("",self)
+		self.lbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(leftarrow)))
+		self.lbutton.setAutoRepeat(True)
+		self.lbutton.setAutoRepeatDelay(200)
+		#self.lbutton.setMinimumWidth(100)
+		shbox.addWidget(self.lbutton)
+		self.numbox = QtGui.QLineEdit(str(self.value), self)
+		shbox.addWidget(self.numbox)
+		self.rbutton = QtGui.QPushButton("",self)
+		self.rbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(rightarrow)))
+		self.rbutton.setAutoRepeat(True)
+		self.rbutton.setAutoRepeatDelay(200)
+		shbox.addWidget(self.rbutton)
+		self.setLayout(shbox)
+		
+		QtCore.QObject.connect(self.numbox,QtCore.SIGNAL("editingFinished()"),self.on_editfinish)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("clicked()"),self.on_clickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("clicked()"),self.on_clickright)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("released()"),self.on_unclickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("released()"),self.on_unclickright)
+		
+	def on_clickleft(self):
+		self.value = self.value - self.coeff*(2**self.powercoeff)
+		self.numbox.setText(str(round(self.value, 2)))
+		self.powercoeff += 0.1
+		
+	def on_clickright(self):
+		self.value = self.value + self.coeff*(2**self.powercoeff)
+		self.numbox.setText(str(round(self.value,2)))
+		self.powercoeff += 0.1
+	
+	def on_unclickleft(self):
+		if not self.lbutton.isDown():
+			self.powercoeff = 0.0
+			
+	def on_unclickright(self):
+		if not self.rbutton.isDown():
+			self.powercoeff = 0.0
+			
+	def on_editfinish(self):
+		self.value = float(self.numbox.text())
+	
 class EMColorWidget(QtGui.QWidget):
 	def __init__(self, redcolor, greencolor, bluecolor):
 		QtGui.QWidget.__init__(self)
@@ -976,26 +1164,23 @@ class EMColorBar(QtGui.QWidget):
 		qp.drawEllipse(self.position,0,self.radius,self.radius)
 		
 		if self.color == "red":
-			for i in xrange(self.w-self.radius):
-				color = int((255.0/float(self.w))*i)
-				qcolor = QtGui.QColor(color, 0, 0)
-				qp.setPen(qcolor)
-				qp.setBrush(qcolor)
-				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)
+			redgrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
+			redgrad.setColorAt(0.0, QtGui.QColor(0,0,0))
+			redgrad.setColorAt(1.0, QtGui.QColor(255,0,0))
+			redbrush = QtGui.QBrush(redgrad)
+			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, redbrush)
 		if self.color == "green":
-			for i in xrange(self.w-self.radius):
-				color = int((255.0/float(self.w))*i)
-				qcolor = QtGui.QColor(0, color, 0)
-				qp.setPen(qcolor)
-				qp.setBrush(qcolor)
-				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)
+			greengrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
+			greengrad.setColorAt(0.0, QtGui.QColor(0,0,0))
+			greengrad.setColorAt(1.0, QtGui.QColor(0,255,0))
+			greenbrush = QtGui.QBrush(greengrad)
+			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, greenbrush)
 		if self.color == "blue":
-			for i in xrange(self.w-self.radius):
-				color = int((255.0/float(self.w))*i)
-				qcolor = QtGui.QColor(0, 0, color)
-				qp.setPen(qcolor)
-				qp.setBrush(qcolor)
-				qp.drawRect(i+self.radius/2, self.radius, 1, self.h-self.radius)	
+			bluegrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
+			bluegrad.setColorAt(0.0, QtGui.QColor(0,0,0))
+			bluegrad.setColorAt(1.0, QtGui.QColor(0,0,255))
+			bluebrush = QtGui.QBrush(bluegrad)
+			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, bluebrush)	
 	
 	def mousePressEvent(self, event):
 		color = int((255.0/float(self.w-self.radius))*event.x())
@@ -1026,7 +1211,7 @@ class glCube(EMItem3D):
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		
 		# GUI contols
-		self.widget = EMInspectorControl("CUBE", self)
+		self.widget = EMInspectorControlShape("CUBE", self)
 	
 	#def on_selection(self):
 		#self.diffuse = [0.0,0.5,0.0,1.0]
@@ -1120,7 +1305,7 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D()
-		self.inspector.setGeometry(300, 300, 400, 300)
+		#self.inspector.setGeometry(300, 300, 700, 300)
 		self.widget.set_inspector(self.inspector)
 		
 		rootnode = self.inspector.add_tree_node("root node", self.widget)
