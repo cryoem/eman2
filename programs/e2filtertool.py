@@ -284,7 +284,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
 	def __init__(self,datafile=None,apix=0.0,verbose=0):
-		QtGui.QWidget.__init__(self)
+		QtGui.QMainWindow.__init__(self)
 		
 		app=QtGui.qApp
 		self.apix=apix
