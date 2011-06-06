@@ -39,9 +39,20 @@ from   user_functions import *
 from   optparse       import OptionParser
 import sys
 
-def write_montage_file(stack, montage_file, N, gx, gy, bg, scale):
+def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_zero):
 
 	from utilities import model_blank
+
+	font = [ "0011100010001010000011000001100000110000011000001100000101000100011100",
+	         "0001000001100001010001001000000100000010000001000000100000010001111111",
+		 "0111110100000110000010000001000001000001000011000010000001000001111111",
+		 "1111111000000100000100000100000111000000010000001000000110000010111110",
+		 "0000010000011000010100010010010001010000101111111000001000000100000010",
+		 "1111111100000010000001011110110000100000010000001000000110000010111110",
+		 "0011110010000010000001000000101111101100000110000011000001100000101111",
+		 "1111111000000100000010000010000010000100000100000010000010000010000000",
+		 "0011100010001010000010100010001110001000101000001100000101000010011100",
+		 "0111110100000011000001100000110000110111101000000100000010000010011110"]
 
 	if gy == -1: gy = gx
 
@@ -80,7 +91,7 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale):
 		bk = avgn
 	
 	montage = model_blank(NX, NY, 1, bk)
-	
+
 	for i in xrange(K):
 		col = i%N
 		row = M-1-i/N
@@ -88,17 +99,24 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale):
 			for t in xrange(nx):
 				v = data[i].get_value_at(s, t)
 				montage.set_value_at(col*(nx+gx)+s, row*(nx+gy)+t, v)
+		if number:
+			for s in xrange(10):
+				for t in xrange(7):
+					if font[i%10][s*7+t] == '1':
+						montage.set_value_at(col*(nx+gx)+2+t, row*(nx+gy)+2+10-s, maxn)
 	montage.write_image(montage_file)
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack montagefile --N=image_per_row --gx=gap_on_x_axis --gy=gap_on_y_axis --bg=background_option --scale"
+	usage = progname + " stack montagefile --N=image_per_row --gx=gap_on_x_axis --gy=gap_on_y_axis --bg=background_option --scale --number --begin_zero"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--N",       type="int",  default=10,           help="number of images per row (default = 10)")
 	parser.add_option("--gx",      type="int",  default=0,            help="number of pixels of the gap on x-axis (default = 0)")
 	parser.add_option("--gy",      type="int",  default=-1,           help="number of pixels of the gap on y-axis (default = gx)")
 	parser.add_option("--bg",      type="int",  default=0,            help="background option: 0. use minimum as background; 1. use maximum as background; 2. use 0 as background; 3. use average as background (default = 0)") 
 	parser.add_option("--scale",   action="store_true",  default=False,   help="whether to scale all particles to (0, 1) ")
+	parser.add_option("--number",  action="store_true",  default=False,   help="whether to show particle number on the particle")	
+	parser.add_option("--begin_zero", action="store_true",  default=False,   help="whether to use zero as the starting point")	
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -109,7 +127,7 @@ def main():
 			disable_bdb_cache()
 		
 		global_def.BATCH = True
-		write_montage_file(args[0], args[1], options.N, options.gx, options.gy, options.bg, options.scale)
+		write_montage_file(args[0], args[1], options.N, options.gx, options.gy, options.bg, options.scale, options.number, options.begin_zero)
 		global_def.BATCH = False
 
 
