@@ -207,43 +207,35 @@ selectorcursor = [
 ]
 
 leftarrow = [
-    '13 14 2 1',
+    '12 10 2 1',
     'b c #0000ff',
     'c c None',
-    'ccccccccccccbb',
-    'ccccccccccbbbb',
-    'ccccccccbbbbbc',
-    'ccccccbbbbbccc',
-    'ccccbbbbbccccc',
-    'ccbbbbbccccccc',
-    'bbbbbccccccccc',
-    'bbbbbccccccccc',
-    'ccbbbbbccccccc',
-    'ccccbbbbbccccc',
-    'ccccccbbbbbccc',
-    'ccccccccbbbbbc',
-    'ccccccccccbbbb',
-    'ccccccccccccbb'
+    'ccccccccbbbb',
+    'ccccccbbbbbc',
+    'ccccbbbbbccc',
+    'ccbbbbbccccc',
+    'bbbbbccccccc',
+    'bbbbbccccccc',
+    'ccbbbbbccccc',
+    'ccccbbbbbccc',
+    'ccccccbbbbbc',
+    'ccccccccbbbb'
 ]    
 
 rightarrow = [
-    '13 14 2 1',
+    '12 10 2 1',
     'b c #0000ff',
     'c c None',
-    'bbcccccccccccc',
-    'bbbbcccccccccc',
-    'cbbbbbcccccccc',
-    'cccbbbbbcccccc',
-    'cccccbbbbbcccc',
-    'cccccccbbbbbcc',
-    'cccccccccbbbbb',
-    'cccccccccbbbbb',
-    'cccccccbbbbbcc',
-    'cccccbbbbbcccc',
-    'cccbbbbbcccccc',
-    'cbbbbbcccccccc',
-    'bbbbcccccccccc',
-    'bbcccccccccccc'
+    'bbbcccccccc',
+    'cbbbbbcccccc',
+    'cccbbbbbcccc',
+    'cccccbbbbbcc',
+    'cccccccbbbbb',
+    'cccccccbbbbb',
+    'cccccbbbbbcc',
+    'cccbbbbbcccc',
+    'cbbbbbcccccc',
+    'bbbbcccccccc'
 ]
 
 class EMScene3D(EMItem3D, EMGLWidget):
@@ -1012,10 +1004,14 @@ class EMSpinWidget(QtGui.QWidget):
 		shbox.addWidget(self.lbutton)
 		self.numbox = QtGui.QLineEdit(str(self.value), self)
 		shbox.addWidget(self.numbox)
+		self.lbutton.setMaximumHeight(self.numbox.height())
+		self.lbutton.setMaximumWidth(20)
 		self.rbutton = QtGui.QPushButton("",self)
 		self.rbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(rightarrow)))
 		self.rbutton.setAutoRepeat(True)
 		self.rbutton.setAutoRepeatDelay(200)
+		self.rbutton.setMaximumHeight(self.numbox.height())
+		self.rbutton.setMaximumWidth(20)
 		shbox.addWidget(self.rbutton)
 		self.setLayout(shbox)
 		
@@ -1045,150 +1041,14 @@ class EMSpinWidget(QtGui.QWidget):
 			
 	def on_editfinish(self):
 		self.value = float(self.numbox.text())
-	
-class EMColorWidget(QtGui.QWidget):
+		
+class EMQTColorWidget(QtGui.QWidget):
 	def __init__(self, redcolor, greencolor, bluecolor):
 		QtGui.QWidget.__init__(self)
-		# Make redbar
-		cvbox = QtGui.QVBoxLayout()
-		# Red
-		rhbox = QtGui.QHBoxLayout()
-		self.redbar = EMColorBar("red", redcolor)
-		self.redspin = QtGui.QSpinBox(self)
-		self.redspin.setRange(0,255)
-		self.redspin.setMaximumWidth(60)
-		self.redspin.setValue(redcolor)
-		self.redbar.setHeight(self.redspin.height())
-		rhbox.addWidget(self.redbar)
-		rhbox.addWidget(self.redspin)
-		cvbox.addLayout(rhbox)
-		# Green
-		ghbox = QtGui.QHBoxLayout()
-		self.greenbar = EMColorBar("green", greencolor)
-		self.greenspin = QtGui.QSpinBox(self)
-		self.greenspin.setRange(0,255)
-		self.greenspin.setMaximumWidth(60)
-		self.greenspin.setValue(greencolor)
-		self.greenbar.setHeight(self.greenspin.height())
-		ghbox.addWidget(self.greenbar)
-		ghbox.addWidget(self.greenspin)
-		cvbox.addLayout(ghbox)
-		# Blue
-		bhbox = QtGui.QHBoxLayout()
-		self.bluebar = EMColorBar("blue", bluecolor)
-		self.bluespin = QtGui.QSpinBox(self)
-		self.bluespin.setRange(0,255)
-		self.bluespin.setMaximumWidth(60)
-		self.bluespin.setValue(bluecolor)
-		self.bluebar.setHeight(self.bluespin.height())
-		bhbox.addWidget(self.bluebar)
-		bhbox.addWidget(self.bluespin)
-		cvbox.addLayout(bhbox)
-		
-		self.setLayout(cvbox)
-		
-		QtCore.QObject.connect(self.redbar,QtCore.SIGNAL("colorChanged(int)"),self.on_redbar)
-		QtCore.QObject.connect(self.redspin,QtCore.SIGNAL("valueChanged(int)"),self.on_redspin)
-		QtCore.QObject.connect(self.greenbar,QtCore.SIGNAL("colorChanged(int)"),self.on_greenbar)
-		QtCore.QObject.connect(self.greenspin,QtCore.SIGNAL("valueChanged(int)"),self.on_greenspin)
-		QtCore.QObject.connect(self.bluebar,QtCore.SIGNAL("colorChanged(int)"),self.on_bluebar)
-		QtCore.QObject.connect(self.bluespin,QtCore.SIGNAL("valueChanged(int)"),self.on_bluespin)
-		
-	def on_redbar(self, color):
-		self.redspin.setValue(color)
-		self.redbar.setMarker(color)
-		self.emit(QtCore.SIGNAL("redcolorChanged(int)"),color)
-		self.redbar.update()
-		
-	def on_redspin(self, value):
-		self.redbar.setMarker(value)
-		self.emit(QtCore.SIGNAL("redcolorChanged(int)"),value)
-		self.redbar.update()
-		
-	def on_greenbar(self, color):
-		self.greenspin.setValue(color)
-		self.greenbar.setMarker(color)
-		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),color)
-		self.greenbar.update()
-		
-	def on_greenspin(self, value):
-		self.greenbar.setMarker(value)
-		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),value)
-		self.greenbar.update()
-		
-	def on_bluebar(self, color):
-		self.bluespin.setValue(color)
-		self.bluebar.setMarker(color)
-		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),color)
-		self.bluebar.update()
-		
-	def on_bluespin(self, value):
-		self.bluebar.setMarker(value)
-		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),value)
-		self.bluebar.update()
-	
-class EMColorBar(QtGui.QWidget):
+
+class EMQTcolorBoxWidget(QtGui.QWidget):
 	def __init__(self, color, brightness):
 		QtGui.QWidget.__init__(self)
-		minwidth = 50
-		self.setMinimumSize(minwidth, 2)
-		self.color = color
-		self.radius = 6
-		self.w = minwidth
-		self.setMarker(brightness)
-		
-	def setHeight(self, height):
-		self.setMaximumHeight(height+self.radius/2)
-		
-	def setMarker(self, position):
-		self.absposition = position
-		self.position = int((float(self.w-self.radius)/255.0)*position)
-		if self.position < 0: self.position = 0
-		if self.position > (self.w-self.radius): self.position = (self.w-self.radius)
-		
-	def paintEvent(self, e):
-		qp = QtGui.QPainter()
-		qp.begin(self)
-		self.drawWidget(qp)
-		qp.end()
-		
-	def drawWidget(self, qp):
-		size = self.size()
-		self.w = size.width()
-		self.h = size.height()
-		self.setMarker(self.absposition)
-		
-
-		qp.setPen(QtGui.QColor(255, 255, 255))
-		qp.setBrush(QtGui.QColor(0, 0, 0))
-		qp.drawEllipse(self.position,0,self.radius,self.radius)
-		
-		if self.color == "red":
-			redgrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
-			redgrad.setColorAt(0.0, QtGui.QColor(0,0,0))
-			redgrad.setColorAt(1.0, QtGui.QColor(255,0,0))
-			redbrush = QtGui.QBrush(redgrad)
-			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, redbrush)
-		if self.color == "green":
-			greengrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
-			greengrad.setColorAt(0.0, QtGui.QColor(0,0,0))
-			greengrad.setColorAt(1.0, QtGui.QColor(0,255,0))
-			greenbrush = QtGui.QBrush(greengrad)
-			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, greenbrush)
-		if self.color == "blue":
-			bluegrad = QtGui.QLinearGradient(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius)
-			bluegrad.setColorAt(0.0, QtGui.QColor(0,0,0))
-			bluegrad.setColorAt(1.0, QtGui.QColor(0,0,255))
-			bluebrush = QtGui.QBrush(bluegrad)
-			qp.fillRect(self.radius/2,self.radius,self.w-self.radius,self.h-self.radius, bluebrush)	
-	
-	def mousePressEvent(self, event):
-		color = int((255.0/float(self.w-self.radius))*event.x())
-		self.emit(QtCore.SIGNAL("colorChanged(int)"),color)
-		
-	def mouseMoveEvent(self, event):
-		color = int((255.0/float(self.w-self.radius))*event.x())
-		self.emit(QtCore.SIGNAL("colorChanged(int)"),color)
 
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		

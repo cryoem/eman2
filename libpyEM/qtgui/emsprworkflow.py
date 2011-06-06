@@ -5596,11 +5596,11 @@ post-process - This is an optional filter to apply to the model as a final step,
 				mlist += m+","
 				tsym += params["symname"+str(i)]+params["symnumber"+str(i)]+","
 			mlist = mlist[:-1]
-			tysm = tsym[:-1]
+			tsym = tsym[:-1]
 			#string_args[string_args.index("model")] = mlist
 			setattr(options, "models", mlist)
 			setattr(options, "sym", tsym)
-			print tsym
+
 		midx = string_args.index("model")
 		string_args.remove("model")
 		string_args.insert(midx, "models")
