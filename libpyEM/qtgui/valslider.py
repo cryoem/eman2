@@ -751,7 +751,7 @@ class EMColorWidget(QtGui.QWidget):
 		self.greenbar.setMarker(color)
 		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),color)
 		self.greenbar.update()
-		
+		self.height
 	def on_greenspin(self, value):
 		self.greenbar.setMarker(value)
 		self.emit(QtCore.SIGNAL("greencolorChanged(int)"),value)

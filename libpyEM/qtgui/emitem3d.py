@@ -30,6 +30,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.is_visible = True 
 		self.is_selected = False
 		self.widget = None
+		self.boundingboxsize = None
 		self.getnset_unique_integer()
 		
 	def __del__(self):

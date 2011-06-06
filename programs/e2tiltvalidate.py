@@ -173,7 +173,7 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltste
 			#score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
-
+	print zrot
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
 
 def run(command):

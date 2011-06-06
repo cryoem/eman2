@@ -226,7 +226,7 @@ rightarrow = [
     '12 10 2 1',
     'b c #0000ff',
     'c c None',
-    'bbbcccccccc',
+    'bbbccccccccc',
     'cbbbbbcccccc',
     'cccbbbbbcccc',
     'cccccbbbbbcc',
@@ -710,6 +710,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		QtGui.QWidget.__init__(self)
 		self.mintreewidth = 200		# minimum width of the tree
+		self.mincontrolwidth = 250
 		
 		vbox = QtGui.QVBoxLayout(self)
 		
@@ -738,6 +739,7 @@ class EMInspector3D(QtGui.QWidget):
 		controlsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		controlsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		controlsplitter.setLayout(self.get_controler_layout(widget))
+		controlsplitter.setMinimumWidth(self.mincontrolwidth)
 		hbox.addWidget(controlsplitter)
 		widget.setLayout(hbox)
 		
@@ -868,9 +870,13 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		label.setFont(font)
 		label.setAlignment(QtCore.Qt.AlignCenter)
 		igvbox.addWidget(label)
+		databox = QtGui.QHBoxLayout()
 		self.isselectedbox = QtGui.QCheckBox("Is Selected", self)
+		databox.addWidget(self.isselectedbox)
+		if self.sgnode.boundingboxsize:
+			databox.addWidget(QtGui.QLabel("Size: "+str(self.sgnode.boundingboxsize)+u'\u00B3',self))
 		self.set_selection_checkbox()
-		igvbox.addWidget(self.isselectedbox)
+		igvbox.addLayout(databox)
 		# angluar controls
 		xformframe = QtGui.QFrame()
 		xformframe.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -972,17 +978,40 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorlabel = QtGui.QLabel("Color",colorframe)
 		colorlabel.setFont(lfont)
 		colorlabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.colorslider = EMColorWidget(150, 150, 0)
+
+		# These boxes are a pain maybe I should use a Grid?
+		cdialoghbox = QtGui.QHBoxLayout()
+		cabox = QtGui.QHBoxLayout()
+		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
+		cabox.addWidget(self.ambcolorbox)
+		cabox.setAlignment(QtCore.Qt.AlignCenter)
+		cdbox = QtGui.QHBoxLayout()
+		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
+		cdbox.addWidget(self.diffusecolorbox)
+		cdbox.setAlignment(QtCore.Qt.AlignCenter)
+		csbox = QtGui.QHBoxLayout()
+		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
+		csbox.addWidget(self.specularcolorbox)
+		csbox.setAlignment(QtCore.Qt.AlignCenter)
+		cdialoghbox.addLayout(cabox)
+		cdialoghbox.addLayout(cdbox)
+		cdialoghbox.addLayout(csbox)
+		
 		colorhbox = QtGui.QHBoxLayout()
-		self.ambientbut = QtGui.QRadioButton("Ambient", colorframe)
-		self.diffusebut = QtGui.QRadioButton("Diffuse", colorframe)
-		self.specularbut = QtGui.QRadioButton("Specular", colorframe)
+		self.ambient = QtGui.QLabel("Ambient", colorframe)
+		self.ambient.setAlignment(QtCore.Qt.AlignCenter)
+		self.diffuse = QtGui.QLabel("Diffuse", colorframe)
+		self.diffuse.setAlignment(QtCore.Qt.AlignCenter)
+		self.specular = QtGui.QLabel("Specular", colorframe)
+		self.specular.setAlignment(QtCore.Qt.AlignCenter)
+		colorhbox.addWidget(self.ambient)
+		colorhbox.addWidget(self.diffuse)
+		colorhbox.addWidget(self.specular)
+		
 		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shininess")
-		colorhbox.addWidget(self.ambientbut)
-		colorhbox.addWidget(self.diffusebut)
-		colorhbox.addWidget(self.specularbut)
+		
 		colorvbox.addWidget(colorlabel)
-		colorvbox.addWidget(self.colorslider)
+		colorvbox.addLayout(cdialoghbox)
 		colorvbox.addLayout(colorhbox)
 		colorvbox.addWidget(self.shininess)
 		colorframe.setLayout(colorvbox)
@@ -1041,14 +1070,39 @@ class EMSpinWidget(QtGui.QWidget):
 			
 	def on_editfinish(self):
 		self.value = float(self.numbox.text())
-		
-class EMQTColorWidget(QtGui.QWidget):
-	def __init__(self, redcolor, greencolor, bluecolor):
-		QtGui.QWidget.__init__(self)
 
-class EMQTcolorBoxWidget(QtGui.QWidget):
-	def __init__(self, color, brightness):
-		QtGui.QWidget.__init__(self)
+class EMQTColorWidget(QtGui.QWidget):
+	def __init__(self, parent=None, red=255, green=255, blue=255):
+		QtGui.QWidget.__init__(self, parent)
+		self.width=30
+		self.height=30
+		self.color = QtGui.QColor(red,green,blue)
+		self.setMinimumHeight(50)
+		self.setMinimumWidth(50)
+	
+	def setcolor(self, color):
+		self.color = color
+		self.update()
+		
+	def getcolor(self):
+		return self.color
+		
+	def paintEvent(self, e):
+		qp = QtGui.QPainter()
+		qp.begin(self)
+		self.drawWidget(qp)
+		qp.end()
+		
+	def drawWidget(self, qp):
+		pen = QtGui.QPen(QtGui.QColor(0, 0, 0))
+		pen.setWidth(2)
+		qp.setPen(pen)
+		qp.setBrush(self.color)
+		qp.drawRect(0, 0, self.width, self.height)
+		
+	def mousePressEvent(self, event):
+		self.color = QtGui.QColorDialog.getColor()
+		self.update()
 
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
@@ -1058,6 +1112,7 @@ class glCube(EMItem3D):
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		# size
+		self.boundingboxsize = size
 		self.xi = -size/2
 		self.yi = -size/2
 		self.zi = -size/2
@@ -1165,7 +1220,6 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D()
-		#self.inspector.setGeometry(300, 300, 700, 300)
 		self.widget.set_inspector(self.inspector)
 		
 		rootnode = self.inspector.add_tree_node("root node", self.widget)
