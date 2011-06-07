@@ -1227,7 +1227,7 @@ class EMQTColorWidget(QtGui.QWidget):
 
 	def mouseMoveEvent(self, e):
 
-		if e.buttons() != QtCore.Qt.RightButton:
+		if e.buttons() != QtCore.Qt.LeftButton:
 			return
 		self.dragdrop(e)
 
@@ -1242,15 +1242,63 @@ class EMQTColorWidget(QtGui.QWidget):
 		
 	def mousePressEvent(self, event):
 		if event.buttons() != QtCore.Qt.RightButton:
-			self.colrodialog = QtGui.QColorDialog(self.color)
-			#self.colrodialog.setCurrentColor(self.color)
-			color = self.colrodialog.getColor()
-			if color.isValid():
-				self.color = color
-			self.update()
+			self.inicolor = self.color
+			self.colrodialog = EMQtColorDialog(self.color)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
 		else:
 			self.dragdrop(event)
+			
+	def on_colorchange(self, color):
+		if color.isValid():
+			self.color = color
+			self.update()
+	def on_colorselect(self, color):
+		if color.isValid():
+			self.color = color
+			self.update()
+			
+	def on_cancel(self):
+		self.color = self.inicolor
+		self.update()
+		
+	def on_additonal_connect(self):
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
 
+def singleton(cls):
+	instances = {}
+	def getinstance(inicolor):
+		if cls not in instances:
+			instances[cls] = cls(inicolor)
+		else:
+			instances[cls].emit(QtCore.SIGNAL("newconnection()"))
+			instances[cls].setCurrentColor(inicolor)
+			if instances[cls].hidden:
+				instances[cls].show()
+		return instances[cls]
+	return getinstance
+    
+@singleton
+class EMQtColorDialog(QtGui.QColorDialog):
+	"""
+	The Is to create a non-modal color dialog
+	"""
+	def __init__(self, inicolor):
+		QtGui.QColorDialog.__init__(self, inicolor)
+		self.hidden = False
+		self.setWindowFlags(QtCore.Qt.Window)
+		self.show()
+	
+	def hideEvent(self, e):
+		QtGui.QColorDialog.hideEvent(self, e)
+		self.emit(QtCore.SIGNAL("canceled()"))
+		self.hidden = True
+		
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
