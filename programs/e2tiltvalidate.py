@@ -168,7 +168,7 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltste
 			inplane = Transform({"type":"eman", "phi":-zrot})
 			totalxform = tiltxform*inplane*eulerxform
 			testprojection = volume.project("standard",totalxform)
-			tiltalign = tilted.align("translational",testprojection{},options.cmp[0],options.cmp[1])
+			tiltalign = tilted.align("translational",testprojection,{},options.cmp[0],options.cmp[1])
 			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			#score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)

@@ -34,6 +34,38 @@ import sys
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 
+leftarrow = [
+    '12 10 2 1',
+    'b c #0000ff',
+    'c c None',
+    'ccccccccbbbb',
+    'ccccccbbbbbc',
+    'ccccbbbbbccc',
+    'ccbbbbbccccc',
+    'bbbbbccccccc',
+    'bbbbbccccccc',
+    'ccbbbbbccccc',
+    'ccccbbbbbccc',
+    'ccccccbbbbbc',
+    'ccccccccbbbb'
+]    
+
+rightarrow = [
+    '12 10 2 1',
+    'b c #0000ff',
+    'c c None',
+    'bbbccccccccc',
+    'cbbbbbcccccc',
+    'cccbbbbbcccc',
+    'cccccbbbbbcc',
+    'cccccccbbbbb',
+    'cccccccbbbbb',
+    'cccccbbbbbcc',
+    'cccbbbbbcccc',
+    'cbbbbbcccccc',
+    'bbbbcccccccc'
+]
+
 def clamp(x0,val,x1):
 	return int(max(min(val,x1),x0))
 
@@ -504,7 +536,7 @@ class CheckBox(QtGui.QWidget):
 		self.check = QtGui.QCheckBox(self)
 		self.hboxlayout.addWidget(self.check)
 		
-		QtCore.QObject.connect(self.check, QtCore.SIGNAL("stateChanged(bool)"), self.boolChanged)
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("stateChanged(bool)"), self.boolChange)
 		
 		if showenable>=0 : self.setEnabled(showenable)
 		self.updateboth()
@@ -686,4 +718,178 @@ class RangeSlider(QtGui.QWidget):
 
 	def getValue(self):
 		return self.value
+		
+class EMSpinWidget(QtGui.QWidget):
+	"""
+	Widget for a unbounded spin box using left and right arrow keys
+	value is the starting value
+	coeff is controls the exponential growth rate when the arrow is held down
+	maxarrowwidth is the size of the arrow buttons
+	"""
+	def __init__(self, value, coeff, maxarrowwidth=20):
+		QtGui.QWidget.__init__(self)
+		self.value = value
+		self.coeff = coeff
+		self.powercoeff = 0.0
+		self.maxarrowwidth = maxarrowwidth
+		
+		shbox = QtGui.QHBoxLayout()
+		self.lbutton = QtGui.QPushButton("",self)
+		self.lbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(leftarrow)))
+		self.lbutton.setAutoRepeat(True)
+		self.lbutton.setAutoRepeatDelay(200)
+		shbox.addWidget(self.lbutton)
+		self.numbox = QtGui.QLineEdit(str(self.value), self)
+		shbox.addWidget(self.numbox)
+		self.lbutton.setMaximumHeight(self.numbox.height())
+		self.lbutton.setMaximumWidth(self.maxarrowwidth)
+		self.rbutton = QtGui.QPushButton("",self)
+		self.rbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(rightarrow)))
+		self.rbutton.setAutoRepeat(True)
+		self.rbutton.setAutoRepeatDelay(200)
+		self.rbutton.setMaximumHeight(self.numbox.height())
+		self.rbutton.setMaximumWidth(self.maxarrowwidth)
+		shbox.addWidget(self.rbutton)
+		self.setLayout(shbox)
+		
+		QtCore.QObject.connect(self.numbox,QtCore.SIGNAL("editingFinished()"),self.on_editfinish)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("clicked()"),self.on_clickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("clicked()"),self.on_clickright)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("released()"),self.on_unclickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("released()"),self.on_unclickright)
+		
+	def on_clickleft(self):
+		self.value = self.value - self.coeff*(2**self.powercoeff)
+		self.numbox.setText(str(round(self.value, 2)))
+		self.powercoeff += 0.1
+		
+	def on_clickright(self):
+		self.value = self.value + self.coeff*(2**self.powercoeff)
+		self.numbox.setText(str(round(self.value,2)))
+		self.powercoeff += 0.1
 	
+	def on_unclickleft(self):
+		if not self.lbutton.isDown():
+			self.powercoeff = 0.0
+			
+	def on_unclickright(self):
+		if not self.rbutton.isDown():
+			self.powercoeff = 0.0
+			
+	def on_editfinish(self):
+		self.value = float(self.numbox.text())
+
+class EMQTColorWidget(QtGui.QWidget):
+	"""
+	A widget displaying a color box that is used to control colors
+	multiple boxes can be implemented
+	"""
+	def __init__(self, parent=None, red=255, green=255, blue=255, width=30, height=30):
+		QtGui.QWidget.__init__(self, parent)
+		self.width = width
+		self.height = height
+		self.color = QtGui.QColor(red,green,blue)
+		self.setMinimumHeight(self.width+2)
+		self.setMinimumWidth(self.height+2)
+		self.setAcceptDrops(True)
+	
+	def setcolor(self, color):
+		self.color = color
+		self.update()
+		
+	def getcolor(self):
+		return self.color
+		
+	def paintEvent(self, e):
+		qp = QtGui.QPainter()
+		qp.begin(self)
+		self.drawWidget(qp)
+		qp.end()
+		
+	def drawWidget(self, qp):
+		pen = QtGui.QPen(QtGui.QColor(0, 0, 0))
+		pen.setWidth(2)
+		qp.setPen(pen)
+		qp.setBrush(self.color)
+		qp.drawRect(0, 0, self.width, self.height)
+	
+	def dragEnterEvent(self, e):
+		e.accept()
+		
+	def dropEvent(self, e):
+		self.color = QtGui.QColor(e.mimeData().colorData())
+		self.update()
+
+	def mouseMoveEvent(self, e):
+
+		if e.buttons() != QtCore.Qt.LeftButton:
+			return
+		self.dragdrop(e)
+
+		
+	def dragdrop(self, e):
+		mimeData = QtCore.QMimeData()
+		mimeData.setColorData(self.color)
+		drag = QtGui.QDrag(self)
+		drag.setMimeData(mimeData)
+		drag.setHotSpot(e.pos() - self.rect().topLeft())
+		dropAction = drag.start(QtCore.Qt.MoveAction)
+		
+	def mousePressEvent(self, event):
+		if event.buttons() != QtCore.Qt.RightButton:
+			self.inicolor = self.color
+			self.colrodialog = EMQtColorDialog(self.color)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
+		else:
+			self.dragdrop(event)
+			
+	def on_colorchange(self, color):
+		if color.isValid():
+			self.color = color
+			self.update()
+	def on_colorselect(self, color):
+		if color.isValid():
+			self.color = color
+			self.update()
+			
+	def on_cancel(self):
+		self.color = self.inicolor
+		self.update()
+		
+	def on_additonal_connect(self):
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
+
+def singleton(cls):
+	instances = {}
+	def getinstance(inicolor):
+		if cls not in instances:
+			instances[cls] = cls(inicolor)
+		else:
+			instances[cls].emit(QtCore.SIGNAL("newconnection()"))
+			instances[cls].setCurrentColor(inicolor)
+			if instances[cls].hidden:
+				instances[cls].show()
+		return instances[cls]
+	return getinstance
+    
+@singleton
+class EMQtColorDialog(QtGui.QColorDialog):
+	"""
+	The Is to create a non-modal color dialog
+	"""
+	def __init__(self, inicolor):
+		QtGui.QColorDialog.__init__(self, inicolor)
+		self.hidden = False
+		self.setWindowFlags(QtCore.Qt.Window)
+		self.show()
+	
+	def hideEvent(self, e):
+		QtGui.QColorDialog.hideEvent(self, e)
+		self.emit(QtCore.SIGNAL("canceled()"))
+		self.hidden = True
