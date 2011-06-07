@@ -629,7 +629,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		if self.inspector: self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		
-		#if update_gl: self.updateGL()
+		if update_gl: self.updateGL()
 
 			
 	def set_den_range(self,x0,x1,update_gl=True):
@@ -1295,7 +1295,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def scr_to_img(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
-		image from the matrix. Returns (image number,x,y) or None if the location is not within any
+		image from the matrix. Returns (image number,x,y,image_attr_dict) or None if the location is not within any
 		of the contained images. """ 
 		if  self.max_idx == 0: return # there is no data
 		
@@ -1430,6 +1430,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc:
 				self.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
+#				print "select ",lc[0]
 				#print "setting selected"
 				self.set_selected([lc[0]],True)
 			xians_stuff = False
@@ -1447,7 +1448,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					print "Filename: ", self.get_image_file_name()
 					print "Sequence#: ",lc[0]
 					print "Angle: ", angle
-					
+
+	def __app_mode_mouse_double_click(self, event):
+		if event.button()==Qt.LeftButton:
+			lc=self.scr_to_img((event.x(),event.y()))
+			if lc:
+#				print "dselect ",lc[0]
+				self.emit(QtCore.SIGNAL("mx_image_double"),event,lc)
+
+
 	def __app_mode_mouse_move(self, event):
 		if event.buttons()&Qt.LeftButton:
 			self.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.get_scale())
@@ -1614,6 +1623,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if not self.data: return
 		if self.mmode == "Drag":
 			self.__drag_mode_mouse_double_click(event)
+		if self.mmode == "App":
+			self.__app_mode_mouse_double_click(event)
 
 	def mousePressEvent(self, event):
 		if not self.data: return
