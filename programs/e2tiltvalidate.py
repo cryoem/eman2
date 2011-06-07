@@ -160,6 +160,7 @@ def main():
 def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltstep):
 	scoremx = EMData(2*tiltrange+1,2*tiltrange+1)
 	bestscore = float('inf')
+	ac = 0
 	for rotx in xrange(-tiltrange, tiltrange+1,tiltstep):
 		for roty in xrange(-tiltrange, tiltrange+1,tiltstep):
 			# First make the projection
@@ -173,7 +174,9 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltste
 			#score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
-	print zrot
+			tilted.write_image("diag.hdf",ac)
+			testprojection.write_image("diag.hdf",ac+1)
+			ac+=2
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
 
 def run(command):

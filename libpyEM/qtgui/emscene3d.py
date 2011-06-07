@@ -45,39 +45,41 @@ import weakref
 
 # XPM format Cursors
 
-selectedicon = [
-    '13 12 2 1',
-    'a c #00ff00',
+visibleicon = [
+    '16 12 3 1',
+    'a c #0000ff',
+    'b c #000000',
     'c c None',
-    'cccccccccccaa',
-    'cccccccccccaa',
-    'ccccccccccaac',
-    'ccccccccccaac',
-    'cccccccccaacc',
-    'cccccccccaacc',
-    'ccccccccaaccc',
-    'ccccccccaaccc',
-    'aacccccaacccc',
-    'caaccccaacccc',
-    'ccaaaaaaccccc',
-    'ccccaaacccccc'
+    'cccccccccccccccc',
+    'ccccccbbbbcccccc',
+    'ccccbbbbbbbbcccc',
+    'ccbbbccccccbbbcc',
+    'cbbccccaaccccbbc',
+    'cbccccaaaaccccbc',
+    'cbccccaaaaccccbc',
+    'cbbccccaaccccbbc',
+    'ccbbbccccccbbbcc',
+    'ccccbbbbbbbbcccc',
+    'ccccccbbbbcccccc',
+    'cccccccccccccccc'
 ]
     
-deselectedicon = [
-    '12 11 2 1',
-    'a c #ff0000',
+invisibleicon = [
+    '16 12 2 1',
+    'b c #000000',
     'c c None',
-    'aaccccccccaa',
-    'caaccccccaac',
-    'ccaaccccaacc',
-    'cccaaccaaccc',
-    'ccccaaaacccc',
-    'cccccaaccccc',
-    'ccccaaaacccc',
-    'cccaaccaaccc',
-    'ccaaccccaacc',
-    'caaccccccaac',
-    'aaccccccccaa'
+    'cccccccccccccccc',
+    'ccccccbbbbcccccc',
+    'ccccbbbbbbbbcccc',
+    'ccbbbbccccbbbbcc',
+    'cbbcccbccbcccbbc',
+    'cbcccccbbcccccbc',
+    'cbcccccbbcccccbc',
+    'cbbcccbccbcccbbc',
+    'ccbbbbccccbbbbcc',
+    'ccccbbbbbbbbcccc',
+    'ccccccbbbbcccccc',
+    'cccccccccccccccc'
 ]
 
 zrotatecursor = [
@@ -705,10 +707,11 @@ class EMCamera:
 ###################################### Inspector Code #########################################################################################
 
 class EMInspector3D(QtGui.QWidget):
-	def __init__(self):
+	def __init__(self, scenegraph):
 		"""
 		"""
 		QtGui.QWidget.__init__(self)
+		self.scenegraph = scenegraph
 		self.mintreewidth = 200		# minimum width of the tree
 		self.mincontrolwidth = 250
 		
@@ -750,11 +753,12 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the tree layout
 		"""
 		tvbox = QtGui.QVBoxLayout()
-		self.tree_widget = QtGui.QTreeWidget(parent)
+		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.tree_widget_test)
 		
 		return tvbox
 	
@@ -765,9 +769,8 @@ class EMInspector3D(QtGui.QWidget):
 		The Treeitem also needs to know the SGnode, so it can talk to the SGnode.
 		You can think of this as a three way conversation(the alterative it to use a meniator, but that is not worth it w/ only three players
 		"""
+		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI 
 		sgnodegui = sgnode.get_scene_gui()				# Get the SG node GUI controls 
-		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode, sgnodegui)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI 
-		sgnodegui.set_treeitem(node)					# Relate the SG node GUI controls to the QTreeItem
 		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
 		# Set icon status
 		node.set_selection_state_box()
@@ -781,6 +784,10 @@ class EMInspector3D(QtGui.QWidget):
 	def tree_widget_click(self, item, col):
 		self.stacked_widget.setCurrentWidget(item.sgnode.get_scene_gui())
 		item.set_selection_state(item.checkState(0))
+		
+	def tree_widget_test(self, item):
+		item.toogle_visible_state()
+		self.update_scenegraph()
 		
 	def get_controler_layout(self, parent):
 		"""
@@ -815,18 +822,36 @@ class EMInspector3D(QtGui.QWidget):
 		uwidget = QtGui.QWidget()
 		
 		return uwidget
-
 		
+	def update_scenegraph(self):
+		""" 
+		Updates SG, in the near future this will be improved to allow for slow operations
+		"""
+		self.scenegraph.updateSG()
+
+class EMQTreeWidget(QtGui.QTreeWidget):
+	def __init__(self, parent=None):
+		QtGui.QTreeWidget.__init__(self, parent)
+			
+	def mousePressEvent(self, e):
+		QtGui.QTreeWidget.mousePressEvent(self, e)
+		if e.button()==Qt.RightButton:
+			self.emit(QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.currentItem())
+		
+		
+	
 class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
-	def __init__(self, qstring, sgnode, sgnodegui):
+	def __init__(self, qstring, sgnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
 		self.sgnode = sgnode
-		self.sgnodegui = sgnodegui
 		self.setCheckState(0, QtCore.Qt.Unchecked)
+		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
+		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
+		self.get_visible_state()
 	
 	def set_selection_state(self, state):
 		""" 
@@ -837,8 +862,20 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		else:
 			self.sgnode.is_selected = False
 		self.set_selection_state_box() # set state of TreeItemwidget
-		self.sgnodegui.set_selection_checkbox()	# Set the GUI checked box
 		
+	def toogle_visible_state(self):
+		self.sgnode.is_visible = not self.sgnode.is_visible
+		self.get_visible_state()
+		
+	def get_visible_state(self):
+		"""
+		Toogle the visble state
+		"""
+		if self.sgnode.is_visible:
+			self.setIcon(0, self.visible)
+		else:
+			self.setIcon(0, self.invisible)
+	
 	def set_selection_state_box(self):
 		"""
 		Set the selection state icon
@@ -856,6 +893,7 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.sgnode = sgnode
 		self.name = name
+		self.transfromboxmaxheight = 400
 		
 		igvbox = QtGui.QVBoxLayout()
 		self.add_basic_controls(igvbox)
@@ -871,11 +909,8 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		label.setAlignment(QtCore.Qt.AlignCenter)
 		igvbox.addWidget(label)
 		databox = QtGui.QHBoxLayout()
-		self.isselectedbox = QtGui.QCheckBox("Is Selected", self)
-		databox.addWidget(self.isselectedbox)
 		if self.sgnode.boundingboxsize:
 			databox.addWidget(QtGui.QLabel("Size: "+str(self.sgnode.boundingboxsize)+u'\u00B3',self))
-		self.set_selection_checkbox()
 		igvbox.addLayout(databox)
 		# angluar controls
 		xformframe = QtGui.QFrame()
@@ -885,12 +920,12 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		xformlabel.setFont(font)
 		xformlabel.setAlignment(QtCore.Qt.AlignCenter)
 		xformbox.addWidget(xformlabel)
-		self.azslider = ValSlider(xformframe, (0.0, 360.0), "AZ")
-		self.altslider = ValSlider(xformframe, (0.0, 180.0), "ALT")
-		self.phislider = ValSlider(xformframe, (0.0, 360.0), "PHI")
-		xformbox.addWidget(self.azslider)
-		xformbox.addWidget(self.altslider)
-		xformbox.addWidget(self.phislider)
+		# Rotations
+		self.rotcombobox = QtGui.QComboBox()
+		xformbox.addWidget(self.rotcombobox)
+		self.rotstackedwidget = QtGui.QStackedWidget()
+		self.addRotationWidgets()
+		xformbox.addWidget(self.rotstackedwidget)
 		#translations
 		textbox = QtGui.QHBoxLayout()
 		txlabel = QtGui.QLabel("TX",xformframe)
@@ -920,45 +955,127 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		zoomwidgetbox.addWidget(tz)
 		zoomwidgetbox.addWidget(zoom)
 		xformbox.addLayout(zoomwidgetbox)
-		
 				
+		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
 		igvbox.addWidget(xformframe)
+	
+	def addRotationWidgets(self):
+		EMANwidget = QtGui.QWidget()
+		Imagicwidget = QtGui.QWidget()
+		Spiderwidget = QtGui.QWidget()
+		MRCwidget = QtGui.QWidget()
+		XYZwidget = QtGui.QWidget()
+		spinwidget = QtGui.QWidget()
+		sgirotwidget = QtGui.QWidget()
+		quaternionwidget = QtGui.QWidget()
+		# EMAN
+		emanbox = QtGui.QVBoxLayout()
+		self.emanazslider = ValSlider(EMANwidget, (0.0, 360.0), "  Az")
+		self.emanaltslider = ValSlider(EMANwidget, (0.0, 180.0), "Alt")
+		self.emanphislider = ValSlider(EMANwidget, (0.0, 360.0), "Phi")
+		emanbox.addWidget(self.emanazslider)
+		emanbox.addWidget(self.emanaltslider)
+		emanbox.addWidget(self.emanphislider)
+		EMANwidget.setLayout(emanbox)
+		# Imagic
+		imagicbox = QtGui.QVBoxLayout()
+		self.imagicgammaslider = ValSlider(Imagicwidget, (0.0, 360.0), "Gamma")
+		self.imagicbetaslider = ValSlider(Imagicwidget, (0.0, 180.0), "     Beta")
+		self.imagicalphaslider = ValSlider(Imagicwidget, (0.0, 360.0), "   Alpha")
+		imagicbox.addWidget(self.imagicgammaslider)
+		imagicbox.addWidget(self.imagicbetaslider)
+		imagicbox.addWidget(self.imagicalphaslider)
+		Imagicwidget.setLayout(imagicbox)
+		# Spider
+		spiderbox = QtGui.QVBoxLayout()
+		self.spiderpsislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Psi")
+		self.spiderthetaslider = ValSlider(Spiderwidget, (0.0, 180.0), "theta")
+		self.spiderphislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Phi")
+		spiderbox.addWidget(self.spiderpsislider)
+		spiderbox.addWidget(self.spiderthetaslider)
+		spiderbox.addWidget(self.spiderphislider)
+		Spiderwidget.setLayout(spiderbox)
+		# MRC
+		mrcbox = QtGui.QVBoxLayout()
+		self.mrcpsislider = ValSlider(MRCwidget, (0.0, 360.0), "      Psi")
+		self.mrcthetaslider = ValSlider(MRCwidget, (0.0, 180.0), "  Theta")
+		self.mrcomegaslider = ValSlider(MRCwidget, (0.0, 360.0), "Omega")
+		mrcbox.addWidget(self.mrcpsislider)
+		mrcbox.addWidget(self.mrcthetaslider)
+		mrcbox.addWidget(self.mrcomegaslider)
+		MRCwidget.setLayout(mrcbox)
+		# XYZ
+		xyzbox = QtGui.QVBoxLayout()
+		self.xyzzslider = ValSlider(XYZwidget, (0.0, 360.0), "Z")
+		self.xyzyslider = ValSlider(XYZwidget, (0.0, 180.0), "Y")
+		self.xyzxslider = ValSlider(XYZwidget, (0.0, 360.0), "X")
+		xyzbox.addWidget(self.xyzzslider)
+		xyzbox.addWidget(self.xyzyslider)
+		xyzbox.addWidget(self.xyzxslider)
+		XYZwidget.setLayout(xyzbox)
+		# spin
+		spinbox = QtGui.QVBoxLayout()
+		self.spinomegaslider = ValSlider(spinwidget, (0.0, 360.0), "Omega")
+		self.spinn1slider = ValSlider(spinwidget, (0.0, 1.0), "       N1")
+		self.spinn2slider = ValSlider(spinwidget, (0.0, 1.0), "       N2")
+		self.spinn3slider = ValSlider(spinwidget, (0.0, 1.0), "       N3")
+		spinbox.addWidget(self.spinomegaslider)
+		spinbox.addWidget(self.spinn1slider)
+		spinbox.addWidget(self.spinn2slider)
+		spinbox.addWidget(self.spinn3slider)
+		spinwidget.setLayout(spinbox)
+		# sgirot
+		sgirotbox = QtGui.QVBoxLayout()
+		self.sgirotqslider = ValSlider(sgirotwidget, (0.0, 360.0), " Q")
+		self.sgirotn1slider = ValSlider(sgirotwidget, (0.0, 1.0), "N1")
+		self.sgirotn2slider = ValSlider(sgirotwidget, (0.0, 1.0), "N2")
+		self.sgirotn3slider = ValSlider(sgirotwidget, (0.0, 1.0), "N3")
+		sgirotbox.addWidget(self.sgirotqslider)
+		sgirotbox.addWidget(self.sgirotn1slider)
+		sgirotbox.addWidget(self.sgirotn2slider)
+		sgirotbox.addWidget(self.sgirotn3slider)
+		sgirotwidget.setLayout(sgirotbox)
+		# quaternion
+		quaternionbox = QtGui.QVBoxLayout()
+		self.quaternione0slider = ValSlider(quaternionwidget, (0.0, 1.0), "E0")
+		self.quaternione1slider = ValSlider(quaternionwidget, (0.0, 1.0), "E1")
+		self.quaternione2slider = ValSlider(quaternionwidget, (0.0, 1.0), "E2")
+		self.quaternione3slider = ValSlider(quaternionwidget, (0.0, 1.0), "E3")
+		quaternionbox.addWidget(self.quaternione0slider)
+		quaternionbox.addWidget(self.quaternione1slider)
+		quaternionbox.addWidget(self.quaternione2slider)
+		quaternionbox.addWidget(self.quaternione3slider)
+		quaternionwidget.setLayout(quaternionbox)		
 		
-		self.connect(self.isselectedbox,QtCore.SIGNAL("stateChanged(int)"),self.on_isselected)
+		# Add widgets to the stack
+		self.rotstackedwidget.addWidget(EMANwidget)
+		self.rotstackedwidget.addWidget(Imagicwidget)
+		self.rotstackedwidget.addWidget(Spiderwidget)
+		self.rotstackedwidget.addWidget(MRCwidget)
+		self.rotstackedwidget.addWidget(XYZwidget)
+		self.rotstackedwidget.addWidget(spinwidget)
+		self.rotstackedwidget.addWidget(sgirotwidget)
+		self.rotstackedwidget.addWidget(quaternionwidget)
+		# add choices to combobox
+		self.rotcombobox.addItem("EMAN")
+		self.rotcombobox.addItem("Imagic")
+		self.rotcombobox.addItem("Spider")
+		self.rotcombobox.addItem("MRC")
+		self.rotcombobox.addItem("XYZ")
+		self.rotcombobox.addItem("spin")
+		self.rotcombobox.addItem("sgirot")
+		self.rotcombobox.addItem("quaternion")
+		
+		# Signal for all sliders
+		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self.rotcombobox_changed)
+	
+	def rotcombobox_changed(self, idx):
+		self.rotstackedwidget.setCurrentIndex(idx)
 		
 	def add_controls(self, igvbox):
 		pass
-	
-	def set_treeitem(self, treeitem):
-		"""
-		Relate the GUI to the treeitem so it can talk directy to the tree item
-		"""
-		self.treeitem = treeitem
 		
-	def set_selection_checkbox(self):
-		"""
-		Set the selection state
-		"""
-		if self.sgnode.is_selected:	
-			self.isselectedbox.setCheckState(QtCore.Qt.Checked)
-		else:
-			self.isselectedbox.setCheckState(QtCore.Qt.Unchecked)
-		
-	def on_isselected(self):
-		"""
-		Set the selection state when the check boix is clicked
-		"""
-		if self.isselectedbox.isChecked():
-			self.sgnode.is_selected = True
-		else:
-			self.sgnode.is_selected = False
-		self.treeitem.set_selection_state_box()
-		
-	def update_gui(self):
-		self.set_selection_checkbox()
-		self.treeitem.set_selection_state_box()
-
 class EMInspectorControlShape(EMInspectorControlBasic):
 	"""
 	Class to make EMItem GUI SHAPE
@@ -1079,6 +1196,7 @@ class EMQTColorWidget(QtGui.QWidget):
 		self.color = QtGui.QColor(red,green,blue)
 		self.setMinimumHeight(50)
 		self.setMinimumWidth(50)
+		self.setAcceptDrops(True)
 	
 	def setcolor(self, color):
 		self.color = color
@@ -1099,10 +1217,39 @@ class EMQTColorWidget(QtGui.QWidget):
 		qp.setPen(pen)
 		qp.setBrush(self.color)
 		qp.drawRect(0, 0, self.width, self.height)
+	
+	def dragEnterEvent(self, e):
+		e.accept()
+		
+	def dropEvent(self, e):
+		self.color = QtGui.QColor(e.mimeData().colorData())
+		self.update()
+
+	def mouseMoveEvent(self, e):
+
+		if e.buttons() != QtCore.Qt.RightButton:
+			return
+		self.dragdrop(e)
+
+		
+	def dragdrop(self, e):
+		mimeData = QtCore.QMimeData()
+		mimeData.setColorData(self.color)
+		drag = QtGui.QDrag(self)
+		drag.setMimeData(mimeData)
+		drag.setHotSpot(e.pos() - self.rect().topLeft())
+		dropAction = drag.start(QtCore.Qt.MoveAction)
 		
 	def mousePressEvent(self, event):
-		self.color = QtGui.QColorDialog.getColor()
-		self.update()
+		if event.buttons() != QtCore.Qt.RightButton:
+			self.colrodialog = QtGui.QColorDialog(self.color)
+			#self.colrodialog.setCurrentColor(self.color)
+			color = self.colrodialog.getColor()
+			if color.isValid():
+				self.color = color
+			self.update()
+		else:
+			self.dragdrop(event)
 
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
@@ -1219,7 +1366,7 @@ class GLdemo(QtGui.QWidget):
 		self.widget.add_child(self.cube2)
 		#self.widget.activatenode(cube2)
 
-		self.inspector = EMInspector3D()
+		self.inspector = EMInspector3D(self.widget)
 		self.widget.set_inspector(self.inspector)
 		
 		rootnode = self.inspector.add_tree_node("root node", self.widget)
