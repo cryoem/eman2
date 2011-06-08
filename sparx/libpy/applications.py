@@ -6979,8 +6979,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr = snr, npad = npad, xysize = xysize)
-			else:    vol = recons3d_4nn_MPI(myid, data, npad = npad, xysize = xysize)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize)
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
