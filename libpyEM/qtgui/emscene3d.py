@@ -240,20 +240,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
 		self.firstlight = EMLight(GL_LIGHT0)
-		self.firstlight.enablelighting()
+		self.firstlight.enableLighting()
         
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
-		self.render_selectedarea() 	# Draw the selection box if needed
+		self.renderSelectedArea() 	# Draw the selection box if needed
 		self.render()			# SG nodes must have a render method
 		glFlush()			# Finish rendering
 
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 	
-	def get_scene_gui(self):
+	def getSceneGui(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
@@ -262,7 +262,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def render_node(self):
 		pass
 	
-	def set_inspector(self, inspector):
+	def setInspector(self, inspector):
 		"""
 		Set the main 3d inspector
 		"""
@@ -281,20 +281,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glLoadIdentity()
 		
 		# Find the selection box. Go from Volume view coords to viewport coords
-		x = self.sa_xi + self.camera.get_width()/2
-		y = self.camera.get_height()/2 - self.sa_yi
+		x = self.sa_xi + self.camera.getWidth()/2
+		y = self.camera.getHeight()/2 - self.sa_yi
 		dx = 2*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
 		dy = 2*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
 		
 		# Apply selection box
 		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
-		self.camera.setprojectionmatrix()
+		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		self.camera.set_camera_position(sfactor=2) # Factor of two to compensate for the samera already being set
+		self.camera.setCameraPosition(sfactor=2) # Factor of two to compensate for the samera already being set
 		self.render()
 		glPopMatrix()
 		
@@ -305,20 +305,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		records = glRenderMode(GL_RENDER)
 		
 		# process records
-		self.processselection(records)
+		self.procesSelection(records)
 	
-	def selectarea(self, xi, xf, yi, yf):
+	def selectArea(self, xi, xf, yi, yf):
 		"""
 		Set an area for selection. Need to switch bewteen viewport coords, where (0,0 is bottom left) to
 		volume view coords where 0,0) is center of the screen.
 		"""
-		self.sa_xi = xi - self.camera.get_width()/2
-		self.sa_xf = xf - self.camera.get_width()/2
-		self.sa_yi = -yi + self.camera.get_height()/2
-		self.sa_yf = -yf + self.camera.get_height()/2
+		self.sa_xi = xi - self.camera.getWidth()/2
+		self.sa_xf = xf - self.camera.getWidth()/2
+		self.sa_yi = -yi + self.camera.getHeight()/2
+		self.sa_yf = -yf + self.camera.getHeight()/2
 		self.toggle_render_selectedarea = True
 		
-	def deselectarea(self):
+	def deselectArea(self):
 		"""
 		Turn off selectin box
 		"""
@@ -328,7 +328,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.sa_yf = 0.0
 		self.toggle_render_selectedarea = False
 		
-	def render_selectedarea(self):
+	def renderSelectedArea(self):
 		"""
 		Draw the selection box, box is always drawn orthographically
 		"""
@@ -336,11 +336,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glMatrixMode(GL_PROJECTION)
 			glPushMatrix()
 			glLoadIdentity()
-			self.camera.set_ortho_projectionmatrix()
+			self.camera.setOrthoProjectionMatrix()
 			glColor3f(0.0,1.0,0.0)
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
 			glBegin(GL_LINE_LOOP)
-			z = -self.camera.get_zclip() - 1
+			z = -self.camera.getZclip() - 1
 			glVertex3f(self.sa_xi, self.sa_yi, z)
 			glVertex3f(self.sa_xi, self.sa_yf, z)
 			glVertex3f(self.sa_xf, self.sa_yf, z)
@@ -350,7 +350,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glMatrixMode(GL_MODELVIEW)
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
 		
-	def processselection(self, records):
+	def procesSelection(self, records):
 		"""
 		Process the selection records
 		"""
@@ -358,14 +358,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if not self.appendselection:
 			for selected in self.get_all_selected_nodes():
 				selected.is_selected = False
-				selected.widget.update_gui()
+				# Inspector tree management
+				if EMQTreeWidgetItem:
+					selected.EMQTreeWidgetItem.setSelectionStateBox()
 		# Select the desired items	
 		closestitem = None
 		bestdistance = 1.0
 		for record in records:
 			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
 			selecteditem.is_selected = True
-			selecteditem.widget.update_gui()
+			# Inspector tree management
+			if EMQTreeWidgetItem:
+				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
 			try:
 				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.widget)
 				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.widget.treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
@@ -414,7 +418,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.buttons()&Qt.LeftButton:
 			if event.modifiers()&Qt.ControlModifier:
 				self.setCursor(self.selectorcursor)
-				self.selectarea(self.first_x, event.x(), self.first_y, event.y())
+				self.selectArea(self.first_x, event.x(), self.first_y, event.y())
 			else:
 				magnitude = math.sqrt(dx*dx + dy*dy)
 				#Check to see if the cursor is in the 'virtual slider pannel'
@@ -446,7 +450,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.setCursor(Qt.ArrowCursor)
 		if self.toggle_render_selectedarea:
 			self.pickItem()
-			self.deselectarea()
+			self.deselectArea()
 			self.updateSG()
 	
 	def wheelEvent(self, event):
@@ -482,14 +486,14 @@ class EMLight:
 		The light properties are set to reasnonale defaults.
 		"""
 		self.light = light
-		self.setambient(0.1, 0.1, 0.1, 1.0)		# Default ambient color is light grey
-		self.setdiffuse(1.0, 1.0, 1.0, 1.0)		# Default diffuse color is white
-		self.setspecualar(1.0, 1.0, 1.0, 1.0)		# Default specular color is white
-		self.setposition(0.0, 0.0, 1.0, 0.0)		# Defulat position is 0, 0, 1.0 and light is directional (w=0)
+		self.setAmbient(0.1, 0.1, 0.1, 1.0)		# Default ambient color is light grey
+		self.setDiffuse(1.0, 1.0, 1.0, 1.0)		# Default diffuse color is white
+		self.setSpecualar(1.0, 1.0, 1.0, 1.0)		# Default specular color is white
+		self.setPosition(0.0, 0.0, 1.0, 0.0)		# Defulat position is 0, 0, 1.0 and light is directional (w=0)
 		if not glIsEnabled(GL_LIGHTING):
 			glEnable(GL_LIGHTING)
 
-	def setambient(self, r, g, b, a):
+	def setAmbient(self, r, g, b, a):
 		"""
 		@param r: the red component of the ambient light
 		@param g: the green component of the ambient light
@@ -500,7 +504,7 @@ class EMLight:
 		self.colorambient = [r, g, b, a]
 		glLightfv(self.light, GL_AMBIENT, self.colorambient)
 
-	def setdiffuse(self, r, g, b, a):
+	def setDiffuse(self, r, g, b, a):
 		"""
 		@param r: the red component of the diffuse and specular light
 		@param g: the green component of the diffuse and specular light
@@ -511,7 +515,7 @@ class EMLight:
 		self.colordiffuse = [r, g, b, a]
 		glLightfv(self.light, GL_DIFFUSE, self.colordiffuse)
 		
-	def setspecualar(self, r, g, b, a):
+	def setSpecualar(self, r, g, b, a):
 		"""
 		@param r: the red component of the diffuse and specular light
 		@param g: the green component of the diffuse and specular light
@@ -522,7 +526,7 @@ class EMLight:
 		self.colorspecular = [r, g, b, a]
 		glLightfv(self.light, GL_SPECULAR, self.colorspecular)
 
-	def setposition(self, x, y, z, w):
+	def setPosition(self, x, y, z, w):
 		"""
 		@param x: The x component of the light position
 		@param y: The y component of the light position
@@ -533,14 +537,14 @@ class EMLight:
 		self.position = [x, y, z, w]
 		glLightfv(self.light, GL_POSITION, self.position)
 
-	def enablelighting(self):
+	def enableLighting(self):
 		"""
 		Enables this light
 		"""
 		if not glIsEnabled(self.light):
 			glEnable(self.light)
 
-	def disablelighting(self):
+	def disableLighting(self):
 		"""
 		Disables this light
 		"""
@@ -561,9 +565,9 @@ class EMCamera:
 		self.far = far
 		self.near = near
 		if usingortho:
-			self.useortho(zclip)
+			self.useOrtho(zclip)
 		else:
-			self.useprespective(boundingbox, screenfraction, fovy)
+			self.usePrespective(boundingbox, screenfraction, fovy)
 
 	def update(self, width, height):
 		"""
@@ -577,50 +581,50 @@ class EMCamera:
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			self.set_ortho_projectionmatrix()
+			self.setOrthoProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,self.zclip)
-			self.set_camera_position()
+			self.setCameraPosition()
 		else:
 			# This may need some work to get it to behave
 			glViewport(0,0,width,height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
-			self.set_perspective_projectionmatrix()
+			self.setPerspectiveProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
-			self.set_camera_position()
+			self.setCameraPosition()
 	
-	def set_camera_position(self, sfactor=1):
+	def setCameraPosition(self, sfactor=1):
 		"""
 		Set the default camera position
 		"""
-		glTranslate(0,0,sfactor*self.get_zclip())
+		glTranslate(0,0,sfactor*self.getZclip())
 		
-	def setprojectionmatrix(self):
+	def setProjectionMatrix(self):
 		"""
 		Set the projection matrix
 		"""
 		if self.usingortho:
-			self.set_ortho_projectionmatrix()
+			self.setOrthoProjectionMatrix()
 		else:
-			self.set_perspective_projectionmatrix()
+			self.setPerspectiveProjectionMatrix()
 			
-	def set_ortho_projectionmatrix(self):
+	def setOrthoProjectionMatrix(self):
 		"""
 		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
 		"""
 		glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
 		
-	def set_perspective_projectionmatrix(self):
+	def setPerspectiveProjectionMatrix(self):
 		"""
 		Set the perspective projection matrix. Volume view origin (0,0) is center of screen
 		"""
 		GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
 			
-	def useprespective(self, boundingbox, screenfraction, fovy=60.0):
+	def usePrespective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
@@ -631,40 +635,40 @@ class EMCamera:
 		self.usingortho = False
 		
 
-	def useortho(self, zclip):
+	def useOrtho(self, zclip):
 		"""
 		Changes projection matrix to orthographic
 		"""
 		self.usingortho = True
 		self.zclip = zclip
 
-	def setclipfar(self, far):
+	def setClipFar(self, far):
 		"""
 		Set the far aspect of the viewing volume
 		"""
 		self.far = far
 
-	def setclipnear(self, near):
+	def setClipNear(self, near):
 		"""
 		Set the near aspect of the viewing volume
 		"""
 		self.near = near
 
-	def setfovy(self, fovy):
+	def setFovy(self, fovy):
 		"""
 		Set the field of view angle aspect of the viewing volume
 		"""
 		self.fovy = fovy
 		
-	def get_height(self):
+	def getHeight(self):
 		""" Get the viewport height """
 		return self.height
 	
-	def get_width(self):
+	def getWidth(self):
 		""" Get the viewport width"""
 		return self.width
 		
-	def get_zclip(self):
+	def getZclip(self):
 		""" Get the zclip """
 		if self.usingortho:
 			return self.zclip
@@ -686,17 +690,17 @@ class EMInspector3D(QtGui.QWidget):
 		vbox = QtGui.QVBoxLayout(self)
 		
 		self.inspectortab = QtGui.QTabWidget()
-		self.inspectortab.addTab(self.get_tree_widget(), "Tree View")
-		self.inspectortab.addTab(self.get_lights_widget(), "Lights")
-		self.inspectortab.addTab(self.get_camera_widget(), "Camera")
-		self.inspectortab.addTab(self.get_utils_widget(), "Utils")
+		self.inspectortab.addTab(self.getTreeWidget(), "Tree View")
+		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
+		self.inspectortab.addTab(self.getCameraWidget(), "Camera")
+		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
 
 		vbox.addWidget(self.inspectortab)
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
 
-	def get_tree_widget(self):
+	def getTreeWidget(self):
 		"""
 		This returns the treeview-control panel widget
 		"""
@@ -704,19 +708,19 @@ class EMInspector3D(QtGui.QWidget):
 		hbox = QtGui.QHBoxLayout(widget)
 		treesplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		treesplitter.setFrameShape(QtGui.QFrame.StyledPanel)
-		treesplitter.setLayout(self.get_tree_layout(widget))
+		treesplitter.setLayout(self._get_tree_layout(widget))
 		treesplitter.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treesplitter)
 		controlsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		controlsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
-		controlsplitter.setLayout(self.get_controler_layout(widget))
+		controlsplitter.setLayout(self._get_controler_layout(widget))
 		controlsplitter.setMinimumWidth(self.mincontrolwidth)
 		hbox.addWidget(controlsplitter)
 		widget.setLayout(hbox)
 		
 		return widget
 		
-	def get_tree_layout(self, parent):
+	def _get_tree_layout(self, parent):
 		"""
 		Returns the tree layout
 		"""
@@ -725,23 +729,25 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
 		
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.tree_widget_test)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
 		
 		return tvbox
 	
-	def add_tree_node(self, name, sgnode, parentnode=None):
+	def addTreeNode(self, name, sgnode, parentnode=None):
 		"""
 		Add a node to the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
 		The Treeitem also needs to know the SGnode, so it can talk to the SGnode.
 		You can think of this as a three way conversation(the alterative it to use a meniator, but that is not worth it w/ only three players
 		"""
-		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI 
-		sgnodegui = sgnode.get_scene_gui()				# Get the SG node GUI controls 
+		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		sgnode.setEMQTreeWidgetItem(node)
+		sgnodegui = sgnode.getSceneGui()				# Get the SG node GUI controls 
+		sgnodegui.setInspector(self)					# Associate the SGGUI with the inspector
 		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
 		# Set icon status
-		node.set_selection_state_box()
+		node.setSelectionStateBox()
 		# Set parent if one exists	
 		if not parentnode:
 			self.tree_widget.insertTopLevelItem(0, node)
@@ -749,15 +755,15 @@ class EMInspector3D(QtGui.QWidget):
 			parentnode.addChild(node)
 		return node
 			
-	def tree_widget_click(self, item, col):
-		self.stacked_widget.setCurrentWidget(item.sgnode.get_scene_gui())
-		item.set_selection_state(item.checkState(0))
+	def _tree_widget_click(self, item, col):
+		self.stacked_widget.setCurrentWidget(item.sgnode.getSceneGui())
+		item.setSelectionState(item.checkState(0))
 		
-	def tree_widget_test(self, item):
-		item.toogle_visible_state()
-		self.update_scenegraph()
+	def _tree_widget_visible(self, item):
+		item.toogleVisibleState()
+		self.updateSceneGraph()
 		
-	def get_controler_layout(self, parent):
+	def _get_controler_layout(self, parent):
 		"""
 		Returns the control layout
 		"""
@@ -767,7 +773,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return cvbox
 		
-	def get_lights_widget(self):
+	def getLightsWidget(self):
 		"""
 		Returns the lights control widget
 		"""
@@ -775,7 +781,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return lwidget
 		
-	def get_camera_widget(self):
+	def getCameraWidget(self):
 		"""
 		Returns the camera control widget
 		"""
@@ -783,7 +789,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return cwidget
 	
-	def get_utils_widget(self):
+	def getUtilsWidget(self):
 		"""
 		Retrusn the utilites widget
 		"""
@@ -791,7 +797,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return uwidget
 		
-	def update_scenegraph(self):
+	def updateSceneGraph(self):
 		""" 
 		Updates SG, in the near future this will be improved to allow for slow operations
 		"""
@@ -819,9 +825,9 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
-		self.get_visible_state()
+		self.getVisibleState()
 	
-	def set_selection_state(self, state):
+	def setSelectionState(self, state):
 		""" 
 		Toogle selection state on and off
 		"""
@@ -829,13 +835,13 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.sgnode.is_selected = True
 		else:
 			self.sgnode.is_selected = False
-		self.set_selection_state_box() # set state of TreeItemwidget
+		self.setSelectionStateBox() # set state of TreeItemwidget
 		
-	def toogle_visible_state(self):
+	def toogleVisibleState(self):
 		self.sgnode.is_visible = not self.sgnode.is_visible
-		self.get_visible_state()
+		self.getVisibleState()
 		
-	def get_visible_state(self):
+	def getVisibleState(self):
 		"""
 		Toogle the visble state
 		"""
@@ -844,7 +850,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		else:
 			self.setIcon(0, self.invisible)
 	
-	def set_selection_state_box(self):
+	def setSelectionStateBox(self):
 		"""
 		Set the selection state icon
 		"""
@@ -861,14 +867,19 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.sgnode = sgnode
 		self.name = name
+		self.inspector = None
 		self.transfromboxmaxheight = 400
 		
 		igvbox = QtGui.QVBoxLayout()
-		self.add_basic_controls(igvbox)
-		self.add_controls(igvbox)
+		self.addBasicControls(igvbox)
+		self.addColorControls(igvbox)
+		self.addControls(igvbox)
 		self.setLayout(igvbox)
+	
+	def setInspector(self, inspector):
+		self.inspector = inspector
 		
-	def add_basic_controls(self, igvbox):
+	def addBasicControls(self, igvbox):
 		# selection box and label
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -904,10 +915,10 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		textbox.addWidget(tylabel)
 		xformbox.addLayout(textbox)
 		box = QtGui.QHBoxLayout()
-		tx = EMSpinWidget(0.0, 0.1)
-		ty = EMSpinWidget(0.0, 0.1)
-		box.addWidget(tx)
-		box.addWidget(ty)
+		self.tx = EMSpinWidget(0.0, 1.0)
+		self.ty = EMSpinWidget(0.0, 1.0)
+		box.addWidget(self.tx)
+		box.addWidget(self.ty)
 		xformbox.addLayout(box)
 		zoombox = QtGui.QHBoxLayout()
 		tzlabel = QtGui.QLabel("TZ",xformframe)
@@ -918,16 +929,82 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		zoombox.addWidget(zoomlabel)
 		xformbox.addLayout(zoombox)
 		zoomwidgetbox = QtGui.QHBoxLayout()
-		tz = EMSpinWidget(0.0, 0.1)
-		zoom = EMSpinWidget(0.0, 0.1)
-		zoomwidgetbox.addWidget(tz)
-		zoomwidgetbox.addWidget(zoom)
+		self.tz = EMSpinWidget(0.0, 1.0)
+		self.zoom = EMSpinWidget(0.0, 0.1)
+		zoomwidgetbox.addWidget(self.tz)
+		zoomwidgetbox.addWidget(self.zoom)
 		xformbox.addLayout(zoomwidgetbox)
 				
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
 		igvbox.addWidget(xformframe)
+		
+		QtCore.QObject.connect(self.tx,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
+		QtCore.QObject.connect(self.ty,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
+		QtCore.QObject.connect(self.tz,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
+		QtCore.QObject.connect(self.zoom,QtCore.SIGNAL("valueChanged(int)"),self._on_scale)
 	
+	def _on_translation(self, value):
+		self.sgnode.transform.set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
+		self.inspector.updateSceneGraph()
+		
+	def _on_scale(self, value):
+		self.sgnode.transform.set_scale(self.zoom.getValue())
+		self.inspector.updateSceneGraph()
+		
+	def addColorControls(self, igvbox):
+		pass
+	
+	def addControls(self, igvbox):
+		pass
+	
+	def updateInspector(self):
+		# Translation update
+		translation =  self.sgnode.transform.get_trans()
+		self.tx.setValue(translation[0])
+		self.ty.setValue(translation[1])
+		self.tz.setValue(translation[2])
+		# Rotation update
+		rotation =  self.sgnode.transform.get_rotation(str(self.rotcombobox.currentText()))
+		comboboxidx = self.rotcombobox.currentIndex()
+		if comboboxidx == 0:
+			self.emanazslider.setValue(rotation["az"], quiet=1)
+			self.emanaltslider.setValue(rotation["alt"], quiet=1)
+			self.emanphislider.setValue(rotation["phi"], quiet=1)
+		if comboboxidx == 1:
+			self.imagicgammaslider.setValue(rotation["gamma"], quiet=1)
+			self.imagicbetaslider.setValue(rotation["beta"], quiet=1)
+			self.imagicalphaslider.setValue(rotation["alpha"], quiet=1)
+		if comboboxidx == 2:
+			self.spiderpsislider.setValue(rotation["psi"], quiet=1)
+			self.spiderthetaslider.setValue(rotation["theta"], quiet=1)
+			self.spiderphislider.setValue(rotation["phi"], quiet=1)
+		if comboboxidx == 3:
+			self.mrcpsislider.setValue(rotation["phi"], quiet=1)
+			self.mrcthetaslider.setValue(rotation["theta"], quiet=1)
+			self.mrcomegaslider.setValue(rotation["omega"], quiet=1)
+		if comboboxidx == 4:
+			self.xyzzslider.setValue(rotation["ztilt"], quiet=1)
+			self.xyzyslider.setValue(rotation["ytilt"], quiet=1)
+			self.xyzxslider.setValue(rotation["xtilt"], quiet=1)
+		if comboboxidx == 5:
+			self.spinomegaslider .setValue(rotation["Omega"], quiet=1)
+			self.spinn1slider.setValue(rotation["n1"], quiet=1)
+			self.spinn2slider.setValue(rotation["n2"], quiet=1)
+			self.spinn3slider.setValue(rotation["n3"], quiet=1)
+		if comboboxidx == 6:
+			self.spinomegaslider.setValue(rotation["q"], quiet=1)
+			self.sgirotn1slider.setValue(rotation["n1"], quiet=1)
+			self.sgirotn2slider.setValue(rotation["n2"], quiet=1)
+			self.sgirotn3slider.setValue(rotation["n3"], quiet=1)
+		if comboboxidx == 7:
+			self.quaternione0slider.setValue(rotation["e0"], quiet=1)
+			self.quaternione1slider.setValue(rotation["e1"], quiet=1)
+			self.quaternione2slider.setValue(rotation["e2"], quiet=1)
+			self.quaternione3slider.setValue(rotation["e3"], quiet=1)
+		# Scaling update
+		self.zoom.setValue(self.sgnode.transform.get_scale())
+		
 	def addRotationWidgets(self):
 		EMANwidget = QtGui.QWidget()
 		Imagicwidget = QtGui.QWidget()
@@ -958,7 +1035,7 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		# Spider
 		spiderbox = QtGui.QVBoxLayout()
 		self.spiderpsislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Psi")
-		self.spiderthetaslider = ValSlider(Spiderwidget, (0.0, 180.0), "theta")
+		self.spiderthetaslider = ValSlider(Spiderwidget, (0.0, 180.0), "Theta")
 		self.spiderphislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Phi")
 		spiderbox.addWidget(self.spiderpsislider)
 		spiderbox.addWidget(self.spiderthetaslider)
@@ -1036,13 +1113,70 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		self.rotcombobox.addItem("quaternion")
 		
 		# Signal for all sliders
-		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self.rotcombobox_changed)
-	
-	def rotcombobox_changed(self, idx):
-		self.rotstackedwidget.setCurrentIndex(idx)
+		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self._rotcombobox_changed)
+		QtCore.QObject.connect(self.emanazslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
+		QtCore.QObject.connect(self.emanaltslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
+		QtCore.QObject.connect(self.emanphislider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
+		QtCore.QObject.connect(self.imagicgammaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
+		QtCore.QObject.connect(self.imagicbetaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
+		QtCore.QObject.connect(self.imagicalphaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
+		QtCore.QObject.connect(self.spiderpsislider,QtCore.SIGNAL("valueChanged"),self._on_Spider_rotation)
+		QtCore.QObject.connect(self.spiderthetaslider,QtCore.SIGNAL("valueChanged"),self._on_Spider_rotation)
+		QtCore.QObject.connect(self.spiderphislider,QtCore.SIGNAL("valueChanged"),self._on_Spider_rotation)
+		QtCore.QObject.connect(self.mrcpsislider,QtCore.SIGNAL("valueChanged"),self._on_MRC_rotation)
+		QtCore.QObject.connect(self.mrcthetaslider,QtCore.SIGNAL("valueChanged"),self._on_MRC_rotation)
+		QtCore.QObject.connect(self.mrcomegaslider,QtCore.SIGNAL("valueChanged"),self._on_MRC_rotation)
+		QtCore.QObject.connect(self.xyzzslider,QtCore.SIGNAL("valueChanged"),self._on_XYZ_rotation)
+		QtCore.QObject.connect(self.xyzyslider,QtCore.SIGNAL("valueChanged"),self._on_XYZ_rotation)
+		QtCore.QObject.connect(self.xyzxslider,QtCore.SIGNAL("valueChanged"),self._on_XYZ_rotation)
+		QtCore.QObject.connect(self.spinomegaslider,QtCore.SIGNAL("valueChanged"),self._on_spin_rotation)
+		QtCore.QObject.connect(self.spinn1slider,QtCore.SIGNAL("valueChanged"),self._on_spin_rotation)
+		QtCore.QObject.connect(self.spinn2slider,QtCore.SIGNAL("valueChanged"),self._on_spin_rotation)
+		QtCore.QObject.connect(self.spinn3slider,QtCore.SIGNAL("valueChanged"),self._on_spin_rotation)
+		QtCore.QObject.connect(self.sgirotqslider,QtCore.SIGNAL("valueChanged"),self._on_sgirot_rotation)
+		QtCore.QObject.connect(self.sgirotn1slider,QtCore.SIGNAL("valueChanged"),self._on_sgirot_rotation)
+		QtCore.QObject.connect(self.sgirotn2slider,QtCore.SIGNAL("valueChanged"),self._on_sgirot_rotation)
+		QtCore.QObject.connect(self.sgirotn3slider,QtCore.SIGNAL("valueChanged"),self._on_sgirot_rotation)
+		QtCore.QObject.connect(self.quaternione0slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
+		QtCore.QObject.connect(self.quaternione1slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
+		QtCore.QObject.connect(self.quaternione2slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
+		QtCore.QObject.connect(self.quaternione3slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
 		
-	def add_controls(self, igvbox):
-		pass
+	def _rotcombobox_changed(self, idx):
+		self.rotstackedwidget.setCurrentIndex(idx)
+		self.updateInspector()
+		
+	def _on_EMAN_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_Imagic_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_Spider_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_MRC_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_XYZ_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_spin_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":self.spinn1slider.getValue(),"n2":self.spinn2slider.getValue(),"n3":self.spinn3slider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_sgirot_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":self.sgirotn1slider.getValue(),"n2":self.sgirotn2slider.getValue(),"n3":self.sgirotn3slider.getValue()})
+		self.inspector.updateSceneGraph()
+		
+	def _on_quaternion_rotation(self, value):
+		self.sgnode.transform.set_rotation({"type":"quaternion","e0":self.quaternione0slider.getValue(),"e1":self.quaternione1slider.getValue(),"e2":self.quaternione2slider.getValue(),"e3":self.quaternione3slider.getValue()})
+		self.inspector.updateSceneGraph()
 		
 class EMInspectorControlShape(EMInspectorControlBasic):
 	"""
@@ -1051,10 +1185,10 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 	def __init__(self, name, sgnode):
 		EMInspectorControlBasic.__init__(self, name, sgnode)
 		
-	def add_controls(self, igvbox):
-		self.addcolor_controls(igvbox)
+	def addControls(self, igvbox):
+		pass
 		
-	def addcolor_controls(self, box):
+	def addColorControls(self, box):
 		colorframe = QtGui.QFrame()
 		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		colorvbox = QtGui.QVBoxLayout()
@@ -1102,6 +1236,25 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorframe.setLayout(colorvbox)
 		box.addWidget(colorframe)
 		
+		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_ambient_color)
+		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_diffuse_color)
+		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_specular_color)
+		
+	def _on_ambient_color(self, color):
+		rgb = color.getRgb()
+		self.sgnode.setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_diffuse_color(self, color):
+		rgb = color.getRgb()
+		self.sgnode.setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_specular_color(self, color):
+		rgb = color.getRgb()
+		self.sgnode.setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
@@ -1126,12 +1279,16 @@ class glCube(EMItem3D):
 		# GUI contols
 		self.widget = EMInspectorControlShape("CUBE", self)
 	
-	#def on_selection(self):
-		#self.diffuse = [0.0,0.5,0.0,1.0]
-		#self.specular = [0.0,1.0,0.0,1.0]
-		#self.ambient = [0.0, 1.0, 0.0, 1.0]
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
 		
-	def get_scene_gui(self):
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+		
+	def getSceneGui(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
@@ -1147,7 +1304,6 @@ class glCube(EMItem3D):
 		# The box itself anlong with normal vectors
 		
 		glBegin(GL_QUADS)
-
 		glNormal3f(self.xi, self.yi, self.zi + 1)
 		glVertex3f(self.xi, self.yi, self.zi)
 		glNormal3f(self.xf, self.yi, self.zi + 1)
@@ -1209,7 +1365,7 @@ class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3D()
-		#self.widget.camera.useprespective(50, 0.5)
+		#self.widget.camera.usePrespective(50, 0.5)
 		self.cube1 = glCube(50.0)
 		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)
@@ -1218,11 +1374,11 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D(self.widget)
-		self.widget.set_inspector(self.inspector)
+		self.widget.setInspector(self.inspector)
 		
-		rootnode = self.inspector.add_tree_node("root node", self.widget)
-		self.inspector.add_tree_node("cube1", self.cube1, rootnode)
-		self.inspector.add_tree_node("cube2", self.cube2, rootnode)
+		rootnode = self.inspector.addTreeNode("root node", self.widget)
+		self.inspector.addTreeNode("cube1", self.cube1, rootnode)
+		self.inspector.addTreeNode("cube2", self.cube2, rootnode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()

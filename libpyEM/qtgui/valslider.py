@@ -731,32 +731,43 @@ class EMSpinWidget(QtGui.QWidget):
 		shbox.addWidget(self.rbutton)
 		self.setLayout(shbox)
 		
-		QtCore.QObject.connect(self.numbox,QtCore.SIGNAL("editingFinished()"),self.on_editfinish)
-		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("clicked()"),self.on_clickleft)
-		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("clicked()"),self.on_clickright)
-		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("released()"),self.on_unclickleft)
-		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("released()"),self.on_unclickright)
+		QtCore.QObject.connect(self.numbox,QtCore.SIGNAL("editingFinished()"),self._on_editfinish)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("clicked()"),self._on_clickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("clicked()"),self._on_clickright)
+		QtCore.QObject.connect(self.lbutton,QtCore.SIGNAL("released()"),self._on_unclickleft)
+		QtCore.QObject.connect(self.rbutton,QtCore.SIGNAL("released()"),self._on_unclickright)
+	
+	def setValue(self, value, quiet=1):
+		self.value = value
+		self.numbox.setText(str(round(self.value, 2)))
+		if not quiet: self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
+	
+	def getValue(self):
+		return self.value
 		
-	def on_clickleft(self):
+	def _on_clickleft(self):
 		self.value = self.value - self.coeff*(2**self.powercoeff)
 		self.numbox.setText(str(round(self.value, 2)))
 		self.powercoeff += 0.1
+		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 		
-	def on_clickright(self):
+	def _on_clickright(self):
 		self.value = self.value + self.coeff*(2**self.powercoeff)
 		self.numbox.setText(str(round(self.value,2)))
 		self.powercoeff += 0.1
+		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 	
-	def on_unclickleft(self):
+	def _on_unclickleft(self):
 		if not self.lbutton.isDown():
 			self.powercoeff = 0.0
 			
-	def on_unclickright(self):
+	def _on_unclickright(self):
 		if not self.rbutton.isDown():
 			self.powercoeff = 0.0
 			
-	def on_editfinish(self):
+	def _on_editfinish(self):
 		self.value = float(self.numbox.text())
+		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 
 class EMQTColorWidget(QtGui.QWidget):
 	"""
@@ -772,20 +783,20 @@ class EMQTColorWidget(QtGui.QWidget):
 		self.setMinimumWidth(self.height+2)
 		self.setAcceptDrops(True)
 	
-	def setcolor(self, color):
+	def setColor(self, color):
 		self.color = color
 		self.update()
 		
-	def getcolor(self):
+	def getColor(self):
 		return self.color
 		
 	def paintEvent(self, e):
 		qp = QtGui.QPainter()
 		qp.begin(self)
-		self.drawWidget(qp)
+		self._draw_widget(qp)
 		qp.end()
 		
-	def drawWidget(self, qp):
+	def _draw_widget(self, qp):
 		pen = QtGui.QPen(QtGui.QColor(0, 0, 0))
 		pen.setWidth(2)
 		qp.setPen(pen)
@@ -798,15 +809,16 @@ class EMQTColorWidget(QtGui.QWidget):
 	def dropEvent(self, e):
 		self.color = QtGui.QColor(e.mimeData().colorData())
 		self.update()
+		self.emit(QtCore.SIGNAL("newcolor(Qcolor)"), self.color)
 
 	def mouseMoveEvent(self, e):
 
 		if e.buttons() != QtCore.Qt.LeftButton:
 			return
-		self.dragdrop(e)
+		self._dragdrop(e)
 
 		
-	def dragdrop(self, e):
+	def _dragdrop(self, e):
 		mimeData = QtCore.QMimeData()
 		mimeData.setColorData(self.color)
 		drag = QtGui.QDrag(self)
@@ -818,31 +830,33 @@ class EMQTColorWidget(QtGui.QWidget):
 		if event.buttons() != QtCore.Qt.RightButton:
 			self.inicolor = self.color
 			self.colrodialog = EMQtColorDialog(self.color)
-			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
-			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
-			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
-			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self._on_colorchange)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self._on_colorselect)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("canceled()"),self._on_cancel)
+			QtCore.QObject.connect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self._on_additonal_connect)
 		else:
-			self.dragdrop(event)
+			self._dragdrop(event)
 			
-	def on_colorchange(self, color):
-		if color.isValid():
-			self.color = color
-			self.update()
-	def on_colorselect(self, color):
+	def _on_colorchange(self, color):
 		if color.isValid():
 			self.color = color
 			self.update()
 			
-	def on_cancel(self):
+	def _on_colorselect(self, color):
+		if color.isValid():
+			self.color = color
+			self.update()
+			self.emit(QtCore.SIGNAL("newcolor(Qcolor)"), self.color)
+			
+	def _on_cancel(self):
 		self.color = self.inicolor
 		self.update()
 		
-	def on_additonal_connect(self):
-		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self.on_colorchange)
-		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self.on_colorselect)
-		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("canceled()"),self.on_cancel)
-		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self.on_additonal_connect)
+	def _on_additonal_connect(self):
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self._on_colorchange)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("colorSelected(const QColor &)"),self._on_colorselect)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("canceled()"),self._on_cancel)
+		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("newconnection()"), self._on_additonal_connect)
 
 def singleton(cls):
 	instances = {}

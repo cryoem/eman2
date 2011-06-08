@@ -49,6 +49,7 @@ def main():
 	parser.add_option("--volume", type="string",help="3D volume to validate",default=None)
 	parser.add_option("--untiltdata", type="string",help="Stack of untilted images",default=None)
 	parser.add_option("--tiltdata", type="string",help="Stack of tilted images",default=None)
+	parser.add_option("--align", type="string",help="The name of a aligner to be used in comparing the aligned images",default="translational")
 	parser.add_option("--cmp", type="string",help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc")
 	parser.add_option("--tiltrange", type="int",help="The anglular tiltranger to search",default=15)
 	# options associated with e2projector3d.py
@@ -168,7 +169,7 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltste
 			inplane = Transform({"type":"eman", "phi":-zrot})
 			totalxform = tiltxform*inplane*eulerxform
 			testprojection = volume.project("standard",totalxform)
-			tiltalign = tilted.align("translational",testprojection,{},options.cmp[0],options.cmp[1])
+			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
 			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			#score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
