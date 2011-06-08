@@ -441,8 +441,46 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else:
 			self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 	
+
+	def clear_set(self,update_gl=True):
+		'''
+		Unset all images in the current set
+		'''
+		self.sets_manager.clear_set()
+		if update_gl:
+			self.force_display_update()
+			self.updateGL()
 	
+	def invert_set(self,update_gl=True):
+		'''
+		Unset all images in the current set
+		'''
+		self.sets_manager.invert_set()
+		if update_gl:
+			self.force_display_update()
+			self.updateGL()
+
+	
+	def all_set(self,update_gl=True):
+		'''
+		Sets all images in the current set
+		'''
+		self.sets_manager.all_set()
+		if update_gl:
+			self.force_display_update()
+			self.updateGL()
+
+	def subset_set(self,toadd,update_gl=True):
+		"""merges toadd to current set"""
+		
+		self.sets_manager.subset_set(toadd)
+		if update_gl:
+			self.force_display_update()
+			self.updateGL()
+
+
 	def image_set_associate(self,idx,event=None,update_gl=False):
+		"toggles a single image in the current set"
 		self.sets_manager.image_set_associate(idx)
 		if update_gl:
 			self.force_display_update()
@@ -2732,6 +2770,44 @@ class EMMXSetsManager:
 #			
 		self.panel.add_set(set_name,display)
 	
+	def clear_set(self):
+		'''
+		Unset all images in the current set
+		'''
+		if self.current_set == None: return 0
+		
+		self.sets[self.current_set]=[]
+		self.save_current_set()
+		
+	def all_set(self):
+		'''
+		Sets all images in the current set
+		'''
+		if self.current_set == None: return 0
+		
+		self.sets[self.current_set]=range(self.target().nimg)
+		
+		self.save_current_set()
+
+	def invert_set(self):
+		'''
+		Invert the current selection
+		'''
+		if self.current_set == None: return 0
+		
+		self.sets[self.current_set]=list(set(range(self.target().nimg))-set(self.sets[self.current_set]))
+		
+		self.save_current_set()
+
+	def subset_set(self,toadd):
+		"""merges toadd to current set"""
+		
+		if self.current_set == None: return 0
+		
+		self.sets[self.current_set]=list(set(self.sets[self.current_set]).union(set(toadd)))
+		
+		self.save_current_set()
+
 	def image_set_associate(self,idx):
 		'''
 		Associate/disassociate the image with self.current_set 
@@ -2739,19 +2815,12 @@ class EMMXSetsManager:
 		'''
 		if self.current_set == None: return 0
 		
-		val = -1
 		l = self.sets[self.current_set]
-		try:
-			#http://dev.ionous.net/2009/01/python-find-item-in-list.html
-			val = (i for i in l if i == idx ).next()
-		except:
-			pass
 		
-		if val == -1: # it wasn't in the list - we add the particle to the list
-			l.append(idx)
-		else: # it is in the list so we remove it
-			l.remove(idx)
-			
+#		print idx,l
+		if idx in l : l.remove(idx)
+		else: l.append(idx)
+		
 		self.save_current_set()
 		
 	def enable_sets_mode(self,unused=None):

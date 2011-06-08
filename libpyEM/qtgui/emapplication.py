@@ -117,6 +117,8 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	def setWindowTitle(self, title):
 		if self.qt_parent:
 			self.qt_parent.setWindowTitle(title)
+		else:
+			self.setWindowTitle(title)
 			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
 		QtOpenGL.QGLWidget.__init__(self,parent)

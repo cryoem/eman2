@@ -411,7 +411,6 @@ class StringBox(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,parent)
 		
 		if value==None : value=""
-		self.value=value
 		self.ignore=0
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
@@ -442,6 +441,7 @@ class StringBox(QtGui.QWidget):
 		
 		
 		self.text = QtGui.QLineEdit(self)
+		self.text.setText(value)
 		
 		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
@@ -455,7 +455,6 @@ class StringBox(QtGui.QWidget):
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
 		
 		if showenable>=0 : self.setEnabled(showenable)
-		self.updateboth()
 
 	def setEnabled(self,ena):
 		self.text.setEnabled(ena)
@@ -466,20 +465,18 @@ class StringBox(QtGui.QWidget):
 		except: return True
 
 	def setValue(self,val,quiet=0):
-		if self.value==val : return
-		self.value=val
-		self.updateboth()
+		if self.getValue()==val : return
+		self.text.setText(value)
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def getValue(self):
-		return str(self.value)
+		return str(self.text.text())
 	
 		
 	def textChange(self):
 		if self.ignore : return
-		self.value=self.text.text()
-		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
-		self.emit(QtCore.SIGNAL("textChanged"),self.value)
+		self.emit(QtCore.SIGNAL("valueChanged"),self.getValue())
+		self.emit(QtCore.SIGNAL("textChanged"),self.getValue())
 				
 	def setLabel(self,label):
 		self.label.setText(label)
@@ -487,13 +484,6 @@ class StringBox(QtGui.QWidget):
 	def getLabel(self):
 		return str(self.label.text())
 		
-	def updatet(self):
-		self.ignore=1
-#		if self.validate!=None : self.validate()
-		self.ignore=0
-		
-	def updateboth(self):
-		self.updatet()
 
 class CheckBox(QtGui.QWidget):
 	"""A QCheckBox with a label
@@ -503,7 +493,6 @@ class CheckBox(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,parent)
 		
 		if value==None : value=""
-		self.value=value
 		self.ignore=0
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
@@ -534,12 +523,12 @@ class CheckBox(QtGui.QWidget):
 		
 		
 		self.check = QtGui.QCheckBox(self)
+		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)
 		
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("stateChanged(bool)"), self.boolChange)
 		
 		if showenable>=0 : self.setEnabled(showenable)
-		self.updateboth()
 
 	def setEnabled(self,ena):
 		self.text.setEnabled(ena)
@@ -550,18 +539,16 @@ class CheckBox(QtGui.QWidget):
 		except: return True
 		
 	def setValue(self,val,quiet=0):
-		if self.value==val : return
-		self.value=val
-		self.updateboth()
+		if self.getValue()==val : return
+		self.check.setChecked(val)
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def getValue(self):
-		return bool(self.value)
+		return bool(self.check.isChecked())
 	
 		
-	def boolChanged(self,bool):
+	def boolChanged(self,newv):
 		if self.ignore : return
-		self.value=self.text.text()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 				
 	def setLabel(self,label):
@@ -569,14 +556,6 @@ class CheckBox(QtGui.QWidget):
 	
 	def getLabel(self):
 		return str(self.label.text())
-		
-	def updatet(self):
-		self.ignore=1
-#		if self.validate!=None : self.validate()
-		self.ignore=0
-		
-	def updateboth(self):
-		self.updatet()
 
 
 class RangeSlider(QtGui.QWidget):

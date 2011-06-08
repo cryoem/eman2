@@ -77,71 +77,86 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl = QtGui.QVBoxLayout(self)
 	
 		# A listwidget for selecting which class-average file we're looking at
+		self.wclassfilel=QtGui.QLabel("Class-average File:")
+		self.vbl.addWidget(self.wclassfilel)
+		
 		self.wfilesel=QtGui.QListWidget()
 		self.vbl.addWidget(self.wfilesel)
+		self.vbl.addSpacing(5)
 		
 		# A widget containing the current particle filename, editable by the user
 		# If edited it will also impact set generation !
+		self.wptclfilel=QtGui.QLabel("Particle Data File:")
+		self.vbl.addWidget(self.wptclfilel)
+		
 		self.wptclfile=QtGui.QComboBox(self)
 		self.vbl.addWidget(self.wptclfile)
+		self.vbl.addSpacing(5)
 
 		# Selection tools
 		self.wselectg=QtGui.QGroupBox("Select",self)
 		self.wselectg.setFlat(False)
 		self.vbl.addWidget(self.wselectg)
+		self.vbl.addSpacing(5)
 		
-		self.hbl0=QtGui.QHBoxLayout(self.wselectg)
+		self.gbl0=QtGui.QGridLayout(self.wselectg)
 
 		self.wselallb=QtGui.QPushButton("All")
-		self.hbl0.addWidget(self.wselallb)
+		self.gbl0.addWidget(self.wselallb,0,0)
 		
 		self.wselnoneb=QtGui.QPushButton("None")
-		self.hbl0.addWidget(self.wselnoneb)
+		self.gbl0.addWidget(self.wselnoneb,0,1)
 		
-		self.wsel3db=QtGui.QPushButton("From 3D")
-		self.hbl0.addWidget(self.wsel3db)
+		self.wselrangeb=QtGui.QPushButton("Range")
+		self.gbl0.addWidget(self.wselrangeb,1,0)
 
+		self.wselinvertb=QtGui.QPushButton("Invert")
+		self.gbl0.addWidget(self.wselinvertb,0,2)
+
+		self.wsel3db=QtGui.QPushButton("From 3D")
+		self.gbl0.addWidget(self.wsel3db,1,2)
+
+		self.wprocessg=QtGui.QGroupBox("Process results",self)
+		self.wprocessg.setFlat(False)
+		self.vbl.addWidget(self.wprocessg)
+		
+		self.vbl2=QtGui.QVBoxLayout(self.wprocessg)
+		
+		self.wselused=CheckBox(None,"Included Ptcls",1,100)
+		self.vbl2.addWidget(self.wselused)
+		
+		self.wselunused=CheckBox(None,"Excluded Ptcls",1,100)
+		self.vbl2.addWidget(self.wselunused)
+		
 		# Mark particles in selected classes as bad
-		self.wmarkbad=QtGui.QGroupBox("Mark Bad",self)
-		self.wmarkbad.setFlat(False)
-		self.vbl.addWidget(self.wmarkbad)
-		
-		self.vbl2=QtGui.QVBoxLayout(self.wmarkbad)
-		
-		self.wmarkused=CheckBox(self.wmarkbad,"Included Ptcls",1,100)
-		self.vbl2.addWidget(self.wmarkused)
-		
-		self.wmarkunused=CheckBox(self.wmarkbad,"Excluded Ptcls",1,100)
-		self.vbl2.addWidget(self.wmarkunused)
-		
-		self.wmarkbut=QtGui.QPushButton("Mark as Bad",self.wmarkbad)
+		self.wmarkbut=QtGui.QPushButton("Mark as Bad")
 		self.vbl2.addWidget(self.wmarkbut)
 		
-		# Make a new set from selected classes
-		self.wmakeset=QtGui.QGroupBox("Make Set",self)
-		self.wmakeset.setFlat(False)
-		self.vbl.addWidget(self.wmakeset)
-		
-		self.vbl3=QtGui.QVBoxLayout(self.wmakeset)
-		
-		self.wmarkused=CheckBox(self.wmakeset,"Included Ptcls",1,100)
-		self.vbl3.addWidget(self.wmarkused)
-		
-		self.wmarkunused=CheckBox(self.wmakeset,"Excluded Ptcls",1,100)
-		self.vbl3.addWidget(self.wmarkunused)
-		
-		self.wsetname=StringBox(self.wmakeset,"Set Name","set-",100)
-		self.vbl3.addWidget(self.wsetname)
-		
-		self.wmakebut=QtGui.QPushButton("Make New Set",self.wmakeset)
-		self.vbl3.addWidget(self.wmakebut)
+		# Make a new set from selected classes						
+		self.wmakebut=QtGui.QPushButton("Make New Set")
+		self.vbl2.addWidget(self.wmakebut)
+		self.wmakebut.setEnabled(False)
 	
-		
+		# Save list
+		self.wsavebut=QtGui.QPushButton("Save Particle List")
+		self.vbl2.addWidget(self.wsavebut)
+
+		# Save micrograph dereferenced lists
+		self.wsaveorigbut=QtGui.QPushButton("Save CCD-based List")
+		self.vbl2.addWidget(self.wsaveorigbut)
+
+
 		QtCore.QObject.connect(self.wfilesel,QtCore.SIGNAL("itemSelectionChanged()"),self.fileUpdate)
 		QtCore.QObject.connect(self.wptclfile,QtCore.SIGNAL("currentIndexChanged(int)"),self.ptclChange)
 		QtCore.QObject.connect(self.wselallb,QtCore.SIGNAL("clicked(bool)"),self.selAllClasses)
 		QtCore.QObject.connect(self.wselnoneb,QtCore.SIGNAL("clicked(bool)"),self.selNoClasses)
+		QtCore.QObject.connect(self.wselrangeb,QtCore.SIGNAL("clicked(bool)"),self.selRangeClasses)
+		QtCore.QObject.connect(self.wselinvertb,QtCore.SIGNAL("clicked(bool)"),self.selInvertClasses)
 		QtCore.QObject.connect(self.wsel3db,QtCore.SIGNAL("clicked(bool)"),self.sel3DClasses)
+		QtCore.QObject.connect(self.wmakebut,QtCore.SIGNAL("clicked(bool)"),self.makeNewSet)
+		QtCore.QObject.connect(self.wmarkbut,QtCore.SIGNAL("clicked(bool)"),self.markBadPtcl)
+		QtCore.QObject.connect(self.wsavebut,QtCore.SIGNAL("clicked(bool)"),self.savePtclNum)
+		QtCore.QObject.connect(self.wsaveorigbut,QtCore.SIGNAL("clicked(bool)"),self.saveOrigPtclNum)
 		
 		# View windows, one for class-averages, one for good particles and one for bad particles
 		self.vclasses=None
@@ -150,33 +165,205 @@ class EMClassPtclTool(QtGui.QWidget):
 		
 		self.updateFiles()
 	
+	### FIXME - HAVENT FINISHED THIS ONE YET!
+	def makeNewSet(self,x):
+		"Makes a new particle set based on the selected class-averages"
+		setname=QtGui.QInputDialog.getText(None,"Set Name","Please specify the name for the new set. CTF modified versions will be made as appropriate.")
+		if setname[1]==False or setname[0]=="" : return
+		
+		gooddict={}
+		# iterate over each particle from each marked class-average
+		for n in self.curPtclIter(self.wselused.getValue(),self.wselunused.getValue()): 
+			im=EMData(self.curPtclFile(),n,True)	# We have to actually read the particle header to dereference its set
+			try :
+				srcfile=im["data_source"]
+				if not "bdb:particles#" in srcfile : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2 project conventions. Cannot find raw particles for set."%srcfile)
+				return
+				
+			# demangle the source name to get the CCD name we expect to find in bdb:select
+			srcname=srcfile.split("#")[1].split("?")[0].split("_ctf")[0]
+			try: gooddict[srcname].append(im["data_n"])
+			except: gooddict[srcname]=[im["data_n"]]
+			
+		
+		
+		
+	def markBadPtcl(self,x):
+		"Mark particles from the selected class-averages as bad in the set interface"
+		
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will permanently mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+	
+#		print self.wselused.getValue(),self.wselunused.getValue()
+		
+		baddict={}
+		# iterate over each particle from each marked class-average
+		for n in self.curPtclIter(self.wselused.getValue(),self.wselunused.getValue()): 
+			im=EMData(self.curPtclFile(),n,True)	# We have to actually read the particle header to dereference its set
+			try :
+				srcfile=im["data_source"]
+				if not "bdb:particles#" in srcfile : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2 project conventions. Cannot mark bad particles."%srcfile)
+				return
+				
+			# demangle the source name to get the CCD name we expect to find in bdb:select
+			srcname=srcfile.split("#")[1].split("?")[0].split("_ctf")[0]
+			try: baddict[srcname].append(im["data_n"])
+			except: baddict[srcname]=[im["data_n"]]
+			
+		print baddict
+
+		# Now merge the newly marked bad particles with the main bad particle selection lists
+		db=db_open_dict("bdb:select")
+		for k in baddict.keys():
+			try: db[k]=list(set(db[k]).union(baddict[k]))
+			except : db[k]=baddict[k]
+
+	def savePtclNum(self,x):
+		"Saves a list of particles from marked classes into a text file"
+		
+		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain the particle number (within the particle file) for each particle associated with a selected class-average.")
+		if filename[1]==False or filename[0]=="" : return
+			
+		out=file(filename[0],"w")
+		for i in self.curPtclIter(self.wselused.getValue(),self.wselunused.getValue()): out.write("%d\n"%i)
+		out.close()
+
+	def saveOrigPtclNum(self,x):
+		"Saves a file containing micrograph-dereferenced particles"
+		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain particle number and image file, one per line. Image files will be referenced back to the original per-CCD frame stacks.")
+		if filename[1]==False or filename[0]=="" : return
+		
+		gooddict={}
+		# iterate over each particle from each marked class-average
+		for n in self.curPtclIter(self.wselused.getValue(),self.wselunused.getValue()): 
+			im=EMData(self.curPtclFile(),n,True)	# We have to actually read the particle header to dereference its set
+			try :
+				srcfile=im["data_source"]
+				if not "bdb:particles#" in srcfile : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2 project conventions. Cannot find raw particles."%srcfile)
+				return
+				
+			# demangle the source name to get the CCD name we expect to find in bdb:select
+			srcname=srcfile.split("#")[1].split("?")[0].split("_ctf")[0]
+			try: gooddict[srcname].append(im["data_n"])
+			except: gooddict[srcname]=[im["data_n"]]
+			
+		out=file(filename[0],"w")
+		for k in gooddict.keys():
+			for i in gooddict[k]:
+				out.write("%d\t%s\n"%(i,k))
+				
+		out.close()
+
+	def selAllClasses(self,x):
+		"Mark all classes as selected"
+		self.vclasses.all_set()
+		
+	def selNoClasses(self,x):
+		"Clear selection"
+		self.vclasses.clear_set()
+		
+	def selRangeClasses(self,x):
+		"Select a range of images (ask the user for the range)"
+		rng=QtGui.QInputDialog.getText(None,"Select Range","Enter the range of particle values as first-last (inclusive). Merges with existing selection.")
+		if rng[1]==False : return
+		
+		try:
+			x0,x1=rng[0].split("-")
+			x0=int(x0)
+			x1=int(x1)+1
+		except: 
+			QtGui.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
+			return
+			
+		self.vclasses.subset_set(range(x0,x1))
+
+	def selInvertClasses(self,x):
+		"Inverts the current selection set"
+		self.vclasses.invert_set()
+
+	def sel3DClasses(self,x):
+		"Select a range of images based on those used in a 3-D reconstruction associated with this classes file. Removes current selection first."
+	
+		f=self.curFile()
+		if not '#classes_' in f :
+			QtGui.QMessageBox.warning(self,"Error !","A classes_xx file from a refine_xx directory is not currently selected")
+			return
+		
+		# construct the path to the threed_xx file
+		num=f.split("_")[-1]
+		pre=f.split("#")[0]
+		d3path="%s#threed_%s"%(pre,num)
+		try:
+			a=EMData(d3path,0,True)
+			goodptcl=a["threed_ptcl_idxs"]
+		except:
+			QtGui.QMessageBox.warning(self,"Error !","Cannot read classes from "+d3path)
+			return
+		
+		self.vclasses.clear_set()
+		self.vclasses.subset_set(goodptcl)
+	
 	def ptclChange(self,value):
-		self.vgoodptcl.set_data(None)
-		self.vbadptcl.set_data(None)
-		self.vgoodptcl.setWindowTitle("Included Particles (%s)"%ptclfile)
-		self.vbadptcl.setWindowTitle("Excluded Particles (%s)"%ptclfile)
+		"Called when a change of particle data file occurs to zero out the display"
+		try:
+			self.vgoodptcl.set_data(None)
+			self.vbadptcl.set_data(None)
+			self.vgoodptcl.setWindowTitle("Included Particles (%s)"%ptclfile)
+			self.vbadptcl.setWindowTitle("Excluded Particles (%s)"%ptclfile)
+		except:
+			pass
 	
 	def updateFiles(self):
+		"Updates the list of classes files"
 		subdir=sorted([i for i in os.listdir(e2getcwd()) if "r2d_" in i or "refine_" in i])
 		for d in subdir:
 			dbs=db_list_dicts("bdb:"+d)
 			dbs.sort()
 			for db in dbs:
 				if "classes_" in db or "allrefs_" in db :
-					self.wfilesel.addItem("%s/%s"%(d,db))
+					self.wfilesel.addItem("bdb:%s#%s"%(d,db))
 
 		dbs=db_list_dicts("bdb:sets")
 		dbs.sort()
 		for db in dbs:
-			self.wptclfile.addItem("sets#"+db)
+			self.wptclfile.addItem("bdb:sets#"+db)
+
+	def curPtclIter(self,included=True,excluded=True):
+		"This is a generator function which yields n (in self.curPtclFile()) for all particles associated with selected classes"
+		for ci in self.curSet():
+			try :
+				c=EMData(self.curFile(),ci,True)		# read header for current class average
+				if included :
+					for i in c["class_ptcl_idxs"]:
+						yield(i)
+				if excluded :
+					for i in c["exc_class_ptcl_idxs"]:
+						yield(i)
+			except:
+				print "Problem with class %d. Skipping"%ci
+				continue
 
 	def curFile(self):
 		"return the currently selected file as a readable path"
-		return "bdb:"+str(self.wfilesel.item(self.wfilesel.currentRow()).text())		# text of the currently selected item
+		return str(self.wfilesel.item(self.wfilesel.currentRow()).text())		# text of the currently selected item
+
+	def curSet(self):
+		"return a list (integers) of the currently selected class-averages"
+		db=db_open_dict("bdb:select")
+		try: return db[self.curFile().replace("bdb:","")]
+		except:
+			print "Warning: no set found for ",self.curFile()
+			return []
 
 	def curPtclFile(self):
 		"return the particle file associated with the currently selected classes file"
-		return "bdb:"+str(self.wptclfile.currentText())		# text of the currently selected item
+		return str(self.wptclfile.currentText())		# text of the currently selected item
 		
 
 	def fileUpdate(self):
@@ -186,21 +373,22 @@ class EMClassPtclTool(QtGui.QWidget):
 		
 		if self.vclasses==None :
 			self.vclasses=EMImageMXWidget()
-			self.vclasses.setWindowTitle("Classes (%s)"%self.curFile())
 			self.vclasses.set_mouse_mode("App")
 			QtCore.QObject.connect(self.vclasses,QtCore.SIGNAL("mx_image_selected"),self.classSelect)
 			QtCore.QObject.connect(self.vclasses,QtCore.SIGNAL("mx_image_double"),self.classDouble)
+			
+		self.vclasses.setWindowTitle("Classes (%s)"%self.curFile())
 
 
 		self.classes=EMData.read_images(self.curFile())
 		self.vclasses.set_data(self.classes)
-		self.vclasses.set_single_active_set(self.curFile()[4:])
+		self.vclasses.set_single_active_set(self.curFile().replace("bdb:",""))		# This makes the 'set' representing the selected class-averages current
 		self.vclasses.set_mouse_mode("App")
 
 		# This makes sure the particle file is in the list of choices and is selected
 		try:
 			ptclfile=self.classes[0]["class_ptcl_src"]
-			if ptclfile.lower()[:4]=="bdb:" : ptclfile=ptclfile[4:]
+#			if ptclfile.lower()[:4]=="bdb:" : ptclfile=ptclfile[4:]
 			i=self.wptclfile.findText(ptclfile)
 			if i==-1 : 
 				self.wptclfile.insertItem(0,ptclfile)
