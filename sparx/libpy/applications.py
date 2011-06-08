@@ -6451,7 +6451,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 
 	#drop_image(vol, os.path.join(outdir,"ref_vol00.hdf"))
-	sym = "c1"
+	#sym = "c1"
 	symref = "s"+sym
 	ref_a= "P"
 
@@ -6560,7 +6560,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
-	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, helios,helios7
+	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
@@ -6578,6 +6578,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
 	from EMAN2 import Vec2f
+	from string    import lower,split
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -6618,9 +6619,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	else:
 		finfo = None
 
-	sym = "c1"
-	symref = "s" + sym
+
+	#sym = "c1"
+	symref = "s"+sym
+
 	ref_a= "P"
+	symmetryLower = sym.lower()
+	symmetry_string = split(symmetryLower)[0]
 
 	xrng        = get_input_from_string(xr)
 	ynumber	    = get_input_from_string(ynumber)
@@ -6767,6 +6772,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#jeanmod
 	total_iter = 0
 	# do the projection matching
+	
 	for N_step in xrange(lstp):
 		terminate = 0
 		Iter = 0
@@ -6795,10 +6801,62 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
-
+			#split refrings to two list: refrings1 (theta =90), and refrings2( theat not 90)
+			refrings1= []
+			refrings2= []
+			sn = int(symmetry_string[1:])
+			for i in xrange( len(refrings) ):
+				if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 and (symmetry_string[0] == "c" or symmetry_string[0] =="d" ) ):
+					refrings1.append( refrings[i])
+					
+				else:
+					refrings2.append( refrings[i])
+					'''if myid == main_node:
+						print_msg("\nphi = %5.2f, theta = %5.2f, psi=%5.2f\n"%( refrings[i].get_attr('phi'), refrings[i].get_attr('theta'), refrings[i].get_attr('psi') ) )
+			if myid == main_node:
+				print_msg("\nlen(ref1) = %4d, len(ref2) = %4d\n"%(len(refrings1), len(refrings2)) )'''		
+			del refrings
 			for im in xrange( nima ):
-
-				peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+				peak1 = None
+				peak2 = None
+				if ( len(refrings1) > 0):
+					peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+				if( len(refrings2) > 0):
+					peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+				if peak1 is None: 
+					peak = peak2
+					phihi = phihi2
+					theta = theta2
+					psi = psi2
+					sxi = sxi2
+					syi = syi2
+					t1 = t12
+				elif peak2 is None:
+					peak = peak1
+					phihi = phihi1
+					theta = theta1
+					psi = psi1
+					sxi = sxi1
+					syi = syi1
+					t1 = t11
+				else:
+					if(peak1 >= peak2):
+						peak = peak1
+						phihi = phihi1
+						theta = theta1
+						psi = psi1
+						sxi = sxi1
+						syi = syi1
+						t1 = t11
+					else:
+						peak = peak2
+						phihi = phihi2
+						theta = theta2
+						psi = psi2
+						sxi = sxi2
+						syi = syi2
+						t1 = t12
+				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
 					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
 					jdelta=0.0
@@ -6832,7 +6890,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					phihi, theta, psi, sxi, syi = get_params_proj(data[im])
 					modphi[im] = phihi
 
-			del refrings
+			del refrings1, refrings2
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
