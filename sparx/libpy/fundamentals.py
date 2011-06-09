@@ -46,6 +46,7 @@ def acf(e, center=True):
 		Output
 			circulant autocorrelation function of the input image. Real.
 	"""
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.CIRCULANT, center)
 
 def acfn(e, center=True):
@@ -58,9 +59,11 @@ def acfn(e, center=True):
 		Output
 			normalized circulant autocorrelation function of an input image. Real.
 	"""
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.CIRCULANT_NORMALIZED, center)
 
 def acfp(e, center=True):
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.PADDED, center)
 
 def acfnp(e, center=True):
@@ -73,7 +76,7 @@ def acfnp(e, center=True):
 		Output
 			normalized autocorrelation function of the input image. Real. 
 	"""
-
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.PADDED_NORMALIZED, center)
 
 def acfpl(e, center=True):
@@ -87,6 +90,7 @@ def acfpl(e, center=True):
 			normalized autocorrelation function of the input image. Real. 
 			
 	"""
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.PADDED_LAG, center)
 
 def acfnpl(e, center=True):
@@ -99,6 +103,7 @@ def acfnpl(e, center=True):
 		Output
 			autocorrelation function of the input image. Real. 
 	"""
+	from EMAN2 import autocorrelation, fp_flag
 	return autocorrelation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
 
 def __buildweights(m, kb):
@@ -133,6 +138,7 @@ def ccfn(e, f, center=True):
 		Output
 			normalized circulant cross-correlation function between image and ref. Real.
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def ccfp(e, f, center=True):
@@ -146,6 +152,7 @@ def ccfp(e, f, center=True):
 		Output
 			cross-correlation function between image and ref. Real.
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.PADDED, center)
 
 def ccfnp(e, f, center=True):
@@ -159,6 +166,7 @@ def ccfnp(e, f, center=True):
 		Output
 			normalized cross-correlation function between image and ref. Real.
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.PADDED_NORMALIZED, center)
 
 def ccfpl(e, f, center=True):
@@ -172,6 +180,7 @@ def ccfpl(e, f, center=True):
 		Output
 			cross-correlation function between image and ref. Real. 
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.PADDED_LAG, center)
 
 def ccfnpl(e, f, center=True):
@@ -183,6 +192,7 @@ def ccfnpl(e, f, center=True):
 			ref: second input image (real) 
 			center: if set to True (default), the origin of the result is at the center
 	"""
+	from EMAN2 import correlation, fp_flag
 	return correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
     
 # Convolution functions
@@ -197,6 +207,7 @@ def cnv(e, f, center=True):
 		Output
 			circulant convolution function between image and ref. Real.
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.CIRCULANT, center)
 
 def cnvn(e, f, center=True):
@@ -210,6 +221,7 @@ def cnvn(e, f, center=True):
 		Output
 			normalized circulant convolution function between image and ref. Real. 
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
 
 def cnvp(e, f, center=True):
@@ -223,6 +235,7 @@ def cnvp(e, f, center=True):
 		Output
 			convolution function between image and ref. Real.
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.PADDED, center)
 
 def cnvnp(e, f, center=True):
@@ -236,6 +249,7 @@ def cnvnp(e, f, center=True):
 		Output
 			normalized convolution function between image and ref. Real. 
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.PADDED_NORMALIZED, center)
 
 def cnvpl(e, f, center=True):
@@ -249,6 +263,7 @@ def cnvpl(e, f, center=True):
 		Output
 			convolution function between image and ref. Real. 
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.PADDED_LAG, center)
 
 def cnvnpl(e, f, center=True):
@@ -262,6 +277,7 @@ def cnvnpl(e, f, center=True):
 		Output
 			convolution function between image and ref. Real.
 	"""
+	from EMAN2 import convolution, fp_flag
 	return convolution(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
     
     
@@ -276,6 +292,7 @@ def scf(e, center=True):
 		Output
 			circulant self-correlation function of the input image. Real.
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.CIRCULANT, center)
 
 def scfn(e, center=True):
@@ -288,6 +305,7 @@ def scfn(e, center=True):
 		Output
 			normalized circulant self-correlation function of an input image. Real.
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.CIRCULANT_NORMALIZED, center)
 
 def scfp(e, center=True):
@@ -300,6 +318,7 @@ def scfp(e, center=True):
 		Output
 			self-correlation function of the input image. Real. 
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.PADDED, center)
 
 def scfnp(e, center=True):
@@ -312,6 +331,7 @@ def scfnp(e, center=True):
 		Output
 			normalized self-correlation function of the input image. Real.
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.PADDED_NORMALIZED, center)
 
 def scfpl(e, center=True):
@@ -324,6 +344,7 @@ def scfpl(e, center=True):
 		Output
 			self-correlation function of the input image. Real.
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.PADDED_LAG, center)
 
 def scfnpl(e, center=True):
@@ -336,6 +357,7 @@ def scfnpl(e, center=True):
 		Output
 			self-correlation function of the input image. Real.
 	"""
+	from EMAN2 import self_correlation, fp_flag
 	return self_correlation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
  
 def cyclic_shift(img, dx=0, dy=0, dz=0):
