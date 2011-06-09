@@ -526,7 +526,7 @@ class CheckBox(QtGui.QWidget):
 		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)
 		
-		QtCore.QObject.connect(self.text, QtCore.SIGNAL("stateChanged(bool)"), self.boolChange)
+		QtCore.QObject.connect(self.check, QtCore.SIGNAL("stateChanged(bool)"), self.boolChanged)
 		
 		if showenable>=0 : self.setEnabled(showenable)
 

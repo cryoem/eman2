@@ -737,7 +737,7 @@ class EMMpiClient():
 					
 					if -1 in self.rankjobs :
 						rank=self.rankjobs.index(-1)
-						if verbose>1 : print "Sending job %d to rank %d"%(self.nextjob,rank)
+						if verbose>1 : print "Sending job %d to rank %d (%d idle)"%(self.nextjob,rank,self.rankjobs.count(-1))
 						
 						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"rb"))
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
@@ -785,6 +785,7 @@ class EMMpiClient():
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
 						self.nextjob+=1
+						self.log("Sending task rank %d done"%(rank))
 						continue
 				
 				# Now look for any requests from existing running jobs
@@ -814,9 +815,9 @@ class EMMpiClient():
 		else :
 
 			while 1:
-#				r=mpi_iprobe(0,-1)		# listen for a message from rank 0, this one doesn't block
-				r=mpi_probe(0,-1)		# listen for a message from rank 0
-				if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
+				r=mpi_iprobe(0,-1)		# listen for a message from rank 0, this one doesn't block
+#				r=mpi_probe(0,-1)		# listen for a message from rank 0
+				#if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
 				if r!=None :
 					com,data=mpi_recv(r[1],r[2])[0]
 					
@@ -962,8 +963,8 @@ class EMMpiClient():
 					
 #						if verbose>2 : print "rank %d: running but not done"%self.rank
 				else: 
-					time.sleep(1)
-					if self.logfile!=None : self.logfile.write( "Sleep\n")
+					time.sleep(0.1)
+#					if self.logfile!=None : self.logfile.write( "Sleep\n")
 #					if verbose>2 : print "rank %d: waiting"%self.rank
 
 		mpi_finalize()
