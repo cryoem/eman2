@@ -1202,14 +1202,17 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		cdialoghbox = QtGui.QHBoxLayout()
 		cabox = QtGui.QHBoxLayout()
 		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
+		self.ambcolorbox.setColor(QtGui.QColor(255*self.sgnode.ambient[0],255*self.sgnode.ambient[1],255*self.sgnode.ambient[2]))
 		cabox.addWidget(self.ambcolorbox)
 		cabox.setAlignment(QtCore.Qt.AlignCenter)
 		cdbox = QtGui.QHBoxLayout()
 		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
+		self.diffusecolorbox.setColor(QtGui.QColor(255*self.sgnode.diffuse[0],255*self.sgnode.diffuse[1],255*self.sgnode.diffuse[2]))
 		cdbox.addWidget(self.diffusecolorbox)
 		cdbox.setAlignment(QtCore.Qt.AlignCenter)
 		csbox = QtGui.QHBoxLayout()
 		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
+		self.specularcolorbox.setColor(QtGui.QColor(255*self.sgnode.specular[0],255*self.sgnode.specular[1],255*self.sgnode.specular[2]))
 		csbox.addWidget(self.specularcolorbox)
 		csbox.setAlignment(QtCore.Qt.AlignCenter)
 		cdialoghbox.addLayout(cabox)
@@ -1228,6 +1231,7 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorhbox.addWidget(self.specular)
 		
 		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shininess")
+		self.shininess.setValue(self.sgnode.shininess)
 		
 		colorvbox.addWidget(colorlabel)
 		colorvbox.addLayout(cdialoghbox)
@@ -1239,6 +1243,7 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_ambient_color)
 		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_diffuse_color)
 		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_specular_color)
+		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
 		
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
@@ -1253,6 +1258,10 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
 		self.sgnode.setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_shininess(self, shininess):
+		self.sgnode.setShininess(shininess)
 		self.inspector.updateSceneGraph()
 		
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
@@ -1272,9 +1281,10 @@ class glCube(EMItem3D):
 		self.zf = size/2
 		
 		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.diffuse = [1.0,1.0,1.0,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0
 		
 		# GUI contols
 		self.widget = EMInspectorControlShape("CUBE", self)
@@ -1287,6 +1297,9 @@ class glCube(EMItem3D):
 		
 	def setSpecularColor(self, red, green, blue, alpha=1.0):
 		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
 		
 	def getSceneGui(self):
 		"""
@@ -1299,7 +1312,7 @@ class glCube(EMItem3D):
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		# The box itself anlong with normal vectors
 		
