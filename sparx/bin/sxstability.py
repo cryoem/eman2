@@ -94,7 +94,7 @@ def main():
 							ali_params.extend([alpha, sx, sy, mirror])
 						all_ali_params.append(ali_params)
 					stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 1.0)
-					print "Average %3d: %20.3f %20.3f %20d %20d"%(i, mirror_consistent_rate, err, len(stable_set), len(mem))
+					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mirror_consistent_rate, err, len(stable_set), len(mem))
 
 		global_def.BATCH = False
 
