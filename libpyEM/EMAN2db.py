@@ -222,7 +222,7 @@ def db_parse_path(url):
 			all_set = set(range(0,EMUtil.get_image_count("bdb:"+url[0]+"#"+url[1])))
 			rem_set = all_set - exc_set
 			return (url[0],url[1],list(rem_set))		# bdb:path/to#dict?select/name
-		return url											# bdb:path/to#dict?onekey
+#		return url											# bdb:path/to#dict?onekey
 	# make sure integer string keys are integers
 	for i in range(len(u2)) :
 		try: u2[i]=int(u2[i])

@@ -135,7 +135,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		# Make a new set from selected classes						
 		self.wmakebut=QtGui.QPushButton("Make New Set")
 		self.vbl2.addWidget(self.wmakebut)
-		self.wmakebut.setEnabled(False)
+#		self.wmakebut.setEnabled(False)
 	
 		# Save list
 		self.wsavebut=QtGui.QPushButton("Save Particle List")
@@ -165,7 +165,6 @@ class EMClassPtclTool(QtGui.QWidget):
 		
 		self.updateFiles()
 	
-	### FIXME - HAVENT FINISHED THIS ONE YET!
 	def makeNewSet(self,x):
 		"Makes a new particle set based on the selected class-averages"
 		setname=QtGui.QInputDialog.getText(None,"Set Name","Please specify the name for the new set. CTF modified versions will be made as appropriate.")
@@ -187,7 +186,50 @@ class EMClassPtclTool(QtGui.QWidget):
 			try: gooddict[srcname].append(im["data_n"])
 			except: gooddict[srcname]=[im["data_n"]]
 			
+		# determine which types are available
+		avail=db_list_dicts("bdb:particles")
 		
+		ftypes=[("","_original_data","Original Data"),("_ctf_flip","_phase_flipped","Phase Flipped"),("_ctf_wiener","_wiener_filtered","Wiener Filtered"),("_ctf_flip_hp","_phase_flipped-hp","Phase flipped-hp")]
+		usetypes=[]
+		
+		for fn,sn,hn in ftypes:
+			for tag in gooddict.keys():
+				if not tag+fn in avail: 	# make sure the input file is available
+					print tag+fn," missing"
+					break		
+			else:			# if we get here, all of the images had an available fn file
+				usetypes.append((fn,sn,hn))
+		
+		print "Making sets for ", [i[2] for i in usetypes]
+		
+		# now make the sets with a series of e2bdb.py commands
+		ncoms=len(usetypes)*len(gooddict)
+		progress = QtGui.QProgressDialog("Building new sets", "Abort", 0, ncoms,None)
+		progress.show()
+		n=0
+		newd={}
+		for fn,sn,hn in usetypes:
+			setpath="bdb:sets#%s%s"%(setname[0],sn)		# output path
+			newd[hn]=setpath
+			db_remove_dict(setpath)						# make sure we're starting from scratch
+			for tag in gooddict.keys():
+				if progress.wasCanceled() : return			# This will leave a bit of a mess, but if the user wants to...
+
+				imgnums=",".join((str(i) for i in gooddict[tag]))
+				imgpath="'bdb:particles#%s%s?%s'"%(tag,fn,imgnums)	# input path, single quotes prevent the shell from interpreting '?'
+				
+#				print "e2bdb.py %s --appendvstack=%s"%(imgpath,setpath)
+				os.system("e2bdb.py %s --appendvstack=%s"%(imgpath,setpath))
+				n+=1
+				progress.setValue(n)
+				QtGui.qApp.processEvents()
+		progress.close()
+		
+		db=db_open_dict("bdb:project")
+		sts=db["global.spr_sets_dict"]
+		sts["bdb:sets#%s"%setname[0]]=newd
+		db["global.spr_sets_dict"]=sts
+#		bdb:sets#set-all-secondeval : {'Original Data': 'bdb:sets#set-all-secondeval_original_data', 'Phase flipped': 'bdb:sets#set-all-secondeval_phase_flipped', 'Wiener filtered': 'bdb:sets#set-all-secondeval_wiener_filtered', 'Phase flipped-hp': 'bdb:sets#set-all-secondeval_phase_flipped-hp'}
 		
 		
 	def markBadPtcl(self,x):
