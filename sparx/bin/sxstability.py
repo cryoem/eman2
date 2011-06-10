@@ -35,12 +35,11 @@
 import os
 import global_def
 from   global_def     import *
-from   user_functions import *
 from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages --th_grp"
+	usage = progname + " stack averages --ou=ou --th_grp=th_grp --num_ali=num_ali"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
 	parser.add_option("--th_grp",       type="int",     default=5,         help=" mininum number of objects to consider for stability")
