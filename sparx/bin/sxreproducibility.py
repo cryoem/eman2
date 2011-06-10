@@ -84,12 +84,14 @@ def main():
 
 	        MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 
-		print MATCH
-		print STB_PART
-		print CT_s
-		print CT_t
-		print ST
-		print st
+		if options.verbose:
+			print MATCH
+			print STB_PART
+			print CT_s
+			print CT_t
+			print ST
+			print st
+			print " "
 
 		for i in xrange(len(MATCH)):
 			assert len(STB_PART[i]) == CT_s[i]
@@ -98,6 +100,7 @@ def main():
 				print "   matched group = %s"%(STB_PART[i])
 			else: print ""
 
+		print "\nNumber of averages = %4d %4d"%(len(data1), len(data2))
 		print "Total number of particles = %5d %5d     number of matched particles = %5d"%(len(mem1), len(mem2), sum(CT_s))
 
 		global_def.BATCH = False
