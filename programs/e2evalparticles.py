@@ -460,12 +460,14 @@ class EMClassPtclTool(QtGui.QWidget):
 	def classSelect(self,event,lc):
 		"Single clicked class particle. lc=(img#,x,y,image_dict)"
 		
+		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
 		ptclfile=self.curPtclFile()
 		try:
 			ptclgood=lc[3]["class_ptcl_idxs"]
 			self.vgoodptcl.set_data(EMData.read_images(ptclfile,ptclgood))
 		except:
 			QtGui.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
+			QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
 			return
 		try:
 			ptclbad=lc[3]["exc_class_ptcl_idxs"]
@@ -476,6 +478,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
+		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
 		
 	def classDouble(self,event,lc):
 		self.vclasses.image_set_associate(lc[0],update_gl=True)

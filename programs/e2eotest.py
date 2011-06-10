@@ -64,6 +64,9 @@ def main():
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
 	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_option("--mass", default=None, type="float",help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
+	parser.add_option("--apix", default=None, type="float",help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
+	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. Specify --automask=none to suppress using the mask from refinement")
 	
 	
 	# options associated with e2classaverage.py
@@ -93,8 +96,87 @@ def main():
 	
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
 
-	(options, args) = parser.parse_args()
+	########################
+	# THESE OPTIONS DO NOTHING, THEY ARE STRICTLY TO PERMIT EOTEST TO RUN using the same options as e2refine
+	########################
+	parser.add_option("--input", dest="input", default=None,type="string", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_option("--model", dest="model", type="string",default="threed.0a.mrc", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+
+	# options associated with e2project3d.py
+	parser.add_option("--projector", dest = "projector", default = "standard",help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_option("--orientgen", type = "string",help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+		
+	# options associated with e2simmx.py
+	parser.add_option("--simalign",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="rotate_translate_flip")
+	parser.add_option("--simaligncmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
+	parser.add_option("--simralign",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
+	parser.add_option("--simraligncmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
+	parser.add_option("--simcmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="dot:normalize=1")
+	parser.add_option("--simmask",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
+	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_option("--twostage", dest="twostage", type = "int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=0)
+	parser.add_option("--prefilt",action="store_true",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=False)
 	
+	# options associated with e2classify.py
+	parser.add_option("--sep", type="int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
+
+
+
+	(options, args) = parser.parse_args()
+
+	# If automask3d is not provided
+	if options.automask3d and options.automask3d.lower()!="none":
+		vals = options.automask3d.split(",")
+		mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
+		if len(vals) != 5:
+			print "If specified, the automask3d options must provide 5 parameters (threshold,radius,nshells,nshellsgauss,nmaxseed), for example --automask3d=1.7,0,5,5,3"
+			sys.exit(1)
+		else:
+			# Here I turn options.automask3d into what we would have expected if the user was supplying the whole processor argument,
+			# e.g. --automask3d=mask.auto3d:threshold=1.7:radi.... etc. I also add the return_mask=1 parameters - this could be misleading for future
+			# programmers, who will potentially wander where it came from
+			s = "mask.auto3d"
+			for i,p in enumerate(mapping):
+				s += ":"+p+"="+vals[i]
+			s+= ":return_mask=1"
+			options.automask3d = s
+	elif options.automask3d.lower()!="none":
+		print "Inheriting automask from refine command"
+		try : db=db_open_dict("bdb:%s#register"%options.path,ro=True)
+		except : 
+			print "Error: Must specify --path"
+			sys.exit(1)
+		try: options.automask3d=db["automask3d"]
+		except : 
+			print "Cannot get automask parameter from register, no mask applied"
+			sys.exit(1)
+	else: options.automask3d=None
+
+	if options.mass==None:
+		print "Inheriting mass from refine command"
+		try : db=db_open_dict("bdb:%s#register"%options.path,ro=True)
+		except : 
+			print "Error: Must specify --path"
+			sys.exit(1)
+		try: options.mass=db["mass"]
+		except :
+			if options.automask3d:
+				print "Error: cannot get mass parameter from register"
+				sys.exit(1)
+
+	if options.apix==None:
+		print "Inheriting apix from refine command"
+		try : db=db_open_dict("bdb:%s#register"%options.path,ro=True)
+		except : 
+			print "Error: Must specify --path"
+			sys.exit(1)
+		try: options.apix=db["apix"]
+		except : 
+			if options.automask3d:
+				print "Error: cannot get apix parameter from register"
+				sys.exit(1)
+
+
 	error = False
 	if check(options) == True :
 		# in eotest the first check fills in a lot of the blanks in the options, so if it fails just exit - it printed error messages for us
@@ -113,14 +195,14 @@ def main():
 	if options.classrefsf : options.classrefsf=" --setsfref"
 	else : options.classrefsf=" "
 	
-	logid=E2init(sys.argv)
 	
 	if error:
 		print "Error encountered while checking command line, bailing"
 		
-		exit_eotest(1,logid)
+		sys.exit(1)
 		
 	else:
+		logid=E2init(sys.argv)
 		progress = 0.0
 		total_procs = 4.0
 		for tag in ["even","odd"]:
@@ -147,14 +229,31 @@ def main():
 		a = EMData("bdb:"+options.path+"#threed_"+options.iteration+"_even",0)
 		b = EMData("bdb:"+options.path+"#threed_"+options.iteration+"_odd",0)
 		
-		mask_file = "bdb:"+options.path+"#threed_mask_"+options.iteration
-		if file_exists(mask_file):
-			mask = EMData(mask_file,0)
-			a.mult(mask)
-			b.mult(mask)
-			a.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_even",0)
-			b.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_odd",0)
-		
+		# Used to just apply the existing mask file. Need to mask them independently.
+		#mask_file = "bdb:"+options.path+"#threed_mask_"+options.iteration
+		#if file_exists(mask_file):
+			#mask = EMData(mask_file,0)
+			#a.mult(mask)
+			#b.mult(mask)
+			#a.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_even",0)
+			#b.write_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_odd",0)
+			
+		if options.mass:
+			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
+			# apix argument has been specified.
+			cmda="e2proc3d.py bdb:%s#threed_%s_even bdb:%s#threed_masked_%s_even --process=normalize.bymass:apix=%1.5f:mass=%1.3f"%(options.path,options.iteration,options.path,options.iteration,options.apix,options.mass)
+			cmdb="e2proc3d.py bdb:%s#threed_%s_odd bdb:%s#threed_masked_%s_odd --process=normalize.bymass:apix=%1.5f:mass=%1.3f"%(options.path,options.iteration,options.path,options.iteration,options.apix,options.mass)
+
+			if options.automask3d:
+				cmda+="--process=%s"%options.automask3d
+				cmdb+="--process=%s"%options.automask3d
+			
+			print "Normalize and mask : ",cmda
+			os.system(cmda)
+			os.system(cmdb)
+			a.read_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_even",0)
+			b.read_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_odd",0)
+
 		fsc = a.calc_fourier_shell_correlation(b)
 		third = len(fsc)/3
 		xaxis = fsc[0:third]
