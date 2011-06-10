@@ -71,14 +71,14 @@ for d in dirs:
 		elif ns[0]=="threed" : continue
 		# even/odd tests
 		elif ns[0]=="even" :
-			a=EMData("bdb:%s#threed_%s_even"%(d,ns[2]),0)
-			b=EMData("bdb:%s#threed_%s_odd"%(d,ns[2]),0)
-			try : 
-				m=EMData("bdb:%s#threed_mask_%s"%(d,ns[2]),0)	# We apply the same (soft) mask to both images. Contrary to EMAN1
-				a.mult(m)
-				b.mult(m)
-			except:
-				print "not masking even/odd"
+			a=EMData("bdb:%s#threed_masked_%s_even"%(d,ns[2]),0)
+			b=EMData("bdb:%s#threed_masked_%s_odd"%(d,ns[2]),0)
+			#try : 
+				#m=EMData("bdb:%s#threed_mask_%s"%(d,ns[2]),0)	# We apply the same (soft) mask to both images. Contrary to EMAN1
+				#a.mult(m)
+				#b.mult(m)
+			#except:
+				#print "not masking even/odd"
 		# general case, convergence curves
 		else : 
 			try :
