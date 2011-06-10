@@ -115,7 +115,6 @@ def main():
 	parser.add_option("--simmask",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
 	parser.add_option("--twostage", dest="twostage", type = "int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=0)
-	parser.add_option("--prefilt",action="store_true",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=False)
 	
 	# options associated with e2classify.py
 	parser.add_option("--sep", type="int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
@@ -123,6 +122,11 @@ def main():
 
 
 	(options, args) = parser.parse_args()
+
+	try:
+		options.iteration="%02d"%int(options.iteration)
+	except:
+		pass
 
 	# If automask3d is not provided
 	if options.automask3d and options.automask3d.lower()!="none":
