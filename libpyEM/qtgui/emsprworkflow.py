@@ -5706,7 +5706,27 @@ post-process - This is an optional filter to apply to the model as a final step,
 		#db_close_dict(self.form_db_name)
 		
 		return ["Project 3D",params]
+		
+class E2EvaluateSetTask(WorkFlowTask):
+	"""Launch Steven's Evaluate particles task. Just click 'ok' """
+	def __init__(self):
+		WorkFlowTask.__init__(self)
+		
+	def get_params(self):
+	 	params = []
+	 	params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 
+		return params
+		
+	def on_form_ok(self,params):
+		
+		processlist = "e2evalparticles.py"
+		
+		child = subprocess.Popen(processlist, shell=True)
+		
+		self.form.close()
+		self.form = None
+		
 class E2RefineFromFreAlign(WorkFlowTask):
 	"""Select the directory you want to use"""
 	def __init__(self):

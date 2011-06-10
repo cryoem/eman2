@@ -404,8 +404,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 #		self.launchers["Examine Particles"] = self.launch_examine_particle_stacks
 		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Build Particle Sets")))
 		self.launchers["Build Particle Sets"] = self.launch_make_ptcl_set
+		mis_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Evaluate Particle Sets")))
+		self.launchers["Evaluate Particle Sets"] = self.launch_evaluate_ptcl_set
 		mis_list[0].setIcon(0,self.icons["multiple_images"])
-#		mis_list[1].setIcon(0,self.icons["multiple_images"])
+		mis_list[1].setIcon(0,self.icons["multiple_images"])
 		mis.addChildren(mis_list)
 		
 		refine2d_list = []
@@ -840,6 +842,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_ctf_report(self):self.launch_task(CTFReportTask(),"CTF Report")
 	def launch_mis_report(self): self.launch_task(EMSetReportTask(),"Project Sets")
 	def launch_make_ptcl_set(self):	self.launch_task(E2MakeSetChooseDataTask(),"Build Particle Set")
+	def launch_evaluate_ptcl_set(self):	self.launch_task(E2EvaluateSetTask(),"Build Particle Set")
 	def launch_examine_particle_stacks(self): self.launch_task(E2ParticleExamineChooseDataTask(),"Examine Particles")
 	def launch_particle_report(self): self.launch_task(EMParticleReportTask(),"Particle Report")	
 	def launch_particle_import(self):self.launch_task(EMParticleImportTask(),"Import Particles")
