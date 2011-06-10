@@ -360,7 +360,7 @@ class PathWalker(object):
 			'dmin', 
 			'average',
 			'chain',
-			'atomtype',
+			'atomtype',options.edge
 			'solver',
 			'start',
 			'end',

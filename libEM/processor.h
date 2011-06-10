@@ -1515,7 +1515,45 @@ The basic design of EMAN Processors: <br>\
 			 */
 			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
+	
+	 /** Applies a symmetry to a 3D model. The model must be on aligned to its symmetry axis(via align3d or other mechanism)
+	 *@author Steve Ludtke and John Flanagan
+	 *@date June 2011
+	 *@param sym A string specifying the symmetry under which to do the alignment
+	 */
+	class ApplySymProcessor:public Processor
+	{
+		public:
+			virtual string get_name() const
+			{
+				return NAME;
+			}
 
+			static Processor *NEW()
+			{
+				return new ApplySymProcessor();
+			}
+
+			virtual void process_inplace(EMData* image);
+
+			virtual EMData* process(const EMData* const image);
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment, Default=c1" );
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Symmetry is applied to the 3D EM object";
+			}
+
+			static const string NAME;
+		
+	};
+	
 	/** Aligns a particle with the specified symmetry into the standard orientation for that
 	 * symmetry.
 	 *@author Steve Ludtke and John Flanagan

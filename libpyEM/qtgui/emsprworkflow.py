@@ -6131,7 +6131,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 		Looks for bdb:r2d_??#classes_?? and the bdb:r2d_??#classes_init file, finds the most recent one, then fills in the number of particles in
 		in the class average file and also its dimensions.
 		'''
-		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_")
+		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_")
 		
 		available_dirs = []
 		total_iterations = []
@@ -6298,7 +6298,7 @@ those used during refinement."
 		'''
 		This function is called in get_params to accrue the directory data
 		'''
-		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_")
+		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_")
 		dirs.sort()
 		
 		nec_files = [ "classes_", "classify_","projections_"]
@@ -6470,7 +6470,7 @@ class E2ResolutionTask(WorkFlowTask):
 		General/broad refine params
 		'''
 		# have to get the directories 
-		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_")
+		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_")
 		dirs.sort()
 		
 		nec_files = ["threed_filt_","threed_mask_"]

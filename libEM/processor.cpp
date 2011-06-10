@@ -91,6 +91,7 @@ const string Rotate180Processor::NAME = "math.rotate.180";
 const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "math.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
+const string ApplySymProcessor::NAME = "xform.applysym";
 const string SymAlignProcessor::NAME = "xform.symalign";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
@@ -280,6 +281,7 @@ template <> Factory < Processor >::Factory()
 	force_add<Rotate180Processor>();
 	force_add<TransformProcessor>();
 	force_add<ScaleTransformProcessor>();
+	force_add<ApplySymProcessor>();
 	force_add<SymAlignProcessor>();
 	force_add<IntTranslateProcessor>();
 	force_add<InvertCarefullyProcessor>();
@@ -879,6 +881,28 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 	result->set_attr("segment_centers",centers);
 
 	return result;
+}
+
+EMData* ApplySymProcessor::process(const EMData * const image)
+{
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+	vector<Transform> transforms = sym->get_syms();
+	//vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+	
+	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
+	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
+		Dict tparams = trans_it->get_params("eman");
+		Transform t(tparams);
+		EMData* transformed = image->process("xform",Dict("transform",&t));
+		imgavg->add_image(transformed);
+		delete transformed;
+	}
+	return imgavg->finish();
+}
+
+void ApplySymProcessor::process_inplace(EMData* image)
+{
+	cout << "Not implemented yet" << endl;
 }
 
 EMData* SymAlignProcessor::process(const EMData * const image)

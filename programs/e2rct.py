@@ -55,22 +55,25 @@ def main():
 	parser.add_option("--untiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
 	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
 	parser.add_option("--stagetilt",type="float",default=None,help="Amount of tiliting of the cryo stage, default=auto")
-	parser.add_option("--careject",type="int",default=None,action="append",help="class averages to reject, default=None")
+	parser.add_option("--careject",type="string",default=None, help="class averages to reject, default=None")
 	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto")
-	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--align", action="store_true", help="Switch on image alignment.",default=False)
 	parser.add_option("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph.",default=False)
 	parser.add_option("--maxshift",type="int",help="Maximun amount to shift the images during alignment", default=2)
 	# Options for averaging RCTs
 	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
-	parser.add_option("--aligngran",type="float",default=30.0,help="Fineness of global search in e2align3d.py, default=30.0")
-	parser.add_option("--weightrecons",type="int",default=1,help="weight reconstructions by ptcl_repr (before averaging), default=1")
+	parser.add_option("--reference", type="string",default=None,help="Reference used to align RCT recons to, needs to be aligned to symetry axis is --sym is specified")
+	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
+	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the recons before alignment, speeds things up, default=None")
+	parser.add_option("--aligngran",type="float",default=10.0,help="Fineness of global search in e2align3d.py, default=10.0")
+	parser.add_option("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False)
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
 	parser.add_option("--verbose", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()
-
+	if options.careject: options.careject = options.careject.split(',')
+	
 	if not options.path:
 		options.path = "bdb:rct/"
 	else:
@@ -83,17 +86,11 @@ def main():
 	if not options.classavg:
 		print "Error, classavg needed! Crashing!"
 		exit(1)	    
-
-	#set up the preprocesses (otherwise bugs occur)
-	preprocess = ""
-	if options.preprocess != None:
-		for p in reversed(options.preprocess):
-			preprocess = ("--preprocess=%s " % str(p)) + preprocess 
 		
 	# Now get azimuthal data
 	cadb = EMData.read_images(options.classavg)
 	tiltimgs = EMData.read_images(options.tiltdata)
-	
+
 	# Check to see if we need a tilt angle
 	if not options.stagetilt:
 		if not tiltimgs[0].get_attr_dict().has_key("tiltangle"):	
@@ -104,13 +101,17 @@ def main():
 	search = tiltimgs[0].get_attr('nx')/4 # the search range for the 3D aligner
 	arlist = []
 	totalptcls = 0
-	firstrecon = None
-
 	tiltcorrection = 0.0
+	reference = None
+	# Read in reference if nedded
+	if options.reference: 
+		reference = EMData(options.reference)
+		if options.shrink: reference.process_inplace('xform.scale', {'scale':options.shrink})
+		# commence with the RCT recons
 	for avnum, a in enumerate(cadb):
 		if a == None:
 			break # stupidly, enumerate keeps on going, even after it reachs the end of the 'list'
-		if options.careject and avnum in options.careject:
+		if options.careject and str(avnum) in options.careject:
 			if options.verbose>0: print "Rejecting class average %d" % avnum
 			continue # do not use suboptimal classaverages
 		if a.get_attr('ptcl_repr') > options.minproj:
@@ -142,33 +143,49 @@ def main():
 					tiltimgs[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
 				
 			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
-			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --sym=%s --iter=2" % (options.path,avnum,options.path,avnum,options.sym))
+			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --iter=2" % (options.path,avnum,options.path,avnum))
 			#now make an averaged image
 			if options.avgrcts:
-				if firstrecon:
-					run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d --sym=%s %s --cmp='ccc.tomo'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,options.sym,preprocess))
-					arlist.append("%srctreconali_%02d" % (options.path,avnum))
+				currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
+				if options.shrink: currentrct.process_inplace('xform.scale', {'scale':options.shrink})
+				if reference:
+					#run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d %s --cmp='ccc.tomo'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,preprocess))
+					processimage(currentrct, options.preprocess)
+					nbest = currentrct.xform_align_nbest('rotate_translate_3d', reference, {'delta':options.aligngran, 'dphi':options.aligngran,'sym':'c1', 'verbose':1}, 1, 'ccc.tomo',{})
+					raligned = currentrct.align('refine_3d_grid', reference, {"xform.align3d":nbest[0]["xform.align3d"],"delta":1,"range":6,"verbose":1}, "ccc.tomo")
+					# Scale back to original size
+					if options.shrink:
+						xform = raligned.get_attr("xform.align3d")
+						translation = xform.get_trans()
+						xform.set_trans(translation[0]/options.shrink, translation[1]/options.shrink, translation[2]/options.shrink)
+						currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
+						processimage(currentrct, options.preprocess)
+						raligned = currentrct.process('xform',{'transform':xform})
+					# write output
+					arlist.append(raligned)
+					raligned.write_image(("%srctrecon_align%02d" % (options.path,avnum)),0)
 				else:
-					tmp = EMData()
-					tmp.read_image("%srctrecon_%02d" % (options.path,avnum))
-					processimage(tmp, options.preprocess)
-					tmp.write_image("%srctreconali_%02d" % (options.path,avnum),0)
-					firstrecon = ("%srctreconali_%02d" % (options.path,avnum))
-					arlist.append(firstrecon)
-		    
+					processimage(currentrct, options.preprocess)
+					reference=currentrct
+					# Scale back to original size
+					if options.shrink:
+						currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
+						processimage(currentrct, options.preprocess)
+					arlist.append(currentrct)
 	#now make the average
 	if options.avgrcts:
 		if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
 		avgr = Averagers.get('mean')		    
-		for r in arlist:
-			recon = EMData()
-			recon.read_image(r)
+		for recon in arlist:
 			if options.weightrecons:
 				weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
 				if options.verbose>0: print "Weighting recon using %f" % weight
 				recon.mult(weight)
 			avgr.add_image(recon)
 		avged = avgr.finish()
+		if options.sym != "c1":
+			symavg = avged.process('xform.applysym',{"sym":options.sym})
+			symavg.write_image("%srctrecon_symavg" % (options.path), 0)
 		avged.write_image("%srctrecon_avg" % (options.path), 0)
   
 	db_close_dict(options.classavg)
@@ -208,9 +225,9 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 		
-def processimage(image, optionspreprocess):
-	if optionspreprocess != None:
-	    for p in options.preprocess:
+def processimage(image, options_to_preprocess):
+	if options_to_preprocess != None:
+	    for p in options_to_preprocess:
 	        try:
 		    (processorname, param_dict) = parsemodopt(p)
 		    if not param_dict : param_dict={}
