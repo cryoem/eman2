@@ -178,6 +178,13 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["df3"] = IMAGE_DF3;
 		imagetypes["DF3"] = IMAGE_DF3;
 
+		imagetypes["Omap"] = IMAGE_OMAP;
+		imagetypes["omap"] = IMAGE_OMAP;
+		imagetypes["OMAP"] = IMAGE_OMAP;
+		imagetypes["BRIX"] = IMAGE_OMAP;
+		imagetypes["brix"] = IMAGE_OMAP;
+		imagetypes["DSN6"] = IMAGE_OMAP;
+
 		initialized = true;
 	}
 
@@ -319,6 +326,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_DF3;
 		}
 		break;
+	case IMAGE_OMAP:
+		if (OmapIO::is_valid(first_block, file_size)) {
+			return IMAGE_OMAP;
+		}
+		break;
 	case IMAGE_IMAGIC:
 		if (ImagicIO::is_valid(first_block)) {
 			return IMAGE_IMAGIC;
@@ -432,6 +444,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else if (EmIO::is_valid(first_block, file_size)) {
 		image_type = IMAGE_EM;
+	}
+	else if(OmapIO::is_valid(first_block, file_size)) {
+		image_type = IMAGE_OMAP;
 	}
 	else if (ImagicIO::is_valid(first_block)) {
 		image_type = IMAGE_IMAGIC;
@@ -587,6 +602,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_DF3:
 		imageio = new Df3IO(filename, rw_mode);
 		break;
+	case IMAGE_OMAP:
+		imageio = new OmapIO(filename, rw_mode);
+		break;
 	default:
 		break;
 	}
@@ -673,6 +691,9 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 		break;
 	case IMAGE_DF3:
 		return "DF3";
+		break;
+	case IMAGE_OMAP:
+		return "OMAP";
 		break;
 	case IMAGE_UNKNOWN:
 		return "unknown";
