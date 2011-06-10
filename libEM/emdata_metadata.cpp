@@ -414,7 +414,7 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 	IntPoint peak(0,0,0);
 	
 #ifdef EMAN2_USING_CUDA //CUDA
-	if(cudarwdata){
+	if(EMData::usecuda == 1 && cudarwdata){
 	
 		CudaPeakInfo* soln = calc_max_location_wrap_cuda(cudarwdata, nx, ny, nz, maxdx, maxdy, maxdz);
 		
@@ -708,7 +708,7 @@ float EMData::get_edge_mean() const
 {
 	ENTERFUNC;
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata){
+	if(EMData::usecuda == 1 && cudarwdata){
 		
 			return get_edgemean_cuda(cudarwdata, nx, ny, nz);
 			

@@ -53,6 +53,7 @@ def main():
 	parser.add_option("--initemp",type="float",default=0.2,help="Initial temperature, default=0.2")
 	parser.add_option("--cooling",type="float",default=2.0,help="Cooling rate, default=2.0")
 	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the CAs, default=None")
+	parser.add_option("--cuda",action="store_true", help="Use CUDA for the reconstructors step.",default=False)
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -70,6 +71,7 @@ def main():
 	Util.set_randnum_seed(Util.get_randnum_seed())	# Initialize random num generator
 	
 	# Setup the reconstructor
+	if options.cuda: EMData.switchoncuda()
 	size = (int(calist[0].get_attr('nx')),int(calist[0].get_attr('nx')),int(calist[0].get_attr('nx')))	# The images must all be the same size or we will get an exception
 	reconstructor = ("fourier", {"size":size,"sym":options.sym,"verbose":options.verbose})
 	freconstructor=Reconstructors.get(reconstructor[0], reconstructor[1])
@@ -120,6 +122,7 @@ def main():
 		#ca.set_attr("xform.projection", besttlist[canum])
 		bfreconstructor.insert_slice(ca, besttlist[canum][0],1)
 	recon = bfreconstructor.finish(1)
+	if options.cuda: EMData.switchoffcuda()
 	
 	#write output
 	if options.output[-3:] == "mrc":

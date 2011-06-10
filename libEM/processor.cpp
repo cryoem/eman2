@@ -4307,7 +4307,7 @@ void FlipProcessor::process_inplace(EMData * image)
 	string axis = (const char*)params["axis"];
 	
 #ifdef EMAN2_USING_CUDA
-	if (image->getcudarwdata()) {
+	if (EMData::usecuda == 1 && image->getcudarwdata()) {
 		//cout << "flip processor" << endl;
 		float array[12] = {1.0, 0.0, 0.0, 0.0,
 						   0.0, 1.0, 0.0, 0.0,
@@ -4956,8 +4956,8 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
-	if (image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
-		//cout << "CUDA tocorner" << endl;
+	if (EMData::usecuda == 1 && image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+		//cout << "CUDA tocorner " << image->getcudarwdata() << endl;
 		emdata_phaseorigin_to_corner(image->getcudarwdata(), image->get_xsize(), image->get_ysize(), image->get_zsize());
 		return;
 	}
@@ -5104,7 +5104,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
-	if (image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
+	if (EMData::usecuda == 1 && image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
 		//cout << "CUDA tocenter" << endl;
 		emdata_phaseorigin_to_center(image->getcudarwdata(), image->get_xsize(), image->get_ysize(), image->get_zsize());
 		return;
@@ -8422,7 +8422,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
-	if(image->isrodataongpu()){	
+	if(EMData::usecuda == 1 && image->isrodataongpu()){	
 	        //cout << "using CUDA xform" << endl;
 		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict()); 
 		float * m = new float[12];
@@ -8465,7 +8465,8 @@ void TransformProcessor::process_inplace(EMData* image) {
 	bool use_cpu = true;
 	
 #ifdef EMAN2_USING_CUDA
-	if(image->isrodataongpu()){
+	if(EMData::usecuda == 1 && image->isrodataongpu()){
+		//cout << "CUDA xform inplace" << endl;
 		image->bindcudaarrayA(false);	
 		float * m = new float[12];
 		Transform inv = t->inverse();
@@ -8673,7 +8674,8 @@ void Rotate180Processor::process_inplace(EMData* image) {
 	}
 
 #ifdef EMAN2_USING_CUDA
-	if (image->getcudarwdata()) {
+	if (EMData::usecuda == 1 && image->getcudarwdata()) {
+		//cout << "CUDA rotate 180" << endl;
 		emdata_rotate_180(image->getcudarwdata(), image->get_xsize(), image->get_ysize());
 		EXITFUNC;
 		return;

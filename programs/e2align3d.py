@@ -48,7 +48,7 @@ def main():
 	alignmnet is too rough then the refiner might get stuck in a local minima."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	#options associated with e2refine3d.py
+	#options associated with e2align.py
 	parser.add_option("--shrink",type="float",default=-1,help="Fractional amount to shrink the maps by (-1 = auto), default=-1.0")
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
 	parser.add_option("--maskrad",type="int",default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
@@ -56,6 +56,7 @@ def main():
 	parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
 	parser.add_option("--famps",type="float",default=1,help="fraction of Fourier amps to exclude from recons, default=0.0")
 	parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same', default=0.01")
+	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
 	#options form the sphere alinger
 	parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=30.0")
 	parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=30.0")
@@ -184,6 +185,7 @@ def main():
 	bestscore = 0
 	bestmodel = 0
 	galignedref = []
+	if options.cuda: EMData.switchoncuda()
 	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
 	
 	#refine each solution found are write out the best one
@@ -198,6 +200,7 @@ def main():
 			#bestscore = score
 			bestmodel = i
 		if options.verbose > 0: print "Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score
+	if options.cuda: EMData.switchoffcuda()
 	
 	# Find out how many peaks are 'the same'
 	if options.nsolns > 1:

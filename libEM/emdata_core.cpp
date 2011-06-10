@@ -413,7 +413,7 @@ void EMData::sub(float f)
 	ENTERFUNC;
 	
 #ifdef EMAN2_USING_CUDA
-		if (cudarwdata) {
+		if (EMData::usecuda == 1 && cudarwdata) {
 			if(f != 0){
 				subtract_cuda(cudarwdata, f, nx, ny, nz);
 			}
@@ -490,7 +490,7 @@ void EMData::mult(float f)
 	}
 	if (f != 1.0) {
 #ifdef EMAN2_USING_CUDA
-		if (cudarwdata) { //doesn't make any sense to use RO, esp on compute devices >= 2.0
+		if (EMData::usecuda == 1 && cudarwdata) { //doesn't make any sense to use RO, esp on compute devices >= 2.0
 			//cout << "CUDA mult" << endl;
 			emdata_processor_mult(cudarwdata,f,nx,ny,nz);
 			EXITFUNC;
@@ -766,7 +766,7 @@ float& EMData::get_value_at_wrap(int x, int y, int z)
 {
 	
 #ifdef EMAN2_USING_CUDA 
-	if(cudarwdata){
+	if(EMData::usecuda == 1 && cudarwdata){
 		float result = get_value_at_wrap_cuda(cudarwdata, x, y, z, nx, ny, nz); // this should work....
 		return result;
 	}
@@ -1385,7 +1385,7 @@ void EMData::to_value(const float& value)
 	ENTERFUNC;
 
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata){
+	if(EMData::usecuda == 1 && cudarwdata){
 		to_value_cuda(cudarwdata, value, nx, ny, nz);
 		return;
 	}

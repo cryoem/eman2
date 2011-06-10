@@ -146,7 +146,7 @@ EMData::EMData(const EMData& that) :
 		EMUtil::em_memcpy(rdata, data, num_bytes);
 	}
 #ifdef EMAN2_USING_CUDA
-	if (num_bytes != 0 && that.cudarwdata != 0) {
+	if (EMData::usecuda == 1 && num_bytes != 0 && that.cudarwdata != 0) {
 		//cout << "That copy constructor" << endl;
 		if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");
 		cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
@@ -195,7 +195,7 @@ EMData& EMData::operator=(const EMData& that)
 		zoff = that.zoff;
 
 #ifdef EMAN2_USING_CUDA
-		if (num_bytes != 0 && that.cudarwdata != 0) {
+		if (EMData::usecuda == 1 && num_bytes != 0 && that.cudarwdata != 0) {
 			if(cudarwdata){rw_free();}
 			if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");;
 			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
@@ -1468,7 +1468,8 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 
 	if( with == 0 ) {
 #ifdef EMAN2_USING_CUDA //CUDA 
-	if(cudarwdata) {
+	if(EMData::usecuda == 1 && cudarwdata) {
+		//cout << "calc ccf" << endl;
 		EMData* ifft = 0;
 		bool delifft = false;
 		int offset = 0;
@@ -1503,7 +1504,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 		// assume always get rw data (makes life a lot easier!!! 
 		// also assume that both images are the same size. When using CUDA we are only interested in speed, not flexibility!!
 		// P.S. (I feel like I am pounding square pegs into a round holes with CUDA)
-		if(cudarwdata && with->cudarwdata) {
+		if(EMData::usecuda == 1 && cudarwdata && with->cudarwdata) {
 			//cout << "using CUDA for ccf" << endl;
 			EMData* afft = 0;
 			EMData* bfft = 0;
@@ -1617,7 +1618,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 	}
 
 #ifdef EMAN2_USING_CUDA
-	if (cudarwdata && with->cudarwdata) {
+	if (EMData::usecuda == 1 && cudarwdata && with->cudarwdata) {
 		//cout << "calc_ccfx CUDA" << endl;
 		if(!f1.cudarwdata) f1.rw_alloc();
 		if(!f2.cudarwdata) f2.rw_alloc();
@@ -1851,14 +1852,14 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		filt->to_one();
 		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
 #ifdef EMAN2_USING_CUDA
-		if(big_clip.cudarwdata)
+		if(EMData::usecuda == 1 && big_clip.cudarwdata)
 		{
 			filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
 		}
 #endif
 	}
 #ifdef EMAN2_USING_CUDA
-	if(big_clip.cudarwdata && !filt->cudarwdata)
+	if(EMData::usecuda == 1 && big_clip.cudarwdata && !filt->cudarwdata)
 	{
 		filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
 	}
@@ -1889,7 +1890,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (nz == 1) {
 		if (!unwrap) {
 #ifdef EMAN2_USING_CUDA
-			if(sml_clip.cudarwdata) throw UnexpectedBehaviorException("shap masking is not yet supported by CUDA");
+			if(EMData::usecuda == 1 && sml_clip.cudarwdata) throw UnexpectedBehaviorException("shap masking is not yet supported by CUDA");
 #endif
 			result = sml_clip.process("mask.sharp", Dict("outer_radius", -1, "value", 0));
 
@@ -1906,7 +1907,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	}
 	
 #ifdef EMAN2_USING_CUDA
-	sml_clip.roneedsanupdate(); //If we didn't do this then unwrap would use data from the previous call of this function, happens b/c sml_clip is static
+	if (EMData::usecuda == 1) sml_clip.roneedsanupdate(); //If we didn't do this then unwrap would use data from the previous call of this function, happens b/c sml_clip is static
 #endif
 	EXITFUNC;
 	if ( unwrap == true)
@@ -2121,7 +2122,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 	}
 
 #ifdef EMAN2_USING_CUDA
-	if(cudarwdata && with->cudarwdata)
+	if(EMData::usecuda == 1 && cudarwdata && with->cudarwdata)
 	{	
 
 		EMData* this_fft = do_fft_cuda();
@@ -2514,7 +2515,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	if ( (r2-r1) < 0 ) throw UnexpectedBehaviorException("The combination of function the arguments and the image dimensions causes unexpected behavior internally. Use a larger image, or a smaller value of r1, or a combination of both");
 
 #ifdef EMAN2_USING_CUDA
-	if (isrodataongpu()){
+	if (EMData::usecuda == 1 && isrodataongpu()){
 		//cout << " CUDA unwrap" << endl;
 		EMData* result = new EMData(0,0,xs,(r2-r1),1);
 		if(!result->rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");

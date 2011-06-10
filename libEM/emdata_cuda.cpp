@@ -51,7 +51,7 @@ int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the dev
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
 bool EMData::usemempoolswitch = false;
-bool EMData::usecuda = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) ) ? 1 : 0;
+bool EMData::usecuda = (getenv("EMANUSECUDA") == NULL) ? 0 : bool(atoi(getenv("EMANUSECUDA")));
 float* EMData::mempool[] = {0};
 
 bool EMData::copy_to_cuda_keepcpu() const

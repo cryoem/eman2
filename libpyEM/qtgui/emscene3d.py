@@ -361,6 +361,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				# Inspector tree management
 				if EMQTreeWidgetItem:
 					selected.EMQTreeWidgetItem.setSelectionStateBox()
+					self.main_3d_inspector.tree_widget.setCurrentItem(selected.EMQTreeWidgetItem)
 		# Select the desired items	
 		closestitem = None
 		bestdistance = 1.0
@@ -370,6 +371,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			# Inspector tree management
 			if EMQTreeWidgetItem:
 				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
+				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
 			try:
 				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.widget)
 				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.widget.treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters

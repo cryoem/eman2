@@ -195,6 +195,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	IntPoint peak;
 #ifdef EMAN2_USING_CUDA
 	if (!use_cpu) {
+		cout << "USe CUDA TA 2" << endl;
 		if (nozero) throw UnexpectedBehaviorException("Nozero is not yet supported in CUDA");
 		CudaPeakInfo* data = calc_max_location_wrap_cuda(cf->getcudarwdata(), cf->get_xsize(), cf->get_ysize(), cf->get_zsize(), maxshiftx, maxshifty, maxshiftz);
 		peak = IntPoint(data->px,data->py,data->pz);
@@ -233,6 +234,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 #ifdef EMAN2_USING_CUDA
 	if (!use_cpu) {
+		cout << "USe CUDA TA 3" << endl;
 		//this will work just fine....
 		cf = this_img->process("xform",Dict("transform",&t));
 	}

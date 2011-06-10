@@ -64,7 +64,7 @@ def main():
 	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
 	parser.add_option("--reference", type="string",default=None,help="Reference used to align RCT recons to, needs to be aligned to symetry axis is --sym is specified")
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
-	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the recons before alignment, speeds things up, default=None")
+	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
 	parser.add_option("--aligngran",type="float",default=10.0,help="Fineness of global search in e2align3d.py, default=10.0")
 	parser.add_option("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False)
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
@@ -106,8 +106,7 @@ def main():
 	# Read in reference if nedded
 	if options.reference: 
 		reference = EMData(options.reference)
-		if options.shrink: reference.process_inplace('xform.scale', {'scale':options.shrink})
-		# commence with the RCT recons
+	# commence with the RCT recons
 	for avnum, a in enumerate(cadb):
 		if a == None:
 			break # stupidly, enumerate keeps on going, even after it reachs the end of the 'list'
@@ -147,30 +146,19 @@ def main():
 			#now make an averaged image
 			if options.avgrcts:
 				currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
-				if options.shrink: currentrct.process_inplace('xform.scale', {'scale':options.shrink})
+				processimage(currentrct, options.preprocess)
+				#if options.shrink: currentrct.process_inplace('xform.scale', {'scale':options.shrink})
 				if reference:
-					#run("e2align3d.py %s %srctrecon_%02d %srctreconali_%02d --delta=%f --dphi=%f --search=%d %s --cmp='ccc.tomo'" % (firstrecon,options.path,avnum,options.path,avnum,options.aligngran, options.aligngran, search,preprocess))
-					processimage(currentrct, options.preprocess)
+					# Do the alignment
+					if options.cuda: EMData.switchoncuda()
 					nbest = currentrct.xform_align_nbest('rotate_translate_3d', reference, {'delta':options.aligngran, 'dphi':options.aligngran,'sym':'c1', 'verbose':1}, 1, 'ccc.tomo',{})
 					raligned = currentrct.align('refine_3d_grid', reference, {"xform.align3d":nbest[0]["xform.align3d"],"delta":1,"range":6,"verbose":1}, "ccc.tomo")
-					# Scale back to original size
-					if options.shrink:
-						xform = raligned.get_attr("xform.align3d")
-						translation = xform.get_trans()
-						xform.set_trans(translation[0]/options.shrink, translation[1]/options.shrink, translation[2]/options.shrink)
-						currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
-						processimage(currentrct, options.preprocess)
-						raligned = currentrct.process('xform',{'transform':xform})
+					if options.cuda: EMData.switchoffcuda()
 					# write output
 					arlist.append(raligned)
 					raligned.write_image(("%srctrecon_align%02d" % (options.path,avnum)),0)
 				else:
-					processimage(currentrct, options.preprocess)
 					reference=currentrct
-					# Scale back to original size
-					if options.shrink:
-						currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
-						processimage(currentrct, options.preprocess)
 					arlist.append(currentrct)
 	#now make the average
 	if options.avgrcts:
@@ -233,7 +221,9 @@ def processimage(image, options_to_preprocess):
 		    if not param_dict : param_dict={}
 		    image.process_inplace(str(processorname), param_dict)
 		except:
-		    print "warning - application of the pre processor",p," failed. Continuing anyway"  
+		    print "warning - application of the pre processor",p," failed. Continuing anyway"
+	else:
+		return
 	
 if __name__ == "__main__":
 	main()
