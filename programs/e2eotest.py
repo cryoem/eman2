@@ -249,8 +249,8 @@ def main():
 			cmdb="e2proc3d.py bdb:%s#threed_%s_odd bdb:%s#threed_masked_%s_odd --process=normalize.bymass:apix=%1.5f:mass=%1.3f"%(options.path,options.iteration,options.path,options.iteration,options.apix,options.mass)
 
 			if options.automask3d:
-				cmda+="--process=%s"%options.automask3d
-				cmdb+="--process=%s"%options.automask3d
+				cmda+=" --process=%s"%options.automask3d
+				cmdb+=" --process=%s"%options.automask3d
 			
 			print "Normalize and mask : ",cmda
 			os.system(cmda)
