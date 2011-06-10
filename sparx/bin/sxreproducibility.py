@@ -30,8 +30,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-
-
 import os
 import global_def
 from   global_def     import *
@@ -92,6 +90,11 @@ def main():
 			print ST
 			print st
 			print " "
+
+		for i in xrange(len(STB_PART)-1, -1, -1):
+			if STB_PART[i] == []: del STB_PART[i]
+		for i in xrange(len(CT_s)-1, -1, -1):
+			if CT_s[i] == 0: del CT_s[i]
 
 		for i in xrange(len(MATCH)):
 			assert len(STB_PART[i]) == CT_s[i]
