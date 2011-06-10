@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#
+# Author: Ross Coleman (racolema@bcm.edu)
+# Copyright (c) 2000-2011 Baylor College of Medicine
+
 from OpenGL import GL
 from EMAN2 import Transform
 from libpyGLUtils2 import GLUtil
@@ -32,12 +37,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.widget = None			# This is an inspector widget
 		self.EMQTreeWidgetItem = None 		# This is an inspector tree item
 		self.boundingboxsize = None
-		self.getnset_unique_integer()
+		self.getAndSetUniqueInteger()
 		
 	def __del__(self):
 		EMItem3D.selection_recycle.append(self.intname)
 	
-	def getnset_unique_integer(self):
+	def getAndSetUniqueInteger(self):
 		"""
 		Stuff for the selection mechanism, return a unique int for each instance of EMItem3D
 		"""
@@ -48,7 +53,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			self.intname = EMItem3D.selection_intname
 		EMItem3D.selection_idx_dict[self.intname] = weakref.ref(self)
 		
-	def add_child(self, node):
+	def addChild(self, node):
 		"""
 		Adds a child node, if not already in the set of child nodes.
 		@type node: EMItem3D
@@ -57,7 +62,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.children.add(node)
 		node.parent = self
 	
-	def add_children(self, nodes):
+	def addChildren(self, nodes):
 		"""
 		Adds all the provided child nodes which are not already in the set of child nodes.
 		@type nodes: an iterable collection of EMItem3D (or subclass) objects
@@ -67,7 +72,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			self.children.add(node)
 			node.parent = self
 			
-	def has_child(self, node):
+	def hasChild(self, node):
 		"""
 		Tests whether the supplied node is a child of the current node. 
 		@type node: EMItem3D
@@ -75,7 +80,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		return node in self.children
 		
-	def remove_child(self, node):
+	def removeChild(self, node):
 		"""
 		Remove the supplied node from the set of child nodes. 
 		@type node: EMItem3D
@@ -84,7 +89,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.children.remove(node)
 		node.parent = None
 		
-	def get_all_selected_nodes(self):
+	def getAllSelectedNodes(self):
 		"""
 		For the tree rooted at self, this recursive method returns a list of all the selected nodes.
 		@return: a list of selected nodes
@@ -93,13 +98,13 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		if self.is_selected:
 			selected_list.append(self)
 		for child in self.children: #Recursion ends on leaf nodes here
-			selected_list.extend(child.get_all_selected_nodes()) #Recursion
+			selected_list.extend(child.getAllSelectedNodes()) #Recursion
 		
 		return selected_list
 	
-	def get_nearest_selected_nodes(self):
+	def getNearbySelectedNodes(self):
 		"""
-		For the tree rooted at self, this recursive method returns a list of the selected nodes that are nearest to self.
+		For the tree rooted at self, this recursive method returns a list of the selected nodes that are near self.
 		A selected node will not be in the returned list if one of its ancestor nodes is also selected. 
 		@return: a list of selected nodes
 		"""
@@ -108,19 +113,19 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			return [self]
 		else:
 			for child in self.children:
-				selected_list.extend(child.get_nearest_selected_nodes())
+				selected_list.extend(child.getNearbySelectedNodes())
 		
 		return selected_list
 	
-	def get_farthest_selected_nodes(self):
+	def getDistantSelectedNodes(self):
 		"""
-		For the tree rooted at self, this recursive method returns a list of the selected nodes that are farthest from self.
+		For the tree rooted at self, this recursive method returns a list of the selected nodes that are distant from self.
 		A selected node will not be in the returned list if one of its descendant nodes is also selected. 
 		@return: a list of selected nodes
 		"""
 		selected_list = []
 		for child in self.children:
-			selected_list.extend(child.get_farthest_selected_nodes())
+			selected_list.extend(child.getDistantSelectedNodes())
 		if not selected_list: #either this is a leaf node, or there are no selected nodes in the child subtrees
 			if self.is_selected:
 				selected_list.append(self)
@@ -163,7 +168,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def render(self):
 		"""
 		This is the method to call to render the node and its child nodes. 
-		It calls self.render_node() to render the current node. 
+		It calls self.renderNode() to render the current node. 
 		Usually, this method is unchanged in subclasses. 
 		"""
 		if not self.is_visible:
@@ -175,7 +180,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			GL.glPushName(self.intname)
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
 			
-			self.render_node()
+			self.renderNode()
 			for child in self.children:
 				child.render()
 			GL.glPopName()
@@ -183,13 +188,13 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			
 		else:
 			GL.glPushName(self.intname)
-			self.render_node()
+			self.renderNode()
 			for child in self.children:
 				child.render()
 			GL.glPopName()
 		
 
-	def render_node(self):
+	def renderNode(self):
 		"""
 		This method, which is called by self.render(), renders the current node.
 		It should be implemented in subclasses that represent visible objects.
@@ -213,27 +218,27 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 if __name__ == '__main__':
 	#Test code
 	root = EMItem3D(0)
-	a = EMItem3D(1,root)
-	b = EMItem3D(2,root)
-	c = EMItem3D(3,root)
-	root.add_children([a,b,c])
-	aa = EMItem3D(4)
-	ab = EMItem3D(5)
-	ac = EMItem3D(6)
-	a.add_children([aa,ab,ac])
-	ba = EMItem3D(7)
-	bb = EMItem3D(8)
-	bc = EMItem3D(9)
-	b.add_children([ba,bb,bc])
-	ca = EMItem3D(10)
-	cb = EMItem3D(11)
-	cc = EMItem3D(12)
-	c.add_children([ca,cb,cc])
+	a = EMItem3D(root)
+	b = EMItem3D(root)
+	c = EMItem3D(root)
+	root.addChildren([a,b,c])
+	aa = EMItem3D()
+	ab = EMItem3D()
+	ac = EMItem3D()
+	a.addChildren([aa,ab,ac])
+	ba = EMItem3D()
+	bb = EMItem3D()
+	bc = EMItem3D()
+	b.addChildren([ba,bb,bc])
+	ca = EMItem3D()
+	cb = EMItem3D()
+	cc = EMItem3D()
+	c.addChildren([ca,cb,cc])
 	
-	aaa = EMItem3D(13)
-	aab = EMItem3D(14)
-	aac = EMItem3D(15)
-	aa.add_children([aaa,aab,aac])
+	aaa = EMItem3D()
+	aab = EMItem3D()
+	aac = EMItem3D()
+	aa.addChildren([aaa,aab,aac])
 	
 	a.is_selected = True
 	aab.is_selected = True
@@ -242,9 +247,9 @@ if __name__ == '__main__':
 	c.is_selected = True
 	cc.is_selected = True
 	
-	print "get_all_selected_nodes() test: "
-	print "\tpassed?  ", set(root.get_all_selected_nodes()) == set([a,aab,ba,bc,c,cc])
-	print "get_nearest_selected_nodes() test: "
-	print "\tpassed?  ", set(root.get_nearest_selected_nodes()) == set([a,ba,bc,c])
-	print "get_farthest_selected_nodes() test: "
-	print "\tpassed?  ", set(root.get_farthest_selected_nodes()) == set([aab,ba,bc,cc])
+	print "getAllSelectedNodes() test: "
+	print "\tpassed?  ", set(root.getAllSelectedNodes()) == set([a,aab,ba,bc,c,cc])
+	print "getNearbySelectedNodes() test: "
+	print "\tpassed?  ", set(root.getNearbySelectedNodes()) == set([a,ba,bc,c])
+	print "getDistantSelectedNodes() test: "
+	print "\tpassed?  ", set(root.getDistantSelectedNodes()) == set([aab,ba,bc,cc])

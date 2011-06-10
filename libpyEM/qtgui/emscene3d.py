@@ -259,7 +259,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""	
 		return self.widget
 		
-	def render_node(self):
+	def renderNode(self):
 		pass
 	
 	def setInspector(self, inspector):
@@ -356,7 +356,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Remove old selection if not in append mode
 		if not self.appendselection:
-			for selected in self.get_all_selected_nodes():
+			for selected in self.getAllSelectedNodes():
 				selected.is_selected = False
 				# Inspector tree management
 				if EMQTreeWidgetItem:
@@ -1307,7 +1307,7 @@ class glCube(EMItem3D):
 		"""
 		return self.widget	
 		
-	def render_node(self):
+	def renderNode(self):
 			
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -1380,10 +1380,10 @@ class GLdemo(QtGui.QWidget):
 		self.widget = EMScene3D()
 		#self.widget.camera.usePrespective(50, 0.5)
 		self.cube1 = glCube(50.0)
-		self.widget.add_child(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
+		self.widget.addChild(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		#self.widget.activatenode(cube1)
 		self.cube2 = glCube(50.0)
-		self.widget.add_child(self.cube2)
+		self.widget.addChild(self.cube2)
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D(self.widget)

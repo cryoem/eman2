@@ -60,7 +60,7 @@ class EMCube(EMItem3D):
 		# GUI contols
 		self.widget = EMInspectorControl("CUBE", self)
 		
-	def render_node(self):        
+	def renderNode(self):        
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -89,7 +89,7 @@ class EMSphere(EMItem3D):
 		
 	
 				
-	def render_node(self):
+	def renderNode(self):
 		# Material properties of the sphere
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -116,7 +116,7 @@ class EMCylinder(EMItem3D):
 		# GUI contols
 		self.widget = EMInspectorControl("CYLINDER", self)
 		
-	def render_node(self):
+	def renderNode(self):
 		# Material properties of the cylinder
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
