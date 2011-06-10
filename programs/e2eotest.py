@@ -142,7 +142,6 @@ def main():
 			s = "mask.auto3d"
 			for i,p in enumerate(mapping):
 				s += ":"+p+"="+vals[i]
-			s+= ":return_mask=1"
 			options.automask3d = s
 	elif options.automask3d.lower()!="none":
 		print "Inheriting automask from refine command"
