@@ -57,7 +57,17 @@ for d in dirs:
 		initm=None
 
 	db=db_open_dict("bdb:%s#convergence.results"%d)
-	k=db.keys()
+
+	tdf=[i for i in db_list_dicts("bdb:%s"%d) if "threed_filt" in i or "threed_masked" in i]
+	#k=db.keys()
+
+	# instead of using the existing list, we construct our own list from files
+	k=[]
+	for i in tdf:
+		n=int(i.split("_")[2])
+		if i=="threed_filt_00" : k.append("init_00_fsc")
+		elif "masked" in i : k.append("even_odd_%s_fsc"%i.split("_")[2])
+		else : k.append("%02d_%02d_fsc"%(n-1,n))
 	print " %d comparisons"%len(k)
 	# iterates over all iterations in a directory
 	for n in k:
