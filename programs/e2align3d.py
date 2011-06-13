@@ -127,7 +127,7 @@ def main():
 
 	#mask out all the junk
 	if options.maskrad > 0:
-		fixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'rae2align3d.pydius_z':options.maskrad,'gauss_width':options.maskfoff})
+		fixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 		moving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 
 	# shrink the maps
