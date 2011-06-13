@@ -98,7 +98,7 @@ def main():
 
 		for i in xrange(len(MATCH)):
 			assert len(STB_PART[i]) == CT_s[i]
-			print "Group %3d matchs Group %3d : group size = %3d %3d    matched size = %3d"%(MATCH[i][0], MATCH[i][1], len(Parts[0][MATCH[i][0]]), len(Parts[1][MATCH[i][1]]), CT_s[i]),
+			print "Group %3d matches Group %3d : group size = %3d %3d    matched size = %3d"%(MATCH[i][0], MATCH[i][1], len(Parts[0][MATCH[i][0]]), len(Parts[1][MATCH[i][1]]), CT_s[i]),
 			if options.verbose:
 				print "   matched group = %s"%(STB_PART[i])
 			else: print ""
