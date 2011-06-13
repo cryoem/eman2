@@ -49,13 +49,13 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	#options associated with e2align.py
-	parser.add_option("--shrink",type="float",default=-1,help="Fractional amount to shrink the maps by (-1 = auto), default=-1.0")
+	parser.add_option("--shrink",type="int",default=1,help="Fractional amount to shrink the maps by, default=1")
 	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
 	parser.add_option("--maskrad",type="int",default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
 	parser.add_option("--maskfoff",type="float",default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
 	parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
-	parser.add_option("--famps",type="float",default=1,help="fraction of Fourier amps to exclude from recons, default=0.0")
-	parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same', default=0.01")
+	parser.add_option("--famps",type="float",default=1,help="fraction of Fourier amps to exclude from recons. 0 means that this option is not used, default=0.0")
+	parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same' used only statistics output, default=0.01")
 	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
 	#options form the sphere alinger
 	parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=30.0")
@@ -64,26 +64,19 @@ def main():
 	parser.add_option("--phi1",type="float",default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
 	parser.add_option("--search",type="int",default=10,help="maximum extent of the translational search, default=10")
 	parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
-	parser.add_option("--cmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
-	parser.add_option("--cmpparms",type="string",action="append",default=None,help="comparitor paramters")
+	parser.add_option("--cmp",type="string",default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
 	parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
 	#options associated with  the simplex 3D refiner
-	parser.add_option("--stepn0",type="float",default=5.0,help="step size for quaternion vector component 0, default=1.0")
-	parser.add_option("--stepn1",type="float",default=5.0,help="step size for quaternion vector component 1, default=1.0")
-	parser.add_option("--stepn2",type="float",default=5.0,help="step size for quaternion vector component 2, default=1.0")
-	parser.add_option("--stepx",type="float",default=1.0,help="step size for th x direction, default=1.0")
-	parser.add_option("--stepy",type="float",default=1.0,help="step size for th y direction, default=1.0")
-	parser.add_option("--stepz",type="float",default=1.0,help="step size for th z direction, default=1.0")
-	parser.add_option("--spin_coeff",type="float",default=1.0,help="spin coefficient, governs the spin step size (if too small or too large, convergence may not be reached), default=10.0")
-	parser.add_option("--maxshift",type="int",default=-1.0,help="maximum shift, (-1 means dim/4), default=-1.0")
-	parser.add_option("--maxiter",type="int",default=100,help="maximum number of iterations(you'll need more for courser global searches), default=100")
-	parser.add_option("--rcmp",type="string",default='ccc',help="comparitor to use for the 3D refiner, default='ccc'")
-	parser.add_option("--rcmpparms",type="string",action="append",default=None,help="refine comparitor paramters")
+	parser.add_option("--ralign",type="string",default='refine_3d:spin_coeff=1',help="aligner to use for refine alignement, default='refine_3d:spin_coeff=1'")
+	parser.add_option("--rcmp",type="string",default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
 	parser.add_option("--verbose","-v",type="int",default=0,help="Level of verboseness, default=0")
 
 	global options
 	(options, args) = parser.parse_args()
-        
+	if options.cmp : options.cmp=parsemodopt(options.cmp)
+	if options.ralign : options.ralign=parsemodopt(options.ralign)
+	if options.rcmp : options.rcmp=parsemodopt(options.rcmp)
+               
 	#read in the input maps and check for sanity
 	fixed = EMData()
 	moving = EMData()
@@ -111,25 +104,7 @@ def main():
 	if (moving.get_attr('nx') != fixed.get_attr('nx')):
 		print "Fixed and model maps must have the same dimensions!"
 		exit(1)
-	    
-	#now shrink the maps by a sane value
-	if options.shrink > 1:
-		print "The idea is to shrink, not blow up the models! Continuing anyways though...."
-	if options.shrink <= 0:  
-		if fixed.get_attr('nx') > 250:
-			options.shrink = 0.1
-		if fixed.get_attr('nx') <= 250:
-			options.shrink = 0.25
-		if fixed.get_attr('nx') <= 100:
-			options.shrink = 0.5
-		if fixed.get_attr('nx') <= 50:
-			options.shrink = 1.0
-
-	sfixed = fixed.process('xform.scale', {'scale':options.shrink})
-	smoving = moving.process('xform.scale', {'scale':options.shrink})
-        options.maskrad = options.maskrad*options.shrink
-        options.search = options.search*options.shrink		# must adjust the search range
-
+			
 	#preprocess maps
 	if options.preprocess != None:
 		for p in options.preprocess:
@@ -140,61 +115,53 @@ def main():
 				moving.process_inplace(str(processorname), param_dict)
 			except:
 				print "warning - application of the pre processor",p," failed. Continuing anyway"
-	
-	#scope is ok here
-        if options.cmpparms:
-		cmpparms = parsedict(options.cmpparms)
-        else:
-		cmpparms = {}
-	if options.rcmpparms:
-		rcmpparms = parsedict(options.rcmpparms)
-        else:
-		rcmpparms = {}
 
 	#denoise recons
 	if options.famps > 0:
-		tmp = sfixed.do_fft()
-		fth = tmp.get_amplitude_thres(options.famps)
-		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
-		sfixed = tmp.do_ift()
 		tmp = fixed.do_fft()
-		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+		tmp.process_inplace('threshold.binary.fourier',{'value':tmp.get_amplitude_thres(options.famps)})
 		fixed = tmp.do_ift()
-
-		tmp = smoving.do_fft()
-		mth = tmp.get_amplitude_thres(options.famps)
-		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
-		smoving = tmp.do_ift()
 		tmp = moving.do_fft()
-		tmp.process_inplace('threshold.binary.fourier',{'value':fth})
+		tmp.process_inplace('threshold.binary.fourier',{'value':tmp.get_amplitude_thres(options.famps)})
 		moving = tmp.do_ift()
 
 	#mask out all the junk
 	if options.maskrad > 0:
-		sfixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'rae2align3d.pydius_z':options.maskrad,'gauss_width':options.maskfoff})
-		smoving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
+		fixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'rae2align3d.pydius_z':options.maskrad,'gauss_width':options.maskfoff})
+		moving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 
+	# shrink the maps
+	if options.shrink > 1:
+		sfixed = fixed.process('math.medianshrink', {'n':options.shrink})
+		smoving = moving.process('math.medianshrink', {'n':options.shrink})
+		options.search = options.search/options.shrink		# must adjust the search range
+	else:
+		sfixed = fixed
+		smoving = moving
+        
 	#sort of a debugging step
 	fixed.set_attr('UCSF.chimera',1)
 	fixed.write_image('filtered_fixed.mrc')
 
-	if options.rcmp == "dot":
-		rcmpparms['normalize']=1
+	# IF the dot product is being used then we need to normalize
+	if options.cmp[0] == "dot":
+		cmpdict = options.cmp[1]
+		cmpdict['normalize'] = 1
+		options.cmp = (options.cmp[0], cmpdict)
 	
 	#do the global search
 	bestscore = 0
 	bestmodel = 0
 	galignedref = []
 	if options.cuda: EMData.switchoncuda()
-	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp,cmpparms)
+	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp[0],options.cmp[1])
 	
 	#refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
-		# Fix this so that the transform is passed rather than the transfomed object.....
-		if options.dotrans:
-			galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':options.maxshift, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
-		else:
-			galignedref.append(smoving.align('refine_3d', sfixed, {'xform.align3d':n['xform.align3d'], 'maxshift':0, 'stepn0':options.stepn0,'stepn1':options.stepn1,'stepn2':options.stepn2,'stepx':options.stepx,'stepy':options.stepy,'stepz':options.stepz,'spin_coeff':options.spin_coeff, 'maxiter':options.maxiter}, options.rcmp, rcmpparms))
+		ralingdict = options.ralign[1]
+		ralingdict['xform.align3d'] = n['xform.align3d']
+		options.ralign = (options.ralign[0], ralingdict)
+		galignedref.append(smoving.align(options.ralign[0], sfixed, options.ralign[1], options.rcmp[0], options.rcmp[1]))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
 			#bestscore = score
@@ -214,7 +181,8 @@ def main():
 	moving.read_image(sys.argv[2])
 	ft = galignedref[bestmodel].get_attr("xform.align3d")
 	tft = ft.get_trans()
-	ft.set_trans([tft[0]/options.shrink,tft[1]/options.shrink,tft[2]/options.shrink]) # Rescale the translation pars, otherwise it will be crap!
+	print tft
+	ft.set_trans([tft[0]*options.shrink,tft[1]*options.shrink,tft[2]*options.shrink]) # Rescale the translation pars, otherwise it will be crap!
 	moving.process_inplace("xform",{"transform":ft})
         
 	#now write out the aligned model

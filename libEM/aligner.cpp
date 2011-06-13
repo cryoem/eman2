@@ -1633,9 +1633,9 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 	
-	float stepi = params.set_default("stepi",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
-	float stepj = params.set_default("stepj",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
-	float stepk = params.set_default("stepk",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepi = params.set_default("stepn0",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepj = params.set_default("stepn1",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepk = params.set_default("stepn2",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
 	float stepx = params.set_default("stepx",1.0f);
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
