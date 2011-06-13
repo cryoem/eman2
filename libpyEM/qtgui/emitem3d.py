@@ -201,12 +201,6 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		pass
 
-	def getSceneGui(self):
-		"""
-		Return a Qt widget that controls the scene item
-		"""
-		return self.widget
-
 	def keyPressEvent(self, event): pass
 	def keyReleaseEvent(self, event): pass
 	def mouseDoubleClickEvent(self, event): pass
