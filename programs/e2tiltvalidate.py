@@ -89,7 +89,6 @@ def main():
 		exit(1)
 
 	# Make a new dir for each run
-	
 	dirindex = 1
 	while os.path.exists("./%s_%d"%(options.path,dirindex)):
 		dirindex += 1
@@ -117,8 +116,9 @@ def main():
 	projections = EMData.read_images("bdb:%s#projections"%workingdir)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
-	#avgers = {}
 	ac = 0
+	distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
+	distplot.to_zero()
 	for imgnum in xrange(simmx[0].get_ysize()):
 		bestscore = float('inf')
 		bestrefnum = 0
@@ -128,7 +128,7 @@ def main():
 				bestrefnum = refnum
 		# Get the euler angle for this particle and call compare to tilt"bdb:%s#
 		euler_xform = projections[bestrefnum].get_attr('xform.projection')
-		compare_to_tilt(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), options.tiltrange, 1) # For now only ints
+		compare_to_tilt(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), distplot, options.tiltrange, 1) # For now only ints
 		#Get 2D xfrom and transform, then add the image to its class avg"bdb:%s#
 		xform = Transform({"type":"2d","alpha":simmx[3].get_value_at(bestrefnum, imgnum),"tx":simmx[1].get_value_at(bestrefnum, imgnum),"ty":simmx[2].get_value_at(bestrefnum, imgnum)})
 		imgprocess = untiltimgs[imgnum].process("xform", {"transform":xform})
@@ -136,16 +136,6 @@ def main():
 		imgprocess.write_image("aligneddata.hdf",ac)
 		projections[bestrefnum].write_image("aligneddata.hdf",ac+1)
 		ac+=2
-		#try:
-		#	avgers[bestrefnum].add_image(imgprocess)
-		#except:
-		#	avgers[bestrefnum] = Averagers.get('mean')
-		#	avgers[bestrefnum].add_image(imgprocess)
-			
-	# Make and write class avgs
-	#for i, avgeridx in enumerate(avgers):
-		#avg = avgers[avgeridx].finish()
-		#avg.write_image("bdb:%s#classavgs.hdf"%workingdir,i)
 		
 	# Make scoremx avg
 	scoremxs = EMData.read_images("bdb:%s#scorematrix"%workingdir)
@@ -153,11 +143,11 @@ def main():
 	for mx in scoremxs:
 		avgmxavger.add_image(mx)
 	avgmx = avgmxavger.finish()
-	#avgmx.write_image("bdb:%s#scoremxavg"%workingdir)
 	avgmx.write_image("%s/contour.hdf"%workingdir)
+	distplot.write_image("%s/distplot.hdf"%workingdir)
 		
-		
-def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltstep):
+# Function to compute a similarity map for a given image		
+def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep):
 	scoremx = EMData(2*tiltrange+1,2*tiltrange+1)
 	bestscore = float('inf')
 	for rotx in xrange(-tiltrange, tiltrange+1,tiltstep):
@@ -174,6 +164,8 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, tiltrange, tiltste
 			#score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
+	maxpeak = scoremx.calc_min_location()
+	distplot.set_value_at(maxpeak[0], maxpeak[1], distplot.get_value_at(maxpeak[0], maxpeak[1]) + 1.0)
 
 def run(command):
 	"Execute a command with optional verbose output"		    

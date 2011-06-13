@@ -143,34 +143,29 @@ def main():
 				
 			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
 			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --iter=2" % (options.path,avnum,options.path,avnum))
-			#now make an averaged image
+			
+			#now make an averaged 
 			if options.avgrcts:
 				currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
 				processimage(currentrct, options.preprocess)
 				#if options.shrink: currentrct.process_inplace('xform.scale', {'scale':options.shrink})
 				if reference:
-					# Do the alignment
+					# Do the alignment, perhaps I should use e2align3d.py?
 					if options.cuda: EMData.switchoncuda()
 					nbest = currentrct.xform_align_nbest('rotate_translate_3d', reference, {'delta':options.aligngran, 'dphi':options.aligngran,'sym':'c1', 'verbose':1}, 1, 'ccc.tomo',{})
-					raligned = currentrct.align('refine_3d_grid', reference, {"xform.align3d":nbest[0]["xform.align3d"],"delta":1,"range":6,"verbose":1}, "ccc.tomo")
+					raligned = currentrct.align('refine_3d_grid', reference, {"xform.align3d":nbest[0]["xform.align3d"],"delta":1,"range":(options.aligngran/2 + 1),"verbose":1}, "ccc.tomo")
 					if options.cuda: EMData.switchoffcuda()
 					# write output
 					arlist.append(raligned)
 					raligned.write_image(("%srctrecon_align%02d" % (options.path,avnum)),0)
+					if not options.reference:
+						reference = average_rcts(arlist, totalptcls)	# Make a running average
 				else:
 					reference=currentrct
 					arlist.append(currentrct)
 	#now make the average
 	if options.avgrcts:
-		if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
-		avgr = Averagers.get('mean')		    
-		for recon in arlist:
-			if options.weightrecons:
-				weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
-				if options.verbose>0: print "Weighting recon using %f" % weight
-				recon.mult(weight)
-			avgr.add_image(recon)
-		avged = avgr.finish()
+		avged = average_rcts(arlist, totalptcls)
 		if options.sym != "c1":
 			symavg = avged.process('xform.applysym',{"sym":options.sym})
 			symavg.write_image("%srctrecon_symavg" % (options.path), 0)
@@ -178,6 +173,17 @@ def main():
   
 	db_close_dict(options.classavg)
 
+def average_rcts(arlist, totalptcls):
+	if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
+	avgr = Averagers.get('mean')		    
+	for recon in arlist:
+		if options.weightrecons:
+			weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
+			if options.verbose>0: print "Weighting recon using %f" % weight
+			recon.mult(weight)
+		avgr.add_image(recon)
+	return avgr.finish()
+		
 # I am not worried about interpoloation errors b/c the RCT resolution is very low anyways (80/20 rule....)
 def center_particles(particles, avnum, iterations):
 	if options.verbose>0: print "Centering tilted particles"

@@ -130,7 +130,7 @@ def main():
 		fixed.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 		moving.process_inplace('mask.gaussian.nonuniform', {'radius_x':options.maskrad,'radius_y':options.maskrad,'radius_z':options.maskrad,'gauss_width':options.maskfoff})
 
-	# shrink the maps
+	# shrink the maps, if desired
 	if options.shrink > 1:
 		sfixed = fixed.process('math.medianshrink', {'n':options.shrink})
 		smoving = moving.process('math.medianshrink', {'n':options.shrink})
@@ -139,24 +139,24 @@ def main():
 		sfixed = fixed
 		smoving = moving
         
-	#sort of a debugging step
+	# A hack to get around a Chimera bug
 	fixed.set_attr('UCSF.chimera',1)
 	fixed.write_image('filtered_fixed.mrc')
 
-	# IF the dot product is being used then we need to normalize
+	# IF the dot product is being used then we need to normalize, othrwise the Quaternion aligner will crash
 	if options.cmp[0] == "dot":
 		cmpdict = options.cmp[1]
 		cmpdict['normalize'] = 1
 		options.cmp = (options.cmp[0], cmpdict)
 	
-	#do the global search
+	# do the global search
 	bestscore = 0
 	bestmodel = 0
 	galignedref = []
 	if options.cuda: EMData.switchoncuda()
 	nbest = smoving.xform_align_nbest('rotate_translate_3d', sfixed, {'delta':options.delta,'dotrans':options.dotrans,'dphi':options.dphi,'search':options.search, 'phi0':options.phi0, 'phi1':options.phi1, 'sym':options.sym, 'verbose':options.verbose}, options.nsolns, options.cmp[0],options.cmp[1])
 	
-	#refine each solution found are write out the best one
+	# refine each solution found are write out the best one
 	for i, n in enumerate(nbest):
 		ralingdict = options.ralign[1]
 		ralingdict['xform.align3d'] = n['xform.align3d']
@@ -171,7 +171,7 @@ def main():
 		if options.verbose > 0: print "Peak Num: ", i, " Transform: ", n["xform.align3d"], " Ini Score: ", n["score"], " Final Score: ", score
 	if options.cuda: EMData.switchoffcuda()
 	
-	# Find out how many peaks are 'the same'
+	# Find out how many peaks are 'the same' and print stats to the screen
 	if options.nsolns > 1:
 		thesame = 0
 		for m in galignedref:
@@ -183,7 +183,6 @@ def main():
 	moving.read_image(sys.argv[2])
 	ft = galignedref[bestmodel].get_attr("xform.align3d")
 	tft = ft.get_trans()
-	print tft
 	ft.set_trans([tft[0]*options.shrink,tft[1]*options.shrink,tft[2]*options.shrink]) # Rescale the translation pars, otherwise it will be crap!
 	moving.process_inplace("xform",{"transform":ft})
         
