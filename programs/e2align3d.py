@@ -161,6 +161,8 @@ def main():
 		ralingdict = options.ralign[1]
 		ralingdict['xform.align3d'] = n['xform.align3d']
 		options.ralign = (options.ralign[0], ralingdict)
+		print options.ralign[0], options.ralign[1]
+		print options.rcmp[0], options.rcmp[1]
 		galignedref.append(smoving.align(options.ralign[0], sfixed, options.ralign[1], options.rcmp[0], options.rcmp[1]))
 		score = galignedref[i].get_attr('score')
 		if score < bestscore:
