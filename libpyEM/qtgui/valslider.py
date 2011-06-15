@@ -809,7 +809,7 @@ class EMQTColorWidget(QtGui.QWidget):
 	def dropEvent(self, e):
 		self.color = QtGui.QColor(e.mimeData().colorData())
 		self.update()
-		self.emit(QtCore.SIGNAL("newcolor(Qcolor)"), self.color)
+		self.emit(QtCore.SIGNAL("newcolor(QColor)"), self.color)
 
 	def mouseMoveEvent(self, e):
 
@@ -846,7 +846,7 @@ class EMQTColorWidget(QtGui.QWidget):
 		if color.isValid():
 			self.color = color
 			self.update()
-			self.emit(QtCore.SIGNAL("newcolor(Qcolor)"), self.color)
+			self.emit(QtCore.SIGNAL("newcolor(QColor)"), self.color)
 			
 	def _on_cancel(self):
 		self.color = self.inicolor

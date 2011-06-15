@@ -1243,9 +1243,9 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorframe.setLayout(colorvbox)
 		box.addWidget(colorframe)
 		
-		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_ambient_color)
-		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_diffuse_color)
-		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_specular_color)
+		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
+		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
+		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_specular_color)
 		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
 		
 	def _on_ambient_color(self, color):
