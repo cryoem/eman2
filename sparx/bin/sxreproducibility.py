@@ -80,22 +80,18 @@ def main():
 		print st
 		print " "
 
-	for i in xrange(len(STB_PART)-1, -1, -1):
-		if STB_PART[i] == []: del STB_PART[i]
-	for i in xrange(len(CT_s)-1, -1, -1):
-		if CT_s[i] == 0: del CT_s[i]
-
 	for i in xrange(len(MATCH)):
-		assert len(STB_PART[i]) == CT_s[i]
+		u = MATCH[i][0]  # u is the group in question in partition 1
+		assert len(STB_PART[u]) == CT_s[u]
 		print "Group %3d matches Group %3d "%(MATCH[i][0], MATCH[i][1]),
 		for r in xrange(2, R):
 			print " Group %3d"%(MATCH[i][r]),
 		print ":    group size = ",
 		for r in xrange(R):
 			print " %3d"%len(Parts[r][MATCH[i][r]]), 
-		print "     matched size = %3d"%(CT_s[i]),
+		print "     matched size = %3d"%(CT_s[u]),
 		if options.verbose:
-			print "   matched group = %s"%(STB_PART[i])
+			print "   matched group = %s"%(STB_PART[u])
 		else: print ""
 
 	print "\nNumber of averages = ",
