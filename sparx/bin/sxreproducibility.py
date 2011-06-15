@@ -42,73 +42,71 @@ def main():
 	parser.add_option("--T",           type="int",     default=0,        help=" Threshold for matching")
 	parser.add_option("--verbose",     action="store_true",     default=False,        help=" Threshold for matching")
 	(options, args) = parser.parse_args()
-	if len(args) != 2:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
-	else:
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
 
-		global_def.BATCH = True
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
 
-		from numpy import array
-		from statistics import k_means_stab_bbenum
+	global_def.BATCH = True
 
-		data1 = EMData.read_images(args[0])
-		data2 = EMData.read_images(args[1])
+	from numpy import array
+	from statistics import k_means_stab_bbenum
+
+	R = len(args)
+	Parts = []
+	mem = [0]*R
+	avg = [0]*R
+	for r in xrange(R):
+		data = EMData.read_images(args[r])
+		avg[r] = len(data)
 		
-		Parts = []
-	        
 		part = []
-		mem1 = []
-        	for k in xrange(len(data1)):
-                	lid = data1[k].get_attr('members') 
-			mem1.extend(lid)
+        	for k in xrange(len(data)):
+                	lid = data[k].get_attr('members') 
+			mem[r] += len(lid)
                         lid = array(lid, 'int32') 
                         lid.sort() 
                         part.append(lid.copy())
 		Parts.append(part)
 
-	        part = []
-		mem2 = []
-        	for k in xrange(len(data2)):
-                	lid = data2[k].get_attr('members')
-			mem2.extend(lid)
-                        lid = array(lid, 'int32') 
-                        lid.sort() 
-                        part.append(lid.copy())
-		Parts.append(part)
+	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 
-	        MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+	if options.verbose:
+		print MATCH
+		print STB_PART
+		print CT_s
+		print CT_t
+		print ST
+		print st
+		print " "
 
+	for i in xrange(len(STB_PART)-1, -1, -1):
+		if STB_PART[i] == []: del STB_PART[i]
+	for i in xrange(len(CT_s)-1, -1, -1):
+		if CT_s[i] == 0: del CT_s[i]
+
+	for i in xrange(len(MATCH)):
+		assert len(STB_PART[i]) == CT_s[i]
+		print "Group %3d matches Group %3d "%(MATCH[i][0], MATCH[i][1]),
+		for r in xrange(2, R):
+			print " Group %3d"%(MATCH[i][r]),
+		print ":    group size = ",
+		for r in xrange(R):
+			print " %3d"%len(Parts[r][MATCH[i][r]]), 
+		print "     matched size = %3d"%(CT_s[i]),
 		if options.verbose:
-			print MATCH
-			print STB_PART
-			print CT_s
-			print CT_t
-			print ST
-			print st
-			print " "
+			print "   matched group = %s"%(STB_PART[i])
+		else: print ""
 
-		for i in xrange(len(STB_PART)-1, -1, -1):
-			if STB_PART[i] == []: del STB_PART[i]
-		for i in xrange(len(CT_s)-1, -1, -1):
-			if CT_s[i] == 0: del CT_s[i]
+	print "\nNumber of averages = ",
+	for r in xrange(R):
+		print "%3d"%(avg[r]),
+	print "\nTotal number of particles = ",
+	for r in xrange(R):
+		print "%3d"%(mem[r]), 
+	print "     number of matched particles = %5d"%(sum(CT_s))
 
-		for i in xrange(len(MATCH)):
-			assert len(STB_PART[i]) == CT_s[i]
-			print "Group %3d matches Group %3d : group size = %3d %3d    matched size = %3d"%(MATCH[i][0], MATCH[i][1], len(Parts[0][MATCH[i][0]]), len(Parts[1][MATCH[i][1]]), CT_s[i]),
-			if options.verbose:
-				print "   matched group = %s"%(STB_PART[i])
-			else: print ""
-
-		print "\nNumber of averages = %4d %4d"%(len(data1), len(data2))
-		print "Total number of particles = %5d %5d     number of matched particles = %5d"%(len(mem1), len(mem2), sum(CT_s))
-
-		global_def.BATCH = False
-
-
+	global_def.BATCH = False
 
 if __name__ == "__main__":
 	main()
