@@ -5610,6 +5610,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		while os.access("refinemulti_%02d"%dirnum,os.F_OK):
 			dirnum += 1
 		setattr(options, 'path', ("refinemulti_%02d"%dirnum))
+		os.mkdir("refinemulti_%02d"%dirnum)
 		# end of hack
 		
 		self.spawn_single_task("e2refinemulti.py",options,string_args,bool_args,additional_args,temp_file_name)

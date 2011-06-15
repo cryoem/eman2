@@ -224,7 +224,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
 		self.main_3d_inspector = None
-		self.widget = EMInspectorControlBasic("SG", self)	# Get the inspector GUI
+		self.widget = None				# Get the inspector GUI
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
@@ -257,6 +257,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
+		if not self.widget: self.widget = EMInspectorControlBasic("SG", self)
 		return self.widget
 		
 	def renderNode(self):
@@ -373,8 +374,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
 				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
 			try:
-				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.widget)
-				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.widget.treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
+				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.getSceneGui())
+				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.getSceneGui().treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
 			except:
 				pass
 			#if record.near < bestdistance:
@@ -1289,7 +1290,7 @@ class glCube(EMItem3D):
 		self.shininess = 25.0
 		
 		# GUI contols
-		self.widget = EMInspectorControlShape("CUBE", self)
+		self.widget = None
 	
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -1307,7 +1308,8 @@ class glCube(EMItem3D):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		return self.widget	
+		if not self.widget: self.widget = EMInspectorControlShape("CUBE", self)
+		return self.widget
 		
 	def renderNode(self):
 			
