@@ -747,7 +747,7 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 				double sum_xx = 0;
 				double sum_xy = 0;
 
-				for (int k=max_int(i-npsm,1); k<=min_int(i+npsm,np); k++) {
+				for (int k=max_int(i-npsm,1); k<=min_int(i+npsm,np-1); k++) {
 					double y = dsnr[k];
 					double x = tsnr[k];
 
