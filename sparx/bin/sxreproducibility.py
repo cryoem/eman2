@@ -83,10 +83,10 @@ def main():
 	for i in xrange(len(MATCH)):
 		u = MATCH[i][0]  # u is the group in question in partition 1
 		assert len(STB_PART[u]) == CT_s[u]
-		print "Group %3d matches Group %3d "%(MATCH[i][0], MATCH[i][1]),
-		for r in xrange(2, R):
-			print " Group %3d"%(MATCH[i][r]),
-		print ":    group size = ",
+		print "Group ", 
+		for r in xrange(R):
+			print "%3d "%(MATCH[i][r]),
+		print " matches:   group size = ",
 		for r in xrange(R):
 			print " %3d"%len(Parts[r][MATCH[i][r]]), 
 		print "     matched size = %3d"%(CT_s[u]),
