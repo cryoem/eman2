@@ -9767,7 +9767,7 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 # DO NOT copy memory - could lead to crashes	
 # This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
 def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
-	from numpy import array, append, insert
+	from numpy import array, append, insert,sort
 	
 	MATCH=[]
 	output=[]
@@ -9863,13 +9863,21 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 		# get the j-th match
 		ar_match = array(output[j*np + 2: j*np + 2+np],'int32')
 		MATCH.append(ar_match)
-	
-	
+		
+	# order Matches in Match by group in first partition
+	outMATCH=[]
+	for j in xrange(num_matches):
+		amatch=[]
+		for js in xrange(len(MATCH[j])):
+			amatch.append(MATCH[j][js])
+		outMATCH.append(amatch)
+	outMATCH.sort()
+			
 	if DoMPI:
 		print "Not supporting MPI currently"
-		return MATCH, output[0]
+		return outMATCH, output[0]
 	else:
-		return MATCH
+		return outMATCH
 # match is a list, where every five tuple corresponds to a match
 def k_means_stab_getinfo(PART, match):
 	
