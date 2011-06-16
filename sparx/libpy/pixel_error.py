@@ -486,7 +486,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		for i in xrange(n): var+=(a[i]-avg)**2
 		return var/(n-1)
 
-	def stable(args, data):
+	def transform_variance(args, data):
 		from math import sqrt
 	        x1 = 1.0
 	        y1 = 0.0
@@ -562,7 +562,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	del ps[-1]
 
 	if val > error_threshold: return [], mirror_consistent_rate, val
-	err = stable(ps, ali_params_mir_cons)
+	err = transform_variance(ps, ali_params_mir_cons)
 	#  Here all errors could be printed, PAP.
 	'''
 	for i in xrange(nima):

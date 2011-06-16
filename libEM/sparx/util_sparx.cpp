@@ -19420,7 +19420,7 @@ float Util::multi_align_error_func(double* x, vector<float> all_ali_params, int 
 	delete[] y1_new;
 	delete[] x2_new;
 	delete[] y2_new;
-	return all_var/static_cast<float>(nima-1);
+	return all_var/static_cast<float>(nima);
 }
 
 void Util::multi_align_error_dfunc(double* x, vector<float> all_ali_params, int nima, int num_ali, double* g) {
