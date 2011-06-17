@@ -6276,17 +6276,24 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	result->to_zero();
 	int nyc = ny/2;
 	int nxc = nx/2;
-	int nb = int(nz*(1.0f - section_use)/2.);
-	int ne = nz - nb -1;
-	int numst = int(nz*section_use*pixel_size/dp);
-	// how many steps needed total, fewer will be used, only those that fall between nb and ne
-	int nst = int(nz*pixel_size/dp);
+	int vl = nz-1; //lengh of the volume in pixel
+	if ( section_use < dp/int(vl*pixel_size) )	
+		section_use = (dp)/int(vl*pixel_size);
+		
+	float nb = vl*(1.0f - section_use)/2.0f;
+
+	float ne =  nb+vl*section_use;
+	int numst = int( (ne-nb)*pixel_size/dp );
+	
+	
 	float r2, ir;
 	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
 	if(minrad < 0.0f) ir = 0.0f;
 	else ir = minrad*minrad;
 	for (int k = 0; k<nz; k++) {
+		int nst1 = int ( (nb-k)*pixel_size/dp) -1;
+		int nst2 = int ( (ne-k)*pixel_size/dp) +1;
 		for (int j = 0; j<ny; j++) {
 			int jy = j - nyc;
 			int jj = jy*jy;
@@ -6295,10 +6302,10 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 				float d2 = (float)(ix*ix + jj);
 				if(d2 <= r2 && d2>=ir) {
 					int nq = 0;
-					for ( int ist = -nst; ist <= nst; ist++) {
+					for ( int ist = nst1; ist < nst2; ist++) {
 						float zold = (k*pixel_size + ist*dp)/pixel_size;
-						int IOZ = int(zold);
-						if(IOZ >= nb && IOZ <= ne) {
+						
+						if(zold >= nb && zold <= ne) {
 							// now x-y position
 							float cphi = ist*dphi*(float)DGR_TO_RAD;
 							float ca = cos(cphi);
@@ -6307,7 +6314,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 							float yold = ix*sa + jy*ca + nyc;
 							nq++;
 
-
+	int IOZ = int(zold);
 	//  Do tri-linear interpolation
 	int IOX = int(xold);
 	int IOY = int(yold);
@@ -6349,7 +6356,6 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 
 
 							(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
-							//(*result)(i,j,k) += (*this)(IOX, IOY, IOZ);
 							if(nq == numst) break;
 						}
 					}
