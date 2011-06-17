@@ -6427,8 +6427,8 @@ EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::Kais
 	
 	// rotation matrix (the transpose is used in the loop to get (xold,yold,zold)):
 	 
-	float a13 = -0.0f;	float a23 =  0.0f;
-	float a31 =  0.0f;          float a32 =  0.0f;          float a33 =  1.0f;
+	//float a13 = -0.0f;	float a23 =  0.0f;
+	//float a31 =  0.0f;          float a32 =  0.0f;          float a33 =  1.0f;
 		
 	//end gridding
 
@@ -6445,11 +6445,7 @@ EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::Kais
 	else r2 = radius*radius;
 	if(minrad < 0.0f) ir = 0.0f;
 	else ir = minrad*minrad;
-	std::cout<<"numst=="<<numst<<"nb=="<<nb<<"ne=="<<ne<<"nst=="<<nst<<std::endl;
-	std::cout<<"radius=="<<radius<<"minrad=="<<minrad<<std::endl;
-	std::cout<<"nxn=="<<nxn<<"nyn=="<<nyn<<"nzn=="<<nzn<<std::endl;
-	std::cout<<"nx=="<<nx<<"ny=="<<ny<<"nz=="<<nz<<std::endl;
-	std::cout<<"data[200,200,200]==="<<*(data+ 200+200*nx+200*nx*ny)<<"Util_con[200,200,200]=="<<Util::get_pixel_conv_new(nx, ny, nz, 200, 200, 200, data, kb)<<std::endl;
+	
 	for (int k = 0; k<nzn; k++) {
 		for (int j = 0; j<nyn; j++) {
 			int jy = j - nyc;
