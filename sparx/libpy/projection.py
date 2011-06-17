@@ -550,7 +550,9 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 	from fundamentals import fftip
 	from filter       import filt_tanh
 
-	nprj = EMUtil.get_image_count(stack)               # number of projections
+	# number of projections
+	if  type(stack) == type(""): nprj = EMUtil.get_image_count(stack)
+	else:                       nprj = len(stack)
 	Prj  = []                                          # list of projections
 	Ori  = [-1] * 4 * nprj                             # orientation intial (phi, theta, psi, index) for each projection
 
@@ -570,7 +572,8 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 
 		# normalize under the mask
 		[mean_a, sigma, imin, imax] = Util.infomask(image, mask2D, True)
-		image = (image - mean_a) / sigma
+		image -= mean_a
+		Util.mul_scalar(image, 1.0/sigma)
 		Util.mul_img(image, mask2D)
 
 		# sinogram
