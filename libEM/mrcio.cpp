@@ -571,15 +571,27 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	for (int i = 0; i < MRC_NUM_LABELS; i++) {
 		char label[32];
+#ifdef _WIN32
+		_snprintf(label,31, "MRC.label%d", i);
+#else
 		snprintf(label,31, "MRC.label%d", i);
+#endif	//_WIN32
 		if (dict.has_key(label)) {
+#ifdef _WIN32
+			_snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
+#else
 			snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
+#endif	//_WIN32
 			mrch.nlabels = i + 1;
 		}
 	}
 
 	if (mrch.nlabels < (MRC_NUM_LABELS - 1)) {
+#ifdef _WIN32
+		_snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
+#else
 		snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
+#endif	//_WIN32
 		mrch.nlabels++;
 	}
 
@@ -1094,7 +1106,11 @@ void MrcIO::write_ctf(const Ctf & ctf, int)
 	init();
 
 	string ctf_str = ctf.to_string();
+#ifdef _WIN32
+	_snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
+#else
 	snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
+#endif	//_WIN32
 	rewind(mrcfile);
 
 	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {

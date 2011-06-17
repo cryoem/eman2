@@ -155,6 +155,7 @@ int OmapIO::write_header(EMAN::Dict const&, int, EMAN::Region const*, EMAN::EMUt
 	ENTERFUNC;
 
 	EXITFUNC;
+	return 0;
 }
 
 int OmapIO::write_data(float*, int, EMAN::Region const*, EMAN::EMUtil::EMDataType, bool)
@@ -162,6 +163,7 @@ int OmapIO::write_data(float*, int, EMAN::Region const*, EMAN::EMUtil::EMDataTyp
 	ENTERFUNC;
 
 	EXITFUNC;
+	return 0;
 }
 
 bool OmapIO::is_valid(const void *first_block, off_t file_size)
