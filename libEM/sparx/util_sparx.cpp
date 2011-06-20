@@ -20833,11 +20833,14 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	// now go check if the matches are sensical! i.e, if the matches are feasible, if the sum of the match weights in output is equal to *output, and if each match in output has weight at least T
 	bool correct = Util::sanitycheck(argParts, Indices,dimClasses, nParts, K, T,output);
 
+	delete[] Indices;
+
 	// something is wrong with output of branchMPI!
 	if (correct < 1){
 		cout << "something is wrong with output of branchMPI!\n";
 		vector<int> ret(1);
-		ret[0]=-1;
+		ret[0] = -1;
+		delete[] output;
 		return ret;
 	}
 
@@ -20850,6 +20853,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	for (int i = 0; i < output_size; i++){
 		ret[i]=*(output+i);
 	}
+	delete[] output;
 	return ret;
 
 }
@@ -20918,8 +20922,6 @@ return ret;
 	
 	// note that costlist and matchlist are NOT sorted by weight, and branch factor takes care of that...
 	if (curlevel==0) branch_all = 0;
-	int* newcostlist;
-	int* newmatchlist;
 	
 	int nBranches = -1;
 	
@@ -20932,8 +20934,8 @@ return ret;
 	if (branchfunc == 4)
 		nBranches = branch_factor_4(costlist,matchlist,J, T, nParts, curlevel, max_branching, stmult); // branch based on distribution of top J (weighted) matches  with cost > T
 
-	newcostlist= new int[nBranches];
-	newmatchlist = new int[nBranches*nParts];
+	int* newcostlist= new int[nBranches];
+	int* newmatchlist = new int[nBranches*nParts];
 	for (int i=0; i<nBranches; i++){
 		*(newcostlist + i) = *(costlist+i);
 		for (int j=0; j< nParts; j++)
