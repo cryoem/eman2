@@ -226,7 +226,11 @@ class Strategy2IMGPair(Strategy):
 			self.dphi = math.degrees(phi)
 			
 			sin_gamma = rotA[0,0]*math.sin(phi) + rotA[0,1]*math.cos(phi)
-			gamma = math.asin(sin_gamma)
+			try:
+				gamma = math.asin(sin_gamma)
+			except:
+				gamma = math.pi/2
+				
 			self.dgamma = math.degrees(gamma) 
 			print rotA
 			

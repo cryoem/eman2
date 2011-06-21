@@ -39,7 +39,7 @@ from PyQt4.QtCore import Qt
 from emapplication import EMGLWidget
 from emitem3d import EMItem3D
 from libpyGLUtils2 import GLUtil
-from valslider import ValSlider, EMSpinWidget, EMQTColorWidget
+from valslider import ValSlider, EMSpinWidget, EMQTColorWidget, EMLightControls, CameraControls
 import math
 import weakref
 
@@ -339,6 +339,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glLoadIdentity()
 			self.camera.setOrthoProjectionMatrix()
 			glColor3f(0.0,1.0,0.0)
+			glMaterialfv(GL_FRONT, GL_AMBIENT, [0.0,0.0,0.0,1.0])
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.0,0.0,0.0,1.0])
+			glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
 			glBegin(GL_LINE_LOOP)
 			z = -self.camera.getZclip() - 1
@@ -479,6 +482,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		QtOpenGL.QGLWidget.updateGL(self)
 	
+	def setZslice(self):
+		self.setAutoBufferSwap(False)
+		self.transform.rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
+		QtOpenGL.QGLWidget.updateGL(self)
+		pixeldata = glReadPixels(10,10,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
+		self.transform.rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
+		self.setAutoBufferSwap(True)
+		self.pixels = []
+		self.pixels.append(0)
+		self.pixels.append(0)
+		self.pixels.append(self.camera.width)
+		self.pixels.append(self.camera.height)
+		self.pixels.append(pixeldata)
+
 	# Maybe add methods to control the lights
 
 class EMLight:
@@ -684,6 +701,7 @@ class EMCamera:
 class EMInspector3D(QtGui.QWidget):
 	def __init__(self, scenegraph):
 		"""
+		The inspector for the 3D widget
 		"""
 		QtGui.QWidget.__init__(self)
 		self.scenegraph = scenegraph
@@ -699,10 +717,11 @@ class EMInspector3D(QtGui.QWidget):
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
 
 		vbox.addWidget(self.inspectortab)
+		QtCore.QObject.connect(self.inspectortab, QtCore.SIGNAL("currentChanged(int)"), self._on_load_camera)
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
-
+		
 	def getTreeWidget(self):
 		"""
 		This returns the treeview-control panel widget
@@ -781,20 +800,79 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the lights control widget
 		"""
 		lwidget = QtGui.QWidget()
+		lvbox = QtGui.QVBoxLayout()
+		lightslabel = QtGui.QLabel("Lights", lwidget)
+		lightslabel.setAlignment(QtCore.Qt.AlignCenter)
+		lightslabel.setMaximumHeight(30.0)
+		font = QtGui.QFont()
+		font.setBold(True)
+		lightslabel.setFont(font)
+		lvbox.addWidget(lightslabel)
+		self.lightwidget = EMLightControls(GL_LIGHT1)
+		positionlabel = QtGui.QLabel("Position", lwidget)
+		positionlabel.setMaximumHeight(20.0)
+		positionlabel.setAlignment(QtCore.Qt.AlignCenter)
+		valslidersplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		valslidersplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		valvbox = QtGui.QVBoxLayout()
+		self.hvalslider = ValSlider(lwidget,(0.0,360.0),"Horizontal")
+		self.hvalslider.setMaximumHeight(40.0)
+		self.vvalslider = ValSlider(lwidget,(0.0,360.0),"Vertical")
+		self.vvalslider.setMaximumHeight(40.0)
+		valvbox.addWidget(self.hvalslider)
+		valvbox.addWidget(self.vvalslider)
+		valslidersplitter.setLayout(valvbox)
+		lvbox.addWidget(self.lightwidget)
+		lvbox.addWidget(positionlabel)
+		lvbox.addWidget(valslidersplitter)
+		lwidget.setLayout(lvbox)
 		
+		QtCore.QObject.connect(self.lightwidget, QtCore.SIGNAL("lightPositionMoved([pos])"), self._light_position_moved)
+		QtCore.QObject.connect(self.hvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
+		QtCore.QObject.connect(self.vvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
+
 		return lwidget
+	
+	def _light_position_moved(self, position):
+		angularposition = self.lightwidget.getAngularPosition()
+		self.hvalslider.setValue(angularposition[0], quiet=1)
+		self.vvalslider.setValue(angularposition[1], quiet=1)
+		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
+		self.scenegraph.update()
+	
+	def _on_light_slider(self, value):
+		self.lightwidget.setAngularPosition(self.hvalslider.getValue(), self.vvalslider.getValue())
+		position = self.lightwidget.getPosition()
+		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
+		self.scenegraph.update()
 		
 	def getCameraWidget(self):
 		"""
 		Returns the camera control widget
 		"""
+		self.cameratab_open = False
 		cwidget = QtGui.QWidget()
+		cvbox = QtGui.QVBoxLayout()
+		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
+		
+		cvbox.addWidget(self.camerawidget)
+		cwidget.setLayout(cvbox)
 		
 		return cwidget
 	
+	def _on_load_camera(self, idx):
+		"""
+		Load the SG Z slice
+		"""
+		if idx == 2:
+			self.sg_zslice = self.scenegraph.setZslice()
+			self.cameratab_open = True
+		else:
+			self.cameratab_open = False
+			
 	def getUtilsWidget(self):
 		"""
-		Retrusn the utilites widget
+		Return the utilites widget
 		"""
 		uwidget = QtGui.QWidget()
 		
@@ -807,6 +885,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.scenegraph.updateSG()
 
 class EMQTreeWidget(QtGui.QTreeWidget):
+	"""
+	Subclassing the QTreeWidget to enable is_visible toggling
+	"""
 	def __init__(self, parent=None):
 		QtGui.QTreeWidget.__init__(self, parent)
 			

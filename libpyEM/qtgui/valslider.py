@@ -30,8 +30,10 @@
 #
 #
 
-import sys
-from PyQt4 import QtCore, QtGui
+import sys, math
+from OpenGL.GL import *
+from OpenGL import GLU
+from PyQt4 import QtCore, QtGui, QtOpenGL 
 from PyQt4.QtCore import Qt
 
 leftarrow = [
@@ -886,3 +888,227 @@ class EMQtColorDialog(QtGui.QColorDialog):
 		QtGui.QColorDialog.hideEvent(self, e)
 		self.emit(QtCore.SIGNAL("canceled()"))
 		self.hidden = True
+
+class EMLightControls(QtOpenGL.QGLWidget):
+	"""
+	Widget to set the postion of a light
+	"""
+	def __init__(self, light, parent=None):
+		QtOpenGL.QGLWidget.__init__(self, parent)
+		self.light = light
+		self.x_light_pos = 0
+		self.y_light_pos = 0
+		self.lightposition = [0.0, 0.0, 1.0, 0.0]
+		self.ambient = [1.0,1.0,1.0,1.0]
+		self.diffuse = [1.0,1.0,1.0,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+	
+	def initializeGL(self):
+		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
+		glShadeModel(GL_SMOOTH)
+		glEnable(GL_DEPTH_TEST)
+		glEnable(GL_LIGHTING)
+		glEnable(self.light)
+		self.setLightColor()
+		
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
+		glColor3f(1.0, 1.0, 1.0)	# Default color is white
+		# Draw the flashlight
+		self.drawFlashLight()
+		# Draw the sphere
+		glMaterialfv(GL_FRONT, GL_AMBIENT, [0.3,0.3,0.3,1.0])
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, [1.0,1.0,1.0,1.0])
+		glMaterialfv(GL_FRONT, GL_SPECULAR, [1.0,1.0,1.0,1.0])
+		glLightfv(self.light, GL_POSITION, self.lightposition)
+		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		quad = GLU.gluNewQuadric()
+		GLU.gluQuadricDrawStyle(quad, GLU.GLU_FILL)
+		GLU.gluQuadricNormals(quad, GLU.GLU_SMOOTH)
+		GLU.gluSphere(quad, 3.0, 30, 30)
+		glFlush()
+		
+		
+	def drawFlashLight(self):
+		glPushMatrix()
+		glRotate(self.x_light_pos, 0.0, math.cos(math.radians(self.y_light_pos)), 0.0)
+		glRotate(-self.y_light_pos,1.0, 0.0, 0.0)
+		glTranslate(0,0,4)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, [0.0,0.0,0.0,1.0])
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.0,0.0,0.0,1.0])
+		glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
+		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
+		flashlight = GLU.gluNewQuadric()
+		GLU.gluQuadricDrawStyle(flashlight, GLU.GLU_FILL)
+		GLU.gluCylinder(flashlight, 0.3, 0.3, 1.5, 30,30)
+		GLU.gluCylinder(flashlight, 0.5, 0.3, 0.4, 30,30)
+		glMaterialfv(GL_FRONT, GL_EMISSION, self.diffuse)
+		GLU.gluDisk(flashlight, 0.0, 0.5, 30,30)
+		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
+		glTranslate(0,0,1.5)
+		GLU.gluDisk(flashlight, 0.0, 0.3, 30,30)
+		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
+		glPopMatrix()
+		
+	def resizeGL(self, width, height):
+		glViewport(0,0,width,height)
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		GLU.gluPerspective(60.0, (float(width)/float(height)), 1.0, 100.0)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glTranslate(0,0,-10.0)
+	
+	def mousePressEvent(self, event):
+		self.init_x = event.x()
+		self.init_y = event.y()
+		
+	def mouseMoveEvent(self, event):
+
+		self.x_light_pos += event.x() - self.init_x
+		self.y_light_pos -= event.y() - self.init_y
+		self.x_light_pos = self.x_light_pos % 360
+		self.y_light_pos = self.y_light_pos % 360
+
+		self.setPosition()
+		self.init_x = event.x()
+		self.init_y = event.y()
+		self.update()
+		self.emit(QtCore.SIGNAL("lightPositionMoved([pos])"), self.lightposition)
+		
+	def setPosition(self):
+		x = math.sin(math.radians(self.x_light_pos))
+		y = math.sin(math.radians(self.y_light_pos))
+		z = math.cos(math.radians(self.x_light_pos + self.y_light_pos))
+		self.lightposition = [x, y, z, 0.0]
+		
+	def getPosition(self):
+		return self.lightposition
+		
+	def getAngularPosition(self):
+		return [self.x_light_pos, self.y_light_pos]
+	
+	def setAngularPosition(self, h, v):
+		self.x_light_pos = h
+		self.y_light_pos = v
+		self.setPosition()
+		self.update()
+	
+	def setLightColor(self):
+		glLightfv(self.light, GL_AMBIENT, self.ambient)
+		glLightfv(self.light, GL_DIFFUSE, self.diffuse)
+		glLightfv(self.light, GL_SPECULAR, self.specular)
+		
+	def setAmbient(self, r, g, b):
+		self.ambient = [r, g, b, 1.0]
+		self.setLightColor()
+		self.update()
+	
+	def setDiffuse(self, r, g, b):
+		self.diffuse = [r, g, b, 1.0]
+		self.setLightColor()
+		self.update()
+		
+	def setSpecular(self, r, g, b):
+		self.specular = [r, g, b, 1.0]
+		self.setLightColor()
+		self.update()
+		
+class CameraControls(QtOpenGL.QGLWidget):
+	def __init__(self, parent=None, scenegraph=None):
+		QtOpenGL.QGLWidget.__init__(self, parent)
+		self.camerabox = [[-1, -1 ,-5],[1,-1,-5],[-1,1,-5],[1,1,-5],[-1, -1 ,1],[1,-1,1],[-1,1,1],[1,1,1]]
+		self.lenses = [2,0,-2,0.6,1.0,0.8,0.6,0.3]
+		self.scenegraph = scenegraph
+		self.texture = glGenTextures(1)
+		
+	def initializeGL(self):
+		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
+		glShadeModel(GL_SMOOTH)
+		glEnable(GL_DEPTH_TEST)
+
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
+		glColor3f(1.0, 1.0, 1.0)	# Default color is white
+		self.drawcamera()
+		self.drawZslice()
+		glFlush()
+		
+	def resizeGL(self, width, height):
+		self.width = width
+		self.height = height
+		d = float(width)/30.0
+		self.camerabox = [[-d, -d ,2.5*d],[d,-d,2.5*d],[-d,d,2.5*d],[d,d,2.5*d]]
+		self.lenses = [2.0*d,0,0,0.6*d,d,0.8*d,0.6*d,0.3*d]
+		glViewport(0,0,width,height)
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		glOrtho(-width/2, width/2, -height/2, height/2, -100.0, 100.0)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glTranslate(0,0,-10.0)
+	
+	def drawZslice(self):
+		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		self.pixels = self.scenegraph.pixels
+		glBindTexture(GL_TEXTURE_2D, self.texture)
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.pixels[2], self.pixels[3], 0, GL_RGB, GL_UNSIGNED_BYTE, self.pixels[4])
+		
+		
+		glEnable(GL_TEXTURE_2D)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glBindTexture(GL_TEXTURE_2D, self.texture)
+		
+		glPushMatrix()
+		glLoadIdentity()
+		glBegin(GL_QUADS)
+		glTexCoord2f(0.0,0.0)
+		glVertex(-0,-self.width/4,-1)
+		glTexCoord2f(1.0,0.0)
+		glVertex(self.width/2,-self.width/4,-1)
+		glTexCoord2f(1.0,1.0)
+		glVertex(self.width/2,self.width/4,-1)
+		glTexCoord2f(0.0,1.0)
+		glVertex(-0,self.width/4,-1)
+		glEnd()
+		glDisable(GL_TEXTURE_2D)
+		glPopMatrix()
+		
+	def drawcamera(self):
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glTranslate(-self.width/2.5,0,-10)
+		glPushMatrix()
+		glColor3f(0.8, 0.8, 0.8)
+		
+		glBegin(GL_QUADS)
+		glVertex(self.camerabox[0])
+		glVertex(self.camerabox[1])
+		glVertex(self.camerabox[3])
+		glVertex(self.camerabox[2])
+		glEnd()
+		
+		glColor3f(1.0, 1.0, 1.0)
+		glBegin(GL_LINE_STRIP)
+		glVertex(self.camerabox[0])
+		glVertex(self.camerabox[1])
+		glVertex(self.camerabox[3])
+		glVertex(self.camerabox[2])
+		glEnd()
+		
+		glColor3f(0.3, 0.3, 0.3)
+		glTranslate(self.lenses[0],0,0)
+		glRotate(-90,0,1,0)
+		lenses = GLU.gluNewQuadric()
+		GLU.gluQuadricDrawStyle(lenses, GLU.GLU_FILL)
+		GLU.gluCylinder(lenses, self.lenses[3], self.lenses[3], self.lenses[4], 12,10)
+		lensestop = GLU.gluNewQuadric()
+		GLU.gluQuadricDrawStyle(lensestop, GLU.GLU_FILL)
+		GLU.gluCylinder(lenses, self.lenses[5], self.lenses[6], self.lenses[7], 12,10)
+	
+		glPopMatrix()
