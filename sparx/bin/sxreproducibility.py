@@ -40,7 +40,10 @@ def main():
 	usage = progname + " averages1 averages2 --th_grp"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--T",           type="int",     default=0,        help=" Threshold for matching")
+	parser.add_option("--J",           type="int",     default=50,       help=" J")
+	parser.add_option("--max_branching",         type="int",     default=40,        help=" maximum branching")
 	parser.add_option("--verbose",     action="store_true",     default=False,        help=" Threshold for matching")
+	parser.add_option("--timing",      action="store_true",     default=False,        help=" Get the timing")
 	(options, args) = parser.parse_args()
 
 	if global_def.CACHE_DISABLE:
@@ -69,7 +72,11 @@ def main():
                         part.append(lid.copy())
 		Parts.append(part)
 
-	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+	if options.timing:
+		from time import time
+		time1 = time()
+
+	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=options.J, max_branching=options.max_branching, stmult=0.1, branchfunc=2)
 
 	if options.verbose:
 		print MATCH
@@ -101,6 +108,9 @@ def main():
 	for r in xrange(R):
 		print "%3d"%(mem[r]), 
 	print "     number of matched particles = %5d"%(sum(CT_s))
+
+	if options.timing:
+		print "Elapsed time = ", time() - time1
 
 	global_def.BATCH = False
 
