@@ -20654,12 +20654,11 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 
 			// consider class Parts[i][j]
 			cref = Parts[i][j];//incr by 1 since first element is index and second is dummy
-			cref_size = (*(dimClasses+i*K+(*cref)))-2;
+			cref_size = dimClasses[i*K+cref[0]]-2;
 
 
 			if (cref_size <= T){
-
-				*cref = -1;
+				cref[0] = -1;
 				continue;
 			}
 			bool done = 0;
@@ -20670,14 +20669,14 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 					// get the card of the intx between Parts[i][j] and Parts[a][b] using k_means_cont_table
 					// remember first element of each class is the index of the class
 					ccomp = Parts[a][b];
-					ccomp_size= (*(dimClasses+a*K+(*ccomp)))-2;
+					ccomp_size= dimClasses[a*K+ccomp[0]]-2;
 					nintx = Util::k_means_cont_table_(cref+2,ccomp+2, dummy, cref_size, ccomp_size,0);
 
 
 					if (nintx <= T)
-						*(ccomp+1) = 0; // class Parts[a][b] is 'inactive' for cref
+						ccomp[1] = 0; // class Parts[a][b] is 'inactive' for cref
 					else{
-						*(ccomp+1)=1; // class Parts[a][b] is 'active' for cref
+						ccomp[1] = 1; // class Parts[a][b] is 'active' for cref
 						hasActive=1;
 					}
 				}
@@ -20692,7 +20691,7 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 			if (done > 0){
 				// remove class j from partition i
 
-				*cref = -1; // mark for deletion later
+				cref[0] = -1; // mark for deletion later
 				continue; // move on to class Parts[i][j+1]
 			}
 
@@ -20709,14 +20708,14 @@ void Util::initial_prune(vector <vector <int*> > & Parts, int* dimClasses, int n
 
 			if (found<1){ // There is NO feasible matching with class j (cref)  with weight greater than T, so delete this class from Parts
 				// Parts[i].erase(Parts[i].begin()+j);
-				*cref = -1;
+				cref[0] = -1;
 			}
 		}
 
 		// Erase from Parts[i] all the classes that's being designated for erasure
 
 		for (int d = K-1; d > -1; d--){
-			if (*(Parts[i][d]) < 0) Parts[i].erase(Parts[i].begin()+d);
+			if (Parts[i][d][0] < 0) Parts[i].erase(Parts[i].begin()+d);
 		}
 
 	}
@@ -20740,7 +20739,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 
 	int old_depth=depth;
 	if (depth == partref) depth = depth + 1; // we skip classes in partref
-	if (depth == (nParts)) { if (old_depth>0) return 1;}
+	if (depth == nParts &&  old_depth>0) return 1;
 
 	// have not yet reached a leaf, and current weight is still greather than T, so keep on going.
 
@@ -20751,11 +20750,11 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 
 	// we now consider each of the classes in partition (depth+1) in turn
 	bool gt_thresh;
-	int num_classes = (Parts[depth]).size(); // (TO DO) have to figure out how many classes partition (depth) has since some may have being removed from before iterations
+	int num_classes = Parts[depth].size(); // (TO DO) have to figure out how many classes partition (depth) has since some may have being removed from before iterations
 
 	for (int i=0; i < num_classes; i++){
-		if (*(Parts[depth][i]+1) < 1) continue; // class is not active so move on
-		size_next = (*(dimClasses + depth*K+(*(Parts[depth][i])) ))-2;
+		if (Parts[depth][i][1] < 1) continue; // class is not active so move on
+		size_next = dimClasses[depth*K + Parts[depth][i][0] ]-2;
 		gt_thresh = explore(Parts,dimClasses, nParts, K, T, partref, curintx2,nintx, Parts[depth][i], size_next, depth+1);
 		if (gt_thresh) return 1;
 	}
@@ -20779,7 +20778,6 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 		 for(int j = 0; j < K; j++){
 			 Indices[i*K + j] = ind_c;
 			 ind_c = ind_c + dimClasses[i*K + j];
-
 		 }
 	 }
 
@@ -20791,10 +20789,9 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	int argParts_size=0;
 	for (int i=0; i < nParts; i++){
 		for(int j = 0; j < K; j++){
-			Parts[i][j]=argParts + ind_c;
+			Parts[i][j] = argParts + ind_c;
 			ind_c = ind_c + dimClasses[i*K + j];
 			argParts_size = argParts_size + dimClasses[i*K + j];
-
 		}
 	}
 
@@ -20815,7 +20812,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	for(int i=0; i<nParts; i++){
 		num_classes = Parts[i].size();// number of classes in partition i after pruning
 		for (int j=0; j < num_classes; j++){
-			old_index = *(Parts[i][j]);
+			old_index = Parts[i][j][0];
 			//cout << "old_index: " << old_index<<"\n";
 			argParts[Indices[i*K + old_index]+1] = 1;
 		}
@@ -20825,7 +20822,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	// if we're not doing mpi then keep going and call branchMPI and return the output
 	//cout <<"begin partition matching\n";
 	//int* dummy(0);
-	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,0,n_guesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM);
+	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T, 0, n_guesses, LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM);
 	
 	//cout<<"total cost: "<<*output<<"\n";
 	//cout<<"number of matches: "<<*(output+1)<<"\n";
@@ -20944,7 +20941,8 @@ return output;
 	delete[] costlist;
 	delete[] matchlist;
 	
-	int* output = new int[2];//initialize to placeholder
+	//int* output = new int[2];//initialize to placeholder
+	int* output = new int[2+K*nParts];//initialize to placeholder
 	output[0] = 0;
 	output[1] = 0;
 	// some temporary variables
@@ -20981,8 +20979,8 @@ return output;
 		if (totalcost > output[0]) // option 1
 		{
 			nmatches = 1 + ret[1];
-			delete[] output; // get rid of the old maxreturn
-			output = new int[2+nmatches*nParts];
+			//delete[] output; // get rid of the old maxreturn
+			//output = new int[2+nmatches*nParts];
 			output[0] = totalcost;
 			output[1] = nmatches;
 			int nret = 2+(nmatches-1)*nParts;
