@@ -616,7 +616,7 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 
 	M_PI  = 3.141592653589793238462643383279502884197
 
-	# prepare 
+	# prepare
 	M = image2D.get_xsize()
 	# padd two times
 	npad  = 2
@@ -631,6 +631,50 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
 	volft.do_fft_inplace()
+	volft.center_origin_fft()
+	volft.fft_shuffle()
+
+	# get line projection
+	nangle = int(180.0 / d_psi)
+	dangle = M_PI / float(nangle)
+	e = EMData()
+	e.set_size(diameter, nangle, 1)
+	offset = M - diameter // 2
+	for j in xrange(nangle):
+		nuxnew =  cos(dangle * j)
+		nuynew = -sin(dangle * j)
+		line   = fft(volft.extractline(kb, nuxnew, nuynew))
+		Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
+		Util.set_line(e, j, line, offset, diameter)
+
+	return e 
+
+# transform an image to sinogram (mirror include)
+def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
+	from math         import cos, sin
+	from fundamentals import fft
+
+	M_PI  = 3.141592653589793238462643383279502884197
+
+	# prepare
+	M = image2D.get_xsize()
+	# padd two times
+	npad  = 2
+	N     = M * npad
+	# support of the window
+	K     = 6
+	alpha = 1.75
+	r     = M / 2
+	v     = K / 2.0 / N
+	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	volft  = image2D.average_circ_sub()  	# ASTA - in spider
+	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
+	volft  = volft.norm_pad(False, npad)
+	volft.do_fft_inplace()
+	#  Apply shift
+	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : 2*shifts[0], "y_shift" : 2*shifts[1], "z_shift" : 0.0}
+	volft = Processor.EMFourierFilter(volft, params2)
+
 	volft.center_origin_fft()
 	volft.fft_shuffle()
 
