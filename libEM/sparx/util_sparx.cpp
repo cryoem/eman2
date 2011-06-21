@@ -20778,7 +20778,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	 for (int i=0; i < nParts; i++){
 		 for(int j = 0; j < K; j++){
 			 Indices[i*K + j] = ind_c;
-			 ind_c = ind_c + *(dimClasses+i*K + j);
+			 ind_c = ind_c + dimClasses[i*K + j];
 
 		 }
 	 }
@@ -20792,8 +20792,8 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	for (int i=0; i < nParts; i++){
 		for(int j = 0; j < K; j++){
 			Parts[i][j]=argParts + ind_c;
-			ind_c = ind_c + *(dimClasses+i*K + j);
-			argParts_size = argParts_size + *(dimClasses+i*K + j);
+			ind_c = ind_c + dimClasses[i*K + j];
+			argParts_size = argParts_size + dimClasses[i*K + j];
 
 		}
 	}
@@ -20803,10 +20803,10 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	// the running time for 7 partitions with 288 classes per partition is a couple of minutes at most, i'll just leave it for now.....
 
 	// comment out for testing
-	Util::initial_prune(Parts, dimClasses, nParts, K,T);
+	Util::initial_prune(Parts, dimClasses, nParts, K, T);
 	for(int i = 0; i < nParts; i++){
 		for(int j=0; j < K; j++){
-			*(argParts + Indices[i*K + j]+1) = -1;
+			argParts[Indices[i*K + j]+1] = -1;
 		}
 	}
 
@@ -20817,7 +20817,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 		for (int j=0; j < num_classes; j++){
 			old_index = *(Parts[i][j]);
 			//cout << "old_index: " << old_index<<"\n";
-			*(argParts + Indices[i*K + old_index]+1) = 1;
+			argParts[Indices[i*K + old_index]+1] = 1;
 		}
 	}
 
@@ -20825,8 +20825,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	// if we're not doing mpi then keep going and call branchMPI and return the output
 	//cout <<"begin partition matching\n";
 	//int* dummy(0);
-	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,0,n_guesses,LARGEST_CLASS, J, max_branching, stmult,
-	branchfunc, LIM);
+	int* output = Util::branchMPI(argParts, Indices,dimClasses, nParts, K, T,0,n_guesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM);
 	
 	//cout<<"total cost: "<<*output<<"\n";
 	//cout<<"number of matches: "<<*(output+1)<<"\n";
@@ -20840,7 +20839,7 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 		cout << "something is wrong with output of branchMPI!\n";
 		vector<int> ret(1);
 		ret[0] = -1;
-		delete[] output;
+		if (output != 0)  { delete[] output; output = 0; }
 		return ret;
 	}
 
@@ -20848,12 +20847,12 @@ int max_branching, float stmult, int branchfunc, int LIM) {
 	// output is an int array, the first element is the cost of the output solution, the second element is the total number of matches in the solution
 	// and the rest is the list of matches. output is one dimensional
 
-	int output_size = 2+ *(output+1) * nParts;
+	int output_size = 2 + output[1] * nParts;
 	vector<int> ret(output_size);
-	for (int i = 0; i < output_size; i++){
-		ret[i]=*(output+i);
+	for (int i = 0; i < output_size; i++) {
+		ret[i]= output[i];
 	}
-	delete[] output;
+	if (output != 0) { delete[] output; output = 0; }
 	return ret;
 
 }
@@ -20880,27 +20879,27 @@ for (int jit = 0; jit < J; jit++) {
 
 }
 cout <<"end test search2\n";
-int* ret = new int[1];
-*ret=1;
+int* output = new int[1];
+output[0] = 1;
 delete [] matchlist;
 delete [] costlist;
-return ret;
+return output;
 }
 //**************************************
 
 	// Base Case: we're at a leaf, no more feasible matches possible
 	if (curlevel > K -1){
-		int* res = new int[2];
-		*res = 0;
-		*(res+1)=0;
-		return res;
+		int* output = new int[2];
+		output[0] = 0;
+		output[1] = 0;
+		return output;
 	}
 
 	// branch dynamically depending on results of search 2!
 	
 	int* matchlist = new int[J*nParts];
 	int* costlist = new int[J];
-	Util::search2(argParts,Indices, dimClasses, nParts, K,  T, matchlist,costlist,J);
+	Util::search2(argParts, Indices, dimClasses, nParts, K,  T, matchlist, costlist, J);
 	
 	
 	// each class in the matches found by findTopLargest is encoded by the original index of the first element of the class in argPart
@@ -20911,10 +20910,10 @@ return ret;
 	
 		if (costlist[jit] > T) break;
 		if (jit == J-1){
-			int* res = new int[2];
-			*res = 0;
-			*(res+1)=0;
-			return res;
+			int* output = new int[2];
+			output[0] = 0;
+			output[1] = 0;
+			return output;
 		}
 	}
 	
@@ -20937,17 +20936,17 @@ return ret;
 	int* newcostlist= new int[nBranches];
 	int* newmatchlist = new int[nBranches*nParts];
 	for (int i=0; i<nBranches; i++){
-		*(newcostlist + i) = *(costlist+i);
+		newcostlist[i] = costlist[i];
 		for (int j=0; j< nParts; j++)
-			*(newmatchlist + i*nParts + j) = *(matchlist + i*nParts+j);
+			newmatchlist[i*nParts + j] = matchlist[i*nParts + j];
 	}
 
 	delete[] costlist;
 	delete[] matchlist;
 	
-	int* maxreturn = new int[2];//initialize to placeholder
-	*maxreturn=0;
-	*(maxreturn+1)=0;
+	int* output = new int[2];//initialize to placeholder
+	output[0] = 0;
+	output[1] = 0;
 	// some temporary variables
 	int old_index;
 	int totalcost;
@@ -20964,32 +20963,31 @@ return ret;
 
 		for(int j=0; j < nParts; j++){
 			// matchlist[i*nParts + j] is the original index of the class belonging to the j-th partition in the i-th match.
-			old_index=newmatchlist[i*nParts + j];
-			*(argParts + Indices[j*K+old_index] + 1) = -2;
+			old_index = newmatchlist[i*nParts + j];
+			argParts[Indices[j*K+old_index] + 1] = -2;
 		}
 
 		
-		int* ret = Util::branchMPI(argParts, Indices, dimClasses, nParts, K, T,curlevel+1,n_guesses, LARGEST_CLASS,
-		J,max_branching, stmult,branchfunc, LIM);
+		int* ret = Util::branchMPI(argParts, Indices, dimClasses, nParts, K, T, curlevel+1, n_guesses, LARGEST_CLASS,
+		J, max_branching, stmult,branchfunc, LIM);
 		
 		// first element of ret is the total cost of all the matches in ret, and second element is the number of matches in ret
-		totalcost = newcostlist[i] + *ret;
+		totalcost = newcostlist[i] + ret[0];
 
 		//if (curlevel == 0) {
 		//	cout <<"totalcost*****************************************************************: "<<totalcost<<", costlist["<<i<<"]="<<newcostlist[i]<<", *ret="<<*ret<<", level: "<<curlevel<<"\n";
 			
 		//}
-		if (totalcost > *maxreturn) // option 1
+		if (totalcost > output[0]) // option 1
 		{
-			nmatches = 1 + *(ret+1);
-			delete[] maxreturn; // get rid of the old maxreturn
-			maxreturn = new int[2+nmatches*nParts];
-			*maxreturn = totalcost;
-			
-			*(maxreturn + 1)= nmatches;
+			nmatches = 1 + ret[1];
+			delete[] output; // get rid of the old maxreturn
+			output = new int[2+nmatches*nParts];
+			output[0] = totalcost;
+			output[1] = nmatches;
 			int nret = 2+(nmatches-1)*nParts;
-			for(int iret=2; iret <nret;iret++) *(maxreturn+iret)=*(ret+iret);
-			for(int imax=0; imax<nParts;imax++) *(maxreturn+nret+imax)=newmatchlist[i*nParts + imax];
+			for(int iret=2; iret < nret; iret++) output[iret] = ret[iret];
+			for(int imax=0; imax < nParts; imax++) output[nret+imax] = newmatchlist[i*nParts + imax];
 		}
 
 
@@ -20998,8 +20996,8 @@ return ret;
 		// unmark the marked classes in preparation for the next iteration
 
 		for(int j=0; j < nParts; j++){
-			old_index=newmatchlist[i*nParts + j];
-			*(argParts + Indices[j*K+old_index] + 1) = 1;
+			old_index = newmatchlist[i*nParts + j];
+			argParts[Indices[j*K+old_index] + 1] = 1;
 		}
 
 	}
@@ -21007,8 +21005,7 @@ return ret;
 	delete[] newmatchlist;
 	delete[] newcostlist;
 	
-	return maxreturn;
-
+	return output;
 }
 
 int* costlist_global;
