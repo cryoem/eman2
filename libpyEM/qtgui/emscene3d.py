@@ -364,7 +364,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Remove old selection if not in append mode
 		if not self.appendselection:
 			for selected in self.getAllSelectedNodes():
-				selected.is_selected = False
+				selected.setSelected(False)
 				# Inspector tree management
 				if EMQTreeWidgetItem:
 					selected.EMQTreeWidgetItem.setSelectionStateBox()
@@ -374,7 +374,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		bestdistance = 1.0
 		for record in records:
 			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-			selecteditem.is_selected = True
+			selecteditem.setSelected(True)
 			# Inspector tree management
 			if EMQTreeWidgetItem:
 				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
@@ -824,7 +824,7 @@ class EMInspector3D(QtGui.QWidget):
 		item.setSelectionState(item.checkState(0))
 		
 	def _tree_widget_visible(self, item):
-		item.toogleVisibleState()
+		item.toggleVisibleState()
 		self.updateSceneGraph()
 		
 	def _get_controler_layout(self, parent):
@@ -977,20 +977,20 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		Toogle selection state on and off
 		"""
 		if state == QtCore.Qt.Checked:
-			self.sgnode.is_selected = True
+			self.sgnode.setSelected(True)
 		else:
-			self.sgnode.is_selected = False
+			self.sgnode.setSelected(False)
 		self.setSelectionStateBox() # set state of TreeItemwidget
 		
-	def toogleVisibleState(self):
-		self.sgnode.is_visible = not self.sgnode.is_visible
+	def toggleVisibleState(self):
+		self.sgnode.setVisible( not self.sgnode.isVisible() )
 		self.getVisibleState()
 		
 	def getVisibleState(self):
 		"""
 		Toogle the visble state
 		"""
-		if self.sgnode.is_visible:
+		if self.sgnode.isVisible():
 			self.setIcon(0, self.visible)
 		else:
 			self.setIcon(0, self.invisible)
@@ -999,7 +999,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		"""
 		Set the selection state icon
 		"""
-		if self.sgnode.is_selected:
+		if self.sgnode.isSelected():
 			self.setCheckState(0, QtCore.Qt.Checked)
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
@@ -1090,11 +1090,11 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		QtCore.QObject.connect(self.zoom,QtCore.SIGNAL("valueChanged(int)"),self._on_scale)
 	
 	def _on_translation(self, value):
-		self.sgnode.transform.set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
+		self.sgnode.get_transform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
 		self.inspector.updateSceneGraph()
 		
 	def _on_scale(self, value):
-		self.sgnode.transform.set_scale(self.zoom.getValue())
+		self.sgnode.get_transform().set_scale(self.zoom.getValue())
 		self.inspector.updateSceneGraph()
 		
 	def addColorControls(self, igvbox):
@@ -1105,12 +1105,12 @@ class EMInspectorControlBasic(QtGui.QWidget):
 	
 	def updateItemControls(self):
 		# Translation update
-		translation =  self.sgnode.transform.get_trans()
+		translation =  self.sgnode.get_transform().get_trans()
 		self.tx.setValue(translation[0])
 		self.ty.setValue(translation[1])
 		self.tz.setValue(translation[2])
 		# Rotation update
-		rotation =  self.sgnode.transform.get_rotation(str(self.rotcombobox.currentText()))
+		rotation =  self.sgnode.get_transform().get_rotation(str(self.rotcombobox.currentText()))
 		comboboxidx = self.rotcombobox.currentIndex()
 		if comboboxidx == 0:
 			self.emanazslider.setValue(rotation["az"], quiet=1)
@@ -1148,7 +1148,7 @@ class EMInspectorControlBasic(QtGui.QWidget):
 			self.quaternione2slider.setValue(rotation["e2"], quiet=1)
 			self.quaternione3slider.setValue(rotation["e3"], quiet=1)
 		# Scaling update
-		self.zoom.setValue(self.sgnode.transform.get_scale())
+		self.zoom.setValue(self.sgnode.get_transform().get_scale())
 		
 	def addRotationWidgets(self):
 		EMANwidget = QtGui.QWidget()
@@ -1291,35 +1291,35 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		self.updateItemControls()
 		
 	def _on_EMAN_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_Imagic_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_Spider_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_MRC_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_XYZ_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_spin_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":self.spinn1slider.getValue(),"n2":self.spinn2slider.getValue(),"n3":self.spinn3slider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":self.spinn1slider.getValue(),"n2":self.spinn2slider.getValue(),"n3":self.spinn3slider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_sgirot_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":self.sgirotn1slider.getValue(),"n2":self.sgirotn2slider.getValue(),"n3":self.sgirotn3slider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":self.sgirotn1slider.getValue(),"n2":self.sgirotn2slider.getValue(),"n3":self.sgirotn3slider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 	def _on_quaternion_rotation(self, value):
-		self.sgnode.transform.set_rotation({"type":"quaternion","e0":self.quaternione0slider.getValue(),"e1":self.quaternione1slider.getValue(),"e2":self.quaternione2slider.getValue(),"e3":self.quaternione3slider.getValue()})
+		self.sgnode.get_transform().set_rotation({"type":"quaternion","e0":self.quaternione0slider.getValue(),"e1":self.quaternione1slider.getValue(),"e2":self.quaternione2slider.getValue(),"e3":self.quaternione3slider.getValue()})
 		self.inspector.updateSceneGraph()
 		
 class EMInspectorControlShape(EMInspectorControlBasic):

@@ -28,7 +28,6 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type transform: Transform or None
 		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
 		"""
-		#NOTE: Accessor methods are not needed; Python "properties" can be used instead if needed.
 		self.parent = parent		
 		self.children = set(children)
 		self.transform = transform
@@ -38,7 +37,19 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.EMQTreeWidgetItem = None 		# This is an inspector tree item
 		self.boundingboxsize = None
 		self.getAndSetUniqueInteger()
-		
+	
+	def getChildren(self): return self.children
+	def setChildren(self, children): self.children = set(children)
+	def getParent(self): return self.parent
+	def setParent(self, parent): self.parent = parent
+	def isSelected(self): return self.is_selected
+	def setSelected(self, is_selected): self.selected = self.is_selected
+	def getTransform(self): return self.transform
+	def setTransform(self, transform): self.transform = transform
+	def isVisible(self): return self.is_visible
+	def setVisible(self, is_visible): self.is_visible = is_visible
+
+	
 	def __del__(self):
 		EMItem3D.selection_recycle.append(self.intname)
 	
@@ -136,7 +147,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		raise NotImplementedError("GUI controls must be implented in the subclasses")
+		raise NotImplementedError("GUI controls must be implemented in the subclasses")
 	
 	def setEMQTreeWidgetItem(self, node):
 		"""
