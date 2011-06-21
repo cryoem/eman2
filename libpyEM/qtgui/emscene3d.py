@@ -225,6 +225,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
 		self.main_3d_inspector = None
 		self.widget = None				# Get the inspector GUI
+		self.z_clipped_changed = False
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
@@ -243,13 +244,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.firstlight.enableLighting()
         
 	def paintGL(self):
+		if self.z_clipped_changed: self.camera.update()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
 		self.renderSelectedArea() 	# Draw the selection box if needed
 		self.render()			# SG nodes must have a render method
 		glFlush()			# Finish rendering
-
+		self.z_clipped_changed = False
+		
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 	
@@ -481,13 +484,28 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Update the SG
 		"""
 		QtOpenGL.QGLWidget.updateGL(self)
-	
+		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		
+	def setZclip(self, zclip):
+		""" Set the Z clipping plane """
+		self.camera.setZclip(zclip)
+		self.z_clipped_changed = True
+		
 	def setZslice(self):
+		"""
+		Get a Z slice to display in the camera widget, only works for orthoganal mode
+		"""
+		# Getting the Z slice will have problems when using perspective viewing
 		self.setAutoBufferSwap(False)
 		self.transform.rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
+		oldzclip = self.camera.getZclip()
+		self.camera.setZclip(-1000) 		# We must move the camera back when we take a side slice
+		self.z_clipped_changed = True
 		QtOpenGL.QGLWidget.updateGL(self)
 		pixeldata = glReadPixels(10,10,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
 		self.transform.rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
+		self.camera.setZclip(oldzclip)
+		self.z_clipped_changed = True
 		self.setAutoBufferSwap(True)
 		self.pixels = []
 		self.pixels.append(0)
@@ -572,7 +590,7 @@ class EMLight:
 			glDisable(self.light)
 class EMCamera:
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, zclip=-1000.0, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
+	def __init__(self, near, far, zclip=-500.0, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
@@ -584,37 +602,38 @@ class EMCamera:
 		"""
 		self.far = far
 		self.near = near
+		self.fovy = fovy
 		if usingortho:
 			self.useOrtho(zclip)
 		else:
 			self.usePrespective(boundingbox, screenfraction, fovy)
 
-	def update(self, width, height):
+	def update(self, width=None, height=None):
 		"""
 		@param width: The width of the window in pixels
 		@param height: The height of the window in pixels
 		updates the camera and viewport after windowresize
 		"""
-		self.width = width
-		self.height = height
+		if width: self.width = width
+		if height: self.height = height
 		if self.usingortho:
-			glViewport(0,0,width,height)
+			glViewport(0,0,self.width,self.height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setOrthoProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			glTranslate(0,0,self.zclip)
+			#glTranslate(0,0,self.zclip)
 			self.setCameraPosition()
 		else:
 			# This may need some work to get it to behave
-			glViewport(0,0,width,height)
+			glViewport(0,0,self.width,self.height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setPerspectiveProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
+			#glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
 			self.setCameraPosition()
 	
 	def setCameraPosition(self, sfactor=1):
@@ -674,18 +693,34 @@ class EMCamera:
 		"""
 		self.near = near
 
+	def getClipNear(self):
+		"""
+		Get the near clipping plane
+		"""
+		return self.near
+		
+	def getClipFar(self):
+		"""
+		Get the far clipping plane
+		"""
+		return self.far
+		
 	def setFovy(self, fovy):
 		"""
 		Set the field of view angle aspect of the viewing volume
 		"""
 		self.fovy = fovy
+	
+	def getFovy(self):
+		""" Return FOVY """
+		return self.fovy
 		
 	def getHeight(self):
 		""" Get the viewport height """
 		return self.height
 	
 	def getWidth(self):
-		""" Get the viewport width"""
+		""" Get the viewport width """
 		return self.width
 		
 	def getZclip(self):
@@ -694,6 +729,13 @@ class EMCamera:
 			return self.zclip
 		else:
 			return self.perspective_z
+			
+	def setZclip(self, clip):
+		""" Set the Z clip """
+		if self.usingortho:
+			self.zclip = clip
+		else:
+			self.perspective_z = clip
 	# Maybe other methods to control the camera
 
 ###################################### Inspector Code #########################################################################################
@@ -856,16 +898,27 @@ class EMInspector3D(QtGui.QWidget):
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
 		
 		cvbox.addWidget(self.camerawidget)
+		self.camera_z = EMSpinWidget(self.scenegraph.camera.getZclip(), 1.0)
+		self.camera_z.setMaximumHeight(40.0)
+		cvbox.addWidget(self.camera_z)
 		cwidget.setLayout(cvbox)
+
+		QtCore.QObject.connect(self.camera_z,QtCore.SIGNAL("valueChanged(int)"),self._on_camera_z)
 		
 		return cwidget
 	
+	def _on_camera_z(self, value):
+		self.camerawidget.updateWidget()
+		self.scenegraph.setZclip(value)
+		self.scenegraph.updateSG()
+		
+		
 	def _on_load_camera(self, idx):
 		"""
 		Load the SG Z slice
 		"""
-		if idx == 2:
-			self.sg_zslice = self.scenegraph.setZslice()
+		if idx == 2: # '2' is the camera tab
+			self.scenegraph.setZslice()
 			self.cameratab_open = True
 		else:
 			self.cameratab_open = False
@@ -877,7 +930,15 @@ class EMInspector3D(QtGui.QWidget):
 		uwidget = QtGui.QWidget()
 		
 		return uwidget
-		
+	
+	def updateInspector(self):
+		"""
+		Update Inspector, for now this only pertains to the camera widget
+		"""
+		if self.cameratab_open:
+			self.scenegraph.setZslice()
+			self.camerawidget.updateWidget()
+			
 	def updateSceneGraph(self):
 		""" 
 		Updates SG, in the near future this will be improved to allow for slow operations
@@ -1042,7 +1103,7 @@ class EMInspectorControlBasic(QtGui.QWidget):
 	def addControls(self, igvbox):
 		pass
 	
-	def updateInspector(self):
+	def updateItemControls(self):
 		# Translation update
 		translation =  self.sgnode.transform.get_trans()
 		self.tx.setValue(translation[0])
@@ -1176,7 +1237,6 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		quaternionbox.addWidget(self.quaternione2slider)
 		quaternionbox.addWidget(self.quaternione3slider)
 		quaternionwidget.setLayout(quaternionbox)		
-		
 		# Add widgets to the stack
 		self.rotstackedwidget.addWidget(EMANwidget)
 		self.rotstackedwidget.addWidget(Imagicwidget)
@@ -1224,11 +1284,11 @@ class EMInspectorControlBasic(QtGui.QWidget):
 		QtCore.QObject.connect(self.quaternione0slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
 		QtCore.QObject.connect(self.quaternione1slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
 		QtCore.QObject.connect(self.quaternione2slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
-		QtCore.QObject.connect(self.quaternione3slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
+		QtCore.QObject.connect(self.quaternione3slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)	
 		
 	def _rotcombobox_changed(self, idx):
 		self.rotstackedwidget.setCurrentIndex(idx)
-		self.updateInspector()
+		self.updateItemControls()
 		
 	def _on_EMAN_rotation(self, value):
 		self.sgnode.transform.set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
@@ -1324,9 +1384,9 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorframe.setLayout(colorvbox)
 		box.addWidget(colorframe)
 		
-		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
-		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
-		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_specular_color)
+		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_ambient_color)
+		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_diffuse_color)
+		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_specular_color)
 		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
 		
 	def _on_ambient_color(self, color):

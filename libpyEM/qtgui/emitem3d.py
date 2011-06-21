@@ -175,7 +175,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			return #Also applies to subtree rooted at this node
 		
 		if self.transform != None:
-			if self.widget != None and self.is_selected: self.widget.updateInspector()
+			if self.widget != None and self.is_selected: self.widget.updateItemControls()
 			GL.glPushMatrix()
 			GL.glPushName(self.intname)
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
