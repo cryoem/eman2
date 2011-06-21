@@ -672,6 +672,7 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	volft  = volft.norm_pad(False, npad)
 	volft.do_fft_inplace()
 	#  Apply shift
+	from EMAN2 import Processor
 	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : 2*shifts[0], "y_shift" : 2*shifts[1], "z_shift" : 0.0}
 	volft = Processor.EMFourierFilter(volft, params2)
 
