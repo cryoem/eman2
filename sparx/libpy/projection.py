@@ -454,9 +454,22 @@ def cml_init_rnd(trials, rand_seed):
 	return rnd
 
 # calculate the discrepancy allong all common-lines 
-def cml_disc(Prj, Ori, Rot):
+def cml_disc(Prj, Ori, Rot, flag_weights=True):
 	global g_n_prj, g_n_psi, g_n_lines, g_seq
-	weights = [1.0] * g_n_lines
+	if flag_weights:
+		cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+		weights = Util.cml_weights(cml)
+		mw  = max(weights)
+		for i in xrange(g_n_lines): weights[i]  = mw - weights[i]
+		sw = sum(weights)
+		if sw == 0:
+			weights = [6.28 / float(g_n_lines)] * g_n_lines
+		else:
+			for i in xrange(g_n_lines):
+				weights[i] /= sw
+				weights[i] *= weights[i]
+	else:   weights = [1.0] * g_n_lines
+
 	com  = Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
 	disc = Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
 
