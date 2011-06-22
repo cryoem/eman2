@@ -46,6 +46,110 @@ from emimage3d import EMImage3DWidget
 from emshape import EMShape
 from valslider import *
 
+
+def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,cbinz,output,output_format,swapyz,reverse_contrast):
+
+	clines = open(coordinates,'r').readlines()
+	set = len(clines)
+	
+	if subset:
+		if subset > set:
+			print "WARNING: The total amount of lines in the coordinates files is LESS that the subset of particles to box you specified; therefore, ALL particles will be extracted"
+		else:
+			set=subset
+	
+	print "The size of the set of sub-volumes to extract is", set
+	for i in range(set):
+	
+		#Some people might manually make ABERANT coordinates files with commas, tabs, or more than once space in between coordinates
+    	
+	       	clines[i] = clines[i].replace(", ",' ')	
+		clines[i] = clines[i].replace(",",' ')
+		clines[i] = clines[i].replace("x",'')
+		clines[i] = clines[i].replace("y",'')
+		clines[i] = clines[i].replace("z",'')
+		clines[i] = clines[i].replace("=",'')
+        	clines[i] = clines[i].replace("_",' ')
+		clines[i] = clines[i].replace("\n",' ')
+		clines[i] = clines[i].replace("\t",' ')
+		clines[i] = clines[i].replace("  ",' ')
+		clines[i] = clines[i].split()		
+		
+		x = int(clines[i][0])
+		y = int(clines[i][1])
+		z = int(clines[i][2])
+
+		if cbin !=1:
+	                x = x * cbin
+  			y = y * cbin
+			z = z * cbin		
+		
+		if cbinx !=1:
+			x = int(clines[i][0]) * cbinx
+		if cbiny !=1:
+			y = int(clines[i][0]) * cbiny
+		if cbinz !=1:
+			z = int(clines[i][0]) * cbinz
+
+		if swapyz:
+			print '''You indicated that Y and Z coordinates are flipped in the coordinates file, respect to the orientation of the tomogram; 
+			therefore, they will be swapped'''
+			aux = y
+			y = z
+			z = aux
+
+		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+
+		r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
+        	e = EMData()
+		e.read_image(tomogram,0,False,r)
+
+		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
+		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
+		#or if erroneous binning factors are provided
+		
+		if e['mean'] != 0:
+			
+			#It IS CONVENIENT to record any processing done on the particles as header parameters
+			#to easily track what has been done to them. All relevant EMAN2 processing steps on sub-volumes are recorded as parameters starting with e2spt
+			
+			if reverse_contrast:
+				e = e*(-1)
+				e['e2spt_contrast_reversed'] = 'yes'
+			else:
+				e['e2spt_contrast_reversed'] = 'no'
+
+			e['e2spt_tomogram'] = tomogram
+			e['e2spt_coordx'] = x
+			e['e2spt_coordy'] = y
+			e['e2spt_coordz'] = z
+			
+			#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
+			#This can create ANNOYING visualization problems in Chimera
+			
+			e['origin_x'] = 0
+			e['origin_y'] = 0
+			e['origin_z'] = 0
+
+			e = e.process('normalize')
+			e['e2spt_normalized'] = 'yes'
+
+			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
+			
+			k=i
+			if output_format == 'single':
+				name = output.split('.')[0] + '_' + str(i).zfill(3) + '.' + output.split('.')[1]
+				k=0
+			else:
+				name = output
+			
+			e.write_image(name,k)
+			
+		else:
+			print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
+				Your coordinates file and/or the binning factors specified might be MESSED UP. 
+				Also, make sure to specify --yshort if the 'ice thickness' (that is, the shortest legth of your tomogram) lies along the Y direction"""	
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <Volume file>
@@ -63,26 +167,80 @@ def main():
 	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the tomogram header",default=0.0)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
+	parser.add_option('--bin', type='int', default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. 
+								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
+								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
+	
+	parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	
+	parser.add_option('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, and for the extracted sub-volumes.
+											Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color
+											of the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.
+											If they look black you MUST specify this option''')
+	
+	#parameters for commandline boxer
+	
+	parser.add_option('--coords', type='str', default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
+	
+	parser.add_option('--cbin', type='int', default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.
+								For example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, 
+								but want to extract the sub-volumes from the UNbinned version of that tomogram''')
+	
+	parser.add_option('--cbinx', type='int', default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
+								Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
+
+	parser.add_option('--cbiny', type='int', default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+	parser.add_option('--cbinz', type='int', default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+
+	parser.add_option('--subset', type='int', default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.
+								0 means "box them all" because it makes no sense to box none''')
+	parser.add_option('--output', type='str', default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
+	parser.add_option('--output_format', type='str', default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.
+										For example, if you specify --output=myparticles.hdf\n
+										but also specify --output_format=single\n
+										then the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
+	
+	parser.add_option('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.
+										For example, the coordinates file migh thave a line like this:\n
+										1243 3412 45\n
+										where clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out from
+										IMOD by default, then the line should have been:\n
+										1243 45 3412\n''')
 	(options, args) = parser.parse_args()
 		
-	if len(args) != 1: parser.error("You must specify a single volume data file on the command-line.")
+	if len(args) != 1: 
+		parser.error("You must specify a single volume data file on the command-line.")		
+	
 	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
+
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
-#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
-	
+#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")	
 #	logid=E2init(sys.argv)
 	
-	app = EMApp()
-	if options.inmemory : 
-		print "Reading tomogram. Please wait."
-		img=EMData(args[0],0)
-		print "Done !"
-		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
-	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
-	boxer.show()
-	app.execute()
-#	E2end(logid)
+	if options.coords:
+		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.cbinx,options.cbiny,options.cbinz,options.output,options.output_format,options.yshort,options.reverse_contrast)
+	
+	else:
+		img = EMData(args[0],0)
+		if options.reverse_contrast:
+			img = img*(-1)
+			
+		app = EMApp()
+		if options.inmemory: 
+			print "Reading tomogram. Please wait."
+			#img=EMData(args[0],0)
+			print "Done !"
+			boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
+		else : 
+	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
+
+		boxer.show()
+		app.execute()
+	#	E2end(logid)
 
 class EMAverageViewer(QtGui.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -301,7 +459,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.app=weakref.ref(application)
 		self.yshort=yshort
 		self.apix=apix
-		self.setWindowTitle("e2tomoboxer.py")
+		self.setWindowTitle("MAIN e2tomoboxer.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -642,6 +800,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
 			img=self.get_cube(b[0],b[1],b[2])
+			
+			img['origin_x'] = 0
+			img['origin_y'] = 0
+			img['origin_z'] = 0
+
 			if fsp[:4].lower()=="bdb:" : img.write_image("%s_%03d"%(fsp,i),0)
 			elif "." in fsp: img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
 			else :
