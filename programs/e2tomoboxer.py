@@ -79,16 +79,16 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,c
 		y = int(clines[i][1])
 		z = int(clines[i][2])
 
-		if cbin !=1:
+		if cbin > 1:
 	                x = x * cbin
   			y = y * cbin
 			z = z * cbin		
 		
-		if cbinx !=1:
+		if cbinx > 1:
 			x = int(clines[i][0]) * cbinx
-		if cbiny !=1:
+		if cbiny > 1:
 			y = int(clines[i][0]) * cbiny
-		if cbinz !=1:
+		if cbinz > 1:
 			z = int(clines[i][0]) * cbinz
 
 		if swapyz:
@@ -225,9 +225,23 @@ def main():
 	
 	else:
 		img = EMData(args[0],0)
+		
+		if options.bin > 1:
+			img = img.process('math.meanshrink',{'n':options.bin})
+		
+		#if options.binx > 1 or options.biny > 1 or options.binz > 1:
+		#	img = EMData(args[0],0)
+	
+		#	options.binx > 1:
+		
+		#	options.biny > 1:
+			
+		#	options.binz > 1:
+
+		
 		if options.reverse_contrast:
 			img = img*(-1)
-			
+						
 		app = EMApp()
 		if options.inmemory: 
 			print "Reading tomogram. Please wait."
