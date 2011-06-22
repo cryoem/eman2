@@ -892,7 +892,7 @@ class EMQtColorDialog(QtGui.QColorDialog):
 
 class EMLightControls(QtOpenGL.QGLWidget):
 	"""
-	Widget to set the postion of a light
+	Widget to set the postion of a light in 3D
 	"""
 	def __init__(self, light, parent=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
@@ -943,11 +943,12 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		GLU.gluQuadricDrawStyle(flashlight, GLU.GLU_FILL)
 		GLU.gluCylinder(flashlight, 0.3, 0.3, 1.5, 30,30)
 		GLU.gluCylinder(flashlight, 0.5, 0.3, 0.4, 30,30)
-		glMaterialfv(GL_FRONT, GL_EMISSION, self.diffuse)
-		GLU.gluDisk(flashlight, 0.0, 0.5, 30,30)
-		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
+		glPushMatrix()
 		glTranslate(0,0,1.5)
 		GLU.gluDisk(flashlight, 0.0, 0.3, 30,30)
+		glPopMatrix()
+		glMaterialfv(GL_FRONT, GL_EMISSION, self.diffuse)
+		GLU.gluDisk(flashlight, 0.0, 0.5, 30,30)
 		glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
 		glPopMatrix()
 		
@@ -1016,6 +1017,9 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.update()
 		
 class CameraControls(QtOpenGL.QGLWidget):
+	"""
+	Widget to set the camera position
+	"""
 	def __init__(self, parent=None, scenegraph=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.scenegraph = scenegraph
@@ -1038,7 +1042,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.width = width
 		self.height = height
 		cw = float(width)/30.0
-		ch = float(height)/30.0
+		ch = float(width)/30.0
 		self.camerabox = [[-cw, -ch ,0],[cw,-ch,0],[-cw,ch,0],[cw,ch,0]]
 		self.lenses = [2.0*cw,0.6*cw,cw,0.8*cw,0.3*cw]
 		glViewport(0,0,width,height)
@@ -1048,7 +1052,17 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 	
+	def mousePressEvent(self, event):
+		self.init_x = event.x()
+		
+	def mouseMoveEvent(self, event):
+		self.movement = event.x() - self.init_x
+		self.emit(QtCore.SIGNAL("cameraMoved(int)"), self.movement)
+		self.init_x = event.x()
+		
 	def _drawViewingVolume(self):
+		# These current scheme draws what looks like a frustrum, which is a bit of a lie, b/c usually a orthographic projection is used. But is it hard to depict such
+		# disuation using a camera analogy
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		glTranslate(self.scenegraph.camera.getZclip()/self.scale,0,-0)
@@ -1056,10 +1070,12 @@ class CameraControls(QtOpenGL.QGLWidget):
 		sixtydegrees = math.sin(math.radians(self.scenegraph.camera.getFovy()))
 		zslicer = (float(self.width)/4.0) - self.width/110.0	# The 110 is a fudge factor, for some reason the objects are translated by a constant factor.....
 		glBegin(GL_LINES)
-		glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
-		glVertex(self.width,self.width*sixtydegrees,0)
-		glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
-		glVertex(self.width,-self.width*sixtydegrees,0)
+		#glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
+		#glVertex(self.width,self.width*sixtydegrees,0)
+		#glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
+		#glVertex(self.width,-self.width*sixtydegrees,0)
+		#glVertex(zslicer, -zslicer*sixtydegrees, 0)
+		#glVertex(zslicer, zslicer*sixtydegrees, 0)
 		glVertex(zslicer, -self.height/4, 0)
 		glVertex(zslicer, self.height/4, 0)
 		glEnd()

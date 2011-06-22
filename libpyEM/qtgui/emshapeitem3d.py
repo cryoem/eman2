@@ -38,27 +38,38 @@ from OpenGL import GLUT
 
 from emglobjects import init_glut
 from emitem3d import EMItem3D
-from emscene3d import EMScene3D, EMInspector3D, EMInspectorControl
+from emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
 from EMAN2 import Transform
 
 class EMCube(EMItem3D):
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
-        # size
-#        self.xi = -size/2
-#        self.yi = -size/2
-#        self.zi = -size/2
-#        self.xf = size/2
-#        self.yf = size/2
-#        self.zf = size/2
+		# size
 		self.size = size    
-        # color
+		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0
 		
-		# GUI contols
-		self.widget = EMInspectorControl("CUBE", self)
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
+	def getSceneGui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.widget: self.widget = EMInspectorControlShape("CUBE", self)
+		return self.widget
 		
 	def renderNode(self):        
 		# Material properties of the box
@@ -74,20 +85,35 @@ class EMCube(EMItem3D):
 class EMSphere(EMItem3D):
 	def __init__(self, radius):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
-        # size
+		# size
 		self.radius = radius
-		self.slices = int(radius)*16
-		self.stacks = int(radius)*16
+		self.slices = int(radius)
+		self.stacks = int(radius)
 		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0
 		
-		# GUI contols
-		self.widget = EMInspectorControl("SPHERE", self)
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
 		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
 	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
+	def getSceneGui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.widget: self.widget = EMInspectorControlShape("SPHERE", self)
+		return self.widget
 				
 	def renderNode(self):
 		# Material properties of the sphere
@@ -105,16 +131,33 @@ class EMCylinder(EMItem3D):
 		#size
 		self.radius = radius
 		self.height = height
-		self.slices = int(radius)*16
-		self.stacks = int(radius)*16
+		self.slices = int(radius)
+		self.stacks = int(radius)
 
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]		
+		self.shininess = 25.0
 		
-		# GUI contols
-		self.widget = EMInspectorControl("CYLINDER", self)
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
+	def getSceneGui(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.widget: self.widget = EMInspectorControlShape("CYLINDER", self)
+		return self.widget
 		
 	def renderNode(self):
 		# Material properties of the cylinder

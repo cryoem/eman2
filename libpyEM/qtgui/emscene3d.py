@@ -225,7 +225,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
 		self.main_3d_inspector = None
 		self.widget = None				# Get the inspector GUI
-		self.z_clipped_changed = False
+		self.z_clipped_changed = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		self.fuzzyselectionfactor = 2.0			# A fudge factor to determine the selection box 'thickness'
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
@@ -287,8 +288,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Find the selection box. Go from Volume view coords to viewport coords
 		x = self.sa_xi + self.camera.getWidth()/2
 		y = self.camera.getHeight()/2 - self.sa_yi
-		dx = 2*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
-		dy = 2*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		dx = self.fuzzyselectionfactor*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
+		dy = self.fuzzyselectionfactor*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
 		
 		# Apply selection box
 		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
@@ -376,7 +377,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
 			selecteditem.setSelected(True)
 			# Inspector tree management
-			if EMQTreeWidgetItem:
+			if self.EMQTreeWidgetItem:
 				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
 				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
 			try:
@@ -479,12 +480,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def keyPressEvent(self,event):
 		print "Mouse KeyPress Event"
 	
-	def updateSG(self):
-		"""
-		Update the SG
-		"""
-		QtOpenGL.QGLWidget.updateGL(self)
-		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+	def getFuzzyFactor(self):
+		"""Get the fuzzy selection factor """
+		return self.fuzzyselectionfactor
+		
+	def setFuzzyFactor(self, factor):
+		"""Set the fuzzy selection factor"""
+		self.fuzzyselectionfactor = factor
 		
 	def setZclip(self, zclip):
 		""" Set the Z clipping plane """
@@ -513,7 +515,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.pixels.append(self.camera.width)
 		self.pixels.append(self.camera.height)
 		self.pixels.append(pixeldata)
-
+		
+	def updateSG(self):
+		"""
+		Update the SG
+		"""
+		QtOpenGL.QGLWidget.updateGL(self)
+		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 	# Maybe add methods to control the lights
 
 class EMLight:
@@ -623,7 +631,6 @@ class EMCamera:
 			self.setOrthoProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			#glTranslate(0,0,self.zclip)
 			self.setCameraPosition()
 		else:
 			# This may need some work to get it to behave
@@ -633,7 +640,6 @@ class EMCamera:
 			self.setPerspectiveProjectionMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			#glTranslate(0,0,self.perspective_z) #How much to set the camera back depends on how big the object is
 			self.setCameraPosition()
 	
 	def setCameraPosition(self, sfactor=1):
@@ -806,7 +812,7 @@ class EMInspector3D(QtGui.QWidget):
 		You can think of this as a three way conversation(the alterative it to use a meniator, but that is not worth it w/ only three players
 		"""
 		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
-		sgnode.setEMQTreeWidgetItem(node)
+		sgnode.setEMQTreeWidgetItem(node)				# Reference to the EMQTreeWidgetItem
 		sgnodegui = sgnode.getSceneGui()				# Get the SG node GUI controls 
 		sgnodegui.setInspector(self)					# Associate the SGGUI with the inspector
 		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
@@ -898,12 +904,17 @@ class EMInspector3D(QtGui.QWidget):
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
 		
 		cvbox.addWidget(self.camerawidget)
+		clabel = QtGui.QLabel("Camera position", cwidget)
+		clabel.setMaximumHeight(30.0)
+		clabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.camera_z = EMSpinWidget(self.scenegraph.camera.getZclip(), 1.0)
 		self.camera_z.setMaximumHeight(40.0)
+		cvbox.addWidget(clabel)
 		cvbox.addWidget(self.camera_z)
 		cwidget.setLayout(cvbox)
 
 		QtCore.QObject.connect(self.camera_z,QtCore.SIGNAL("valueChanged(int)"),self._on_camera_z)
+		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("cameraMoved(int)"),self._on_camera_move)
 		
 		return cwidget
 	
@@ -912,6 +923,12 @@ class EMInspector3D(QtGui.QWidget):
 		self.scenegraph.setZclip(value)
 		self.scenegraph.updateSG()
 		
+	def _on_camera_move(self, movement):
+		value = self.scenegraph.camera.getZclip() + movement
+		self.camera_z.setValue(value, quiet=1)
+		self.scenegraph.setZclip(value)
+		self.scenegraph.updateSG()
+		self.camerawidget.updateWidget()
 		
 	def _on_load_camera(self, idx):
 		"""
@@ -928,9 +945,22 @@ class EMInspector3D(QtGui.QWidget):
 		Return the utilites widget
 		"""
 		uwidget = QtGui.QWidget()
+		uvbox = QtGui.QVBoxLayout()
+		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
+		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
+		uvbox.addWidget(self.fuzzy_slider)
+		uwidget.setLayout(uvbox)
+		
+		QtCore.QObject.connect(self.fuzzy_slider, QtCore.SIGNAL("valueChanged"),self._on_fuzzy_slider)
 		
 		return uwidget
 	
+	def _on_fuzzy_slider(self, value):
+		"""
+		Set the fuzzy selection coeff
+		"""
+		self.scenegraph.setFuzzyFactor(value)
+		
 	def updateInspector(self):
 		"""
 		Update Inspector, for now this only pertains to the camera widget
@@ -1411,132 +1441,27 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
-# In this example I use a cube, but any object can be drawn and so long as the object class inherits from abstractSGnode
-class glCube(EMItem3D):
-	def __init__(self, size):
-		EMItem3D.__init__(self, parent=None, transform=Transform())
-		# size
-		self.boundingboxsize = size
-		self.xi = -size/2
-		self.yi = -size/2
-		self.zi = -size/2
-		self.xf = size/2
-		self.yf = size/2
-		self.zf = size/2
-		
-		# color
-		self.diffuse = [1.0,1.0,1.0,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0
-		
-		# GUI contols
-		self.widget = None
-	
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
+from emshapeitem3d import *
 
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
-	def getSceneGui(self):
-		"""
-		Return a Qt widget that controls the scene item
-		"""
-		if not self.widget: self.widget = EMInspectorControlShape("CUBE", self)
-		return self.widget
-		
-	def renderNode(self):
-			
-		# Material properties of the box
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
-		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
-		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		# The box itself anlong with normal vectors
-		
-		glBegin(GL_QUADS)
-		glNormal3f(self.xi, self.yi, self.zi + 1)
-		glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xf, self.yi, self.zi + 1)
-		glVertex3f(self.xf, self.yi, self.zi)
-		glNormal3f(self.xf, self.yf, self.zi + 1)
-		glVertex3f(self.xf, self.yf, self.zi)
-		glNormal3f(self.xi, self.yf, self.zi + 1)
-		glVertex3f(self.xi, self.yf, self.zi)
-
-		glNormal3f(self.xi - 1, self.yi, self.zi)
-		glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xi - 1, self.yi, self.zf)
-		glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xi - 1, self.yf, self.zf)
-		glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xi - 1, self.yf, self.zi)
-		glVertex3f(self.xi, self.yf, self.zi)
-
-		glNormal3f(self.xi, self.yi, self.zf - 1)
-		glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xi, self.yf, self.zf - 1)
-		glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf, self.zf - 1)
-		glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf, self.yi, self.zf - 1)
-		glVertex3f(self.xf, self.yi, self.zf)
-
-		glNormal3f(self.xf + 1, self.yf, self.zf)
-		glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf + 1, self.yf, self.zi)
-		glVertex3f(self.xf, self.yf, self.zi)
-		glNormal3f(self.xf + 1, self.yi, self.zi)
-		glVertex3f(self.xf, self.yi, self.zi)
-		glNormal3f(self.xf + 1, self.yi, self.zf)
-		glVertex3f(self.xf, self.yi, self.zf)
-
-		glNormal3f(self.xi, self.yf + 1, self.zi)
-		glVertex3f(self.xi, self.yf, self.zi)
-		glNormal3f(self.xi, self.yf + 1, self.zf)
-		glVertex3f(self.xi, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf + 1, self.zf)
-		glVertex3f(self.xf, self.yf, self.zf)
-		glNormal3f(self.xf, self.yf + 1, self.zi)
-		glVertex3f(self.xf, self.yf, self.zi)
-
-		glNormal3f(self.xi, self.yi - 1, self.zi)
-		glVertex3f(self.xi, self.yi, self.zi)
-		glNormal3f(self.xi, self.yi - 1, self.zf)
-		glVertex3f(self.xi, self.yi, self.zf)
-		glNormal3f(self.xf, self.yi - 1, self.zf)
-		glVertex3f(self.xf, self.yi, self.zf)
-		glNormal3f(self.xf, self.yi - 1, self.zi)
-		glVertex3f(self.xf, self.yi, self.zi)
-
-		glEnd()
-
-		
 class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		self.widget = EMScene3D()
 		#self.widget.camera.usePrespective(50, 0.5)
-		self.cube1 = glCube(50.0)
-		self.widget.addChild(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
-		#self.widget.activatenode(cube1)
-		self.cube2 = glCube(50.0)
-		self.widget.addChild(self.cube2)
-		#self.widget.activatenode(cube2)
+		self.cube = EMCube(50.0)
+		self.widget.addChild(self.cube)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
+		self.sphere = EMSphere(50.0)
+		self.widget.addChild(self.sphere)
+		self.cylider = EMCylinder(50.0, 50.0)
+		self.widget.addChild(self.cylider)
 
 		self.inspector = EMInspector3D(self.widget)
 		self.widget.setInspector(self.inspector)
 		
 		rootnode = self.inspector.addTreeNode("root node", self.widget)
-		self.inspector.addTreeNode("cube1", self.cube1, rootnode)
-		self.inspector.addTreeNode("cube2", self.cube2, rootnode)
+		self.inspector.addTreeNode("cube", self.cube, rootnode)
+		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
+		self.inspector.addTreeNode("cylider", self.cylider, rootnode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()
