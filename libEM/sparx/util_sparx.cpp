@@ -20489,8 +20489,8 @@ bool Util::sanitycheck(int* argParts, int* Indices, int* dimClasses, int nParts,
 		      delete[] intx;
 		      intx=intx_next;
 		      intx_size= intx_next_size;
-		      if (j==nParts-1) delete[] intx_next;
 		}
+		delete[] intx_next;
 
 		if (intx_next_size <= T) {cout << "something wrong with solution!\n"; return 0;}
 		//cout <<intx_next_size<<",";
@@ -20756,7 +20756,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 		if (Parts[depth][i][1] < 1) continue; // class is not active so move on
 		size_next = dimClasses[depth*K + Parts[depth][i][0] ]-2;
 		gt_thresh = explore(Parts,dimClasses, nParts, K, T, partref, curintx2,nintx, Parts[depth][i], size_next, depth+1);
-		if (gt_thresh) return 1;
+		if (gt_thresh) { delete[] curintx2; return 1; }
 	}
 	delete[] curintx2;
 	return 0;
@@ -20910,6 +20910,8 @@ return output;
 			int* output = new int[2];
 			output[0] = 0;
 			output[1] = 0;
+			delete[] matchlist;
+			delete[] costlist;
 			return output;
 		}
 	}
