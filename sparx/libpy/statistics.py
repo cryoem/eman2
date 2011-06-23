@@ -9703,9 +9703,9 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 					# pad with empty arrays
 					df = maxK - len(PART[i])
 					for pd in xrange(df):
-						a=array([garbage_value, garbage_value+1],'int32')
+						PART[i].append(array([garbage_value, garbage_value+1],'int32'))
 						garbage_value = garbage_value + 2
-						PART[i].append(a.copy())
+						
 		# now call 
 		MATCH, list_stb, tot_n = k_means_match_clusters_asg_new(PART[0], PART[1], T)
 			
@@ -9817,9 +9817,9 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 				# pad with empty arrays
 				df = max_K - len(PART[i])
 				for j in xrange(df):
-					a=array([garbage_value, garbage_value+1],'int32')
+					PART[i].append(array([garbage_value, garbage_value+1],'int32'))
 					garbage_value = garbage_value + 2	
-					PART[i].append(a.copy())
+					
 		
 		K = len(PART[0])		
 		# serialize all the arguments in preparation for passing into c++ function
