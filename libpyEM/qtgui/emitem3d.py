@@ -42,12 +42,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def setChildren(self, children): self.children = set(children)
 	def getParent(self): return self.parent
 	def setParent(self, parent): self.parent = parent
-	def isSelected(self): return self.is_selected
-	def setSelected(self, is_selected): self.selected = self.is_selected
+	def isSelectedItem(self): return self.is_selected
+	def setSelectedItem(self, is_selected): self.is_selected = is_selected
 	def getTransform(self): return self.transform
 	def setTransform(self, transform): self.transform = transform
-	def isVisible(self): return self.is_visible
-	def setVisible(self, is_visible): self.is_visible = is_visible
+	def isVisibleItem(self): return self.is_visible
+	def setVisibleItem(self, is_visible): self.is_visible = is_visible
 
 	
 	def __del__(self):
