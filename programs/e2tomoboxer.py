@@ -37,6 +37,7 @@ import sys
 import os
 import weakref
 import threading
+from sys import argv
 
 from EMAN2 import *
 from emapplication import get_application, EMApp
@@ -46,6 +47,18 @@ from emimage3d import EMImage3DWidget
 from emshape import EMShape
 from valslider import *
 
+
+def unbinned_extractor(boxsize,x,y,z,bin,tomogram=argv[1]):
+
+	boxsize=boxsize*bin
+	x=x*bin
+	y=y*bin
+	z=z*bin
+
+	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
+	e = EMData()
+	e.read_image(tomogram,0,False,r)
+	return(e)
 
 def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,cbinz,output,output_format,swapyz,reverse_contrast):
 
@@ -100,9 +113,11 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,c
 
 		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-        	e = EMData()
-		e.read_image(tomogram,0,False,r)
+		#r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
+        	#e = EMData()
+		#e.read_image(tomogram,0,False,r)
+		
+		e=unbinned_extractor(boxsize,x,y,z)
 
 		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
 		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
@@ -131,8 +146,8 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,c
 			e['origin_y'] = 0
 			e['origin_z'] = 0
 
-			e = e.process('normalize')
-			e['e2spt_normalized'] = 'yes'
+			e = e.process('normalize.edgemean')
+			e['e2spt_normalize.edgemean'] = 'yes'
 
 			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 			
@@ -171,9 +186,9 @@ def main():
 								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
 								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
 	
-	parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	#parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	#parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	#parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
 	
 	parser.add_option('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, and for the extracted sub-volumes.
 											Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color
@@ -247,10 +262,10 @@ def main():
 			print "Reading tomogram. Please wait."
 			#img=EMData(args[0],0)
 			print "Done !"
-			boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
+			boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin)
 		else : 
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin)
 
 		boxer.show()
 		app.execute()
@@ -467,12 +482,17 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1): #jesus
+		
+	
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
 		self.apix=apix
+		
+		self.bin=bin			#jesus
+		
 		self.setWindowTitle("MAIN e2tomoboxer.py")
 		
 		# Menu Bar
@@ -661,11 +681,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.wdepth.setValue(self.datasize[2]/2)
 		self.update_all()
-
+	
 	def get_cube(self,x,y,z):
 		"""Returns a box-sized cube at the given center location"""
 		bs=self.boxsize()
-
+		
 		if self.yshort:
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
@@ -691,6 +711,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 		r.process_inplace("normalize.edgemean")
 		return r
+	
 
 	def get_slice(self,n,xyz):
 		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
@@ -813,14 +834,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			img=self.get_cube(b[0],b[1],b[2])
+			#img=self.get_cube(b[0],b[1],b[2])
+			bs=self.boxsize()
+			binf=self.bin
 			
-			img['origin_x'] = 0
-			img['origin_y'] = 0
+			if self.yshort:							#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+			else:
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+			
+			img['origin_x'] = 0						#jesus
+			img['origin_y'] = 0				
 			img['origin_z'] = 0
 
-			if fsp[:4].lower()=="bdb:" : img.write_image("%s_%03d"%(fsp,i),0)
-			elif "." in fsp: img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+			if fsp[:4].lower()=="bdb:" : 
+				img.write_image("%s_%03d"%(fsp,i),0)
+			elif "." in fsp: 
+				img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
 			else :
 				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 				return
@@ -837,7 +867,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			img=self.get_cube(b[0],b[1],b[2])
+			#img=self.get_cube(b[0],b[1],b[2])
+			bs=self.boxsize()
+			binf=self.bin
+
+			if self.yshort:							#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+			else:
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+			
+			img['origin_x'] = 0						#jesus
+			img['origin_y'] = 0				
+			img['origin_z'] = 0
+			
 			img.write_image(fsp,i)
 			
 			progress.setValue(i+1)
