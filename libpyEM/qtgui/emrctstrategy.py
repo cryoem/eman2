@@ -315,12 +315,12 @@ class Strategy2IMGPair(Strategy):
 			
 		return True
 	
-	# This toogle the contol buttons on and off (also controls the mask)
-	def set_gui_buttons(self, toogle):
-		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(toogle)
-		self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(toogle)
-		self.mediator.control_window.pair_picker_tool.centerboxes_but.setEnabled(toogle)
-		if toogle == False:
+	# This toggle the contol buttons on and off (also controls the mask)
+	def set_gui_buttons(self, toggle):
+		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(toggle)
+		self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(toggle)
+		self.mediator.control_window.pair_picker_tool.centerboxes_but.setEnabled(toggle)
+		if toggle == False:
 			self.mediator.tilt_win.boxes.add_mask(None)
 			self.mediator.untilt_win.boxes.add_mask(None)
 		

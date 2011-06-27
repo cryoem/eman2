@@ -830,7 +830,7 @@ class EMInspector3D(QtGui.QWidget):
 		item.setSelectionState(item.checkState(0))
 		
 	def _tree_widget_visible(self, item):
-		item.toogleVisibleState()
+		item.toggleVisibleState()
 		self.updateSceneGraph()
 		
 	def _get_controler_layout(self, parent):
@@ -1012,7 +1012,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.sgnode.setSelectedItem(False)
 		self.setSelectionStateBox() # set state of TreeItemwidget
 		
-	def toogleVisibleState(self):
+	def toggleVisibleState(self):
 		self.sgnode.setVisibleItem(not self.sgnode.isVisibleItem())
 		self.getVisibleState()
 		
