@@ -875,13 +875,14 @@ class EMInspector3D(QtGui.QWidget):
 		lvbox.addWidget(valslidersplitter)
 		lwidget.setLayout(lvbox)
 		
-		QtCore.QObject.connect(self.lightwidget, QtCore.SIGNAL("lightPositionMoved([pos])"), self._light_position_moved)
+		QtCore.QObject.connect(self.lightwidget, QtCore.SIGNAL("lightPositionMoved"), self._light_position_moved)
 		QtCore.QObject.connect(self.hvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
 		QtCore.QObject.connect(self.vvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
 
 		return lwidget
 	
-	def _light_position_moved(self, position):
+	def _light_position_moved(self, position): 
+		print "_light_position_moved: position ==", position
 		angularposition = self.lightwidget.getAngularPosition()
 		self.hvalslider.setValue(angularposition[0], quiet=1)
 		self.vvalslider.setValue(angularposition[1], quiet=1)
@@ -1096,9 +1097,9 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorframe.setLayout(colorvbox)
 		box.addWidget(colorframe)
 		
-		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_ambient_color)
-		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_diffuse_color)
-		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(Qcolor)"),self._on_specular_color)
+		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
+		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
+		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_specular_color)
 		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
 		
 	def _on_ambient_color(self, color):
