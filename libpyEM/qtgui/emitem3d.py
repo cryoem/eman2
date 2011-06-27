@@ -4,8 +4,10 @@
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
 from OpenGL import GL
+from PyQt4 import QtCore, QtGui
 from EMAN2 import Transform
 from libpyGLUtils2 import GLUtil
+from valslider import ValSlider, EMSpinWidget
 import weakref
 
 
