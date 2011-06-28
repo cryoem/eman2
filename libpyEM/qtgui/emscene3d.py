@@ -37,7 +37,7 @@ from OpenGL import GLU
 from PyQt4 import QtCore, QtGui, QtOpenGL 
 from PyQt4.QtCore import Qt
 from emapplication import EMGLWidget
-from emitem3d import EMItem3D, EMInspectorControlBasic
+from emitem3d import EMItem3D, EMItem3DInspector
 from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMSpinWidget, EMQTColorWidget, EMLightControls, CameraControls
 import math
@@ -261,7 +261,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
-		if not self.widget: self.widget = EMInspectorControlBasic("SG", self)
+		if not self.widget: self.widget = EMItem3DInspector("SG", self)
 		return self.widget
 		
 	def renderNode(self):
@@ -882,7 +882,6 @@ class EMInspector3D(QtGui.QWidget):
 		return lwidget
 	
 	def _light_position_moved(self, position): 
-		print "_light_position_moved: position ==", position
 		angularposition = self.lightwidget.getAngularPosition()
 		self.hvalslider.setValue(angularposition[0], quiet=1)
 		self.vvalslider.setValue(angularposition[1], quiet=1)
@@ -1035,12 +1034,12 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
 
-class EMInspectorControlShape(EMInspectorControlBasic):
+class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	Class to make EMItem GUI SHAPE
 	"""
 	def __init__(self, name, item3d):
-		EMInspectorControlBasic.__init__(self, name, item3d)
+		EMItem3DInspector.__init__(self, name, item3d)
 		
 	def addControls(self, igvbox):
 		pass

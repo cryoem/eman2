@@ -223,7 +223,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def wheelEvent(self, event): pass
 
         
-class EMInspectorControlBasic(QtGui.QWidget):
+class EMItem3DInspector(QtGui.QWidget):
     """
     Class to make the EMItem GUI controls
     """
