@@ -21,11 +21,11 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.activatenode(cube2)
 
 		self.inspector = EMInspector3D(self.widget)
-		self.widget.set_inspector(self.inspector)
+		self.widget.setInspector(self.inspector)
 		
-		rootnode = self.inspector.add_tree_node("root node", self.widget)
-		self.inspector.add_tree_node("cube1", self.cube1, rootnode)
-		self.inspector.add_tree_node("cube2", self.cube2, rootnode)
+		rootnode = self.inspector.addTreeNode("root node", self.widget)
+		self.inspector.addTreeNode("cube1", self.cube1, rootnode)
+		self.inspector.addTreeNode("cube2", self.cube2, rootnode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()
