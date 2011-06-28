@@ -13,7 +13,7 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.camera.useprespective(50, 0.5)
 #		self.cube1 = glCube(50.0)
 		self.cube1 = EMCube(50.0)
-		self.widget.addChild(self.cube1)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
+		self.widget.addChild(self.cube1)    # Something to Render something..... an EMItem3D
 		#self.widget.activatenode(cube1)
 #		self.cube2 = glCube(50.0)
 		self.cube2 = EMCube(50.0)
