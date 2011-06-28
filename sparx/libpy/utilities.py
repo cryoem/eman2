@@ -437,17 +437,17 @@ def ce_fit(inp_image, ref_image, mask_image):
 	     Usage : ce_fit(inp_image,ref_image,mask_image):
 	    	 A and B, number of iterations and the chi-square
 	"""
-	hist_res = Util.histc(ref_image,inp_image,mask_image)
-	args=hist_res["args"]
+	hist_res = Util.histc(ref_image, inp_image, mask_image)
+	args = hist_res["args"]
 	scale = hist_res["scale"]
-	data = [hist_res['data'],inp_image,hist_res["ref_freq_bin"],mask_image,hist_res['size_img'],hist_res['hist_len']]
-	res=amoeba(args,scale,hist_func,1.e-4,1.e-4,500,data)
-	resu = ["Final Parameter [A,B]:", res[0],"Final Chi-square :",-1*res[1],"Number of Iteration :",res[2]]
+	data = [hist_res['data'], inp_image, hist_res["ref_freq_bin"], mask_image, int(hist_res['size_img']), hist_res['hist_len']]
+	res = amoeba(args, scale, hist_func, 1.e-4, 1.e-4, 500, data)
+	resu = ["Final Parameter [A,B]:", res[0], "Final Chi-square :", -1*res[1], "Number of Iteration :", res[2]]
 	corrected_image = inp_image*res[0][0] + res[0][1]
-	result=[resu,"Corrected Image :",corrected_image]
-	del data[:],args[:],scale[:]
+	result = [resu,"Corrected Image :",corrected_image]
+	del data[:], args[:], scale[:]
 	return result
-	
+
 def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gauss_radius_inner = 2, Gauss_radius_outter = 7, self_defined_reference = None):
 	"""
 		Put an input image into image center (nx/2, ny/2) using method :
