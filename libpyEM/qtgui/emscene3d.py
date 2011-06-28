@@ -804,29 +804,29 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return tvbox
 	
-	def addTreeNode(self, name, sgnode, parentnode=None):
+	def addTreeNode(self, name, item3d, parentnode=None):
 		"""
-		Add a node to the TreeWidget if not parent node, otherwise add a child to parent node
+		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
-		The Treeitem also needs to know the SGnode, so it can talk to the SGnode.
-		You can think of this as a three way conversation(the alterative it to use a meniator, but that is not worth it w/ only three players
+		The Treeitem also needs to know the node, so it can talk to the node.
+		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
 		"""
-		node = EMQTreeWidgetItem(QtCore.QStringList(name), sgnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
-		sgnode.setEMQTreeWidgetItem(node)				# Reference to the EMQTreeWidgetItem
-		sgnodegui = sgnode.getSceneGui()				# Get the SG node GUI controls 
-		sgnodegui.setInspector(self)					# Associate the SGGUI with the inspector
-		self.stacked_widget.addWidget(sgnodegui)			# Add a widget to the stack
+		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
+		item3dgui = item3d.getSceneGui()				# Get the node GUI controls 
+		item3dgui.setInspector(self)					# Associate the item GUI with the inspector
+		self.stacked_widget.addWidget(item3dgui)			# Add a widget to the stack
 		# Set icon status
-		node.setSelectionStateBox()
+		tree_item.setSelectionStateBox()
 		# Set parent if one exists	
 		if not parentnode:
-			self.tree_widget.insertTopLevelItem(0, node)
+			self.tree_widget.insertTopLevelItem(0, tree_item)
 		else:
-			parentnode.addChild(node)
-		return node
+			parentnode.addChild(tree_item)
+		return tree_item
 			
 	def _tree_widget_click(self, item, col):
-		self.stacked_widget.setCurrentWidget(item.sgnode.getSceneGui())
+		self.stacked_widget.setCurrentWidget(item.item3d.getSceneGui())
 		item.setSelectionState(item.checkState(0))
 		
 	def _tree_widget_visible(self, item):
@@ -995,9 +995,9 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
-	def __init__(self, qstring, sgnode):
+	def __init__(self, qstring, item3d):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
-		self.sgnode = sgnode
+		self.item3d = item3d
 		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
@@ -1008,20 +1008,20 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		Toogle selection state on and off
 		"""
 		if state == QtCore.Qt.Checked:
-			self.sgnode.setSelectedItem(True)
+			self.item3d.setSelectedItem(True)
 		else:
-			self.sgnode.setSelectedItem(False)
+			self.item3d.setSelectedItem(False)
 		self.setSelectionStateBox() # set state of TreeItemwidget
 		
 	def toggleVisibleState(self):
-		self.sgnode.setVisibleItem(not self.sgnode.isVisibleItem())
+		self.item3d.setVisibleItem(not self.item3d.isVisibleItem())
 		self.getVisibleState()
 		
 	def getVisibleState(self):
 		"""
 		Toogle the visble state
 		"""
-		if self.sgnode.isVisibleItem():
+		if self.item3d.isVisibleItem():
 			self.setIcon(0, self.visible)
 		else:
 			self.setIcon(0, self.invisible)
@@ -1030,7 +1030,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		"""
 		Set the selection state icon
 		"""
-		if self.sgnode.isSelectedItem():
+		if self.item3d.isSelectedItem():
 			self.setCheckState(0, QtCore.Qt.Checked)
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
@@ -1039,8 +1039,8 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 	"""
 	Class to make EMItem GUI SHAPE
 	"""
-	def __init__(self, name, sgnode):
-		EMInspectorControlBasic.__init__(self, name, sgnode)
+	def __init__(self, name, item3d):
+		EMInspectorControlBasic.__init__(self, name, item3d)
 		
 	def addControls(self, igvbox):
 		pass
@@ -1059,17 +1059,17 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		cdialoghbox = QtGui.QHBoxLayout()
 		cabox = QtGui.QHBoxLayout()
 		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
-		self.ambcolorbox.setColor(QtGui.QColor(255*self.sgnode.ambient[0],255*self.sgnode.ambient[1],255*self.sgnode.ambient[2]))
+		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d.ambient[0],255*self.item3d.ambient[1],255*self.item3d.ambient[2]))
 		cabox.addWidget(self.ambcolorbox)
 		cabox.setAlignment(QtCore.Qt.AlignCenter)
 		cdbox = QtGui.QHBoxLayout()
 		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
-		self.diffusecolorbox.setColor(QtGui.QColor(255*self.sgnode.diffuse[0],255*self.sgnode.diffuse[1],255*self.sgnode.diffuse[2]))
+		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d.diffuse[0],255*self.item3d.diffuse[1],255*self.item3d.diffuse[2]))
 		cdbox.addWidget(self.diffusecolorbox)
 		cdbox.setAlignment(QtCore.Qt.AlignCenter)
 		csbox = QtGui.QHBoxLayout()
 		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
-		self.specularcolorbox.setColor(QtGui.QColor(255*self.sgnode.specular[0],255*self.sgnode.specular[1],255*self.sgnode.specular[2]))
+		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d.specular[0],255*self.item3d.specular[1],255*self.item3d.specular[2]))
 		csbox.addWidget(self.specularcolorbox)
 		csbox.setAlignment(QtCore.Qt.AlignCenter)
 		cdialoghbox.addLayout(cabox)
@@ -1088,7 +1088,7 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		colorhbox.addWidget(self.specular)
 		
 		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shininess")
-		self.shininess.setValue(self.sgnode.shininess)
+		self.shininess.setValue(self.item3d.shininess)
 		
 		colorvbox.addWidget(colorlabel)
 		colorvbox.addLayout(cdialoghbox)
@@ -1104,21 +1104,21 @@ class EMInspectorControlShape(EMInspectorControlBasic):
 		
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
-		self.sgnode.setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d.setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
-		self.sgnode.setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d.setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
-		self.sgnode.setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d.setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_shininess(self, shininess):
-		self.sgnode.setShininess(shininess)
+		self.item3d.setShininess(shininess)
 		self.inspector.updateSceneGraph()
 		
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
