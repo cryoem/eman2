@@ -30,6 +30,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from sys import argv #jesus
+
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from optparse import OptionParser
@@ -37,7 +39,6 @@ import sys
 import os
 import weakref
 import threading
-from sys import argv
 
 from EMAN2 import *
 from emapplication import get_application, EMApp
@@ -48,19 +49,19 @@ from emshape import EMShape
 from valslider import *
 
 
-def unbinned_extractor(boxsize,x,y,z,bin,tomogram=argv[1]):
+def unbinned_extractor(boxsize,x,y,z,cbin,tomogram=argv[1]):
 
-	boxsize=boxsize*bin
-	x=x*bin
-	y=y*bin
-	z=z*bin
+	boxsize=boxsize*cbin
+	x=x*cbin
+	y=y*cbin
+	z=z*cbin
 
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
 	return(e)
 
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,cbinz,output,output_format,swapyz,reverse_contrast):
+def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,reverse_contrast):
 
 	clines = open(coordinates,'r').readlines()
 	set = len(clines)
@@ -97,12 +98,12 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,c
   			y = y * cbin
 			z = z * cbin		
 		
-		if cbinx > 1:
-			x = int(clines[i][0]) * cbinx
-		if cbiny > 1:
-			y = int(clines[i][0]) * cbiny
-		if cbinz > 1:
-			z = int(clines[i][0]) * cbinz
+		#if cbinx > 1:
+		#	x = int(clines[i][0]) * cbinx
+		#if cbiny > 1:
+		#	y = int(clines[i][0]) * cbiny
+		#if cbinz > 1:
+		#	z = int(clines[i][0]) * cbinz
 
 		if swapyz:
 			print '''You indicated that Y and Z coordinates are flipped in the coordinates file, respect to the orientation of the tomogram; 
@@ -117,7 +118,7 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,cbinx,cbiny,c
         	#e = EMData()
 		#e.read_image(tomogram,0,False,r)
 		
-		e=unbinned_extractor(boxsize,x,y,z)
+		e=unbinned_extractor(boxsize,x,y,z,cbin)
 
 		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
 		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
@@ -203,11 +204,11 @@ def main():
 								For example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, 
 								but want to extract the sub-volumes from the UNbinned version of that tomogram''')
 	
-	parser.add_option('--cbinx', type='int', default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
-								Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
+	#parser.add_option('--cbinx', type='int', default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
+	#							Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
 
-	parser.add_option('--cbiny', type='int', default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-	parser.add_option('--cbinz', type='int', default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+	#parser.add_option('--cbiny', type='int', default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+	#parser.add_option('--cbinz', type='int', default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
 
 	parser.add_option('--subset', type='int', default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.
 								0 means "box them all" because it makes no sense to box none''')
@@ -235,25 +236,27 @@ def main():
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")	
 #	logid=E2init(sys.argv)
 	
-	if options.coords:
-		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.cbinx,options.cbiny,options.cbinz,options.output,options.output_format,options.yshort,options.reverse_contrast)
+	img = EMData(args[0],0)
 	
-	else:
-		img = EMData(args[0],0)
+	if options.bin > 1:
+		img = img.process('math.meanshrink',{'n':options.bin})
 		
-		if options.bin > 1:
-			img = img.process('math.meanshrink',{'n':options.bin})
-		
-		#if options.binx > 1 or options.biny > 1 or options.binz > 1:
-		#	img = EMData(args[0],0)
-	
-		#	options.binx > 1:
-		
-		#	options.biny > 1:
+		if options.coords:
+			print "WARNING! You will extract particles from a tomogram that is binned/shrunk by %d, and not its raw version" % (options.bin)
 			
-		#	options.binz > 1:
+	#if options.binx > 1 or options.biny > 1 or options.binz > 1:
+	#	img = EMData(args[0],0)
 
-		
+	#	options.binx > 1:
+
+	#	options.biny > 1:
+
+	#	options.binz > 1:
+
+	if options.coords:
+		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
+	
+	else:	
 		if options.reverse_contrast:
 			img = img*(-1)
 						
@@ -543,29 +546,47 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
 		self.oldboxsize=boxsize
 		
+		# Position boxes showing current position		#Jesus - Coordinates should be displayed
+		self.positionx=ValBox(label="X:",value=0)
+		self.gbl2.addWidget(self.positionx,1,0)
+
+		self.positiony=ValBox(label="Y:",value=0)
+		self.gbl2.addWidget(self.positiony,1,1)
+
+		self.positionz=ValBox(label="Z:",value=0)
+		self.gbl2.addWidget(self.positionz,1,2)
+
+		
 		# max or mean
 		self.wmaxmean=QtGui.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
-		self.gbl2.addWidget(self.wmaxmean,1,0)
+		#self.gbl2.addWidget(self.wmaxmean,1,0)
+		self.gbl2.addWidget(self.wmaxmean,4,0)
+
 		
 		# number slices
 		self.wnlayers=QtGui.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)
-		self.gbl2.addWidget(self.wnlayers,1,1)
+		self.gbl2.addWidget(self.wnlayers,4,1)
 		
 		# Local boxes in side view
-		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
-		self.gbl2.addWidget(self.wlocalbox,2,0)
+		#self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")		#jesus - should be true by default; no use for checkbox
+		#self.gbl2.addWidget(self.wlocalbox,2,0)
+		#self.gbl2.addWidget(self.wlocalbox,5,0)
+
 		
 		# scale factor
 		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		self.gbl2.addWidget(self.wscale,3,0,1,2)
+		#self.gbl2.addWidget(self.wscale,3,0,1,2)
+		self.gbl2.addWidget(self.wscale,6,0,1,2)
+
 		
 		# 2-D filters
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
-		self.gbl2.addWidget(self.wfilt,4,0,1,2)
+		#self.gbl2.addWidget(self.wfilt,4,0,1,2)
+		self.gbl2.addWidget(self.wfilt,7,0,1,2)
 		
 		
 		
@@ -594,7 +615,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
 		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
+		
+		#QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )	#jesus
 		
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
@@ -822,11 +844,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.update_box(len(self.boxes)-1)
 
 	def menu_file_save_boxloc(self):
+		binf=self.bin 								#jesus
+
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 		
 		out=file(fsp,"w")
 		for b in self.boxes:
-			out.write("%d\t%d\t%d\n"%(b[0],b[1],b[2]))
+			out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
 		out.close()
 		
 	def menu_file_save_boxes(self):
@@ -911,23 +935,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		bs=self.boxsize()
 		
 		# update shape display
-		if self.wlocalbox.isChecked():
-			xzs=self.xzview.get_shapes()
-			for i in range(len(self.boxes)):
-				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
-					xzs[i][0]="rect"
-				else : xzs[i][0]="hidden"
-				
-			zys=self.zyview.get_shapes()
-			for i in range(len(self.boxes)):
-				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
-					zys[i][0]="rect"
-				else : zys[i][0]="hidden"
-		else :
-			xzs=self.xzview.get_shapes()
-			for i in range(len(self.boxes)): xzs[i][0]="rect"
-			zys=self.zyview.get_shapes()
-			for i in range(len(self.boxes)): zys[i][0]="rect"
+		#if self.wlocalbox.isChecked():						#jesus- limiting side boxes should be default
+		
+		xzs=self.xzview.get_shapes()
+		for i in range(len(self.boxes)):
+			if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
+				xzs[i][0]="rect"
+			else : xzs[i][0]="hidden"
+
+		zys=self.zyview.get_shapes()
+		for i in range(len(self.boxes)):
+			if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
+				zys[i][0]="rect"
+			else : zys[i][0]="hidden"
+		
+		#else :
+		#	xzs=self.xzview.get_shapes()					#jesus
+		#	for i in range(len(self.boxes)): xzs[i][0]="rect"
+		#	zys=self.zyview.get_shapes()
+		#	for i in range(len(self.boxes)): zys[i][0]="rect"
 			
 		self.xzview.shapechange=1
 		self.zyview.shapechange=1
@@ -961,6 +987,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""updates xy view due to a new slice range"""
 		
 		if self.datafile==None and self.data==None: return
+		
+		
+		# Boxes should also be limited by default in the XY view
+		if len(self.boxes) > 0:
+			zc=self.wdepth.value()
+			#print "The current depth is", self.wdepth.value()
+			bs=self.boxsize()
+			xys=self.xyview.get_shapes()
+			for i in range(len(self.boxes)):
+				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
+				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
+				if abs(self.boxes[i][2] - zc) < bs/2: 
+					#print "Which is less than half the box thus it survives"
+					xys[i][0]="rect"
+				else : 
+					xys[i][0]="hidden"
+					#print "Which is more than half the box and thus it dies"
+		
+			self.xyview.shapechange=1
 		
 		if self.wmaxmean.isChecked() : avgr=Averagers.get("minmax",{"max":1})
 		else : avgr=Averagers.get("mean")
@@ -1045,6 +1090,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if box[2]<bs2 : box[2]=bs2
 		if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
 #		print self.boxes
+
+
 		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2)))
 		self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
 		self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
@@ -1054,7 +1101,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,2)))
 		self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
 		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
-		
+	
+
 		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
 		else : self.xyview.update()
 		self.update_sides()
@@ -1100,6 +1148,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			if self.inside_box(i,x,y) :
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else:
+				
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
 					self.update_box(i)
 				break
@@ -1133,9 +1182,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def xy_wheel (self,event):
 		if event.delta() > 0:
-			self.wdepth.setValue(self.wdepth.value()+4)
+			self.wdepth.setValue(self.wdepth.value()+2)
 		elif event.delta() < 0:
-			self.wdepth.setValue(self.wdepth.value()-4)
+			self.wdepth.setValue(self.wdepth.value()-2)
+		
+		if len(self.boxes) > 0:			#jesus - boxes should disappear in Z when they're in a Z 1/2 the boxsize away from their center
+			self.update_xy()		#xy view needs to be updated to take this into account as you scroll
+		
 	
 	def xy_scale(self,news):
 		"xy image view has been rescaled"
@@ -1158,8 +1211,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :
-				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+			#if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :	#jesus ????
+			if self.inside_box(i,x,self.cury,z) :
+
+				if event.modifiers()&Qt.ShiftModifier: 
+					self.del_box(i)
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
 					self.update_box(i)
@@ -1213,7 +1269,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):
+			#if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):	#jesus - ????
+			if self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
