@@ -1315,6 +1315,56 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0,
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		
+def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None):
+	"""
+	  dpsi - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	ant = cos(an*pi/180.0)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	iref = int(iref)
+	
+	if iref > -1:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+		print  "peak==",peak,"an == ", an, "ant ==", ant, "iref==",iref,"phi==",phi, "theta==", theta, "psi == ",psi
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, phi, theta, psi, s2x, s2y, t1
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0, finfo=None):
 	"""
@@ -1331,7 +1381,6 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	if finfo:
@@ -1350,6 +1399,47 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180
 		s2x   = sxb - dp["tx"]
 		s2y   = syb - dp["ty"]
 
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, phi, theta, psi, s2x, s2y, t1
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		
+def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None):
+	"""
+	  dpsi - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	ant = cos(an*pi/180.0)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	iref = int(iref)
+	#print  " IN ", ang, sxs, sys, mirror, iref, peak
+	if iref > -1:
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+		print  "90 local peak==",peak,"an == ", an, "ant ==", ant, "iref==",iref,"phi==",phi, "theta==", theta, "psi == ",psi
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()

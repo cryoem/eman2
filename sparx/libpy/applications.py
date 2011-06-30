@@ -6560,7 +6560,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 	fourvar, debug):
 
-	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, helios,helios7
+	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
@@ -6820,9 +6820,15 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				peak1 = None
 				peak2 = None
 				if ( len(refrings1) > 0):
-					peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+					if  an[N_step] == -1:
+						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+					else:
+						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90_local(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,  finfo,)
 				if( len(refrings2) > 0):
-					peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+					if  an[N_step] == -1:
+						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+					else:
+						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical_local(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,finfo,)
 				if peak1 is None: 
 					peak = peak2
 					phihi = phihi2
