@@ -541,9 +541,33 @@ class EMItem3DInspector(QtGui.QWidget):
         self.item3d.getTransform().set_rotation({"type":"quaternion","e0":self.quaternione0slider.getValue(),"e1":self.quaternione1slider.getValue(),"e2":self.quaternione2slider.getValue(),"e3":self.quaternione3slider.getValue()})
         self.inspector.updateSceneGraph()
         
+class EMDataItem3D(EMItem3D):
+	def __init__(self, data, parent = None, children = set(), transform = None):
+		self.data = data
+		EMItem3D.__init__(self, parent, children, transform)
+	def getSceneGui(self):
+		if not self.widget:
+			self.widget = EMDataItem3DInspector("DATA", self)
+		return self.widget
+	
+class EMDataItem3DInspector(EMItem3DInspector):
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
 
 
-
+class EMIsosurface(EMItem3D):
+	def __init__(self, parent, children = set(), transform = None):
+		EMItem3D.__init__(self, parent, children, transform)
+		assert self.parent.data != None
+	
+	def getSceneGui(self):
+		if not self.widget: #TODO: code and use EMIsosurfaceInspector
+			self.widget = EMDataItem3DInspector("ISO", self)
+		return self.widget
+	
+	def renderNode(self):
+		pass
+		
 
 if __name__ == '__main__':
 	#Test code
