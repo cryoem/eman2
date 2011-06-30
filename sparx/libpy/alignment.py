@@ -1358,7 +1358,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 			s2x   = sxb - dp["tx"]
 			s2y   = syb - dp["ty"]
-		print  "peak==",peak,"an == ", an, "ant ==", ant, "iref==",iref,"phi==",phi, "theta==", theta, "psi == ",psi
+		
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -1439,7 +1439,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx,ynumber, a
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 		s2x   = sxb - dp["tx"]
 		s2y   = syb - dp["ty"]
-		print  "90 local peak==",peak,"an == ", an, "ant ==", ant, "iref==",iref,"phi==",phi, "theta==", theta, "psi == ",psi
+		
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
