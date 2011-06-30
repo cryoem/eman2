@@ -129,11 +129,11 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 			#It IS CONVENIENT to record any processing done on the particles as header parameters
 			#to easily track what has been done to them. All relevant EMAN2 processing steps on sub-volumes are recorded as parameters starting with e2spt
 			
-			if reverse_contrast:
-				e = e*(-1)
-				e['e2spt_contrast_reversed'] = 'yes'
-			else:
-				e['e2spt_contrast_reversed'] = 'no'
+			#if reverse_contrast:
+			#	e = e*(-1)
+			#	e['e2spt_contrast_reversed'] = 'yes'
+			#else:
+			#	e['e2spt_contrast_reversed'] = 'no'
 
 			e['e2spt_tomogram'] = tomogram
 			e['e2spt_coordx'] = x
@@ -572,9 +572,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wnlayers,4,1)
 		
 		# Local boxes in side view
-		#self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")		#jesus - should be true by default; no use for checkbox
-		#self.gbl2.addWidget(self.wlocalbox,2,0)
-		#self.gbl2.addWidget(self.wlocalbox,5,0)
+		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")		#jesus - should be true by default; no use for checkbox
+		self.gbl2.addWidget(self.wlocalbox,2,0)
+		self.gbl2.addWidget(self.wlocalbox,5,0)
 
 		
 		# scale factor
@@ -616,7 +616,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
 		
-		#QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )	#jesus
+		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )	#jesus
 		
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
@@ -935,25 +935,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		bs=self.boxsize()
 		
 		# update shape display
-		#if self.wlocalbox.isChecked():						#jesus- limiting side boxes should be default
+		if self.wlocalbox.isChecked():						#jesus- limiting side boxes should be default
 		
-		xzs=self.xzview.get_shapes()
-		for i in range(len(self.boxes)):
-			if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
-				xzs[i][0]="rect"
-			else : xzs[i][0]="hidden"
+			xzs=self.xzview.get_shapes()
+			for i in range(len(self.boxes)):
+				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
+					xzs[i][0]="rect"
+				else : xzs[i][0]="hidden"
 
-		zys=self.zyview.get_shapes()
-		for i in range(len(self.boxes)):
-			if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
-				zys[i][0]="rect"
-			else : zys[i][0]="hidden"
+			zys=self.zyview.get_shapes()
+			for i in range(len(self.boxes)):
+				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
+					zys[i][0]="rect"
+				else : zys[i][0]="hidden"
 		
-		#else :
-		#	xzs=self.xzview.get_shapes()					#jesus
-		#	for i in range(len(self.boxes)): xzs[i][0]="rect"
-		#	zys=self.zyview.get_shapes()
-		#	for i in range(len(self.boxes)): zys[i][0]="rect"
+		else :
+			xzs=self.xzview.get_shapes()					#jesus
+			for i in range(len(self.boxes)): xzs[i][0]="rect"
+			zys=self.zyview.get_shapes()
+			for i in range(len(self.boxes)): zys[i][0]="rect"
 			
 		self.xzview.shapechange=1
 		self.zyview.shapechange=1
@@ -1211,8 +1211,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			#if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :	#jesus ????
-			if self.inside_box(i,x,self.cury,z) :
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :	#jesus ????
+			#if self.inside_box(i,x,self.cury,z) :
 
 				if event.modifiers()&Qt.ShiftModifier: 
 					self.del_box(i)
@@ -1269,8 +1269,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			#if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):	#jesus - ????
-			if self.inside_box(i,self.curx,y,z):
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):	#jesus - ????
+			#if self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
