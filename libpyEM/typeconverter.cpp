@@ -104,7 +104,7 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 	}
 
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
-	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
+//	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
 	int ndim = array_ptr->nd;
 	char data_type = array_ptr->descr->type;
 
@@ -135,14 +135,17 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 	}
 
 	EMData* image = 0;
+	float * temparray = new float[(size_t)nx*ny*nz];
 	if(data_type == 'f') {
 		char* array_data = array_ptr->data;
-		image = new EMData((float*)array_data, nx, ny, nz);
+		memcpy(temparray, array_data, (size_t)nx*ny*nz*sizeof(float));
+		image = new EMData((float*)temparray, nx, ny, nz);
 	}
 	else {
 		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
 		char* array_data2 = array_ptr2->data;
-		image = new EMData((float*)array_data2, nx, ny, nz);
+		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
+		image = new EMData((float*)temparray, nx, ny, nz);
 	}
 
 	image->update();
