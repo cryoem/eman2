@@ -187,6 +187,8 @@ def main():
 								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
 								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
 	
+	parser.add_option("--lowpass",type="float",help="Lowpass filter to apply to the tomogram prior to loading it for boxing",default=0.0)
+	
 	#parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
 	#parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
 	#parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
@@ -229,47 +231,53 @@ def main():
 	if len(args) != 1: 
 		parser.error("You must specify a single volume data file on the command-line.")		
 	
-	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
+	if not file_exists(args[0]): 
+		parser.error("%s does not exist" %args[0])
 
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")	
 #	logid=E2init(sys.argv)
-	
-	img = EMData(args[0],0)
-	
-	if options.bin > 1:
-		img = img.process('math.meanshrink',{'n':options.bin})
-		
-		if options.coords:
-			print "WARNING! You will extract particles from a tomogram that is binned/shrunk by %d, and not its raw version" % (options.bin)
+
 			
-	#if options.binx > 1 or options.biny > 1 or options.binz > 1:
+	#if options.binx > 1 or options.biny > 1 or options.binz > 1: #JESUS
 	#	img = EMData(args[0],0)
-
 	#	options.binx > 1:
-
 	#	options.biny > 1:
-
 	#	options.binz > 1:
 
-	if options.coords:
+	if options.coords:						#JESUS
 		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
 	
-	else:	
-		if options.reverse_contrast:
-			img = img*(-1)
-						
+	else:							
 		app = EMApp()
 		if options.inmemory: 
 			print "Reading tomogram. Please wait."
-			#img=EMData(args[0],0)
+			
+			img = EMData(args[0],0)
+			
+			if options.bin > 1:
+				img = img.process('math.meanshrink',{'n':options.bin})
+			
+			if options.reverse_contrast:
+				img = img*(-1)
+			
 			print "Done !"
-			boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin)
+			
+			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin)
 		else : 
-	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin)
-
+	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
+			img=args[0]
+			if options.bin > 1:
+				img = args[0].replace('.','_bin' + str(options.bin) + '.')
+				cmd = 'e2proc3d.py ' + args[0] + ' ' + img + ' --process=math.meanshrink:n=' + str(options.bin)
+				print "Supposedly, I should ggenerate this newly binned tomogram as datafile", img
+				print "And the command to do so is", cmd
+				os.system(cmd)
+				
+			
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast)
+			
 		boxer.show()
 		app.execute()
 	#	E2end(logid)
@@ -423,7 +431,7 @@ class EMBoxViewer(QtGui.QWidget):
 		self.d3view = EMImage3DWidget()
 		self.gbl.addWidget(self.d3view,1,0)
 		
-		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
+		self.wfilt = ValSlider(rng=(0,100),label="Filter:",value=0.0)
 		self.gbl.addWidget(self.wfilt,2,0,1,2)
 		
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
@@ -485,7 +493,7 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1): #jesus
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=False): #jesus
 		
 	
 		QtGui.QWidget.__init__(self)
@@ -495,6 +503,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.apix=apix
 		
 		self.bin=bin			#jesus
+		self.contrast=contrast		#jesus
 		
 		self.setWindowTitle("MAIN e2tomoboxer.py")
 		
@@ -547,14 +556,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.oldboxsize=boxsize
 		
 		# Position boxes showing current position		#Jesus - Coordinates should be displayed
-		self.positionx=ValBox(label="X:",value=0)
-		self.gbl2.addWidget(self.positionx,1,0)
+		#self.positionx=ValBox(label="X:",value=0)
+		#self.gbl2.addWidget(self.positionx,1,0)
 
-		self.positiony=ValBox(label="Y:",value=0)
-		self.gbl2.addWidget(self.positiony,1,1)
+		#self.positiony=ValBox(label="Y:",value=0)
+		#self.gbl2.addWidget(self.positiony,1,1)
 
-		self.positionz=ValBox(label="Z:",value=0)
-		self.gbl2.addWidget(self.positionz,1,2)
+		#self.positionz=ValBox(label="Z:",value=0)
+		#self.gbl2.addWidget(self.positionz,1,2)
 
 		
 		# max or mean
@@ -637,8 +646,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
-		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
-		if data!=None : self.set_data(data)
+		if datafile!=None : 
+			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
+		if data!=None : 
+			self.set_data(data)
 		
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
@@ -675,8 +686,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.data=None
 		self.datafile=datafile
 		imgh=EMData(datafile,0,1)
-		if self.yshort : self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
-		else: self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
+		
+		if self.yshort : 
+			self.datasize = (imgh["nx"],imgh["nz"],imgh["ny"])
+		
+		else: 
+			self.datasize = (imgh["nx"],imgh["ny"],imgh["nz"])
+		
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -686,17 +702,22 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def set_data(self,data):
 		if data==None :
-			self.datafile=None
-			self.data=None
+			self.datafile = None
+			self.data = None
 			self.xyview.set_data(None)
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
 			return
 		
-		self.data=data
-		self.datafile=None
-		if self.yshort: self.datasize=(data["nx"],data["nz"],data["ny"])
-		else: self.datasize=(data["nx"],data["ny"],data["nz"])
+		self.data = data
+		self.datafile = None
+		
+		if self.yshort: 
+			self.datasize = (data["nx"],data["nz"],data["ny"])
+		
+		else: 
+			self.datasize = (data["nx"],data["ny"],data["nz"])
+		
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -706,7 +727,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def get_cube(self,x,y,z):
 		"""Returns a box-sized cube at the given center location"""
-		bs=self.boxsize()
+		
+		contrast=self.contrast
+		bs = self.boxsize()
 		
 		if self.yshort:
 			if self.data!=None:
@@ -717,14 +740,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
 				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 				r.process_inplace("xform.flip",{"axis":"z"})
-			else: return None
+				if contrast:								#jesus
+					r=r*-1
+			else: 
+				return None
 
 		else :
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
-			else: return None
+				if contrast:								#jesus
+					r=r*-1
+					
+			else: 
+				return None
 		
 		if self.apix!=0 : 
 			r["apix_x"]=self.apix
@@ -736,7 +766,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 
 	def get_slice(self,n,xyz):
+
 		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
+		contrast=self.contrast
 		if self.yshort:
 			if self.data!=None :
 				if xyz==0:
@@ -753,13 +785,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
 					r.set_size(self.datasize[2],self.datasize[1],1)
+					if contrast:								#jesus
+						r=r*-1
 				elif xyz==2:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
 					r.set_size(self.datasize[0],self.datasize[1],1)
+					if contrast:								#jesus
+						r=r*-1
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
+					if contrast:								#jesus
+						r=r*-1
 			else: return None
 			
 		else :
@@ -778,13 +816,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
 					r.set_size(self.datasize[1],self.datasize[2],1)
+					if contrast:								#jesus
+						r=r*-1
 				elif xyz==1:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
 					r.set_size(self.datasize[0],self.datasize[2],1)
+					if contrast:								#jesus
+						r=r*-1
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
+					if contrast:								#jesus
+						r=r*-1
 
 			else : return None
 
@@ -1110,11 +1154,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
 		if not quiet:
 			# Get the cube from the original data (normalized)
-			cube=self.get_cube(*box)
+			cube = self.get_cube(*box)
 			self.boxviewer.set_data(cube)
 			
 			# Make a z projection and store it in the list of all boxes
-			proj=cube.process("misc.directional_sum",{"axis":"z"})
+			proj = cube.process("misc.directional_sum",{"axis":"z"})
 			try: self.boxesimgs[n]=proj
 			except:
 				for i in range(len(self.boxesimgs),n+1): self.boxesimgs.append(None)
