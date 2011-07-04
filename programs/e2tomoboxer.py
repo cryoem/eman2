@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten)
+# Author: Steven Ludtke  2/8/2011 (rewritten); Jesus Galaz - Update 7/2011
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -49,7 +49,7 @@ from emshape import EMShape
 from valslider import *
 
 
-def unbinned_extractor(boxsize,x,y,z,cbin,tomogram=argv[1]):
+def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
 
 	boxsize=boxsize*cbin
 	x=x*cbin
@@ -59,6 +59,14 @@ def unbinned_extractor(boxsize,x,y,z,cbin,tomogram=argv[1]):
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
+
+	if contrast:
+		e=e*-1
+		
+	#e.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
+	#e.process_inplace("xform.flip",{"axis":"z"})
+	e=e.process('normalize.edgemean')
+	
 	return(e)
 
 def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,reverse_contrast):
@@ -187,7 +195,10 @@ def main():
 								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
 								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
 	
-	parser.add_option("--lowpass",type="float",help="Lowpass filter to apply to the tomogram prior to loading it for boxing",default=0.0)
+	parser.add_option("--lowpass",type="int",help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0)
+	parser.add_option("--preprocess",type="string",help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. 
+				For example, a specific filter with specific parameters you might like. 
+				Type 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
 	
 	#parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
 	#parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
@@ -227,7 +238,11 @@ def main():
 										IMOD by default, then the line should have been:\n
 										1243 45 3412\n''')
 	(options, args) = parser.parse_args()
-		
+	
+	if options.preprocess: 
+		options.preprocess = parsemodopt(options.preprocess)
+		print "options.preprocess is", options.preprocess
+
 	if len(args) != 1: 
 		parser.error("You must specify a single volume data file on the command-line.")		
 	
@@ -261,22 +276,33 @@ def main():
 			
 			if options.reverse_contrast:
 				img = img*(-1)
+				
+			if options.lowpass:
+				filt=1.0/options.lowpass
+				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
 			
 			print "Done !"
 			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin)
+			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast)
 		else : 
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
 			img=args[0]
+			modd = False
 			if options.bin > 1:
-				img = args[0].replace('.','_bin' + str(options.bin) + '.')
-				cmd = 'e2proc3d.py ' + args[0] + ' ' + img + ' --process=math.meanshrink:n=' + str(options.bin)
-				print "Supposedly, I should ggenerate this newly binned tomogram as datafile", img
-				print "And the command to do so is", cmd
+				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
 				os.system(cmd)
-				
+				img = imgnew
+				modd = True
+			if options.lowpass:
+				imgnew = img.replace('.','_lp' + str(options.lowpass) + '.')
+				filt=1.0/options.lowpass
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
+				os.system(cmd)
+				img = imgnew
+				modd = True
 			
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast)
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,mod=modd)
 			
 		boxer.show()
 		app.execute()
@@ -493,7 +519,7 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=False): #jesus
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=False,mod=False): #jesus
 		
 	
 		QtGui.QWidget.__init__(self)
@@ -504,6 +530,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.bin=bin			#jesus
 		self.contrast=contrast		#jesus
+		self.mod=mod			#jesus
 		
 		self.setWindowTitle("MAIN e2tomoboxer.py")
 		
@@ -734,12 +761,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.yshort:
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-				r.process_inplace("xform.flip",{"axis":"z"})
+				#r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})	#jesus
+				#r.process_inplace("xform.flip",{"axis":"z"})
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-				r.process_inplace("xform.flip",{"axis":"z"})
+				#r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})	#jesus
+				#r.process_inplace("xform.flip",{"axis":"z"})
 				if contrast:								#jesus
 					r=r*-1
 			else: 
@@ -905,11 +932,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			#img=self.get_cube(b[0],b[1],b[2])
 			bs=self.boxsize()
 			binf=self.bin
+			contrast=self.contrast
 			
-			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+			if self.yshort:								#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
 			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
 			
 			img['origin_x'] = 0						#jesus
 			img['origin_y'] = 0				
@@ -927,7 +955,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			if progress.wasCanceled() : break
 		
 	def menu_file_save_boxes_stack(self):
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)")) #jesus
 		
 		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")
@@ -1362,6 +1390,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.xzview.set_origin(xzo[0],newor[1],True)
 
 	def closeEvent(self,event):
+		
 		print "Exiting"
 		self.boxviewer.close()
 		self.boxesviewer.close()
@@ -1369,6 +1398,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+		if self.mod:
+			print "The temporary datafile to remove is", self.datafile
+			os.system('rm ' + self.datafile)
 
 	#def closeEvent(self,event):
 		#self.target().done()
