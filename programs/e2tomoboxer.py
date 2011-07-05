@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten); Jesus Galaz - Update 7/2011
+# Author: Steven Ludtke  2/8/2011 (rewritten)
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -30,8 +30,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-from sys import argv #jesus
-
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from optparse import OptionParser
@@ -47,132 +45,6 @@ from emimagemx import EMImageMXWidget
 from emimage3d import EMImage3DWidget
 from emshape import EMShape
 from valslider import *
-
-
-def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
-
-	boxsize=boxsize*cbin
-	x=x*cbin
-	y=y*cbin
-	z=z*cbin
-
-	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-	e = EMData()
-	e.read_image(tomogram,0,False,r)
-
-	if contrast:
-		e=e*-1
-		
-	#e.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-	#e.process_inplace("xform.flip",{"axis":"z"})
-	e=e.process('normalize.edgemean')
-	
-	return(e)
-
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,reverse_contrast):
-
-	clines = open(coordinates,'r').readlines()
-	set = len(clines)
-	
-	if subset:
-		if subset > set:
-			print "WARNING: The total amount of lines in the coordinates files is LESS that the subset of particles to box you specified; therefore, ALL particles will be extracted"
-		else:
-			set=subset
-	
-	print "The size of the set of sub-volumes to extract is", set
-	for i in range(set):
-	
-		#Some people might manually make ABERANT coordinates files with commas, tabs, or more than once space in between coordinates
-    	
-	       	clines[i] = clines[i].replace(", ",' ')	
-		clines[i] = clines[i].replace(",",' ')
-		clines[i] = clines[i].replace("x",'')
-		clines[i] = clines[i].replace("y",'')
-		clines[i] = clines[i].replace("z",'')
-		clines[i] = clines[i].replace("=",'')
-        	clines[i] = clines[i].replace("_",' ')
-		clines[i] = clines[i].replace("\n",' ')
-		clines[i] = clines[i].replace("\t",' ')
-		clines[i] = clines[i].replace("  ",' ')
-		clines[i] = clines[i].split()		
-		
-		x = int(clines[i][0])
-		y = int(clines[i][1])
-		z = int(clines[i][2])
-
-		if cbin > 1:
-	                x = x * cbin
-  			y = y * cbin
-			z = z * cbin		
-		
-		#if cbinx > 1:
-		#	x = int(clines[i][0]) * cbinx
-		#if cbiny > 1:
-		#	y = int(clines[i][0]) * cbiny
-		#if cbinz > 1:
-		#	z = int(clines[i][0]) * cbinz
-
-		if swapyz:
-			print '''You indicated that Y and Z coordinates are flipped in the coordinates file, respect to the orientation of the tomogram; 
-			therefore, they will be swapped'''
-			aux = y
-			y = z
-			z = aux
-
-		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
-
-		#r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-        	#e = EMData()
-		#e.read_image(tomogram,0,False,r)
-		
-		e=unbinned_extractor(boxsize,x,y,z,cbin)
-
-		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
-		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
-		#or if erroneous binning factors are provided
-		
-		if e['mean'] != 0:
-			
-			#It IS CONVENIENT to record any processing done on the particles as header parameters
-			#to easily track what has been done to them. All relevant EMAN2 processing steps on sub-volumes are recorded as parameters starting with e2spt
-			
-			#if reverse_contrast:
-			#	e = e*(-1)
-			#	e['e2spt_contrast_reversed'] = 'yes'
-			#else:
-			#	e['e2spt_contrast_reversed'] = 'no'
-
-			e['e2spt_tomogram'] = tomogram
-			e['e2spt_coordx'] = x
-			e['e2spt_coordy'] = y
-			e['e2spt_coordz'] = z
-			
-			#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
-			#This can create ANNOYING visualization problems in Chimera
-			
-			e['origin_x'] = 0
-			e['origin_y'] = 0
-			e['origin_z'] = 0
-
-			e = e.process('normalize.edgemean')
-			e['e2spt_normalize.edgemean'] = 'yes'
-
-			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
-			
-			k=i
-			if output_format == 'single':
-				name = output.split('.')[0] + '_' + str(i).zfill(3) + '.' + output.split('.')[1]
-				k=0
-			else:
-				name = output
-			
-			e.write_image(name,k)
-			
-		else:
-			print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
-				Your coordinates file and/or the binning factors specified might be MESSED UP. 
-				Also, make sure to specify --yshort if the 'ice thickness' (that is, the shortest legth of your tomogram) lies along the Y direction"""	
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -191,122 +63,26 @@ def main():
 	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the tomogram header",default=0.0)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	parser.add_option('--bin', type='int', default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. 
-								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
-								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
-	
-	parser.add_option("--lowpass",type="int",help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0)
-	parser.add_option("--preprocess",type="string",help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. 
-				For example, a specific filter with specific parameters you might like. 
-				Type 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
-	
-	#parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	
-	parser.add_option('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, and for the extracted sub-volumes.
-											Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color
-											of the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.
-											If they look black you MUST specify this option''')
-	
-	#parameters for commandline boxer
-	
-	parser.add_option('--coords', type='str', default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
-	
-	parser.add_option('--cbin', type='int', default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.
-								For example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, 
-								but want to extract the sub-volumes from the UNbinned version of that tomogram''')
-	
-	#parser.add_option('--cbinx', type='int', default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
-	#							Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
-
-	#parser.add_option('--cbiny', type='int', default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-	#parser.add_option('--cbinz', type='int', default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-
-	parser.add_option('--subset', type='int', default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.
-								0 means "box them all" because it makes no sense to box none''')
-	parser.add_option('--output', type='str', default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
-	parser.add_option('--output_format', type='str', default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.
-										For example, if you specify --output=myparticles.hdf\n
-										but also specify --output_format=single\n
-										then the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
-	
-	parser.add_option('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.
-										For example, the coordinates file migh thave a line like this:\n
-										1243 3412 45\n
-										where clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out from
-										IMOD by default, then the line should have been:\n
-										1243 45 3412\n''')
 	(options, args) = parser.parse_args()
-	
-	if options.preprocess: 
-		options.preprocess = parsemodopt(options.preprocess)
-		print "options.preprocess is", options.preprocess
-
-	if len(args) != 1: 
-		parser.error("You must specify a single volume data file on the command-line.")		
-	
-	if not file_exists(args[0]): 
-		parser.error("%s does not exist" %args[0])
-
+		
+	if len(args) != 1: parser.error("You must specify a single volume data file on the command-line.")
+	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
-#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")	
-#	logid=E2init(sys.argv)
-
-			
-	#if options.binx > 1 or options.biny > 1 or options.binz > 1: #JESUS
-	#	img = EMData(args[0],0)
-	#	options.binx > 1:
-	#	options.biny > 1:
-	#	options.binz > 1:
-
-	if options.coords:						#JESUS
-		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
+#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
 	
-	else:							
-		app = EMApp()
-		if options.inmemory: 
-			print "Reading tomogram. Please wait."
-			
-			img = EMData(args[0],0)
-			
-			if options.bin > 1:
-				img = img.process('math.meanshrink',{'n':options.bin})
-			
-			if options.reverse_contrast:
-				img = img*(-1)
-				
-			if options.lowpass:
-				filt=1.0/options.lowpass
-				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
-			
-			print "Done !"
-			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast)
-		else : 
-	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
-			img=args[0]
-			modd = False
-			if options.bin > 1:
-				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)
-				img = imgnew
-				modd = True
-			if options.lowpass:
-				imgnew = img.replace('.','_lp' + str(options.lowpass) + '.')
-				filt=1.0/options.lowpass
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
-				os.system(cmd)
-				img = imgnew
-				modd = True
-			
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,mod=modd)
-			
-		boxer.show()
-		app.execute()
-	#	E2end(logid)
+#	logid=E2init(sys.argv)
+	
+	app = EMApp()
+	if options.inmemory : 
+		print "Reading tomogram. Please wait."
+		img=EMData(args[0],0)
+		print "Done !"
+		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
+	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
+	boxer.show()
+	app.execute()
+#	E2end(logid)
 
 class EMAverageViewer(QtGui.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -457,7 +233,7 @@ class EMBoxViewer(QtGui.QWidget):
 		self.d3view = EMImage3DWidget()
 		self.gbl.addWidget(self.d3view,1,0)
 		
-		self.wfilt = ValSlider(rng=(0,100),label="Filter:",value=0.0)
+		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
 		self.gbl.addWidget(self.wfilt,2,0,1,2)
 		
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
@@ -519,20 +295,13 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=False,mod=False): #jesus
-		
-	
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
 		self.apix=apix
-		
-		self.bin=bin			#jesus
-		self.contrast=contrast		#jesus
-		self.mod=mod			#jesus
-		
-		self.setWindowTitle("MAIN e2tomoboxer.py")
+		self.setWindowTitle("e2tomoboxer.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -582,47 +351,29 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
 		self.oldboxsize=boxsize
 		
-		# Position boxes showing current position		#Jesus - Coordinates should be displayed
-		#self.positionx=ValBox(label="X:",value=0)
-		#self.gbl2.addWidget(self.positionx,1,0)
-
-		#self.positiony=ValBox(label="Y:",value=0)
-		#self.gbl2.addWidget(self.positiony,1,1)
-
-		#self.positionz=ValBox(label="Z:",value=0)
-		#self.gbl2.addWidget(self.positionz,1,2)
-
-		
 		# max or mean
 		self.wmaxmean=QtGui.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
-		#self.gbl2.addWidget(self.wmaxmean,1,0)
-		self.gbl2.addWidget(self.wmaxmean,4,0)
-
+		self.gbl2.addWidget(self.wmaxmean,1,0)
 		
 		# number slices
 		self.wnlayers=QtGui.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)
-		self.gbl2.addWidget(self.wnlayers,4,1)
+		self.gbl2.addWidget(self.wnlayers,1,1)
 		
 		# Local boxes in side view
-		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")		#jesus - should be true by default; no use for checkbox
+		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
 		self.gbl2.addWidget(self.wlocalbox,2,0)
-		self.gbl2.addWidget(self.wlocalbox,5,0)
-
 		
 		# scale factor
 		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		#self.gbl2.addWidget(self.wscale,3,0,1,2)
-		self.gbl2.addWidget(self.wscale,6,0,1,2)
-
+		self.gbl2.addWidget(self.wscale,3,0,1,2)
 		
 		# 2-D filters
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
-		#self.gbl2.addWidget(self.wfilt,4,0,1,2)
-		self.gbl2.addWidget(self.wfilt,7,0,1,2)
+		self.gbl2.addWidget(self.wfilt,4,0,1,2)
 		
 		
 		
@@ -651,8 +402,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
 		QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
 		QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-		
-		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )	#jesus
+		QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
 		
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
 		QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
@@ -673,10 +423,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 
-		if datafile!=None : 
-			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
-		if data!=None : 
-			self.set_data(data)
+		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
+		if data!=None : self.set_data(data)
 		
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
@@ -713,13 +461,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.data=None
 		self.datafile=datafile
 		imgh=EMData(datafile,0,1)
-		
-		if self.yshort : 
-			self.datasize = (imgh["nx"],imgh["nz"],imgh["ny"])
-		
-		else: 
-			self.datasize = (imgh["nx"],imgh["ny"],imgh["nz"])
-		
+		if self.yshort : self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
+		else: self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -729,59 +472,47 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def set_data(self,data):
 		if data==None :
-			self.datafile = None
-			self.data = None
+			self.datafile=None
+			self.data=None
 			self.xyview.set_data(None)
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
 			return
 		
-		self.data = data
-		self.datafile = None
-		
-		if self.yshort: 
-			self.datasize = (data["nx"],data["nz"],data["ny"])
-		
-		else: 
-			self.datasize = (data["nx"],data["ny"],data["nz"])
-		
+		self.data=data
+		self.datafile=None
+		if self.yshort: self.datasize=(data["nx"],data["nz"],data["ny"])
+		else: self.datasize=(data["nx"],data["ny"],data["nz"])
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
 		
 		self.wdepth.setValue(self.datasize[2]/2)
 		self.update_all()
-	
+
 	def get_cube(self,x,y,z):
 		"""Returns a box-sized cube at the given center location"""
-		
-		contrast=self.contrast
-		bs = self.boxsize()
-		
+		bs=self.boxsize()
+
 		if self.yshort:
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				#r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})	#jesus
-				#r.process_inplace("xform.flip",{"axis":"z"})
+				r.process_inplace("normalize.edgemean")
+				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
+				r.process_inplace("xform.mirror",{"axis":"z"})
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				#r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})	#jesus
-				#r.process_inplace("xform.flip",{"axis":"z"})
-				if contrast:								#jesus
-					r=r*-1
-			else: 
-				return None
+				r.process_inplace("normalize.edgemean")
+				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
+				r.process_inplace("xform.mirror",{"axis":"z"})
+			else: return None
 
 		else :
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bs/2,bs,bs,bs))
-				if contrast:								#jesus
-					r=r*-1
-					
-			else: 
-				return None
+			else: return None
 		
 		if self.apix!=0 : 
 			r["apix_x"]=self.apix
@@ -790,12 +521,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 		r.process_inplace("normalize.edgemean")
 		return r
-	
 
 	def get_slice(self,n,xyz):
-
 		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
-		contrast=self.contrast
 		if self.yshort:
 			if self.data!=None :
 				if xyz==0:
@@ -812,19 +540,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
 					r.set_size(self.datasize[2],self.datasize[1],1)
-					if contrast:								#jesus
-						r=r*-1
 				elif xyz==2:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
 					r.set_size(self.datasize[0],self.datasize[1],1)
-					if contrast:								#jesus
-						r=r*-1
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
-					if contrast:								#jesus
-						r=r*-1
 			else: return None
 			
 		else :
@@ -843,19 +565,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
 					r.set_size(self.datasize[1],self.datasize[2],1)
-					if contrast:								#jesus
-						r=r*-1
 				elif xyz==1:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
 					r.set_size(self.datasize[0],self.datasize[2],1)
-					if contrast:								#jesus
-						r=r*-1
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
-					if contrast:								#jesus
-						r=r*-1
 
 			else : return None
 
@@ -915,13 +631,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.update_box(len(self.boxes)-1)
 
 	def menu_file_save_boxloc(self):
-		binf=self.bin 								#jesus
-
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 		
 		out=file(fsp,"w")
 		for b in self.boxes:
-			out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
+			out.write("%d\t%d\t%d\n"%(b[0],b[1],b[2]))
 		out.close()
 		
 	def menu_file_save_boxes(self):
@@ -929,24 +643,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			#img=self.get_cube(b[0],b[1],b[2])
-			bs=self.boxsize()
-			binf=self.bin
-			contrast=self.contrast
-			
-			if self.yshort:								#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
-			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
-			
-			img['origin_x'] = 0						#jesus
-			img['origin_y'] = 0				
-			img['origin_z'] = 0
-
-			if fsp[:4].lower()=="bdb:" : 
-				img.write_image("%s_%03d"%(fsp,i),0)
-			elif "." in fsp: 
-				img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+			img=self.get_cube(b[0],b[1],b[2])
+			if fsp[:4].lower()=="bdb:" : img.write_image("%s_%03d"%(fsp,i),0)
+			elif "." in fsp: img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
 			else :
 				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 				return
@@ -955,7 +654,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			if progress.wasCanceled() : break
 		
 	def menu_file_save_boxes_stack(self):
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)")) #jesus
+		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))
 		
 		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")
@@ -963,19 +662,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			#img=self.get_cube(b[0],b[1],b[2])
-			bs=self.boxsize()
-			binf=self.bin
-
-			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
-			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
-			
-			img['origin_x'] = 0						#jesus
-			img['origin_y'] = 0				
-			img['origin_z'] = 0
-			
+			img=self.get_cube(b[0],b[1],b[2])
 			img.write_image(fsp,i)
 			
 			progress.setValue(i+1)
@@ -1007,22 +694,20 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		bs=self.boxsize()
 		
 		# update shape display
-		if self.wlocalbox.isChecked():						#jesus- limiting side boxes should be default
-		
+		if self.wlocalbox.isChecked():
 			xzs=self.xzview.get_shapes()
 			for i in range(len(self.boxes)):
 				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
 					xzs[i][0]="rect"
 				else : xzs[i][0]="hidden"
-
+				
 			zys=self.zyview.get_shapes()
 			for i in range(len(self.boxes)):
 				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
 					zys[i][0]="rect"
 				else : zys[i][0]="hidden"
-		
 		else :
-			xzs=self.xzview.get_shapes()					#jesus
+			xzs=self.xzview.get_shapes()
 			for i in range(len(self.boxes)): xzs[i][0]="rect"
 			zys=self.zyview.get_shapes()
 			for i in range(len(self.boxes)): zys[i][0]="rect"
@@ -1059,25 +744,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""updates xy view due to a new slice range"""
 		
 		if self.datafile==None and self.data==None: return
-		
-		
-		# Boxes should also be limited by default in the XY view
-		if len(self.boxes) > 0:
-			zc=self.wdepth.value()
-			#print "The current depth is", self.wdepth.value()
-			bs=self.boxsize()
-			xys=self.xyview.get_shapes()
-			for i in range(len(self.boxes)):
-				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
-				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
-				if abs(self.boxes[i][2] - zc) < bs/2: 
-					#print "Which is less than half the box thus it survives"
-					xys[i][0]="rect"
-				else : 
-					xys[i][0]="hidden"
-					#print "Which is more than half the box and thus it dies"
-		
-			self.xyview.shapechange=1
 		
 		if self.wmaxmean.isChecked() : avgr=Averagers.get("minmax",{"max":1})
 		else : avgr=Averagers.get("mean")
@@ -1162,8 +828,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if box[2]<bs2 : box[2]=bs2
 		if box[2]>self.datasize[2]-bs2 : box[2]=self.datasize[2]-bs2
 #		print self.boxes
-
-
 		self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2)))
 		self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
 		self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
@@ -1173,8 +837,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.zyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,2)))
 		self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
 		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
-	
-
+		
 		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
 		else : self.xyview.update()
 		self.update_sides()
@@ -1182,11 +845,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
 		if not quiet:
 			# Get the cube from the original data (normalized)
-			cube = self.get_cube(*box)
+			cube=self.get_cube(*box)
 			self.boxviewer.set_data(cube)
 			
 			# Make a z projection and store it in the list of all boxes
-			proj = cube.process("misc.directional_sum",{"axis":"z"})
+			proj=cube.process("misc.directional_sum",{"axis":"z"})
 			try: self.boxesimgs[n]=proj
 			except:
 				for i in range(len(self.boxesimgs),n+1): self.boxesimgs.append(None)
@@ -1220,7 +883,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			if self.inside_box(i,x,y) :
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else:
-				
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
 					self.update_box(i)
 				break
@@ -1254,13 +916,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def xy_wheel (self,event):
 		if event.delta() > 0:
-			self.wdepth.setValue(self.wdepth.value()+2)
+			self.wdepth.setValue(self.wdepth.value()+4)
 		elif event.delta() < 0:
-			self.wdepth.setValue(self.wdepth.value()-2)
-		
-		if len(self.boxes) > 0:			#jesus - boxes should disappear in Z when they're in a Z 1/2 the boxsize away from their center
-			self.update_xy()		#xy view needs to be updated to take this into account as you scroll
-		
+			self.wdepth.setValue(self.wdepth.value()-4)
 	
 	def xy_scale(self,news):
 		"xy image view has been rescaled"
@@ -1283,11 +941,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :	#jesus ????
-			#if self.inside_box(i,x,self.cury,z) :
-
-				if event.modifiers()&Qt.ShiftModifier: 
-					self.del_box(i)
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :
+				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
 					self.update_box(i)
@@ -1341,8 +996,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):	#jesus - ????
-			#if self.inside_box(i,self.curx,y,z):
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
@@ -1390,7 +1044,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.xzview.set_origin(xzo[0],newor[1],True)
 
 	def closeEvent(self,event):
-		
 		print "Exiting"
 		self.boxviewer.close()
 		self.boxesviewer.close()
@@ -1398,9 +1051,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
-		if self.mod:
-			print "The temporary datafile to remove is", self.datafile
-			os.system('rm ' + self.datafile)
 
 	#def closeEvent(self,event):
 		#self.target().done()

@@ -64,13 +64,13 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis, means mirror by changing the sign of the respective axis;");
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "mirror an image.";
+			return "Mirrors an image along the specified axis. This will shift the image center for even box sizes. Use the 'xform.flip' processor to preserve center.";
 		}
 		
 		static const string NAME;

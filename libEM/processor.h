@@ -4518,13 +4518,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;");
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis.");
 			return d;
 		}
 
 		virtual string get_desc() const
 		{
-			return "flip an image around an axis.";
+			return "Mirrors an image along the specified axis, preserving the center. This will introduce a plane of 0's for even box sizes. Use 'xform.mirror' processor to avoid the zero plane, but not preserve the center.";
 		}
 
 		static const string NAME;
