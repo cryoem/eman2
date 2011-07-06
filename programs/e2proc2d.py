@@ -535,11 +535,14 @@ def main():
 					
 					if i==n1:
 						if 'mrc8bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+							out3d_img.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'.mrc', 0, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+							out3d_img.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
-							out3d_img.write_image(outfile)
+							if options.inplace:
+								out3d_img.write_image(outfile)
+							else:
+								out3d_img.write_image(outfile, -1)
 				else:   #output a single 2D image or a 2D stack			
 					if 'mrc8bit' in optionlist:
 						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
