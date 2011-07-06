@@ -45,7 +45,8 @@ class EMCube(EMItem3D):
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
-		self.size = size    
+		self.size = size  
+		self.boundingboxsize = size
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
@@ -89,6 +90,7 @@ class EMSphere(EMItem3D):
 		self.radius = radius
 		self.slices = int(radius)
 		self.stacks = int(radius)
+		self.boundingboxsize = radius
 		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
@@ -133,6 +135,7 @@ class EMCylinder(EMItem3D):
 		self.height = height
 		self.slices = int(radius)
 		self.stacks = int(radius)
+		self.boundingboxsize = max(self.radius, self.height)
 
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]

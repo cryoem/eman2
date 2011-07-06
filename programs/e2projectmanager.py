@@ -38,26 +38,22 @@ class EMProjectManager(QtGui.QMainWindow):
 		QtGui.QMainWindow.__init__(self)
 		self.makemenues()
 		
-		centralwidget = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
-		vbox.addWidget(self.maketiltebarwidget())
-		lhbox = QtGui.QHBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
+		
+		centralwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		grid.addWidget(self.maketiltebarwidget(), 0, 0, 1, 2)
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
-		#workflowcontrollabel.setAlignment(QtCore.Qt.AlignCenter)
 		workflowcontrollabel.setFont(font)
-		lhbox.addWidget(workflowcontrollabel)
+		grid.addWidget(workflowcontrollabel, 1,0)
 		logbooklabel = QtGui.QLabel("LogBook", centralwidget)
 		logbooklabel.setFont(font)
-		#logbooklabel.setAlignment(QtCore.Qt.AlignCenter)
-		lhbox.addWidget(logbooklabel)
-		vbox.addLayout(lhbox)
-		hbox = QtGui.QHBoxLayout()
-		hbox.addWidget(self.makestackedwidget())
-		hbox.addWidget(self.maketexteditwidget())
-		vbox.addLayout(hbox)
-		centralwidget.setLayout(vbox)
+		grid.addWidget(logbooklabel, 1,1)
+		grid.addWidget(self.makestackedwidget(),2,0)
+		grid.addWidget(self.maketexteditwidget(),2,1)
+		centralwidget.setLayout(grid)
+
 		self.setCentralWidget(centralwidget)
 		self.makestatusbar()
 		
@@ -73,8 +69,24 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
 		filemenu.addAction(exit)
 		
+		# Project
+		projectmenu = menubar.addMenu('&Project')
+		newproject = QtGui.QAction('New Project', self)
+		newproject.setShortcut('Ctrl+N')
+		projectmenu.addAction(newproject)
+		newproject.setStatusTip('New Project')
+		openproject = QtGui.QAction('Open Project', self)
+		openproject.setShortcut('Ctrl+O')
+		openproject.setStatusTip('Open Project')
+		projectmenu.addAction(openproject)
+		editproject = QtGui.QAction('Edit Project', self)
+		editproject.setShortcut('Ctrl+E')
+		editproject.setStatusTip('Edit Project')
+		projectmenu.addAction(editproject)
+		
 		# Options
-		optionsmenu = menubar.addMenu('&Options')
+		#optionsmenu = menubar.addMenu('&Options')
+		
 		
 		# Mode
 		modemenu = menubar.addMenu('&Mode')
@@ -92,6 +104,19 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
+		filebrowser = QtGui.QAction('File Browser', self)
+		filebrowser.setShortcut('Ctrl+F')
+		filebrowser.setStatusTip('File Browser')
+		utilsmenu.addAction(filebrowser)
+	
+		# Help
+		helpmenu = menubar.addMenu('&Help')
+		about = QtGui.QAction('About', self)
+		about.setStatusTip('About')
+		helpmenu.addAction(about)
+		helpdoc = QtGui.QAction('Help', self)
+		helpdoc.setStatusTip('Help')
+		helpmenu.addAction(helpdoc)
 		
 	def maketiltebarwidget(self):
 		tbwidget = QtGui.QSplitter(QtCore.Qt.Horizontal)
@@ -124,6 +149,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def makestackedwidget(self):
 		self.tree_stacked_widget = QtGui.QStackedWidget()
+		self.tree_stacked_widget.setMaximumWidth(300)
 		self.tree_stacked_widget.addWidget(self.maketreewidget())
 		self.tree_stacked_widget.addWidget(self.maketomotreewidget())
 		

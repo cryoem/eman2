@@ -301,11 +301,16 @@ class ControlPannel(QtGui.QWidget):
 		QtCore.QObject.connect(self.current_tool_combobox, QtCore.SIGNAL("activated(int)"), self.current_tool_combobox_changed)
 	
 	def add_controls(self, layout):
+		butbox = QtGui.QHBoxLayout()
+		self.write_box_but=QtGui.QPushButton("Write Boxes")
+		butbox.addWidget(self.write_box_but)
 		self.write_but=QtGui.QPushButton("Write Output")
-		layout.addWidget(self.write_but)
+		butbox.addWidget(self.write_but)
+		layout.addLayout(butbox)
 		self.done_but=QtGui.QPushButton("Done")
 		layout.addWidget(self.done_but)
 		
+		self.connect(self.write_box_but,QtCore.SIGNAL("clicked(bool)"),self.on_write_box)
 		self.connect(self.write_but,QtCore.SIGNAL("clicked(bool)"),self.on_write)
 		self.connect(self.done_but,QtCore.SIGNAL("clicked(bool)"),self.on_done)
 	
@@ -350,6 +355,10 @@ class ControlPannel(QtGui.QWidget):
 		for window in self.mediator.windowlist:
 			window.write_particles(window.filename, ("bdb:RCTparticles#"+os.path.splitext(window.filename)[0]),self.mediator.boxsize,normproc="normalize.edgemean")
 	
+	def on_write_box(self):
+		for window in self.mediator.windowlist:
+			window.write_boxes(os.path.splitext(window.filename)[0]+".box",self.mediator.boxsize)
+		
 	def on_done(self):
 		for wid in self.mediator.widgetlist:
 			if wid != None:

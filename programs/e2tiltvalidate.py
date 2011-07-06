@@ -37,7 +37,10 @@ import os, math
 
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
-	tilted particles must be presented. The untilted and tilted particle stack must have a one-to-one relationship. For more details see:
+	tilted particles must be presented. The untilted and tilted particle stack must have a one-to-one relationship. In the contour plot, the Tiltaxis is along positive 'Y'
+	The tiltaxis angle can be determined from e2RCTboxer.py uisng PairPicker mode. For example, if the tiltaxis is 45 degrees and the tilt angle is -15 degrees, there should
+	be a peak in the -X, -Y quadrant at 225 degrees at a magnitude of 15.
+	For more details see:
 	Optiomal Determination of Particle Orientation, Absolute Hand, and COntrast Loss in Single-particle Electron Cryomicroscopy. Rosenthal, P.B., and Henderson, R. JMB, 333 (2003) pg 721-745
 	"""
 	progname = os.path.basename(sys.argv[0])
@@ -164,7 +167,12 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrang
 			#score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
-	maxpeak = scoremx.calc_min_location()
+	# Denoise the contiur plot
+	radius = 4
+	scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
+	scoremx_blur = scoremx_blur.get_clip(Region(radius, radius, scoremx_blur.get_xsize() - radius*2, scoremx_blur.get_ysize() - radius*2))
+	# Find the peak
+	maxpeak = scoremx_blur.calc_min_location()
 	distplot.set_value_at(maxpeak[0], maxpeak[1], distplot.get_value_at(maxpeak[0], maxpeak[1]) + 1.0)
 
 def run(command):

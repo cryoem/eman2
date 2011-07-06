@@ -400,6 +400,14 @@ class MainWin:
 			self.rctwidget.handle_image_save(image)
 			if str(normproc) != "None": image.process_inplace(normproc)
 			image.write_image(out_file_name,i)
+			
+	def write_boxes(self,out_file_name,box_size):
+		boxfile = open(out_file_name, 'w')
+		for i,box in enumerate(self.boxes.boxlist):
+			boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x),int(box.y),box_size,box_size))
+		boxfile.close()
+			
+		
 class EMBoxList:
 	'''
 	This is a container for the EMBox objects, this class follows the compiste pattern

@@ -289,6 +289,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		get_application().attach_child(self)
 	def __init_icons(self):
 		self.icons = {}
+		print get_image_directory()
 		self.icons["single_image"] = QtGui.QIcon(get_image_directory() + "single_image.png")
 		self.icons["single_image_3d"] = QtGui.QIcon(get_image_directory() + "single_image_3d.png")
 		self.icons["eulerxplor"] = QtGui.QIcon(get_image_directory() + "eulerxplor.png")
