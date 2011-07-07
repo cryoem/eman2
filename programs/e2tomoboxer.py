@@ -264,26 +264,30 @@ def main():
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
 	
 #	logid=E2init(sys.argv)
+
+	if options.coords:
+		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
 	
-	else:							
+	else:		
+		img = args[0]
+					
 		app = EMApp()
 		if options.inmemory: 
-			print "Reading tomogram. Please wait."
-			
 			#img = EMData(args[0],0)
-			img = args[0]
-			
 			if options.bin > 1:
 				print "The tomogram is being shrunk by a factor of %d" %(options.bin)
 				#img = img.process('math.meanshrink',{'n':options.bin})
 
 				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)											#If the tomogram will be binned, there's no need to load the fulll version
-				img = EMData(imgnew,0)										#and bin it here. That's TOO slow. It's best to do so at the commandline.
+				os.system(cmd)	
+				
+				print "Reading tomogram. Please wait."
+											#If the tomogram will be binned, there's no need to load the fulll version
+				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
 				cmd = 'rm ' + imgnew		#Remove "temporary" binned tomogram after loading it to memory.
 			else:
-				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk"
+				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
 				img = EMData(img,0)
 			
 			if options.reverse_contrast:
@@ -308,13 +312,27 @@ def main():
 			particles in a bined or pre-low pass filtered tomogram'''
 			modd = False
 			if options.bin > 1:
-				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
 				os.system(cmd)
 				img = imgnew
 				modd = True
+				
+			if options.reverse_contrast:
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
+				os.system(cmd)
+				img = imgnew
+				modd = True
+
 			if options.lowpass:
-				imgnew = img.replace('.','_lp' + str(options.lowpass) + '.')
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
 				os.system(cmd)
@@ -802,6 +820,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
 					r.set_size(self.datasize[2],self.datasize[1],1)
+					
 				elif xyz==2:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
@@ -872,13 +891,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def event_localbox(self,tog):
 		self.update_sides()
 
-	def boxsize(self): return int(self.wboxsize.getValue())
+	def boxsize(self): 
+		return int(self.wboxsize.getValue())
 	
-	def nlayers(self): return int(self.wnlayers.value())
+	def nlayers(self): 
+		return int(self.wnlayers.value())
 	
-	def depth(self): return int(self.wdepth.value())
+	def depth(self): 
+		return int(self.wdepth.value())
 
-	def scale(self) : return self.wscale.getValue()
+	def scale(self): 
+		return self.wscale.getValue()
 
 	def menu_file_open(self,tog):
 		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
@@ -893,11 +916,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.update_box(len(self.boxes)-1)
 
 	def menu_file_save_boxloc(self):
+		binf=self.bin 								#jesus
+
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 		
 		out=file(fsp,"w")
 		for b in self.boxes:
-			out.write("%d\t%d\t%d\n"%(b[0],b[1],b[2]))
+			out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
 		out.close()
 		
 	def menu_file_save_boxes(self):
@@ -905,9 +930,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			img=self.get_cube(b[0],b[1],b[2])
-			if fsp[:4].lower()=="bdb:" : img.write_image("%s_%03d"%(fsp,i),0)
-			elif "." in fsp: img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+			#img=self.get_cube(b[0],b[1],b[2])
+			bs=self.boxsize()
+			binf=self.bin
+			
+			if self.yshort:							#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+			else:
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+			
+			img['origin_x'] = 0						#jesus
+			img['origin_y'] = 0				
+			img['origin_z'] = 0
+
+			if fsp[:4].lower()=="bdb:" : 
+				img.write_image("%s_%03d"%(fsp,i),0)
+			elif "." in fsp: 
+				img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
 			else :
 				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 				return
@@ -924,11 +963,24 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		for i,b in enumerate(self.boxes):
-			img=self.get_cube(b[0],b[1],b[2])
+			#img=self.get_cube(b[0],b[1],b[2])
+			bs=self.boxsize()
+			binf=self.bin
+
+			if self.yshort:							#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+			else:
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+			
+			img['origin_x'] = 0						#jesus
+			img['origin_y'] = 0				
+			img['origin_z'] = 0
+			
 			img.write_image(fsp,i)
 			
 			progress.setValue(i+1)
 			if progress.wasCanceled() : break
+		
 		
 	def menu_file_quit(self):
 		self.close()
@@ -959,20 +1011,24 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.wlocalbox.isChecked():
 			xzs=self.xzview.get_shapes()
 			for i in range(len(self.boxes)):
-				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 : 
+				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2: 
 					xzs[i][0]="rect"
-				else : xzs[i][0]="hidden"
+				else: 
+					xzs[i][0]="hidden"
 				
 			zys=self.zyview.get_shapes()
 			for i in range(len(self.boxes)):
-				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 : 
+				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2: 
 					zys[i][0]="rect"
-				else : zys[i][0]="hidden"
+				else: 
+					zys[i][0]="hidden"
 		else :
 			xzs=self.xzview.get_shapes()
-			for i in range(len(self.boxes)): xzs[i][0]="rect"
+			for i in range(len(self.boxes)): 
+				xzs[i][0]="rect"
 			zys=self.zyview.get_shapes()
-			for i in range(len(self.boxes)): zys[i][0]="rect"
+			for i in range(len(self.boxes)): 
+				zys[i][0]="rect"
 			
 		self.xzview.shapechange=1
 		self.zyview.shapechange=1
@@ -1006,6 +1062,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""updates xy view due to a new slice range"""
 		
 		if self.datafile==None and self.data==None: return
+		
+		
+		# Boxes should also be limited by default in the XY view
+		if len(self.boxes) > 0:
+			zc=self.wdepth.value()
+			#print "The current depth is", self.wdepth.value()
+			bs=self.boxsize()
+			xys=self.xyview.get_shapes()
+			for i in range(len(self.boxes)):
+				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
+				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
+				if abs(self.boxes[i][2] - zc) < bs/2: 
+					#print "Which is less than half the box thus it survives"
+					xys[i][0]="rect"
+				else : 
+					xys[i][0]="hidden"
+					#print "Which is more than half the box and thus it dies"
+		
+			self.xyview.shapechange=1
 		
 		if self.wmaxmean.isChecked() : avgr=Averagers.get("minmax",{"max":1})
 		else : avgr=Averagers.get("mean")
@@ -1100,8 +1175,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
 		self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
 		
-		if self.depth()!=box[2] : self.wdepth.setValue(box[2])
-		else : self.xyview.update()
+		if self.depth()!=box[2]: 
+			self.wdepth.setValue(box[2])
+		else: 
+			self.xyview.update()
 		self.update_sides()
 
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
@@ -1127,8 +1204,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def img_selected(self,event,lc):
 #		print "sel",lc[0]
-		if event.modifiers()&Qt.ShiftModifier: self.del_box(lc[0])
-		else : self.update_box(lc[0])
+		if event.modifiers()&Qt.ShiftModifier: 
+			self.del_box(lc[0])
+		else: 
+			self.update_box(lc[0])
 		if self.curbox>=0 :
 			box=self.boxes[self.curbox]
 			self.xyview.scroll_to(box[0],box[1])
@@ -1178,10 +1257,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def xy_wheel (self,event):
 		if event.delta() > 0:
-			self.wdepth.setValue(self.wdepth.value()+4)
+			#self.wdepth.setValue(self.wdepth.value()+4)
+			self.wdepth.setValue(self.wdepth.value()+1) #jesus
+
 		elif event.delta() < 0:
-			self.wdepth.setValue(self.wdepth.value()-4)
-	
+			#self.wdepth.setValue(self.wdepth.value()-4)
+			self.wdepth.setValue(self.wdepth.value()-1) #jesus
+
+			
 	def xy_scale(self,news):
 		"xy image view has been rescaled"
 		self.wscale.setValue(news)
@@ -1288,7 +1371,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.update_box(self.curbox,True)
 		
 	def zy_up  (self,event):
-		if self.zydown!=None : self.update_box(self.curbox)
+		if self.zydown!=None: 
+			self.update_box(self.curbox)
 		self.zydown=None
 
 	def zy_scale(self,news):
