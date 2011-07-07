@@ -49,6 +49,8 @@ from valslider import *
 from sys import argv #jesus
 
 
+
+
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
@@ -57,8 +59,10 @@ It is also called when boxing from the commandline, without GUI usage, as when y
 a coordinates file
 """
 def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
-
-	boxsize=boxsize*cbin
+	print "The tomogram to open in the unbinned extractor is", tomogram
+	tomo_header=EMData(tomogram,0,True)
+	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
+	#boxsize=boxsize*cbin
 	x=x*cbin
 	y=y*cbin
 	z=z*cbin
@@ -66,13 +70,16 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
-
+	
+	print "The extracted particle has these dimensions", e['nx'],e['ny'],e['nz']
+	print "And this mean", e['mean']
+	
 	if contrast:
 		e=e*-1
 		
 	#e.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 	#e.process_inplace("xform.flip",{"axis":"z"})
-	e=e.process('normalize.edgemean')
+	#e=e.process('normalize.edgemean')
 	
 	return(e)
 
@@ -81,7 +88,7 @@ This function enables extracting sub-volumes from the command line, without open
 Usually used when "re-extracting" sub-volumes (for whatever reason) from a coordinates file previously generated.
 It allows for extraction of smaller sub-sets too.
 """
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,reverse_contrast):
+def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,contrast):
 
 
 	clines = open(coordinates,'r').readlines()
@@ -94,9 +101,10 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 			set=subset
 	
 	print "The size of the set of sub-volumes to extract is", set
+	
 	for i in range(set):
 	
-		#Some people might manually make ABERANT coordinates files with commas, tabs, or more than once space in between coordinates
+		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
     	
 	       	clines[i] = clines[i].replace(", ",' ')	
 		clines[i] = clines[i].replace(",",' ')
@@ -114,32 +122,15 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 		y = int(clines[i][1])
 		z = int(clines[i][2])
 
-		if cbin > 1:
-	                x = x * cbin
-  			y = y * cbin
-			z = z * cbin		
-		
-		#if cbinx > 1:
-		#	x = int(clines[i][0]) * cbinx
-		#if cbiny > 1:
-		#	y = int(clines[i][0]) * cbiny
-		#if cbinz > 1:
-		#	z = int(clines[i][0]) * cbinz
-
 		if swapyz:
-			print '''You indicated that Y and Z coordinates are flipped in the coordinates file, respect to the orientation of the tomogram; 
-			therefore, they will be swapped'''
+			print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
 			aux = y
 			y = z
 			z = aux
 
 		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		#r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-        	#e = EMData()
-		#e.read_image(tomogram,0,False,r)
-		
-		e=unbinned_extractor(boxsize,x,y,z,cbin)
+		e=unbinned_extractor(boxsize,x,y,z,cbin,contrast)
 
 		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
 		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
@@ -147,23 +138,16 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 		
 		if e['mean'] != 0:
 			
-			#It IS CONVENIENT to record any processing done on the particles as header parameters
-			#to easily track what has been done to them. All relevant EMAN2 processing steps on sub-volumes are recorded as parameters starting with e2spt
-			
-			#if reverse_contrast:
-			#	e = e*(-1)
-			#	e['e2spt_contrast_reversed'] = 'yes'
-			#else:
-			#	e['e2spt_contrast_reversed'] = 'no'
+		#It IS CONVENIENT to record any processing done on the particles as header parameters
 
 			e['e2spt_tomogram'] = tomogram
 			e['e2spt_coordx'] = x
 			e['e2spt_coordy'] = y
 			e['e2spt_coordz'] = z
-			
+
 			#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
 			#This can create ANNOYING visualization problems in Chimera
-			
+
 			e['origin_x'] = 0
 			e['origin_y'] = 0
 			e['origin_z'] = 0
@@ -172,20 +156,26 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 			e['e2spt_normalize.edgemean'] = 'yes'
 
 			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
-			
+
 			k=i
 			if output_format == 'single':
 				name = output.split('.')[0] + '_' + str(i).zfill(3) + '.' + output.split('.')[1]
 				k=0
 			else:
 				name = output
-			
+
 			e.write_image(name,k)
-			
+
 		else:
 			print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
-				Your coordinates file and/or the binning factors specified might be MESSED UP. 
-				Also, make sure to specify --yshort if the 'ice thickness' (that is, the shortest legth of your tomogram) lies along the Y direction"""	
+				Your coordinates file and/or the binning factors specified might be MESSED UP, or you might need to swap Y and Z, or
+				the particles are being normalized before they should 
+				"""
+	
+	return()
+
+
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -267,7 +257,6 @@ def main():
 
 	if options.coords:
 		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
-	
 	else:		
 		img = args[0]
 					
@@ -346,16 +335,18 @@ def main():
 		app.execute()
 	#	E2end(logid)
 
-	app = EMApp()
-	if options.inmemory : 
-		print "Reading tomogram. Please wait."
-		img=EMData(args[0],0)
-		print "Done !"
-		boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
-	else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
-	boxer.show()
-	app.execute()
-#	E2end(logid)
+	#app = EMApp()
+	#if options.inmemory : 
+	#	print "Reading tomogram. Please wait."
+	#	img=EMData(args[0],0)
+	#	print "Done !"
+	#	boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
+	#else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
+	#boxer.show()
+	#app.execute()
+#	#E2end(logid)
+	
+	return()
 
 class EMAverageViewer(QtGui.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -933,21 +924,24 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			#img=self.get_cube(b[0],b[1],b[2])
 			bs=self.boxsize()
 			binf=self.bin
+			contrast=self.contrast
 			
 			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
 			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
 			
 			img['origin_x'] = 0						#jesus
 			img['origin_y'] = 0				
 			img['origin_z'] = 0
+			
+			img=img.process('normalize.edgemean')
 
-			if fsp[:4].lower()=="bdb:" : 
+			if fsp[:4].lower()=="bdb:": 
 				img.write_image("%s_%03d"%(fsp,i),0)
 			elif "." in fsp: 
 				img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
-			else :
+			else:
 				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 				return
 			
@@ -966,20 +960,24 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			#img=self.get_cube(b[0],b[1],b[2])
 			bs=self.boxsize()
 			binf=self.bin
+			contrast=self.contrast
 
 			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf) 	#jesus
+				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
 			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf) 	#jesus
+				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
 			
 			img['origin_x'] = 0						#jesus
 			img['origin_y'] = 0				
 			img['origin_z'] = 0
 			
+			img=img.process('normalize.edgemean')
+			
 			img.write_image(fsp,i)
 			
 			progress.setValue(i+1)
-			if progress.wasCanceled() : break
+			if progress.wasCanceled(): 
+				break
 		
 		
 	def menu_file_quit(self):
