@@ -464,7 +464,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	return ali_list
 
 
-def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0):
+def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0, print_individual = False):
 
 	def rot_shift(x, y, alpha, sx, sy):
 		from math import pi, sin, cos
@@ -563,14 +563,13 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 
 	if val > error_threshold: return [], mirror_consistent_rate, val
 	err = transform_variance(ps, ali_params_mir_cons)
-	#  Here all errors could be printed, PAP.
-	'''
-	for i in xrange(nima):
-		print "Particle %3d :"%i,
-		if i in mir_cons_part:
-			print "error = %6.4f"%err[mir_cons_part.index(i)]
-		else: print "Mirror inconsistent"
-	'''
+
+	if print_individual:
+		for i in xrange(nima):
+			print "Particle %3d :"%i,
+			if i in mir_cons_part:
+				print "error = %6.4f"%err[mir_cons_part.index(i)]
+			else: print "Mirror inconsistent"
 	stable_set = []
 	for i in xrange(len(mir_cons_part)):
 		if err[i] < individual_error_threshold: stable_set.append([err[i], mir_cons_part[i]])
