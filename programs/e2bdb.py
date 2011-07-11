@@ -73,6 +73,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
 	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
+	parser.add_option("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
 	parser.add_option("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
 	parser.add_option("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
 	
@@ -220,6 +221,29 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			DB.close()
 			continue
 
+		if options.extractplots :
+			for db in dbs:
+				print "####  Extracting plots from ",db
+				dct=db_open_dict(path+db,ro=True)
+				
+				#### Dump
+				keys=dct.keys()
+				keys.sort()
+				for k in keys:
+					v=dct[k]
+					try :
+						ns=[len(i) for i in v]
+						fsp=db+"-"+k+".txt"
+						print "%s  (%d columns)"%(fsp,len(ns))
+						out=file(fsp,"w")
+						for i in range(ns[0]):
+							for j in range(len(ns)):
+								out.write(str(v[j][i]))
+								if j<len(ns)-1 : out.write("\t")
+							out.write("\n")
+						out.close()
+					except: continue
+				dct.close()
 			
 		if options.dump :
 			for db in dbs:
