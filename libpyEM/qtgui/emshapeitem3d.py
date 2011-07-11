@@ -34,6 +34,7 @@
 from PyQt4 import QtCore, QtGui, QtOpenGL 
 from OpenGL.GLU import *
 from OpenGL.GL import *
+import math 
 
 from emglobjects import init_glut
 from emitem3d import EMItem3D
@@ -217,9 +218,16 @@ class EMCylinder(EMItem3D):
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		quadratic = gluNewQuadric()
+		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
-		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
 		gluCylinder(quadratic,self.radius,self.radius,self.height,self.slices,self.stacks)
+		gluQuadricOrientation(quadratic,GLU_INSIDE)
+		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+		glTranslatef( 0,0,self.height)
+		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
+		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+			
 
 class EMLine(EMItem3D):
 	pass
