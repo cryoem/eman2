@@ -57,7 +57,6 @@ def main():
 	parser.add_option("--startiter", dest = "startiter", type = "int", default=0, help = "If a refinement crashes, this can be used to pick it up where it left off. This should NOT be used to change parameters, but only to resume an incomplete run.")
 	parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
 	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
 	parser.add_option("--model", dest="model", type="string",default="threed.0a.mrc", help="The name 3D image that will seed the refinement")
 	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
