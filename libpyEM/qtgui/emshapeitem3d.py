@@ -34,7 +34,6 @@
 from PyQt4 import QtCore, QtGui, QtOpenGL 
 from OpenGL.GLU import *
 from OpenGL.GL import *
-from OpenGL import GLUT
 
 from emglobjects import init_glut
 from emitem3d import EMItem3D
@@ -47,6 +46,13 @@ class EMCube(EMItem3D):
 		# size
 		self.size = size  
 		self.boundingboxsize = size
+		self.xi = -size/2
+		self.yi = -size/2
+		self.zi = -size/2
+		self.xf = size/2
+		self.yf = size/2
+		self.zf = size/2
+		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
@@ -79,8 +85,46 @@ class EMCube(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
-		init_glut()
-		GLUT.glutSolidCube(self.size)
+		# The box itself along with normal vectors
+		glBegin(GL_QUADS)	# Start Drawing The Cube
+
+		# Front Face (note that the texture's corners have to match the quad's corners)
+		glNormal3f(self.xi, self.yi, self.zi + 1); glVertex3f(self.xi, self.yi, self.zi)
+		glNormal3f(self.xf, self.yi, self.zi + 1); glVertex3f(self.xf, self.yi, self.zi)
+		glNormal3f(self.xf, self.yf, self.zi + 1); glVertex3f(self.xf, self.yf, self.zi)
+		glNormal3f(self.xi, self.yf, self.zi + 1); glVertex3f(self.xi, self.yf, self.zi)
+
+		# Back Face
+		glNormal3f(self.xi - 1, self.yi, self.zi); glVertex3f(self.xi, self.yi, self.zi)
+		glNormal3f(self.xi - 1, self.yi, self.zf); glVertex3f(self.xi, self.yi, self.zf)
+		glNormal3f(self.xi - 1, self.yf, self.zf); glVertex3f(self.xi, self.yf, self.zf)
+		glNormal3f(self.xi - 1, self.yf, self.zi); glVertex3f(self.xi, self.yf, self.zi)
+
+		# Top Face
+		glNormal3f(self.xi, self.yi, self.zf - 1); glVertex3f(self.xi, self.yi, self.zf)
+		glNormal3f(self.xi, self.yf, self.zf - 1); glVertex3f(self.xi, self.yf, self.zf)
+		glNormal3f(self.xf, self.yf, self.zf - 1); glVertex3f(self.xf, self.yf, self.zf)
+		glNormal3f(self.xf, self.yi, self.zf - 1); glVertex3f(self.xf, self.yi, self.zf)
+
+		# Bottom Face
+		glNormal3f(self.xf + 1, self.yf, self.zf); glVertex3f(self.xf, self.yf, self.zf)
+		glNormal3f(self.xf + 1, self.yf, self.zi); glVertex3f(self.xf, self.yf, self.zi)
+		glNormal3f(self.xf + 1, self.yi, self.zi); glVertex3f(self.xf, self.yi, self.zi)
+		glNormal3f(self.xf + 1, self.yi, self.zf); glVertex3f(self.xf, self.yi, self.zf)
+
+		# Right face
+		glNormal3f(self.xi, self.yf + 1, self.zi); glVertex3f(self.xi, self.yf, self.zi)
+		glNormal3f(self.xi, self.yf + 1, self.zf); glVertex3f(self.xi, self.yf, self.zf)
+		glNormal3f(self.xf, self.yf + 1, self.zf); glVertex3f(self.xf, self.yf, self.zf)
+		glNormal3f(self.xf, self.yf + 1, self.zi); glVertex3f(self.xf, self.yf, self.zi)
+
+		# Left Face
+		glNormal3f(self.xi, self.yi - 1, self.zi); glVertex3f(self.xi, self.yi, self.zi)
+		glNormal3f(self.xi, self.yi - 1, self.zf); glVertex3f(self.xi, self.yi, self.zf)
+		glNormal3f(self.xf, self.yi - 1, self.zf); glVertex3f(self.xf, self.yi, self.zf)
+		glNormal3f(self.xf, self.yi - 1, self.zi); glVertex3f(self.xf, self.yi, self.zi)
+
+		glEnd()	# Done Drawing The Cube
 
 
 class EMSphere(EMItem3D):
@@ -124,9 +168,12 @@ class EMSphere(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
-		init_glut()
-		GLUT.glutSolidSphere(self.radius, self.slices, self.stacks)
+		quadratic = gluNewQuadric()
+		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
 
+		gluSphere(quadratic,self.radius,self.slices,self.stacks)
+		
 class EMCylinder(EMItem3D):
 	def __init__(self, radius, height):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
@@ -169,8 +216,10 @@ class EMCylinder(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
-		init_glut()
-		GLUT.glutSolidCylinder(self.radius, self.height, self.slices, self.stacks)
+		quadratic = gluNewQuadric()
+		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
+		gluCylinder(quadratic,self.radius,self.radius,self.height,self.slices,self.stacks)
 
 class EMLine(EMItem3D):
 	pass
