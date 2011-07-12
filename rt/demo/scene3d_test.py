@@ -19,6 +19,12 @@ class GLdemo(QtGui.QWidget):
 		self.cube2 = EMCube(50.0)
 		self.widget.addChild(self.cube2)
 		#self.widget.activatenode(cube2)
+		
+		self.sphere = EMSphere(50.0)
+		self.widget.addChild(self.sphere)
+		
+		self.cylinder = EMCylinder(50, 300)
+		self.widget.addChild(self.cylinder)
 
 		self.inspector = EMInspector3D(self.widget)
 		self.widget.setInspector(self.inspector)
@@ -26,6 +32,8 @@ class GLdemo(QtGui.QWidget):
 		rootnode = self.inspector.addTreeNode("root node", self.widget)
 		self.inspector.addTreeNode("cube1", self.cube1, rootnode)
 		self.inspector.addTreeNode("cube2", self.cube2, rootnode)
+		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
+		self.inspector.addTreeNode("cylinder", self.cylinder, rootnode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()
