@@ -722,8 +722,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		if n <= 1: return
 		if idx == n-1: return
 		
+		widget = self.tabwidget.widget(idx) #Ross: trying this to fix memory leak
 		self.tabwidget.removeTab(idx)
+		widget.deleteLater() #Ross: trying this to fix memory leak
 		self.target().delete_current(self.targetidxmap[idx])
+
 		
 		self.target().updateGL()
 	
@@ -731,8 +734,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		n = self.tabwidget.count()
 		if n <= 1: return
 		
-		for idx in range(n-2,-1,-1):
+		for idx in range(n-2,-1,-1):	
+			widget = self.tabwidget.widget(idx) #Ross: trying this to fix memory leak
 			self.tabwidget.removeTab(idx)
+			widget.deleteLater() #Ross: trying this to fix memory leak
+		
 			self.target().delete_current(self.targetidxmap[idx])
 	
 
