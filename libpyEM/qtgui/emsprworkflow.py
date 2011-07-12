@@ -1899,7 +1899,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			# cache everything at the start, it's the most efficient approach, in this strategy
 			for name in particle_names:
 				a = EMData()
-				a.read_image(name,0,True) # header only
+				try: a.read_image(name,0,True) # header only
+				except: a=EMData(1,1)
 				d = a.get_attr_dict()
 				if d.has_key("ptcl_source_image"):
 					file_name = d["ptcl_source_image"]
@@ -1929,8 +1930,9 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			
 
 			for name in particle_names:
-				a = EMData()
-				a.read_image(name,0,True) # header only
+				a = EMData(1,1)
+				try : a.read_image(name,0,True) # header only
+				except: pass
 				d = a.get_attr_dict()
 				if d.has_key("ptcl_source_image"):
 					if d["ptcl_source_image"] == file_name:
@@ -1956,8 +1958,9 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			if len(particle_names) == 0: return "-"
 			
 			for name in particle_names:
-				a = EMData()
-				a.read_image(name,0,True) # header only
+				a = EMData(1,1)
+				try: a.read_image(name,0,True) # header only
+				except: pass
 				d = a.get_attr_dict()
 				#print d
 				if d.has_key("ptcl_source_image"):

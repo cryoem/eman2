@@ -410,6 +410,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 			pp=p.processorParms()				# processor parameters
 			if pp==None: continue				# disabled processor
 			proc=Processors.get(pp[0],pp[1])	# the actual processor object
+			print pp
 			
 			errflag=False
 			for im in self.procdata:
