@@ -220,6 +220,11 @@ class ValSlider(QtGui.QWidget):
 				else : 
 					self.value=float(x)
 #				print "new text ",self.value
+
+				# If the user enters a value out of range, adjust the slider range
+				if self.value>self.rng[1] : self.rng[1]=self.value
+				if self.value<self.rng[0] : self.rng[0]=self.value
+				
 				self.updates()
 				if self.value!=self.oldvalue:
 					self.emit(QtCore.SIGNAL("valueChanged"),self.value)
@@ -494,7 +499,9 @@ class CheckBox(QtGui.QWidget):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
-		if value==None : value=""
+		if value==None : value=False
+		if value!=False and value!=True : value=True
+		
 		self.ignore=0
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
@@ -525,6 +532,7 @@ class CheckBox(QtGui.QWidget):
 		
 		
 		self.check = QtGui.QCheckBox(self)
+#		print "'%s'"%str(value)
 		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)
 		
@@ -533,7 +541,7 @@ class CheckBox(QtGui.QWidget):
 		if showenable>=0 : self.setEnabled(showenable)
 
 	def setEnabled(self,ena):
-		self.text.setEnabled(ena)
+		self.check.setEnabled(ena)
 		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
 		
 	def getEnabled(self):

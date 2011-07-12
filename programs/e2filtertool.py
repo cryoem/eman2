@@ -115,7 +115,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		
 		# Enable checkbox
 		self.wenable=QtGui.QCheckBox(self)
-		self.wenable.setChecked(True)
+		self.wenable.setChecked(False)			# disable new processors by default to permit their values to be set
 		self.gbl.addWidget(self.wenable,0,1)
 		
 		# List of processor categories
@@ -193,8 +193,10 @@ class EMProcessorWidget(QtGui.QWidget):
 	def eventCatSel(self,idx):
 		"Called when the user selects a processor category"
 		cat=str(self.wcat.currentText())
-		scats=[i.split('.',1)[1] for i in self.plist if i.split(".")[0]==cat]
+		scats=['.'.join(i.split('.',1)[1:]) for i in self.plist if i.split(".")[0]==cat]
 		scats.sort()
+		for i in xrange(len(scats)):
+			if scats[i]=="" : scats[i]="---"
 		self.wsubcat.clear()
 		self.wsubcat.addItem("")
 		if len(scats)>0 : self.wsubcat.addItems(scats)
@@ -321,7 +323,8 @@ class EMProcessorTool(QtGui.QMainWindow):
 		self.needupdate=1
 		self.needredisp=0
 		self.procthread=None
-		
+		self.errors=None		# used to communicate errors back from the reprocessing thread
+
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(0.1)
@@ -353,7 +356,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 		"This swaps 2 adjacent filters, tag and tag+1"
 		w=self.filterlist[tag]
 		self.filterlist[tag-1:tag+1]=self.filterlist[tag:tag-2:-1]		#swap the entries in the list
-		w=self.vbl.removeWidget(w)
+		self.vbl.removeWidget(w)
 		self.vbl.insertWidget(tag-1,w)
 		
 		# Make sure all the tags are correct
@@ -361,7 +364,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 
 	def upPress(self,tag):
 		if tag==0 : return
-		self.swapfilters(tag)
+		self.swapFilters(tag)
 	
 	def downPress(self,tag):
 		if tag==len(self.filterlist)-1 : return
@@ -381,6 +384,10 @@ class EMProcessorTool(QtGui.QMainWindow):
 			self.procthread=threading.Thread(target=self.reprocess)
 			self.procthread.start()
 		
+		if self.errors:
+			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			self.errors=None
+
 		# When reprocessing is done, we want to redisplay from the main thread
 		if self.needredisp :
 			self.needredisp=0
@@ -398,14 +405,22 @@ class EMProcessorTool(QtGui.QMainWindow):
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
 		self.procdata=[im.copy() for im in self.origdata]
 		
+		errors=[]
 		for p in self.filterlist:
 			pp=p.processorParms()				# processor parameters
 			if pp==None: continue				# disabled processor
 			proc=Processors.get(pp[0],pp[1])	# the actual processor object
 			
+			errflag=False
 			for im in self.procdata:
-				proc.process_inplace(im)
-				
+				try: proc.process_inplace(im)
+				except: errflag=True
+			
+			if errflag: errors.append(str(pp))
+		
+		if len(errors)>0 :
+			self.errors=errors
+		
 		self.needredisp=1
 		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
 		

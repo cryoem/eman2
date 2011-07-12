@@ -47,8 +47,8 @@ def main():
 	Single particle reconstruction refinement program. This is the main program used to perform
 	iterative single-model single particle reconstruction in EMAN2. It has MANY options, many
 	of which are passed on to other programs called as part of this process. For more information
-	on the parameters and using this program, suggest reading the tutorial or using the
-	e2workflow.py interface.
+	on the parameters and using this program, we suggest reading the tutorial, using the
+	e2workflow.py interface or http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2refine
 """
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 		
@@ -72,10 +72,10 @@ def main():
 		
 	# options associated with e2simmx.py
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
-	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
-	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_option("--simaligncmp",type="string",help="Name and parameters of the comparator used by the first stage aligner",default="dot")
+	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment, currently 'refine' or not specified.", default=None)
+	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparator used by the second stage aligner. Default is dot.",default="dot")
+	parser.add_option("--simcmp",type="string",help="The name of a comparator to be used in comparing the aligned images", default="ccc")
 	parser.add_option("--simmask",type="string",help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
 	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
 	parser.add_option("--twostage", dest="twostage", type = "int", help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0)
@@ -90,10 +90,10 @@ def main():
 	parser.add_option("--classiter", type="int", help="The number of iterations to perform. Default is 1.", default=3)
 	parser.add_option("--classalign",type="string",help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip")
 	parser.add_option("--classaligncmp",type="string",help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase")
-	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
-	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
+	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Either specify 'refine' or omit the option.", default=None)
+	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is ccc.",default="ccc")
 	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
-	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
+	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is ccc", default="ccc")
 	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
 	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
 	parser.add_option("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.")
