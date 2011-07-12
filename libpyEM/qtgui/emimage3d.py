@@ -486,7 +486,8 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			previous_size = (self.data["nx"], self.data["ny"], self.data["nz"])
 			for model in self.viewables:
 				if model.get_type() == "Isosurface":
-					previous_normalized_threshold = (model.isothr - self.data["mean"])/self.data["sigma"]
+					try: previous_normalized_threshold = (model.isothr - self.data["mean"])/self.data["sigma"]
+					except: previous_normalized_threshold =1.0
 					previous_cam_data = {"rot": model.cam.t3d_stack[-1], "pos":(model.cam.cam_x, model.cam.cam_y, model.cam.cam_z), "scale":model.cam.scale}
 					break
 		#############

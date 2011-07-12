@@ -259,7 +259,7 @@ class EMProcessorWidget(QtGui.QWidget):
 	
 	def updateFilt(self,val=None):
 		"Called whenever the processor changes"
-		self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
+		if self.wenable.isChecked() : self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
 	
 	def processorName(self):
 		"Returns the name of the currently selected processor"
@@ -294,7 +294,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
-		self.mfile_save_processed=self.mfile.addAction("Save processed data")
+		self.mfile_save_filter=self.mfile.addAction("Save Processor Param")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
 		self.setCentralWidget(QtGui.QScrollArea())
@@ -307,7 +307,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 		self.addFilter()
 		
 		# file menu
-		QtCore.QObject.connect(self.mfile_save_processed,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_processed  )
+		QtCore.QObject.connect(self.mfile_save_filter,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_filter  )
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
 		self.viewer=None			# viewer window for data
@@ -355,7 +355,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 	def swapFilters(self,tag):
 		"This swaps 2 adjacent filters, tag and tag+1"
 		w=self.filterlist[tag]
-		self.filterlist[tag-1:tag+1]=self.filterlist[tag:tag-2:-1]		#swap the entries in the list
+		self.filterlist[tag-1],self.filterlist[tag]=self.filterlist[tag],self.filterlist[tag-1]
 		self.vbl.removeWidget(w)
 		self.vbl.insertWidget(tag-1,w)
 		
@@ -397,6 +397,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 		
 		
 	def procChange(self,tag):
+#		print "change"
 		self.needupdate=1
 		
 	def reprocess(self):
@@ -410,7 +411,7 @@ class EMProcessorTool(QtGui.QMainWindow):
 			pp=p.processorParms()				# processor parameters
 			if pp==None: continue				# disabled processor
 			proc=Processors.get(pp[0],pp[1])	# the actual processor object
-			print pp
+#			print pp
 			
 			errflag=False
 			for im in self.procdata:
@@ -462,9 +463,23 @@ class EMProcessorTool(QtGui.QMainWindow):
 		
 		self.procChange(-1)
 
-	def menu_file_save_processed(self):
-		"incomplete"
+	def menu_file_save_filter(self):
+		"Saves the filter in a usable form to a text file"
+		out=file("processor.txt","a")
+		out.write("Below you will find the processor options in sequence. They can be passed together in order\nas options to a single e2proc2d.py or e2proc3d.py command to achieve the\nsame results as in e2filtertool.py\n")
+		for p in self.filterlist:
+			pp=p.processorParms()				# processor parameters
+			if pp==None : continue
+			out.write("--process=%s"%pp[0])
+			for k in pp[1]:
+				out.write(":%s=%s"%(k,str(pp[1][k])))
+			out.write("\n")
+		out.write("\n")
+		out.close()
 		
+		QtGui.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
+		
+
 	def menu_file_quit(self):
 		self.close()
 		
