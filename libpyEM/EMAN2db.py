@@ -329,7 +329,7 @@ EMData.__init__=db_emd_init
 
 #Transform.__str__ = transform_to_str
 
-def db_read_image(self,fsp,*parms):
+def db_read_image(self,fsp,*parms,**kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d])
 	
 	This function can be used to read a set of images from a file or bdb: database. Pass in
@@ -358,7 +358,16 @@ def db_read_image(self,fsp,*parms):
 #		except: 
 #			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
-	return self.read_image_c(fsp,*parms)
+	if len(kparms)!=0:
+		if not kparms.has_key('img_index'):
+			kparms['img_index'] = 0
+		if not kparms.has_key('header_only'):
+			kparms['header_only'] = False
+		if not kparms.has_key('region'):
+			kparms['region'] = None
+		if not kparms.has_key('is_3d'):
+			kparms['is_3d'] = False
+	return self.read_image_c(fsp,*parms, **kparms)
 
 EMData.read_image_c=EMData.read_image
 EMData.read_image=db_read_image
