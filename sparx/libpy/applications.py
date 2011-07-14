@@ -6579,7 +6579,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from applications   import MPI_start_end
 	from EMAN2 import Vec2f
 	from string    import lower,split
-
+	from math import cos, pi
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -6884,8 +6884,92 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					sxnew = - ddd["tx"]
 					synew = - ddd["ty"]
 					phinew  = ddd["phi"]
+					
+					phihi = phinew
+					sxi   = sxnew
+					syi   = synew
+					
+					# unique range identified by [k0,k1], [k2,k3]
+					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+					tp.set_trans( Vec2f( -sxi, -syi ) )
+					k0 = 0.0
+					k2 = k0+180
 
-					t2 = Transform({"type":"spider","phi":phinew,"theta":theta,"psi":psi})
+					if( abs( tp.at(2,2) )<1.0e-6 ):
+						if (symmetry_string[0] =="c"):
+							if sn%2 == 0:
+								k1=360.0/sn
+							else:
+								k1=360.0/2/sn
+						elif (symmetry_string[0] =="d"):
+							if sn%2 == 0:
+								k1=360.0/2/sn
+							else:
+								k1=360.0/4/sn
+					else:
+						k1=360.0/sn
+					k3 = k1 +180
+					from utilities import get_sym
+					T = get_sym(symmetry_string[0:])
+					
+					for i in xrange( len(T) ):
+						ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
+						d1 = ttt.get_params("spider")
+						
+						if ( abs( tp.at(2,2) )<1.0e-6 ):
+							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
+
+								if( ( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ) or ( d1['phi'] < float(k3) and d1['phi'] >= float(k2) )):
+									
+									sxnew = - d1["tx"]
+									synew = - d1["ty"]
+									phinew = d1['phi']
+									thetanew = d1["theta"]
+									psinew = d1["psi"]
+							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
+
+								if( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ) :
+									
+									sxnew = - d1["tx"]
+									synew = - d1["ty"]
+									phinew = d1['phi']
+									thetanew = d1["theta"]
+									psinew = d1["psi"]
+									
+						else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
+							if( sn==1):
+								sxnew = sxi
+								synew = syi
+								phinew = phihi
+								thetanew = theta
+								psinew = psi
+							else:
+
+								if (tp.at(2,2) >0.0): #theta <90
+									
+									if( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ):
+										if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
+											
+											sxnew = - d1["tx"]
+											synew = - d1["ty"]
+											phinew = d1['phi']
+											thetanew = d1["theta"]
+											psinew = d1["psi"]
+											
+								else:
+									if(  d1['phi'] <= float(k3) and d1['phi'] >= float(k2) ):
+										if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
+											
+											sxnew = - d1["tx"]
+											synew = - d1["ty"]
+											phinew = d1['phi']
+											thetanew = d1["theta"]
+											psinew = d1["psi"]
+											
+						del ttt,d1
+
+
+					t2 = Transform({"type":"spider","phi":phinew,"theta":thetanew,"psi":psinew})
 					t2.set_trans(Vec2f(-sxnew, -synew))
 					data[im].set_attr("xform.projection", t2)
 					pixer[im]  = max_3D_pixel_error(t1, t2, numr[-3])
