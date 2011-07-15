@@ -104,19 +104,43 @@ def main():
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
-	# Make simmx
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.untiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	# Make simmx untilt
+	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_untilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.untiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
+	
+	# Make simmx tilt
+	#e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.tiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	#if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+	#if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
+	#if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
+	#run(e2simmxcmd)	
 
-	# Now that we have the simmx, lets validate each particles
-	#global workingdir
-	#workingdir = "TiltValidate_3"
-	# Read in files
-	simmx= EMData.read_images("bdb:%s#simmx"%workingdir)
+	# Read in the data
+	simmx= EMData.read_images("bdb:%s#simmx_untilt"%workingdir)
 	projections = EMData.read_images("bdb:%s#projections"%workingdir)
+	#simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%workingdir)	
+	
+	# Find the differnces in alignment pars
+	#for imgnum in xrange(simmx[0].get_ysize()):
+	#	untiltbestscore = float('inf')
+	#	tiltbestscore = float('inf')
+	#	untiltbestrefnum = 0
+	#	tiltbestrefnum = 0
+	#	for refnum in xrange(simmx[0].get_xsize()):
+	#		if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
+	#			untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
+	#			untiltbestrefnum = refnum
+	#		if simmx_tilt[0].get_value_at(refnum, imgnum) < tiltbestscore:
+	#			tiltbestscore = simmx_tilt[0].get_value_at(refnum, imgnum)
+	#			tiltbestrefnum = refnum
+	#	untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
+	#	tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
+	#	print untilt_euler_xform.get_rotation("spin")["Omega"] - tilt_euler_xform.get_rotation("spin")["Omega"]
+	#exit(1)
+	# Make contour plot to validate each particle
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
 	ac = 0
@@ -164,10 +188,9 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrang
 			testprojection = volume.project("standard",totalxform)
 			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
 			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
-			#score = tilted.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
 	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
-	# Denoise the contiur plot
+	# Denoise the contiur plot, I need to experiment around with this
 	radius = 4
 	scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
 	scoremx_blur = scoremx_blur.get_clip(Region(radius, radius, scoremx_blur.get_xsize() - radius*2, scoremx_blur.get_ysize() - radius*2))

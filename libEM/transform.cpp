@@ -220,6 +220,21 @@ bool Transform::is_identity() const {
 	return true;
 }
 
+bool Transform::is_rot_identity() const {
+	for(int i=0; i<3; ++i) {
+		for(int j=0; j<3; ++j) {
+			float c = matrix[i][j];
+			Util::apply_precision(c,ERR_LIMIT);
+			if(i==j) {
+				if (c != 1.0) return false;
+			}
+			else {
+				if (c != 0.0) return false;
+			}
+		}
+	}
+	return true;
+}
 
 void Transform::set_params(const Dict& d) {
 	detect_problem_keys(d);

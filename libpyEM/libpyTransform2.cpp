@@ -209,11 +209,31 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("get_list")
 		.staticmethod("get")
 		;
+	typedef void (EMAN::Vec4f::*vec4f_set_value_at_float)(int, const float&);
+	typedef void (EMAN::Vec4f::*vec4f_set_value_float)(const float&, const float&, const float&, const float&);
+	typedef float (EMAN::Vec4f::*vec4f_at_float)(int) const;	
+    class_< EMAN::Vec4f >("Vec4f", "typedef Vec4<float> Vec4f;", init<  >())
+        .def(init< float, float, float, float >())
+        .def(init< const std::vector<float,std::allocator<float> >& >())
+        .def(init< const EMAN::Vec4i& >())
+        .def(init< const EMAN::Vec4f& >())
+        .def("normalize", &EMAN::Vec4f::normalize)
+        .def("length", &EMAN::Vec4f::length)
+        .def("set_value", (void (EMAN::Vec4f::*)(const std::vector<float,std::allocator<float> >&) )&EMAN::Vec4f::set_value)
+		.def("set_value_at", vec4f_set_value_at_float(&EMAN::Vec4f::set_value_at))
+		.def("set_value", (void (EMAN::Vec4f::*)(float, float, float, float) )vec4f_set_value_float(&EMAN::Vec4f::set_value))
+	.def("at", vec4f_at_float(&EMAN::Vec4f::at))
+	.def("__getitem__",vec4f_at_float(&EMAN::Vec4f::at))
+		.def("__setitem__",vec4f_set_value_at_float(&EMAN::Vec4f::set_value_at))
+		.def("__len__",&EMAN::Vec4f::number_of_element)
+		.def("__iter__", range(&EMAN::Vec4f::begin, &EMAN::Vec4f::end))
+    ;
 	typedef float (EMAN::Vec3f::*dot_float)(const EMAN::Vec3f&) const;
 	typedef EMAN::Vec3f (EMAN::Vec3f::*cross_float)(const EMAN::Vec3f&) const;
 	typedef void (EMAN::Vec3f::*set_value_at_float)(int, const float&);
 	typedef void (EMAN::Vec3f::*set_value_float)(const float&, const float&,const float&);
 	typedef float (EMAN::Vec3f::*at_float)(int) const;
+	
     class_< EMAN::Vec3f >("Vec3f", "typedef Vec3<float> Vec3f;", init<  >())
     	.def_pickle(Vec3f_pickle_suite())
         .def(init< float, float, float >())
@@ -587,6 +607,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("scale", &EMAN::Transform::scale, args("scale"), "Increment the scale\n \nscale - the amount to scale by\n")
 		.def("to_identity", &EMAN::Transform::to_identity, "Force the internal matrix to become the identity\n")
 		.def("is_identity", &EMAN::Transform::is_identity, "Returns whethers or this matrix is the identity\n")
+		.def("is_rot_identity", &EMAN::Transform::is_rot_identity, "Returns whethers or this matrix rotation is the identity\n")
 		.def("get_determinant", &EMAN::Transform::get_determinant, "Get the determinant of the matrix\n \nreturn the determinant\n")
 		.def("get_params_inverse",&EMAN::Transform::get_params_inverse, args("euler_type"), "Get the parameters of the inverse of the transform as though it were in RSMT order not MTSR\n \neuler_type - the euler type of the retrieved rotation\n \nreturn a dictionary containing the parameters\n")
 		.def("set_params_inverse",&EMAN::Transform::set_params_inverse, args("d"), "Set the parameters of the entire transform as though they there in the inverse format\nin other words, calling set_params_inverse(get_params_inverse()) should essentially leave\nthe object unchanged.\n \nd - the dictionary containing the inverse parameters\n")

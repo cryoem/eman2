@@ -826,10 +826,20 @@ class EMInspector3D(QtGui.QWidget):
 		return tree_item
 			
 	def _tree_widget_click(self, item, col):
+		"""
+		When a user clicks on the selection tree check box
+		"""
 		self.stacked_widget.setCurrentWidget(item.item3d.getSceneGui())
 		item.setSelectionState(item.checkState(0))
+		for ancestor in item.item3d.getSelectedAncestorNodes():
+			ancestor.EMQTreeWidgetItem.setSelectionState(False)
+		for child in item.item3d.getAllSelectedNodes()[1:]: # Lop the node itself off
+			child.EMQTreeWidgetItem.setSelectionState(False)
 		
 	def _tree_widget_visible(self, item):
+		"""
+		When a user clicks on the visible icon
+		"""
 		item.toggleVisibleState()
 		self.updateSceneGraph()
 		

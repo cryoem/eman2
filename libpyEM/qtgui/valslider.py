@@ -77,7 +77,7 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
+	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
 		#if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
@@ -90,6 +90,7 @@ class ValSlider(QtGui.QWidget):
 		self.oldvalue=value-1.0
 		self.ignore=0
 		self.intonly=0
+		self.rounding = rounding
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
@@ -264,7 +265,8 @@ class ValSlider(QtGui.QWidget):
 
 	def updatet(self):
 		self.ignore=1
-		self.text.setText(str(self.value)[:self.text.width()/10-1])
+		#self.text.setText(str(self.value)[:self.text.width()/10-1]) # Stupido!!! This will turn a sci number to a real
+		self.text.setText(str(round(self.value,self.rounding)))
 		self.ignore=0
 		
 	def updateboth(self):

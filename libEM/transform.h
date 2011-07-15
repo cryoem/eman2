@@ -311,6 +311,10 @@ namespace EMAN
 			 */
 			bool is_identity() const;
 
+			/** Returns whethers or this matrix rotation is the identity
+			 */
+			bool is_rot_identity() const;
+			
 			/** Reorthogonalize the rotation part of the matrix in place.
 			 * Does this by performing the SVD decomposition of the rotation matrix R
 			 * such that R = USV^T - since the eigenvalues of a rotation matrix are all 1 we

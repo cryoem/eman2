@@ -48,6 +48,215 @@ using std::endl;
 namespace EMAN
 {
 
+	/** The Vec4 object is a templated object, intended to instantiated
+	 * with basic types such as int, float, double etc. You may try
+	 * to use other more generic types such as classes but you may get
+	 * bad results.
+	 * Note that the normalize and length operations are precise only to 32 bits
+	 * Note there are convenient typedef so one needn't bother about using template
+	 * terminology
+	 *
+	 * WARNING This class is not as complete as Vec4f, in that I have not yet implmented object operators
+	 *
+	 * For now, only functionality is for normalization
+	 * typedef Vec4<float> Vec4f;
+	 * typedef Vec4<int> Vec4i;
+	 * typedef Vec4<double> Vec4d; // Not recommended for use unless precision is addressed in this class
+	 * @author John Flanagan
+	 * @date July 2011
+	 */
+	template<typename Type>
+	class Vec4
+	{
+		public:
+		/** One can always cast to the type of a Vec4 by accessing Vec4<Type>::type
+		*/
+		typedef Type type;
+		
+		Vec4() 
+		{
+			vec[0] = static_cast<Type>(0);
+			vec[1] = static_cast<Type>(0);
+			vec[2] = static_cast<Type>(0);
+			vec[3] = static_cast<Type>(0);
+		}
+		
+		template<typename Type2, typename Type3, typename Type4, typename Type5>
+		Vec4(const Type2& a, const Type3& b, const Type4& c, const Type5& d)
+		{
+			vec[0] = static_cast<Type>(a);
+			vec[1] = static_cast<Type>(b);
+			vec[2] = static_cast<Type>(c);
+			vec[3] = static_cast<Type>(d);
+		}
+		
+		/** Construct a Vec3 object given a std::vector object. The
+		 * std::vector object should have at least 3 items.
+		 * @param v The std::vector object. It should have at least 3 items.
+		 */
+		template<typename Type2>
+		Vec4(const vector < Type2 > &v)
+		{
+			vec[0] = static_cast<Type>(v[0]);
+			vec[1] = static_cast<Type>(v[1]);
+			vec[2] = static_cast<Type>(v[2]);
+			vec[3] = static_cast<Type>(v[3]);
+		}
+
+		/** Copy constructor copies vector elements
+		*/
+		template<typename Type2>
+		Vec4(const Vec4<Type2> &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
+			vec[2] = v[3];
+		}
+		
+		/** Destructor
+		*/
+		~Vec4() {}
+		
+		/** Calculate its length.
+		 * @return The vector's length
+		 * Warning - float precision
+		 */
+		float length() const
+		{
+			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] + vec[3] * vec[3]);
+			return (float)sqrt(t);
+		}
+		
+		/** Normalize the vector and return its length before the
+		 * normalization.
+		 * @return The length of the Vec before normalization.
+		 */
+		float normalize()
+		{
+			// Warning - float precision
+			float len = length();
+			if (len != 0) {
+				vec[0] = static_cast<Type> (vec[0] / len);
+				vec[1] = static_cast<Type> (vec[1] / len);
+				vec[2] = static_cast<Type> (vec[2] / len);
+				vec[3] = static_cast<Type> (vec[3] / len);
+			}
+			else {
+				set_value(0, 0, 0, 0);	
+			}
+			return len;
+		}
+		
+		/** Set new values using a std::vector object.
+		 * @param v A std::vector object used to set 'this' vector's value.
+		 *  It should have at least 3 items.
+		 */
+		template<typename Type2>
+		void set_value(const vector < Type2 > &v)
+		{
+			vec[0] =  static_cast<Type>(v[0]);
+			vec[1] =  static_cast<Type>(v[1]);
+			vec[2] =  static_cast<Type>(v[2]);
+			vec[3] =  static_cast<Type>(v[3]);
+		}
+
+		/** Set values at a particular index
+		 * @param index  The index to be set
+		 * @param value  The value to be set
+		 */
+		template<typename Type2>
+		void set_value_at(int index, const Type2& value)
+		{
+			vec[index] = static_cast<Type>(value);
+		}
+
+		/** Set new values to this vector object.
+		 * @param x Value of the first item.
+		 * @param y Value of the second item.
+		 * @param z Value of the third item.
+		 */
+		void set_value(const Type& a, const Type& b, const Type& c, const Type& d)
+		{
+			vec[0] =  a;
+			vec[1] =  b;
+			vec[2] =  c;
+			vec[3] =  d;
+		}
+
+		/** Get the ith item of the vector. Used in the left side of
+		* the assignment.
+		*
+		* @param i The index of the item to get. Its validality is
+		* not checked.
+		* @return The ith item of the vector.
+		*/
+		inline Type at(int i)
+		{
+			return vec[i];
+		}
+		
+		/** For python __len__
+		 *
+		 * @return the number of elements in this container. it's always 3.
+		 * */
+		int number_of_element()
+		{
+			return 4;
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the first element
+		 * */
+		Type * begin()
+		{
+			return &vec[0];
+		}
+
+		/** Add this function to make it iterable in Python,
+		 * so we can call list() or tuple() to convert Vec3f in python to a list or tuple.
+		 *
+		 * @return the iterator (here is the pointer) of the one beyond the last element.
+		 * */
+		Type * end()
+		{
+			return &vec[4];
+		}
+		
+		/** Get the ith item of the vector. Used in the right side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
+		inline Type operator[] (int i) const
+		{
+			return vec[i];
+		}
+		
+		/** Get the ith item of the vector. Used in the left side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
+		inline Type& operator[] (int i)
+		{
+			return vec[i];
+		}
+		
+		private:
+			Type vec[4];
+	};
+	
+	typedef Vec4<float> Vec4f;
+	typedef Vec4<int> Vec4i;
+	typedef Vec4<double> Vec4d;
+	
 	/** The Vec3 object is a templated object, intended to instantiated
 	 * with basic types such as int, float, double etc. You may try
 	 * to use other more generic types such as classes but you may get
