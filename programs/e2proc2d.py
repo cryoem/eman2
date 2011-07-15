@@ -169,6 +169,7 @@ def main():
 	parser.add_option("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
 	parser.add_option("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
 	parser.add_option("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
+	parser.add_option("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -543,6 +544,13 @@ def main():
 								out3d_img.write_image(outfile)
 							else:
 								out3d_img.write_image(outfile, -1)
+				elif options.unstacking:	#output a series numbered single image files
+					if 'mrc8bit' in optionlist:
+						d.write_image(outfile.split('.')[0]+'-'+str(i)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+					elif 'mrc16bit' in optionlist:
+						d.write_image(outfile.split('.')[0]+'-'+str(i)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+					else:
+						d.write_image(outfile.split('.')[0]+'-'+str(i)+'.'+outfile.split('.')[-1])
 				else:   #output a single 2D image or a 2D stack			
 					if 'mrc8bit' in optionlist:
 						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
