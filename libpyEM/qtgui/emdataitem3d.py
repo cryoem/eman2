@@ -4,8 +4,13 @@
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
 from OpenGL import GL
+from OpenGL.GL import *
+from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
 from emitem3d import EMItem3D, EMItem3DInspector
+
+
+from emglobjects import get_default_gl_colors
 
 
 class EMDataItem3D(EMItem3D):
@@ -49,6 +54,7 @@ class EMIsosurface(EMItem3D):
 		#self.enable_file_browse = enable_file_browse
 		self.force_update = False
 		
+		self.load_colors()
 		data = self.parent.data
 		assert isinstance(data, EMData)
 		self.isorender = MarchingCubes(data)
@@ -58,6 +64,11 @@ class EMIsosurface(EMItem3D):
 		if not self.widget: #TODO: code and use EMIsosurfaceInspector
 			self.widget = EMDataItem3DInspector("ISO", self)
 		return self.widget
+	
+	def load_colors(self):
+		self.colors = get_default_gl_colors()
+		
+		self.isocolor = "bluewhite"
 
 	def get_iso_dl(self):
 		# create the isosurface display list
@@ -69,7 +80,7 @@ class EMIsosurface(EMItem3D):
 				self.update_data_and_texture()
 		
 		face_z = False
-		if self.data.get_zsize() <= 2:
+		if self.parent.data.get_zsize() <= 2:
 			face_z = True
 		
 		if ( self.texture  ):
@@ -107,13 +118,13 @@ class EMIsosurface(EMItem3D):
 			glDisable(GL_LIGHTING)
 
 		
-		glPushMatrix()
-		self.cam.position(True)
-		# the ones are dummy variables atm... they don't do anything
-		self.vdtools.update(1,1)
-		glPopMatrix()
+#		glPushMatrix()
+#		self.cam.position(True)
+#		# the ones are dummy variables atm... they don't do anything
+#		self.vdtools.update(1,1)
+#		glPopMatrix()
 		
-		self.cam.position()
+#		self.cam.position()
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 or self.force_update ):
 			self.get_iso_dl()
@@ -127,13 +138,13 @@ class EMIsosurface(EMItem3D):
 		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
 		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
 		if ( self.texture ):
-			glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
+			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 		glCallList(self.isodl)
 		glPopMatrix()
 		
-		self.draw_bc_screen()
+#		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
