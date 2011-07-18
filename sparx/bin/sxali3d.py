@@ -88,28 +88,28 @@ def main():
 		if(options.n):
 			from development import ali3d_n
 			global_def.BATCH = True
-			ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
 			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, options.chunck)
 			global_def.BATCH = False
-			pass
-		if options.rantest:
-			from development import ali3d_rantest
-			global_def.BATCH = True
-			ali3d_rantest(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
-			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-			options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
-			global_def.BATCH = False
-		else:
-			from applications import ali3d
-			global_def.BATCH = True
-			ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
-			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
-			global_def.BATCH = False
+		else:	
+			if options.rantest:
+				from development import ali3d_rantest
+				global_def.BATCH = True
+				ali3d_rantest(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
+				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
+				global_def.BATCH = False
+			else:
+				from applications import ali3d
+				global_def.BATCH = True
+				ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
+				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
+				global_def.BATCH = False
 
                 if options.MPI:
 		        from mpi import mpi_finalize
