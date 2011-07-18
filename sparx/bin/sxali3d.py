@@ -91,7 +91,7 @@ def main():
 			ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
 			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, options.chunck)
+			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, options.chunk)
 			global_def.BATCH = False
 		else:	
 			if options.rantest:
