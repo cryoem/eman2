@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--npad",     type="int",    default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
 	parser.add_option("--n",        action="store_true", default=False,         help="new")
-	parser.add_option("--chunck",      type="float",  default= 0.2,             help="percentage of data used for alignment")
+	parser.add_option("--chunk",      type="float",  default= 0.2,             help="percentage of data used for alignment")
 	parser.add_option("--rantest",  action="store_true", default=False,         help="rantest")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
