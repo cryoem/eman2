@@ -44,6 +44,7 @@ def main():
 	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
 	parser.add_option("--th_grp",       type="int",     default=5,         help=" mininum number of objects to consider for stability")
 	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability")
+	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -58,8 +59,9 @@ def main():
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 
-		from development import within_group_refinement
-		from pixel_error import multi_align_stability		
+		from applications import within_group_refinement
+		from pixel_error import multi_align_stability
+		from utilities import write_text_file	
 
 		global_def.BATCH = True
 
@@ -87,12 +89,26 @@ def main():
 					all_ali_params = []
 					for ii in xrange(num_ali):
 						ali_params = []
-						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2, 1], [2, 1], [1, 0.5], 90.0, 30, 0.3, CUDA = False, R = -1)
+						if options.verbose:
+							ALPHA = []
+							SX = []
+							SY = []
+							MIRROR = []
+							SCALE = []
+						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2, 1], [2, 1], [1, 0.5], 90.0, 30, 0.3, 0.2)
 						for im in class_data:
 							alpha, sx, sy, mirror, scale = get_params2D(im)
 							ali_params.extend([alpha, sx, sy, mirror])
+							if options.verbose:
+								ALPHA.append(alpha)
+								SX.append(sx)
+								SY.append(sy)
+								MIRROR.append(mirror)
+								SCALE.append(scale)
 						all_ali_params.append(ali_params)
-					stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 1.0)
+						if options.verbose:
+							write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
+					stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 1.0, options.verbose)
 					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mirror_consistent_rate, err, len(stable_set), len(mem))
 
 		global_def.BATCH = False
