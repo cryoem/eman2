@@ -5,10 +5,11 @@
 
 from OpenGL import GL
 from OpenGL.GL import *
+from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
 from emitem3d import EMItem3D, EMItem3DInspector
-
+from valslider import ValSlider
 
 from emglobjects import get_default_gl_colors
 
@@ -25,7 +26,51 @@ class EMDataItem3D(EMItem3D):
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
+	
+	def addControls(self, vboxlayout):
+		hblbrowse = QtGui.QHBoxLayout()
+		self.file_line_edit = QtGui.QLineEdit()
+		hblbrowse.addWidget(self.file_line_edit)
+		self.file_browse_button = QtGui.QPushButton("Browse")
+		hblbrowse.addWidget(self.file_browse_button)
+		vboxlayout.addLayout(hblbrowse)
+		
+		self.file_browse_button.clicked.connect(self.on_file_browse)
+		
+	def on_file_browse(self):
+		#TODO: replace this with an EMAN2 browser window once we re-write it
+		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		self.file_line_edit.setText(file_path)
 
+class EMIsosurfaceInspector(EMItem3DInspector):
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
+		
+		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
+		self.dataChanged()
+		
+	def addControls(self, vbox):		
+		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
+		self.thr.setObjectName("thr")
+		self.thr.setValue(0.5)
+		
+		vbox.addWidget(self.thr)
+	
+	def dataChanged(self):
+		data = self.item3d.parent.data
+		
+		minden=data.get_attr("minimum")
+		maxden=data.get_attr("maximum")
+		mean=data.get_attr("mean")
+		sigma=data.get_attr("sigma")
+		iso_threshold = mean+3.0*sigma
+		
+		self.thr.setRange(minden,maxden)
+		self.thr.setValue(iso_threshold, True)
+		
+	def onThresholdSlider(self,val):
+		self.item3d.setThreshold(val)
+#		self.bright.setValue(-val,True)
 
 class EMIsosurface(EMItem3D):
 	def __init__(self, parent, children = set(), transform = None):
@@ -62,7 +107,7 @@ class EMIsosurface(EMItem3D):
 	
 	def getSceneGui(self):
 		if not self.widget: #TODO: code and use EMIsosurfaceInspector
-			self.widget = EMDataItem3DInspector("ISO", self)
+			self.widget = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.widget
 	
 	def load_colors(self):
@@ -168,4 +213,15 @@ class EMIsosurface(EMItem3D):
 		#else: glPolygonMode(GL_BACK, GL_FILL)
 		
 		#print "total time is", time()-a
+		
+	def setThreshold(self, val):
+		if (self.isothr != val):
+			self.isothr = val
+#			self.brightness = -val
+#			if ( self.texture ):
+#				self.update_data_and_texture()
+			self.get_iso_dl()
+		
+#			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
+#			self.updateGL()
 		
