@@ -55,7 +55,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		self.dataChanged()
 		
-	def addControls(self, vbox):	
+	def addControls(self, vbox):
+		# Perhaps we sould allow the inspector control this?
 		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setCheckState(QtCore.Qt.Checked) 
 		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
@@ -233,7 +234,8 @@ class EMIsosurface(EMItem3D):
 			glPushMatrix()
 			self.draw_volume_bounds()
 			glPopMatrix()
-			
+		
+		# Again the lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
 		#if ( lighting ): glEnable(GL_LIGHTING)
 		#else: glDisable(GL_LIGHTING)
 		if ( not cull ): glDisable(GL_CULL_FACE)
