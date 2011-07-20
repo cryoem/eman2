@@ -78,6 +78,8 @@ def main():
 	parser.add_option("--new",      action="store_true", default=False,         help="use rectangular recon and projection version")
 	parser.add_option("--initial_theta",      type="float", default=90.0,         help="intial theta for reference projection")
 	parser.add_option("--delta_theta",      type="float", default=1.0,         help="delta theta for reference projection")
+	parser.add_option("--n",        action="store_true", default=False,         help="new")
+	parser.add_option("--chunk",      type="float",  default= 0.2,             help="percentage of data used for alignment")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -94,11 +96,11 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		if (options.new):
-			from development import ihrsr_new
+		if (options.n):
+			from development import ihrsr_n
 			global_def.BATCH = True
-			print "new helical code is called"
-			ihrsr_new(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,options.ynumber, options.txs, options.delta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi,options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI)
+			
+			ihrsr_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk)
 			global_def.BATCH = False
 		
 		else:
