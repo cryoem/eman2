@@ -55,6 +55,8 @@ def main():
 	parser.add_option("--align", type="string",help="The name of a aligner to be used in comparing the aligned images",default="translational")
 	parser.add_option("--cmp", type="string",help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc")
 	parser.add_option("--tiltrange", type="int",help="The anglular tiltranger to search",default=15)
+	parser.add_option("--sym",  type="string",help="The recon symmetry", default="c1")
+	parser.add_option("--tiltangle", type="float", help="The stage tiltused during data collection", default=None)
 	# options associated with e2projector3d.py
 	parser.add_option("--delta", type="float",help="The angular step size for alingment", default=20.0)
 	# options associated with e2simmx.py
@@ -80,7 +82,10 @@ def main():
 	if not options.untiltdata:
 		print "Error a stack of untiled images must be presented"
 		exit(1)
-	
+	if not options.tiltangle:
+		print "Error a tiltangle must be entered"
+		exit(1)
+		
 	options.cmp=parsemodopt(options.cmp)
 	options.align=parsemodopt(options.align)
 	
@@ -100,49 +105,77 @@ def main():
 	os.mkdir(workingdir)
 	
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard" % (options.volume,options.delta,workingdir)
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,workingdir, options.sym)
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
-	# Make simmx untilt
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_untilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.untiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	# Make simmx
+	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.untiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 	
-	# Make simmx tilt
-	#e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.tiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
-	#if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
-	#if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
-	#if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
-	#run(e2simmxcmd)	
+	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.tiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
+	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
+	run(e2simmxcmd)
 
 	# Read in the data
-	simmx= EMData.read_images("bdb:%s#simmx_untilt"%workingdir)
+	simmx= EMData.read_images("bdb:%s#simmx"%workingdir)
+	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%workingdir)
 	projections = EMData.read_images("bdb:%s#projections"%workingdir)
-	#simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%workingdir)	
-	
-	# Find the differnces in alignment pars
-	#for imgnum in xrange(simmx[0].get_ysize()):
-	#	untiltbestscore = float('inf')
-	#	tiltbestscore = float('inf')
-	#	untiltbestrefnum = 0
-	#	tiltbestrefnum = 0
-	#	for refnum in xrange(simmx[0].get_xsize()):
-	#		if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
-	#			untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
-	#			untiltbestrefnum = refnum
-	#		if simmx_tilt[0].get_value_at(refnum, imgnum) < tiltbestscore:
-	#			tiltbestscore = simmx_tilt[0].get_value_at(refnum, imgnum)
-	#			tiltbestrefnum = refnum
-	#	untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
-	#	tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
-	#	print untilt_euler_xform.get_rotation("spin")["Omega"] - tilt_euler_xform.get_rotation("spin")["Omega"]
-	#exit(1)
-	# Make contour plot to validate each particle
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
+	symmeties = Symmetries.get(options.sym)
+	
+	# Find the differnces in alignment pars, this is an attempt to do per image validation
+	for imgnum in xrange(simmx[0].get_ysize()):
+		untiltbestscore = float('inf')
+		tiltbestscore = float('inf')
+		untiltbestrefnum = 0
+		tiltbestrefnum = 0
+		tiltimgnum = imgnum
+		for refnum in xrange(simmx[0].get_xsize()):
+			if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
+				untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
+				untiltbestrefnum = refnum		
+			if simmx_tilt[0].get_value_at(refnum, tiltimgnum) < tiltbestscore:
+				tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
+				tiltbestrefnum = refnum
+		# Untilt
+		untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
+		untiltrot = untilt_euler_xform.get_rotation("eman")
+		untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
+		# Tilt
+		tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
+		tiltrot = tilt_euler_xform.get_rotation("eman")
+		tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
+		# Write out test results
+		volume.project("standard", {"transform":untilt_euler_xform}).write_image('untilted_test.hdf', 2*imgnum)
+		untiltimgs[imgnum].write_image('untilted_test.hdf', 2*imgnum+1)
+		volume.project("standard", {"transform":tilt_euler_xform}).write_image('tilted_test.hdf', 2*imgnum)
+		tiltimgs[imgnum].write_image('tilted_test.hdf', 2*imgnum+1)
+		
+		# Compute tilt transform, and account for symmetry if needed (the tilt angle must be < symmetryangle/2 for this to work
+		# This is a bit of a cheat b/c it looks for the symmetric position thaty gives the best result. I wish I coould figure out how to do this w/o.....
+		invuntiltxform = untilt_euler_xform.inverse()
+		bestdistance = 129600	# 360**2
+		besttiltangle = 0.0
+		for sym in symmeties.get_syms():
+			symtilt = tilt_euler_xform*sym
+			tiltxform = symtilt*invuntiltxform
+			currenttiltangle = tiltxform.get_rotation("eman")["alt"]
+			distance = (currenttiltangle - options.tiltangle)**2
+			if distance < bestdistance:
+				bestdistance = distance
+				besttiltangle = currenttiltangle
+		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman"), untiltbestrefnum, tiltbestrefnum
+		print "The angluar distance between tilted and untiled is: %3.2f"%besttiltangle
+	exit(1)
+	
+	# Make contour plot to validate each particle
 	ac = 0
 	distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
 	distplot.to_zero()

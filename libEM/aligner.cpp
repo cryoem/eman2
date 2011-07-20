@@ -2283,7 +2283,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 		Transform sympos = *symit; //stupidly this is necessary!!!
 		//Here move to sym position and compute the score
 		EMData* transformed = this_img->process("xform",Dict("transform",&sympos));
-		score = transformed->cmp(cmp_name,this_img,cmp_params);
+		score = transformed->cmp(cmp_name,to,cmp_params);
 		delete transformed; transformed = 0;
 		
 		if (verbose) {

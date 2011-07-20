@@ -37,8 +37,8 @@ from OpenGL.GL import *
 import math 
 
 from emglobjects import init_glut
-from emitem3d import EMItem3D
-from emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
+from emitem3d import EMItem3D, EMItem3DInspector
+from emscene3d import EMScene3D, EMInspectorControlShape
 from EMAN2 import Transform
 
 class EMCube(EMItem3D):
@@ -83,7 +83,7 @@ class EMCube(EMItem3D):
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		# The box itself along with normal vectors
@@ -166,7 +166,7 @@ class EMSphere(EMItem3D):
 		# Material properties of the sphere
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		quadratic = gluNewQuadric()
@@ -214,7 +214,7 @@ class EMCylinder(EMItem3D):
 		# Material properties of the cylinder
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		quadratic = gluNewQuadric()
@@ -227,7 +227,6 @@ class EMCylinder(EMItem3D):
 		glTranslatef( 0,0,self.height)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
-			
 
 class EMLine(EMItem3D):
 	pass

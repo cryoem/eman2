@@ -39,7 +39,7 @@ from PyQt4.QtCore import Qt
 from emapplication import EMGLWidget
 from emitem3d import EMItem3D, EMItem3DInspector
 from libpyGLUtils2 import GLUtil
-from valslider import ValSlider, EMSpinWidget, EMQTColorWidget, EMLightControls, CameraControls
+from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget
 import math
 import weakref
 
@@ -241,6 +241,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
+		glEnable(GL_NORMALIZE)
 		self.firstlight = EMLight(GL_LIGHT0)
 		self.firstlight.enableLighting()
         
@@ -832,8 +833,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.stacked_widget.setCurrentWidget(item.item3d.getSceneGui())
 		item.setSelectionState(item.checkState(0))
 		for ancestor in item.item3d.getSelectedAncestorNodes():
-			ancestor.EMQTreeWidgetItem.setSelectionState(False)
-		for child in item.item3d.getAllSelectedNodes()[1:]: # Lop the node itself off
+			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
+				ancestor.EMQTreeWidgetItem.setSelectionState(False)
+		for child in item.item3d.getAllSelectedNodes()[1:]: 	# Lop the node itself off
 			child.EMQTreeWidgetItem.setSelectionState(False)
 		
 	def _tree_widget_visible(self, item):
@@ -1046,7 +1048,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 
 class EMInspectorControlShape(EMItem3DInspector):
 	"""
-	Class to make EMItem GUI SHAPE
+	Class to make EMItem GUI SHAPE Inspector
 	"""
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
@@ -1134,6 +1136,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
 from emshapeitem3d import *
+from emdataitem3d import EMDataItem3D, EMIsosurface
 
 class GLdemo(QtGui.QWidget):
 	def __init__(self):
@@ -1146,7 +1149,13 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
-
+		data = test_image_3d(1)
+		data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
+		self.emdata = EMDataItem3D(data)
+		self.widget.addChild(self.emdata)
+		self.isosurface = EMIsosurface(self.emdata, transform=Transform())
+		self.emdata.addChild(self.isosurface)
+		
 		self.inspector = EMInspector3D(self.widget)
 		self.widget.setInspector(self.inspector)
 		
@@ -1154,6 +1163,8 @@ class GLdemo(QtGui.QWidget):
 		self.inspector.addTreeNode("cube", self.cube, rootnode)
 		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
 		self.inspector.addTreeNode("cylider", self.cylider, rootnode)
+		#datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
+		self.inspector.addTreeNode("isosurface", self.isosurface, rootnode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()

@@ -32,32 +32,70 @@
 #
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
+import os
+from EMAN2db import db_open_dict
 
 class EMProjectManager(QtGui.QMainWindow):
 	def __init__(self):
 		QtGui.QMainWindow.__init__(self)
-		self.makemenues()
+		# default PM attributes
+		self.pm_icon = "../images/EMAN2Icon.tif"
+		self.pm_cwd = os.getcwd()
+		self.usingEMEN = False
+		# Load the project DataBase
+		self.loadPMdb()
 		
+		# Make the project manager layout
+		self.makeMenues()
 		font = QtGui.QFont()
 		font.setBold(True)
-		
 		centralwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
-		grid.addWidget(self.maketiltebarwidget(), 0, 0, 1, 2)
+		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 2)
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
 		workflowcontrollabel.setFont(font)
 		grid.addWidget(workflowcontrollabel, 1,0)
-		logbooklabel = QtGui.QLabel("LogBook", centralwidget)
-		logbooklabel.setFont(font)
-		grid.addWidget(logbooklabel, 1,1)
-		grid.addWidget(self.makestackedwidget(),2,0)
-		grid.addWidget(self.maketexteditwidget(),2,1)
+		guilabel = QtGui.QLabel("EMAN2 program GUI", centralwidget)
+		guilabel.setFont(font)
+		grid.addWidget(guilabel, 1,1)
+		grid.addWidget(self.makeStackedWidget(),2,0)
+		grid.addWidget(self.makeStackedGUIwidget(),2,1,2,1)
+		# Make Browse button
+		self.browsebutton = QtGui.QPushButton("Browse")
+		grid.addWidget(self.browsebutton, 3, 0)
+		# Make status bar
+		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager")
+		grid.addWidget(self.statusbar, 4,0,1,2)
 		centralwidget.setLayout(grid)
-
+		# Make status bar
 		self.setCentralWidget(centralwidget)
-		self.makestatusbar()
+		# Make logbook
+		self.logbook = LogBook()
+		self.logbook.setGeometry(400,400,400,400)
+		self.logbook.show()
 		
-	def makemenues(self):
+		QtCore.QObject.connect(self.browsebutton,QtCore.SIGNAL("clicked()"),self._on_browse)
+		
+	def _on_browse(self):
+		print "Browse"
+		#self.pm_icon = "/home/john/Desktop/MmCpnValidate.ti"
+		
+	def closeEvent(self, event):
+		self.logbook.close()
+	
+	def loadPMdb(self):
+		# This probably wont work on WINDOWS.....
+		self.pm_projects_db = db_open_dict("bdb:"+os.environ['HOME']+"#:pm_projects")
+		# Load the project if we are already in the right dir
+		self.pn_project_name = "Unknown"
+		for project in self.pm_projects_db.keys():
+			if self.pm_projects_db[project]["CWD"] == self.pm_cwd:
+				self.pn_project_name = project
+		
+	def makeMenues(self):
+		"""
+		Make the menus
+		"""
 		menubar = self.menuBar()
 		
 		# File menu
@@ -73,20 +111,26 @@ class EMProjectManager(QtGui.QMainWindow):
 		projectmenu = menubar.addMenu('&Project')
 		newproject = QtGui.QAction('New Project', self)
 		newproject.setShortcut('Ctrl+N')
+		newproject.setStatusTip('Create New Project')
+		self.connect(newproject, QtCore.SIGNAL('triggered()'), self._on_newproject)
 		projectmenu.addAction(newproject)
 		newproject.setStatusTip('New Project')
 		openproject = QtGui.QAction('Open Project', self)
 		openproject.setShortcut('Ctrl+O')
 		openproject.setStatusTip('Open Project')
+		self.connect(openproject, QtCore.SIGNAL('triggered()'), self._on_openproject)
 		projectmenu.addAction(openproject)
 		editproject = QtGui.QAction('Edit Project', self)
 		editproject.setShortcut('Ctrl+E')
 		editproject.setStatusTip('Edit Project')
 		projectmenu.addAction(editproject)
+		importdataproject = QtGui.QAction('Import data', self)
+		importdataproject.setShortcut('Ctrl+I')
+		importdataproject.setStatusTip('Import data from EMEN or Disk')
+		projectmenu.addAction(importdataproject)
 		
 		# Options
 		#optionsmenu = menubar.addMenu('&Options')
-		
 		
 		# Mode
 		modemenu = menubar.addMenu('&Mode')
@@ -107,7 +151,11 @@ class EMProjectManager(QtGui.QMainWindow):
 		filebrowser = QtGui.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
+		configureEMEN = QtGui.QAction('Configure EMEN', self)
+		configureEMEN.setShortcut('Ctrl+C')
+		configureEMEN.setStatusTip('Configure EMEN')
 		utilsmenu.addAction(filebrowser)
+		utilsmenu.addAction(configureEMEN)
 	
 		# Help
 		helpmenu = menubar.addMenu('&Help')
@@ -117,20 +165,46 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpdoc = QtGui.QAction('Help', self)
 		helpdoc.setStatusTip('Help')
 		helpmenu.addAction(helpdoc)
+	
+	def _on_sprmode(self):
+		self.tree_stacked_widget.setCurrentIndex(0)
 		
-	def maketiltebarwidget(self):
-		tbwidget = QtGui.QSplitter(QtCore.Qt.Horizontal)
+	def _on_tomomode(self):
+		self.tree_stacked_widget.setCurrentIndex(1)
+		
+	def _on_newproject(self):
+		np = DialogNewProject()
+		np.exec_()
+		self.activateWindow()
+		
+	def _on_openproject(self):
+		np = DialogOpenProject(self)
+		np.exec_()
+		self.activateWindow()
+		
+	def makeTilteBarWidget(self):
+		"""
+		Make the title bar widget (ICON + label)
+		"""
+		tbwidget = QtGui.QFrame()
 		tbwidget.setFrameShape(QtGui.QFrame.StyledPanel)
-		hbox = QtGui.QHBoxLayout()
-		self.PMIcon = QtGui.QLabel("<img src=\"../images/EMAN2Icon.tif\" />", tbwidget)
-		hbox.addWidget(self.PMIcon)
+		grid = QtGui.QGridLayout()
+		self.PMIcon = PMIcon(self.pm_icon, tbwidget)
+		grid.addWidget(self.PMIcon,0 , 0, 2, 1)
 		self.PMTitle = QtGui.QLabel("EMAN2 Project Manager ")
+		self.PMProjectNameBanner = QtGui.QLabel("Project Name: "+self.pn_project_name)
+		self.PMProjectNameBanner.setAlignment(QtCore.Qt.AlignCenter)
 		titlefont = QtGui.QFont()
 		titlefont.setPointSize(30)
 		titlefont.setBold(True)
 		self.PMTitle.setFont(titlefont)
-		hbox.addWidget(self.PMTitle)
-		tbwidget.setLayout(hbox)
+		self.PMTitle.setAlignment(QtCore.Qt.AlignBottom)
+		pmnamefont = QtGui.QFont()
+		pmnamefont.setBold(True)
+		self.PMProjectNameBanner.setFont(pmnamefont)
+		grid.addWidget(self.PMTitle, 0, 1)
+		grid.addWidget(self.PMProjectNameBanner, 1, 1)
+		tbwidget.setLayout(grid)
 		
 		return tbwidget
 	
@@ -147,21 +221,31 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.icons["resolution"] = QtGui.QIcon("../images/macimages/plot.png")
 		self.icons["tomo_hunter"] = QtGui.QIcon("../images/macimages/tomo_hunter.png")
 	
-	def makestackedwidget(self):
+	def makeStackedWidget(self):
+		"""
+		This is the stacked widget to manage the tree types
+		"""
 		self.tree_stacked_widget = QtGui.QStackedWidget()
 		self.tree_stacked_widget.setMaximumWidth(300)
-		self.tree_stacked_widget.addWidget(self.maketreewidget())
-		self.tree_stacked_widget.addWidget(self.maketomotreewidget())
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget())
+		self.tree_stacked_widget.addWidget(self.makeTomoTreeWidget())
 		
 		return self.tree_stacked_widget
 	
-	def _on_sprmode(self):
-		self.tree_stacked_widget.setCurrentIndex(0)
+	def makeStackedGUIwidget(self):
+		"""
+		Make a stacked widget
+		When a python script is called for the first time a GUI widget is made and added to the stack
+		"""
+		self.gui_stacked_widget = QtGui.QStackedWidget()
+		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
 		
-	def _on_tomomode(self):
-		self.tree_stacked_widget.setCurrentIndex(1)
+		return self.gui_stacked_widget
 		
-	def maketomotreewidget(self):
+	def makeTomoTreeWidget(self):
+		"""
+		Make the tomo tree widget
+		"""
 		self.TomoTree = QtGui.QTreeWidget()
 		self.TomoTree.setHeaderLabel("Tomography")
 		
@@ -181,7 +265,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		return self.TomoTree
 		
-	def maketreewidget(self):
+	def makeTreeWidget(self):
+		"""
+		Make the SPR tree
+		"""
 		self.SPRtree = QtGui.QTreeWidget()
 		self.SPRtree.setMinimumHeight(400)
 		self.SPRtree.setHeaderLabel("SPR")
@@ -190,8 +277,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Raw Data
 		self.rawdata = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Data"))
 		self.rawdata.setIcon(0, self.icons['single_image'])
+		self.impemen_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Import Data"))
+		self.impemen_raw_data.setIcon(0, self.icons['single_image'])
+		#self.impdisk_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Import Data From Disk"))
+		#self.impdisk_raw_data.setIcon(0, self.icons['single_image'])
 		self.filter_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Filter Raw Data"))
 		self.filter_raw_data.setIcon(0, self.icons['single_image'])
+		self.rawdata.addChild(self.impemen_raw_data)
 		self.rawdata.addChild(self.filter_raw_data)
 		# Particles
 		self.particles = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
@@ -291,18 +383,165 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.SPRtree.addTopLevelItem(self.resolution)
 		
 		return self.SPRtree
-	
-	def maketexteditwidget(self):
-		self.texteditbox = QtGui.QTextEdit()
-		return self.texteditbox
+			
+class EMAN2StatusBar(QtGui.QLabel):
+	"""
+	The Stats bar for PM
+	"""
+	def __init__(self, text):
+		QtGui.QLabel.__init__(self, text)
+		self.setFrameShape(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
+		self.setLineWidth(2)
+		self.setMargin(4)
 		
-	def makestatusbar(self):
-		self.statusbar = QtGui.QStatusBar(self)
-		self.statusbar.showMessage("Welcome to the EMAN2 Project Manager", 0)
-		#self.statusbar.addWidget(QtGui.QLabel("XXXX"))
-		self.setStatusBar(self.statusbar)
+	def setMessage(self, text):
+		self.setText(text)
 
+class PMIcon(QtGui.QLabel):
+	"""
+	The Icon manager for PM
+	"""
+	def __init__(self, image, parent=None):
+		QtGui.QLabel.__init__(self, ("<img src=\"%s\" />")%image, parent)
+	
+	def setIcon(self, image):
+		self.setText(("<img src=\"%s\" />")%image)
+		
+class LogBook(QtGui.QWidget):
+	"""
+	The Logbook for PM
+	"""
+	def __init__(self):
+		QtGui.QWidget.__init__(self)
+		self.setWindowTitle('LogBook')
+		grid = QtGui.QGridLayout()
+		font = QtGui.QFont()
+		font.setBold(True)
+		textlabel = QtGui.QLabel("EMAN2 LogBook")
+		textlabel.setFont(font)
+		self.texteditbox = QtGui.QTextEdit()
+		grid.addWidget(textlabel,0,0)
+		grid.addWidget(self.texteditbox,1,0,1,2)
+		self.savepb = QtGui.QPushButton("Save")
+		self.closepb = QtGui.QPushButton("Close")
+		grid.addWidget(self.savepb, 2,0)
+		grid.addWidget(self.closepb, 2,1)
+		self.setLayout(grid)
 
+class DialogNewProject(QtGui.QDialog):
+	"""
+	Generate the new projects dialog
+	"""
+	def __init__(self):
+		QtGui.QDialog.__init__(self, pm)
+		self.setWindowTitle('New Project')
+		self.pm = pm
+		
+		# Dialog line edit fields
+		minwidth = 8*max(len(self.pm.pm_cwd),len(self.pm.pm_icon))
+		frame = QtGui.QFrame()
+		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
+		grid = QtGui.QGridLayout()
+		project_name_label = QtGui.QLabel("Project Name")
+		self.project_name = QtGui.QLineEdit("New Project")
+		self.project_name.setMinimumWidth(minwidth)
+		grid.addWidget(project_name_label, 0, 0)
+		grid.addWidget(self.project_name, 0, 1)
+		project_directory_label = QtGui.QLabel("Project Directory")
+		self.project_directory = QtGui.QLineEdit(self.pm.pm_cwd)
+		self.project_directory.setMinimumWidth(minwidth)
+		grid.addWidget(project_directory_label, 1, 0)
+		grid.addWidget(self.project_directory, 1, 1)
+		icon_path_label = QtGui.QLabel("Project Icon")
+		self.icon_path = QtGui.QLineEdit(self.pm.pm_icon)
+		self.icon_path.setMinimumWidth(minwidth)
+		grid.addWidget(icon_path_label, 2, 0)
+		grid.addWidget(self.icon_path, 2, 1)
+		# Microscope parameters
+		if self.pm.usingEMEN == False:
+			micrscope_cs_label = QtGui.QLabel("Microscope CS")
+			self.micrscope_cs = QtGui.QLineEdit()
+			microscope_voltage_label = QtGui.QLabel("Microscope Voltage")
+			self.microscope_voltage = QtGui.QLineEdit()
+			microscope_apix_label = QtGui.QLabel("Microscope apix")
+			self.microscope_apix = QtGui.QLineEdit()
+			grid.addWidget(micrscope_cs_label, 3, 0)
+			grid.addWidget(self.micrscope_cs, 3, 1)
+			grid.addWidget(microscope_voltage_label, 4, 0)
+			grid.addWidget(self.microscope_voltage, 4, 1)
+			grid.addWidget(microscope_apix_label, 5, 0)
+			grid.addWidget(self.microscope_apix, 5, 1)
+		else:
+			pass
+			# Get these data from EMEN
+			
+		frame.setLayout(grid)
+		
+		# Ok, cancel buttons
+		makeproject_pb = QtGui.QPushButton("Make Project")
+		cancel_pb = QtGui.QPushButton("Cancel")
+		sgrid = QtGui.QGridLayout()
+		sgrid.addWidget(frame,0,0,1,2)
+		sgrid.addWidget(makeproject_pb,1,0)
+		sgrid.addWidget(cancel_pb,1,1)
+		self.setLayout(sgrid)
+		
+		self.connect(makeproject_pb, QtCore.SIGNAL('clicked()'), self._on_makeproject)
+		self.connect(cancel_pb, QtCore.SIGNAL('clicked()'), self._on_cancel)
+		
+	def _on_makeproject(self):
+		for project in self.pm.pm_projects_db.keys():
+			if project == self.project_name.text():
+				self.pm.statusbar.setMessage("Project Name is alreay in use!!!")
+				return
+			if self.pm.pm_projects_db[project]["CWD"] == self.project_directory.text():
+				self.pm.statusbar.setMessage("This project directory is already in use by another project!!!")
+				return
+		self.pm.pm_projects_db[self.project_name.text()] = {"CWD":self.project_directory.text(),"ICON":self.icon_path.text(),"CS":self.micrscope_cs.text(),"VOLTAGE":self.microscope_voltage.text(),"APIX":self.microscope_apix.text()}
+		self.pm.statusbar.setMessage("Project: "+self.project_name.text()+" created :)")
+		self.done(0)
+		
+	def _on_cancel(self):
+		self.done(1)
+		
+class DialogOpenProject(QtGui.QDialog):
+	"""
+	Generate the new projects dialog
+	"""
+	def __init__(self, pm):
+		QtGui.QDialog.__init__(self)
+		self.pm = pm
+		self.setWindowTitle('Open Project')
+		grid = QtGui.QGridLayout()
+		self.list_widget = QtGui.QListWidget()
+		# Populate list
+		for project in self.pm.pm_projects_db.keys():
+			item = QtGui.QListWidgetItem(project)
+			self.list_widget.addItem(item) 
+			if self.pm.pn_project_name == project:
+				self.list_widget.setCurrentItem(item)
+		self.list_widget.sortItems()
+		
+		grid.addWidget(self.list_widget, 0, 0, 1, 2)
+		open_pb = QtGui.QPushButton("Open Project")
+		cancel_pb = QtGui.QPushButton("Cancel")
+		grid.addWidget(open_pb)
+		grid.addWidget(cancel_pb)
+		self.setLayout(grid)
+		
+		self.connect(open_pb, QtCore.SIGNAL('clicked()'), self._on_openproject)
+		self.connect(cancel_pb, QtCore.SIGNAL('clicked()'), self._on_cancel)
+		
+	def _on_openproject(self):
+		self.pm.pn_project_name = self.list_widget.currentItem().text()
+		self.pm.statusbar.setMessage("Opened Project: "+self.pm.pn_project_name)
+		self.pm.PMProjectNameBanner.setText("Project Name: "+self.pm.pn_project_name)
+		self.PMIcon.setIcon(self.pm.pm_projects_db[self.pm.pn_project_name]['ICON'])
+		self.done(0)
+		# do some stuff......
+		
+	def _on_cancel(self):
+		self.done(1)
 		
 if __name__ == "__main__":
 	import sys

@@ -9,6 +9,7 @@ from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
 from emitem3d import EMItem3D, EMItem3DInspector
+from emscene3d import EMInspectorControlShape
 from valslider import ValSlider
 
 from emglobjects import get_default_gl_colors
@@ -47,18 +48,21 @@ class EMDataItem3DInspector(EMItem3DInspector):
 			child.inspector.dataChanged()
 		self.inspector.updateSceneGraph()
 
-class EMIsosurfaceInspector(EMItem3DInspector):
+class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		self.dataChanged()
 		
-	def addControls(self, vbox):		
+	def addControls(self, vbox):	
+		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
+		self.cullbackface.setCheckState(QtCore.Qt.Checked) 
 		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
 		
+		vbox.addWidget(self.cullbackface)
 		vbox.addWidget(self.thr)
 	
 	def dataChanged(self):
@@ -110,9 +114,27 @@ class EMIsosurface(EMItem3D):
 		assert isinstance(data, EMData)
 		self.isorender = MarchingCubes(data)
 		
+		# color Needed for inspector to work John Flanagan
+		self.diffuse = self.colors[self.isocolor]["diffuse"]
+		self.specular = self.colors[self.isocolor]["specular"]
+		self.ambient = self.colors[self.isocolor]["ambient"]		
+		self.shininess = self.colors[self.isocolor]["shininess"]
+		
+	# I have added these methods so the inspector can set the color John Flanagan
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
 	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
 	def getSceneGui(self):
-		if not self.widget: 
+		if not self.widget:
 			self.widget = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.widget
 	
@@ -145,28 +167,28 @@ class EMIsosurface(EMItem3D):
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
-		lighting = glIsEnabled(GL_LIGHTING)
+		#lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
-		depth = glIsEnabled(GL_DEPTH_TEST)
+		#depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-		normalize = glIsEnabled(GL_NORMALIZE)
-		
-		
+		#normalize = glIsEnabled(GL_NORMALIZE)
+	
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
+		# The lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
 		#glDisable(GL_CULL_FACE)
-		glEnable(GL_DEPTH_TEST)
-		glEnable(GL_NORMALIZE)
+		#glEnable(GL_DEPTH_TEST)
+		#glEnable(GL_NORMALIZE)
 		#glDisable(GL_NORMALIZE)
 		if ( self.wire ):
 			glPolygonMode(GL_FRONT,GL_LINE);
 		else:
 			glPolygonMode(GL_FRONT,GL_FILL);
 		
-		if self.light:
-			glEnable(GL_LIGHTING)
-		else:
-			glDisable(GL_LIGHTING)
+		#if self.light:
+		#	glEnable(GL_LIGHTING)
+		#else:
+		#	glDisable(GL_LIGHTING)
 
 		
 #		glPushMatrix()
@@ -182,12 +204,20 @@ class EMIsosurface(EMItem3D):
 			self.force_update = False
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
-		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
-		glColor(self.colors[self.isocolor]["ambient"])
+		# This is needed for the inspector to work John Flanagan	
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		glColor(self.ambient)
+		# I have commented this out b/c it need to be controled by the inspector John Flanagan
+		#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
+		#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
+		#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
+		#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		#glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
+		#glColor(self.colors[self.isocolor]["ambient"])
+		
 		glPushMatrix()
 		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
 		if ( self.texture ):
@@ -199,19 +229,19 @@ class EMIsosurface(EMItem3D):
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
-			glDisable(GL_LIGHTING)
+			#glDisable(GL_LIGHTING)
 			glPushMatrix()
 			self.draw_volume_bounds()
 			glPopMatrix()
 			
-		if ( lighting ): glEnable(GL_LIGHTING)
-		else: glDisable(GL_LIGHTING)
+		#if ( lighting ): glEnable(GL_LIGHTING)
+		#else: glDisable(GL_LIGHTING)
 		if ( not cull ): glDisable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
-		if ( depth ): glEnable(GL_DEPTH_TEST)
-		else : glDisable(GL_DEPTH_TEST)
+		#if ( depth ): glEnable(GL_DEPTH_TEST)
+		#else : glDisable(GL_DEPTH_TEST)
 		
-		if ( not normalize ): glDisable(GL_NORMALIZE)
+		#if ( not normalize ): glDisable(GL_NORMALIZE)
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		else: glPolygonMode(GL_FRONT, GL_FILL)
