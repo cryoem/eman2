@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 02/15/2011 - using code and concepts drawn from Jesus Montoya's scripts
+# Author: Steven Ludtke, 02/15/2011 - using code and concepts drawn from Jesus Galaz's scripts
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -87,6 +87,9 @@ def main():
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--postprocess",type="string",help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
+	
+#	parser.add_option('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
+	
 	parser.add_option("--shrink", type="int",default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	parser.add_option("--shrinkrefine", type="int",default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 #	parser.add_option("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
@@ -103,8 +106,14 @@ def main():
 		sys.exit(1)
 	if options.align : options.align=parsemodopt(options.align)
 	if options.ralign : options.ralign=parsemodopt(options.ralign)
+	print "\n!!!\n!!!\n!!!\n!!!ralign is", options.ralign
+	
+	
 	if options.aligncmp : options.aligncmp=parsemodopt(options.aligncmp)
 	if options.raligncmp : options.raligncmp=parsemodopt(options.raligncmp)
+	
+	
+	
 	if options.averager : options.averager=parsemodopt(options.averager)
 #	if options.cmpr : options.cmpr=parsemodopt(options.cmpr)
 	if options.normproc : options.normproc=parsemodopt(options.normproc)
@@ -114,27 +123,32 @@ def main():
 
 	if options.resultmx : 
 		print "Sorry, resultmx not implemented yet"
-	if options.resultmx!=None : options.storebad=True
+	if options.resultmx!=None: 
+		options.storebad=True
 
-	hdr=EMData(options.input,0,True)
-	nx=hdr["nx"]
-	ny=hdr["ny"]
-	nz=hdr["nz"]
+	hdr = EMData(options.input,0,True)
+	nx = hdr["nx"]
+	ny = hdr["ny"]
+	nz = hdr["nz"]
 	if nx!=ny or ny!=nz :
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 	
 	if options.ref!=None :
-		hdr=EMData(options.ref,0,True)
+		hdr = EMData(options.ref,0,True)
 		if hdr["nx"]!=nx or hdr["ny"]!=ny or hdr["nz"]!=nz : 
 			print "Error, ref volume not same size as input volumes"
 			sys.exit(1)
-	
-	logger=E2init(sys.argv)
+			
+	if '.' not in options.output:					#jesus
+		print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
+		sys.exit(1)
+		
+	logger = E2init(sys.argv)
 	
 	try: 
-		classmx=EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
-		ncls=int(classmx[0]["maximum"])
+		classmx = EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
+		ncls = int(classmx[0]["maximum"])
 	except:
 		ncls=1
 		#if options.resultmx!=None :
@@ -160,7 +174,9 @@ def main():
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 		pclist=[options.input]
-		if options.ref: pclist.append(options.ref)
+		
+		if options.ref: 
+			pclist.append(options.ref)
 		etc.precache(pclist)
 
 	#########################################
@@ -169,13 +185,16 @@ def main():
 
 	# outer loop over classes, ic=class number
 	for ic in range(ncls):
-		if ncls==1 : ptcls=range(nptcl)				# start with a list of particle numbers in this class
-		else : ptcls=classmx_ptcls(classmx,ic)		# This gets the list from the classmx
+		if ncls==1: 
+			ptcls=range(nptcl)				# start with a list of particle numbers in this class
+		else: 
+			ptcls=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
 		
 		if options.verbose and ncls>1 : print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
 		
 		# prepare a reference either by reading from disk or bootstrapping
-		if options.ref : ref=EMData(options.ref,ic)
+		if options.ref: 
+			ref=EMData(options.ref,ic)
 		else :
 			if nptcl==1 : 
 				print "Error: More than 1 particle required if no reference specified"
@@ -191,12 +210,13 @@ def main():
 				print "Limiting seeding to the first 64 images"
 
 			nseediter=int(log(nseed,2))			# number of iterations we'll need
-			if options.verbose : print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
+			if options.verbose: 
+				print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
 			
 			# We copy the particles for this class into bdb:seedtree_0
 			for i,j in enumerate(ptcls[:nseed]):
 				EMData(options.input,j).write_image("bdb:seedtree_0",i)
-			
+				
 			# Outer loop covering levels in the converging binary tree
 			for i in range(nseediter):
 				infile="bdb:seedtree_%d"%i
@@ -212,7 +232,8 @@ def main():
 
 				# Start the alignments for this level
 				tids=etc.send_tasks(tasks)
-				if options.verbose : print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+				if options.verbose: 
+					print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
 				# Wait for alignments to finish and get results
 				results=get_results(etc,tids,options.verbose)
@@ -252,7 +273,8 @@ def main():
 			
 			ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 			
-			postprocess(ref,options.mask,options.normproc,options.postprocess)
+			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
+			postprocess(ref,None,options.normproc,options.postprocess) #jesus
 
 			if options.sym!=None : 
 				if options.verbose : print "Apply ",options.sym," symmetry"
@@ -261,14 +283,21 @@ def main():
 			if options.savesteps :
 				ref.write_image("bdb:class_%02d"%ic,it)
 
-		if options.verbose: print "Preparing final average"
+		if options.verbose: 
+			print "Preparing final average"
 		# new average
 		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
-		if options.postprocess!=None : 
-			ref.process_inplace(options.postprocess[0],options.postprocess[1])
+		
+		#if options.postprocess!=None : 
+			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
+												#to the output final average, so no need to apply it to ref. Plus, you ALWAYS want to have a copy
+												#of the average of the raw particles, completley raw
+		ref['origin_x']=0
+		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
+		ref['origin_z']=0
 		ref.write_image(options.output,ic)
-
 	E2end(logger)
+
 
 def postprocess(img,optmask,optnormproc,optpostprocess):
 	"""Postprocesses a volume in-place"""
@@ -292,11 +321,13 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 	if optpostprocess!=None : 
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
+
 def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
+	print "\n!!!!!!!\n!!!!!!\n!!!!!!!\n!!!!!!These are the align parameters received in make average", align_parms #jesus
 	if keepsig:
 		# inefficient memory-wise
 		val=sum([p[0]["score"] for p in align_parms])
@@ -318,12 +349,19 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+		print "\n@@@@@@@@@\n@@@@@@@@\n@@@@@I have actually applied this transform to the particle", ptcl_parms[0] #jesus
+		
 		if ptcl_parms[0]["score"]<=thresh : 
 			avgr.add_image(ptcl)
 			included.append(i)
-		if saveali: ptcl.write_image("bdb:class_ptcl",i)
+		if saveali:
+			ptcl['origin_x'] = 0
+			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+			ptcl['origin_z'] = 0
+			ptcl.write_image("bdb:class_ptcl",i)
 	
-	if verbose : print "Kept %d / %d particles in average"%(len(included),len(align_parms))
+	if verbose: 
+		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 	
 	ret=avgr.finish()
 	ret["class_ptcl_idxs"]=included
