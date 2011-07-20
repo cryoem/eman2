@@ -173,7 +173,7 @@ def main():
 				besttiltangle = currenttiltangle
 		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman"), untiltbestrefnum, tiltbestrefnum
 		print "The angluar distance between tilted and untiled is: %3.2f"%besttiltangle
-	exit(1)
+	#exit(1)
 	
 	# Make contour plot to validate each particle
 	ac = 0

@@ -1150,7 +1150,7 @@ class GLdemo(QtGui.QWidget):
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
 		data = test_image_3d(1)
-		data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
+		#data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
 		self.emdata = EMDataItem3D(data)
 		self.widget.addChild(self.emdata)
 		self.isosurface = EMIsosurface(self.emdata, transform=Transform())
