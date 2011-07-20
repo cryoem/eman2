@@ -41,6 +41,11 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_line_edit.setText(file_path)
+		new_emdata = EMData(file_path)
+		self.item3d.data = new_emdata
+		for child in self.item3d.getChildren():
+			child.inspector.dataChanged()
+		self.inspector.updateSceneGraph()
 
 class EMIsosurfaceInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
@@ -71,6 +76,7 @@ class EMIsosurfaceInspector(EMItem3DInspector):
 	def onThresholdSlider(self,val):
 		self.item3d.setThreshold(val)
 #		self.bright.setValue(-val,True)
+		self.inspector.updateSceneGraph()
 
 class EMIsosurface(EMItem3D):
 	def __init__(self, parent, children = set(), transform = None):
@@ -106,7 +112,7 @@ class EMIsosurface(EMItem3D):
 		
 	
 	def getSceneGui(self):
-		if not self.widget: #TODO: code and use EMIsosurfaceInspector
+		if not self.widget: 
 			self.widget = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.widget
 	
