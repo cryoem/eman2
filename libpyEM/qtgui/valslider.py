@@ -1046,7 +1046,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
-		self._drawcamera()
 		self._drawZslice()
 		self._drawViewingVolume()
 		glFlush()
@@ -1054,10 +1053,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 	def resizeGL(self, width, height):
 		self.width = width
 		self.height = height
-		cw = float(width)/30.0
-		ch = float(width)/30.0
-		self.camerabox = [[-cw, -ch ,0],[cw,-ch,0],[-cw,ch,0],[cw,ch,0]]
-		self.lenses = [2.0*cw,0.6*cw,cw,0.8*cw,0.3*cw]
 		glViewport(0,0,width,height)
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
@@ -1070,7 +1065,10 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 	def mouseMoveEvent(self, event):
 		self.movement = event.x() - self.init_x
-		self.emit(QtCore.SIGNAL("cameraMoved(int)"), self.movement)
+		if event.buttons()&Qt.RightButton:
+			self.emit(QtCore.SIGNAL("farMoved(int)"), self.movement)
+		else:
+			self.emit(QtCore.SIGNAL("nearMoved(int)"), self.movement)
 		self.init_x = event.x()
 		
 	def _drawViewingVolume(self):
@@ -1078,19 +1076,17 @@ class CameraControls(QtOpenGL.QGLWidget):
 		# disuation using a camera analogy
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		glTranslate(self.scenegraph.camera.getZclip()/self.scale,0,-0)
 		glColor3f(1.0, 1.0, 0.0)
 		sixtydegrees = math.sin(math.radians(self.scenegraph.camera.getFovy()))
-		zslicer = (float(self.width)/4.0) - self.width/110.0	# The 110 is a fudge factor, for some reason the objects are translated by a constant factor.....
+		self.scale = float(self.scenegraph.camera.getWidth())/float(self.width)*2.0
+		origin = -self.width/110
+		near_clipping = origin + (self.scenegraph.camera.getClipNear() + self.scenegraph.camera.getZclip())/self.scale
+		far_clipping = origin + (self.scenegraph.camera.getClipFar() + self.scenegraph.camera.getZclip())/self.scale
 		glBegin(GL_LINES)
-		#glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
-		#glVertex(self.width,self.width*sixtydegrees,0)
-		#glVertex(self.width/15,0,0)	# The 15 moves the viewing volume from the camera box to the lenses
-		#glVertex(self.width,-self.width*sixtydegrees,0)
-		#glVertex(zslicer, -zslicer*sixtydegrees, 0)
-		#glVertex(zslicer, zslicer*sixtydegrees, 0)
-		glVertex(zslicer, -self.height/4, 0)
-		glVertex(zslicer, self.height/4, 0)
+		glVertex(near_clipping, -self.height/4, 0)
+		glVertex(near_clipping, self.height/4, 0)
+		glVertex(far_clipping, -self.height/4, 0)
+		glVertex(far_clipping, self.height/4, 0)
 		glEnd()
 		
 	def _drawZslice(self):
@@ -1111,53 +1107,18 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glEnable(GL_TEXTURE_2D)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		glBindTexture(GL_TEXTURE_2D, self.texture)
-		
+		aspectratio = float(self.scenegraph.camera.getHeight())/float(self.scenegraph.camera.getWidth())
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0,0.0)
-		glVertex(0,-self.width/4,-1)
+		glVertex(-self.width/4,-aspectratio*self.width/4,-1)
 		glTexCoord2f(1.0,0.0)
-		glVertex(self.width/2,-self.width/4,-1)
+		glVertex(self.width/4,-aspectratio*self.width/4,-1)
 		glTexCoord2f(1.0,1.0)
-		glVertex(self.width/2,self.width/4,-1)
+		glVertex(self.width/4,aspectratio*self.width/4,-1)
 		glTexCoord2f(0.0,1.0)
-		glVertex(-0,self.width/4,-1)
+		glVertex(-self.width/4,aspectratio*self.width/4,-1)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
-		
-	def _drawcamera(self):
-		self.scale = float(self.scenegraph.camera.getWidth())/float(self.width)*2.0
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		glTranslate(self.scenegraph.camera.getZclip()/self.scale,0,0)
-		glPushMatrix()
-		glColor3f(0.8, 0.8, 0.8)
-		
-		glBegin(GL_QUADS)
-		glVertex(self.camerabox[0])
-		glVertex(self.camerabox[1])
-		glVertex(self.camerabox[3])
-		glVertex(self.camerabox[2])
-		glEnd()
-		
-		glColor3f(1.0, 1.0, 1.0)
-		glBegin(GL_LINE_STRIP)
-		glVertex(self.camerabox[0])
-		glVertex(self.camerabox[1])
-		glVertex(self.camerabox[3])
-		glVertex(self.camerabox[2])
-		glEnd()
-		
-		glColor3f(0.3, 0.3, 0.3)
-		glTranslate(self.lenses[0],0,0)
-		glRotate(-90,0,1,0)
-		lenses = GLU.gluNewQuadric()
-		GLU.gluQuadricDrawStyle(lenses, GLU.GLU_FILL)
-		GLU.gluCylinder(lenses, self.lenses[1], self.lenses[1], self.lenses[2], 12,10)
-		lensestop = GLU.gluNewQuadric()
-		GLU.gluQuadricDrawStyle(lensestop, GLU.GLU_FILL)
-		GLU.gluCylinder(lenses, self.lenses[2], self.lenses[3], self.lenses[4], 12,10)
-	
-		glPopMatrix()
 		
 	def updateWidget(self):
 		self.update()

@@ -222,10 +222,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
-		self.camera = EMCamera(1.0, 10000.0)	# Default near,far, and zclip values
+		self.camera = EMCamera(1.0, 500.0)	# Default near,far, and zclip values
+		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None
 		self.widget = None				# Get the inspector GUI
-		self.z_clipped_changed = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
 		self.fuzzyselectionfactor = 2.0			# A fudge factor to determine the selection box 'thickness'
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
@@ -238,7 +239,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.selectorcursor = QtGui.QCursor(QtGui.QPixmap(selectorcursor),-1,-1)
 
 	def initializeGL(self):
-		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
+		glClearColor(self.clearcolor[0], self.clearcolor[1], self.clearcolor[2], self.clearcolor[3])		# Default clear color is black
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_NORMALIZE)
@@ -246,17 +247,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.firstlight.enableLighting()
         
 	def paintGL(self):
-		if self.z_clipped_changed: self.camera.update()
+		if self.reset_camera: self.camera.update()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
 		self.renderSelectedArea() 	# Draw the selection box if needed
 		self.render()			# SG nodes must have a render method
 		glFlush()			# Finish rendering
-		self.z_clipped_changed = False
+		self.reset_camera = False
 		
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
+		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 	
 	def getSceneGui(self):
 		"""
@@ -300,7 +302,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		self.camera.setCameraPosition(sfactor=2) # Factor of two to compensate for the samera already being set
+		self.camera.setCameraPosition(sfactor=1) # Factor of two to compensate for the samera already being set
 		self.render()
 		glPopMatrix()
 		
@@ -349,7 +351,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
 			glBegin(GL_LINE_LOOP)
-			z = -self.camera.getZclip() - 1
+			# set the box just in front of the cliping plane
+			z = -self.camera.getClipNear() - self.camera.getZclip()
 			glVertex3f(self.sa_xi, self.sa_yi, z)
 			glVertex3f(self.sa_xi, self.sa_yf, z)
 			glVertex3f(self.sa_xf, self.sa_yf, z)
@@ -492,7 +495,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def setZclip(self, zclip):
 		""" Set the Z clipping plane """
 		self.camera.setZclip(zclip)
-		self.z_clipped_changed = True
+		self.reset_camera = True
 		
 	def setZslice(self):
 		"""
@@ -500,15 +503,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Getting the Z slice will have problems when using perspective viewing
 		self.setAutoBufferSwap(False)
+		oldnear = self.camera.getClipNear() 
+		oldfar = self.camera.getClipFar()
+		# We want to see the full volume data rather than a clip, so move clipping planes to BIG
+		# BIG is a bit differnt for perspective and orthgraphic volumes
+		if self.camera.usingortho:
+			self.camera.setClipNear(-1000)
+			self.camera.setClipFar(1000)
+		else:
+			self.camera.setClipNear(1)
+			self.camera.setClipFar(1000)
+		self.reset_camera = True
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
-		oldzclip = self.camera.getZclip()
-		self.camera.setZclip(-1000) 		# We must move the camera back when we take a side slice
-		self.z_clipped_changed = True
 		QtOpenGL.QGLWidget.updateGL(self)
 		pixeldata = glReadPixels(10,10,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
-		self.camera.setZclip(oldzclip)
-		self.z_clipped_changed = True
+		# Then move back
+		self.camera.setClipNear(oldnear)
+		self.camera.setClipFar(oldfar)
+		self.reset_camera = True	# Reset the camera when redering the real scene
 		self.setAutoBufferSwap(True)
 		self.pixels = []
 		self.pixels.append(0)
@@ -516,6 +529,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.pixels.append(self.camera.width)
 		self.pixels.append(self.camera.height)
 		self.pixels.append(pixeldata)
+		
+	def setClearColor(self, r, g, b):
+		"""
+		Set the background colorambient
+		"""
+		glClearColor(r, g, b, 0.0)
 		
 	def updateSG(self):
 		"""
@@ -599,12 +618,11 @@ class EMLight:
 			glDisable(self.light)
 class EMCamera:
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, zclip=-500.0, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
+	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
 		@param far: The volume view far position
-		@param zclip: The zclipping plane (basicaly how far back the camera is)
 		@param usingortho: Use orthographic projection
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
@@ -612,6 +630,7 @@ class EMCamera:
 		self.far = far
 		self.near = near
 		self.fovy = fovy
+		zclip = (self.near-self.far)/2.0	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
 		else:
@@ -677,7 +696,7 @@ class EMCamera:
 		Changes projection matrix to perspective
 		"""
 		self.fovy = fovy
-		self.perspective_z = -(boundingbox/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox/2
+		self.perspective_z = -(boundingbox*2/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox
 		self.usingortho = False
 		
 
@@ -914,33 +933,66 @@ class EMInspector3D(QtGui.QWidget):
 		cwidget = QtGui.QWidget()
 		cvbox = QtGui.QVBoxLayout()
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
-		
 		cvbox.addWidget(self.camerawidget)
-		clabel = QtGui.QLabel("Camera position", cwidget)
-		clabel.setMaximumHeight(30.0)
-		clabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.camera_z = EMSpinWidget(self.scenegraph.camera.getZclip(), 1.0)
-		self.camera_z.setMaximumHeight(40.0)
-		cvbox.addWidget(clabel)
-		cvbox.addWidget(self.camera_z)
+		nhbox = QtGui.QHBoxLayout()
+		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
+		nlabel.setMaximumHeight(30.0)
+		nlabel.setAlignment(QtCore.Qt.AlignCenter)
+		self.near = EMSpinWidget(self.scenegraph.camera.getClipNear(), 1.0)
+		self.near.setMaximumHeight(40.0)
+		nhbox.addWidget(nlabel)
+		nhbox.addWidget(self.near)
+		cvbox.addLayout(nhbox)
+		fhbox = QtGui.QHBoxLayout()
+		flabel = QtGui.QLabel("Far clipping plane", cwidget)
+		flabel.setMaximumHeight(30.0)
+		flabel.setAlignment(QtCore.Qt.AlignCenter)
+		self.far = EMSpinWidget(self.scenegraph.camera.getClipFar(), 1.0)
+		self.far.setMaximumHeight(40.0)
+		fhbox.addWidget(flabel)
+		fhbox.addWidget(self.far)
+		cvbox.addLayout(fhbox)
+	
 		cwidget.setLayout(cvbox)
 
-		QtCore.QObject.connect(self.camera_z,QtCore.SIGNAL("valueChanged(int)"),self._on_camera_z)
-		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("cameraMoved(int)"),self._on_camera_move)
+		QtCore.QObject.connect(self.near,QtCore.SIGNAL("valueChanged(int)"),self._on_near)
+		QtCore.QObject.connect(self.far,QtCore.SIGNAL("valueChanged(int)"),self._on_far)
+		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("nearMoved(int)"),self._on_near_move)
+		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("farMoved(int)"),self._on_far_move)
 		
 		return cwidget
 	
-	def _on_camera_z(self, value):
-		self.camerawidget.updateWidget()
-		self.scenegraph.setZclip(value)
-		self.scenegraph.updateSG()
+	def _on_near(self, value):
+		if not self.scenegraph.camera.usingortho and value <= 0:
+			return
+		if self.scenegraph.camera.getClipFar() > value:
+			self.camerawidget.updateWidget()
+			self.scenegraph.camera.setClipNear(value)
+			self.scenegraph.updateSG()
+	
+	def _on_far(self, value):
+		if value > self.scenegraph.camera.getClipNear():
+			self.camerawidget.updateWidget()
+			self.scenegraph.camera.setClipFar(value)
+			self.scenegraph.updateSG()
 		
-	def _on_camera_move(self, movement):
-		value = self.scenegraph.camera.getZclip() + movement
-		self.camera_z.setValue(value, quiet=1)
-		self.scenegraph.setZclip(value)
-		self.scenegraph.updateSG()
-		self.camerawidget.updateWidget()
+	def _on_near_move(self, movement):
+		value = self.scenegraph.camera.getClipNear() + movement
+		if not self.scenegraph.camera.usingortho and value <= 0:
+			return
+		if self.scenegraph.camera.getClipFar() > value:
+			self.near.setValue(value, quiet=1)
+			self.scenegraph.camera.setClipNear(value)
+			self.scenegraph.updateSG()
+			self.camerawidget.updateWidget()
+		
+	def _on_far_move(self, movement):
+		value = self.scenegraph.camera.getClipFar() + movement
+		if value > self.scenegraph.camera.getClipNear():
+			self.far.setValue(value, quiet=1)
+			self.scenegraph.camera.setClipFar(value)
+			self.scenegraph.updateSG()
+			self.camerawidget.updateWidget()
 		
 	def _on_load_camera(self, idx):
 		"""
@@ -958,12 +1010,24 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		uwidget = QtGui.QWidget()
 		uvbox = QtGui.QVBoxLayout()
+		frame = QtGui.QFrame()
+		frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		fvbox = QtGui.QHBoxLayout()
+		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
+		self.backgroundcolor = EMQTColorWidget(parent=frame)
+		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
+		fvbox.addWidget(backgroundcolor_label)
+		fvbox.addWidget(self.backgroundcolor)
+		fvbox.setAlignment(QtCore.Qt.AlignCenter)
+		frame.setLayout(fvbox)
+		uvbox.addWidget(frame)
 		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
 		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
 		uvbox.addWidget(self.fuzzy_slider)
 		uwidget.setLayout(uvbox)
 		
 		QtCore.QObject.connect(self.fuzzy_slider, QtCore.SIGNAL("valueChanged"),self._on_fuzzy_slider)
+		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
 		
 		return uwidget
 	
@@ -972,6 +1036,14 @@ class EMInspector3D(QtGui.QWidget):
 		Set the fuzzy selection coeff
 		"""
 		self.scenegraph.setFuzzyFactor(value)
+	
+	def _on_bg_color(self, color):
+		rgb = color.getRgb()
+		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		self.updateSceneGraph()
+		# No, this is not  a bug.... It is a hack b/c sometimes openGL does not change its clear color the first time around!!!!!!
+		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		self.updateSceneGraph()
 		
 	def updateInspector(self):
 		"""
@@ -1149,9 +1221,9 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
-		data = test_image_3d(1)
-		#data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
-		self.emdata = EMDataItem3D(data)
+		#data = test_image_3d(1)
+		data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
+		self.emdata = EMDataItem3D(data, transform=Transform())
 		self.widget.addChild(self.emdata)
 		self.isosurface = EMIsosurface(self.emdata, transform=Transform())
 		self.emdata.addChild(self.isosurface)
@@ -1163,8 +1235,8 @@ class GLdemo(QtGui.QWidget):
 		self.inspector.addTreeNode("cube", self.cube, rootnode)
 		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
 		self.inspector.addTreeNode("cylider", self.cylider, rootnode)
-		#datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
-		self.inspector.addTreeNode("isosurface", self.isosurface, rootnode)
+		datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
+		self.inspector.addTreeNode("isosurface", self.isosurface, datanode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()

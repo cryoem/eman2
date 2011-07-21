@@ -310,6 +310,8 @@ class EMItem3DInspector(QtGui.QWidget):
 		zoomwidgetbox.addWidget(self.tz)
 		zoomwidgetbox.addWidget(self.zoom)
 		xformbox.addLayout(zoomwidgetbox)
+		self.resetbutton = QtGui.QPushButton("Reset Transform")
+		xformbox.addWidget(self.resetbutton)
                 
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
@@ -319,6 +321,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.ty,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.tz,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.zoom,QtCore.SIGNAL("valueChanged(int)"),self._on_scale)
+		QtCore.QObject.connect(self.resetbutton,QtCore.SIGNAL("clicked()"),self._on_reset)
     
 	def _on_translation(self, value):
 		self.item3d.getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
@@ -328,6 +331,13 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.item3d.getTransform().set_scale(self.zoom.getValue())
 		self.inspector.updateSceneGraph()
         
+        def _on_reset(self):
+		self.item3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
+		self.item3d.getTransform().set_trans(0.0, 0.0, 0.0)
+		#self.item3d.getTransform().set_scale(1.0)
+		self.updateItemControls()
+		self.inspector.updateSceneGraph()
+			
 	def addColorControls(self, igvbox):
 		pass
     
@@ -351,6 +361,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		if comboboxidx == 1:
 			self.imagicgammaslider.setValue(rotation["gamma"], quiet=1)
 			self.imagicbetaslider.setValue(rotation["beta"], quiet=1)
+			self.imagicalphaslider.setValue(rotation["alpha"], quiet=1)
 		if comboboxidx == 2:
 			self.spiderpsislider.setValue(rotation["psi"], quiet=1)
 			self.spiderthetaslider.setValue(rotation["theta"], quiet=1)
@@ -510,7 +521,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		# Signal for all sliders
 		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self._rotcombobox_changed)
 		QtCore.QObject.connect(self.emanazslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
-		QtCore.QObject.connect(self.emanaltslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
+		QtCore.QObject.connect(self.emanaltslider,QtCore.SIGNAL("self.zoom.getValue()valueChanged"),self._on_EMAN_rotation)
 		QtCore.QObject.connect(self.emanphislider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
 		QtCore.QObject.connect(self.imagicgammaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
 		QtCore.QObject.connect(self.imagicbetaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)

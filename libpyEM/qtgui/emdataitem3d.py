@@ -53,6 +53,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		EMItem3DInspector.__init__(self, name, item3d)
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
+		QtCore.QObject.connect(self.cullbackface, QtCore.SIGNAL("stateChanged(int)"), self.onCullFaces)
 		self.dataChanged()
 		
 	def addControls(self, vbox):
@@ -82,6 +83,13 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.item3d.setThreshold(val)
 #		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
+		
+	def onCullFaces(self):
+		if self.cullbackface.checkState() == QtCore.Qt.Checked:
+			self.item3d.cullbackfaces = True
+		else:
+			self.item3d.cullbackfaces = False
+		self.inspector.updateSceneGraph()
 
 class EMIsosurface(EMItem3D):
 	def __init__(self, parent, children = set(), transform = None):
@@ -98,6 +106,7 @@ class EMIsosurface(EMItem3D):
 		self.cube = False
 		self.wire = False
 		self.light = True
+		self.cullbackfaces = True
 		
 		self.tex_name = 0
 		self.texture = False
@@ -174,8 +183,12 @@ class EMIsosurface(EMItem3D):
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
 		#normalize = glIsEnabled(GL_NORMALIZE)
 	
-		glEnable(GL_CULL_FACE)
-		glCullFace(GL_BACK)
+		if self.cullbackfaces:
+			glEnable(GL_CULL_FACE)
+			glCullFace(GL_BACK)
+		else:
+			if not cull:
+				glDisable(GL_CULL_FACE)
 		# The lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
 		#glDisable(GL_CULL_FACE)
 		#glEnable(GL_DEPTH_TEST)
@@ -200,7 +213,7 @@ class EMIsosurface(EMItem3D):
 		
 #		self.cam.position()
 		glShadeModel(GL_SMOOTH)
-		if ( self.isodl == 0 or self.force_update ):
+		if ( self.isodl == 0 or self.force_update):
 			self.get_iso_dl()
 			self.force_update = False
 		glStencilFunc(GL_EQUAL,self.rank,0)
@@ -238,6 +251,7 @@ class EMIsosurface(EMItem3D):
 		# Again the lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
 		#if ( lighting ): glEnable(GL_LIGHTING)
 		#else: glDisable(GL_LIGHTING)
+		# What is the point of this conditional testing.... It's always TRUE!!!
 		if ( not cull ): glDisable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
 		#if ( depth ): glEnable(GL_DEPTH_TEST)
@@ -245,6 +259,7 @@ class EMIsosurface(EMItem3D):
 		
 		#if ( not normalize ): glDisable(GL_NORMALIZE)
 		
+		# What is the point of this conditonal testing.... It's always TRUE!!!
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		else: glPolygonMode(GL_FRONT, GL_FILL)
 		#if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
