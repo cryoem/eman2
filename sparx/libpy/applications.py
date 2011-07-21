@@ -3312,7 +3312,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
-	fscmask = model_circle(last_ring,nx,nx,nx)
+	fscmask = mask3D  #model_circle(last_ring,nx,nx,nx)  For a fancy mask circle would work better  PAP 7/21/11
 	if CTF:
 		from reconstruction import rec3D_MPI
 		from filter         import filt_ctf
