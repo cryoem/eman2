@@ -464,6 +464,217 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	return ali_list
 
 
+def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.0, err_thld = 1.732, print_individual = False, d = 64):
+
+	def ave(a):
+		n = len(a)
+		ave = 0.0
+		for i in xrange(n): ave += a[i]
+		ave /= n
+		return ave
+
+	def var(a):
+		n = len(a)
+		avg = ave(a)
+		var = 0.0
+		for i in xrange(n): var += (a[i]-avg)**2
+		return var/n
+
+	def func(args, data, return_pixel_error=True):
+
+	        from math import pi, sin, cos
+
+	        ali_params = data[0]
+	        d = data[1]
+
+	        L = len(ali_params)
+	        N = len(ali_params[0])/4
+
+	        args_list= [0.0]*(L*3)
+	        for i in xrange(L*3-3):        args_list[i] = args[i]
+	        cosa = [0.0]*L
+	        sina = [0.0]*L
+	        for i in xrange(L):
+	        	cosa[i] = cos(args_list[i*3]*pi/180.0)
+	        	sina[i] = sin(args_list[i*3]*pi/180.0)
+	        sqr_pixel_error = [0.0]*N
+	        for i in xrange(N):
+	        	sum_cosa = 0.0
+	        	sum_sina = 0.0
+	        	sx = [0.0]*L
+	        	sy = [0.0]*L
+	        	for j in xrange(L):
+	        		if int(ali_params[j][i*4+3]) == 0:
+	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
+	        			sy[j] = args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        		else:
+	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
+	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        	P = sqrt(sum_cosa**2+sum_sina**2)
+	        	sum_cosa /= P
+	        	sum_sina /= P
+
+	        	sqr_pixel_error[i] = d*d/4.*(1-P/L)+var(sx)+var(sy)
+
+	        # Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
+	        # Don't forget to square root it after getting the value
+	        if return_pixel_error:         return sum(sqr_pixel_error)/N
+	        else: return sqr_pixel_error
+
+
+	def dfunc(args, data):
+
+	        from math import pi, sin, cos
+	        from numpy import zeros, array, float64
+
+	        g = zeros(args.shape, float64)
+
+	        ali_params = data[0]
+	        d = data[1]
+
+	        L = len(ali_params)
+	        N = len(ali_params[0])/4
+
+	        args_list= [0.0]*(L*3)
+	        for i in xrange(L*3-3):        args_list[i] = args[i]
+	        cosa = [0.0]*L
+	        sina = [0.0]*L
+	        for i in xrange(L):
+	        	cosa[i] = cos(args_list[i*3]*pi/180.0)
+	        	sina[i] = sin(args_list[i*3]*pi/180.0)
+	        for i in xrange(N):
+	        	sum_cosa = 0.0
+	        	sum_sina = 0.0
+	        	sx = [0.0]*L
+	        	sy = [0.0]*L
+	        	for j in xrange(L):
+	        		if int(ali_params[j][i*4+3]) == 0:
+	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
+	        			sy[j] = args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        		else:
+	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
+	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        	P = sqrt(sum_cosa**2+sum_sina**2)
+	        	sum_cosa /= P
+	        	sum_sina /= P
+
+	        	for j in xrange(L-1):
+	        		# Original formula, useful for double-checking, DON'T DELETE!
+	        		#g[j*3] += d*d/4.0*(-1.0)*0.5/P*(-2*sum_cosa*P*sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)+\
+	        		#			      2*sum_sina*P*cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0))*pi/180.0+\
+	        		#      2.0*(sx[j]-ave(sx))*(-ali_params[j][i*4+1]*sin(args_list[j*3]*pi/180.0)-ali_params[j][i*4+2]*cos(args_list[j*3]*pi/180.0))*pi/180.0+\
+	        		#      2.0*(sy[j]-ave(sy))*( ali_params[j][i*4+1]*cos(args_list[j*3]*pi/180.0)-ali_params[j][i*4+2]*sin(args_list[j*3]*pi/180.0))*pi/180.0
+	        		dx = 2.0*(sx[j]-ave(sx))
+	        		dy = 2.0*(sy[j]-ave(sy))
+	        		if int(ali_params[j][i*4+3]) == 0:
+	        			g[j*3] += (d*d/4.0*(sum_cosa*sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)-\
+	        					sum_sina*cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
+	        					dx*(-ali_params[j][i*4+1]*sina[j]-ali_params[j][i*4+2]*cosa[j])+\
+	        					dy*( ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
+	        			g[j*3+1] += dx
+	        			g[j*3+2] += dy
+	        		else:
+	        			g[j*3] += (d*d/4.0*(-sum_cosa*sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)+\
+	        					    sum_sina*cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
+	        					 dx*(-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j])+\
+	        					 dy*(-ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
+	        			g[j*3+1] += -dx
+	        			g[j*3+2] += dy
+	        g /= (N*L)
+
+	        return g
+
+	from statistics import k_means_stab_bbenum
+	from utilities import combine_params2
+	from numpy import array
+	from math import sqrt
+	from scipy import array, int32
+	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
+
+	# Find out the subset which is mirror stable over all runs
+	all_part = []
+	num_ali = len(ali_params)
+	nima = len(ali_params[0])/4
+	for i in xrange(num_ali):
+		mirror0 = []
+		mirror1 = []
+		for j in xrange(nima):
+			if ali_params[i][j*4+3] == 0: mirror0.append(j)
+			else: mirror1.append(j)
+		mirror0 = array(mirror0, 'int32')
+		mirror1 = array(mirror1, 'int32')
+		all_part.append([mirror0, mirror1])
+	match, stab_part, CT_s, CT_t, ST, st = k_means_stab_bbenum(all_part, T=0, nguesses=1)
+	mir_stab_part = stab_part[0] + stab_part[1]
+	mir_stab_rate = len(mir_stab_part)/float(nima)
+	if mir_stab_rate <= mir_stab_thld: return [], mir_stab_rate, -1.0
+	mir_stab_part.sort()
+	del all_part, match, stab_part, CT_s, CT_t, ST, st	
+
+	# Keep the alignment paramters of mirror stable particles
+	ali_params_mir_stab = [[] for i in xrange(num_ali)]
+	for j in mir_stab_part:
+		for i in xrange(num_ali):
+			ali_params_mir_stab[i].extend(ali_params[i][j*4:j*4+4])
+	nima2 = len(mir_stab_part)
+
+	# Find out the alignment parameters for each iteration against the last one
+	args = []
+	for i in xrange(num_ali-1):
+		alpha, sx, sy, mirror, stab_mirror, pixel_error = ave_ali_err_params(ali_params_mir_stab[i], ali_params_mir_stab[num_ali-1])
+		args.extend([alpha, sx, sy])
+
+	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
+	data = [ali_params_mir_stab, d]
+	pixel_error_before = func(array(args), data, return_pixel_error=False)
+	ali_params_cleaned = [[] for i in xrange(num_ali)]
+	cleaned_part = []
+	for j in xrange(nima2):
+		if sqrt(pixel_error_before[j]) > 3*err_thld: continue
+		cleaned_part.append(j)
+		for i in xrange(num_ali):
+			ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
+	nima3 = len(cleaned_part)
+	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error_before)/nima2)
+
+	# Use LBFGSB to minimize the sum of pixel errors
+	data = [ali_params_cleaned, d]
+	ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
+	pixel_error_after = func(ps_lp, data, return_pixel_error=False)
+	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
+
+	if print_individual:
+		for i in xrange(nima):
+			print "Particle %3d :"%i,
+			if i in mir_stab_part:
+				j = mir_stab_part.index(i)
+				if j in cleaned_part:
+					print "error = %6.4f"%(sqrt(pixel_error_after[cleaned_part.index(j)]))
+				else:
+					print "error = %6.4f     outlier"%(sqrt(pixel_error_before[j])) 
+			else: print "Mirror unstable"
+
+	stable_set = []
+	for i in xrange(nima3):
+		err = sqrt(pixel_error_after[i])
+		if err < err_thld: stable_set.append([err, mir_stab_part[cleaned_part[i]]])
+	stable_set.sort()
+		
+	return stable_set, mir_stab_rate, sqrt(val)
+
+
+
+'''
+# These are some obsolete codes, we retain them just in case.
+
 def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0, print_individual = False):
 
 	def rot_shift(x, y, alpha, sx, sy):
@@ -475,7 +686,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	def ave(a):
 		n = len(a)
 		ave = 0.0
-		for i in xrange(n): ave+=a[i]
+		for i in xrange(n): ave += a[i]
 		ave /= n
 		return ave
 
@@ -483,8 +694,8 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		n = len(a)
 		avg = ave(a)
 		var = 0.0
-		for i in xrange(n): var+=(a[i]-avg)**2
-		return var/(n-1)
+		for i in xrange(n): var += (a[i]-avg)**2
+		return var/n
 
 	def transform_variance(args, data):
 		from math import sqrt
@@ -517,6 +728,86 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        	err[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
 
 	        return err
+		
+	def transform_variance2(args, data):
+		from math import sqrt
+	        x1 = 30.0
+	        y1 = 0.0
+        	x2 = 0.0
+	        y2 = 30.0
+
+        	all_ali_params = data
+	        num_ali = len(all_ali_params)
+	        nima = len(all_ali_params[0])/4
+		err = [0.0]*nima
+
+		# Error introduced by rotation
+	        for i in xrange(nima):
+	        	pix_error = 0
+	        	x1_new = [0.0]*num_ali
+	        	y1_new = [0.0]*num_ali
+	        	x2_new = [0.0]*num_ali
+	        	y2_new = [0.0]*num_ali
+	        	alpha2, sx2, sy2, mirror2 = all_ali_params[num_ali-1][i*4:i*4+4]
+	        	x1_new[num_ali-1], y1_new[num_ali-1] = rot_shift(x1, y1, alpha2, 0.0, 0.0)
+	        	x2_new[num_ali-1], y2_new[num_ali-1] = rot_shift(x2, y2, alpha2, 0.0, 0.0)
+	        	for j in xrange(num_ali-1):
+	        		alpha1, sx1, sy1, mirror1 = all_ali_params[j][i*4:i*4+4]
+	        		alphai, sxi, syi = args[j*3:j*3+3]
+	        		alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, 0.0, 0.0)
+	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, 0.0, 0.0)
+
+	        	err[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+
+		# Error introduced by shift
+        	all_ali_params = data
+	        num_ali = len(all_ali_params)
+	        nima = len(all_ali_params[0])/4
+		err2 = [0.0]*nima
+
+	        for i in xrange(nima):
+	        	pix_error = 0
+	        	x1_new = [0.0]*num_ali
+	        	y1_new = [0.0]*num_ali
+	        	x2_new = [0.0]*num_ali
+	        	y2_new = [0.0]*num_ali
+	        	alpha2, sx2, sy2, mirror2 = all_ali_params[num_ali-1][i*4:i*4+4]
+	        	x1_new[num_ali-1], y1_new[num_ali-1] = rot_shift(x1, y1, 0.0, sx2, sy2)
+	        	x2_new[num_ali-1], y2_new[num_ali-1] = rot_shift(x2, y2, 0.0, sx2, sy2)
+	        	for j in xrange(num_ali-1):
+	        		alpha1, sx1, sy1, mirror1 = all_ali_params[j][i*4:i*4+4]
+	        		alphai, sxi, syi = args[j*3:j*3+3]
+	        		alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, 0.0, sx12, sy12)
+	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, 0.0, sx12, sy12)
+
+	        	err2[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+
+        	all_ali_params = data
+	        num_ali = len(all_ali_params)
+	        nima = len(all_ali_params[0])/4
+		err3 = [0.0]*nima
+
+	        for i in xrange(nima):
+	        	pix_error = 0
+	        	x1_new = [0.0]*num_ali
+	        	y1_new = [0.0]*num_ali
+	        	x2_new = [0.0]*num_ali
+	        	y2_new = [0.0]*num_ali
+	        	alpha2, sx2, sy2, mirror2 = all_ali_params[num_ali-1][i*4:i*4+4]
+	        	x1_new[num_ali-1], y1_new[num_ali-1] = rot_shift(x1, y1, alpha2, sx2, sy2)
+	        	x2_new[num_ali-1], y2_new[num_ali-1] = rot_shift(x2, y2, alpha2, sx2, sy2)
+	        	for j in xrange(num_ali-1):
+	        		alpha1, sx1, sy1, mirror1 = all_ali_params[j][i*4:i*4+4]
+	        		alphai, sxi, syi = args[j*3:j*3+3]
+	        		alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, sx12, sy12)
+	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, sx12, sy12)
+
+	        	err3[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+
+	        return err, err2, err3
 
 	from statistics import k_means_stab_bbenum
 	from utilities import combine_params2
@@ -562,13 +853,14 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	del ps[-1]
 
 	if val > error_threshold: return [], mirror_consistent_rate, val
-	err = transform_variance(ps, ali_params_mir_cons)
+	err, err2, err3 = transform_variance2(ps, ali_params_mir_cons)
 
 	if print_individual:
 		for i in xrange(nima):
 			print "Particle %3d :"%i,
 			if i in mir_cons_part:
-				print "error = %6.4f"%err[mir_cons_part.index(i)]
+				j = mir_cons_part.index(i)
+				print "error = %6.4f  %6.4f  %6.4f"%(err[j], err2[j], err3[j]) 
 			else: print "Mirror inconsistent"
 	stable_set = []
 	for i in xrange(len(mir_cons_part)):
@@ -577,9 +869,6 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		
 	return stable_set, mirror_consistent_rate, val
 
-'''
-
-# These are some obsolete codes, we retain them just in case.
 
 def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
 	"""

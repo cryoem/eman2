@@ -42,7 +42,8 @@ def main():
 	usage = progname + " stack averages --ou=ou --th_grp=th_grp --num_ali=num_ali"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
-	parser.add_option("--th_grp",       type="int",     default=5,         help=" mininum number of objects to consider for stability")
+	parser.add_option("--thld_grp",     type="int",     default=5,         help=" mininum number of objects to consider for stability")
+	parser.add_option("--thld_err",     type="float",   default=1.732,     help=" threshld of pixel error")
 	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error")
 	(options, args) = parser.parse_args()
@@ -76,12 +77,12 @@ def main():
 		mask = model_circle(ou, nx, nx)
 
 		if myid == 0:
-			print "%12s %20s %20s %20s %20s"%("", "Mirror cons rate", "Pixel error", "Size of stable set", "Size of set")
+			print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
 		for i in xrange(len(averages)):
 			if i%number_of_proc == myid:
 				mem = averages[i].get_attr('members')
 				mem = map(int, mem)
-				if len(mem) < options.num_ali:
+				if len(mem) < options.thld_grp:
 					print "Average %3d: Group size too small to consider for stability."%i
 				else:
 					class_data = [data[im] for im in mem]
@@ -108,8 +109,8 @@ def main():
 						all_ali_params.append(ali_params)
 						if options.verbose:
 							write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
-					stable_set, mirror_consistent_rate, err = multi_align_stability(all_ali_params, 0.0, 10000.0, 1.0, options.verbose)
-					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mirror_consistent_rate, err, len(stable_set), len(mem))
+					stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose)
+					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
 
 		global_def.BATCH = False
 
