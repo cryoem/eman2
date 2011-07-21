@@ -10,7 +10,7 @@
  * in either instance.
  *
  * This complete copyright notice must be included in any revised version of the
- * source code. Additional authorship citations may be added, but existing
+ * source code. Additional authorship citations may be added, but existingx
  * author citations must be preserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -94,16 +94,17 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 			return get("d",parms);
 		}
 		if (leadingchar == 'h') {
-			int nstart,nsym;
-			float daz,tz;
+			int nstart=1,nsym=1;
+			float daz=5.,tz=5.,maxtilt=1.0;
 			string temp;
 			temp=instancename;
 			temp.erase(0,1);
-			sscanf(temp.c_str(),"%d,%d,%f,%f",&nstart,&nsym,&daz,&tz);
+			sscanf(temp.c_str(),"%d,%d,%f,%f,%f",&nsym,&nstart,&daz,&tz,&maxtilt);
 			parms["nstart"]=nstart;
-			parms["nsym"]=nstart*nsym;
+			parms["nsym"]=nsym;
 			parms["daz"]=daz;
 			parms["tz"]=tz;
+			parms["maxtilt"]=maxtilt;
 			return get("h",parms);
 		}
 
@@ -628,7 +629,7 @@ int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	if (sym->is_h_sym()){
 		altmin = delimiters["alt_min"];
 		if (inc_mirror) {
-			altmin -= (float) sym->get_params()["equator_range"];
+			altmin -= (float) sym->get_params()["maxtilt"];
 		}
 	}
 
@@ -681,7 +682,7 @@ vector<Transform> SaffOrientationGenerator::gen_orientations(const Symmetry3D* c
 	if (sym->is_h_sym()){
 		altmin = delimiters["alt_min"];
 		if (inc_mirror) {
-			altmin -= (float) sym->get_params()["equator_range"];
+			altmin -= (float) sym->get_params()["maxtilt"];
 		}
 	}
 
@@ -1494,13 +1495,13 @@ Dict HSym::get_delimiters(const bool) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 
-	float equator_range = params.set_default("equator_range",5.0f);
+	float maxtilt = params.set_default("maxtilt",5.0f);
 
-	returnDict["alt_max"] = 90.0f + equator_range;
+	returnDict["alt_max"] = 90.0f;
 
-	returnDict["alt_min"] = 90.0f;
+	returnDict["alt_min"] = 90.0f - maxtilt;
 
-	returnDict["az_max"] = 360.0f/(float)nsym;
+	returnDict["az_max"] = 360.0f;
 
 	return returnDict;
 }
@@ -1512,7 +1513,7 @@ bool HSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	float alt_min = d["alt_min"];
 
 	if (inc_mirror) {
-		float e = params.set_default("equator_range",5.0f);
+		float e = params.set_default("maxtilt",5.0f);
 		alt_min -= e;
 	}
 
@@ -1533,7 +1534,7 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 	vector<Vec3f> ret;
 
 	Dict delim = get_delimiters(inc_mirror);
-	int nsym = params.set_default("nsym",0);
+	int nsym = params.set_default("nsym",1);
 	float az = -(float)delim["az_max"];
 
 
@@ -1572,7 +1573,6 @@ Transform HSym::get_sym(const int n) const
 {
 	int nstart=params["nstart"];
 	int nsym=params["nsym"];
-	int hsym=nsym/nstart;
 	float apix = params.set_default("apix",1.0f);
 	float daz= params["daz"];
 	float tz=params["tz"];
@@ -1581,12 +1581,13 @@ Transform HSym::get_sym(const int n) const
 
 	// courtesy of Phil Baldwin
 	//d["az"] = (n%nsym) * 360.0f / nsym;
-	d["az"]=(((int) n/hsym)%nstart)*360.f/nstart+(n%hsym)*daz;
+	//d["az"]=(((int) n/hsym)%nstart)*360.f/nstart+(n%hsym)*daz;
 	//d["az"] = n * daz;
+	d["az"]=(n%nstart)*(360.0/nstart)+floor(float(n)/nstart)*daz;	// corrected by steve, 7/21/11. No dependency on nsym
 	d["alt"] = 0.0f;
 	d["phi"] = 0.0f;
 	Transform ret(d);
-	ret.set_trans(0,0,(n%hsym)*dz);
+	ret.set_trans(0,0,(n/nstart)*dz);
 	return ret;
 }
 

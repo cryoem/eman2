@@ -76,7 +76,7 @@ namespace EMAN {
 		virtual Transform get_sym(const int n) const = 0;
 
 		/** The total number of unique symmetry operations that will be return by this object when
-		 * a calling program access Symmetry3D::get_sym. However in the case of HSym, this is really something else.
+		 * a calling program access Symmetry3D::get_sym. 
 		 */
 		virtual int get_nsym() const = 0;
 
@@ -465,7 +465,7 @@ namespace EMAN {
 			/** Get a description
 		 * @return a clear desciption of this class
 			 */
-		virtual string get_desc() const { return "H symmetry support"; }
+		virtual string get_desc() const { return "Helical symmetry, with support for N-start, pitch and limited tilt range. Specify as H<nsym>,<nstart>,<daz>,<tz in pix>[,<maxtilt>]"; }
 
 			/** Get a dictionary containing the permissable parameters of this class
 		 * Of all the symmetries, helical has the most options. This is because
@@ -476,18 +476,18 @@ namespace EMAN {
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("nsym", EMObject::INT, "The symmetry number of the helix, around the equator.");
-			d.put("nstart", EMObject::INT, "The symmetry number of the implicit C symmetry.");//ming add
-			d.put("equator_range", EMObject::FLOAT, "The amount altitude angles are allowed to vary above and below the equator. Default is 5");
-			d.put("tz", EMObject::FLOAT, "The translational distance (along z) between successive identical subunits in angstrom (default a/pix is 1)");
+			d.put("nsym", EMObject::INT, "The number of asymmetric units to generate. This could be infinite for helical symmetry. Normally a multiple of nstart.");
+			d.put("nstart", EMObject::INT, "The Cn symmetry of a single Z-slice of the helix.");
+			d.put("tz", EMObject::FLOAT, "The translational distance (along z) between successive identical subunits in angstroms (default A/pix is 1)");
 			d.put("daz", EMObject::FLOAT, "The rotational angle (about z) between successive identical subunits in degrees");
-			d.put("apix", EMObject::FLOAT, "Angstrom per pixel, default is one.");
+			d.put("apix", EMObject::FLOAT, "Angstroms per pixel, default is 1.0, used only for tz");
+			d.put("maxtilt", EMObject::FLOAT, "When generating projections, normally only 'side views' are created (3-D Z along Y in 2-D). This is the maximum out of plane tilt in degrees.");
 			return d;
 		}
 
 			/** Get the altitude and phi angle of the d symmetry, which depends on nysm.
-		 * The "alt_max" is always 90 + the "equator_range" variable in the internally stored params
-		 * The "alt_min" veriable is always 90.
+		 * The "alt_max" is always 90
+		 * The "alt_min" 90-maxtilt
 		 * The "az_max" is always 360/nsym degrees
 		 * Helical symmetry argument is the only symmetry not to act on the inc_mirror argument. The current policy
 		 * is the orientation generator using this symmetry should make its own accomodation for the inclusion of
@@ -512,14 +512,11 @@ namespace EMAN {
 
 			/** For symmetries in general this function is supposed to return the number
 		 * of unique symmetric operations that can be applied for the given Symmetry3D object.
-		 * However, for helical symmetry it is possible that the there are infinitely many
-		 * symmetric operations. So there is no general answer to return here. So,
-		 * as a hack,  the answer returned is the number of rotional steps
-		 * (as specified by the "d_az" paramater) that can be applied before surpassing 360 degrees.
+		 * For helical symmetries this is provided by the user as a parameter when setting up the helical symmetry. Generally a multiple of nstart.
 		 * @return the number of symmetric rotations that can be applied without going beyond 360 degrees
 		 * @exception InvalidValueException if d_az (as stored internally in parms) is less than or equal to zero
 			 */
-		virtual int get_nsym() const { return (int)params["nsym"]; }; // ming, this is the number of helix turns
+		virtual int get_nsym() const { return (int)params["nsym"]; }; 
 		/*virtual int get_nsym() const {
 			float daz = params.set_default("daz",0.0f);
 			if ( daz <= 0 ) throw InvalidValueException(daz,"Error, you must specify a positive non zero d_az");
@@ -530,7 +527,7 @@ namespace EMAN {
 		 * probably not something a general user would utilize.
 		 * @return nsym - this is the symmetry of the helix
 			 */
-		virtual int get_max_csym() const { return params["nsym"]; }
+		virtual int get_max_csym() const { return (int)params["nstart"]; }	// may not be 
 
 			/// The name of this class - used to access it from factories etc. Should be "h"
 		static const string NAME;
