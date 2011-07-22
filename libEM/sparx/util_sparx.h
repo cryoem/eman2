@@ -728,7 +728,7 @@ costlist, int* curbranch);
 
 	static EMData* window(EMData* img,int new_nx ,int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0);
 
-	static EMData* pad(EMData* img, int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0, char *params="average");
+	static EMData* pad(EMData* img, int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0, const char *params="average");
 
 	static vector<float> histogram(EMData* image, EMData* mask, int nbins = 128, float hmin =0.0f, float hmax = 0.0f );
 

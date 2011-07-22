@@ -5379,7 +5379,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*(size_t)nx]
 #define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*(size_t)new_nx]
-EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset,char *params)
+EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset, const char *params)
 {
 	/* Exception Handle */
 	if (!img)  throw NullPointerException("NULL input image");
