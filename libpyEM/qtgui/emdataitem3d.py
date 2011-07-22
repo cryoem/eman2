@@ -53,18 +53,22 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		EMItem3DInspector.__init__(self, name, item3d)
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
-		QtCore.QObject.connect(self.cullbackface, QtCore.SIGNAL("stateChanged(int)"), self.onCullFaces)
+		self.cullbackface.toggled.connect(self.onCullFaces)
+		self.wireframe.toggled.connect(self.onWireframe)
 		self.dataChanged()
 		
 	def addControls(self, vbox):
 		# Perhaps we sould allow the inspector control this?
 		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
-		self.cullbackface.setCheckState(QtCore.Qt.Checked) 
-		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
+		self.cullbackface.setChecked(True)
+		self.wireframe = QtGui.QCheckBox("Wireframe mode")
+		self.wireframe.setChecked(False)
+		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
 		
 		vbox.addWidget(self.cullbackface)
+		vbox.addWidget(self.wireframe)
 		vbox.addWidget(self.thr)
 	
 	def dataChanged(self):
@@ -78,18 +82,20 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 		self.thr.setRange(minden,maxden)
 		self.thr.setValue(iso_threshold, True)
+
+	def onCullFaces(self):
+		self.item3d.cullbackfaces = self.cullbackface.isChecked()
+		self.inspector.updateSceneGraph()
 		
 	def onThresholdSlider(self,val):
 		self.item3d.setThreshold(val)
 #		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
-		
-	def onCullFaces(self):
-		if self.cullbackface.checkState() == QtCore.Qt.Checked:
-			self.item3d.cullbackfaces = True
-		else:
-			self.item3d.cullbackfaces = False
+	
+	def onWireframe(self):
+		self.item3d.wire = self.wireframe.isChecked()
 		self.inspector.updateSceneGraph()
+
 
 class EMIsosurface(EMItem3D):
 	def __init__(self, parent, children = set(), transform = None):
@@ -177,11 +183,8 @@ class EMIsosurface(EMItem3D):
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
-		#lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
-		#depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-		#normalize = glIsEnabled(GL_NORMALIZE)
 	
 		if self.cullbackfaces:
 			glEnable(GL_CULL_FACE)
@@ -189,48 +192,27 @@ class EMIsosurface(EMItem3D):
 		else:
 			if not cull:
 				glDisable(GL_CULL_FACE)
-		# The lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
-		#glDisable(GL_CULL_FACE)
-		#glEnable(GL_DEPTH_TEST)
-		#glEnable(GL_NORMALIZE)
-		#glDisable(GL_NORMALIZE)
+
 		if ( self.wire ):
 			glPolygonMode(GL_FRONT,GL_LINE);
 		else:
 			glPolygonMode(GL_FRONT,GL_FILL);
 		
-		#if self.light:
-		#	glEnable(GL_LIGHTING)
-		#else:
-		#	glDisable(GL_LIGHTING)
 
-		
-#		glPushMatrix()
-#		self.cam.position(True)
-#		# the ones are dummy variables atm... they don't do anything
-#		self.vdtools.update(1,1)
-#		glPopMatrix()
-		
-#		self.cam.position()
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 or self.force_update):
 			self.get_iso_dl()
 			self.force_update = False
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+		
 		# This is needed for the inspector to work John Flanagan	
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		glColor(self.ambient)
-		# I have commented this out b/c it need to be controled by the inspector John Flanagan
-		#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
-		#glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
-		#glColor(self.colors[self.isocolor]["ambient"])
+
 		
 		glPushMatrix()
 		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
@@ -248,22 +230,14 @@ class EMIsosurface(EMItem3D):
 			self.draw_volume_bounds()
 			glPopMatrix()
 		
-		# Again the lighting, depthtest, and normalization are controlled at the EMScene3d level. It should not be down with child widgets John Flanagan
-		#if ( lighting ): glEnable(GL_LIGHTING)
-		#else: glDisable(GL_LIGHTING)
 		# What is the point of this conditional testing.... It's always TRUE!!!
 		if ( not cull ): glDisable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
-		#if ( depth ): glEnable(GL_DEPTH_TEST)
-		#else : glDisable(GL_DEPTH_TEST)
 		
-		#if ( not normalize ): glDisable(GL_NORMALIZE)
-		
-		# What is the point of this conditonal testing.... It's always TRUE!!!
-		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
-		else: glPolygonMode(GL_FRONT, GL_FILL)
-		#if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-		#else: glPolygonMode(GL_BACK, GL_FILL)
+		if ( polygonmode[0] == GL_LINE ): 
+			glPolygonMode(GL_FRONT, GL_LINE)
+		else: 
+			glPolygonMode(GL_FRONT, GL_FILL)
 		
 		#print "total time is", time()-a
 		
