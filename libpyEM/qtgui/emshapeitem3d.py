@@ -42,6 +42,7 @@ from emscene3d import EMScene3D, EMInspectorControlShape
 from EMAN2 import Transform
 
 class EMCube(EMItem3D):
+	name = "Cube"
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
@@ -129,6 +130,7 @@ class EMCube(EMItem3D):
 
 
 class EMSphere(EMItem3D):
+	name = "Sphere"
 	def __init__(self, radius):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
@@ -176,6 +178,7 @@ class EMSphere(EMItem3D):
 		gluSphere(quadratic,self.radius,self.slices,self.stacks)
 		
 class EMCylinder(EMItem3D):
+	name = "Cylinder"
 	def __init__(self, radius, height):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		#size
@@ -229,4 +232,5 @@ class EMCylinder(EMItem3D):
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
 
 class EMLine(EMItem3D):
+	name = "Line"
 	pass

@@ -16,6 +16,7 @@ from emglobjects import get_default_gl_colors
 
 
 class EMDataItem3D(EMItem3D):
+	name = "Data"
 	def __init__(self, data, parent = None, children = set(), transform = None):
 		self.data = data
 		EMItem3D.__init__(self, parent, children, transform)
@@ -98,6 +99,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 
 class EMIsosurface(EMItem3D):
+	name = "Isosurface"
 	def __init__(self, parent, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
 		
@@ -230,8 +232,7 @@ class EMIsosurface(EMItem3D):
 			self.draw_volume_bounds()
 			glPopMatrix()
 		
-		# What is the point of this conditional testing.... It's always TRUE!!!
-		if ( not cull ): glDisable(GL_CULL_FACE)
+		if cull: glEnable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
 		
 		if ( polygonmode[0] == GL_LINE ): 

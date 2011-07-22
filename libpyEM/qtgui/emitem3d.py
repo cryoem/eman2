@@ -21,6 +21,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	selection_idx_dict = {}
 	selection_recycle = []
 	selection_intname = -1
+	name = "General 3D Item"
 	
 	def __init__(self, parent = None, children = set(), transform = None):
 		"""
