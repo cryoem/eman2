@@ -96,12 +96,14 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 	def removeChild(self, node):
 		"""
-		Remove the supplied node from the set of child nodes. 
+		Remove the supplied node from the set of child nodes This also removes all its descendant nodes. 
 		@type node: EMItem3D
 		@param node: the node to remove
 		"""
 		self.children.remove(node)
 		node.parent = None
+		for child in node.children:
+			node.removeChild(child)
 	
 	def getSelectedAncestorNodes(self):
 		"""
