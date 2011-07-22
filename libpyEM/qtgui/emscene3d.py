@@ -821,17 +821,18 @@ class EMInspector3D(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("(QTreeWidgetItem*)"), self._tree_widget_modify)
 		
 		return tvbox
 	
-	def addTreeNode(self, name, item3d, parentnode=None):
+	def addTreeNode(self, name, item3d, parentnode=None, insertionindex=-1):
 		"""
 		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
 		The Treeitem also needs to know the node, so it can talk to the node.
 		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
 		"""
-		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
 		item3dgui = item3d.getSceneGui()				# Get the node GUI controls 
 		item3dgui.setInspector(self)					# Associate the item GUI with the inspector
@@ -842,7 +843,10 @@ class EMInspector3D(QtGui.QWidget):
 		if not parentnode:
 			self.tree_widget.insertTopLevelItem(0, tree_item)
 		else:
-			parentnode.addChild(tree_item)
+			if insertionindex >= 0:
+				parentnode.insertChild(insertionindex, tree_item)
+			else:
+				parentnode.addChild(tree_item)
 		return tree_item
 			
 	def _tree_widget_click(self, item, col):
@@ -863,6 +867,14 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		item.toggleVisibleState()
 		self.updateSceneGraph()
+	
+	def _tree_widget_modify(self, item):
+		"""
+		when a user wants to remove or add an item3d
+		"""
+		nodedialog = NodeDialog(self, item)
+		nodedialog.exec_()
+		self.activateWindow()
 		
 	def _get_controler_layout(self, parent):
 		"""
@@ -939,6 +951,7 @@ class EMInspector3D(QtGui.QWidget):
 		nlabel.setMaximumHeight(30.0)
 		nlabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.near = EMSpinWidget(self.scenegraph.camera.getClipNear(), 1.0)
+		self.near.setToolTip("In the Window above:\nLeft click 'n' drag to move near clipping plane")
 		self.near.setMaximumHeight(40.0)
 		nhbox.addWidget(nlabel)
 		nhbox.addWidget(self.near)
@@ -948,6 +961,7 @@ class EMInspector3D(QtGui.QWidget):
 		flabel.setMaximumHeight(30.0)
 		flabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.far = EMSpinWidget(self.scenegraph.camera.getClipFar(), 1.0)
+		self.far.setToolTip("In the Window above:\nRight click 'n' drag to move far clipping plane")
 		self.far.setMaximumHeight(40.0)
 		fhbox.addWidget(flabel)
 		fhbox.addWidget(self.far)
@@ -1070,6 +1084,8 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 		QtGui.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.emit(QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.currentItem())
+		if e.button()==Qt.MidButton:
+			self.emit(QtCore.SIGNAL("(QTreeWidgetItem*)"), self.currentItem())
 		
 		
 	
@@ -1078,13 +1094,15 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
-	def __init__(self, qstring, item3d):
+	def __init__(self, qstring, item3d, parentnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
 		self.item3d = item3d
+		self.parent = parentnode
 		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
 		self.getVisibleState()
+		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to open the node dialog\nRight click to toogle visible')
 	
 	def setSelectionState(self, state):
 		""" 
@@ -1118,6 +1136,152 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
 
+class NodeDialog(QtGui.QDialog):
+	"""
+	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
+	If add node is chosen, a node is inserted just below this node.
+	"""
+	def __init__(self, inspector, item):
+		QtGui.QDialog.__init__(self)
+		self.item = item
+		self.inspector = inspector
+		self.setWindowTitle('Node Controler')
+		#grid = QtGui.QGridLayout()
+		vbox = QtGui.QVBoxLayout(self)
+		# Stuff within the frame
+		frame = QtGui.QFrame()
+		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
+		fvbox = QtGui.QVBoxLayout(frame)
+		label = QtGui.QLabel("Node Type to add")
+		self.node_type_combo = QtGui.QComboBox() 
+		self.node_stacked_widget = QtGui.QStackedWidget()
+		self.node_stacked_widget.setFrameStyle(QtGui.QFrame.StyledPanel)
+		self.addnode_button = QtGui.QPushButton("Add Node")
+		fvbox.addWidget(label)
+		fvbox.addWidget(self.node_type_combo)
+		fvbox.addWidget(self.node_stacked_widget)
+		fvbox.addWidget(self.addnode_button)
+		frame.setLayout(fvbox)
+		# vbox widgets
+		vbox.addWidget(frame)
+		hbox = QtGui.QHBoxLayout()
+		self.removenode_button = QtGui.QPushButton("Remove This Node")
+		self.cancel_button = QtGui.QPushButton("Cancel")
+		hbox.addWidget(self.removenode_button)
+		hbox.addWidget(self.cancel_button)
+		vbox.addLayout(hbox)
+		self.setLayout(vbox)
+		
+		# Populate node types
+		self.node_type_combo.addItem("Cube")
+		self.node_stacked_widget.addWidget(self.getCubeWidget())
+		self.node_type_combo.addItem("Sphere")
+		self.node_stacked_widget.addWidget(self.getSphereWidget())
+		self.node_type_combo.addItem("Cylinder")
+		self.node_stacked_widget.addWidget(self.getCylinderWidget())
+		
+		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
+		self.connect(self.removenode_button, QtCore.SIGNAL('clicked()'), self._on_remove_node)
+		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
+		self.connect(self.node_type_combo, QtCore.SIGNAL("activated(int)"), self._node_combobox_changed)
+	
+	def getCubeWidget(self):
+		"""
+		Return a cube control widget for the stacked_widget
+		"""
+		cubewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cube_dim_label = QtGui.QLabel("Cube Dimension")
+		self.cube_dim = QtGui.QLineEdit()
+		node_name_label = QtGui.QLabel("Node Name")
+		self.node_name_cube = QtGui.QLineEdit()
+		grid.addWidget(cube_dim_label, 0, 0)
+		grid.addWidget(self.cube_dim, 0, 1)
+		grid.addWidget(node_name_label , 1, 0)
+		grid.addWidget(self.node_name_cube, 1, 1)
+		cubewidget.setLayout(grid)
+		return cubewidget
+		
+	def getSphereWidget(self):
+		"""
+		Return a sphere control widget for the stacked_widget
+		"""
+		spherewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
+		self.sphere_dim = QtGui.QLineEdit()
+		node_name_label = QtGui.QLabel("Node Name")
+		self.node_name_sphere = QtGui.QLineEdit()
+		grid.addWidget(sphere_dim_label, 0, 0)
+		grid.addWidget(self.sphere_dim, 0, 1)
+		grid.addWidget(node_name_label , 1, 0)
+		grid.addWidget(self.node_name_sphere, 1, 1)
+		spherewidget.setLayout(grid)
+		return spherewidget
+		
+	def getCylinderWidget(self):
+		"""
+		Return a cylider control widget for the stacked_widget
+		"""
+		cyliderwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cylider_radius_label = QtGui.QLabel("Cylider Radius")
+		self.cylider_radius = QtGui.QLineEdit()
+		grid.addWidget(cylider_radius_label, 0, 0)
+		grid.addWidget(self.cylider_radius, 0, 1)
+		cylider_height_label = QtGui.QLabel("Cylider Height")
+		self.cylider_height = QtGui.QLineEdit()
+		node_name_label = QtGui.QLabel("Node Name")
+		self.node_name_cylinder = QtGui.QLineEdit()
+		grid.addWidget(cylider_height_label, 1, 0)
+		grid.addWidget(self.cylider_height, 1, 1)
+		grid.addWidget(node_name_label , 2, 0)
+		grid.addWidget(self.node_name_cylinder, 2, 1)
+		cyliderwidget.setLayout(grid)
+		return cyliderwidget
+	
+	def _on_add_node(self):
+		if not self.item.parent:
+			print "Cannot add another top level node!!!"
+			self.done(0)
+			return
+		insertion_node = None
+		node_name = "default"
+		# Cube
+		if self.node_type_combo.currentIndex() == 0:
+			insertion_node = EMCube(float(self.cube_dim.text()))
+			if self.node_name_cube.text() != "": node_name = self.node_name_cube.text()
+		# Sphere
+		if self.node_type_combo.currentIndex() == 1:
+			insertion_node = EMSphere(float(self.sphere_dim.text()))
+			if self.node_name_sphere.text() != "": node_name = self.node_name_sphere.text()
+		# Cylinder
+		if self.node_type_combo.currentIndex() == 2:
+			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()))
+			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
+			
+		thisnode_index = self.item.parent.indexOfChild(self.item)
+		#self.item.parent.insertChild(thisnode_index, insertion_node)
+		self.inspector.addTreeNode(node_name, insertion_node, parentnode=self.item.parent, insertionindex=(thisnode_index+1))
+		self.item.parent.item3d.addChild(insertion_node)
+		self.inspector.updateSceneGraph()
+		self.done(0)
+	
+	def _on_cancel(self):
+		self.done(1)
+		
+	def _on_remove_node(self):
+		if self.item.parent:
+			self.item.parent.takeChild(self.item.parent.indexOfChild(self.item))
+			self.item.parent.item3d.removeChild(self.item.item3d)
+			self.inspector.updateSceneGraph()
+		else:
+			print "Error cannot remove root node!!"
+		self.done(0)
+	
+	def _node_combobox_changed(self, nodetype):
+		self.node_stacked_widget.setCurrentIndex(nodetype)
+	
 class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	Class to make EMItem GUI SHAPE Inspector

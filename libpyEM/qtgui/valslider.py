@@ -1034,7 +1034,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.scenegraph = scenegraph
 		self.texture = glGenTextures(1)
-	
+		
 	def __del__(self):
 		glDeleteTextures(1, self.texture)
 		

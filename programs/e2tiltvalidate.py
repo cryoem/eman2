@@ -131,6 +131,8 @@ def main():
 	symmeties = Symmetries.get(options.sym)
 	
 	# Find the differnces in alignment pars, this is an attempt to do per image validation
+	tdb = db_open_dict("bdb:perparticletilts")
+	particletilt_list = []
 	for imgnum in xrange(simmx[0].get_ysize()):
 		untiltbestscore = float('inf')
 		tiltbestscore = float('inf')
@@ -173,6 +175,9 @@ def main():
 				besttiltangle = currenttiltangle
 		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman"), untiltbestrefnum, tiltbestrefnum
 		print "The angluar distance between tilted and untiled is: %3.2f"%besttiltangle
+		particletilt_list.append({imgnum:besttiltangle})
+	tdb["particletilt_list"] = particletilt_list
+	tdb.close()
 	#exit(1)
 	
 	# Make contour plot to validate each particle
