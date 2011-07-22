@@ -525,7 +525,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        if return_pixel_error:         return sum(sqr_pixel_error)/N
 	        else: return sqr_pixel_error
 
-
+	'''
 	def dfunc(args, data):
 
 	        from math import pi, sin, cos
@@ -591,13 +591,16 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        g /= (N*L)
 
 	        return g
-
+	'''
+	
 	from statistics import k_means_stab_bbenum
 	from utilities import combine_params2
 	from numpy import array
 	from math import sqrt
-	from scipy import array, int32
-	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
+	
+	# I decided not to use scipy in order to reduce the dependency, I wrote the C++ code instead
+	# from scipy import array, int32
+	# from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 
 	# Find out the subset which is mirror stable over all runs
 	all_part = []
@@ -646,8 +649,14 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error_before)/nima2)
 
 	# Use LBFGSB to minimize the sum of pixel errors
-	data = [ali_params_cleaned, d]
-	ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
+	#data = [ali_params_cleaned, d]
+	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
+	ali_params_cleaned_list = []
+	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
+	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
+	ps_lp = results[:-1]
+	val = results[-1]
+	
 	pixel_error_after = func(ps_lp, data, return_pixel_error=False)
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 
