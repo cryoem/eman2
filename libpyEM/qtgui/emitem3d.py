@@ -37,7 +37,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
-		self.widget = None			# This is an inspector widget
+		self.item_inspector = None			# This is an inspector widget
 		self.EMQTreeWidgetItem = None 		# This is an inspector tree item
 		self.boundingboxsize = None
 		self.getAndSetUniqueInteger()
@@ -161,7 +161,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 		return selected_list
 
-	def getSceneGui(self):
+	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
@@ -204,7 +204,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			return #Also applies to subtree rooted at this node
 		
 		if self.transform != None:
-			if self.widget != None and self.is_selected: self.widget.updateItemControls()
+			if self.item_inspector != None and self.is_selected: self.item_inspector.updateItemControls()
 			GL.glPushMatrix()
 			GL.glPushName(self.intname)
 			GLUtil.glMultMatrix(self.transform) #apply the transformation

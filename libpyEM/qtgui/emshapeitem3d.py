@@ -73,12 +73,12 @@ class EMCube(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 		
-	def getSceneGui(self):
+	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		if not self.widget: self.widget = EMInspectorControlShape("CUBE", self)
-		return self.widget
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CUBE", self)
+		return self.item_inspector
 		
 	def renderNode(self):        
 		# Material properties of the box
@@ -157,12 +157,12 @@ class EMSphere(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 		
-	def getSceneGui(self):
+	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		if not self.widget: self.widget = EMInspectorControlShape("SPHERE", self)
-		return self.widget
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("SPHERE", self)
+		return self.item_inspector
 				
 	def renderNode(self):
 		# Material properties of the sphere
@@ -206,12 +206,12 @@ class EMCylinder(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 		
-	def getSceneGui(self):
+	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		if not self.widget: self.widget = EMInspectorControlShape("CYLINDER", self)
-		return self.widget
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CYLINDER", self)
+		return self.item_inspector
 		
 	def renderNode(self):
 		# Material properties of the cylinder

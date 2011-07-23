@@ -20,10 +20,10 @@ class EMDataItem3D(EMItem3D):
 	def __init__(self, data, parent = None, children = set(), transform = None):
 		self.data = data
 		EMItem3D.__init__(self, parent, children, transform)
-	def getSceneGui(self):
-		if not self.widget:
-			self.widget = EMDataItem3DInspector("DATA", self)
-		return self.widget
+	def getItemInspector(self):
+		if not self.item_inspector:
+			self.item_inspector = EMDataItem3DInspector("DATA", self)
+		return self.item_inspector
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
@@ -151,10 +151,10 @@ class EMIsosurface(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 		
-	def getSceneGui(self):
-		if not self.widget:
-			self.widget = EMIsosurfaceInspector("ISOSURFACE", self)
-		return self.widget
+	def getItemInspector(self):
+		if not self.item_inspector:
+			self.item_inspector = EMIsosurfaceInspector("ISOSURFACE", self)
+		return self.item_inspector
 	
 	def load_colors(self):
 		self.colors = get_default_gl_colors()

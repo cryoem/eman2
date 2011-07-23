@@ -225,7 +225,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera = EMCamera(1.0, 500.0)	# Default near,far, and zclip values
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None
-		self.widget = None				# Get the inspector GUI
+		self.item_inspector = None				# Get the inspector GUI
 		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
 		self.fuzzyselectionfactor = 2.0			# A fudge factor to determine the selection box 'thickness'
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
@@ -260,12 +260,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera.update(width, height)
 		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 	
-	def getSceneGui(self):
+	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
-		if not self.widget: self.widget = EMItem3DInspector("SG", self)
-		return self.widget
+		if not self.item_inspector: self.item_inspector = EMItem3DInspector("SG", self)
+		return self.item_inspector
 		
 	def renderNode(self):
 		pass
@@ -385,8 +385,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
 				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
 			try:
-				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.getSceneGui())
-				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.getSceneGui().treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
+				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
+				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.getItemInspector().treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
 			except:
 				pass
 			#if record.near < bestdistance:
@@ -834,9 +834,9 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
-		item3dgui = item3d.getSceneGui()				# Get the node GUI controls 
-		item3dgui.setInspector(self)					# Associate the item GUI with the inspector
-		self.stacked_widget.addWidget(item3dgui)			# Add a widget to the stack
+		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
+		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
+		self.stacked_widget.addWidget(item_inspector)			# Add a widget to the stack
 		# Set icon status
 		tree_item.setSelectionStateBox()
 		# Set parent if one exists	
@@ -853,7 +853,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		When a user clicks on the selection tree check box
 		"""
-		self.stacked_widget.setCurrentWidget(item.item3d.getSceneGui())
+		self.stacked_widget.setCurrentWidget(item.item3d.getItemInspector())
 		item.setSelectionState(item.checkState(0))
 		for ancestor in item.item3d.getSelectedAncestorNodes():
 			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
