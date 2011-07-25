@@ -40,8 +40,7 @@ from emapplication import EMGLWidget
 from emitem3d import EMItem3D, EMItem3DInspector
 from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget
-import math
-import weakref
+import math, weakref, os
 
 # XPM format Cursors
 
@@ -850,7 +849,8 @@ class EMInspector3D(QtGui.QWidget):
 		return tree_item
 	
 	def removeTreeNode(self, parentitem, childindex):
-		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks (but the widget might sstill be on in memory, I am not sure how to fix this?)
+		# I am using the parent item rather than the item itself b/c the stupid widget has no , remove self function...
+		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
 		self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
 		
@@ -1179,12 +1179,18 @@ class NodeDialog(QtGui.QDialog):
 		self.setLayout(vbox)
 		
 		# Populate node types
-		self.node_type_combo.addItem("Cube")
-		self.node_stacked_widget.addWidget(self.getCubeWidget())
-		self.node_type_combo.addItem("Sphere")
-		self.node_stacked_widget.addWidget(self.getSphereWidget())
-		self.node_type_combo.addItem("Cylinder")
-		self.node_stacked_widget.addWidget(self.getCylinderWidget())
+		if self.item.item3d().name == "Data":
+			self.node_type_combo.addItem("Isosurface")
+			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
+		else:
+			self.node_type_combo.addItem("Cube")
+			self.node_stacked_widget.addWidget(self.getCubeWidget())
+			self.node_type_combo.addItem("Sphere")
+			self.node_stacked_widget.addWidget(self.getSphereWidget())
+			self.node_type_combo.addItem("Cylinder")
+			self.node_stacked_widget.addWidget(self.getCylinderWidget())
+			self.node_type_combo.addItem("Data")
+			self.node_stacked_widget.addWidget(self.getDataWidget())
 		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.removenode_button, QtCore.SIGNAL('clicked()'), self._on_remove_node)
@@ -1199,7 +1205,7 @@ class NodeDialog(QtGui.QDialog):
 		grid = QtGui.QGridLayout()
 		cube_dim_label = QtGui.QLabel("Cube Dimension")
 		self.cube_dim = QtGui.QLineEdit()
-		node_name_label = QtGui.QLabel("Node Name")
+		node_name_label = QtGui.QLabel("Cube Name")
 		self.node_name_cube = QtGui.QLineEdit()
 		grid.addWidget(cube_dim_label, 0, 0)
 		grid.addWidget(self.cube_dim, 0, 1)
@@ -1216,7 +1222,7 @@ class NodeDialog(QtGui.QDialog):
 		grid = QtGui.QGridLayout()
 		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
 		self.sphere_dim = QtGui.QLineEdit()
-		node_name_label = QtGui.QLabel("Node Name")
+		node_name_label = QtGui.QLabel("Sphere Name")
 		self.node_name_sphere = QtGui.QLineEdit()
 		grid.addWidget(sphere_dim_label, 0, 0)
 		grid.addWidget(self.sphere_dim, 0, 1)
@@ -1237,7 +1243,7 @@ class NodeDialog(QtGui.QDialog):
 		grid.addWidget(self.cylider_radius, 0, 1)
 		cylider_height_label = QtGui.QLabel("Cylider Height")
 		self.cylider_height = QtGui.QLineEdit()
-		node_name_label = QtGui.QLabel("Node Name")
+		node_name_label = QtGui.QLabel("Cylider Name")
 		self.node_name_cylinder = QtGui.QLineEdit()
 		grid.addWidget(cylider_height_label, 1, 0)
 		grid.addWidget(self.cylider_height, 1, 1)
@@ -1246,6 +1252,48 @@ class NodeDialog(QtGui.QDialog):
 		cyliderwidget.setLayout(grid)
 		return cyliderwidget
 	
+	def getDataWidget(self):
+		"""
+		Get Data Widget
+		"""
+		datawidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_data_label = QtGui.QLabel("Data Label")
+		self.node_name_data = QtGui.QLineEdit()
+		data_path_label = QtGui.QLabel("Data Path")
+		self.data_path = QtGui.QLineEdit()
+		self.browse_button = QtGui.QPushButton("Browse")
+		grid.addWidget(node_name_data_label, 0, 0)
+		grid.addWidget(self.node_name_data, 0, 1)
+		grid.addWidget(data_path_label, 1, 0)
+		grid.addWidget(self.data_path, 1, 1)
+		grid.addWidget(self.browse_button, 2, 0, 1, 2)
+		datawidget.setLayout(grid)
+		
+		self.connect(self.browse_button, QtCore.SIGNAL('clicked()'), self._on_browse)
+		
+		return datawidget
+	
+	def getIsosurfaceWidget(self):
+		"""
+		Get Isosurface Widget
+		"""
+		isosurfacewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_data_label = QtGui.QLabel("Isosurface Name")
+		self.node_name_data = QtGui.QLineEdit()
+		grid.addWidget(node_name_data_label, 0, 0)
+		grid.addWidget(self.node_name_data, 0, 1)
+		isosurfacewidget.setLayout(grid)
+		
+		return isosurfacewidget
+		
+	def _on_browse(self):
+		filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
+		self.data_path.setText(filename)
+		name = os.path.basename(str(filename))
+		self.node_name_data.setText(name)
+	
 	def _on_add_node(self):
 		if not self.item.parent:
 			print "Cannot add another top level node!!!"
@@ -1253,23 +1301,32 @@ class NodeDialog(QtGui.QDialog):
 			return
 		insertion_node = None
 		node_name = "default"
+		itemparentnode = self.item.parent()
 		# Cube
-		if self.node_type_combo.currentIndex() == 0:
+		if self.node_type_combo.currentText() == "Cube":
 			insertion_node = EMCube(float(self.cube_dim.text()))
 			if self.node_name_cube.text() != "": node_name = self.node_name_cube.text()
 		# Sphere
-		if self.node_type_combo.currentIndex() == 1:
+		if self.node_type_combo.currentText() == "Sphere":
 			insertion_node = EMSphere(float(self.sphere_dim.text()))
 			if self.node_name_sphere.text() != "": node_name = self.node_name_sphere.text()
 		# Cylinder
-		if self.node_type_combo.currentIndex() == 2:
+		if self.node_type_combo.currentText() == "Cylinder":
 			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()))
 			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
+		# Data
+		if self.node_type_combo.currentText() == "Data": 
+			insertion_node =  EMDataItem3D(EMData(str(self.data_path.text())), transform=Transform())
+			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
+		# Isosurface
+		if self.node_type_combo.currentText() == "Isosurface": 
+			insertion_node =  EMIsosurface(self.item.item3d(), transform=Transform())
+			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
+			itemparentnode=self.item
 			
-		thisnode_index = self.item.parent().indexOfChild(self.item)
-		#self.item.parent.insertChild(thisnode_index, insertion_node)
-		self.inspector().addTreeNode(node_name, insertion_node, parentnode=self.item.parent(), insertionindex=(thisnode_index+1))
-		self.item.parent().item3d().addChild(insertion_node)
+		thisnode_index = itemparentnode.indexOfChild(self.item)
+		self.inspector().addTreeNode(node_name, insertion_node, parentnode=itemparentnode, insertionindex=(thisnode_index+1))
+		itemparentnode.item3d().addChild(insertion_node)
 		self.inspector().updateSceneGraph()
 		self.done(0)
 	
