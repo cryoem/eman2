@@ -111,10 +111,11 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		Return a list of selected node ancestors
 		"""
 		selected_ancestors = []
-		if self.parent:
-			if self.is_selected:
-				selected_ancestors.append(self.parent)
-			selected_ancestors.extend(self.parent.getSelectedAncestorNodes()) #Recursion
+		node = self
+		while node.parent:
+			if node.parent.is_selected:
+				selected_ancestors.append(node.parent)
+			node = node.parent
 			
 		return selected_ancestors
 		
