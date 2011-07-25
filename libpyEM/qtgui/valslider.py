@@ -717,12 +717,14 @@ class EMSpinWidget(QtGui.QWidget):
 	coeff is controls the exponential growth rate when the arrow is held down
 	maxarrowwidth is the size of the arrow buttons
 	"""
-	def __init__(self, value, coeff, maxarrowwidth=20):
+	def __init__(self, value, coeff, maxarrowwidth=20, postivemode=False, wheelstep=1):
 		QtGui.QWidget.__init__(self)
 		self.value = value
 		self.coeff = coeff
 		self.powercoeff = 0.0
 		self.maxarrowwidth = maxarrowwidth
+		self.postivemode = postivemode
+		self.wheelstep=wheelstep
 		
 		shbox = QtGui.QHBoxLayout()
 		self.lbutton = QtGui.QPushButton("",self)
@@ -759,9 +761,14 @@ class EMSpinWidget(QtGui.QWidget):
 	
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.setValue(self.value+1)
+			self.setValue(self.value+self.wheelstep)
 		else:
-			self.setValue(self.value-1)
+			value = self.value-self.wheelstep
+			if self.postivemode:
+				if value > 0:
+					self.setValue(value)
+			else:
+				self.setValue(value)
 		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 		
 	def _on_clickleft(self):

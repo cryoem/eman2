@@ -44,8 +44,8 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_line_edit.setText(file_path)
 		new_emdata = EMData(file_path)
-		self.item3d.data = new_emdata
-		for child in self.item3d.getChildren():
+		self.item3d().data = new_emdata
+		for child in self.item3d().getChildren():
 			child.inspector.dataChanged()
 		self.inspector.updateSceneGraph()
 
@@ -73,7 +73,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		vbox.addWidget(self.thr)
 	
 	def dataChanged(self):
-		data = self.item3d.parent.data
+		data = self.item3d().parent.data
 		
 		minden=data.get_attr("minimum")
 		maxden=data.get_attr("maximum")
@@ -85,16 +85,16 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.thr.setValue(iso_threshold, True)
 
 	def onCullFaces(self):
-		self.item3d.cullbackfaces = self.cullbackface.isChecked()
+		self.item3d().cullbackfaces = self.cullbackface.isChecked()
 		self.inspector.updateSceneGraph()
 		
 	def onThresholdSlider(self,val):
-		self.item3d.setThreshold(val)
+		self.item3d().setThreshold(val)
 #		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
 	
 	def onWireframe(self):
-		self.item3d.wire = self.wireframe.isChecked()
+		self.item3d().wire = self.wireframe.isChecked()
 		self.inspector.updateSceneGraph()
 
 

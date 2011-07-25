@@ -245,7 +245,7 @@ class EMItem3DInspector(QtGui.QWidget):
 	"""
 	def __init__(self, name, item3d):
 		QtGui.QWidget.__init__(self)
-		self.item3d = item3d
+		self.item3d = weakref.ref(item3d)
 		self.name = name
 		self.inspector = None
 		self.transfromboxmaxheight = 400
@@ -268,8 +268,8 @@ class EMItem3DInspector(QtGui.QWidget):
 		label.setAlignment(QtCore.Qt.AlignCenter)
 		igvbox.addWidget(label)
 		databox = QtGui.QHBoxLayout()
-		if self.item3d.boundingboxsize:
-			databox.addWidget(QtGui.QLabel("Size: "+str(self.item3d.boundingboxsize)+u'\u00B3',self))
+		if self.item3d().boundingboxsize:
+			databox.addWidget(QtGui.QLabel("Size: "+str(self.item3d().boundingboxsize)+u'\u00B3',self))
 		igvbox.addLayout(databox)
 		# angluar controls
 		xformframe = QtGui.QFrame()
@@ -309,7 +309,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		xformbox.addLayout(zoombox)
 		zoomwidgetbox = QtGui.QHBoxLayout()
 		self.tz = EMSpinWidget(0.0, 1.0)
-		self.zoom = EMSpinWidget(1.0, 0.1)
+		self.zoom = EMSpinWidget(1.0, 0.1, postivemode=True, wheelstep=0.1)
 		zoomwidgetbox.addWidget(self.tz)
 		zoomwidgetbox.addWidget(self.zoom)
 		xformbox.addLayout(zoomwidgetbox)
@@ -327,17 +327,17 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.resetbutton,QtCore.SIGNAL("clicked()"),self._on_reset)
     
 	def _on_translation(self, value):
-		self.item3d.getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
+		self.item3d().getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
 		self.inspector.updateSceneGraph()
         
 	def _on_scale(self, value):
-		self.item3d.getTransform().set_scale(self.zoom.getValue())
+		self.item3d().getTransform().set_scale(self.zoom.getValue())
 		self.inspector.updateSceneGraph()
         
         def _on_reset(self):
-		self.item3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
-		self.item3d.getTransform().set_trans(0.0, 0.0, 0.0)
-		#self.item3d.getTransform().set_scale(1.0)
+		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
+		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
+		#self.item3d().getTransform().set_scale(1.0)
 		self.updateItemControls()
 		self.inspector.updateSceneGraph()
 			
@@ -349,13 +349,13 @@ class EMItem3DInspector(QtGui.QWidget):
     
 	def updateItemControls(self):
 		# Translation update
-		translation =  self.item3d.getTransform().get_trans()
+		translation =  self.item3d().getTransform().get_trans()
 		self.tx.setValue(translation[0])
 		self.ty.setValue(translation[1])
 		self.tz.setValue(translation[2])
 		# Rotation update
-		rotation =  self.item3d.getTransform().get_rotation(str(self.rotcombobox.currentText()))
-		is_identity = self.item3d.getTransform().is_rot_identity()
+		rotation =  self.item3d().getTransform().get_rotation(str(self.rotcombobox.currentText()))
+		is_identity = self.item3d().getTransform().is_rot_identity()
 		comboboxidx = self.rotcombobox.currentIndex()
 		if comboboxidx == 0:
 			self.emanazslider.setValue(rotation["az"], quiet=1)
@@ -413,7 +413,7 @@ class EMItem3DInspector(QtGui.QWidget):
 				self.quaternione2slider.setValue(rotation["e2"], quiet=1)
 				self.quaternione3slider.setValue(rotation["e3"], quiet=1)
 		# Scaling update
-		self.zoom.setValue(self.item3d.getTransform().get_scale())
+		self.zoom.setValue(self.item3d().getTransform().get_scale())
         
 	def addRotationWidgets(self):
 		EMANwidget = QtGui.QWidget()
@@ -524,7 +524,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		# Signal for all sliders
 		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self._rotcombobox_changed)
 		QtCore.QObject.connect(self.emanazslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
-		QtCore.QObject.connect(self.emanaltslider,QtCore.SIGNAL("self.zoom.getValue()valueChanged"),self._on_EMAN_rotation)
+		QtCore.QObject.connect(self.emanaltslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
 		QtCore.QObject.connect(self.emanphislider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
 		QtCore.QObject.connect(self.imagicgammaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
 		QtCore.QObject.connect(self.imagicbetaslider,QtCore.SIGNAL("valueChanged"),self._on_Imagic_rotation)
@@ -556,41 +556,41 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.updateItemControls()
         
 	def _on_EMAN_rotation(self, value):
-		self.item3d.getTransform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
+		self.item3d().getTransform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
 		self.inspector.updateSceneGraph()
         
 	def _on_Imagic_rotation(self, value):
-		self.item3d.getTransform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
+		self.item3d().getTransform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
 		self.inspector.updateSceneGraph()
         
 	def _on_Spider_rotation(self, value):
-		self.item3d.getTransform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
+		self.item3d().getTransform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
 		self.inspector.updateSceneGraph()
         
 	def _on_MRC_rotation(self, value):
-		self.item3d.getTransform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
+		self.item3d().getTransform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
 		self.inspector.updateSceneGraph()
         
 	def _on_XYZ_rotation(self, value):
-		self.item3d.getTransform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
+		self.item3d().getTransform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
 		self.inspector.updateSceneGraph()
         
 	def _on_spin_rotation(self, value):
 		v = Vec3f(self.spinn1slider.getValue(), self.spinn2slider.getValue(), self.spinn3slider.getValue())
 		v.normalize()
-		self.item3d.getTransform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
+		self.item3d().getTransform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
 		self.inspector.updateSceneGraph()
         
 	def _on_sgirot_rotation(self, value):
 		v = Vec3f(self.sgirotn1slider.getValue(), self.sgirotn2slider.getValue(), self.sgirotn3slider.getValue())
 		v.normalize()
-		self.item3d.getTransform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
+		self.item3d().getTransform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
 		self.inspector.updateSceneGraph()
         
 	def _on_quaternion_rotation(self, value):
 		v = Vec4f(self.quaternione0slider.getValue(), self.quaternione1slider.getValue(), self.quaternione2slider.getValue(), self.quaternione3slider.getValue())
 		v.normalize()
-		self.item3d.getTransform().set_rotation({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]})
+		self.item3d().getTransform().set_rotation({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]})
 		self.inspector.updateSceneGraph()
         
 

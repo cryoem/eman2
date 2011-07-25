@@ -848,17 +848,22 @@ class EMInspector3D(QtGui.QWidget):
 			else:
 				parentnode.addChild(tree_item)
 		return tree_item
-			
+	
+	def removeTreeNode(self, parentitem, childindex):
+		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks (but the widget might sstill be on in memory, I am not sure how to fix this?)
+		self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
+		parentitem.takeChild(childindex)
+		
 	def _tree_widget_click(self, item, col):
 		"""
 		When a user clicks on the selection tree check box
 		"""
-		self.stacked_widget.setCurrentWidget(item.item3d.getItemInspector())
+		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
 		item.setSelectionState(item.checkState(0))
-		for ancestor in item.item3d.getSelectedAncestorNodes():
+		for ancestor in item.item3d().getSelectedAncestorNodes():
 			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
 				ancestor.EMQTreeWidgetItem.setSelectionState(False)
-		for child in item.item3d.getAllSelectedNodes()[1:]: 	# Lop the node itself off
+		for child in item.item3d().getAllSelectedNodes()[1:]: 	# Lop the node itself off
 			child.EMQTreeWidgetItem.setSelectionState(False)
 		
 	def _tree_widget_visible(self, item):
@@ -1096,8 +1101,9 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	def __init__(self, qstring, item3d, parentnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
-		self.item3d = item3d
-		self.parent = parentnode
+		self.item3d = weakref.ref(item3d)
+		if parentnode: self.parent = weakref.ref(parentnode)
+		else: self.parent = None
 		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
@@ -1109,20 +1115,20 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		Toogle selection state on and off
 		"""
 		if state == QtCore.Qt.Checked:
-			self.item3d.setSelectedItem(True)
+			self.item3d().setSelectedItem(True)
 		else:
-			self.item3d.setSelectedItem(False)
+			self.item3d().setSelectedItem(False)
 		self.setSelectionStateBox() # set state of TreeItemwidget
 		
 	def toggleVisibleState(self):
-		self.item3d.setVisibleItem(not self.item3d.isVisibleItem())
+		self.item3d().setVisibleItem(not self.item3d().isVisibleItem())
 		self.getVisibleState()
 		
 	def getVisibleState(self):
 		"""
 		Toogle the visble state
 		"""
-		if self.item3d.isVisibleItem():
+		if self.item3d().isVisibleItem():
 			self.setIcon(0, self.visible)
 		else:
 			self.setIcon(0, self.invisible)
@@ -1131,7 +1137,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		"""
 		Set the selection state icon
 		"""
-		if self.item3d.isSelectedItem():
+		if self.item3d().isSelectedItem():
 			self.setCheckState(0, QtCore.Qt.Checked)
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
@@ -1144,7 +1150,7 @@ class NodeDialog(QtGui.QDialog):
 	def __init__(self, inspector, item):
 		QtGui.QDialog.__init__(self)
 		self.item = item
-		self.inspector = inspector
+		self.inspector = weakref.ref(inspector)
 		self.setWindowTitle('Node Controler')
 		#grid = QtGui.QGridLayout()
 		vbox = QtGui.QVBoxLayout(self)
@@ -1260,11 +1266,11 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()))
 			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
 			
-		thisnode_index = self.item.parent.indexOfChild(self.item)
+		thisnode_index = self.item.parent().indexOfChild(self.item)
 		#self.item.parent.insertChild(thisnode_index, insertion_node)
-		self.inspector.addTreeNode(node_name, insertion_node, parentnode=self.item.parent, insertionindex=(thisnode_index+1))
-		self.item.parent.item3d.addChild(insertion_node)
-		self.inspector.updateSceneGraph()
+		self.inspector().addTreeNode(node_name, insertion_node, parentnode=self.item.parent(), insertionindex=(thisnode_index+1))
+		self.item.parent().item3d().addChild(insertion_node)
+		self.inspector().updateSceneGraph()
 		self.done(0)
 	
 	def _on_cancel(self):
@@ -1272,9 +1278,9 @@ class NodeDialog(QtGui.QDialog):
 		
 	def _on_remove_node(self):
 		if self.item.parent:
-			self.item.parent.takeChild(self.item.parent.indexOfChild(self.item))
-			self.item.parent.item3d.removeChild(self.item.item3d)
-			self.inspector.updateSceneGraph()
+			self.inspector().removeTreeNode(self.item.parent(), self.item.parent().indexOfChild(self.item)) 
+			self.item.parent().item3d().removeChild(self.item.item3d())
+			self.inspector().updateSceneGraph()
 		else:
 			print "Error cannot remove root node!!"
 		self.done(0)
@@ -1306,17 +1312,17 @@ class EMInspectorControlShape(EMItem3DInspector):
 		cdialoghbox = QtGui.QHBoxLayout()
 		cabox = QtGui.QHBoxLayout()
 		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
-		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d.ambient[0],255*self.item3d.ambient[1],255*self.item3d.ambient[2]))
+		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
 		cabox.addWidget(self.ambcolorbox)
 		cabox.setAlignment(QtCore.Qt.AlignCenter)
 		cdbox = QtGui.QHBoxLayout()
 		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
-		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d.diffuse[0],255*self.item3d.diffuse[1],255*self.item3d.diffuse[2]))
+		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
 		cdbox.addWidget(self.diffusecolorbox)
 		cdbox.setAlignment(QtCore.Qt.AlignCenter)
 		csbox = QtGui.QHBoxLayout()
 		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
-		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d.specular[0],255*self.item3d.specular[1],255*self.item3d.specular[2]))
+		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
 		csbox.addWidget(self.specularcolorbox)
 		csbox.setAlignment(QtCore.Qt.AlignCenter)
 		cdialoghbox.addLayout(cabox)
@@ -1335,7 +1341,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 		colorhbox.addWidget(self.specular)
 		
 		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shininess")
-		self.shininess.setValue(self.item3d.shininess)
+		self.shininess.setValue(self.item3d().shininess)
 		
 		colorvbox.addWidget(colorlabel)
 		colorvbox.addLayout(cdialoghbox)
@@ -1351,21 +1357,21 @@ class EMInspectorControlShape(EMItem3DInspector):
 		
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
-		self.item3d.setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
-		self.item3d.setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
-		self.item3d.setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 		self.inspector.updateSceneGraph()
 		
 	def _on_shininess(self, shininess):
-		self.item3d.setShininess(shininess)
+		self.item3d().setShininess(shininess)
 		self.inspector.updateSceneGraph()
 		
 ###################################### TEST CODE, THIS WILL NOT APPEAR IN THE WIDGET3D MODULE ##################################################
