@@ -756,6 +756,13 @@ class EMSpinWidget(QtGui.QWidget):
 	
 	def getValue(self):
 		return self.value
+	
+	def wheelEvent(self, event):
+		if event.delta() > 0:
+			self.setValue(self.value+1)
+		else:
+			self.setValue(self.value-1)
+		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 		
 	def _on_clickleft(self):
 		self.value = self.value - self.coeff*(2**self.powercoeff)

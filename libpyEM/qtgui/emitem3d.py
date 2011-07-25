@@ -309,7 +309,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		xformbox.addLayout(zoombox)
 		zoomwidgetbox = QtGui.QHBoxLayout()
 		self.tz = EMSpinWidget(0.0, 1.0)
-		self.zoom = EMSpinWidget(0.0, 0.1)
+		self.zoom = EMSpinWidget(1.0, 0.1)
 		zoomwidgetbox.addWidget(self.tz)
 		zoomwidgetbox.addWidget(self.zoom)
 		xformbox.addLayout(zoomwidgetbox)
