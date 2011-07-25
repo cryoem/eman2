@@ -632,7 +632,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Find out the alignment parameters for each iteration against the last one
 	args = []
 	for i in xrange(num_ali-1):
-		alpha, sx, sy, mirror, stab_mirror, pixel_error = ave_ali_err_params(ali_params_mir_stab[i], ali_params_mir_stab[num_ali-1])
+		alpha, sx, sy, mirror = align_diff_params(ali_params_mir_stab[i], ali_params_mir_stab[num_ali-1])
 		args.extend([alpha, sx, sy])
 
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
@@ -649,16 +649,16 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error_before)/nima2)
 
 	# Use LBFGSB to minimize the sum of pixel errors
-	#data = [ali_params_cleaned, d]
+	data = [ali_params_cleaned, d]
 	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
 	ali_params_cleaned_list = []
 	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
 	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
 	ps_lp = results[:-1]
 	val = results[-1]
+	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 	
 	pixel_error_after = func(ps_lp, data, return_pixel_error=False)
-	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 
 	if print_individual:
 		for i in xrange(nima):
