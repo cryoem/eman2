@@ -51,6 +51,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     imagicio2.cpp
     df3io.cpp
     omapio.cpp
+    situsio.cpp
     emcache.cpp
     ctf.cpp
     xydata.cpp
