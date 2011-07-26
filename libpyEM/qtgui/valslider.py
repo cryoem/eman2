@@ -792,9 +792,13 @@ class EMSpinWidget(QtGui.QWidget):
 			self.powercoeff = 0.0
 			
 	def _on_editfinish(self):
-		self.value = float(self.numbox.text())
-		self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
-
+		try:
+			self.value = float(self.numbox.text())
+			self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
+		except ValueError:
+			self.numbox.setText(str(self.value))
+			print "ERROR!!! You must enter a number"
+		
 class EMQTColorWidget(QtGui.QWidget):
 	"""
 	A widget displaying a color box that is used to control colors
@@ -867,17 +871,18 @@ class EMQTColorWidget(QtGui.QWidget):
 		if color.isValid():
 			self.color = color
 			self.update()
+			self.emit(QtCore.SIGNAL("newcolor(QColor)"), self.color)
 			
 	def _on_colorselect(self, color):
 		if color.isValid():
 			self.color = color
 			self.update()
 			self.emit(QtCore.SIGNAL("newcolor(QColor)"), self.color)
-			self.emit(QtCore.SIGNAL("shit"), self.color)
 			
 	def _on_cancel(self):
 		self.color = self.inicolor
 		self.update()
+		self.emit(QtCore.SIGNAL("newcolor(QColor)"), self.color)
 		
 	def _on_additonal_connect(self):
 		QtCore.QObject.disconnect(self.colrodialog,QtCore.SIGNAL("currentColorChanged(const QColor &)"),self._on_colorchange)
@@ -1078,8 +1083,8 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.init_x = event.x()
 		
 	def mouseMoveEvent(self, event):
-		self.movement = event.x() - self.init_x
-		if event.buttons()&Qt.RightButton:
+		self.movement = (event.x() - self.init_x)*self.scale
+		if math.fabs(event.x()-(self.near_clipping + self.width/2)) > math.fabs(event.x()-(self.far_clipping + self.width/2)):
 			self.emit(QtCore.SIGNAL("farMoved(int)"), self.movement)
 		else:
 			self.emit(QtCore.SIGNAL("nearMoved(int)"), self.movement)
@@ -1093,14 +1098,14 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glColor3f(1.0, 1.0, 0.0)
 		sixtydegrees = math.sin(math.radians(self.scenegraph.camera.getFovy()))
 		self.scale = float(self.scenegraph.camera.getWidth())/float(self.width)*2.0
-		origin = -self.width/110
-		near_clipping = origin + (self.scenegraph.camera.getClipNear() + self.scenegraph.camera.getZclip())/self.scale
-		far_clipping = origin + (self.scenegraph.camera.getClipFar() + self.scenegraph.camera.getZclip())/self.scale
+		origin = 0.0
+		self.near_clipping = origin + (self.scenegraph.camera.getClipNear() + self.scenegraph.camera.getZclip())/self.scale
+		self.far_clipping = origin + (self.scenegraph.camera.getClipFar() + self.scenegraph.camera.getZclip())/self.scale
 		glBegin(GL_LINES)
-		glVertex(near_clipping, -self.height/4, 0)
-		glVertex(near_clipping, self.height/4, 0)
-		glVertex(far_clipping, -self.height/4, 0)
-		glVertex(far_clipping, self.height/4, 0)
+		glVertex(self.near_clipping, -self.height/4, 0)
+		glVertex(self.near_clipping, self.height/4, 0)
+		glVertex(self.far_clipping, -self.height/4, 0)
+		glVertex(self.far_clipping, self.height/4, 0)
 		glEnd()
 		
 	def _drawZslice(self):

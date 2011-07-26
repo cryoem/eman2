@@ -212,8 +212,34 @@ class EMCylinder(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CYLINDER", self)
 		return self.item_inspector
-		
+	
 	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderCylinder()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderCylinder()
+	
+			glPopAttrib()
+		else:
+			self.renderCylinder()
+	
+	def renderCylinder(self):
+	#def renderNode(self):	
 		# Material properties of the cylinder
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -227,9 +253,11 @@ class EMCylinder(EMItem3D):
 		gluCylinder(quadratic,self.radius,self.radius,self.height,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_INSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+		glPushMatrix()
 		glTranslatef( 0,0,self.height)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+		glPopMatrix()
 
 class EMLine(EMItem3D):
 	name = "Line"

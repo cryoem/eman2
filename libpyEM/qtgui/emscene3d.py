@@ -244,6 +244,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glEnable(GL_NORMALIZE)
 		self.firstlight = EMLight(GL_LIGHT0)
 		self.firstlight.enableLighting()
+		if self.main_3d_inspector: self.main_3d_inspector.postGLInitialization()
         
 	def paintGL(self):
 		if self.reset_camera: self.camera.update()
@@ -287,12 +288,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glPushMatrix()
 		glLoadIdentity()
 		
-		# Find the selection box. Go from Volume view coords to viewport coords
+		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
 		x = self.sa_xi + self.camera.getWidth()/2
 		y = self.camera.getHeight()/2 - self.sa_yi
 		dx = self.fuzzyselectionfactor*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
 		dy = self.fuzzyselectionfactor*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
-		
+
 		# Apply selection box
 		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
 		self.camera.setProjectionMatrix()
@@ -458,14 +459,24 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def mouseReleaseEvent(self, event):
 		"""
-		Qt event handler. Returns the cursor to arrow unpn mouse button release
+		Qt event handler. Returns the cursor to arrow unpon mouse button release
 		"""
 		self.setCursor(Qt.ArrowCursor)
+		# Select using the selection box
 		if self.toggle_render_selectedarea:
 			self.pickItem()
 			self.deselectArea()
 			self.updateSG()
-	
+		else:	# Pick without selection box, juwst click
+			if event.modifiers()&Qt.ControlModifier:
+				#self.selectArea(event.x(), event.x()+1, event.y(), event.y()+1)
+				self.sa_xi = event.x() - self.camera.getWidth()/2
+				self.sa_xf = event.x() + 1 - self.camera.getWidth()/2
+				self.sa_yi = -event.y() + self.camera.getHeight()/2
+				self.sa_yf = -event.y() + 1 + self.camera.getHeight()/2
+				self.pickItem()
+				self.updateSG()
+				
 	def wheelEvent(self, event):
 		"""
 		QT event handler. Scales the SG unpon wheel movement
@@ -483,6 +494,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def keyPressEvent(self,event):
 		print "Mouse KeyPress Event"
 	
+	def saveSnapShot(self, filename, format="tiff"):
+		image = self.grabFrameBuffer()
+		image.save(filename, format)
+		
 	def getFuzzyFactor(self):
 		"""Get the fuzzy selection factor """
 		return self.fuzzyselectionfactor
@@ -515,7 +530,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.reset_camera = True
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
 		QtOpenGL.QGLWidget.updateGL(self)
-		pixeldata = glReadPixels(10,10,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
+		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
 		# Then move back
 		self.camera.setClipNear(oldnear)
@@ -551,7 +566,8 @@ class EMLight:
 		The light properties are set to reasnonale defaults.
 		"""
 		self.light = light
-		self.setAmbient(0.1, 0.1, 0.1, 1.0)		# Default ambient color is light grey
+		self.setAmbient(0.3, 0.3, 0.3, 1.0)		# Default ambient color is light grey
+		self.setGlobalAmbient(0.0, 0.0, 0.0, 1.0)		# Default global ambient
 		self.setDiffuse(1.0, 1.0, 1.0, 1.0)		# Default diffuse color is white
 		self.setSpecualar(1.0, 1.0, 1.0, 1.0)		# Default specular color is white
 		self.setPosition(0.0, 0.0, 1.0, 0.0)		# Defulat position is 0, 0, 1.0 and light is directional (w=0)
@@ -568,7 +584,19 @@ class EMLight:
 		"""
 		self.colorambient = [r, g, b, a]
 		glLightfv(self.light, GL_AMBIENT, self.colorambient)
+		
 
+	def setGlobalAmbient(self, r, g, b, a):
+		"""
+		@param r: the red component of the ambient light
+		@param g: the green component of the ambient light
+		@param b: the blue component of the ambient light
+		@param a: the alpha component of the ambient light
+		Set the global ambient light color
+		"""
+		self.colorglobalambient = [r, g, b, a]
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, self.colorglobalambient)	# We want no global ambient light
+		
 	def setDiffuse(self, r, g, b, a):
 		"""
 		@param r: the red component of the diffuse and specular light
@@ -602,6 +630,30 @@ class EMLight:
 		self.position = [x, y, z, w]
 		glLightfv(self.light, GL_POSITION, self.position)
 
+	def getAmbient(self):
+		"""
+		Return the ambient lighting
+		"""
+		return self.colorambient
+	
+	def getGlobalAmbient(self):
+		"""
+		Return the global ambient color
+		"""
+		return self.colorglobalambient
+		
+	def getDiffuse(self):
+		"""
+		Return the diffuse lighting
+		"""
+		return self.colordiffuse
+		
+	def getSpecular(self):
+		"""
+		Return the specular lighting
+		"""
+		returnself.colorspecular
+		
 	def enableLighting(self):
 		"""
 		Enables this light
@@ -748,9 +800,9 @@ class EMCamera:
 		""" Get the viewport width """
 		return self.width
 		
-	def getZclip(self):
+	def getZclip(self, disregardvv=False):
 		""" Get the zclip """
-		if self.usingortho:
+		if self.usingortho or disregardvv:
 			return self.zclip
 		else:
 			return self.perspective_z
@@ -795,12 +847,12 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		widget = QtGui.QWidget()
 		hbox = QtGui.QHBoxLayout(widget)
-		treesplitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+		treesplitter = QtGui.QFrame()
 		treesplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		treesplitter.setLayout(self._get_tree_layout(widget))
 		treesplitter.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treesplitter)
-		controlsplitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+		controlsplitter = QtGui.QFrame()
 		controlsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
 		controlsplitter.setLayout(self._get_controler_layout(widget))
 		controlsplitter.setMinimumWidth(self.mincontrolwidth)
@@ -817,13 +869,28 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
+		self.tree_node_button_add = QtGui.QPushButton("Add Node")
+		self.tree_node_button_remove = QtGui.QPushButton("Remove Node")
+		tvbox.addWidget(self.tree_node_button_add)
+		tvbox.addWidget(self.tree_node_button_remove)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("(QTreeWidgetItem*)"), self._tree_widget_modify)
+		QtCore.QObject.connect(self.tree_node_button_add, QtCore.SIGNAL("clicked()"), self._tree_widget_add)
+		QtCore.QObject.connect(self.tree_node_button_remove, QtCore.SIGNAL("clicked()"), self._tree_widget_remove)
 		
 		return tvbox
 	
+	def _get_controler_layout(self, parent):
+		"""
+		Returns the control layout
+		"""
+		cvbox = QtGui.QVBoxLayout()
+		self.stacked_widget = QtGui.QStackedWidget()
+		cvbox.addWidget(self.stacked_widget)
+		
+		return cvbox
+		
 	def addTreeNode(self, name, item3d, parentnode=None, insertionindex=-1):
 		"""
 		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
@@ -860,11 +927,13 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
 		item.setSelectionState(item.checkState(0))
+		# This code is to prevent both decendents and childer from being selected....
 		for ancestor in item.item3d().getSelectedAncestorNodes():
 			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
 				ancestor.EMQTreeWidgetItem.setSelectionState(False)
 		for child in item.item3d().getAllSelectedNodes()[1:]: 	# Lop the node itself off
 			child.EMQTreeWidgetItem.setSelectionState(False)
+		self.updateSceneGraph()
 		
 	def _tree_widget_visible(self, item):
 		"""
@@ -873,23 +942,25 @@ class EMInspector3D(QtGui.QWidget):
 		item.toggleVisibleState()
 		self.updateSceneGraph()
 	
-	def _tree_widget_modify(self, item):
+	def _tree_widget_add(self):
 		"""
-		when a user wants to remove or add an item3d
+		when a user wants to add an item3d
 		"""
-		nodedialog = NodeDialog(self, item)
+		nodedialog = NodeDialog(self, self.tree_widget.currentItem())
 		nodedialog.exec_()
 		self.activateWindow()
 		
-	def _get_controler_layout(self, parent):
+	def _tree_widget_remove(self):
 		"""
-		Returns the control layout
+		When a use wnats to remove a node_name
 		"""
-		cvbox = QtGui.QVBoxLayout()
-		self.stacked_widget = QtGui.QStackedWidget()
-		cvbox.addWidget(self.stacked_widget)
-		
-		return cvbox
+		item = self.tree_widget.currentItem()
+		if item.parent:
+			self.removeTreeNode(item.parent(), item.parent().indexOfChild(item)) 
+			item.parent().item3d().removeChild(item.item3d())
+			self.updateSceneGraph()
+		else:
+			print "Error cannot remove root node!!"
 		
 	def getLightsWidget(self):
 		"""
@@ -908,24 +979,27 @@ class EMInspector3D(QtGui.QWidget):
 		positionlabel = QtGui.QLabel("Position", lwidget)
 		positionlabel.setMaximumHeight(20.0)
 		positionlabel.setAlignment(QtCore.Qt.AlignCenter)
-		valslidersplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		valslidersplitter = QtGui.QFrame()
 		valslidersplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		valslidersplitter.setMaximumHeight(80)
 		valvbox = QtGui.QVBoxLayout()
 		self.hvalslider = ValSlider(lwidget,(0.0,360.0),"Horizontal")
-		self.hvalslider.setMaximumHeight(40.0)
 		self.vvalslider = ValSlider(lwidget,(0.0,360.0),"Vertical")
-		self.vvalslider.setMaximumHeight(40.0)
 		valvbox.addWidget(self.hvalslider)
 		valvbox.addWidget(self.vvalslider)
 		valslidersplitter.setLayout(valvbox)
 		lvbox.addWidget(self.lightwidget)
 		lvbox.addWidget(positionlabel)
 		lvbox.addWidget(valslidersplitter)
+		self.ambientlighting = ValSlider(lwidget,(0.0,1.0),"Ambient Lighting")
+		self.ambientlighting.setMaximumHeight(30)
+		lvbox.addWidget(self.ambientlighting)
 		lwidget.setLayout(lvbox)
 		
 		QtCore.QObject.connect(self.lightwidget, QtCore.SIGNAL("lightPositionMoved"), self._light_position_moved)
 		QtCore.QObject.connect(self.hvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
 		QtCore.QObject.connect(self.vvalslider,QtCore.SIGNAL("valueChanged"),self._on_light_slider)
+		QtCore.QObject.connect(self.ambientlighting,QtCore.SIGNAL("valueChanged"),self._on_light_ambient)
 
 		return lwidget
 	
@@ -941,43 +1015,57 @@ class EMInspector3D(QtGui.QWidget):
 		position = self.lightwidget.getPosition()
 		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
 		self.scenegraph.update()
-		
+	
+	def _on_light_ambient(self):
+		ambient = self.ambientlighting.getValue()
+		self.scenegraph.firstlight.setAmbient(ambient, ambient, ambient, 1.0)
+		self.scenegraph.update()
+	
 	def getCameraWidget(self):
 		"""
 		Returns the camera control widget
 		"""
 		self.cameratab_open = False
 		cwidget = QtGui.QWidget()
-		cvbox = QtGui.QVBoxLayout()
+		grid = QtGui.QGridLayout()
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
-		cvbox.addWidget(self.camerawidget)
-		nhbox = QtGui.QHBoxLayout()
+		grid.addWidget(self.camerawidget, 0, 0, 1, 2)
 		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
 		nlabel.setMaximumHeight(30.0)
 		nlabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.near = EMSpinWidget(self.scenegraph.camera.getClipNear(), 1.0)
-		self.near.setToolTip("In the Window above:\nLeft click 'n' drag to move near clipping plane")
+		self.near.setToolTip("In the Window above:\nClick 'n' drag, near the near clipping, to move near clipping plane")
 		self.near.setMaximumHeight(40.0)
-		nhbox.addWidget(nlabel)
-		nhbox.addWidget(self.near)
-		cvbox.addLayout(nhbox)
-		fhbox = QtGui.QHBoxLayout()
+		grid.addWidget(nlabel, 1, 0)
+		grid.addWidget(self.near ,1, 1)
 		flabel = QtGui.QLabel("Far clipping plane", cwidget)
 		flabel.setMaximumHeight(30.0)
 		flabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.far = EMSpinWidget(self.scenegraph.camera.getClipFar(), 1.0)
-		self.far.setToolTip("In the Window above:\nRight click 'n' drag to move far clipping plane")
+		self.far.setToolTip("In the Window above:\nClick 'n' drag, near the far clipping, to move far clipping plane")
 		self.far.setMaximumHeight(40.0)
-		fhbox.addWidget(flabel)
-		fhbox.addWidget(self.far)
-		cvbox.addLayout(fhbox)
-	
-		cwidget.setLayout(cvbox)
+		grid.addWidget(flabel, 2, 0)
+		grid.addWidget(self.far, 2, 1)
+		frame = QtGui.QFrame()
+		frame.setMaximumHeight(40.0)
+		frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		hbox = QtGui.QHBoxLayout()
+		vvlabel = QtGui.QLabel("Viewing Volume")
+		self.orthoradio = QtGui.QRadioButton("Orthographic")
+		self.perspectiveradio = QtGui.QRadioButton("Perspective")
+		hbox.addWidget(vvlabel)
+		hbox.addWidget(self.orthoradio)
+		hbox.addWidget(self.perspectiveradio)
+		frame.setLayout(hbox)
+		grid.addWidget(frame, 3, 0,1,2)
+		cwidget.setLayout(grid)
 
 		QtCore.QObject.connect(self.near,QtCore.SIGNAL("valueChanged(int)"),self._on_near)
 		QtCore.QObject.connect(self.far,QtCore.SIGNAL("valueChanged(int)"),self._on_far)
 		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("nearMoved(int)"),self._on_near_move)
 		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("farMoved(int)"),self._on_far_move)
+		QtCore.QObject.connect(self.orthoradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
+		QtCore.QObject.connect(self.perspectiveradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		
 		return cwidget
 	
@@ -1023,6 +1111,24 @@ class EMInspector3D(QtGui.QWidget):
 		else:
 			self.cameratab_open = False
 			
+	def _get_vv_state(self):
+		"""
+		Get the viewing volume of the camera
+		"""
+		if self.scenegraph.camera.usingortho: 
+			self.orthoradio.setChecked(True)
+		else:
+			self.perspectiveradio.setChecked(True)
+	
+	def _on_radio_click(self):
+		"""
+		set the viewing volume. objectsize is the size of the bounding box of the largest displayed object
+		"""
+		objectsize = 50
+		if self.orthoradio.isChecked(): self.scenegraph.camera.useOrtho(self.scenegraph.camera.getZclip(disregardvv=True))
+		if self.perspectiveradio.isChecked(): self.scenegraph.camera.usePrespective(objectsize, 0.25, 60.0)
+		self.scenegraph.updateSG()
+		
 	def getUtilsWidget(self):
 		"""
 		Return the utilites widget
@@ -1042,14 +1148,26 @@ class EMInspector3D(QtGui.QWidget):
 		uvbox.addWidget(frame)
 		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
 		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
+		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
 		uvbox.addWidget(self.fuzzy_slider)
+		uvbox.addWidget(self.savebutton)
 		uwidget.setLayout(uvbox)
 		
 		QtCore.QObject.connect(self.fuzzy_slider, QtCore.SIGNAL("valueChanged"),self._on_fuzzy_slider)
 		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
+		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
 		
 		return uwidget
 	
+	def _on_save(self):
+		"""
+		Save a snapshot of the scene
+		"""
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "*.tiff")
+		if filename:
+			self.scenegraph.saveSnapShot(filename)
+			print "Saved %s to disk"%os.path.basename(str(filename))
+		
 	def _on_fuzzy_slider(self, value):
 		"""
 		Set the fuzzy selection coeff
@@ -1063,6 +1181,15 @@ class EMInspector3D(QtGui.QWidget):
 		# No, this is not  a bug.... It is a hack b/c sometimes openGL does not change its clear color the first time around!!!!!!
 		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		self.updateSceneGraph()
+	
+	def postGLInitialization(self):
+		"""
+		We run this method after openGL is intialized so that we can get GL params.... Otherwise we get CRAP!!!
+		"""
+		ambient = self.scenegraph.firstlight.getAmbient()
+		avgambient = (ambient[0] + ambient[1] + ambient[2])/3
+		self.ambientlighting.setValue(avgambient)
+		self._get_vv_state()
 		
 	def updateInspector(self):
 		"""
@@ -1089,11 +1216,7 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 		QtGui.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.emit(QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.currentItem())
-		if e.button()==Qt.MidButton:
-			self.emit(QtCore.SIGNAL("(QTreeWidgetItem*)"), self.currentItem())
-		
-		
-	
+			
 class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	Subclass of QTreeWidgetItem
@@ -1108,7 +1231,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
 		self.getVisibleState()
-		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to open the node dialog\nRight click to toogle visible')
+		self.setToolTip(0, 'Click on the checkbox to select\nRight click to toogle visible')
 	
 	def setSelectionState(self, state):
 		""" 
@@ -1170,30 +1293,24 @@ class NodeDialog(QtGui.QDialog):
 		frame.setLayout(fvbox)
 		# vbox widgets
 		vbox.addWidget(frame)
-		hbox = QtGui.QHBoxLayout()
-		self.removenode_button = QtGui.QPushButton("Remove This Node")
 		self.cancel_button = QtGui.QPushButton("Cancel")
-		hbox.addWidget(self.removenode_button)
-		hbox.addWidget(self.cancel_button)
-		vbox.addLayout(hbox)
+		vbox.addWidget(self.cancel_button)
 		self.setLayout(vbox)
 		
-		# Populate node types
+		# Populate node types		
+		self.node_type_combo.addItem("Cube")
+		self.node_stacked_widget.addWidget(self.getCubeWidget())
+		self.node_type_combo.addItem("Sphere")
+		self.node_stacked_widget.addWidget(self.getSphereWidget())
+		self.node_type_combo.addItem("Cylinder")
+		self.node_stacked_widget.addWidget(self.getCylinderWidget())
+		self.node_type_combo.addItem("Data")
+		self.node_stacked_widget.addWidget(self.getDataWidget())
 		if self.item.item3d().name == "Data":
 			self.node_type_combo.addItem("Isosurface")
 			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
-		else:
-			self.node_type_combo.addItem("Cube")
-			self.node_stacked_widget.addWidget(self.getCubeWidget())
-			self.node_type_combo.addItem("Sphere")
-			self.node_stacked_widget.addWidget(self.getSphereWidget())
-			self.node_type_combo.addItem("Cylinder")
-			self.node_stacked_widget.addWidget(self.getCylinderWidget())
-			self.node_type_combo.addItem("Data")
-			self.node_stacked_widget.addWidget(self.getDataWidget())
 		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
-		self.connect(self.removenode_button, QtCore.SIGNAL('clicked()'), self._on_remove_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
 		self.connect(self.node_type_combo, QtCore.SIGNAL("activated(int)"), self._node_combobox_changed)
 	
@@ -1316,7 +1433,13 @@ class NodeDialog(QtGui.QDialog):
 			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
-			insertion_node =  EMDataItem3D(EMData(str(self.data_path.text())), transform=Transform())
+			if str(self.data_path.text()) == "": self._on_browse()
+			try:
+				emdata = EMData(str(self.data_path.text()))
+			except:
+				print "ERROR!!! Your file and or path is Rubbish!!!!"
+				return
+			insertion_node =  EMDataItem3D(emdata, transform=Transform())
 			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
 		# Isosurface
 		if self.node_type_combo.currentText() == "Isosurface": 
@@ -1332,15 +1455,6 @@ class NodeDialog(QtGui.QDialog):
 	
 	def _on_cancel(self):
 		self.done(1)
-		
-	def _on_remove_node(self):
-		if self.item.parent:
-			self.inspector().removeTreeNode(self.item.parent(), self.item.parent().indexOfChild(self.item)) 
-			self.item.parent().item3d().removeChild(self.item.item3d())
-			self.inspector().updateSceneGraph()
-		else:
-			print "Error cannot remove root node!!"
-		self.done(0)
 	
 	def _node_combobox_changed(self, nodetype):
 		self.node_stacked_widget.setCurrentIndex(nodetype)

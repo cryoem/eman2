@@ -181,7 +181,94 @@ class EMIsosurface(EMItem3D):
 		#time2 = clock()
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1
+	
+	def renderNode(self):
+		if (not isinstance(self.parent.data,EMData)): return
+		#a = time()
+		cull = glIsEnabled(GL_CULL_FACE)
+		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+	
+		if self.cullbackfaces:
+			glEnable(GL_CULL_FACE)
+			glCullFace(GL_BACK)
+		else:
+			if not cull:
+				glDisable(GL_CULL_FACE)
+
+		if ( self.wire ):
+			glPolygonMode(GL_FRONT,GL_LINE);
+		else:
+			glPolygonMode(GL_FRONT,GL_FILL);
 		
+
+		glShadeModel(GL_SMOOTH)
+		if ( self.isodl == 0 or self.force_update):
+			self.get_iso_dl()
+			self.force_update = False
+		
+		# This code draws an outline around the isosurface
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			if ( self.wire ):
+				glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+			else:
+				glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);	
+			self.renderIso()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderIso()
+	
+			glPopAttrib()
+		else:
+			self.renderIso()
+		
+#		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
+		
+		if self.cube:
+			#glDisable(GL_LIGHTING)
+			glPushMatrix()
+			self.draw_volume_bounds()
+			glPopMatrix()
+		
+		if cull: glEnable(GL_CULL_FACE)
+		else: glDisable(GL_CULL_FACE)
+		
+		if ( polygonmode[0] == GL_LINE ): 
+			glPolygonMode(GL_FRONT, GL_LINE)
+		else: 
+			glPolygonMode(GL_FRONT, GL_FILL)
+		
+		#print "total time is", time()-a
+	
+	def renderIso(self):
+		# This is needed for the inspector to work John Flanagan	
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		glColor(self.ambient)
+
+		
+		glPushMatrix()
+		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
+		if ( self.texture ):
+			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
+		glCallList(self.isodl)
+		glPopMatrix()
+		
+	"""
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
@@ -241,7 +328,8 @@ class EMIsosurface(EMItem3D):
 			glPolygonMode(GL_FRONT, GL_FILL)
 		
 		#print "total time is", time()-a
-		
+	"""
+	
 	def setThreshold(self, val):
 		if (self.isothr != val):
 			self.isothr = val
