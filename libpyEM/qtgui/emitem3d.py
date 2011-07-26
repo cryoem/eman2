@@ -32,8 +32,8 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type transform: Transform or None
 		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
 		"""
-		self.parent = parent		
-		self.children = set(children)
+		self.setParent(parent)
+		self.setChildren(children)
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
@@ -43,9 +43,15 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.getAndSetUniqueInteger()
 	
 	def getChildren(self): return self.children
-	def setChildren(self, children): self.children = set(children)
+	def setChildren(self, children): 
+		self.children = set(children)
+		for child in children:
+			child.parent = self
 	def getParent(self): return self.parent
-	def setParent(self, parent): self.parent = parent
+	def setParent(self, parent): 
+		self.parent = parent
+		if parent:
+			parent.addChild(self)
 	def isSelectedItem(self): return self.is_selected
 	def setSelectedItem(self, is_selected): self.is_selected = is_selected
 	def getTransform(self): return self.transform
@@ -94,17 +100,38 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@param node: test whether this node is a child node of self 
 		"""
 		return node in self.children
-		
+	
+	def displayTree(self, level = 1):
+		indent = "\t"*(level-1)
+		marker = "<-->" if self.parent else "-->"
+		print indent, marker, self.intname
+		for child in self.children:
+			child.displayTree(level+1)
+	
+	def addParentReferences(self):
+		"""
+		For the subtree rooted at self, give each child node a reference to its parent node.
+		"""
+		for child in self.children:
+			child.parent = self
+			child.addParentReferences()
+	
+	def removeParentReferences(self):
+		"""
+		For the subtree rooted at self, break reference cycles by setting self.parent to None.
+		"""
+		self.parent = None
+		for child in self.children:
+			child.removeParentReferences()
+	
 	def removeChild(self, node):
 		"""
 		Remove the supplied node from the set of child nodes This also removes all its descendant nodes. 
 		@type node: EMItem3D
 		@param node: the node to remove
 		"""
+		node.removeParentReferences()
 		self.children.remove(node)
-		node.parent = None
-		for child in node.children:
-			node.removeChild(child)
 	
 	def getSelectedAncestorNodes(self):
 		"""
@@ -601,24 +628,24 @@ if __name__ == '__main__':
 	a = EMItem3D(root)
 	b = EMItem3D(root)
 	c = EMItem3D(root)
-	root.addChildren([a,b,c])
-	aa = EMItem3D()
-	ab = EMItem3D()
-	ac = EMItem3D()
-	a.addChildren([aa,ab,ac])
-	ba = EMItem3D()
-	bb = EMItem3D()
-	bc = EMItem3D()
-	b.addChildren([ba,bb,bc])
-	ca = EMItem3D()
-	cb = EMItem3D()
-	cc = EMItem3D()
-	c.addChildren([ca,cb,cc])
+#	root.addChildren([a,b,c])
+	aa = EMItem3D(a)
+	ab = EMItem3D(a)
+	ac = EMItem3D(a)
+#	a.addChildren([aa,ab,ac])
+	ba = EMItem3D(b)
+	bb = EMItem3D(b)
+	bc = EMItem3D(b)
+#	b.addChildren([ba,bb,bc])
+	ca = EMItem3D(c)
+	cb = EMItem3D(c)
+	cc = EMItem3D(c)
+#	c.addChildren([ca,cb,cc])
 	
-	aaa = EMItem3D()
-	aab = EMItem3D()
-	aac = EMItem3D()
-	aa.addChildren([aaa,aab,aac])
+	aaa = EMItem3D(aa)
+	aab = EMItem3D(aa)
+	aac = EMItem3D(aa)
+#	aa.addChildren([aaa,aab,aac])
 	
 	a.is_selected = True
 	aab.is_selected = True
@@ -633,3 +660,17 @@ if __name__ == '__main__':
 	print "\tpassed?  ", set(root.getNearbySelectedNodes()) == set([a,ba,bc,c])
 	print "getDistantSelectedNodes() test: "
 	print "\tpassed?  ", set(root.getDistantSelectedNodes()) == set([aab,ba,bc,cc])
+	
+	root.displayTree()
+	print "\n"
+	a.removeParentReferences()
+	root.displayTree()
+	print "\n"
+	root.addParentReferences()
+	root.displayTree()
+	print "\n"
+	
+	print "removing child..."
+	root.removeChild(a)
+	root.displayTree()
+	del a, b, c, aa, ab, ac, ba, bb, bc, ca, cb, cc, aaa, aab, aac #Ensure instances are deleted before the class object is deleted, which is important in EMItem3D.__del__(self):
