@@ -63,6 +63,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def __del__(self):
 		EMItem3D.selection_recycle.append(self.intname)
 	
+	def getEvalString(self):
+		"""
+		Retrun a string that after eval can reinstatiate the object
+		"""
+		return "NA"
+	
 	def getAndSetUniqueInteger(self):
 		"""
 		Stuff for the selection mechanism, return a unique int for each instance of EMItem3D

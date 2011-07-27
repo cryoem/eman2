@@ -60,6 +60,9 @@ class EMCube(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
+	
+	def getEvalString(self):
+		return "EMCube(%s)"%self.size
 		
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -144,6 +147,9 @@ class EMSphere(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
+	
+	def getEvalString(self):
+		return "EMSphere(%s)"%self.radius
 		
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -193,6 +199,9 @@ class EMCylinder(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]		
 		self.shininess = 25.0
+	
+	def getEvalString(self):
+		return "EMCylinder(%s, %s)"%(self.radius, self.height)
 		
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]

@@ -1019,11 +1019,12 @@ class EMLightControls(QtOpenGL.QGLWidget):
 	def getAngularPosition(self):
 		return [self.x_light_pos, self.y_light_pos]
 	
-	def setAngularPosition(self, h, v):
+	def setAngularPosition(self, h, v, quiet=True):
 		self.x_light_pos = h
 		self.y_light_pos = v
 		self.setPosition()
 		self.update()
+		if not quiet: self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)
 	
 	def setLightColor(self):
 		glLightfv(self.light, GL_AMBIENT, self.ambient)

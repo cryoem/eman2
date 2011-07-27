@@ -40,7 +40,7 @@ from emapplication import EMGLWidget
 from emitem3d import EMItem3D, EMItem3DInspector
 from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget
-import math, weakref, os
+import math, weakref, os, pickle
 
 # XPM format Cursors
 
@@ -237,6 +237,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.zhaircursor = QtGui.QCursor(QtGui.QPixmap(zhaircursor),-1,-1)
 		self.selectorcursor = QtGui.QCursor(QtGui.QPixmap(selectorcursor),-1,-1)
 
+	def getEvalString(self):
+		"""
+		Retrun a string that after eval can reinstatiate the object
+		"""
+		return "SG"
+		
 	def initializeGL(self):
 		glClearColor(self.clearcolor[0], self.clearcolor[1], self.clearcolor[2], self.clearcolor[3])		# Default clear color is black
 		glShadeModel(GL_SMOOTH)
@@ -530,6 +536,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.reset_camera = True
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
 		QtOpenGL.QGLWidget.updateGL(self)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
 		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
 		# Then move back
@@ -543,12 +550,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.pixels.append(self.camera.width)
 		self.pixels.append(self.camera.height)
 		self.pixels.append(pixeldata)
+	
+	def cameraNeedsanUpdate(self):
+		"""
+		Tell the SG to restet the camera
+		"""
+		self.reset_camera = True
 		
 	def setClearColor(self, r, g, b):
 		"""
 		Set the background colorambient
 		"""
+		self.clearcolor = [r, g, b, 0.0]
 		glClearColor(r, g, b, 0.0)
+	
+	def getClearColor(self):
+		"""
+		Return the clear color
+		"""
+		return self.clearcolor
 		
 	def updateSG(self):
 		"""
@@ -653,6 +673,12 @@ class EMLight:
 		Return the specular lighting
 		"""
 		returnself.colorspecular
+	
+	def getPosition(self):
+		"""
+		Return the light position
+		"""
+		return self.position
 		
 	def enableLighting(self):
 		"""
@@ -750,14 +776,19 @@ class EMCamera:
 		self.perspective_z = -(boundingbox*2/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox
 		self.usingortho = False
 		
-
 	def useOrtho(self, zclip):
 		"""
 		Changes projection matrix to orthographic
 		"""
 		self.usingortho = True
 		self.zclip = zclip
-
+		
+	def getUseOrtho(self):
+		"""
+		Returns the projectrion state
+		"""
+		return self.usingortho
+		
 	def setClipFar(self, far):
 		"""
 		Set the far aspect of the viewing volume
@@ -918,8 +949,41 @@ class EMInspector3D(QtGui.QWidget):
 	def removeTreeNode(self, parentitem, childindex):
 		# I am using the parent item rather than the item itself b/c the stupid widget has no , remove self function...
 		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
-		self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
+		if parentitem.child(childindex).item3d(): self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
+	
+	def getTreeWidgetChildrenData(self, item):
+		"""
+		Return a list of all the child items (actually a tree of sorts) along with all metadata. Used for saving a session
+		item is the item you want to start at
+		"""
+		childlist = []
+		dictionary = {"CONSTRUCTOR":item.item3d().getEvalString(),"NAME":str(item.name),"VISIBLE":item.item3d().isVisibleItem(),"SELECTED":item.item3d().isSelectedItem()}
+		if item.item3d().getTransform(): dictionary["TRANSFORMATION"] = item.item3d().getTransform().get_params("eman")
+		# Process the firrent sorts of emitmes... I don't like this method of sorting out what type of emitem3d we are dealing with, we do have a name but then I'd be stuck with a lot of If thens...
+		try:
+			dictionary["COLOR"] = [item.item3d().ambient, item.item3d().diffuse, item.item3d().specular, item.item3d().shininess]
+		except:
+			pass
+		try:
+			dictionary["ISOPARS"] = [item.item3d().wire, item.item3d().cullbackfaces, item.item3d().isothr]
+		except:
+			pass
+		# Process a SceneGraph if needed
+		if item.item3d().getEvalString() == "SG":	
+			dictionary["AMBIENTLIGHT"] = self.scenegraph.firstlight.getAmbient()
+			dictionary["LIGHTPOSITION"] = self.lightwidget.getAngularPosition()
+			dictionary["CAMERACLIP"] = [self.scenegraph.camera.getClipNear(), self.scenegraph.camera.getClipFar()]
+			dictionary["CAMERAPM"] = self.scenegraph.camera.getUseOrtho()
+			dictionary["CLEARCOLOR"] = self.scenegraph.getClearColor()
+			dictionary["FUZZYFACTOR"] = self.scenegraph.getFuzzyFactor()
+		# Now do the recursion	
+		childlist.append(dictionary)
+		for i in xrange(item.childCount()):
+			ichild = self.getTreeWidgetChildrenData(item.child(i))
+			childlist.append(ichild)
+		
+		return childlist
 		
 	def _tree_widget_click(self, item, col):
 		"""
@@ -1148,23 +1212,139 @@ class EMInspector3D(QtGui.QWidget):
 		uvbox.addWidget(frame)
 		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
 		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
+		self.opensession_button = QtGui.QPushButton("Open Session")
+		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
 		uvbox.addWidget(self.fuzzy_slider)
+		uvbox.addWidget(self.opensession_button)
+		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
 		uwidget.setLayout(uvbox)
 		
 		QtCore.QObject.connect(self.fuzzy_slider, QtCore.SIGNAL("valueChanged"),self._on_fuzzy_slider)
 		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
 		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
+		QtCore.QObject.connect(self.savesession_button, QtCore.SIGNAL("clicked()"),self._on_save_session)
+		QtCore.QObject.connect(self.opensession_button, QtCore.SIGNAL("clicked()"),self._on_open_session)
 		
 		return uwidget
 	
+	def _process_session_load(self, line):
+		if type([]) == type(line):
+			if len(line) > 1:
+				for cline in line:
+					self._process_session_load(cline)
+				self.parentnodestack.pop()	
+			else:
+				# These nodes are leaves
+				item3dobject = eval(line[0]["CONSTRUCTOR"])
+				if line[0]["CONSTRUCTOR"] == 'EMIsosurface()': # I don't know any other way of determining which nodes are data children
+					item3dobject.setParent(self.parentnodestack[-1:][0].item3d())
+				self._constructitem3d(line[0], item3dobject)
+
+		else:
+			# These nodes have children to process
+			if line["CONSTRUCTOR"] != "SG": 
+				item3dobject = eval(line["CONSTRUCTOR"])
+				widgetitem = self._constructitem3d(line, item3dobject)
+				self.parentnodestack.append(widgetitem)
+			else:
+				# This is the SG, so treat special
+				self.scenegraph.setTransform(Transform(line["TRANSFORMATION"]))
+				self.scenegraph.setVisibleItem(line["VISIBLE"])
+				self.scenegraph.setSelectedItem(line["SELECTED"])
+				# Set up the light
+				self.scenegraph.firstlight.setAmbient(line["AMBIENTLIGHT"][0],line["AMBIENTLIGHT"][1],line["AMBIENTLIGHT"][2],line["AMBIENTLIGHT"][3])
+				al = (line["AMBIENTLIGHT"][0] + line["AMBIENTLIGHT"][1] + line["AMBIENTLIGHT"][2])/3
+				self.ambientlighting.setValue(al,quiet=1)
+				self.lightwidget.setAngularPosition(line["LIGHTPOSITION"][0],line["LIGHTPOSITION"][1], quiet=False)
+				p = self.lightwidget.getPosition()
+				self.scenegraph.firstlight.setPosition(p[0],p[1],p[2],p[3])
+				# Set up the Camera
+				self.scenegraph.camera.setClipNear(line["CAMERACLIP"][0])
+				self.scenegraph.camera.setClipFar(line["CAMERACLIP"][1])
+				self.near.setValue(line["CAMERACLIP"][0], quiet=1)
+				self.far.setValue(line["CAMERACLIP"][1], quiet=1)
+				if line["CAMERAPM"]: 
+					self.orthoradio.setChecked(True)
+					self.scenegraph.camera.useOrtho(self.scenegraph.camera.getZclip(disregardvv=True))
+				else:
+					objectsize = 50
+					self.perspectiveradio.setChecked(True)
+					self.scenegraph.camera.usePrespective(objectsize, 0.25, 60.0)
+				self.scenegraph.cameraNeedsanUpdate()
+				# Set up the utils
+				self.scenegraph.setClearColor(line["CLEARCOLOR"][0],line["CLEARCOLOR"][1],line["CLEARCOLOR"][2])
+				self.backgroundcolor.setColor(QtGui.QColor(255*line["CLEARCOLOR"][0],255*line["CLEARCOLOR"][1],255*line["CLEARCOLOR"][2]))
+				self.scenegraph.setFuzzyFactor(line["FUZZYFACTOR"])
+				self.fuzzy_slider.setValue(line["FUZZYFACTOR"])
+			
+	def _constructitem3d(self, datadict, item3dobject):
+		"""
+		Helper function for _process_session_load
+		"""
+		if datadict.has_key("TRANSFORMATION"):
+			item3dobject.setTransform(Transform(datadict["TRANSFORMATION"]))
+		if datadict.has_key("COLOR"):
+			item3dobject.setAmbientColor(datadict["COLOR"][0][0], datadict["COLOR"][0][1], datadict["COLOR"][0][2], datadict["COLOR"][0][3])
+			item3dobject.setDiffuseColor(datadict["COLOR"][1][0], datadict["COLOR"][1][1], datadict["COLOR"][1][2], datadict["COLOR"][1][3])
+			item3dobject.setSpecularColor(datadict["COLOR"][2][0], datadict["COLOR"][2][1], datadict["COLOR"][2][2], datadict["COLOR"][2][3])
+			item3dobject.setShininess(datadict["COLOR"][3])
+		if datadict.has_key("ISOPARS"):
+			item3dobject.wire = datadict["ISOPARS"][0]
+			item3dobject.cullbackfaces = datadict["ISOPARS"][0]
+			item3dobject.cullbackfaces = datadict["ISOPARS"][1]
+			item3dobject.setThreshold(datadict["ISOPARS"][2])
+			
+		item3dobject.setVisibleItem(datadict["VISIBLE"])
+		item3dobject.setSelectedItem(datadict["SELECTED"])
+		self.parentnodestack[-1:][0].item3d().addChild(item3dobject)
+		return self.addTreeNode(datadict["NAME"], item3dobject, self.parentnodestack[-1:][0])
+				
+	def _on_open_session(self):
+		"""
+		Open a session
+		"""
+		# Open the file
+		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
+		self.loadSession(filename)
+	
+	def loadSession(self, filename):
+		"""
+		Load a session
+		"""
+		rfile = open(filename, 'rb')
+		try:
+			tree = pickle.load(rfile)
+		except:
+			print "ERROR!!! Couldn't load the session file"
+			rfile.close()
+			return	
+		rfile.close()
+		# Clear the current tree
+		self.tree_widget.topLevelItem(0).removeAllChildren(self)
+		# Load the new data
+		self.parentnodestack = [self.tree_widget.topLevelItem(0)]
+		self._process_session_load(tree)
+		self.updateSceneGraph()
+		
+	def _on_save_session(self):
+		"""
+		Return a list of all the child items (actually a tree of sorts)
+		"""
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
+		if filename: # if we cancel
+			wfile = open(filename, 'wb')
+			childrentree = self.getTreeWidgetChildrenData(self.tree_widget.topLevelItem(0))
+			pickle.dump(childrentree, wfile)
+			wfile.close()
+		
 	def _on_save(self):
 		"""
 		Save a snapshot of the scene
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "*.tiff")
-		if filename:
+		if filename: # if we cancel
 			self.scenegraph.saveSnapShot(filename)
 			print "Saved %s to disk"%os.path.basename(str(filename))
 		
@@ -1224,6 +1404,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	def __init__(self, qstring, item3d, parentnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
+		self.name = qstring.join('')
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)
 		else: self.parent = None
@@ -1264,7 +1445,16 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.setCheckState(0, QtCore.Qt.Checked)
 		else:
 			self.setCheckState(0, QtCore.Qt.Unchecked)
-
+	
+	def removeAllChildren(self, inspector):
+		"""
+		Remove all children from the SG
+		"""
+		for i in xrange(self.childCount()):
+			self.child(0).removeAllChildren(inspector)
+			self.item3d().removeChild(self.child(0).item3d())
+			inspector.removeTreeNode(self, 0) 
+			
 class NodeDialog(QtGui.QDialog):
 	"""
 	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
@@ -1562,12 +1752,11 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
-		data = test_image_3d(1)
 		#data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
-		self.emdata = EMDataItem3D(data, transform=Transform())
-		self.widget.addChild(self.emdata)
-		self.isosurface = EMIsosurface(self.emdata, transform=Transform())
-		self.emdata.addChild(self.isosurface)
+		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
+		#self.widget.addChild(self.emdata)
+		#self.isosurface = EMIsosurface(self.emdata, transform=Transform())
+		#self.emdata.addChild(self.isosurface)
 		
 		self.inspector = EMInspector3D(self.widget)
 		self.widget.setInspector(self.inspector)
@@ -1576,8 +1765,8 @@ class GLdemo(QtGui.QWidget):
 		self.inspector.addTreeNode("cube", self.cube, rootnode)
 		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
 		self.inspector.addTreeNode("cylider", self.cylider, rootnode)
-		datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
-		self.inspector.addTreeNode("isosurface", self.isosurface, datanode)
+		#datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
+		#self.inspector.addTreeNode("isosurface", self.isosurface, datanode)
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()

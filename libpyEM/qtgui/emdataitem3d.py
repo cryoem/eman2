@@ -17,9 +17,14 @@ from emglobjects import get_default_gl_colors
 
 class EMDataItem3D(EMItem3D):
 	name = "Data"
-	def __init__(self, data, parent = None, children = set(), transform = None):
-		self.data = data
+	def __init__(self, path, parent = None, children = set(), transform = None):
+		self.data = EMData(path) # This will work even if path is an EMData object
+		self.path = path
 		EMItem3D.__init__(self, parent, children, transform)
+		
+	def getEvalString(self):
+		return "EMDataItem3D(\"%s\")"%self.path
+		
 	def getItemInspector(self):
 		if not self.item_inspector:
 			self.item_inspector = EMDataItem3DInspector("DATA", self)
@@ -103,7 +108,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 class EMIsosurface(EMItem3D):
 	name = "Isosurface"
-	def __init__(self, parent, children = set(), transform = None):
+	def __init__(self, parent=None, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
 		
 		#self.mmode = 0
@@ -129,17 +134,26 @@ class EMIsosurface(EMItem3D):
 		#self.vdtools = EMViewportDepthTools(self)
 		#self.enable_file_browse = enable_file_browse
 		self.force_update = False
-		
 		self.load_colors()
-		data = self.parent.data
-		assert isinstance(data, EMData)
-		self.isorender = MarchingCubes(data)
-		
+	
 		# color Needed for inspector to work John Flanagan
 		self.diffuse = self.colors[self.isocolor]["diffuse"]
 		self.specular = self.colors[self.isocolor]["specular"]
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
+	
+	def setParent(self, parent):
+		"""
+		For use in session restore
+		"""
+		self.parent = parent
+		if parent:
+			data = self.parent.data
+			assert isinstance(data, EMData)
+			self.isorender = MarchingCubes(data)
+		
+	def getEvalString(self):
+		return "EMIsosurface()"
 		
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
