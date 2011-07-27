@@ -43,10 +43,10 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_line_edit.setText(file_path)
-		new_emdata = EMData(file_path)
+		new_emdata = EMData(str(file_path))
 		self.item3d().data = new_emdata
 		for child in self.item3d().getChildren():
-			child.inspector.dataChanged()
+			child.getItemInspector().dataChanged()
 		self.inspector.updateSceneGraph()
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
@@ -83,6 +83,9 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 		self.thr.setRange(minden,maxden)
 		self.thr.setValue(iso_threshold, True)
+		
+		self.item3d().force_update = True
+		self.item3d().isorender = MarchingCubes(data)
 
 	def onCullFaces(self):
 		self.item3d().cullbackfaces = self.cullbackface.isChecked()
