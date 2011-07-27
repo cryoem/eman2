@@ -1241,6 +1241,7 @@ class EMInspector3D(QtGui.QWidget):
 		else:
 			# These nodes have children to process
 			if line["CONSTRUCTOR"] != "SG": 
+				print line["CONSTRUCTOR"]
 				item3dobject = eval(line["CONSTRUCTOR"])
 				widgetitem = self._constructitem3d(line, item3dobject)
 				self.parentnodestack.append(widgetitem)
@@ -1620,12 +1621,7 @@ class NodeDialog(QtGui.QDialog):
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
 			if str(self.data_path.text()) == "": self._on_browse()
-			try:
-				emdata = EMData(str(self.data_path.text()))
-			except:
-				print "ERROR!!! Your file and or path is Rubbish!!!!"
-				return
-			insertion_node =  EMDataItem3D(emdata, transform=Transform())
+			insertion_node =  EMDataItem3D(str(self.data_path.text()), transform=Transform())
 			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
 		# Isosurface
 		if self.node_type_combo.currentText() == "Isosurface": 
