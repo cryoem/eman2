@@ -958,17 +958,13 @@ class EMInspector3D(QtGui.QWidget):
 		item is the item you want to start at
 		"""
 		childlist = []
-		dictionary = {"CONSTRUCTOR":item.item3d().getEvalString(),"NAME":str(item.name),"VISIBLE":item.item3d().isVisibleItem(),"SELECTED":item.item3d().isSelectedItem()}
+		dictionary = {"CONSTRUCTOR":item.item3d().getEvalString(),"NAME":str(item.name),"VISIBLE":item.item3d().isVisibleItem(),"SELECTED":item.item3d().isSelectedItem(),"NODETYPE":item.item3d().nodetype}
 		if item.item3d().getTransform(): dictionary["TRANSFORMATION"] = item.item3d().getTransform().get_params("eman")
-		# Process the firrent sorts of emitmes... I don't like this method of sorting out what type of emitem3d we are dealing with, we do have a name but then I'd be stuck with a lot of If thens...
-		try:
+		# Process specific node types
+		if item.item3d().nodetype == "ShapeNode" or item.item3d().nodetype == "DataChild":
 			dictionary["COLOR"] = [item.item3d().ambient, item.item3d().diffuse, item.item3d().specular, item.item3d().shininess]
-		except:
-			pass
-		try:
-			dictionary["ISOPARS"] = [item.item3d().wire, item.item3d().cullbackfaces, item.item3d().isothr]
-		except:
-			pass
+		if item.item3d().name == "Isosurface": dictionary["ISOPARS"] = [item.item3d().wire, item.item3d().cullbackfaces, item.item3d().isothr]
+		
 		# Process a SceneGraph if needed
 		if item.item3d().getEvalString() == "SG":	
 			dictionary["AMBIENTLIGHT"] = self.scenegraph.firstlight.getAmbient()
@@ -977,7 +973,7 @@ class EMInspector3D(QtGui.QWidget):
 			dictionary["CAMERAPM"] = self.scenegraph.camera.getUseOrtho()
 			dictionary["CLEARCOLOR"] = self.scenegraph.getClearColor()
 			dictionary["FUZZYFACTOR"] = self.scenegraph.getFuzzyFactor()
-		# Now do the recursion	
+		# Now do the recursion to build tree
 		childlist.append(dictionary)
 		for i in xrange(item.childCount()):
 			ichild = self.getTreeWidgetChildrenData(item.child(i))
@@ -1238,7 +1234,7 @@ class EMInspector3D(QtGui.QWidget):
 			else:
 				# These nodes are leaves
 				item3dobject = eval(line[0]["CONSTRUCTOR"])
-				if line[0]["CONSTRUCTOR"] == 'EMIsosurface()': # I don't know any other way of determining which nodes are data children
+				if line[0]["NODETYPE"] == "DataChild": # Data child need to have a parent set
 					item3dobject.setParent(self.parentnodestack[-1:][0].item3d())
 				self._constructitem3d(line[0], item3dobject)
 

@@ -43,6 +43,7 @@ from EMAN2 import Transform
 
 class EMCube(EMItem3D):
 	name = "Cube"
+	nodetype = "ShapeNode"
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
@@ -134,6 +135,7 @@ class EMCube(EMItem3D):
 
 class EMSphere(EMItem3D):
 	name = "Sphere"
+	nodetype = "ShapeNode"
 	def __init__(self, radius):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
@@ -185,6 +187,7 @@ class EMSphere(EMItem3D):
 		
 class EMCylinder(EMItem3D):
 	name = "Cylinder"
+	nodetype = "ShapeNode"
 	def __init__(self, radius, height):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		#size
@@ -270,4 +273,5 @@ class EMCylinder(EMItem3D):
 
 class EMLine(EMItem3D):
 	name = "Line"
+	nodetype = "ShapeNode"
 	pass

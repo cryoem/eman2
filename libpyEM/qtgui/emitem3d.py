@@ -22,6 +22,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	selection_recycle = []
 	selection_intname = -1
 	name = "General 3D Item"
+	nodetype = "BaseNode"
 	
 	def __init__(self, parent = None, children = set(), transform = None):
 		"""
@@ -67,7 +68,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Retrun a string that after eval can reinstatiate the object
 		"""
-		return "NA"
+		return ""
 	
 	def getAndSetUniqueInteger(self):
 		"""

@@ -108,6 +108,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 class EMIsosurface(EMItem3D):
 	name = "Isosurface"
+	nodetype = "DataChild" 
 	def __init__(self, parent=None, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
 		
