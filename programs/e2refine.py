@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5.")
 
 	# options associated with e2project3d.py
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.")
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	parser.add_option("--orientgen", type = "string",help = "The orientation generation argument for e2project3d.py")
 		
