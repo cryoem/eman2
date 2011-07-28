@@ -211,6 +211,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def getParentMatrixProduct(self):
 		"""
 		Get the product of all parent matrices
+		This is a recursive function
 		"""
 		if self.parent:
 			if self.parent.getParentMatrixProduct():
@@ -222,6 +223,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 	def update_matrices(self, params, xformtype):
 		"""
+		The matrcies are updated in such a way that each is done in the standard cooridnate system and the std coord system is not perturbed by the others
 		@type params: List
 		@param params: A list defining how the transform in each active node is modified
 		@type xfromtype: sting

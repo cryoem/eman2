@@ -879,7 +879,23 @@ class EMInspector3D(QtGui.QWidget):
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
+	
+	def _recursiveAdd(self, parentitem, parentnode):
+		"""
+		Helper function to laod the SG
+		"""
+		for child in parentnode.getChildren():
+			addeditem = self.addTreeNode(child.name, child, parentitem)
+			self._recursiveAdd(addeditem, child)
 		
+	def loadSG(self):
+		"""
+		Load the SG
+		"""
+		rootitem = self.addTreeNode("root node", self.scenegraph)
+		self._recursiveAdd(rootitem, self.scenegraph)
+			
+	
 	def getTreeWidget(self):
 		"""
 		This returns the treeview-control panel widget
@@ -930,14 +946,14 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return cvbox
 		
-	def addTreeNode(self, name, item3d, parentnode=None, insertionindex=-1):
+	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
 		"""
 		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
 		The Treeitem also needs to know the node, so it can talk to the node.
 		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
 		"""
-		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentnode)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
 		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
 		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
@@ -945,13 +961,13 @@ class EMInspector3D(QtGui.QWidget):
 		# Set icon status
 		tree_item.setSelectionStateBox()
 		# Set parent if one exists	
-		if not parentnode:
+		if not parentitem:
 			self.tree_widget.insertTopLevelItem(0, tree_item)
 		else:
 			if insertionindex >= 0:
-				parentnode.insertChild(insertionindex, tree_item)
+				parentitem.insertChild(insertionindex, tree_item)
 			else:
-				parentnode.addChild(tree_item)
+				parentitem.addChild(tree_item)
 		return tree_item
 	
 	def removeTreeNode(self, parentitem, childindex):
@@ -963,7 +979,8 @@ class EMInspector3D(QtGui.QWidget):
 	def getTreeWidgetChildrenData(self, item):
 		"""
 		Return a list of all the child items (actually a tree of sorts) along with all metadata. Used for saving a session
-		item is the item you want to start at
+		item is the item you want to start at.
+		This is a recursive function
 		"""
 		childlist = []
 		dictionary = {"CONSTRUCTOR":item.item3d().getEvalString(),"NAME":str(item.name),"VISIBLE":item.item3d().isVisibleItem(),"SELECTED":item.item3d().isSelectedItem(),"NODETYPE":item.item3d().nodetype}
@@ -981,6 +998,7 @@ class EMInspector3D(QtGui.QWidget):
 			dictionary["CAMERAPM"] = self.scenegraph.camera.getUseOrtho()
 			dictionary["CLEARCOLOR"] = self.scenegraph.getClearColor()
 			dictionary["FUZZYFACTOR"] = self.scenegraph.getFuzzyFactor()
+			
 		# Now do the recursion to build tree
 		childlist.append(dictionary)
 		for i in xrange(item.childCount()):
@@ -1231,6 +1249,10 @@ class EMInspector3D(QtGui.QWidget):
 		return uwidget
 	
 	def _process_session_load(self, line):
+		"""
+		Function to load a session. This could easily moves to the SG itself if we wanted to do this w/o the inspector
+		This is a recursive function
+		"""
 		if type([]) == type(line):
 			if len(line) > 1:
 				for cline in line:
@@ -1271,9 +1293,7 @@ class EMInspector3D(QtGui.QWidget):
 				self.scenegraph.cameraNeedsanUpdate()
 				# Set up the utils
 				self.scenegraph.setClearColor(line["CLEARCOLOR"][0],line["CLEARCOLOR"][1],line["CLEARCOLOR"][2])
-				self.backgroundcolor.setColor(QtGui.QColor(255*line["CLEARCOLOR"][0],255*line["CLEARCOLOR"][1],255*line["CLEARCOLOR"][2]))
 				self.scenegraph.setFuzzyFactor(line["FUZZYFACTOR"])
-				self.fuzzy_slider.setValue(line["FUZZYFACTOR"])
 			
 	def _constructitem3d(self, datadict, item3dobject):
 		"""
@@ -1640,7 +1660,7 @@ class NodeDialog(QtGui.QDialog):
 			itemparentnode=self.item
 			
 		thisnode_index = itemparentnode.indexOfChild(self.item)
-		self.inspector().addTreeNode(node_name, insertion_node, parentnode=itemparentnode, insertionindex=(thisnode_index+1))
+		self.inspector().addTreeNode(node_name, insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
 		itemparentnode.item3d().addChild(insertion_node)
 		self.inspector().updateSceneGraph()
 		self.done(0)
@@ -1761,24 +1781,14 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
-		#f = open('shit','wb')
-		#pickle.dump(self.cube, f, pickle.HIGHEST_PROTOCOL)
-		#f.close()
-		#data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
-		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
-		#self.widget.addChild(self.emdata)
-		#self.isosurface = EMIsosurface(self.emdata, transform=Transform())
-		#self.emdata.addChild(self.isosurface)
+		self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
+		self.widget.addChild(self.emdata)
+		self.isosurface = EMIsosurface(self.emdata, transform=Transform())
+		self.emdata.addChild(self.isosurface)
 		
-		self.inspector = EMInspector3D(self.widget)
-		self.widget.setInspector(self.inspector)
-		
-		rootnode = self.inspector.addTreeNode("root node", self.widget)
-		self.inspector.addTreeNode("cube", self.cube, rootnode)
-		self.inspector.addTreeNode("sphere", self.sphere, rootnode)
-		self.inspector.addTreeNode("cylider", self.cylider, rootnode)
-		#datanode = self.inspector.addTreeNode("data", self.emdata, rootnode)
-		#self.inspector.addTreeNode("isosurface", self.isosurface, datanode)
+		#self.inspector = EMInspector3D(self.widget)
+		#self.widget.setInspector(self.inspector)
+		#self.inspector.loadSG()
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()
@@ -1786,7 +1796,7 @@ class GLdemo(QtGui.QWidget):
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)
 		self.setWindowTitle('BCM EM Viewer')
-	
+		
 	def show_inspector(self):
 		self.inspector.show()
 		
@@ -1795,5 +1805,5 @@ if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
-	window.show_inspector()
+	#window.show_inspector()
 	app.exec_()
