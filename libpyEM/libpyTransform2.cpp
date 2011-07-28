@@ -138,6 +138,7 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_translate_overloads_2_3, translate,2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_translate_newbasis_overloads_2_3, translate_newBasis,3, 4)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_get_rotation_overloads_0_1, get_rotation, 0, 1)
 
 }// namespace
@@ -570,10 +571,13 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("translate", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::translate, EMAN_Transform_translate_overloads_2_3(args("x", "y", "z"), "Increment the post translation component\n \nx - the x translation\ny - the y translation\nz - the z translation (default = 0)\n"))
 		.def("translate", (void (EMAN::Transform::*)(const EMAN::Vec3f&) )&EMAN::Transform::translate, args("v"), "Increment the post translation component using a Vec3f\n \nv - the 3D translation vector\n")
 		.def("translate", (void (EMAN::Transform::*)(const EMAN::Vec2f&) )&EMAN::Transform::translate, args("v"), "v - the 2D translation vector\n")
+		.def("translate_newbasis", (void (EMAN::Transform::*)(const EMAN::Transform&, const float&, const float&, const float&) )&EMAN::Transform::translate_newBasis, EMAN_Transform_translate_newbasis_overloads_2_3(args("x", "y", "z"), "Increment the post translation component\n \nx - the x translation\ny - the y translation\nz - the z translation (default = 0)\n"))
+		.def("translate_newbasis", (void (EMAN::Transform::*)(const EMAN::Transform&, const EMAN::Vec3f&) )&EMAN::Transform::translate_newBasis, args("v"), "Increment the post translation component using a Vec3f\n \nv - the 3D translation vector\n")
 		.def("set_scale", &EMAN::Transform::set_scale, args("scale"), "Set the scale\n \nscale - the amount to scale by\n")
 		.def("set_rotation", (void (EMAN::Transform::*)(const EMAN::Dict&) )&EMAN::Transform::set_rotation, args("rotation"), "Set a rotation using a specific Euler type and the dictionary interface\nWorks for all Euler types\n \nrotation - a dictionary containing all key-entry pair required of the associated Euler type\n")
 		.def("set_rotation", (void (EMAN::Transform::*)(const EMAN::Vec3f&) )&EMAN::Transform::set_rotation, args("v"), "Determine the rotation that would transform a vector pointing in the Z direction\nso that it points in the direction of the argument vector\nAutomatically normalizes the vector\n \nv - the direction you want to solve for\n")
 		.def("rotate_origin", (void (EMAN::Transform::*)(const EMAN::Transform&) )&EMAN::Transform::rotate_origin, args("rotation"), "Increment the rotation using the rotation bit of a tranfromation matrix.")
+		.def("rotate_origin_newbasis", (void (EMAN::Transform::*)(const EMAN::Transform&, const float&, const float&, const float&, const float&) )&EMAN::Transform::rotate_origin_newBasis, args("rotation, omega, n1, n2, n3"), "Increment the rotation using the rotation bit of a tranfromation matrix.")
 		.def("rotate", (void (EMAN::Transform::*)(const EMAN::Transform&) )&EMAN::Transform::rotate, args("rotation"), "Increment the rotation using a tranfromation matrix.")
 		.def("get_hflip_transform", (EMAN::Transform (EMAN::Transform::*)() const )&EMAN::Transform::get_hflip_transform, "How do I get the transform that will yield the horizontally flipped projection?\n \nreturn the transform that will yield the horizontally flipped projection\n")
 		.def("get_vflip_transform", (EMAN::Transform (EMAN::Transform::*)() const )&EMAN::Transform::get_vflip_transform, "How do I get the transform that will yield the vertically flipped projection?\n \nreturn the transform that will yield the vertically flipped projection\n")

@@ -250,7 +250,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glEnable(GL_NORMALIZE)
 		self.firstlight = EMLight(GL_LIGHT0)
 		self.firstlight.enableLighting()
-		if self.main_3d_inspector: self.main_3d_inspector.postGLInitialization()
         
 	def paintGL(self):
 		if self.reset_camera: self.camera.update()
@@ -693,6 +692,15 @@ class EMLight:
 		"""
 		if glIsEnabled(self.light):
 			glDisable(self.light)
+			
+	def updateGLlighting(self):
+		"""
+		With open GL, Stupid is a stupid does :)
+		Sometimes we need to re-issue glLighting commands to get GLto execute them, I don't know why this happens......
+		"""
+		self.setAmbient(self.colorambient[0], self.colorambient[1], self.colorambient[2], self.colorambient[3])
+		self.setGlobalAmbient(self.colorglobalambient[0], self.colorglobalambient[1], self.colorglobalambient[2], self.colorglobalambient[3])
+		
 class EMCamera:
 	"""Implmentation of the camera"""
 	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
@@ -968,7 +976,7 @@ class EMInspector3D(QtGui.QWidget):
 		# Process a SceneGraph if needed
 		if item.item3d().getEvalString() == "SG":	
 			dictionary["AMBIENTLIGHT"] = self.scenegraph.firstlight.getAmbient()
-			dictionary["LIGHTPOSITION"] = self.lightwidget.getAngularPosition()
+			dictionary["LIGHTPOSITION"] = self.scenegraph.firstlight.getPosition()
 			dictionary["CAMERACLIP"] = [self.scenegraph.camera.getClipNear(), self.scenegraph.camera.getClipFar()]
 			dictionary["CAMERAPM"] = self.scenegraph.camera.getUseOrtho()
 			dictionary["CLEARCOLOR"] = self.scenegraph.getClearColor()
@@ -1026,6 +1034,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Returns the lights control widget
 		"""
+		self.lighttab_open = False
 		lwidget = QtGui.QWidget()
 		lvbox = QtGui.QVBoxLayout()
 		lightslabel = QtGui.QLabel("Lights", lwidget)
@@ -1064,9 +1073,6 @@ class EMInspector3D(QtGui.QWidget):
 		return lwidget
 	
 	def _light_position_moved(self, position): 
-		angularposition = self.lightwidget.getAngularPosition()
-		self.hvalslider.setValue(angularposition[0], quiet=1)
-		self.vvalslider.setValue(angularposition[1], quiet=1)
 		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
 		self.scenegraph.update()
 	
@@ -1133,13 +1139,11 @@ class EMInspector3D(QtGui.QWidget):
 		if not self.scenegraph.camera.usingortho and value <= 0:
 			return
 		if self.scenegraph.camera.getClipFar() > value:
-			self.camerawidget.updateWidget()
 			self.scenegraph.camera.setClipNear(value)
 			self.scenegraph.updateSG()
 	
 	def _on_far(self, value):
 		if value > self.scenegraph.camera.getClipNear():
-			self.camerawidget.updateWidget()
 			self.scenegraph.camera.setClipFar(value)
 			self.scenegraph.updateSG()
 		
@@ -1148,28 +1152,31 @@ class EMInspector3D(QtGui.QWidget):
 		if not self.scenegraph.camera.usingortho and value <= 0:
 			return
 		if self.scenegraph.camera.getClipFar() > value:
-			self.near.setValue(value, quiet=1)
 			self.scenegraph.camera.setClipNear(value)
 			self.scenegraph.updateSG()
-			self.camerawidget.updateWidget()
 		
 	def _on_far_move(self, movement):
 		value = self.scenegraph.camera.getClipFar() + movement
 		if value > self.scenegraph.camera.getClipNear():
-			self.far.setValue(value, quiet=1)
 			self.scenegraph.camera.setClipFar(value)
 			self.scenegraph.updateSG()
-			self.camerawidget.updateWidget()
 		
 	def _on_load_camera(self, idx):
 		"""
-		Load the SG Z slice
+		Load the SG Z slice and only update widgets that are open
 		"""
 		if idx == 2: # '2' is the camera tab
 			self.scenegraph.setZslice()
 			self.cameratab_open = True
-		else:
-			self.cameratab_open = False
+			self.updateInspector()
+			return
+		if idx == 1: # '1' is the  light tab
+			self.lighttab_open = True
+			self.updateInspector()
+			return
+			
+		self.cameratab_open = False
+		self.lighttab_open = False
 			
 	def _get_vv_state(self):
 		"""
@@ -1200,14 +1207,12 @@ class EMInspector3D(QtGui.QWidget):
 		fvbox = QtGui.QHBoxLayout()
 		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
 		self.backgroundcolor = EMQTColorWidget(parent=frame)
-		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
 		fvbox.addWidget(backgroundcolor_label)
 		fvbox.addWidget(self.backgroundcolor)
 		fvbox.setAlignment(QtCore.Qt.AlignCenter)
 		frame.setLayout(fvbox)
 		uvbox.addWidget(frame)
 		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
-		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
@@ -1252,16 +1257,10 @@ class EMInspector3D(QtGui.QWidget):
 				self.scenegraph.setSelectedItem(line["SELECTED"])
 				# Set up the light
 				self.scenegraph.firstlight.setAmbient(line["AMBIENTLIGHT"][0],line["AMBIENTLIGHT"][1],line["AMBIENTLIGHT"][2],line["AMBIENTLIGHT"][3])
-				al = (line["AMBIENTLIGHT"][0] + line["AMBIENTLIGHT"][1] + line["AMBIENTLIGHT"][2])/3
-				self.ambientlighting.setValue(al,quiet=1)
-				self.lightwidget.setAngularPosition(line["LIGHTPOSITION"][0],line["LIGHTPOSITION"][1], quiet=False)
-				p = self.lightwidget.getPosition()
-				self.scenegraph.firstlight.setPosition(p[0],p[1],p[2],p[3])
+				self.scenegraph.firstlight.setPosition(line["LIGHTPOSITION"][0], line["LIGHTPOSITION"][1], line["LIGHTPOSITION"][2], line["LIGHTPOSITION"][3])
 				# Set up the Camera
 				self.scenegraph.camera.setClipNear(line["CAMERACLIP"][0])
 				self.scenegraph.camera.setClipFar(line["CAMERACLIP"][1])
-				self.near.setValue(line["CAMERACLIP"][0], quiet=1)
-				self.far.setValue(line["CAMERACLIP"][1], quiet=1)
 				if line["CAMERAPM"]: 
 					self.orthoradio.setChecked(True)
 					self.scenegraph.camera.useOrtho(self.scenegraph.camera.getZclip(disregardvv=True))
@@ -1291,8 +1290,7 @@ class EMInspector3D(QtGui.QWidget):
 			item3dobject.wire = datadict["ISOPARS"][0]
 			item3dobject.cullbackfaces = datadict["ISOPARS"][0]
 			item3dobject.cullbackfaces = datadict["ISOPARS"][1]
-			item3dobject.setThreshold(datadict["ISOPARS"][2])
-			
+			item3dobject.setThreshold(datadict["ISOPARS"][2])	
 		item3dobject.setVisibleItem(datadict["VISIBLE"])
 		item3dobject.setSelectedItem(datadict["SELECTED"])
 		self.parentnodestack[-1:][0].item3d().addChild(item3dobject)
@@ -1323,6 +1321,10 @@ class EMInspector3D(QtGui.QWidget):
 		# Load the new data
 		self.parentnodestack = [self.tree_widget.topLevelItem(0)]
 		self._process_session_load(tree)
+		self.updateSceneGraph()
+		# With open GL, stupid is as stupid does.....(sometime GL command don't execute the first tima and I have no idea why.....
+		self.scenegraph.firstlight.updateGLlighting()
+		self.scenegraph.setClearColor(self.scenegraph.getClearColor()[0], self.scenegraph.getClearColor()[1], self.scenegraph.getClearColor()[2])
 		self.updateSceneGraph()
 		
 	def _on_save_session(self):
@@ -1358,23 +1360,31 @@ class EMInspector3D(QtGui.QWidget):
 		# No, this is not  a bug.... It is a hack b/c sometimes openGL does not change its clear color the first time around!!!!!!
 		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		self.updateSceneGraph()
-	
-	def postGLInitialization(self):
-		"""
-		We run this method after openGL is intialized so that we can get GL params.... Otherwise we get CRAP!!!
-		"""
-		ambient = self.scenegraph.firstlight.getAmbient()
-		avgambient = (ambient[0] + ambient[1] + ambient[2])/3
-		self.ambientlighting.setValue(avgambient)
-		self._get_vv_state()
 		
 	def updateInspector(self):
 		"""
-		Update Inspector, for now this only pertains to the camera widget
+		Update Inspector,is called whenever the scence changes
 		"""
+		# Lights
+		if self.lighttab_open:
+			p = self.scenegraph.firstlight.getPosition()
+			self.lightwidget.setPositionCartiesion(p[0], p[1], p[2])
+			angularposition = self.lightwidget.getAngularPosition()
+			self.hvalslider.setValue(angularposition[0], quiet=1)
+			self.vvalslider.setValue(angularposition[1], quiet=1)
+			al = self.scenegraph.firstlight.getAmbient()
+			ambient = (al[0] + al[1] + al[2])/3
+			self.ambientlighting.setValue(ambient, quiet=1)
+		# camera
 		if self.cameratab_open:
+			self.near.setValue(self.scenegraph.camera.getClipNear(), quiet=1)
+			self.far.setValue(self.scenegraph.camera.getClipFar(), quiet=1)
+			self._get_vv_state()
 			self.scenegraph.setZslice()
 			self.camerawidget.updateWidget()
+		# utils
+		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
+		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
 			
 	def updateSceneGraph(self):
 		""" 
@@ -1650,8 +1660,15 @@ class EMInspectorControlShape(EMItem3DInspector):
 		
 	def addControls(self, igvbox):
 		pass
+	
+	def updateItemControls(self):
+		super(EMInspectorControlShape, self).updateItemControls()
+		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
+		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
+		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
 		
-	def addColorControls(self, box):
+	def addBasicControls(self, box):
+		super(EMInspectorControlShape, self).addBasicControls(box)
 		colorframe = QtGui.QFrame()
 		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		colorvbox = QtGui.QVBoxLayout()
@@ -1665,17 +1682,14 @@ class EMInspectorControlShape(EMItem3DInspector):
 		cdialoghbox = QtGui.QHBoxLayout()
 		cabox = QtGui.QHBoxLayout()
 		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
-		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
 		cabox.addWidget(self.ambcolorbox)
 		cabox.setAlignment(QtCore.Qt.AlignCenter)
 		cdbox = QtGui.QHBoxLayout()
 		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
-		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
 		cdbox.addWidget(self.diffusecolorbox)
 		cdbox.setAlignment(QtCore.Qt.AlignCenter)
 		csbox = QtGui.QHBoxLayout()
 		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
-		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
 		csbox.addWidget(self.specularcolorbox)
 		csbox.setAlignment(QtCore.Qt.AlignCenter)
 		cdialoghbox.addLayout(cabox)
@@ -1702,6 +1716,9 @@ class EMInspectorControlShape(EMItem3DInspector):
 		colorvbox.addWidget(self.shininess)
 		colorframe.setLayout(colorvbox)
 		box.addWidget(colorframe)
+		
+		# Set to default
+		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
 		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
 		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
@@ -1744,6 +1761,9 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
+		#f = open('shit','wb')
+		#pickle.dump(self.cube, f, pickle.HIGHEST_PROTOCOL)
+		#f.close()
 		#data = EMData("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc")
 		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
 		#self.widget.addChild(self.emdata)

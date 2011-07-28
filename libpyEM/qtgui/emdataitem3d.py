@@ -34,6 +34,10 @@ class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
 	
+	def updateItemControls(self):
+		super(EMDataItem3DInspector, self).updateItemControls()
+		# Anything that needs to be updated when the scene is rendered goes here.....
+		
 	def addControls(self, vboxlayout):
 		hblbrowse = QtGui.QHBoxLayout()
 		self.file_line_edit = QtGui.QLineEdit()
@@ -43,6 +47,9 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		vboxlayout.addLayout(hblbrowse)
 		
 		self.file_browse_button.clicked.connect(self.on_file_browse)
+		
+		# Set to default, but run only once and not in each base class
+		if type(self) == EMDataItem3DInspector: self.updateItemControls()
 		
 	def on_file_browse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
@@ -62,6 +69,10 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
 		self.dataChanged()
+	
+	def updateItemControls(self):
+		super(EMIsosurfaceInspector, self).updateItemControls()
+		# Anything that needs to be updated when the scene is rendered goes here.....
 		
 	def addControls(self, vbox):
 		# Perhaps we sould allow the inspector control this?
@@ -76,6 +87,9 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		vbox.addWidget(self.cullbackface)
 		vbox.addWidget(self.wireframe)
 		vbox.addWidget(self.thr)
+		
+		# Set to default, but run only once and not in each base class
+		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
 	
 	def dataChanged(self):
 		data = self.item3d().parent.data
@@ -115,7 +129,7 @@ class EMIsosurface(EMItem3D):
 		#self.mmode = 0
 		#self.inspector=None
 		self.isothr=0.5
-		self.isorender=None
+		#self.isorender=None
 		self.isodl = 0
 		self.smpval=-1
 		self.griddl = 0
@@ -124,7 +138,6 @@ class EMIsosurface(EMItem3D):
 		self.wire = False
 		self.light = True
 		self.cullbackfaces = True
-		
 		self.tex_name = 0
 		self.texture = False
 
@@ -142,7 +155,7 @@ class EMIsosurface(EMItem3D):
 		self.specular = self.colors[self.isocolor]["specular"]
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
-	
+		
 	def setParent(self, parent):
 		"""
 		For use in session restore

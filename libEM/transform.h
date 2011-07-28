@@ -144,9 +144,17 @@ namespace EMAN
 			void set_rotation(const Vec3f & v);
 
 			/** Increment the rotation by multipling the rotation bit of the argument transfrom by the rotation part of the current transfrom
-			* @param rotation multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
+			* @param by multiplican, a tranform, R'', by which to multiply the current one, R' == R''R' 
 			*/
 			void rotate_origin(const Transform& by);
+			
+			/** Increment the rotation by multipling the rotation bit of the argument transfrom by the rotation part of the current transfrom
+			* This version rotates in the standard coordinate system, even after it have been modified by tcs. The effect is to undo the distortion 
+			* casued by dcs. Useful in the scenegraph
+			* @param tcs, the stansfrom that moves us to a non standard coordinate system
+			* @param by multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
+			*/
+			void rotate_origin_newBasis(const Transform& tcs, const float& Omega, const float& n1, const float& n2, const float& n3);
 			
 			/** Increment the rotation by multipling the rotation bit of the argument transfrom by the current transfrom
 			* @param rotation multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
@@ -241,6 +249,21 @@ namespace EMAN
 			* @param v the @D translation vector
 			*/
 			inline void translate(const Vec2f& v) { translate(v[0],v[1]); }
+			
+			/** Increment the current translation by tx, ty, tz using a non standard basis
+			* Actualy what it does is remove the effect of tcs when a composite transfrom tcs*t (where t is the current transform)
+			* This function is used in the scenegraph
+			* @param tcs the transform specifing the new basis vectors
+			* @param tx the x incrementation
+			* @param ty the y incrementation
+			* @param tz the z incrementation
+			*/
+			void translate_newBasis(const Transform& tcs, const float& tx, const float& ty, const float& tz=0);
+			
+			/** Increment the current translation using vec3f& v and a non standard basis
+			* @param v the 3D translation vector
+			*/
+			inline void translate(const Transform& tcs, const Vec3f& v) { translate_newBasis(tcs, v[0],v[1],v[2]); }
 			
 			/** Get the degenerant 2D post trans as a vec2f
 			 * @return the 2D translation vector

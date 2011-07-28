@@ -60,8 +60,8 @@ class EMCube(EMItem3D):
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0
-	
+		self.shininess = 25.0		
+		
 	def getEvalString(self):
 		return "EMCube(%s)"%self.size
 		

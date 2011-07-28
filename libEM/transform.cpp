@@ -715,6 +715,30 @@ void Transform::rotate_origin(const Transform& by)
 	}
 }
 
+void Transform::rotate_origin_newBasis(const Transform& tcs, const float& Omega, const float& n1, const float& n2, const float& n3)
+{
+	//Get the rotational inverse
+	Transform tcsinv = Transform(tcs);
+	tcsinv.set_trans(0.0, 0.0, 0.0);
+	tcsinv.invert();
+	
+	//Get the current rotation
+	Transform temp = Transform();
+	temp.set_trans(n1, n2, n3);
+	Transform cc = tcsinv*temp;
+	Vec3f cctrans = cc.get_trans();
+	
+	//set the right rotation
+	Dict spinrot = Dict();
+	spinrot["type"] = "spin";
+	spinrot["Omega"] = Omega;
+	spinrot["n1"] = cctrans[0];
+	spinrot["n2"] = cctrans[1];
+	spinrot["n3"] = cctrans[2];
+	Transform rightrot = Transform(spinrot);
+	rotate_origin(rightrot);
+}
+
 void Transform::rotate(const Transform& by)
 {
 	vector<float> multmatrix = by.get_matrix();
@@ -972,6 +996,22 @@ void Transform::translate(const float& tx, const float& ty, const float& tz)
 	else matrix[0][3] = matrix[0][3] + tx;
 	matrix[1][3] = matrix[1][3] + ty;
 	matrix[2][3] = matrix[2][3] + tz;
+}
+
+void Transform::translate_newBasis(const Transform& tcs, const float& tx, const float& ty, const float& tz)
+{
+	//Get the rotational inverse
+	Transform tcsinv = Transform(tcs);
+	tcsinv.set_trans(0.0, 0.0, 0.0);
+	tcsinv.invert();
+	
+	//Now move the coordinate system
+	Transform temp = Transform();
+	temp.set_trans(tx, ty, tz);
+	Transform nb_trans = tcsinv*temp;
+	
+	translate(nb_trans.get_trans());
+	
 }
 
 Vec2f Transform::get_trans_2d() const

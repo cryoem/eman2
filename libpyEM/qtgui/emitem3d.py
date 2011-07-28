@@ -207,6 +207,18 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		Relate a QtreeItem to this node
 		"""
 		self.EMQTreeWidgetItem = node
+	
+	def getParentMatrixProduct(self):
+		"""
+		Get the product of all parent matrices
+		"""
+		if self.parent:
+			if self.parent.getParentMatrixProduct():
+				return self.parent.getParentMatrixProduct()*self.parent.getTransform()
+			else:
+				return self.parent.getTransform()
+		else:
+			return None
 		
 	def update_matrices(self, params, xformtype):
 		"""
@@ -214,12 +226,18 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@param params: A list defining how the transform in each active node is modified
 		@type xfromtype: sting
 		@param xformtype: The sort of transform we wish to do
-		"""
+		"""	
 		if self.is_selected:
 			if xformtype == "rotate":
-				self.transform.rotate_origin(Transform({"type":"spin","Omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
+				if self.parent:
+					self.transform.rotate_origin_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2], params[3])
+				else:
+					self.transform.rotate_origin(Transform({"type":"spin","Omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
 			elif xformtype == "translate":
-				self.transform.translate(params[0], params[1], params[2])
+				if self.parent: 
+					self.transform.translate_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2])
+				else:
+					self.transform.translate(params[0], params[1], params[2])
 			elif xformtype == "scale":
 				self.transform.scale(params[0])
 			else:
@@ -287,7 +305,6 @@ class EMItem3DInspector(QtGui.QWidget):
         
 		igvbox = QtGui.QVBoxLayout()
 		self.addBasicControls(igvbox)
-		self.addColorControls(igvbox)
 		self.addControls(igvbox)
 		self.setLayout(igvbox)
     
@@ -355,6 +372,9 @@ class EMItem3DInspector(QtGui.QWidget):
 		xformframe.setLayout(xformbox)
 		igvbox.addWidget(xformframe)
         
+		# set to default, but run only as a base class
+		if type(self) == EMItem3DInspector: self.updateItemControls()
+		
 		QtCore.QObject.connect(self.tx,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.ty,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.tz,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
@@ -372,12 +392,8 @@ class EMItem3DInspector(QtGui.QWidget):
         def _on_reset(self):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
-		#self.item3d().getTransform().set_scale(1.0)
 		self.updateItemControls()
 		self.inspector.updateSceneGraph()
-			
-	def addColorControls(self, igvbox):
-		pass
     
 	def addControls(self, igvbox):
 		pass
