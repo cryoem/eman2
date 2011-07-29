@@ -62,7 +62,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)
+		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)	# for the iso inspector we need two grid cols for extra space....
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		self.cullbackface.toggled.connect(self.onCullFaces)
