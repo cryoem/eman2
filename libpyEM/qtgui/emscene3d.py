@@ -164,6 +164,138 @@ zhaircursor = [
     'ccccccbbbbccccccc',
     'cccccccbbcccccccc'
 ]   
+cubecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc',
+    'ccccccbbbbbbbbbccc',
+    'cccccbbbbbbbbbbccc',
+    'ccccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbcccc',
+    'ccbbbbbbbbbbbccccc',
+    'ccbbbbbbbbbbcccccc',
+    'ccbbbbbbbbbccccccc',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc'
+] 
+
+spherecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'cccccccbbbccccccc',
+    'cccccbbbbbbbccccc',
+    'ccccbbbbbbbbbcccc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccccbbbbbbbbbcccc',
+    'cccccbbbbbbbccccc',
+    'cccccccbbbccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
+cylindercursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cccccbbbbbbbccccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
+textcursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbcccbbbcccbbcc',
+    'ccbccccbbbccccbcc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'ccccccbbbbbcccccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
+xisosurfacecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'cccccbbbbbbbbbccc',
+    'cccbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'cccbbbbbbbbbbbbcc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbcbbcbbcbbcbbc',
+    'ccbbbbbbbbbbbbbbc',
+    'cccbbbbbbbbbbbbcc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
+isosurfacecursor = [
+    '17 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'bbbccbbbbcccbbbbc',
+    'cbccbccccbcbccccb',
+    'cbccbccccbcbccccb',
+    'cbcccbcccccbccccb',
+    'cbccccbccccbccccb',
+    'cbcccccbcccbccccb',
+    'cbccccccbccbccccb',
+    'cbccbccccbcbccccb',
+    'cbccbccccbcbccccb',
+    'bbbccbbbbcccbbbbc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
 scalecursor = [
     '16 16 2 1',
     'b c #00ff00',
@@ -226,11 +358,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None
 		self.item_inspector = None				# Get the inspector GUI
-		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
-		self.fuzzyselectionfactor = 2.0			# A fudge factor to determine the selection box 'thickness'
+		self.reset_camera = False				# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		self.fuzzyselectionfactor = 2.0				# A fudge factor to determine the selection box 'thickness'
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
+		self.mousemode = None					# The mouse mode
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -270,7 +403,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
-		if not self.item_inspector: self.item_inspector = EMItem3DInspector("SG", self)
+		if not self.item_inspector: self.item_inspector = EMItem3DInspector("All Objects", self)
 		return self.item_inspector
 		
 	def renderNode(self):
@@ -410,23 +543,27 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# The first x,y records where the mouse was first pressed
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
-		if event.buttons()&Qt.LeftButton:
-			if event.modifiers()&Qt.ControlModifier:
-				self.setCursor(self.selectorcursor)
-				self.appendselection = False
-				if event.modifiers()&Qt.ShiftModifier:
-					self.appendselection = True
+		
+		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier):
+			self.mousemode = "rotate"
+			if  event.y() > 0.95*self.size().height():
+				self.setCursor(self.zrotatecursor)
 			else:
-				if  event.y() > 0.95*self.size().height():
-					self.setCursor(self.zrotatecursor)
-				else:
-					self.setCursor(self.xyrotatecursor)
-		if event.buttons()&Qt.MidButton:
-			if event.modifiers()&Qt.ControlModifier:
-				self.setCursor(self.zhaircursor)
-			else:
-				self.setCursor(self.crosshaircursor)
+				self.setCursor(self.xyrotatecursor)
+		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.mousemode = "selection"
+			self.setCursor(self.selectorcursor)
+			self.appendselection = False
+			if event.modifiers()&Qt.ShiftModifier:
+				self.appendselection = True
+		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier):
+			self.mousemode = "ztranslate"
+			self.setCursor(self.zhaircursor)
+		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier):
+			self.mousemode = "xytranslate"
+			self.setCursor(self.crosshaircursor)
 		if event.buttons()&Qt.RightButton:
+			self.mousemode = "scale"
 			self.setCursor(self.scalecursor)		
 			
 	def mouseMoveEvent(self, event):
@@ -435,33 +572,29 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
-		if event.buttons()&Qt.LeftButton:
-			if event.modifiers()&Qt.ControlModifier:
-				self.setCursor(self.selectorcursor)
-				self.selectArea(self.first_x, event.x(), self.first_y, event.y())
+		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.setCursor(self.selectorcursor)
+			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
+		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier):
+			magnitude = math.sqrt(dx*dx + dy*dy)
+			#Check to see if the cursor is in the 'virtual slider pannel'
+			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
+				self.setCursor(self.zrotatecursor)
+				self.update_matrices([magnitude,0,0,-dx/magnitude], "rotate")
 			else:
-				magnitude = math.sqrt(dx*dx + dy*dy)
-				#Check to see if the cursor is in the 'virtual slider pannel'
-				if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-					self.setCursor(self.zrotatecursor)
-					self.update_matrices([magnitude,0,0,-dx/magnitude], "rotate")
-				else:
-					self.setCursor(self.xyrotatecursor) 
-					self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
-			self.updateSG()
-		if event.buttons()&Qt.MidButton:
-			if event.modifiers()&Qt.ControlModifier:
-				self.update_matrices([0,0,(dx+dy)], "translate")
-			else:
-				self.update_matrices([dx,-dy,0], "translate")
-			self.updateSG()	
+				self.setCursor(self.xyrotatecursor) 
+				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
+		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier):
+			self.update_matrices([0,0,(dx+dy)], "translate")
+		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier):
+			self.update_matrices([dx,-dy,0], "translate")
 		if event.buttons()&Qt.RightButton:
 			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
 			self.setCursor(self.scalecursor)
-			self.updateSG()
+			
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
-			
+		self.updateSG()	
 			
 	def mouseReleaseEvent(self, event):
 		"""
@@ -474,15 +607,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.deselectArea()
 			self.updateSG()
 		else:	# Pick without selection box, juwst click
-			if event.modifiers()&Qt.ControlModifier:
-				#self.selectArea(event.x(), event.x()+1, event.y(), event.y()+1)
+			if event.modifiers()&Qt.ControlModifier and self.mousemode == "selection":
+				# 5 seems a big enough slection box
 				self.sa_xi = event.x() - self.camera.getWidth()/2
-				self.sa_xf = event.x() + 1 - self.camera.getWidth()/2
+				self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
 				self.sa_yi = -event.y() + self.camera.getHeight()/2
-				self.sa_yf = -event.y() + 1 + self.camera.getHeight()/2
+				self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
 				self.pickItem()
 				self.updateSG()
-				
+		self.mousemode = None
+		
 	def wheelEvent(self, event):
 		"""
 		QT event handler. Scales the SG unpon wheel movement
@@ -534,12 +668,14 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.camera.setClipNear(1)
 			self.camera.setClipFar(1000)
 		self.reset_camera = True
-		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0}))
+		current_xform = self.getTransform()
+		current_xform_side = Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0})*current_xform
+		self.setTransform(current_xform_side)
 		QtOpenGL.QGLWidget.updateGL(self)
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
-		self.getTransform().rotate_origin(Transform({"type":"spin","Omega":-90,"n1":0,"n2":1,"n3":0}))
 		# Then move back
+		self.setTransform(current_xform)
 		self.camera.setClipNear(oldnear)
 		self.camera.setClipFar(oldfar)
 		self.reset_camera = True	# Reset the camera when redering the real scene
@@ -975,7 +1111,7 @@ class EMCamera:
 class EMInspector3D(QtGui.QWidget):
 	def __init__(self, scenegraph):
 		"""
-		The inspector for the 3D widget
+		The inspector for the 3D widget. The inspector is a strict observer of the SceneGraph, and is updated by calling update inspector
 		"""
 		QtGui.QWidget.__init__(self)
 		self.scenegraph = scenegraph
@@ -983,14 +1119,17 @@ class EMInspector3D(QtGui.QWidget):
 		self.mincontrolwidth = 250
 		
 		vbox = QtGui.QVBoxLayout(self)
-		
 		self.inspectortab = QtGui.QTabWidget()
 		self.inspectortab.addTab(self.getTreeWidget(), "Tree View")
 		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
 		self.inspectortab.addTab(self.getCameraWidget(), "Camera")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
-
+		toolframe = QtGui.QFrame()
+		toolframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		toolframe.setLayout(self._get_toolbox_layout())
 		vbox.addWidget(self.inspectortab)
+		vbox.addWidget(toolframe)
+		
 		QtCore.QObject.connect(self.inspectortab, QtCore.SIGNAL("currentChanged(int)"), self._on_load_camera)
 		
 		self.setLayout(vbox)
@@ -1004,12 +1143,14 @@ class EMInspector3D(QtGui.QWidget):
 			if not child.getLabel(): child.setLabel(child.name)
 			addeditem = self.addTreeNode(child.getLabel(), child, parentitem)
 			self._recursiveAdd(addeditem, child)
+		# Expand the data items
+		if parentitem.childCount() > 0: parentitem.setExpanded(True)
 		
 	def loadSG(self):
 		"""
 		Load the SG
 		"""
-		rootitem = self.addTreeNode("root node", self.scenegraph)
+		rootitem = self.addTreeNode("All Objects", self.scenegraph)
 		self._recursiveAdd(rootitem, self.scenegraph)
 			
 	
@@ -1050,6 +1191,58 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.tree_node_button_remove, QtCore.SIGNAL("clicked()"), self._tree_widget_remove)
 		
 		return tvbox
+	
+	def _get_toolbox_layout(self):
+		tvbox = QtGui.QHBoxLayout()
+		font = QtGui.QFont()
+		font.setBold(True)
+		toollabel = QtGui.QLabel("Tools")
+		toollabel.setFont(font)
+		movementool = QtGui.QToolButton()
+		movementool.setIcon(QtGui.QIcon(QtGui.QPixmap(xyrotatecursor)))
+		movementool.setToolTip("Rotate X/Y\nMouse: Left 'n' drag")
+		translatetool = QtGui.QToolButton()
+		translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairscursor)))
+		translatetool.setToolTip("Translate X/Y\nMouse: Middle 'n' drag")
+		ztranslate = QtGui.QToolButton()
+		ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(zhaircursor)))
+		ztranslate.setToolTip("Translate Z\nMouse: Middle + Ctrl 'n' drag")
+		scaletool = QtGui.QToolButton()
+		scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scalecursor)))
+		scaletool.setToolTip("Scale\nMouse: Right 'n' drag")
+		selectiontool = QtGui.QToolButton()
+		selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectorcursor)))
+		selectiontool.setToolTip("Select objects\nMouse: Left + Ctrl 'n' drag\nMultiple = + Ctrl")
+		cubetool = QtGui.QToolButton()
+		cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubecursor)))
+		cubetool.setToolTip("Insert Cube")
+		spheretool = QtGui.QToolButton()
+		spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(spherecursor)))
+		spheretool.setToolTip("Insert Sphere")
+		cylindertool = QtGui.QToolButton()
+		cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindercursor)))
+		cylindertool.setToolTip("Insert Cylinder")
+		texttool = QtGui.QToolButton()
+		texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(textcursor)))
+		texttool.setToolTip("Insert Text")
+		isotool = QtGui.QToolButton()
+		isotool.setIcon(QtGui.QIcon(QtGui.QPixmap(isosurfacecursor)))
+		isotool.setToolTip("Insert IsoSurface")
+		tvbox.addWidget(toollabel)
+		tvbox.addWidget(movementool)
+		tvbox.addWidget(translatetool)
+		tvbox.addWidget(ztranslate)
+		tvbox.addWidget(scaletool)
+		tvbox.addWidget(selectiontool)
+		tvbox.addWidget(cubetool)
+		tvbox.addWidget(spheretool)
+		tvbox.addWidget(cylindertool)
+		tvbox.addWidget(texttool)
+		tvbox.addWidget(isotool)
+		tvbox.setAlignment(QtCore.Qt.AlignLeft)
+		
+		return tvbox
+
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
 		"""

@@ -242,6 +242,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 					self.transform.translate_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2])
 				else:
 					self.transform.translate(params[0], params[1], params[2])
+					
 			elif xformtype == "scale":
 				self.transform.scale(params[0])
 			else:
