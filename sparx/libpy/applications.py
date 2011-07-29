@@ -6633,10 +6633,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		if(ynumber[i]%2==1):
 			ynumber[i]=ynumber[i]+1
 	yrng =[]
-	
+
 	for i in xrange(len(xrng)):
 		yrng.append(dp/2)
-	
+
 	stepx        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
@@ -6752,11 +6752,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		pixel_size = data[0].get_attr('pixel_size')
 	for i in xrange(len(xrng)):
 		yrng[i]=dp/(2*pixel_size)
-		
+
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
-		
+
 
 	from time import time	
 
@@ -6779,10 +6779,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
  		while(Iter < max_iter and terminate == 0):
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
 			if(ynumber[N_step]==0):
-				stepy=0.0
+				stepy = 0.0
 			else:
-				stepy=(2*yrng[N_step]/ynumber[N_step])
-				
+				stepy = (2*yrng[N_step]/ynumber[N_step])
+
 			pixer  = [0.0]*nima
 			modphi = [0.0]*nima
 			Iter += 1
@@ -6808,7 +6808,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			for i in xrange( len(refrings) ):
 				if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 and (symmetry_string[0] == "c" or symmetry_string[0] =="d" ) ):
 					refrings1.append( refrings[i])
-					
+		
 				else:
 					refrings2.append( refrings[i])
 					'''if myid == main_node:
