@@ -656,6 +656,14 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
 	ps_lp = results[:-1]
 	val = results[-1]
+	if val < 0.0:
+		# This will have in some rare cases, I am still not sure how it happens. My guess is 
+		# it's due to rounding errors, but it could be anything.
+		print "Strange results"
+		print "args =", args
+		print "ali_params_cleaned_list =", ali_params_cleaned_list
+		print "results = ", results
+		val = 0.0
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 	
 	pixel_error_after = func(ps_lp, data, return_pixel_error=False)
