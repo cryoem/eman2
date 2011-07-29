@@ -39,7 +39,7 @@ import sys, ConfigParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack_file --n_run=n_run --img_per_grp=img_per_grps"
+	usage = progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --CTF --snr=snr --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --img_per_grp=img_per_grp --generation=generation --MPI"
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates ")
@@ -48,24 +48,26 @@ def main():
 	parser.add_option("--xr",             type="float",        default=1.0,     help="x range of translational search ")
 	parser.add_option("--yr",             type="float",        default=1.0,     help="y range of translational search ")
 	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search ")
-	parser.add_option("--init_maxit",     type="int",          default=2,       help="maximum iteration of ISAC program in the initialization phase ")
-	parser.add_option("--main_maxit",     type="int",          default=3,       help="maximum iteration of ISAC program in the main phase ")
-	parser.add_option("--match_loop_first",     type="int",          default=3,       help="number of iterations to run 2-way matching in the first phase ")
-	parser.add_option("--match_loop_second",    type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
-	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information ")
-	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio ")
+	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment ")
+	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information (default=False, currently True is not supported)")
+	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meanful when CTF is enabled, currently not supported)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
-	parser.add_option("--num_ali",        type="int",          default=5,       help="number of alignments when checking for stability ")
-	parser.add_option("--loops_reali",    type="int",          default=1,       help="number of iterations in ISAC before checking stability ")
-	parser.add_option("--th_err",         type="float",        default=1.0,     help="the threshold of stability ")
-	parser.add_option("--max_Iter",       type="int",          default=10,      help="maximum overall iterations in the first phase ")
-	parser.add_option("--n_run",          type="int",          default=4,       help="number of indepentdent runs ")
-	parser.add_option("--th_grp",         type="int",          default=10,      help="the threshold of size of reproducible group ")
-	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group ")
-	parser.add_option("--FL",             type="float",        default=0.1,     help="number of images per group ")
-	parser.add_option("--FH",             type="float",        default=0.3,     help="number of images per group ")
-	parser.add_option("--generation",     type="int",          default=0,       help="the n-th approach on the dataset ")
-	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version ")
+	parser.add_option("--FL",             type="float",        default=0.1,     help="lowest stopband frequency used in the tangent filter")
+	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter ")
+	parser.add_option("--FF",             type="float",        default=0.2,     help="fall-off of the tangent filter ")
+	parser.add_option("--init_iter",      type="int",          default=3,       help="number of iterations of ISAC program in initialization ")
+	parser.add_option("--main_iter",      type="int",          default=3,       help="number of iterations of ISAC program in main part ")
+	parser.add_option("--iter_reali",     type="int",          default=1,       help="number of iterations in ISAC before checking stability ")
+	parser.add_option("--match_first",    type="int",          default=1,       help="number of iterations to run 2-way matching in the first phase ")
+	parser.add_option("--max_round",      type="int",          default=20,      help="maximum rounds of generating candidate averages in the first phase ")
+	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
+	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability ")
+	parser.add_option("--thld_err",       type="float",        default=1.732,   help="the threshold of pixel error when checking stability ")
+	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, currently other values not supported")
+	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class)")
+	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class)")
+	parser.add_option("--generation",     type="int",          default=1,       help="the n-th approach on the dataset ")
+	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version (default=True, currently False is not supported)")
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:
@@ -81,11 +83,12 @@ def main():
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
-	from development import iter_isac
+	from applications import iter_isac
 	global_def.BATCH = True
-	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.init_maxit, options.main_maxit, \
-		    options.match_loop_first, options.match_loop_second, options.CTF, options.snr, options.dst, options.num_ali, options.loops_reali, \
-		    options.th_err, options.max_Iter, options.n_run, options.th_grp, options.img_per_grp, options.FL, options.FH, options.generation)
+	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, options.snr, \
+		options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
+		options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
+		options.img_per_grp, options.generation)
 	global_def.BATCH = False
 
 
