@@ -9,11 +9,9 @@ from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
 from emitem3d import EMItem3D, EMItem3DInspector
-from emscene3d import EMInspectorControlShape
 from valslider import ValSlider
-
+from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
-
 
 class EMDataItem3D(EMItem3D):
 	name = "Data"
@@ -38,13 +36,14 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		super(EMDataItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
-	def addControls(self, vboxlayout):
+	def addControls(self, gridbox):
+		super(EMDataItem3DInspector, self).addControls(gridbox)
 		hblbrowse = QtGui.QHBoxLayout()
 		self.file_line_edit = QtGui.QLineEdit()
 		hblbrowse.addWidget(self.file_line_edit)
 		self.file_browse_button = QtGui.QPushButton("Browse")
 		hblbrowse.addWidget(self.file_browse_button)
-		vboxlayout.addLayout(hblbrowse)
+		gridbox.addLayout(hblbrowse, 3, 0, 1, 1)
 		
 		self.file_browse_button.clicked.connect(self.on_file_browse)
 		
@@ -63,7 +62,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		self.cullbackface.toggled.connect(self.onCullFaces)
@@ -74,8 +73,12 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		super(EMIsosurfaceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
-	def addControls(self, vbox):
+	def addControls(self, gridbox):
+		super(EMIsosurfaceInspector, self).addControls(gridbox)
 		# Perhaps we sould allow the inspector control this?
+		isoframe = QtGui.QFrame()
+		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		isogridbox = QtGui.QGridLayout()
 		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
 		self.wireframe = QtGui.QCheckBox("Wireframe mode")
@@ -83,10 +86,11 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
-		
-		vbox.addWidget(self.cullbackface)
-		vbox.addWidget(self.wireframe)
-		vbox.addWidget(self.thr)
+		isogridbox.addWidget(self.cullbackface, 0, 0, 1, 1)
+		isogridbox.addWidget(self.wireframe, 1, 0, 1, 1)
+		isoframe.setLayout(isogridbox)
+		gridbox.addWidget(isoframe, 2, 1, 2, 1)
+		gridbox.addWidget(self.thr, 4, 0, 1, 2)
 		
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMIsosurfaceInspector: self.updateItemControls()

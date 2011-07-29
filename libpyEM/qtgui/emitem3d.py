@@ -33,6 +33,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type transform: Transform or None
 		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
 		"""
+		self.label = None	# Customisabl label, used to label the inspector in the tree
 		self.setParent(parent)
 		self.setChildren(children)
 		self.transform = transform
@@ -59,7 +60,8 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def setTransform(self, transform): self.transform = transform
 	def isVisibleItem(self): return self.is_visible
 	def setVisibleItem(self, is_visible): self.is_visible = is_visible
-
+	def setLabel(self, label): self.label = label
+	def getLabel(self): return self.label
 	
 	def __del__(self):
 		EMItem3D.selection_recycle.append(self.intname)
@@ -298,81 +300,75 @@ class EMItem3DInspector(QtGui.QWidget):
 	"""
 	Class to make the EMItem GUI controls
 	"""
-	def __init__(self, name, item3d):
+	def __init__(self, name, item3d, numgridcols=1):
 		QtGui.QWidget.__init__(self)
 		self.item3d = weakref.ref(item3d)
 		self.name = name
 		self.inspector = None
 		self.transfromboxmaxheight = 400
         
-		igvbox = QtGui.QVBoxLayout()
-		self.addBasicControls(igvbox)
-		self.addControls(igvbox)
-		self.setLayout(igvbox)
+		gridbox = QtGui.QGridLayout()
+		self.gridcols = numgridcols
+		self.addControls(gridbox)
+		self.setLayout(gridbox)
     
 	def setInspector(self, inspector):
 		self.inspector = inspector
         
-	def addBasicControls(self, igvbox):
+	def addControls(self, gridbox):
 		# selection box and label
 		font = QtGui.QFont()
 		font.setBold(True)
 		label = QtGui.QLabel(self.name,self)
 		label.setFont(font)
 		label.setAlignment(QtCore.Qt.AlignCenter)
-		igvbox.addWidget(label)
+		gridbox.addWidget(label, 0, 0, 1, self.gridcols)
 		databox = QtGui.QHBoxLayout()
 		if self.item3d().boundingboxsize:
 			databox.addWidget(QtGui.QLabel("Size: "+str(self.item3d().boundingboxsize)+u'\u00B3',self))
-		igvbox.addLayout(databox)
+		gridbox.addLayout(databox, 1, 0, 1, self.gridcols)
 		# angluar controls
 		xformframe = QtGui.QFrame()
 		xformframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		xformbox = QtGui.QVBoxLayout()
+		xformbox = QtGui.QGridLayout()
 		xformlabel = QtGui.QLabel("Transformation", xformframe)
 		xformlabel.setFont(font)
 		xformlabel.setAlignment(QtCore.Qt.AlignCenter)
-		xformbox.addWidget(xformlabel)
+		xformbox.addWidget(xformlabel, 0, 0, 1, 2)
 		# Rotations
 		self.rotcombobox = QtGui.QComboBox()
-		xformbox.addWidget(self.rotcombobox)
+		xformbox.addWidget(self.rotcombobox, 1, 0, 1, 2)
 		self.rotstackedwidget = QtGui.QStackedWidget()
 		self.addRotationWidgets()
-		xformbox.addWidget(self.rotstackedwidget)
+		xformbox.addWidget(self.rotstackedwidget, 2, 0, 1, 2)
 		#translations
-		textbox = QtGui.QHBoxLayout()
 		txlabel = QtGui.QLabel("TX",xformframe)
 		txlabel.setAlignment(QtCore.Qt.AlignCenter)
-		textbox.addWidget(txlabel)
+		xformbox.addWidget(txlabel, 3, 0, 1, 1)
 		tylabel = QtGui.QLabel("TY",xformframe)
 		tylabel.setAlignment(QtCore.Qt.AlignCenter)
-		textbox.addWidget(tylabel)
-		xformbox.addLayout(textbox)
-		box = QtGui.QHBoxLayout()
+		xformbox.addWidget(tylabel, 3, 1, 1, 1)
 		self.tx = EMSpinWidget(0.0, 1.0)
 		self.ty = EMSpinWidget(0.0, 1.0)
-		box.addWidget(self.tx)
-		box.addWidget(self.ty)
-		xformbox.addLayout(box)
-		zoombox = QtGui.QHBoxLayout()
+		xformbox.addWidget(self.tx, 4, 0, 1, 1)
+		xformbox.addWidget(self.ty, 4, 1, 1, 1)
 		tzlabel = QtGui.QLabel("TZ",xformframe)
 		tzlabel.setAlignment(QtCore.Qt.AlignCenter)
-		zoombox.addWidget(tzlabel)
+		xformbox.addWidget(tzlabel, 5, 0, 1, 1)
 		zoomlabel = QtGui.QLabel("Zoom",xformframe)
-		zoombox.addWidget(zoomlabel)
-		xformbox.addLayout(zoombox)
-		zoomwidgetbox = QtGui.QHBoxLayout()
+		zoomlabel.setAlignment(QtCore.Qt.AlignCenter)
+		xformbox.addWidget(zoomlabel, 5, 1, 1, 1)
 		self.tz = EMSpinWidget(0.0, 1.0)
 		self.zoom = EMSpinWidget(1.0, 0.1, postivemode=True, wheelstep=0.1)
-		zoomwidgetbox.addWidget(self.tz)
-		zoomwidgetbox.addWidget(self.zoom)
-		xformbox.addLayout(zoomwidgetbox)
+		xformbox.addWidget(self.tz, 6, 0, 1, 1)
+		xformbox.addWidget(self.zoom, 6, 1, 1, 1)
 		self.resetbutton = QtGui.QPushButton("Reset Transform")
-		xformbox.addWidget(self.resetbutton)
+		xformbox.addWidget(self.resetbutton, 7, 0, 1, 2)
+                xformframe.setLayout(xformbox)
                 
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
-		igvbox.addWidget(xformframe)
+		gridbox.addWidget(xformframe, 2, 0, 1, 1)
         
 		# set to default, but run only as a base class
 		if type(self) == EMItem3DInspector: self.updateItemControls()
@@ -396,9 +392,6 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
 		self.updateItemControls()
 		self.inspector.updateSceneGraph()
-    
-	def addControls(self, igvbox):
-		pass
     
 	def updateItemControls(self):
 		# Translation update

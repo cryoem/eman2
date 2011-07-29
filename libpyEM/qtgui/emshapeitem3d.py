@@ -35,11 +35,10 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from OpenGL.GLU import *
 from OpenGL.GL import *
 import math 
-
 from emglobjects import init_glut
 from emitem3d import EMItem3D, EMItem3DInspector
-from emscene3d import EMScene3D, EMInspectorControlShape
 from EMAN2 import Transform
+from valslider import EMQTColorWidget, ValSlider
 
 class EMCube(EMItem3D):
 	name = "Cube"
@@ -275,3 +274,93 @@ class EMLine(EMItem3D):
 	name = "Line"
 	nodetype = "ShapeNode"
 	pass
+
+class EMInspectorControlShape(EMItem3DInspector):
+	"""
+	Class to make EMItem GUI SHAPE Inspector
+	"""
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
+	
+	def updateItemControls(self):
+		super(EMInspectorControlShape, self).updateItemControls()
+		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
+		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
+		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
+		
+	def addControls(self, gridbox):
+		super(EMInspectorControlShape, self).addControls(gridbox)
+		colorframe = QtGui.QFrame()
+		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		colorvbox = QtGui.QVBoxLayout()
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		colorlabel = QtGui.QLabel("Color",colorframe)
+		colorlabel.setFont(lfont)
+		colorlabel.setAlignment(QtCore.Qt.AlignCenter)
+
+		# These boxes are a pain maybe I should use a Grid?
+		cdialoghbox = QtGui.QHBoxLayout()
+		cabox = QtGui.QHBoxLayout()
+		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
+		cabox.addWidget(self.ambcolorbox)
+		cabox.setAlignment(QtCore.Qt.AlignCenter)
+		cdbox = QtGui.QHBoxLayout()
+		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
+		cdbox.addWidget(self.diffusecolorbox)
+		cdbox.setAlignment(QtCore.Qt.AlignCenter)
+		csbox = QtGui.QHBoxLayout()
+		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
+		csbox.addWidget(self.specularcolorbox)
+		csbox.setAlignment(QtCore.Qt.AlignCenter)
+		cdialoghbox.addLayout(cabox)
+		cdialoghbox.addLayout(cdbox)
+		cdialoghbox.addLayout(csbox)
+		
+		colorhbox = QtGui.QHBoxLayout()
+		self.ambient = QtGui.QLabel("Ambient", colorframe)
+		self.ambient.setAlignment(QtCore.Qt.AlignCenter)
+		self.diffuse = QtGui.QLabel("Diffuse", colorframe)
+		self.diffuse.setAlignment(QtCore.Qt.AlignCenter)
+		self.specular = QtGui.QLabel("Specular", colorframe)
+		self.specular.setAlignment(QtCore.Qt.AlignCenter)
+		colorhbox.addWidget(self.ambient)
+		colorhbox.addWidget(self.diffuse)
+		colorhbox.addWidget(self.specular)
+		
+		self.shininess = ValSlider(colorframe, (0.0, 50.0), "Shine")
+		self.shininess.setValue(self.item3d().shininess)
+		
+		colorvbox.addWidget(colorlabel)
+		colorvbox.addLayout(cdialoghbox)
+		colorvbox.addLayout(colorhbox)
+		colorvbox.addWidget(self.shininess)
+		colorframe.setLayout(colorvbox)
+		gridbox.addWidget(colorframe, 3, 0, 1, 1)
+		
+		# Set to default, but do not run if being inherited
+		if type(self) == EMInspectorControlShape: self.updateItemControls()
+		
+		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
+		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
+		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_specular_color)
+		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
+		
+	def _on_ambient_color(self, color):
+		rgb = color.getRgb()
+		self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_diffuse_color(self, color):
+		rgb = color.getRgb()
+		self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_specular_color(self, color):
+		rgb = color.getRgb()
+		self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+		self.inspector.updateSceneGraph()
+		
+	def _on_shininess(self, shininess):
+		self.item3d().setShininess(shininess)
+		self.inspector.updateSceneGraph()
