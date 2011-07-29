@@ -1366,7 +1366,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0, finfo=None):
+def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, dpsi=180.0, finfo=None):
 	"""
 	  dpsi - how much psi can differ from 90 or 270 degrees
 	"""
@@ -1388,7 +1388,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx,dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"], int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1405,7 +1405,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-		
+
 def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None):
 	"""
 	  dpsi - how much psi can differ from 90 or 270 degrees
