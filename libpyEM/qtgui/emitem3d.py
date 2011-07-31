@@ -24,11 +24,11 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	name = "General 3D Item"
 	nodetype = "BaseNode"
 	
-	def __init__(self, parent = None, children = set(), transform = None):
+	def __init__(self, parent = None, children = [], transform = None):
 		"""
 		@type parent: EMItem3D
 		@param parent: the parent node to the current node or None for the root node
-		@type children: set type (list or tuple will be converted to a set)
+		@type children: list
 		@param children: the child nodes
 		@type transform: Transform or None
 		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
@@ -46,7 +46,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	
 	def getChildren(self): return self.children
 	def setChildren(self, children): 
-		self.children = set(children)
+		self.children = list(children)
 		for child in children:
 			child.parent = self
 	def getParent(self): return self.parent
@@ -85,22 +85,23 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 	def addChild(self, node):
 		"""
-		Adds a child node, if not already in the set of child nodes.
+		Adds a child node, if not already in the list of child nodes.
 		@type node: EMItem3D
 		@param node: the child node to add
 		"""
-		self.children.add(node)
+		self.children.append(node)
 		node.parent = self
 	
 	def addChildren(self, nodes):
 		"""
-		Adds all the provided child nodes which are not already in the set of child nodes.
+		Adds all the provided child nodes which are not already in the list of child nodes.
 		@type nodes: an iterable collection of EMItem3D (or subclass) objects
 		@param nodes: the nodes which will be added as child nodes
 		"""
 		for node in nodes:
-			self.children.add(node)
-			node.parent = self
+			if not node in self.children:
+				self.children.append(node)
+				node.parent = self
 			
 	def hasChild(self, node):
 		"""
@@ -135,12 +136,14 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	
 	def removeChild(self, node):
 		"""
-		Remove the supplied node from the set of child nodes This also removes all its descendant nodes. 
+		Remove the supplied node from the list of child nodes This also removes all its descendant nodes. 
 		@type node: EMItem3D
 		@param node: the node to remove
 		"""
-		node.removeParentReferences()
-		self.children.remove(node)
+		if node in self.children:
+			node.removeParentReferences()
+		while node in self.children: #In case a duplicate got in, somehow
+			self.children.remove(node)
 	
 	def getSelectedAncestorNodes(self):
 		"""
@@ -296,7 +299,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def mouseReleaseEvent(self, event): pass
 	def wheelEvent(self, event): pass
 
-        
+		
 class EMItem3DInspector(QtGui.QWidget):
 	"""
 	Class to make the EMItem GUI controls
@@ -307,15 +310,15 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.name = name
 		self.inspector = None
 		self.transfromboxmaxheight = 400
-        
+		
 		gridbox = QtGui.QGridLayout()
 		self.gridcols = numgridcols
 		self.addControls(gridbox)
 		self.setLayout(gridbox)
-    
+	
 	def setInspector(self, inspector):
 		self.inspector = inspector
-        
+		
 	def addControls(self, gridbox):
 		# selection box and label
 		font = QtGui.QFont()
@@ -365,12 +368,12 @@ class EMItem3DInspector(QtGui.QWidget):
 		xformbox.addWidget(self.zoom, 6, 1, 1, 1)
 		self.resetbutton = QtGui.QPushButton("Reset Transform")
 		xformbox.addWidget(self.resetbutton, 7, 0, 1, 2)
-                xformframe.setLayout(xformbox)
-                
+		xformframe.setLayout(xformbox)
+				
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
 		gridbox.addWidget(xformframe, 2, 0, 1, 1)
-        
+		
 		# set to default, but run only as a base class
 		if type(self) == EMItem3DInspector: self.updateItemControls()
 		
@@ -379,21 +382,21 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.tz,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.zoom,QtCore.SIGNAL("valueChanged(int)"),self._on_scale)
 		QtCore.QObject.connect(self.resetbutton,QtCore.SIGNAL("clicked()"),self._on_reset)
-    
+	
 	def _on_translation(self, value):
 		self.item3d().getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_scale(self, value):
 		self.item3d().getTransform().set_scale(self.zoom.getValue())
 		self.inspector.updateSceneGraph()
-        
-        def _on_reset(self):
+
+	def _on_reset(self):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
 		self.updateItemControls()
 		self.inspector.updateSceneGraph()
-    
+	
 	def updateItemControls(self):
 		# Translation update
 		translation =  self.item3d().getTransform().get_trans()
@@ -461,7 +464,7 @@ class EMItem3DInspector(QtGui.QWidget):
 				self.quaternione3slider.setValue(rotation["e3"], quiet=1)
 		# Scaling update
 		self.zoom.setValue(self.item3d().getTransform().get_scale())
-        
+		
 	def addRotationWidgets(self):
 		EMANwidget = QtGui.QWidget()
 		Imagicwidget = QtGui.QWidget()
@@ -548,7 +551,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		quaternionbox.addWidget(self.quaternione1slider)
 		quaternionbox.addWidget(self.quaternione2slider)
 		quaternionbox.addWidget(self.quaternione3slider)
-		quaternionwidget.setLayout(quaternionbox)        
+		quaternionwidget.setLayout(quaternionbox)
 		# Add widgets to the stack
 		self.rotstackedwidget.addWidget(EMANwidget)
 		self.rotstackedwidget.addWidget(Imagicwidget)
@@ -567,7 +570,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.rotcombobox.addItem("spin")
 		self.rotcombobox.addItem("sgirot")
 		self.rotcombobox.addItem("quaternion")
-        
+	
 		# Signal for all sliders
 		QtCore.QObject.connect(self.rotcombobox, QtCore.SIGNAL("activated(int)"), self._rotcombobox_changed)
 		QtCore.QObject.connect(self.emanazslider,QtCore.SIGNAL("valueChanged"),self._on_EMAN_rotation)
@@ -596,50 +599,50 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.quaternione0slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
 		QtCore.QObject.connect(self.quaternione1slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
 		QtCore.QObject.connect(self.quaternione2slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)
-		QtCore.QObject.connect(self.quaternione3slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)    
-        
+		QtCore.QObject.connect(self.quaternione3slider,QtCore.SIGNAL("valueChanged"),self._on_quaternion_rotation)	
+		
 	def _rotcombobox_changed(self, idx):
 		self.rotstackedwidget.setCurrentIndex(idx)
 		self.updateItemControls()
-        
+		
 	def _on_EMAN_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_Imagic_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_Spider_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_MRC_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_XYZ_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_spin_rotation(self, value):
 		v = Vec3f(self.spinn1slider.getValue(), self.spinn2slider.getValue(), self.spinn3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_sgirot_rotation(self, value):
 		v = Vec3f(self.sgirotn1slider.getValue(), self.sgirotn2slider.getValue(), self.sgirotn3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
 		self.inspector.updateSceneGraph()
-        
+		
 	def _on_quaternion_rotation(self, value):
 		v = Vec4f(self.quaternione0slider.getValue(), self.quaternione1slider.getValue(), self.quaternione2slider.getValue(), self.quaternione3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]})
 		self.inspector.updateSceneGraph()
-        
+		
 
 if __name__ == '__main__':
 	#Test code
