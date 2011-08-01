@@ -364,6 +364,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
 		self.mousemode = None					# The mouse mode
+		self.mouseoverride = False				# The mouse overide is fals by defalut, this bit is used by the inpscector
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -544,25 +545,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		
-		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "rotate"):
 			self.mousemode = "rotate"
 			if  event.y() > 0.95*self.size().height():
 				self.setCursor(self.zrotatecursor)
 			else:
 				self.setCursor(self.xyrotatecursor)
-		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "selection"):
 			self.mousemode = "selection"
 			self.setCursor(self.selectorcursor)
 			self.appendselection = False
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
-		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "ztranslate"):
 			self.mousemode = "ztranslate"
 			self.setCursor(self.zhaircursor)
-		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "xytranslate"):
 			self.mousemode = "xytranslate"
 			self.setCursor(self.crosshaircursor)
-		if event.buttons()&Qt.RightButton:
+		if (event.buttons()&Qt.RightButton and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "scale"):
 			self.mousemode = "scale"
 			self.setCursor(self.scalecursor)		
 			
@@ -572,10 +573,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
-		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "selection"):
 			self.setCursor(self.selectorcursor)
 			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
-		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
@@ -584,11 +585,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				self.setCursor(self.xyrotatecursor) 
 				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
-		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False)  or (self.mouseoverride == True and self.mousemode == "ztranslate"):
 			self.update_matrices([0,0,(dx+dy)], "translate")
-		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier):
+		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "xytranslate"):
 			self.update_matrices([dx,-dy,0], "translate")
-		if event.buttons()&Qt.RightButton:
+		if (event.buttons()&Qt.RightButton and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "scale"):
 			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
 			self.setCursor(self.scalecursor)
 			
@@ -607,7 +608,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.deselectArea()
 			self.updateSG()
 		else:	# Pick without selection box, juwst click
-			if event.modifiers()&Qt.ControlModifier and self.mousemode == "selection":
+			if (event.modifiers()&Qt.ControlModifier and self.mousemode == "selection") or (self.mouseoverride == True and self.mousemode == "selection"):
 				# 5 seems a big enough slection box
 				self.sa_xi = event.x() - self.camera.getWidth()/2
 				self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
@@ -615,7 +616,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
 				self.pickItem()
 				self.updateSG()
-		self.mousemode = None
 		
 	def wheelEvent(self, event):
 		"""
@@ -634,6 +634,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def keyPressEvent(self,event):
 		print "Mouse KeyPress Event"
 	
+	def setMouseMode(self, mousemode):
+		"""
+		Sets the mouse mode, used by the inpsector
+		"""
+		self.mousemode = mousemode
+		
+	def setMouseOverrideMode(self, mouseoverride):
+		"""
+		If true overrides the default mouse behaviour
+		"""
+		self.mouseoverride = mouseoverride
+		
 	def saveSnapShot(self, filename, format="tiff"):
 		image = self.grabFrameBuffer()
 		image.save(filename, format)
@@ -1264,11 +1276,11 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.isotool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
 		
-		#QtCore.QObject.connect(self.movementool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.translatetool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.ztranslate, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
+		QtCore.QObject.connect(self.movementool, QtCore.SIGNAL("clicked(int)"), self._movetool_clicked)
+		QtCore.QObject.connect(self.translatetool, QtCore.SIGNAL("clicked(int)"), self._transtool_clicked)
+		QtCore.QObject.connect(self.ztranslate, QtCore.SIGNAL("clicked(int)"), self._ztranstool_clicked)
+		QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked(int)"), self._scaletool_clicked)
+		QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked(int)"), self._seltool_clicked)
 		#QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
 		#QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
 		#QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
@@ -1276,9 +1288,28 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.isotool, QtCore.SIGNAL("clicked(int)"), self._isotool_clicked)
 		
 		return tvbox
+	
+	def _movetool_clicked(self, state):
+		self.scenegraph.setMouseMode("rotate")
+		self.scenegraph.setMouseOverrideMode(state)
 		
+	def _transtool_clicked(self, state):
+		self.scenegraph.setMouseMode("xytranslate")
+		self.scenegraph.setMouseOverrideMode(state)
+		
+	def _ztranstool_clicked(self, state):
+		self.scenegraph.setMouseMode("ztranslate")
+		self.scenegraph.setMouseOverrideMode(state)
+	def _scaletool_clicked(self, state):
+		self.scenegraph.setMouseMode("scale")
+		self.scenegraph.setMouseOverrideMode(state)
+	
+	def _seltool_clicked(self, state):
+		self.scenegraph.setMouseMode("selection")
+		self.scenegraph.setMouseOverrideMode(state)
+	
 	def _isotool_clicked(self, state):
-		print state
+		pass
 				
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
