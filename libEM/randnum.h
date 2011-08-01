@@ -53,38 +53,38 @@ namespace EMAN
      *@endcode
 	 *      - How to get a random float in range [0, 1)
      *@code
-     *      Randnum *r = Random::Instance();
-     * 		float f = r.get_frand();
+     *      Randnum *r = Randnum::Instance();
+     * 		float f = r->get_frand();
      *@endcode     
 	 *      - How to get a random float in range (0, 1)
      *@code
      *      Randnum *r = Randnum::Instance();
-     * 		float f = r.get_frand_pos();
+     * 		float f = r->get_frand_pos();
      *@endcode     
 	 *      - How to get a random float in range [lo, hi)
      *@code
      *      Randnum *r = Randnum::Instance();
-     * 		float f = r.get_frand(lo, hi);
+     * 		float f = r->get_frand(lo, hi);
      *@endcode     
 	 *      - How to get a random float in range (lo, hi)
      *@code
      *      Randnum *r = Randnum::Instance();
-     * 		float f = r.get_frand_pos(lo, hi);
+     * 		float f = r->get_frand_pos(lo, hi);
      *@endcode
 	 *      - How to get a gaussian distribution float with given mean and sigma
      *@code
      *      Randnum *r = Randnum::Instance();
-     * 		float f = r.get_gauss_rand(mean, sigma);
+     * 		float f = r->get_gauss_rand(mean, sigma);
      *@endcode
 	 *      - How to set a seed for the random number generator
      *@code
      *      Randnum *r = Randnum::Instance();
-     * 		r.set_seed(12345);
+     * 		r->set_seed(12345);
      *@endcode
 	 *      - How to set a random number generator other than use the default
      *@code
      *      Randnum *r = Randnum::Instance(gsl_rng_rand);	//gsl version of rand()
-     * 		Randnum *r = Randnum:;Instance(gsl_rng_random128_libc5);	//gsl version of Linux's random()
+     * 		Randnum *r = Randnum::Instance(gsl_rng_random128_libc5);	//gsl version of Linux's random()
      *@endcode
 	 */
 	class Randnum {
