@@ -533,7 +533,7 @@ int ImagicIO2::write_header(EMAN::Dict const& dict, int image_index,
 	new_hed.minute = tm->tm_min;
 	new_hed.sec = tm->tm_sec;
 
-	size_t img_size = nx*ny*nz*sizeof(float);
+	size_t img_size = nx*ny*nz;
 	if(img_size > (size_t)INT_MAX) {
 		new_hed.rsize = -1;
 	}
