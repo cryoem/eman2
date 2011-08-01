@@ -53,7 +53,7 @@ namespace EMAN
      *@endcode
 	 *      - How to get a random float in range [0, 1)
      *@code
-     *      Random *r = Random::Instance();
+     *      Randnum *r = Random::Instance();
      * 		float f = r.get_frand();
      *@endcode     
 	 *      - How to get a random float in range (0, 1)
