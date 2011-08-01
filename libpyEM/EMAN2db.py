@@ -1257,7 +1257,7 @@ of these occasional errors"""
 				else : ret.read_data(self.path+"/"+p,int(l))
 			else:
 				try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
-				except: raise KeyError,"Undefined data location key for : ",key
+				except: raise KeyError,"Undefined data location key for : %s"%key
 				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys

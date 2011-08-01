@@ -39,6 +39,7 @@ from math import *
 import os
 import sys
 import weakref
+import e2ctf
 
 from Simplex import Simplex
 
@@ -95,9 +96,15 @@ class GUIEvalImage(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 		
-		self.data=data
+		self.data=None
 		self.curset=0
+		self.calcmode=0
+		self.f2dmode=0
 		self.plotmode=0
+		
+		# Per image parameters to keep track of
+		# for each image [box size,ctf,box coord,set of excluded boxnums]
+		self.parms=[[256,EMAN2Ctf(),(0,0)set()] for i in images]	
 		
 		self.wimage=EMImage2DWidget()
 		
@@ -130,10 +137,22 @@ class GUIEvalImage(QtGui.QWidget):
 			self.setlist.addItem(i)
 		self.vbl2.addWidget(self.setlist)
 		
+		self.scalcmode=QtGui.QComboBox(self)
+		self.scalcmode.addItem("Single Region")
+		self.scalcmode.addItem("Tiled Boxes")
+		self.vbl2.addWidget(self.calcmode)
+		
+		self.s2dmode=QtGui.QComboBox(self)
+		self.s2dmode.addItem("Power Spectrum")
+		self.s2dmode.addItem("Bg Subtracted")
+		self.s2dmode.addItem("Background")
+		self.vbl2.addWidget(self.s2dmode)
+		
 		self.splotmode=QtGui.QComboBox(self)
-		self.splotmode.addItem("Live Box")
-		self.splotmode.addItem("Tiled Boxes")
+		self.splotmode.addItem("Bgsub and Fit")
+		self.splotmode.addItem("Fg and Bg")
 		self.vbl2.addWidget(self.splotmode)
+
 		self.hbl.addLayout(self.vbl2)
 		
 		# ValSliders for CTF parameters
@@ -196,6 +215,8 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.boxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
+		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
 	   	QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
@@ -221,17 +242,19 @@ class GUIEvalImage(QtGui.QWidget):
 			self.app().close_specific(self.guiplot)
 		event.accept()
 		self.app().close_specific(self)
-		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+#		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def update_plot(self):
 		if self.guiplot == None: return # it's closed/not visible
-		val=self.curset
-		ctf=self.data[val][1]
-		ds=self.data[val][1].dsbg
+		parms=self.parms[self.curset]
+		apix=self.sapix.getValue()
+		ds=1.0/(apix*self.data["ny"])
+		ctf=parms[1]
+		bg1d=ctf.background
 		r=len(ctf.background)
 		s=[ds*i for i in range(r)]
 		
-		# This updates the image circles
+		# This updates the FFT image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
 		shp={}
 		nz=0
@@ -239,37 +262,23 @@ class GUIEvalImage(QtGui.QWidget):
 			if fit[i-1]*fit[i]<=0.0: 
 				nz+=1
 				shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
-#				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
 		
 		self.guiim.del_shapes()
 		self.guiim.add_shapes(shp)
 		self.guiim.updateGL()
 		
-		if self.plotmode==1:
-			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
-			self.guiplot.set_data((s,self.data[val][7]),"bg(concave)",quiet=True,color=0,linetype=2)
-			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
-			self.guiplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
-		elif self.plotmode==0: 
-			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+		# Now update the plots for the correct plot mode
+		if self.plotmode==0: 
+			bgsub=[self.fft1d[i]-bg1d[i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
 			
-			lowbg=self.data[val][7]
-			lowbgsub=[self.data[val][2][i]-lowbg[i] for i in range(len(self.data[val][2]))]
-			self.guiplot.set_data((s,lowbgsub),"fg-lowbg",False,True,color=0,linetype=2)
-
-			
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
-			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor
+			fit=[fit[i]**2 for i in range(len(s))]		# squared, no SF
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
 			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
 				if bgsub[i]>0 : 
-					#rto+=fit[i]**2/fabs(bgsub[i])
-					#nrto+=fit[i]
-					#rto+=fit[i]**2
-					#nrto+=bgsub[i]**2
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
@@ -280,30 +289,25 @@ class GUIEvalImage(QtGui.QWidget):
 			
 			self.guiplot.set_data((s,fit),"fit",color=1)
 			self.guiplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+		elif self.plotmode==1:
+			self.guiplot.set_data((s,self.fft1d),"fg",True,True,color=1)
+			self.guiplot.set_data((s,bg1d),"bg",color=0)
+			self.guiplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
 
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
 		self.curset=val
+		self.data=EMData(str(self.setlist.item[val].text()),0)	# read the image from disk
+		self.wimage.set_data(self.data)
 
-		self.sdefocus.setValue(self.data[val][1].defocus,True)
-		self.sbfactor.setValue(self.data[val][1].bfactor,True)
-#		self.sapix.setValue(self.data[val][1].apix)
-		self.sampcont.setValue(self.data[val][1].ampcont,True)
-		self.svoltage.setValue(self.data[val][1].voltage,True)
-		self.scs.setValue(self.data[val][1].cs,True)
-		self.sdfdiff.setValue(self.data[val][1].dfdiff,True)
-		self.sdfang.setValue(self.data[val][1].dfang,True)
-		self.squality.setValue(self.data[val][6],True)
-
-		try : ptcl=str(self.data[val][4]["ptcl_repr"])
-		except: ptcl="?"
-		try: 
-			ctf=self.data[val][1]
-			ssnr="%1.4f"%(sum(ctf.snr)/float(len(ctf.snr)))
-		except:
-			ssnr="?"
-		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
+		self.sdefocus.setValue(self.parms[val][1][1].defocus,True)
+		self.sbfactor.setValue(self.parms[val][1][1].bfactor,True)
+		self.sapix.setValue(self.parms[val][1][1].apix,True)
+		self.sampcont.setValue(self.parms[val][1][1].ampcont,True)
+		self.svoltage.setValue(self.parms[val][1][1].voltage,True)
+		self.scs.setValue(self.parms[val][1][1].cs,True)
+		self.sboxsize.setValue(self.parms[val][0],True)
 		
 		if self.guiim != None: 
 #			print self.data
@@ -312,21 +316,86 @@ class GUIEvalImage(QtGui.QWidget):
 				self.guiim.optimally_resize()
 				self.guiiminit = False
 			self.guiim.updateGL()
+		self.recalc()
+
+	def recalc(self):
+		"Called to recompute the power spectra, also updates plot"
+		
+		# To simplify expressions
+		parms=self.parms[self.curset]
+		apix=self.sapix.getValue()
+		ds=1.0/(apix*self.data["ny"])
+		
+		# Mode where user drags the box around the parent image
+		if self.calcmode==0:
+			# update the box display on the image 
+			self.wimage.del_shapes()
+			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
+			self.wimage.updateGL()
+			
+			# extract the data and do an fft
+			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
+			self.fft=clip.do_fft()
+			self.wfft.set_data(self.fft)
+			
+		# mode where user selects/deselcts tiled image set
+		elif self.calcmode==1:
+			# update the box display on the image
+			nx=self.data["nx"]/parms[0]
+			self.fft=None
+			for x in range(nx):
+				for y in range(self.data["ny"]/parms[0]):
+					# User deselected this one
+					if int(x+y*nx) in parms[3] : continue
+					
+					# Make a shape for this box
+					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9..3,x*parms[0],y*parms[0],(x+1)*parms[0],(y+1)*parms[0]))
+					
+					# read the data and make the FFT
+					clip=self.data.get_clip(Region(x*parms[0],y*parms[0],parms[0],parms[0]))
+					fft=clip.do_fft()
+					fft.ri2inten()
+					if self.fft==None: self.fft=fft
+					else: self.fft+=fft
+			
+			self.fft.process_inplace("normalize")
+			
+			self.guiim.del_shapes()
+			self.guiim.add_shapes(shp)
+			self.guiim.updateGL()
+		
+		# Compute 1-D curve and background
+		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)
+		bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
+		parms[1].background=bg_1d
+		parms[1].dsbg=ds
+
+		# Fitting not done yet. Need to make 2D background somehow
+#		if parms[1].defocus==0:
+#			parms[1]=e2ctf.ctf_fit(self.fft1d,bg_1d,bg_1d,self.fft,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
+			
 		self.update_plot()
+
+	def newCalcMode(self,mode):
+		self.calcmode=mode
+		self.recalc()
+
+	def new2DMode(self,mode):
+		self.f2dmode=mode
+		self.recalc()
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode
-		self.update_plot()
+		self.recalc()
 
 	def newCTF(self) :
-		self.data[self.curset][1].defocus=self.sdefocus.value
-		self.data[self.curset][1].bfactor=self.sbfactor.value
-		self.data[self.curset][1].dfdiff=self.sdfdiff.value
-		self.data[self.curset][1].dfang=self.sdfang.value
-#		self.data[self.curset][1].apix=self.sapix.value
-		self.data[self.curset][1].ampcont=self.sampcont.value
-		self.data[self.curset][1].voltage=self.svoltage.value
-		self.data[self.curset][1].cs=self.scs.value
+		parms=self.parms[self.curset]
+		parms[1].defocus=self.sdefocus.value
+		parms[1].bfactor=self.sbfactor.value
+		parms[1].apix=self.sapix.value
+		parms[1].ampcont=self.sampcont.value
+		parms[1].voltage=self.svoltage.value
+		parms[1].cs=self.scs.value
 		self.update_plot()
 		
 
