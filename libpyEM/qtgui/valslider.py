@@ -1152,14 +1152,13 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.update()
 		
 class EMANToolButton(QtGui.QToolButton):
+	toolpanellist = []
 	def __init__(self):
 		QtGui.QToolButton.__init__(self)
-	
-	def setToolGroup(self, toolpanellist):
-		self.toolpanellist = toolpanellist
+		EMANToolButton.toolpanellist.append(self)
 	
 	def setSelfAsUnique(self):
-		for tool in self.toolpanellist:
+		for tool in EMANToolButton.toolpanellist:
 			if tool != self:
 				tool.setDown(False)
 	
@@ -1169,11 +1168,10 @@ class EMANToolButton(QtGui.QToolButton):
 		
 	def mousePressEvent(self, event):
 		# Toggle the button on and off
-		if self.isDown():
-			self.setDown(False)
-		else:
+		if not self.isDown():
 			self.setSelfAsUnique()
 			self.setDown(True)
 		
 	def mouseReleaseEvent(self, event):
 		pass
+	

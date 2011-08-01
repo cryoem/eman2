@@ -142,159 +142,28 @@ crosshairscursor = [
     'ccccccbbbbccccccc',
     'cccccccbbcccccccc'
 ]   
- 
+
 zhaircursor = [
     '16 16 2 1',
     'b c #00ff00',
     'c c None',
-    'cccccccbbcccccccc',
-    'ccccccbbbbccccccc',
-    'cccccbbbbbbcccccc',
-    'ccccbbcbbcbbccccc',
-    'cccbbccbbccbbcccc',
-    'cccccccbbcccccccc',
-    'cccccccbbcccccccc',
-    'cccccccbbcccccccc',
-    'cccccccbbcccccccc',
-    'cccccccbbcccccccc',
-    'cccccccbbcccccccc',
-    'cccbbccbbccbbcccc',
-    'ccccbbcbbcbbccccc',
-    'cccccbbbbbbcccccc',
-    'ccccccbbbbccccccc',
-    'cccccccbbcccccccc'
-]   
-cubecursor = [
-    '16 16 2 1',
-    'b c #00ff00',
-    'c c None',
-    'cccccccccccccccccc',
-    'cccccccccccccccccc',
-    'ccccccbbbbbbbbbccc',
-    'cccccbbbbbbbbbbccc',
-    'ccccbbbbbbbbbbbccc',
-    'cccbbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbcccc',
-    'ccbbbbbbbbbbbccccc',
-    'ccbbbbbbbbbbcccccc',
-    'ccbbbbbbbbbccccccc',
-    'cccccccccccccccccc',
-    'cccccccccccccccccc'
-] 
-
-spherecursor = [
-    '16 16 2 1',
-    'b c #00ff00',
-    'c c None',
     'ccccccccccccccccc',
-    'cccccccbbbccccccc',
-    'cccccbbbbbbbccccc',
-    'ccccbbbbbbbbbcccc',
-    'cccbbbbbbbbbbbccc',
-    'cccbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'cccbbbbbbbbbbbccc',
-    'cccbbbbbbbbbbbccc',
-    'ccccbbbbbbbbbcccc',
-    'cccccbbbbbbbccccc',
-    'cccccccbbbccccccc',
-    'ccccccccccccccccc',
+    'cccbccccccccccccc',
+    'ccbbbcccccccccccc',
+    'cbcbcbccccccccccc',
+    'cccbccccccccccccc',
+    'cccbccccccccccccc',
+    'cccbccccccbbccccc',
+    'cccbccccbbccccccc',
+    'cccbccbbccccccccc',
+    'cccbbbccccccccccc',
+    'cccbccccccccccccc',
+    'ccccbbccccccccccc',
+    'ccccccbbccccccccc',
+    'ccccccccbbccccccc',
+    'ccccccccccbbccccc',
     'ccccccccccccccccc'
-] 
-
-cylindercursor = [
-    '16 16 2 1',
-    'b c #00ff00',
-    'c c None',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'cccccbbbbbbbccccc',
-    'cccbbbbbbbbbbbccc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'cccbbbbbbbbbbbccc',
-    'cccccbbbbbbbccccc',
-    'ccccccccccccccccc'
-] 
-
-textcursor = [
-    '16 16 2 1',
-    'b c #00ff00',
-    'c c None',
-    'ccccccccccccccccc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbcc',
-    'ccbbcccbbbcccbbcc',
-    'ccbccccbbbccccbcc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'cccccccbbbccccccc',
-    'ccccccbbbbbcccccc',
-    'cccccbbbbbbbccccc',
-    'ccccccccccccccccc'
-] 
-
-xisosurfacecursor = [
-    '16 16 2 1',
-    'b c #00ff00',
-    'c c None',
-    'ccccccccccccccccc',
-    'cccccbbbbbbbbbccc',
-    'cccbbbbbbbbbbbbcc',
-    'ccbbbbbbbbbbbbbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'cccbbbbbbbbbbbbcc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbcbbcbbcbbcbbc',
-    'ccbbbbbbbbbbbbbbc',
-    'cccbbbbbbbbbbbbcc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc'
-] 
-
-isosurfacecursor = [
-    '17 16 2 1',
-    'b c #00ff00',
-    'c c None',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'bbbccbbbbcccbbbbc',
-    'cbccbccccbcbccccb',
-    'cbccbccccbcbccccb',
-    'cbcccbcccccbccccb',
-    'cbccccbccccbccccb',
-    'cbcccccbcccbccccb',
-    'cbccccccbccbccccb',
-    'cbccbccccbcbccccb',
-    'cbccbccccbcbccccb',
-    'bbbccbbbbcccbbbbc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc'
-] 
+]
 
 scalecursor = [
     '16 16 2 1',
@@ -340,6 +209,245 @@ selectorcursor = [
     'cccccccccccccccc'
 ]
 
+cubeicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc',
+    'ccccccbbbbbbbbbccc',
+    'cccccbbbbbbbbbbccc',
+    'ccccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbcccc',
+    'ccbbbbbbbbbbbccccc',
+    'ccbbbbbbbbbbcccccc',
+    'ccbbbbbbbbbccccccc',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc'
+] 
+
+sphereicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'cccccccbbbccccccc',
+    'cccccbbbbbbbccccc',
+    'ccccbbbbbbbbbcccc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccccbbbbbbbbbcccc',
+    'cccccbbbbbbbccccc',
+    'cccccccbbbccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
+cylindericon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cccccbbbbbbbccccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
+texticon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbcccbbbcccbbcc',
+    'ccbccccbbbccccbcc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'ccccccbbbbbcccccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
+isosurfaceicon = [
+    '17 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'bbbccbbbbcccbbbbc',
+    'cbccbccccbcbccccb',
+    'cbccbccccbcbccccb',
+    'cbcccbcccccbccccb',
+    'cbccccbccccbccccb',
+    'cbcccccbcccbccccb',
+    'cbccccccbccbccccb',
+    'cbccbccccbcbccccb',
+    'cbccbccccbcbccccb',
+    'bbbccbbbbcccbbbbc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
+rotateicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'ccccbbbbbbccbcc',
+    'ccbbbbbbbbbbbbc',
+    'cbbbcccccbbbbbc',
+    'bbbcccccbbbbbbb',
+    'bbcccccbbbbbbbc',
+    'ccccccccccccccc',
+    'ccccccccccccccc',
+    'cbbbbbbbcccccbb',
+    'bbbbbbbcccccbbb',
+    'cbbbbbcccccbbbc',
+    'cbbbbbbbbbbbbcc',
+    'ccbccbbbbbbcccc',
+    'ccccccccccccccc'
+]
+
+crosshairsicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccccbbcccccccc',
+    'ccccccbbbbccccccc',
+    'cccccbbbbbbcccccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'ccbccccbbccccbccc',
+    'cbbccccbbccccbbcc',
+    'bbbbbbbbbbbbbbbbb',
+    'bbbbbbbbbbbbbbbbb',
+    'cbbccccbbccccbbcc',
+    'ccbccccbbccccbccc',
+    'cccccccbbcccccccc',
+    'cccccccbbcccccccc',
+    'cccccbbbbbbcccccc',
+    'ccccccbbbbccccccc',
+    'cccccccbbcccccccc'
+] 
+
+multiselectoricon = [
+    '17 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cbcbcbcbcbcbcbccc',
+    'ccccccccccccccccc',
+    'cbcccccccccccbccc',
+    'ccccccccccccccccc',
+    'cbcccccccccccbccc',
+    'ccccccccccccccccc',
+    'cbcccccccccccbccc',
+    'cccccccccccccbbbc',
+    'cbcbcbcbcbcbcbbbc',
+    'cccccccccccccbbbb',
+    'ccccccccccccccccb',
+    'ccccccccccccccccc'
+] 
+
+scaleicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'bbbbbbbbcccccccc',
+    'bccccccccccccccc',
+    'bccccccccccccccc',
+    'bccccccccccccccc',
+    'bccccccccccccccc',
+    'bccccbbbbbbccccc',
+    'bccccbccccbccccc',
+    'bccccbccccbccccc',
+    'cccccbccccbccccb',
+    'cccccbccccbccccb',
+    'cccccbbbbbbccccb',
+    'cccccccccccbcccb',
+    'ccccccccccccbccb',
+    'cccccccccccccbcb',
+    'ccccccccccccccbb',
+    'ccccccccbbbbbbbb'
+]
+
+ztransicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'cccbccccccccccccc',
+    'ccbbbcccccccccccc',
+    'cbcbcbccccccccccc',
+    'cccbccccccccccccc',
+    'cccbccccccccccccc',
+    'cccbccccccbbccccc',
+    'cccbccccbbccccccc',
+    'cccbccbbccccccccc',
+    'cccbbbccccccccccc',
+    'cccbccccccccccccc',
+    'ccccbbccccccccccc',
+    'ccccccbbccccccccc',
+    'ccccccccbbccccccc',
+    'ccccccccccbbccccc',
+    'ccccccccccccccccc'
+] 
+
+selectionicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccbcccccccccccccc',
+    'ccbbccccccccccccc',
+    'ccbcbbccccccccccc',
+    'ccbcccbcccccccccc',
+    'ccbccccbbcccccccc',
+    'ccbccccccbccccccc',
+    'ccbcccccccbbccccc',
+    'ccbcccccbbbbbcccc',
+    'ccbccbccbcccccccc',
+    'ccbcbcbccbccccccc',
+    'ccbbccbccbccccccc',
+    'ccbccccbccbcccccc',
+    'ccccccccbbbcccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
@@ -359,12 +467,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.main_3d_inspector = None
 		self.item_inspector = None				# Get the inspector GUI
 		self.reset_camera = False				# Toogle flag to deterine if the clipping plane has changed and needs redrawing
-		self.fuzzyselectionfactor = 2.0				# A fudge factor to determine the selection box 'thickness'
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
 		self.mousemode = None					# The mouse mode
-		self.mouseoverride = False				# The mouse overide is fals by defalut, this bit is used by the inpscector
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -420,6 +526,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Pick an item on the screen using openGL's selection mechanism
 		"""
+		self.makeCurrent()	# This is needed so we use openGL for the correct widget!!!
 		viewport = glGetIntegerv(GL_VIEWPORT)
 		glSelectBuffer(1024)	# The buffer size for selection
 		glRenderMode(GL_SELECT)
@@ -429,13 +536,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glLoadIdentity()
 		
 		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
-		x = self.sa_xi + self.camera.getWidth()/2
-		y = self.camera.getHeight()/2 - self.sa_yi
-		dx = self.fuzzyselectionfactor*math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
-		dy = self.fuzzyselectionfactor*math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		dx = math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
+		dy = math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		x = (self.sa_xi + self.camera.getWidth()/2) 
+		y = (self.camera.getHeight()/2 - self.sa_yi)
 
-		# Apply selection box
-		GLU.gluPickMatrix(x, viewport[3] - y, dx, dy, viewport)
+		# Apply selection box, and center it in the green box
+		GLU.gluPickMatrix(x + dx/2, (viewport[3] - y) - dy/2, dx, dy, viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -518,20 +625,23 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		closestitem = None
 		bestdistance = 1.0
 		for record in records:
-			selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
+			if self.multiselect:
+				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
+				# Extending toggling to multiple item makes for bonkers bahaviour
+				#if selecteditem.isSelectedItem(): self.itemstodeselect.append(selecteditem) # This will toogle any presiouly selected items in the item list, provided we don't move it.
+				selecteditem.setSelectedItem(True)
+				# Inspector tree management
+				if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
+			else:
+				if record.near < bestdistance:
+					bestdistance = record.near
+					closestitem = record
+		if closestitem:
+			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
+			if selecteditem.isSelectedItem(): self.itemstodeselect.append(selecteditem) # This will toogle any presiouly selected items in the item list, provided we don't move it.
 			selecteditem.setSelectedItem(True)
 			# Inspector tree management
-			if self.EMQTreeWidgetItem:
-				selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
-				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
-			try:
-				self.main_3d_inspector.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
-				self.main_3d_inspector.tree_widget.setCurrentItem(selecteditem.getItemInspector().treeitem)	# Hmmm... tak about tight coupling! It would be better to use getters
-			except:
-				pass
-			#if record.near < bestdistance:
-				#bestdistance = record.near
-				#closestitem = record.names
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
 			
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -544,27 +654,37 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# The first x,y records where the mouse was first pressed
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
-		
-		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "rotate"):
-			self.mousemode = "rotate"
+		# Process mouse events
+		self.itemstodeselect = []
+		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height():
 				self.setCursor(self.zrotatecursor)
 			else:
 				self.setCursor(self.xyrotatecursor)
-		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "selection"):
-			self.mousemode = "selection"
-			self.setCursor(self.selectorcursor)
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier: 
+			#self.setCursor(self.selectorcursor)
+			self.multiselect = False
 			self.appendselection = False
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
-		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "ztranslate"):
-			self.mousemode = "ztranslate"
+			# 5 seems a big enough selection box
+			self.sa_xi = event.x() - self.camera.getWidth()/2
+			self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
+			self.sa_yi = -event.y() + self.camera.getHeight()/2
+			self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
+			self.pickItem()
+			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection") or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mousemode == "selection"):
+			#self.setCursor(self.selectorcursor)
+			self.multiselect = True
+			self.appendselection = False
+			if event.modifiers()&Qt.ShiftModifier:
+				self.appendselection = True
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
 			self.setCursor(self.zhaircursor)
-		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "xytranslate"):
-			self.mousemode = "xytranslate"
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.setCursor(self.crosshaircursor)
-		if (event.buttons()&Qt.RightButton and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "scale"):
-			self.mousemode = "scale"
+		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
 			self.setCursor(self.scalecursor)		
 			
 	def mouseMoveEvent(self, event):
@@ -573,10 +693,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
-		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "selection"):
-			self.setCursor(self.selectorcursor)
-			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
-		if (event.buttons()&Qt.LeftButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "rotate"):
+		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
@@ -585,14 +702,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				self.setCursor(self.xyrotatecursor) 
 				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
-		if (event.buttons()&Qt.MidButton and event.modifiers()&Qt.ControlModifier and self.mouseoverride == False)  or (self.mouseoverride == True and self.mousemode == "ztranslate"):
-			self.update_matrices([0,0,(dx+dy)], "translate")
-		if (event.buttons()&Qt.MidButton and not event.modifiers()&Qt.ControlModifier and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "xytranslate"):
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
+			#self.setCursor(self.selectorcursor)
 			self.update_matrices([dx,-dy,0], "translate")
-		if (event.buttons()&Qt.RightButton and self.mouseoverride == False) or (self.mouseoverride == True and self.mousemode == "scale"):
+			self.itemstodeselect = []	# The user means to move not toggle the item
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection") or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mousemode == "selection"):
+			#self.setCursor(self.selectorcursor)
+			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
+			self.update_matrices([0,0,(dx+dy)], "translate")
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
+			self.update_matrices([dx,-dy,0], "translate")
+		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
 			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
 			self.setCursor(self.scalecursor)
-			
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
 		self.updateSG()	
@@ -607,16 +730,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.pickItem()
 			self.deselectArea()
 			self.updateSG()
-		else:	# Pick without selection box, juwst click
-			if (event.modifiers()&Qt.ControlModifier and self.mousemode == "selection") or (self.mouseoverride == True and self.mousemode == "selection"):
-				# 5 seems a big enough slection box
-				self.sa_xi = event.x() - self.camera.getWidth()/2
-				self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
-				self.sa_yi = -event.y() + self.camera.getHeight()/2
-				self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
-				self.pickItem()
-				self.updateSG()
-		
+		for item in self.itemstodeselect: 
+			item.setSelectedItem(False)
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(item)
+			self.updateSG()
+			
 	def wheelEvent(self, event):
 		"""
 		QT event handler. Scales the SG unpon wheel movement
@@ -640,23 +758,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		self.mousemode = mousemode
 		
-	def setMouseOverrideMode(self, mouseoverride):
+	def getMouseMode(self):
 		"""
-		If true overrides the default mouse behaviour
+		Return the mouse mode
 		"""
-		self.mouseoverride = mouseoverride
+		return self.mousemode
 		
 	def saveSnapShot(self, filename, format="tiff"):
 		image = self.grabFrameBuffer()
 		image.save(filename, format)
-		
-	def getFuzzyFactor(self):
-		"""Get the fuzzy selection factor """
-		return self.fuzzyselectionfactor
-		
-	def setFuzzyFactor(self, factor):
-		"""Set the fuzzy selection factor"""
-		self.fuzzyselectionfactor = factor
 		
 	def setZclip(self, zclip):
 		""" Set the Z clipping plane """
@@ -751,7 +861,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				self.cameraNeedsanUpdate()
 				# Set up the utils
 				self.setClearColor(line["CLEARCOLOR"][0],line["CLEARCOLOR"][1],line["CLEARCOLOR"][2])
-				self.setFuzzyFactor(line["FUZZYFACTOR"])
 			
 	def _constructitem3d(self, datadict, item3dobject):
 		"""
@@ -804,7 +913,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			dictionary["CAMERACLIP"] = [self.camera.getClipNear(), self.camera.getClipFar()]
 			dictionary["CAMERAPM"] = self.camera.getUseOrtho()
 			dictionary["CLEARCOLOR"] = self.getClearColor()
-			dictionary["FUZZYFACTOR"] = self.getFuzzyFactor()
 			
 		# Now do the recursion to build tree
 		childlist.append(dictionary)
@@ -1146,7 +1254,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
-	
+		
 	def _recursiveAdd(self, parentitem, parentnode):
 		"""
 		Helper function to laod the SG
@@ -1204,71 +1312,78 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return tvbox
 	
+	def updateInspectorTree(self, selecteditem):
+		"""
+		Update the inspector tree_item
+		"""
+		if selecteditem.EMQTreeWidgetItem:
+			selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
+			self.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
+		try:
+			self.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
+			self.tree_widget.setCurrentItem(selecteditem.getItemInspector().treeitem)
+		except:
+			pass
+		self.ensureUniqueTreeLevelSelection(selecteditem)
+		
+	def ensureUniqueTreeLevelSelection(self, item):
+		"""
+		Make sure that we don't select both an ancestor and child at the same time
+		"""
+		for ancestor in item.getSelectedAncestorNodes():
+			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
+				ancestor.EMQTreeWidgetItem.setSelectionState(False)
+		for child in item.getAllSelectedNodes()[1:]: 	# Lop the node itself off
+			child.EMQTreeWidgetItem.setSelectionState(False)
+			
 	def _get_toolbox_layout(self):
 		tvbox = QtGui.QHBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		toollabel = QtGui.QLabel("Tools")
 		toollabel.setFont(font)
-		self.toolpanellist = []
-		self.movementool = EMANToolButton()
-		self.movementool.setIcon(QtGui.QIcon(QtGui.QPixmap(xyrotatecursor)))
-		self.movementool.setToolTip("Rotate X/Y\nMouse: Left 'n' drag")
-		self.toolpanellist.append(self.movementool)
+		self.rotatetool = EMANToolButton()
+		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
+		self.rotatetool.setToolTip("Rotate X/Y\nMouse: Right 'n' drag")
 		self.translatetool =EMANToolButton()
-		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairscursor)))
-		self.translatetool.setToolTip("Translate X/Y\nMouse: Middle 'n' drag")
-		self.toolpanellist.append(self.translatetool)
+		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairsicon)))
+		self.translatetool.setToolTip("Translate X/Y\nMouse: Left 'n' drag")
 		self.ztranslate = EMANToolButton()
-		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(zhaircursor)))
-		self.ztranslate.setToolTip("Translate Z\nMouse: Middle + Ctrl 'n' drag")
-		self.toolpanellist.append(self.ztranslate)
+		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(ztransicon)))
+		self.ztranslate.setToolTip("Translate Z")
 		self.scaletool = EMANToolButton()
-		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scalecursor)))
-		self.scaletool.setToolTip("Scale\nMouse: Right 'n' drag")
-		self.toolpanellist.append(self.scaletool)
+		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
+		self.scaletool.setToolTip("Scale\nMouse: Middle 'n' drag")
 		self.selectiontool = EMANToolButton()
-		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectorcursor)))
-		self.selectiontool.setToolTip("Select objects\nMouse: Left + Ctrl 'n' drag\nMultiple = + Ctrl")
-		self.toolpanellist.append(self.selectiontool)
+		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
+		self.selectiontool.setToolTip("Select objects\nMouse: Left 'n' drag\nMultiple = + Shift")
+		self.multiselectiontool = EMANToolButton()
+		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
+		self.multiselectiontool.setToolTip("Select multiple objects\nMouse: Left 'n' drag")
 		self.cubetool = EMANToolButton()
-		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubecursor)))
+		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
 		self.cubetool.setToolTip("Insert Cube")
-		self.toolpanellist.append(self.cubetool)
 		self.spheretool = EMANToolButton()
-		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(spherecursor)))
+		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(sphereicon)))
 		self.spheretool.setToolTip("Insert Sphere")
-		self.toolpanellist.append(self.spheretool)
 		self.cylindertool = EMANToolButton()
-		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindercursor)))
+		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
 		self.cylindertool.setToolTip("Insert Cylinder")
-		self.toolpanellist.append(self.cylindertool)
 		self.texttool = EMANToolButton()
-		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(textcursor)))
+		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Insert Text")
-		self.toolpanellist.append(self.texttool)
 		self.isotool = EMANToolButton()
-		self.isotool.setIcon(QtGui.QIcon(QtGui.QPixmap(isosurfacecursor)))
+		self.isotool.setIcon(QtGui.QIcon(QtGui.QPixmap(isosurfaceicon)))
 		self.isotool.setToolTip("Insert IsoSurface")
-		self.toolpanellist.append(self.isotool)
-		# Set the tool group
-		self.movementool.setToolGroup(self.toolpanellist)
-		self.translatetool.setToolGroup(self.toolpanellist)
-		self.ztranslate.setToolGroup(self.toolpanellist)
-		self.scaletool.setToolGroup(self.toolpanellist)
-		self.selectiontool.setToolGroup(self.toolpanellist)
-		self.cubetool.setToolGroup(self.toolpanellist)
-		self.spheretool.setToolGroup(self.toolpanellist)
-		self.cylindertool.setToolGroup(self.toolpanellist)
-		self.texttool.setToolGroup(self.toolpanellist)
-		self.isotool.setToolGroup(self.toolpanellist)
 		
 		tvbox.addWidget(toollabel)
-		tvbox.addWidget(self.movementool)
+		tvbox.addWidget(self.selectiontool)
+		tvbox.addWidget(self.multiselectiontool)
 		tvbox.addWidget(self.translatetool)
 		tvbox.addWidget(self.ztranslate)
+		tvbox.addWidget(self.rotatetool)
 		tvbox.addWidget(self.scaletool)
-		tvbox.addWidget(self.selectiontool)
+
 		tvbox.addWidget(self.cubetool)
 		tvbox.addWidget(self.spheretool)
 		tvbox.addWidget(self.cylindertool)
@@ -1276,40 +1391,55 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.isotool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
 		
-		QtCore.QObject.connect(self.movementool, QtCore.SIGNAL("clicked(int)"), self._movetool_clicked)
+		QtCore.QObject.connect(self.rotatetool, QtCore.SIGNAL("clicked(int)"), self._rotatetool_clicked)
 		QtCore.QObject.connect(self.translatetool, QtCore.SIGNAL("clicked(int)"), self._transtool_clicked)
 		QtCore.QObject.connect(self.ztranslate, QtCore.SIGNAL("clicked(int)"), self._ztranstool_clicked)
 		QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked(int)"), self._scaletool_clicked)
 		QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked(int)"), self._seltool_clicked)
-		#QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
-		#QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked()"), self._toolbar_clicked)
+		QtCore.QObject.connect(self.multiselectiontool, QtCore.SIGNAL("clicked(int)"), self._multiseltool_clicked)
+		QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked()"), self._cubetool_clicked)
+		QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked()"), self._spheretool_clicked)
+		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked()"), self._cylindertool_clicked)
+		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked()"), self._texttool_clicked)
 		QtCore.QObject.connect(self.isotool, QtCore.SIGNAL("clicked(int)"), self._isotool_clicked)
+		
+		# Set the default tool
+		self.selectiontool.setDown(True)
 		
 		return tvbox
 	
-	def _movetool_clicked(self, state):
+	def _rotatetool_clicked(self, state):
 		self.scenegraph.setMouseMode("rotate")
-		self.scenegraph.setMouseOverrideMode(state)
 		
 	def _transtool_clicked(self, state):
 		self.scenegraph.setMouseMode("xytranslate")
-		self.scenegraph.setMouseOverrideMode(state)
 		
 	def _ztranstool_clicked(self, state):
 		self.scenegraph.setMouseMode("ztranslate")
-		self.scenegraph.setMouseOverrideMode(state)
+		
 	def _scaletool_clicked(self, state):
 		self.scenegraph.setMouseMode("scale")
-		self.scenegraph.setMouseOverrideMode(state)
 	
 	def _seltool_clicked(self, state):
 		self.scenegraph.setMouseMode("selection")
-		self.scenegraph.setMouseOverrideMode(state)
+		
+	def _multiseltool_clicked(self, state):
+		self.scenegraph.setMouseMode("multiselection")
 	
+	def _cubetool_clicked(self, state):
+		self.scenegraph.setMouseMode("cube")
+		
+	def _spheretool_clicked(self, state):
+		self.scenegraph.setMouseMode("sphere")
+		
+	def _cylindertool_clicked(self, state):
+		self.scenegraph.setMouseMode("cylinder")
+		
+	def _texttool_clicked(self, state):
+		self.scenegraph.setMouseMode("text")
+		
 	def _isotool_clicked(self, state):
-		pass
+		self.scenegraph.setMouseMode("isosurface")
 				
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
@@ -1349,11 +1479,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
 		item.setSelectionState(item.checkState(0))
 		# This code is to prevent both decendents and childer from being selected....
-		for ancestor in item.item3d().getSelectedAncestorNodes():
-			if ancestor.EMQTreeWidgetItem:			# Not al ancestors are listed on the inspector tree (such as a data node)
-				ancestor.EMQTreeWidgetItem.setSelectionState(False)
-		for child in item.item3d().getAllSelectedNodes()[1:]: 	# Lop the node itself off
-			child.EMQTreeWidgetItem.setSelectionState(False)
+		self.ensureUniqueTreeLevelSelection(item.item3d())
 		self.updateSceneGraph()
 		
 	def _tree_widget_visible(self, item):
@@ -1565,17 +1691,14 @@ class EMInspector3D(QtGui.QWidget):
 		fvbox.setAlignment(QtCore.Qt.AlignCenter)
 		frame.setLayout(fvbox)
 		uvbox.addWidget(frame)
-		self.fuzzy_slider = ValSlider(uwidget, (0.2, 5.0), "Fuzzy Selection factor")
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
-		uvbox.addWidget(self.fuzzy_slider)
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
 		uwidget.setLayout(uvbox)
 		
-		QtCore.QObject.connect(self.fuzzy_slider, QtCore.SIGNAL("valueChanged"),self._on_fuzzy_slider)
 		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
 		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
 		QtCore.QObject.connect(self.savesession_button, QtCore.SIGNAL("clicked()"),self._on_save_session)
@@ -1630,12 +1753,6 @@ class EMInspector3D(QtGui.QWidget):
 		if filename: # if we cancel
 			self.scenegraph.saveSnapShot(filename)
 			print "Saved %s to disk"%os.path.basename(str(filename))
-		
-	def _on_fuzzy_slider(self, value):
-		"""
-		Set the fuzzy selection coeff
-		"""
-		self.scenegraph.setFuzzyFactor(value)
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
@@ -1649,6 +1766,13 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Update Inspector,is called whenever the scence changes
 		"""
+		#tool buttons
+		if self.scenegraph.getMouseMode() == "selection": self.selectiontool.setDown(True)
+		if self.scenegraph.getMouseMode() == "multiselection": self.multiselectiontool.setDown(True)
+		if self.scenegraph.getMouseMode() == "rotate": self.rotatetool.setDown(True)
+		if self.scenegraph.getMouseMode() == "xytranslate": self.translatetool.setDown(True)
+		if self.scenegraph.getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
+		if self.scenegraph.getMouseMode() == "scale": self.scaletool.setDown(True)
 		# Lights
 		if self.lighttab_open:
 			p = self.scenegraph.firstlight.getPosition()
@@ -1667,7 +1791,6 @@ class EMInspector3D(QtGui.QWidget):
 			self.scenegraph.setZslice()
 			self.camerawidget.updateWidget()
 		# utils
-		self.fuzzy_slider.setValue(self.scenegraph.getFuzzyFactor(), quiet=1)
 		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
 			
 	def updateSceneGraph(self):
