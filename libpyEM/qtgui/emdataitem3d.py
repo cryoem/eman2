@@ -9,6 +9,7 @@ from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
 from emitem3d import EMItem3D, EMItem3DInspector
+from emimageutil import ImgHistogram
 from valslider import ValSlider
 from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
@@ -75,19 +76,26 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 	def addControls(self, gridbox):
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
+		self.histogram_widget = ImgHistogram(self)
+		self.histogram_widget.setObjectName("hist")
+
 		# Perhaps we sould allow the inspector control this?
 		isoframe = QtGui.QFrame()
 		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		isogridbox = QtGui.QGridLayout()
 		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
+		
 		self.wireframe = QtGui.QCheckBox("Wireframe mode")
 		self.wireframe.setChecked(False)
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
-		isogridbox.addWidget(self.cullbackface, 0, 0, 1, 1)
-		isogridbox.addWidget(self.wireframe, 1, 0, 1, 1)
+
+		isogridbox.addWidget(self.histogram_widget, 0, 0, 1, 1)
+		isogridbox.addWidget(self.cullbackface, 1, 0, 1, 1)
+		isogridbox.addWidget(self.wireframe, 2,0,1,1)
+		isogridbox.setRowStretch(3,1)
 		isoframe.setLayout(isogridbox)
 		gridbox.addWidget(isoframe, 2, 1, 2, 1)
 		gridbox.addWidget(self.thr, 4, 0, 1, 2)
@@ -106,6 +114,9 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 		self.thr.setRange(minden,maxden)
 		self.thr.setValue(iso_threshold, True)
+		
+		histogram_data = data.calc_hist(256,minden,maxden)
+		self.histogram_widget.set_data(histogram_data,minden,maxden) 
 		
 		self.item3d().force_update = True
 		self.item3d().isorender = MarchingCubes(data)
