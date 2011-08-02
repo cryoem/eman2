@@ -46,7 +46,16 @@ class EMCube(EMItem3D):
 	def __init__(self, size):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
-		self.size = size  
+		self.setSize(size)
+		
+		# color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0		
+	
+	def setSize(self, size):
+		self.size = size
 		self.boundingboxsize = size
 		self.xi = -size/2
 		self.yi = -size/2
@@ -54,12 +63,7 @@ class EMCube(EMItem3D):
 		self.xf = size/2
 		self.yf = size/2
 		self.zf = size/2
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0		
+		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
 		return "EMCube(%s)"%self.size
@@ -138,10 +142,7 @@ class EMSphere(EMItem3D):
 	def __init__(self, radius):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		# size
-		self.radius = radius
-		self.slices = int(radius)
-		self.stacks = int(radius)
-		self.boundingboxsize = radius
+		self.setRadius(radius)
 		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
@@ -149,6 +150,13 @@ class EMSphere(EMItem3D):
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
 	
+	def setRadius(self, radius):
+		self.radius = radius
+		self.boundingboxsize = radius
+		self.slices = int(radius)
+		self.stacks = int(radius)
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
 	def getEvalString(self):
 		return "EMSphere(%s)"%self.radius
 		
@@ -190,18 +198,22 @@ class EMCylinder(EMItem3D):
 	def __init__(self, radius, height):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
 		#size
-		self.radius = radius
-		self.height = height
-		self.slices = int(radius)
-		self.stacks = int(radius)
-		self.boundingboxsize = max(self.radius, self.height)
-
+		self.setRadiusAndHeight(radius, height)
+		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]		
 		self.shininess = 25.0
 	
+	def setRadiusAndHeight(self, radius, height):
+		self.radius = radius
+		self.height = height
+		self.slices = int(radius)
+		self.stacks = int(radius)
+		self.boundingboxsize = max(self.radius, self.height)
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
 	def getEvalString(self):
 		return "EMCylinder(%s, %s)"%(self.radius, self.height)
 		

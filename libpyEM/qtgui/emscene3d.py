@@ -209,6 +209,72 @@ selectorcursor = [
     'cccccccccccccccc'
 ]
 
+cubecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc',
+    'ccccccbbbbbbbbbccc',
+    'cccccbbbbbbbbbbccc',
+    'ccccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbcccc',
+    'ccbbbbbbbbbbbccccc',
+    'ccbbbbbbbbbbcccccc',
+    'ccbbbbbbbbbccccccc',
+    'cccccccccccccccccc',
+    'cccccccccccccccccc'
+]
+
+spherecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'cccccccbbbccccccc',
+    'cccccbbbbbbbccccc',
+    'ccccbbbbbbbbbcccc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccccbbbbbbbbbcccc',
+    'cccccbbbbbbbccccc',
+    'cccccccbbbccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+]
+
+cylindercursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cccccbbbbbbbccccc',
+    'cccbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbbccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
 cubeicon = [
     '16 16 2 1',
     'b c #000055',
@@ -477,6 +543,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.scalecursor = QtGui.QCursor(QtGui.QPixmap(scalecursor),-1,-1)
 		self.zhaircursor = QtGui.QCursor(QtGui.QPixmap(zhaircursor),-1,-1)
 		self.selectorcursor = QtGui.QCursor(QtGui.QPixmap(selectorcursor),-1,-1)
+		self.cubecursor = QtGui.QCursor(QtGui.QPixmap(cubecursor),-1,-1)
+		self.spherecursor = QtGui.QCursor(QtGui.QPixmap(spherecursor),-1,-1)
+		self.cylindercursor = QtGui.QCursor(QtGui.QPixmap(cylindercursor),-1,-1)
 
 	def getEvalString(self):
 		"""
@@ -536,13 +605,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glLoadIdentity()
 		
 		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
-		dx = math.fabs(self.sa_xi - self.sa_xf) # The 2x is a hack.....
-		dy = math.fabs(self.sa_yi - self.sa_yf) # The 2x is a hack.....
+		dx = self.sa_xf - self.sa_xi
+		dy = self.sa_yf - self.sa_yi 
 		x = (self.sa_xi + self.camera.getWidth()/2) 
 		y = (self.camera.getHeight()/2 - self.sa_yi)
 
 		# Apply selection box, and center it in the green box
-		GLU.gluPickMatrix(x + dx/2, (viewport[3] - y) - dy/2, dx, dy, viewport)
+		GLU.gluPickMatrix(x - dx/2, (viewport[3] - y) + dy/2, dx, dy, viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -642,7 +711,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			selecteditem.setSelectedItem(True)
 			# Inspector tree management
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
-			
+	
+	def insertNewNode(self, name, node):
+		"""
+		Insert a new node in the SG
+		"""
+		insertionpoint = None
+		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(name, node)
+		if insertionpoint:
+			insertionpoint[0].insertChild(node, (insertionpoint[1] + 1))
+		else:
+			self.addChild(node)
+		
 	# Event subclassing
 	def mousePressEvent(self, event):
 		"""
@@ -656,6 +736,30 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_y = self.previous_y
 		# Process mouse events
 		self.itemstodeselect = []
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
+			self.setCursor(self.cubecursor)
+			self.newnode = EMCube(2.0)
+			x = event.x() - self.camera.getWidth()/2
+			y = -event.y() + self.camera.getHeight()/2
+			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.insertNewNode("Cube", self.newnode)
+			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
+			self.setCursor(self.spherecursor)
+			self.newnode = EMSphere(2.0)
+			x = event.x() - self.camera.getWidth()/2
+			y = -event.y() + self.camera.getHeight()/2
+			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.insertNewNode("Sphere", self.newnode)
+			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
+			self.setCursor(self.cylindercursor)
+			self.newnode = EMCylinder(2.0,2.0)
+			x = event.x() - self.camera.getWidth()/2
+			y = -event.y() + self.camera.getHeight()/2
+			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.insertNewNode("Cylinder", self.newnode)
+			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height():
 				self.setCursor(self.zrotatecursor)
@@ -693,6 +797,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
+			self.setCursor(self.cubecursor)
+			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
+			self.setCursor(self.spherecursor)
+			self.newnode.setRadius(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
+			self.setCursor(self.cylindercursor)
+			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
+			sign = -(event.y() - self.first_y)
+			self.newnode.getTransform().set_rotation({"type":"eman","alt":math.copysign(90,sign)})
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
@@ -1300,14 +1415,12 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
-		self.tree_node_button_add = QtGui.QPushButton("Add Node")
 		self.tree_node_button_remove = QtGui.QPushButton("Remove Node")
-		tvbox.addWidget(self.tree_node_button_add)
 		tvbox.addWidget(self.tree_node_button_remove)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
-		QtCore.QObject.connect(self.tree_node_button_add, QtCore.SIGNAL("clicked()"), self._tree_widget_add)
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("editItem(QTreeWidgetItem*)"), self._tree_widget_edit)
 		QtCore.QObject.connect(self.tree_node_button_remove, QtCore.SIGNAL("clicked()"), self._tree_widget_remove)
 		
 		return tvbox
@@ -1397,10 +1510,10 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked(int)"), self._scaletool_clicked)
 		QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked(int)"), self._seltool_clicked)
 		QtCore.QObject.connect(self.multiselectiontool, QtCore.SIGNAL("clicked(int)"), self._multiseltool_clicked)
-		QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked()"), self._cubetool_clicked)
-		QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked()"), self._spheretool_clicked)
-		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked()"), self._cylindertool_clicked)
-		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked()"), self._texttool_clicked)
+		QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked(int)"), self._cubetool_clicked)
+		QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked(int)"), self._spheretool_clicked)
+		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked(int)"), self._cylindertool_clicked)
+		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
 		QtCore.QObject.connect(self.isotool, QtCore.SIGNAL("clicked(int)"), self._isotool_clicked)
 		
 		# Set the default tool
@@ -1454,6 +1567,7 @@ class EMInspector3D(QtGui.QWidget):
 		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
 		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
 		self.stacked_widget.addWidget(item_inspector)			# Add a widget to the stack
+		item3d.setLabel(name)						# Set the label
 		# Set icon status
 		tree_item.setSelectionStateBox()
 		# Set parent if one exists	
@@ -1471,6 +1585,26 @@ class EMInspector3D(QtGui.QWidget):
 		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
 		if parentitem.child(childindex).item3d(): self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
+	
+	def insertNewNode(self, node_name, insertion_node):
+		"""
+		Insert a node at the highlighted location
+		"""
+		currentitem = self.tree_widget.currentItem()
+		if currentitem:
+			itemparentnode = currentitem.parent
+			if itemparentnode:
+				thisnode_index = itemparentnode().indexOfChild(currentitem)
+				addeditem = self.addTreeNode(node_name, insertion_node, parentitem=itemparentnode(), insertionindex=(thisnode_index+1))
+				self.tree_widget.setCurrentItem(addeditem)
+				self._tree_widget_click(addeditem, 0)
+				return [itemparentnode().item3d(), thisnode_index]
+		# Otherwise add the node to the Root
+		addeditem = self.addTreeNode(node_name, insertion_node, parentitem=self.tree_widget.topLevelItem(0))
+		self.tree_widget.setCurrentItem(addeditem)
+		self._tree_widget_click(addeditem, 0)
+		
+		return None
 		
 	def _tree_widget_click(self, item, col):
 		"""
@@ -1489,17 +1623,17 @@ class EMInspector3D(QtGui.QWidget):
 		item.toggleVisibleState()
 		self.updateSceneGraph()
 	
-	def _tree_widget_add(self):
+	def _tree_widget_edit(self):
 		"""
-		when a user wants to add an item3d
+		When a use middle clicks
 		"""
-		nodedialog = NodeDialog(self, self.tree_widget.currentItem())
+		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
 		nodedialog.exec_()
 		self.activateWindow()
 		
 	def _tree_widget_remove(self):
 		"""
-		When a use wnats to remove a node_name
+		When a use wants to remove a node_name
 		"""
 		item = self.tree_widget.currentItem()
 		if item.parent:
@@ -1553,6 +1687,9 @@ class EMInspector3D(QtGui.QWidget):
 	
 	def _light_position_moved(self, position): 
 		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
+		angularposition = self.lightwidget.getAngularPosition()
+		self.hvalslider.setValue(angularposition[0], quiet=1)
+		self.vvalslider.setValue(angularposition[1], quiet=1)
 		self.scenegraph.update()
 	
 	def _on_light_slider(self, value):
@@ -1810,6 +1947,9 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 		QtGui.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.emit(QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.currentItem())
+		if e.button()==Qt.MidButton:
+			self.emit(QtCore.SIGNAL("editItem(QTreeWidgetItem*)"), self.currentItem())
+			
 			
 class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
@@ -1826,7 +1966,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
 		self.getVisibleState()
-		self.setToolTip(0, 'Click on the checkbox to select\nRight click to toogle visible')
+		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to edit\nRight click to toogle visible')
 	
 	def setSelectionState(self, state):
 		""" 
@@ -1868,7 +2008,37 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.child(0).removeAllChildren(inspector)
 			self.item3d().removeChild(self.child(0).item3d())
 			inspector.removeTreeNode(self, 0) 
-			
+
+class NodeEditDialog(QtGui.QDialog):
+	"""
+	A dialog for editing the node
+	"""
+	def __init__(self, inspector, item):
+		QtGui.QDialog.__init__(self)
+		self.item = item
+		self.inspector = weakref.ref(inspector)
+		grid = QtGui.QGridLayout(self)
+		label = QtGui.QLabel("Node Name")
+		self.nodename = QtGui.QLineEdit()
+		grid.addWidget(label, 0, 0, 1, 2)
+		grid.addWidget(self.nodename, 1, 0, 1, 2)
+		self.ok_button = QtGui.QPushButton("Ok")
+		self.cancel_button = QtGui.QPushButton("Cancel")
+		grid.addWidget(self.ok_button, 2, 0, 1, 1)
+		grid.addWidget(self.cancel_button, 2, 1, 1, 1)
+		self.setLayout(grid)
+		
+		self.connect(self.ok_button, QtCore.SIGNAL('clicked()'), self._on_ok)
+		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
+	
+	def _on_ok(self):
+		self.item.item3d().setLabel(self.nodename.text())
+		self.item.setText(0, self.nodename.text())
+		self.done(0)
+		
+	def _on_cancel(self):
+		self.done(1)
+		
 class NodeDialog(QtGui.QDialog):
 	"""
 	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed

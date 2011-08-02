@@ -1020,9 +1020,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		return [self.x_light_pos, self.y_light_pos]
 	
 	def setPositionCartiesion(self, x, y, z, quiet=True):
-		r = math.sqrt(x*x + y*y + z*z)
-		self.x_light_pos = math.degrees(math.acos(z/r))
-		self.y_light_pos = math.degrees(math.atan2(y,x))
+		self.x_light_pos = math.degrees(math.asin(x))
+		self.y_light_pos = math.degrees(math.asin(y))
 		self.setPosition()
 		self.update()
 		if not quiet: self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)

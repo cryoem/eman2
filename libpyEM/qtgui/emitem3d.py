@@ -92,6 +92,16 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.children.append(node)
 		node.parent = self
 	
+	def insertChild(self, node, nodeindex):
+		"""
+		Inserts a child node, if not already in the list of child nodes.
+		@type node: EMItem3D
+		@param node: the child node to add
+		@param nodeindex: the index for insertion
+		"""
+		self.children.insert(nodeindex, node)
+		node.parent = self
+		
 	def addChildren(self, nodes):
 		"""
 		Adds all the provided child nodes which are not already in the list of child nodes.
@@ -329,7 +339,8 @@ class EMItem3DInspector(QtGui.QWidget):
 		gridbox.addWidget(label, 0, 0, 1, self.gridcols)
 		databox = QtGui.QHBoxLayout()
 		if self.item3d().boundingboxsize:
-			databox.addWidget(QtGui.QLabel("Size: "+str(self.item3d().boundingboxsize)+u'\u00B3',self))
+			self.boundingbox = QtGui.QLabel("Size: "+str(round(self.item3d().boundingboxsize, 2))+u'\u00B3',self)
+			databox.addWidget(self.boundingbox)
 		gridbox.addLayout(databox, 1, 0, 1, self.gridcols)
 		# angluar controls
 		xformframe = QtGui.QFrame()
@@ -464,6 +475,17 @@ class EMItem3DInspector(QtGui.QWidget):
 				self.quaternione3slider.setValue(rotation["e3"], quiet=1)
 		# Scaling update
 		self.zoom.setValue(self.item3d().getTransform().get_scale())
+		
+	def updateMetaData(self):
+		"""
+		I didn't want to put this in update b/c this data doesn't change very often, and I don't want to waste CPU
+		Its a judgement call really, less coupling vs. more efficiency
+		"""
+		try:
+			self.boundingbox.setText("Size: "+str(round(self.item3d().boundingboxsize,2))+u'\u00B3')
+		except:
+			pass
+			
 		
 	def addRotationWidgets(self):
 		EMANwidget = QtGui.QWidget()
