@@ -41,7 +41,26 @@ import sys
 import weakref
 import e2ctf
 
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt4.QtCore import Qt
+	from emshape import *
+	from valslider import *
+except:
+	print "Warning: PyQt4 must be installed to use the --gui option"
+	class dummy:
+		pass
+	class QWidget:
+		"A dummy class for use when Qt not installed"
+		def __init__(self,parent):
+			print "Qt4 has not been loaded"
+	QtGui=dummy()
+	QtGui.QWidget=QWidget
+
+
 from Simplex import Simplex
+
+
 
 debug=False
 logid=None
@@ -104,12 +123,11 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# Per image parameters to keep track of
 		# for each image [box size,ctf,box coord,set of excluded boxnums]
-		self.parms=[[256,EMAN2Ctf(),(0,0)set()] for i in images]	
+		self.parms=[[512,EMAN2Ctf(),(256,256),set()] for i in images]	
 		
 		self.wimage=EMImage2DWidget()
 		
 		self.wfft=EMImage2DWidget()
-		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
 		self.wplot=EMPlot2DWidget()
 		
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
@@ -140,7 +158,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.scalcmode=QtGui.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
-		self.vbl2.addWidget(self.calcmode)
+		self.vbl2.addWidget(self.scalcmode)
 		
 		self.s2dmode=QtGui.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
@@ -213,42 +231,45 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.boxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
 		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
-	   	QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
-		QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
-		QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
-		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
+	   	#QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
+		#QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
+		#QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
+		#QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
 		
-		self.update_data()
 		
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
 		
 		
 		self.setWindowTitle("CTF")
+#		self.recalc()
 
 		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
-#		self.app.app.closeAllWindows()
-		if self.guiim != None:
-			self.app().close_specific(self.guiim)
-			self.guiim = None 
-		if self.guiplot != None:
-			self.app().close_specific(self.guiplot)
-		event.accept()
-		self.app().close_specific(self)
+		QtGui.qApp.closeAllWindows()
+		#app=QtGui.qApp
+		#if self.wimage != None:
+			#app.close_specific(self.wimage)
+			#self.wimage = None 
+		#if self.wfft != None:
+			#app.close_specific(self.wfft)
+		#if self.wplot != None:
+			#app.close_specific(self.wplot)
+		#event.accept()
+		#app.close_specific(self)
 #		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def update_plot(self):
-		if self.guiplot == None: return # it's closed/not visible
+#		if self.wplot == None: return # it's closed/not visible
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*self.data["ny"])
+		ds=1.0/(apix*parms[0])
 		ctf=parms[1]
 		bg1d=ctf.background
 		r=len(ctf.background)
@@ -263,14 +284,14 @@ class GUIEvalImage(QtGui.QWidget):
 				nz+=1
 				shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
 		
-		self.guiim.del_shapes()
-		self.guiim.add_shapes(shp)
-		self.guiim.updateGL()
+		self.wfft.del_shapes()
+		self.wfft.add_shapes(shp)
+		self.wfft.updateGL()
 		
 		# Now update the plots for the correct plot mode
 		if self.plotmode==0: 
-			bgsub=[self.fft1d[i]-bg1d[i] for i in range(len(self.data[val][2]))]
-			self.guiplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+			bgsub=[self.fft1d[i]-bg1d[i] for i in range(r)]
+			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
 			
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[fit[i]**2 for i in range(len(s))]		# squared, no SF
@@ -287,45 +308,59 @@ class GUIEvalImage(QtGui.QWidget):
 			
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 			
-			self.guiplot.set_data((s,fit),"fit",color=1)
-			self.guiplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			self.wplot.set_data((s,fit),"fit",color=1)
+			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
 		elif self.plotmode==1:
-			self.guiplot.set_data((s,self.fft1d),"fg",True,True,color=1)
-			self.guiplot.set_data((s,bg1d),"bg",color=0)
-			self.guiplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
+			self.wplot.set_data((s,self.fft1d),"fg",True,True,color=1)
+			self.wplot.set_data((s,bg1d),"bg",color=0)
+			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
 
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
 		self.curset=val
-		self.data=EMData(str(self.setlist.item[val].text()),0)	# read the image from disk
+		self.data=EMData(str(self.setlist.item(val).text()),0)	# read the image from disk
 		self.wimage.set_data(self.data)
 
-		self.sdefocus.setValue(self.parms[val][1][1].defocus,True)
-		self.sbfactor.setValue(self.parms[val][1][1].bfactor,True)
-		self.sapix.setValue(self.parms[val][1][1].apix,True)
-		self.sampcont.setValue(self.parms[val][1][1].ampcont,True)
-		self.svoltage.setValue(self.parms[val][1][1].voltage,True)
-		self.scs.setValue(self.parms[val][1][1].cs,True)
+		ctf=self.parms[val][1]
+		# if voltage is 0, we need to initialize
+		if ctf.voltage==0:
+			ctf.voltage=200.0
+			ctf.apix=self.data["apix_x"]
+			ctf.defocus=1.0
+			ctf.bfactor=200.0
+			ctf.ampcont=10.0
+
+		self.sdefocus.setValue(ctf.defocus,True)
+		self.sbfactor.setValue(ctf.bfactor,True)
+		self.sapix.setValue(ctf.apix,True)
+		self.sampcont.setValue(ctf.ampcont,True)
+		self.svoltage.setValue(ctf.voltage,True)
+		self.scs.setValue(ctf.cs,True)
 		self.sboxsize.setValue(self.parms[val][0],True)
 		
-		if self.guiim != None: 
-#			print self.data
-			self.guiim.set_data(self.data[val][4])
-			if self.guiiminit:
-				self.guiim.optimally_resize()
-				self.guiiminit = False
-			self.guiim.updateGL()
+		#if self.guiim != None: 
+##			print self.data
+			#self.guiim.set_data(self.data[val][4])
+			#if self.guiiminit:
+				#self.guiim.optimally_resize()
+				#self.guiiminit = False
+			#self.guiim.updateGL()
 		self.recalc()
 
 	def recalc(self):
 		"Called to recompute the power spectra, also updates plot"
-		
+	
+		self.wimage.show()
+		self.wfft.show()
+		self.wplot.show()
+
+	
 		# To simplify expressions
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*self.data["ny"])
-		
+		ds=1.0/(apix*parms[0])
+
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
 			# update the box display on the image 
@@ -343,13 +378,14 @@ class GUIEvalImage(QtGui.QWidget):
 			# update the box display on the image
 			nx=self.data["nx"]/parms[0]
 			self.fft=None
+			shp={}
 			for x in range(nx):
 				for y in range(self.data["ny"]/parms[0]):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
 					
 					# Make a shape for this box
-					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9..3,x*parms[0],y*parms[0],(x+1)*parms[0],(y+1)*parms[0]))
+					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,x*parms[0],y*parms[0],(x+1)*parms[0],(y+1)*parms[0],1))
 					
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0],y*parms[0],parms[0],parms[0]))
@@ -360,15 +396,18 @@ class GUIEvalImage(QtGui.QWidget):
 			
 			self.fft.process_inplace("normalize")
 			
-			self.guiim.del_shapes()
-			self.guiim.add_shapes(shp)
-			self.guiim.updateGL()
+			self.wimage.del_shapes()
+			self.wimage.add_shapes(shp)
+			self.wimage.updateGL()
+			
+			self.wfft.set_data(self.fft)
 		
 		# Compute 1-D curve and background
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)
 		bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
 		parms[1].background=bg_1d
 		parms[1].dsbg=ds
+		
 
 		# Fitting not done yet. Need to make 2D background somehow
 #		if parms[1].defocus==0:
@@ -388,6 +427,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.plotmode=mode
 		self.recalc()
 
+	def newBox(self):
+		parms=self.parms[self.curset]
+		parms[0]=self.sboxsize.value
+		self.recalc()
+
 	def newCTF(self) :
 		parms=self.parms[self.curset]
 		parms[1].defocus=self.sdefocus.value
@@ -400,49 +444,44 @@ class GUIEvalImage(QtGui.QWidget):
 		
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wimage.scr_to_img((event.x(),event.y()))
+		parms=self.parms[self.curset]
+		parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+		self.recalc()
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
 	def imgmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wimage.scr_to_img((event.x(),event.y()))
+		parms=self.parms[self.curset]
+		parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+		self.recalc()
 		
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 		
 	def imgmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wimage.scr_to_img((event.x(),event.y()))
 
 	def fftmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wfft.scr_to_img((event.x(),event.y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
 	def fftmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wfft.scr_to_img((event.x(),event.y()))
 		
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 		
 	def fftmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.wfft.scr_to_img((event.x(),event.y()))
 
 
 	def plotmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
-	
-	def run(self):
-		"""If you make your own application outside of this object, you are free to use
-		your own local app.exec_(). This is a convenience for ctf-only programs."""
-		self.app.exec_()
-		
-#		E2saveappwin("boxer","imagegeom",self.guiim)
-#		try:
-#			E2setappval("boxer","imcontrol",self.guiim.inspector.isVisible())
-#			if self.guiim.inspector.isVisible() : E2saveappwin("boxer","imcontrolgeom",self.guiim.inspector)
-#		except : E2setappval("boxer","imcontrol",False)
-		
-		return
+		"mousedown in plot"
+#		m=self.guiim.scr_to_img((event.x(),event.y()))
+
 
 
 if __name__ == "__main__":

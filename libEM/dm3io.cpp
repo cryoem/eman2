@@ -119,7 +119,8 @@ void TagTable::dump() const
 	map < string, string >::const_iterator p;
 
 	for (p = tags.begin(); p != tags.end(); p++) {
-		LOGDEBUG("  %s: %s", (*p).first.c_str(), (*p).second.c_str());
+//		LOGDEBUG("  %s: %s", (*p).first.c_str(), (*p).second.c_str());
+		printf("  %s: %s\n", (*p).first.c_str(), (*p).second.c_str());
 	}
 }
 
@@ -765,12 +766,17 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
 	dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
 
+	dict["DM3.voltage"] = tagtable->get_double("Voltage")/1000.0;
+	dict["DM3.cs"] = tagtable->get_double("Cs(mm)");
+
 	dict["DM3.frame_type"] = tagtable->get_string("Processing");
 	dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
 	dict["DM3.camera_y"] = tagtable->get_int("Active Size (pixels) #1");
 	dict["DM3.binning_x"] = tagtable->get_int("Binning #0");
 	dict["DM3.binning_y"] = tagtable->get_int("Binning #1");
 	dict["datatype"] = to_em_datatype(tagtable->get_datatype());
+
+//tagtable->dump();
 
 	EXITFUNC;
 	return err;
