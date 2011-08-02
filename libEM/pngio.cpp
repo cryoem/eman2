@@ -94,7 +94,7 @@ void PngIO::init()
 		throw ImageReadException(filename, "cannot create png end info structure");
 	}
 
-	if (setjmp(png_ptr->jmpbuf)) {
+	if (setjmp (png_jmpbuf (png_ptr))) {
 		throw ImageReadException(filename, "an error occurs within png");
 	}
 
