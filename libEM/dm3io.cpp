@@ -760,14 +760,22 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 
+	dict["DM3.acq_date"] = tagtable->get_string("Acquisition Date");
+	dict["DM3.acq_time"] = tagtable->get_string("Acquisition Time");
+	dict["DM3.source"] = tagtable->get_string("Source");
 	dict["DM3.exposure_number"] = tagtable->get_int("Exposure Number");
 	dict["DM3.exposure_time"] = tagtable->get_double("Exposure (s)");
 	dict["DM3.zoom"] = tagtable->get_double("Zoom");
 	dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
-	dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
+	dict["DM3.indicated_mag"] = tagtable->get_double("Indicated Magnification");
+	dict["DM3.actual_mag"] = tagtable->get_double("Actual Magnification");
+	dict["DM3.pixel_size"] = tagtable->get_double("Pixel Size (um) #0");
+	dict["DM3.name"] = tagtable->get_string("Name");
 
 	dict["DM3.voltage"] = tagtable->get_double("Voltage")/1000.0;
+	dict["microscope_voltage"]=(float)dict["DM3.voltage"];
 	dict["DM3.cs"] = tagtable->get_double("Cs(mm)");
+	dict["microscope_cs"]=(float)dict["DM3.cs"];
 
 	dict["DM3.frame_type"] = tagtable->get_string("Processing");
 	dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
@@ -775,6 +783,13 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["DM3.binning_x"] = tagtable->get_int("Binning #0");
 	dict["DM3.binning_y"] = tagtable->get_int("Binning #1");
 	dict["datatype"] = to_em_datatype(tagtable->get_datatype());
+
+	if ((float)dict["DM3.actual_mag"] >0.0) {
+		float apix=10000.0*(float)dict["DM3.pixel_size"]/(float)dict["DM3.actual_mag"];
+		dict["apix_x"]=apix;
+		dict["apix_y"]=apix;
+		dict["apix_z"]=apix;
+	}
 
 //tagtable->dump();
 

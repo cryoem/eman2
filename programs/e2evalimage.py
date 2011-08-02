@@ -325,7 +325,10 @@ class GUIEvalImage(QtGui.QWidget):
 		ctf=self.parms[val][1]
 		# if voltage is 0, we need to initialize
 		if ctf.voltage==0:
-			ctf.voltage=200.0
+			ctf.voltage=self.data["microscope_voltage"]
+			if ctf.voltage==0 : ctf.voltage=200.0
+			ctf.cs=self.data["microscope_cs"]
+			if ctf.cs==0 : ctf.cs=4.1
 			ctf.apix=self.data["apix_x"]
 			ctf.defocus=1.0
 			ctf.bfactor=200.0
