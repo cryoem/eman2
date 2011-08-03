@@ -449,6 +449,16 @@ void ImagicIO2::write_ctf(const Ctf * const ctf, int image_index)
 	size_t n = strlen(CTF_MAGIC);
 	strcpy(imagich.label, CTF_MAGIC);
 	string ctf_ = ctf->to_string().substr(1);
+
+	//pad ctf_ to 80 char
+	if(ctf_.size()>80) {
+		ctf_ = ctf_.substr(0, 80);
+	}
+	else {
+		string padded(80 - ctf_.size(), ' ');
+		ctf_ = ctf_ + padded;
+	}
+
 	strncpy(&imagich.label[n], ctf_.c_str(), sizeof(imagich.label) - n);
 
 	rewind(hed_file);
@@ -554,8 +564,12 @@ int ImagicIO2::write_header(EMAN::Dict const& dict, int image_index,
 	new_hed.ixold = 0;
 	new_hed.iyold = 0;
 
-	string new_label = dict.has_key("IMAGIC.label") ? (string) dict["IMAGIC.label"] : "";
+	string new_label = dict.has_key("IMAGIC.label") ? (string) dict["IMAGIC.label"] : string(80, ' ');
 	sprintf(new_hed.label, new_label.c_str() );
+
+	string new_history = dict.has_key("IMAGIC.history") ? (string) dict["IMAGIC.history"] : string(228, ' ');
+	new_history = new_history.substr(0, 228);
+	sprintf(new_hed.history, new_history.c_str());
 
 	new_hed.i4lp = nimg;
 
