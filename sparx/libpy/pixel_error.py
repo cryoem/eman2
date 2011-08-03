@@ -480,7 +480,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		for i in xrange(n): var += (a[i]-avg)**2
 		return var/n
 
-	def func(args, data, return_pixel_error=True):
+	def func(args, data, return_avg_pixel_error=True):
 
 	        from math import pi, sin, cos
 
@@ -522,7 +522,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	        # Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 	        # Don't forget to square root it after getting the value
-	        if return_pixel_error:         return sum(sqr_pixel_error)/N
+	        if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
 	        else: return sqr_pixel_error
 
 	'''
@@ -637,7 +637,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
 	data = [ali_params_mir_stab, d]
-	pixel_error_before = func(array(args), data, return_pixel_error=False)
+	pixel_error_before = func(array(args), data, return_avg_pixel_error=False)
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
 	for j in xrange(nima2):
@@ -650,7 +650,11 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	# Use LBFGSB to minimize the sum of pixel errors
 	data = [ali_params_cleaned, d]
+
+	# Use Pythod code
 	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
+
+	# Use C++ code
 	ali_params_cleaned_list = []
 	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
 	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
@@ -664,9 +668,11 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		print "ali_params_cleaned_list =", ali_params_cleaned_list
 		print "results = ", results
 		val = 0.0
+	del ali_params_cleaned_list	
+	
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 	
-	pixel_error_after = func(ps_lp, data, return_pixel_error=False)
+	pixel_error_after = func(ps_lp, data, return_avg_pixel_error=False)
 
 	if print_individual:
 		for i in xrange(nima):

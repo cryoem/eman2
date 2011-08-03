@@ -12167,11 +12167,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			stable_members = map(int, stable_members)
 			mirror_consistent_rate = mpi_recv(1, MPI_FLOAT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
 			mirror_consistend_rate = float(mirror_consistent_rate[0])
-			tvar = mpi_recv(1, MPI_FLOAT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
-			tvar = float(tvar[0])
+			pix_err = mpi_recv(1, MPI_FLOAT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			pix_err = float(pix_err[0])
 	
 			print  "Group %d ...... Mirror consistent rate = %f"%(i, mirror_consistent_rate)
-			print  "Group %d ...... Average transformation variance = %f"%(i, tvar)
+			print  "Group %d ...... Average pixel error = %f"%(i, pix_err)
 			print  "Group %d ...... Size of stable subset = %d"%(i, l_stable_members)
 			print  "Group %d ......"%i,
 		
@@ -12184,7 +12184,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			stable_members_ori = [0]*l_stable_members
 			for j in xrange(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
 			ave.set_attr_dict({"members": stable_members_ori, "n_objects": l_stable_members})
-	      		ave = filt_tanl(ave, FH, FF)
 			ave.write_image("class_averages_generation_%d.hdf"%generation, ave_num)
 			ave_num += 1
 			members_acc.extend(stable_members_ori)
@@ -12229,7 +12228,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				for im in xrange(l_STB_PART):
 					alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 					ali_params[ii].extend([alpha, sx, sy, mirror])
-			stable_set, mirror_consistent_rate, tvar = multi_align_stability(ali_params, 0.0, 10000.0, thld_err)
+			if ou == -1:  ou = nx/2-2
+			stable_set, mirror_consistent_rate, pix_err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, ou*2)
 			
 			l_stable_set = len(stable_set)
 			stable_set_id = [0]*l_stable_set
@@ -12238,7 +12238,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(mirror_consistent_rate, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(tvar, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(pix_err, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			
 			if l_stable_set > thld_grp:
 				send_EMData(ave, main_node, i*100)			
@@ -12465,7 +12465,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])	
 		
 		if myid == main_node:
-			dummy = within_group_refinement(refi, mask, True, ir, ou, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
 			for j in xrange(numref):
 				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
@@ -12524,7 +12524,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 				randomize = True  # I think there is no reason not to be True
 				class_data = [alldata[im] for im in assign]
-				refi[j] = within_group_refinement(class_data, mask, randomize, ir, ou, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+				refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 
 				# Here stability does not need to be checked for each main iteration, it only need to
 				# be done for every 'iter_reali' iterations. If one really want it to be checked each time
@@ -12533,12 +12533,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					ali_params = [[] for qq in xrange(stab_ali)]
 					for ii in xrange(stab_ali):
 						if ii > 0:  # The first one does not have to be repeated
-							dummy = within_group_refinement(class_data, mask, randomize, ir, ou, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+							dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 						for im in xrange(len(class_data)):
 							alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 							ali_params[ii].extend([alpha, sx, sy, mirror])
 
-					stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err)
+					stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
 					#print  "Class %d ...... Size of stable subset = %d"%(j, len(stable_set))
 					#print  "Class %d ...... Mirror consistent rate = %f"%(j, mirror_consistent_rate)
