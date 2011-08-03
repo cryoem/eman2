@@ -1071,12 +1071,20 @@ class EMMpiTaskHandler():
 		
 		# Named pipes we use to communicate with rank 0 of the MPI job
 		# Unfortunately this isn't windows compatible as far as I know :^(
-		try : os.unlink("%s/tompi"%self.scratchdir)
-		except : pass
-		try : os.unlink("%s/fmmpi"%self.scratchdir)
-		except : pass
-		os.mkfifo("%s/tompi"%self.scratchdir)
-		os.mkfifo("%s/fmmpi"%self.scratchdir)
+		# Strange errors reported on some systems, see if trying multiple times helps !?!?
+		for i in range (5):
+			try : os.unlink("%s/tompi"%self.scratchdir)
+			except : pass
+			try : os.unlink("%s/fmmpi"%self.scratchdir)
+			except : pass
+			try :
+				os.mkfifo("%s/tompi"%self.scratchdir)
+				os.mkfifo("%s/fmmpi"%self.scratchdir)
+			except :
+				time.sleep(2)
+				print "ERROR MAKING FIFO - Retry %d"%i
+				continue
+			break			# this means we succeeded. I know, strange construct.
 
 		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2 </dev/null"%(ncpus,self.scratchdir)
 		

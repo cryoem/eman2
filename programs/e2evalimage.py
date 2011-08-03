@@ -251,8 +251,9 @@ class GUIEvalImage(QtGui.QWidget):
 
 		
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+		QtGui.QWidget.closeEvent(self,event)
 		QtGui.qApp.closeAllWindows()
+		event.accept()
 		#app=QtGui.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
@@ -261,7 +262,6 @@ class GUIEvalImage(QtGui.QWidget):
 			#app.close_specific(self.wfft)
 		#if self.wplot != None:
 			#app.close_specific(self.wplot)
-		#event.accept()
 		#app.close_specific(self)
 #		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
@@ -379,24 +379,26 @@ class GUIEvalImage(QtGui.QWidget):
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
 			# update the box display on the image
-			nx=self.data["nx"]/parms[0]
+			nx=self.data["nx"]/parms[0]-1
 			self.fft=None
 			shp={}
 			for x in range(nx):
-				for y in range(self.data["ny"]/parms[0]):
+				for y in range(self.data["ny"]/parms[0]-1):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
 					
 					# Make a shape for this box
-					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,x*parms[0],y*parms[0],(x+1)*parms[0],(y+1)*parms[0],1))
+					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,(x+.5)*parms[0],(y+.5)*parms[0],(x+1.5)*parms[0],(y+1.5)*parms[0],1))
 					
 					# read the data and make the FFT
-					clip=self.data.get_clip(Region(x*parms[0],y*parms[0],parms[0],parms[0]))
+					clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
 					fft=clip.do_fft()
 					fft.ri2inten()
 					if self.fft==None: self.fft=fft
 					else: self.fft+=fft
 			
+			self.fft.process_inplace("math.sqrt")
+			self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 			self.fft.process_inplace("normalize")
 			
 			self.wimage.del_shapes()
@@ -404,9 +406,10 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wimage.updateGL()
 			
 			self.wfft.set_data(self.fft)
-		
+
+		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+
 		# Compute 1-D curve and background
-		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)
 		bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
 		parms[1].background=bg_1d
 		parms[1].dsbg=ds
@@ -447,17 +450,19 @@ class GUIEvalImage(QtGui.QWidget):
 		
 
 	def imgmousedown(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
-		parms=self.parms[self.curset]
-		parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
-		self.recalc()
+		if self.calcmode==0:
+			m=self.wimage.scr_to_img((event.x(),event.y()))
+			parms=self.parms[self.curset]
+			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+			self.recalc()
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
 	def imgmousedrag(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
-		parms=self.parms[self.curset]
-		parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
-		self.recalc()
+		if self.calcmode==0:
+			m=self.wimage.scr_to_img((event.x(),event.y()))
+			parms=self.parms[self.curset]
+			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+			self.recalc()
 		
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
@@ -465,7 +470,15 @@ class GUIEvalImage(QtGui.QWidget):
 		
 	def imgmouseup(self,event) :
 		m=self.wimage.scr_to_img((event.x(),event.y()))
-
+		if self.calcmode==1:
+			parms=self.parms[self.curset]
+			nx=self.data["nx"]/parms[0]-1
+			grid=int((m[0]-parms[0]/2)/parms[0])+int((m[1]-parms[0]/2)/parms[0])*nx
+			if grid in parms[3] : parms[3].remove(grid)
+			else: parms[3].add(grid)
+			self.recalc()
+			
+			
 	def fftmousedown(self,event) :
 		m=self.wfft.scr_to_img((event.x(),event.y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])

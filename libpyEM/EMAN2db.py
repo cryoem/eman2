@@ -402,8 +402,11 @@ EMData.read_images=staticmethod(db_read_images)
 def db_write_image(self,fsp,*parms):
 	"""write_image(fsp,image #,[image type],[header only],[region],[storage type],[use host endian])
 
-	Writes and image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
-	the remaining options are ignored"
+	help(EMUtil.ImageType) for a list of valid image types, eg EMUtil.ImageType.IMAGE_MRC
+	help(EMUtil.EMDataType) for a list of valid storage types
+
+	Writes an image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
+	the remaining options are ignored
 	"""
 #	print "In db_write_image, WI ",fsp,str(parms)
 	if fsp[:4].lower()=="bdb:" :

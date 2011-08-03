@@ -813,6 +813,14 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 
+	# added to make the 2D display look better. Should have no other impact at the time
+	# it's being added, though autofitting may rely on it in future, so it shouldn't be removed --steve (8/3/11)
+	av1.process_inplace("math.sqrt")
+	av1["is_intensity"]=0
+
+	av2.process_inplace("math.sqrt")
+	av2["is_intensity"]=0
+
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
 	maxpix=int(apix*ys2/80.0)		# we do this up to ~80 A
 	for i in xrange(maxpix) :
