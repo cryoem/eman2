@@ -1018,13 +1018,6 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 	def getAngularPosition(self):
 		return [self.x_light_pos, self.y_light_pos]
-	
-	def setPositionCartiesion(self, x, y, z, quiet=True):
-		self.x_light_pos = math.degrees(math.asin(x))
-		self.y_light_pos = math.degrees(math.asin(y))
-		self.setPosition()
-		self.update()
-		if not quiet: self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)
 		
 	def setAngularPosition(self, h, v, quiet=True):
 		self.x_light_pos = h

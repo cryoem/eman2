@@ -536,7 +536,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
-		self.mousemode = None					# The mouse mode
+		self.mousemode = "Selection"				# The mouse mode
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -1060,7 +1060,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Update the SG
 		"""
-		QtOpenGL.QGLWidget.updateGL(self)
+		self.update()
 		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 	# Maybe add methods to control the lights
 
@@ -1415,13 +1415,16 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
+		self.tree_node_button_add = QtGui.QPushButton("Add Node")
 		self.tree_node_button_remove = QtGui.QPushButton("Remove Node")
+		tvbox.addWidget(self.tree_node_button_add)
 		tvbox.addWidget(self.tree_node_button_remove)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("editItem(QTreeWidgetItem*)"), self._tree_widget_edit)
 		QtCore.QObject.connect(self.tree_node_button_remove, QtCore.SIGNAL("clicked()"), self._tree_widget_remove)
+		QtCore.QObject.connect(self.tree_node_button_add, QtCore.SIGNAL("clicked()"), self._on_add_button)
 		
 		return tvbox
 	
@@ -1630,6 +1633,11 @@ class EMInspector3D(QtGui.QWidget):
 		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
 		nodedialog.exec_()
 		self.activateWindow()
+	
+	def _on_add_button(self):
+		nodedialog =  NodeDialog(self, self.tree_widget.currentItem())
+		nodedialog.exec_()
+		self.activateWindow()
 		
 	def _tree_widget_remove(self):
 		"""
@@ -1687,10 +1695,7 @@ class EMInspector3D(QtGui.QWidget):
 	
 	def _light_position_moved(self, position): 
 		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
-		angularposition = self.lightwidget.getAngularPosition()
-		self.hvalslider.setValue(angularposition[0], quiet=1)
-		self.vvalslider.setValue(angularposition[1], quiet=1)
-		self.scenegraph.update()
+		self.scenegraph.updateSG()
 	
 	def _on_light_slider(self, value):
 		self.lightwidget.setAngularPosition(self.hvalslider.getValue(), self.vvalslider.getValue())
@@ -1867,11 +1872,8 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget.topLevelItem(0).removeAllChildren(self)
 		self.tree_widget.takeTopLevelItem(0)
 		# Load the new data
+		self.scenegraph.makeCurrent()
 		self.scenegraph.loadSession(tree)
-		self.updateSceneGraph()
-		# With open GL, stupid is as stupid does.....(sometime GL command don't execute the first tima and I have no idea why.....
-		self.scenegraph.firstlight.updateGLlighting()
-		self.scenegraph.setClearColor(self.scenegraph.getClearColor()[0], self.scenegraph.getClearColor()[1], self.scenegraph.getClearColor()[2])
 		self.updateSceneGraph()
 		
 	def _on_save_session(self):
@@ -1893,9 +1895,7 @@ class EMInspector3D(QtGui.QWidget):
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
-		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
-		self.updateSceneGraph()
-		# No, this is not  a bug.... It is a hack b/c sometimes openGL does not change its clear color the first time around!!!!!!
+		self.scenegraph.makeCurrent()
 		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		self.updateSceneGraph()
 		
@@ -1910,10 +1910,11 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph.getMouseMode() == "xytranslate": self.translatetool.setDown(True)
 		if self.scenegraph.getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
 		if self.scenegraph.getMouseMode() == "scale": self.scaletool.setDown(True)
+		if self.scenegraph.getMouseMode() == "cube": self.scaletool.setDown(True)
+		if self.scenegraph.getMouseMode() == "sphere": self.scaletool.setDown(True)
+		if self.scenegraph.getMouseMode() == "cylinder": self.scaletool.setDown(True)
 		# Lights
 		if self.lighttab_open:
-			p = self.scenegraph.firstlight.getPosition()
-			self.lightwidget.setPositionCartiesion(p[0], p[1], p[2])
 			angularposition = self.lightwidget.getAngularPosition()
 			self.hvalslider.setValue(angularposition[0], quiet=1)
 			self.vvalslider.setValue(angularposition[1], quiet=1)
