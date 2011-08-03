@@ -42,10 +42,10 @@ def main():
 	usage = progname + " stack averages --ou=ou --th_grp=th_grp --num_ali=num_ali"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
-	parser.add_option("--thld_grp",     type="int",     default=5,         help=" mininum number of objects to consider for stability")
-	parser.add_option("--thld_err",     type="float",   default=1.732,     help=" threshld of pixel error")
-	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability")
-	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error")
+	parser.add_option("--thld_grp",     type="int",     default=5,         help=" mininum number of objects to consider for stability (default = 5)")
+	parser.add_option("--thld_err",     type="float",   default=1.732,     help=" threshld of pixel error (default = 1.732)")
+	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability (default = 5)")
+	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error (default = False)")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
