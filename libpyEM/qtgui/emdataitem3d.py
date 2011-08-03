@@ -46,12 +46,12 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		hblbrowse.addWidget(self.file_browse_button)
 		gridbox.addLayout(hblbrowse, 3, 0, 1, 1)
 		
-		self.file_browse_button.clicked.connect(self.on_file_browse)
+		self.file_browse_button.clicked.connect(self.onFileBrowse)
 		
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMDataItem3DInspector: self.updateItemControls()
 		
-	def on_file_browse(self):
+	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_line_edit.setText(file_path)
@@ -68,6 +68,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
+		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
 		self.dataChanged()
 	
 	def updateItemControls(self):
@@ -79,23 +80,30 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")
 
-		# Perhaps we sould allow the inspector control this?
+		# Perhaps we should allow the inspector control this?
 		isoframe = QtGui.QFrame()
 		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		isogridbox = QtGui.QGridLayout()
+		
 		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
-		
 		self.wireframe = QtGui.QCheckBox("Wireframe mode")
 		self.wireframe.setChecked(False)
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
+		self.sampling_label = QtGui.QLabel("Sample Level:")
+		self.sampling_spinbox = QtGui.QSpinBox()
+		self.sampling_spinbox.setValue(1)
+		sampling_hbox_layout = QtGui.QHBoxLayout()
+		sampling_hbox_layout.addWidget(self.sampling_label)
+		sampling_hbox_layout.addWidget(self.sampling_spinbox)
 
 		isogridbox.addWidget(self.histogram_widget, 0, 0, 1, 1)
 		isogridbox.addWidget(self.cullbackface, 1, 0, 1, 1)
 		isogridbox.addWidget(self.wireframe, 2,0,1,1)
-		isogridbox.setRowStretch(3,1)
+		isogridbox.addLayout(sampling_hbox_layout, 3,0,1,1)
+		isogridbox.setRowStretch(4,1)
 		isoframe.setLayout(isogridbox)
 		gridbox.addWidget(isoframe, 2, 1, 2, 1)
 		gridbox.addWidget(self.thr, 4, 0, 1, 2)
@@ -120,6 +128,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 		self.item3d().force_update = True
 		self.item3d().isorender = MarchingCubes(data)
+		self.setSamplingRange(self.item3d().isorender.get_sampling_range())
 
 	def onCullFaces(self):
 		self.item3d().cullbackfaces = self.cullbackface.isChecked()
@@ -130,10 +139,17 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 #		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
 	
+	def onSampling(self, val):
+		self.item3d().setSample(val)
+		self.inspector.updateSceneGraph()
+	
 	def onWireframe(self):
 		self.item3d().wire = self.wireframe.isChecked()
 		self.inspector.updateSceneGraph()
-
+	
+	def setSamplingRange(self,range):
+		self.sampling_spinbox.setMinimum(1)
+		self.sampling_spinbox.setMaximum(1+range-1)
 
 class EMIsosurface(EMItem3D):
 	name = "Isosurface"
@@ -141,29 +157,21 @@ class EMIsosurface(EMItem3D):
 	def __init__(self, parent=None, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
 		
-		#self.mmode = 0
-		#self.inspector=None
 		self.isothr=0.5
-		#self.isorender=None
 		self.isodl = 0
 		self.smpval=-1
-		self.griddl = 0
-		self.scale = 1.0
 		self.cube = False
 		self.wire = False
-		self.light = True
 		self.cullbackfaces = True
 		self.tex_name = 0
 		self.texture = False
 
-		self.brightness = 0
-		self.contrast = 10
-		self.rank = 1
-		self.data_copy = None		
-		#self.vdtools = EMViewportDepthTools(self)
-		#self.enable_file_browse = enable_file_browse
+#		self.brightness = 0
+#		self.contrast = 10
+#		self.rank = 1
+		self.data_copy = None
 		self.force_update = False
-		self.load_colors()
+		self.loadColors()
 	
 		# color Needed for inspector to work John Flanagan
 		self.diffuse = self.colors[self.isocolor]["diffuse"]
@@ -202,12 +210,19 @@ class EMIsosurface(EMItem3D):
 			self.item_inspector = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.item_inspector
 	
-	def load_colors(self):
+	def loadColors(self):
 		self.colors = get_default_gl_colors()
 		
 		self.isocolor = "bluewhite"
 
-	def get_iso_dl(self):
+	def setSample(self,val):
+		if ( self.smpval != int(val)):
+			# the minus two is here because the marching cubes thinks -1 is the high level of detail, 0 is the next best and  so forth
+			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
+			self.smpval = int(val)-2
+			self.getIsosurfaceDisplayList()
+		
+	def getIsosurfaceDisplayList(self):
 		# create the isosurface display list
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
@@ -249,7 +264,7 @@ class EMIsosurface(EMItem3D):
 
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 or self.force_update):
-			self.get_iso_dl()
+			self.getIsosurfaceDisplayList()
 			self.force_update = False
 		
 		# This code draws an outline around the isosurface
@@ -336,7 +351,7 @@ class EMIsosurface(EMItem3D):
 
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 or self.force_update):
-			self.get_iso_dl()
+			self.getIsosurfaceDisplayList()
 			self.force_update = False
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
@@ -382,7 +397,7 @@ class EMIsosurface(EMItem3D):
 #			self.brightness = -val
 #			if ( self.texture ):
 #				self.update_data_and_texture()
-			self.get_iso_dl()
+			self.getIsosurfaceDisplayList()
 		
 #			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
 #			self.updateGL()
