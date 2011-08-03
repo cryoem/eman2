@@ -251,7 +251,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		
 	def closeEvent(self,event):
-		QtGui.QWidget.closeEvent(self,event)
+#		QtGui.QWidget.closeEvent(self,event)
 		event.accept()
 		QtGui.qApp.exit(0)
 		#app=QtGui.qApp
@@ -311,8 +311,8 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wplot.set_data((s,fit),"fit",color=1)
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
 		elif self.plotmode==1:
-			self.wplot.set_data((s,self.fft1d),"fg",True,True,color=1)
-			self.wplot.set_data((s,bg1d),"bg",color=0)
+			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",True,True,color=1)
+			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
 
 
