@@ -252,8 +252,8 @@ class GUIEvalImage(QtGui.QWidget):
 		
 	def closeEvent(self,event):
 		QtGui.QWidget.closeEvent(self,event)
-		QtGui.qApp.closeAllWindows()
 		event.accept()
+		QtGui.qApp.exit(0)
 		#app=QtGui.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
