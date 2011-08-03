@@ -13,13 +13,13 @@ from emimageutil import ImgHistogram
 from valslider import ValSlider
 from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
+import os.path
 
 class EMDataItem3D(EMItem3D):
 	name = "Data"
-	def __init__(self, path, parent = None, children = set(), transform = None):
-		self.data = EMData(path) # This will work even if path is an EMData object
-		self.path = path
+	def __init__(self, data, parent = None, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
+		self.setData(data)
 		
 	def getEvalString(self):
 		return "EMDataItem3D(\"%s\")"%self.path
@@ -28,6 +28,17 @@ class EMDataItem3D(EMItem3D):
 		if not self.item_inspector:
 			self.item_inspector = EMDataItem3DInspector("DATA", self)
 		return self.item_inspector
+	
+	def setData(self, data):
+		if isinstance(data, EMData):
+			self.data = data
+			if data.has_attr("source_path"):
+				self.path = data["source_path"]
+			else:
+				self.path = None 
+		else:
+			self.data = EMData(str(data))
+			self.path = str(data)		
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
@@ -55,8 +66,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_line_edit.setText(file_path)
-		new_emdata = EMData(str(file_path))
-		self.item3d().data = new_emdata
+		self.item3d().setData(file_path)
 		for child in self.item3d().getChildren():
 			child.getItemInspector().dataChanged()
 		self.inspector.updateSceneGraph()
@@ -328,68 +338,6 @@ class EMIsosurface(EMItem3D):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 		glCallList(self.isodl)
 		glPopMatrix()
-		
-	"""
-	def renderNode(self):
-		if (not isinstance(self.parent.data,EMData)): return
-		#a = time()
-		cull = glIsEnabled(GL_CULL_FACE)
-		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-	
-		if self.cullbackfaces:
-			glEnable(GL_CULL_FACE)
-			glCullFace(GL_BACK)
-		else:
-			if not cull:
-				glDisable(GL_CULL_FACE)
-
-		if ( self.wire ):
-			glPolygonMode(GL_FRONT,GL_LINE);
-		else:
-			glPolygonMode(GL_FRONT,GL_FILL);
-		
-
-		glShadeModel(GL_SMOOTH)
-		if ( self.isodl == 0 or self.force_update):
-			self.getIsosurfaceDisplayList()
-			self.force_update = False
-		glStencilFunc(GL_EQUAL,self.rank,0)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-		
-		# This is needed for the inspector to work John Flanagan	
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
-		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
-		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		glColor(self.ambient)
-
-		
-		glPushMatrix()
-		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
-		if ( self.texture ):
-			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
-		glCallList(self.isodl)
-		glPopMatrix()
-		
-#		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
-		
-		glStencilFunc(GL_ALWAYS,1,1)
-		if self.cube:
-			#glDisable(GL_LIGHTING)
-			glPushMatrix()
-			self.draw_volume_bounds()
-			glPopMatrix()
-		
-		if cull: glEnable(GL_CULL_FACE)
-		else: glDisable(GL_CULL_FACE)
-		
-		if ( polygonmode[0] == GL_LINE ): 
-			glPolygonMode(GL_FRONT, GL_LINE)
-		else: 
-			glPolygonMode(GL_FRONT, GL_FILL)
-		
-		#print "total time is", time()-a
-	"""
 	
 	def setThreshold(self, val):
 		if (self.isothr != val):
