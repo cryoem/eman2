@@ -85,6 +85,9 @@ def main():
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average. Default=mean",default="mean")
 #	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
+	
+	parser.add_option("--groups",type="int",help="The number of final averages you want from the set after ONE iteration of alignment. They will be separated in groups based on their correlation to the reference",default=1)
+
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--postprocess",type="string",help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
 	
@@ -262,7 +265,8 @@ def main():
 			
 			# start the alignments running
 			tids=etc.send_tasks(tasks)
-			if options.verbose : print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
+			if options.verbose: 
+				print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
 
 			# Wait for alignments to finish and get results
 			results=get_results(etc,tids,options.verbose)
@@ -322,12 +326,11 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 
-def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
+def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verbose=1):			#jesus - added the groups parameter
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
-	print "\n!!!!!!!\n!!!!!!\n!!!!!!!\n!!!!!!These are the align parameters received in make average", align_parms #jesus
 	if keepsig:
 		# inefficient memory-wise
 		val=sum([p[0]["score"] for p in align_parms])
@@ -336,20 +339,32 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,verbose=1):
 		mean=val/len(align_parms)
 		sig=sqrt(val2/len(align_parms)-mean*mean)
 		thresh=mean+sig*keep
-		if verbose : print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+		if verbose: 
+			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+	
+	elif groups > 1:
+		print "This is an example of where I'm getting the score from", align_params[0][0]						#jesus
+		val=[p[0]["score"] for p in align_parms]
+		
+		val.sort()
+		threshs = []
+		print "The number of groups you have requested is", groups
+		for i in range(groups - 1):
+			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
+		print "Therefore, based on the size of the set, the particles whose coefficients will work as thresholds are", threshs	
+	
 	else:
 		val=[p[0]["score"] for p in align_parms]
 		val.sort()
 		thresh=val[int(keep*len(align_parms))-1]
-		if verbose : print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
-	
+		if verbose: 
+			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
 	
 	avgr=Averagers.get(averager[0], averager[1])
 	included=[]
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-		print "\n@@@@@@@@@\n@@@@@@@@\n@@@@@I have actually applied this transform to the particle", ptcl_parms[0] #jesus
 		
 		if ptcl_parms[0]["score"]<=thresh : 
 			avgr.add_image(ptcl)
@@ -529,7 +544,9 @@ class Align3DTask(EMTask):
 			for bc in bestcoarse:
 				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				try : bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
+				
+				try: 
+					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
 				except:
 					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
 
@@ -539,17 +556,23 @@ class Align3DTask(EMTask):
 
 			# verbose printout of fine refinement
 			if options["verbose"]>1 :
-				for i,j in enumerate(bestfinal): print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+				for i,j in enumerate(bestfinal): 
+					print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-		else : bestfinal=bestcoarse
+		else: 
+			bestfinal=bestcoarse
 		
 		bestfinal.sort()
-		if bestfinal[0]["score"]==1.0e10 :
+		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are", bestfinal
+		
+		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
 		
-		if options["verbose"] : print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		if options["verbose"]: 
+			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 
-		if options["verbose"] : print "Done aligning ",options["label"]
+		if options["verbose"]: 
+			print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 
