@@ -651,7 +651,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Use LBFGSB to minimize the sum of pixel errors
 	data = [ali_params_cleaned, d]
 
-	# Use Pythod code
+	# Use Python code
 	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
 
 	# Use C++ code
@@ -679,10 +679,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			if i in mir_stab_part:
 				j = mir_stab_part.index(i)
 				if j in cleaned_part:
-					print "Particle %3d :  error = %6.4f"%(i, sqrt(pixel_error_after[cleaned_part.index(j)]))
+					print "Particle %3d :  pixel error = %6.4f \n"%(i, sqrt(pixel_error_after[cleaned_part.index(j)]))
 				else:
-					print "Particle %3d :  error = %6.4f     outlier"%(i, sqrt(pixel_error_before[j]))
-			else: print "Particle %3d :  Mirror unstable"%i
+					print "Particle %3d :  pixel error = %6.4f     outlier \n"%(i, sqrt(pixel_error_before[j]))
+			else: print "Particle %3d :  Mirror unstable \n"%i
 
 	stable_set = []
 	for i in xrange(nima3):

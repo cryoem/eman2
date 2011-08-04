@@ -50,7 +50,7 @@ def main():
 	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search ")
 	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment ")
 	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information (default=False, currently True is not supported)")
-	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meanful when CTF is enabled, currently not supported)")
+	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
 	parser.add_option("--FL",             type="float",        default=0.1,     help="lowest stopband frequency used in the tangent filter")
 	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter ")
