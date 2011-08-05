@@ -86,7 +86,7 @@ def main():
 #	parser.add_option("--cmp",type="string",dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
 	
-	parser.add_option("--groups",type="int",help="The number of final averages you want from the set after ONE iteration of alignment. They will be separated in groups based on their correlation to the reference",default=1)
+	parser.add_option("--groups",type="int",help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=1)
 
 	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--postprocess",type="string",help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
@@ -107,22 +107,31 @@ def main():
 	if options.ncoarse!=None :
 		print "The ncoarse option has been renamed npeakstorefine"
 		sys.exit(1)
-	if options.align : options.align=parsemodopt(options.align)
-	if options.ralign : options.ralign=parsemodopt(options.ralign)
-	print "\n!!!\n!!!\n!!!\n!!!ralign is", options.ralign
 	
+	if options.align: 
+		options.align=parsemodopt(options.align)
+	if options.ralign: 
+		options.ralign=parsemodopt(options.ralign)
 	
-	if options.aligncmp : options.aligncmp=parsemodopt(options.aligncmp)
-	if options.raligncmp : options.raligncmp=parsemodopt(options.raligncmp)
+	if options.aligncmp: 
+		options.aligncmp=parsemodopt(options.aligncmp)
+	if options.raligncmp: 
+		options.raligncmp=parsemodopt(options.raligncmp)
 	
-	
-	
-	if options.averager : options.averager=parsemodopt(options.averager)
-#	if options.cmpr : options.cmpr=parsemodopt(options.cmpr)
-	if options.normproc : options.normproc=parsemodopt(options.normproc)
-	if options.mask : options.mask=parsemodopt(options.mask)
-	if options.preprocess : options.preprocess=parsemodopt(options.preprocess)
-	if options.postprocess : options.postprocess=parsemodopt(options.postprocess)
+	if options.averager: 
+		options.averager=parsemodopt(options.averager)
+
+	if options.normproc: 
+		options.normproc=parsemodopt(options.normproc)
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+	if options.preprocess: 
+		options.preprocess=parsemodopt(options.preprocess)
+	if options.postprocess: 
+		options.postprocess=parsemodopt(options.postprocess)
+
+#	if options.cmpr: 
+#		options.cmpr=parsemodopt(options.cmpr)
 
 	if options.resultmx : 
 		print "Sorry, resultmx not implemented yet"
@@ -342,8 +351,8 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 		if verbose: 
 			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
 	
-	elif groups > 1:
-		print "This is an example of where I'm getting the score from", align_params[0][0]						#jesus
+	if groups > 1:
+		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
 		val=[p[0]["score"] for p in align_parms]
 		
 		val.sort()
@@ -353,7 +362,7 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
 		print "Therefore, based on the size of the set, the particles whose coefficients will work as thresholds are", threshs	
 	
-	else:
+	if keep:
 		val=[p[0]["score"] for p in align_parms]
 		val.sort()
 		thresh=val[int(keep*len(align_parms))-1]
@@ -366,7 +375,7 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		
-		if ptcl_parms[0]["score"]<=thresh : 
+		if ptcl_parms[0]["score"]<=thresh: 
 			avgr.add_image(ptcl)
 			included.append(i)
 		if saveali:
@@ -483,6 +492,7 @@ class Align3DTask(EMTask):
 		mask=EMData(image["nx"],image["ny"],image["nz"])
 		mask.to_one()
 		if options["mask"] != None:
+			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
@@ -562,8 +572,14 @@ class Align3DTask(EMTask):
 		else: 
 			bestfinal=bestcoarse
 		
-		bestfinal.sort()
-		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are", bestfinal
+		#bestfinal.sort()	
+		from operator import itemgetter						#jesus - if you just sort 'bestfinal' it will be sorted based on the 'coarse' element in the dictionaries of the list
+											#because they come before the 'score' elements of the dictionary
+		bestfinal_sorted = sorted(bestfinal, key=itemgetter('score'))
+
+		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are"
+		for i in bestfinal_sorted:
+			print i
 		
 		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
