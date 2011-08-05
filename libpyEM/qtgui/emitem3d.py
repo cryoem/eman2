@@ -10,7 +10,43 @@ from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMSpinWidget
 import weakref
 import math
+import numpy
 
+def drawBoundingBox(width, height, depth):
+	w2 = width/2.0
+	h2 = height/2.0
+	d2 = depth/2.0
+	
+	vertices = numpy.array([
+						(-w2,  h2,  d2), #0 front upper left 
+						( w2,  h2,  d2), #1 front upper right
+						( w2, -h2,  d2), #2 front lower right
+						(-w2, -h2,  d2), #3 front lower left
+						(-w2,  h2, -d2), #4 back upper left 
+						( w2,  h2, -d2), #5 back upper right
+						( w2, -h2, -d2), #6 back lower right
+						(-w2, -h2, -d2), #7 back lower left
+						], dtype=numpy.float32)
+	
+	indices = numpy.array([
+						0, 1, #front edges
+						1, 2,
+						2, 3,
+						3, 0,
+						4, 5, #back edges
+						5, 6,
+						6, 7,
+						7, 4,
+						0, 4, #lateral edges
+						3, 7,
+						1, 5,
+						2, 6
+						])
+	
+	GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
+	GL.glVertexPointerf(vertices)
+	GL.glDrawElements(GL.GL_LINES, 24, GL.GL_UNSIGNED_INT, indices)
+	
 
 class EMItem3D(object): #inherit object for new-style class (new-stype classes required for super() and Python properties)
 	"""

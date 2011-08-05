@@ -8,7 +8,7 @@ from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes
-from emitem3d import EMItem3D, EMItem3DInspector
+from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from emimageutil import ImgHistogram
 from valslider import ValSlider
 from emshapeitem3d import EMInspectorControlShape
@@ -165,7 +165,6 @@ class EMIsosurface(EMItem3D):
 		self.isothr = None #Will be set in self.dataChanged()
 		self.isodl = 0
 		self.smpval=-1
-		self.cube = False
 		self.wire = False
 		self.cullbackfaces = True
 		self.tex_name = 0
@@ -298,6 +297,12 @@ class EMIsosurface(EMItem3D):
 		
 		# This code draws an outline around the isosurface
 		if self.is_selected:
+			
+			#Ross: these two lines add bounding box
+			data = self.getParent().data
+			drawBoundingBox(data.get_xsize(), data.get_ysize(), data.get_zsize())
+			
+			
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cylinder, writing the outline to the stencil buffer
@@ -325,13 +330,7 @@ class EMIsosurface(EMItem3D):
 			self.renderIso()
 		
 #		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
-		
-		if self.cube:
-			#glDisable(GL_LIGHTING)
-			glPushMatrix()
-			self.draw_volume_bounds()
-			glPopMatrix()
-		
+				
 		if cull: glEnable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
 		
