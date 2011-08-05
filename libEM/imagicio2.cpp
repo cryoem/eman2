@@ -626,7 +626,7 @@ int ImagicIO2::write_header(EMAN::Dict const& dict, int image_index,
 	// header in machine order
 	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian)  swap_header(new_hed);
 	imagich=new_hed;
-	imagich.count=nimg;
+	imagich.count=ifol;
 	is_new_hed = false;
 
 	if( dict.has_key("ctf") ) {
