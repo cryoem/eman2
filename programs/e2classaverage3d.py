@@ -573,12 +573,12 @@ class Align3DTask(EMTask):
 			bestfinal=bestcoarse
 		
 		#bestfinal.sort()	
-		from operator import itemgetter						#jesus - if you just sort 'bestfinal' it will be sorted based on the 'coarse' element in the dictionaries of the list
-											#because they come before the 'score' elements of the dictionary
-		bestfinal_sorted = sorted(bestfinal, key=itemgetter('score'))
+		from operator import itemgetter						#jesus - if you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+											#because they come before the 'score' key of the dictionary (alphabetically)
+		bestfinal = sorted(bestfinal, key=itemgetter('score'))
 
-		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are"
-		for i in bestfinal_sorted:
+		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are"	#confirm the peaks are adequately sorted
+		for i in bestfinal:
 			print i
 		
 		if bestfinal[0]["score"] == 1.0e10 :
