@@ -68,9 +68,15 @@ Transform Transform::icos_5_to_2() {
 	Transform t;
 	Dict d;
 	d["type"] = "eman";
-	d["phi"] = 0.0f;
-	d["az"] = 270.0f;
-	d["alt"] = 58.282523f; // 5 fold to a 3 fold to a 2 fold
+	d["phi"] = 0;
+	d["az"] = 90.0f;
+	d["alt"] = 31.717474; // 5 fold to the nearest 2-fold
+	/** Doctor Steve says Phil's answer put the 2-fold in the wrong place based on
+	 * the standard Virus convention (empirically). It was also 2 to 5 not 5 to 2.
+	 * It is possible to rotate to a 2-fold
+	 * directly from a 5-fold, though there are 2 possible orientations for the 2-2-2 convention,
+	 * and this finds only one of them  :^(
+	 **/
 	/** Doctor Phil says:
 	 * alt = (acos(cos(pi/5)/sqrt(3)/sin(pi/5)) + acos(2*cos(pi/5)/ sqrt(3) ) )*180/pi
 	 * This is the angle between a 5 and a 3 plus the angle between a 3 and a 2

@@ -141,6 +141,10 @@ def main():
 
 	parser.add_option("--rot", metavar="az,alt,phi or convention,a1,a2,a3,a4", type="string", default=0, help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention. NOTE, at the moment users may only specify az,alt,phi - this is a bug that will be resolved")
 
+	parser.add_option("--icos5to2",action="store_true",help="Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation")
+	parser.add_option("--icos2to5",action="store_true",help="Rotate an icosahedral map from 2-fold on Z (MRC standard) to 5-fold on Z (EMAN standard)  orientation")
+	
+
 	parser.add_option("--last", metavar="n", type="int", default=-1, 
 								help="the last image in the input to process")
 	
@@ -285,6 +289,16 @@ def main():
 			elif option1 == "add":
 				data.add(options.add)
 			
+			elif option1 == "icos5to2" :
+				xf=Transform.icos_5_to_2()
+				data.process_inplace("xform",{"transform":xf})
+
+			elif option1 == "icos2to5" :
+				xf=Transform.icos_5_to_2()
+				xf.invert()
+				data.process_inplace("xform",{"transform":xf})
+
+
 			elif option1 == "trans":
 				dx,dy,dz=options.trans.split(",")
 				data.translate(float(dx),float(dy),float(dz))
@@ -292,6 +306,8 @@ def main():
 			elif option1 == "rot":
 				daz,dalt,dphi=options.rot.split(",")
 				data.rotate(float(daz),float(dalt),float(dphi))
+				
+			
 			elif option1 == "clip":
 				if(len(options.clip) == 6):
 					(nx, ny, nz, xc, yc, zc) = options.clip
