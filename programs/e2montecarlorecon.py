@@ -39,6 +39,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] 
 	
+	THIS PROGRAM IS EXPERIMENTAL 
+	
 	This program is designed to generate an initial reconstruction via monte carlo methodology.
 	Basically, this just reads in class averages and assigns them random Euler angles. Next it computes how
 	well the class avergaes agree with each other, similar to common lines"""
@@ -46,14 +48,14 @@ def main():
 	
 	#options associated with e2rctV2.py
 	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
-	parser.add_option("--output",type="string",default="mc.mrc",help="Name of ocomputed reconstruction, default=mc.mrc")
+	parser.add_option("--output",type="string",default="mc.mrc",help="Name of computed reconstruction, default=mc.mrc")
 	parser.add_option("--mccoeff",type="float",default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0")
 	parser.add_option("--numsasteps",type="float",default=10.0,help="The number of steps at a given temp, default=10.0")
 	parser.add_option("--numtemps",type="float",default=10.0,help="The number of temp steps, default=10.0")
 	parser.add_option("--initemp",type="float",default=0.2,help="Initial temperature, default=0.2")
 	parser.add_option("--cooling",type="float",default=2.0,help="Cooling rate, default=2.0")
 	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the CAs, default=None")
-	parser.add_option("--cuda",action="store_true", help="Use CUDA for the reconstructors step.",default=False)
+	parser.add_option("--cuda",action="store_true", help="Use CUDA for the reconstructors step. (only if compiled with CUDA support.",default=False)
 	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -65,7 +67,7 @@ def main():
 	# shrink the CAs if needed
 	if options.shrink:
 		for ca in calist:
-			ca.process_inplace('xform.scale',{'scale':options.shrink})
+			ca.process_inplace('math.meanshrink',{'n':options.shrink})
 	
 	trials = len(calist)*options.mccoeff		# How many MC trials? 
 	Util.set_randnum_seed(Util.get_randnum_seed())	# Initialize random num generator
@@ -81,8 +83,13 @@ def main():
 	besttlist = []
 	bestscore = 0.0
 	for mctrial in xrange(int(trials)):
-		if((mctrial % 50) == 0):
-			print "MC trial", mctrial
+		if options.verbose==1 :
+			if((mctrial % 50) == 0):
+				print "MC trial", mctrial
+		elif options.verbose :
+			print "MC trial %5d: "%mctrial,
+			sys.stdout.flush()
+			
 		score = 0.0
 		tlist = []
 		for canum, ca in enumerate(calist):
@@ -106,10 +113,12 @@ def main():
 			
 			
 		freconstructor.clear()
-		#print score
+		
 		if(score > bestscore):
 			bestscore = score
 			besttlist = tlist
+			
+		if options.verbose>1 : print "%f (%f)"%(score,bestscore)
 	
 	refiner = SAsca("simulated annealing, single class average steps\n")
 	#refiner = SA("simulated annealing\n")
