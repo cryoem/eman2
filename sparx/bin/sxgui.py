@@ -57,15 +57,8 @@ class Popuptwodali(QWidget):
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
 	
 	
-	self.savepbtn = QPushButton("Save Input Parameters", self)
-        self.savepbtn.move(10, 280)
-        #sets an infotip for this Pushbutton
-        self.savepbtn.setToolTip('Save Input Parameters')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
-	
 	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
-        self.repopbtn.move(200, 280)
+        self.repopbtn.move(100, 280)
         #sets an infotip for this Pushbutton
         self.repopbtn.setToolTip('Repopulate With Saved Parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -92,8 +85,15 @@ class Popuptwodali(QWidget):
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(10, 450)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
-        self.cmdlinebtn.move(10, 450)
+        self.cmdlinebtn.move(10, 480)
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -187,6 +187,7 @@ class Popuptwodali(QWidget):
 	print "ts=" +ts
 	maxit=self.nriteredit.text()
 	print "maxit="+maxit
+	
 	cmd1 = " sxali2d.py "+str(stack) +" "+ str(output)
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
@@ -235,12 +236,9 @@ class Popuptwodali(QWidget):
 		cmd1 = cmd1 + " --function="+str(userf)
 	
 	np = self.nprocedit.text()
-	
-	if saveparams:							
-		self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf)}
-		if self.setadv:
-			self.w.savedparmsdict=self.savedparmsdict
-		return
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf)}
+	if self.setadv:
+		self.w.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -256,6 +254,10 @@ class Popuptwodali(QWidget):
 	
     def runsxali2d(self):
 	self.gencmdline()
+	outfolder=self.savedparmsdict['foldername']
+	if os.path.exists(outfolder):
+		print "output folder "+outfolder+" already exists!"
+		return
 	os.system(self.cmd)
 	
     def saveparms(self):	
@@ -465,7 +467,7 @@ class MainWindow(QtGui.QWidget):
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popuptwodali()
-        self.w.resize(500,380)
+        self.w.resize(600,600)
         self.w.show()
         
         
