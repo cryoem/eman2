@@ -1153,7 +1153,7 @@ def info(image, mask=None, Comment=""):
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
 	return mean, sigma, imin, imax, nx, ny, nz
 
-def image_decimate(img,decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
+def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
 	from filter import filt_btwl
 	from fundamentals import smallprime, window2d
 	from utilities import get_image
@@ -1162,10 +1162,10 @@ def image_decimate(img,decimation=2, fit_to_fft=1,frequency_low=0, frequency_hig
 		and decimate 2D image 
 	"""
 	if type(img)     == str :	img=get_image(img)
-	if decimation    <= 1   :  	ERROR("Improper decimation ratio","image_decimation",1)
+	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
 	if frequency_low <= 0   :	
 		frequency_low  = .5/decimation- .05
-		if(frequency_low <= 0): ERRROR("Butterworth pass_band frequency is too low","image_decimation",1)			
+		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
 		frequency_high = .5/decimation+ .05
 	if fit_to_fft :
 		nx_d = (img.get_xsize())/int(decimation)
