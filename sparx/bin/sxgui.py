@@ -46,7 +46,13 @@ class Popuptwodali(QWidget):
 
 	
         #Here we create a Button(Run_button with title run sxali2d) and its position in the window
-	self.RUN_button = QtGui.QPushButton('RUN  sxali2d', self)
+	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	
+	
 	self.RUN_button.move(285, 158)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
@@ -161,7 +167,7 @@ class Popuptwodali(QWidget):
 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
 
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
-    
+   
     def gencmdline(self,saveparams=False):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stack = self.stacknameedit.text()
