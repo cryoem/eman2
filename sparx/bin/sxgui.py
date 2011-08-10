@@ -45,17 +45,7 @@ class Popuptwodali(QWidget):
 	title1.move(10,10)
 
 	
-        #Here we create a Button(Run_button with title run sxali2d) and its position in the window
-	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
-	# make 3D textured push button look
-	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
-	
-	self.RUN_button.setStyleSheet(s)
-	
-	
-	self.RUN_button.move(285, 158)
-        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
-        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
+       
         #Here we create a Button(file_button with title run open .hdf) and its position in the window
 	self.file_button = QtGui.QPushButton("Open .hdf", self)
 	self.file_button.move(285, 58)
@@ -65,6 +55,23 @@ class Popuptwodali(QWidget):
 	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
 	self.file_button1.move(385, 58)
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(10, 280)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	
+	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+        self.repopbtn.move(200, 280)
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms)
+
+	
         #not linked to a function yet
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
 	self.activeheader_button.move(10, 340)
@@ -77,36 +84,32 @@ class Popuptwodali(QWidget):
 	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
 	self.ali2drndheader_button.move(250, 370)
 	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
-	advt=QtGui.QLabel('Press this button to adjust advanced parameters', self)
-	advt.move(10,420)
+	
 	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(10, 450)
+        self.advbtn.move(10, 420)
         #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
-	self.savepbtn = QPushButton("Save Parms", self)
-        self.savepbtn.move(10, 480)
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(10, 450)
         #sets an infotip for this Pushbutton
-        self.savepbtn.setToolTip('Save Parameters')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
-	
-	self.repopbtn = QPushButton("Repopulate Parms", self)
-        self.repopbtn.move(10, 510)
-        #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate Parameters')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms)
-
-	self.cmdlinebtn = QPushButton("Generate command line", self)
-        self.cmdlinebtn.move(10, 540)
-        #sets an infotip for this Pushbutton
-        self.cmdlinebtn.setToolTip('Generate command line using entered parameters')
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
 
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	
+	
+	self.RUN_button.move(230, 520)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
 
         #Just a label
@@ -156,8 +159,8 @@ class Popuptwodali(QWidget):
 	self.nriteredit.move(140,210)
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
-	header=QtGui.QLabel('For the program to work, attribute xform.align2d and active parameters must be set\n if this is not the case, hit this button first before starting the program', self)
-	header.move(10,300)
+	header=QtGui.QLabel('Attributes xform.align2d and active parameters must be set in the input stack', self)
+	header.move(10,310)
 	
 	nproc= QtGui.QLabel('Nr. of Processors', self)
 	nproc.move(10,240)
