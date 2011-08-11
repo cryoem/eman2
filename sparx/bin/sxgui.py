@@ -483,19 +483,19 @@ class PopupHelicalRefinement(QWidget):
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
 	self.activeheader_button.move(10, 340)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
-	self.ali2dheader_button = QtGui.QPushButton("set xform.align2d to zero", self)
-	self.ali2dheader_button.move(10, 370)
-	self.connect(self.ali2dheader_button, SIGNAL("clicked()"), self.setali2dheader)
+	self.porjection_to_zero_button = QtGui.QPushButton("set xform.projection to zero", self)
+	self.porjection_to_zero_button.move(10, 370)
+	self.connect(self.porjection_to_zero_button, SIGNAL("clicked()"), self.setxformprojection_to_zero)
 	ort=QtGui.QLabel('<b>or</b>', self)
-	ort.move(220,370)
-	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
-	self.ali2drndheader_button.move(250, 370)
-	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
+	ort.move(230,370)
+	self.projetion_to_value_button = QtGui.QPushButton("set xform.proejction to saved values", self)
+	self.projetion_to_value_button.move(250, 370)
+	self.connect(self.projetion_to_value_button, SIGNAL("clicked()"), self.setxformprojection_to_value)
 	
 	self.advbtn = QPushButton("Advanced Parameters", self)
         self.advbtn.move(10, 420)
         #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
+        self.advbtn.setToolTip('Set Advanced Parameters for ihrsr such as center and CTF')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
@@ -717,13 +717,13 @@ class PopupHelicalRefinement(QWidget):
 	print "stack defined="+ stack
 	header(str(stack), "active", one=True)
 	
-    def setali2dheader(self):
+    def setxformprojection_to_zero(self):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
 	header(str(stack),'xform.align2d',zero=True)
 
-    def setali2drndheader(self):
+    def setxformprojection_to_value(self):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
