@@ -1,12 +1,38 @@
-#!/usr/bin/env  python
-#For a better unterstanding of the code, start at line 166(Main Window)
-#For any questions mail: christos.gatsogiannis@mpi-dortmund.mpg.de
-#In order to add an additional window, the procedure would be like this:
-#1. go to Main Window, add a button and link it to a function of the Main Window(in this code example Main Window, function: twodali)
-#2. This function of the main window, should just start and resize a new pop up window (defined by a new class  - in this code: example class Popuptwodali)
-#3. Adjust the layout of the pop up window( add buttons, lineedits, labels and Infotips)
-#4. Link the Buttons of the Pop up window with functions of the Popupwindow (in this code: example  function runsxali2d for  the Popupwindow Popuptwodali)
+#!/usr/bin/env python
 
+#
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
+
+import global_def
+from global_def import *
 import sys
 from PyQt4.Qt import *
 from PyQt4 import QtGui
@@ -17,11 +43,11 @@ from EMAN2 import *
 from sparx import *
 from EMAN2_cppwrap import *
 
-#Layout of the Pop Up window infosparx; started by the function info of the main window
+#Layout of the Pop Up window infosparx; started by the function info of the main window
 class infosparx(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        #Here we just set the window title and  3 different labels, with their positions in the window
+        #Here we just set the window title and  3 different labels, with their positions in the window
 	self.setWindowTitle('Sparx GUI Info page')
         title1=QtGui.QLabel('<b>Sparx GUI beta version</b>', self)
 	title1.move(10,10)
@@ -29,8 +55,8 @@ class infosparx(QWidget):
 	title2.move(10,40)
         title3=QtGui.QLabel('For more information visit:\nhttp://sparx-em.org/sparxwiki ', self)
 	title3.move(10,70)
-
-#Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
+
+#Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
 class Popuptwodali(QWidget):
     def __init__(self):
         QWidget.__init__(self)
@@ -38,20 +64,20 @@ class Popuptwodali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	
-        #Here we just set the window title
+        #Here we just set the window title
 	self.setWindowTitle('sxali2d')
-        #Here we just set a label and its position in the window
+        #Here we just set a label and its position in the window
 	title1=QtGui.QLabel('<b>sxali2d</b> - performs 2D reference free alignment of an image series', self)
 	title1.move(10,10)
 
 	
        
-        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
 	self.file_button = QtGui.QPushButton("Open .hdf", self)
 	self.file_button.move(285, 58)
-        #Here we define, that when this button is clicked, it starts subfunction choose_file
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
-        #exactly the same as above, but for subfunction choose_file1
+        #exactly the same as above, but for subfunction choose_file1
 	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
 	self.file_button1.move(385, 58)
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
@@ -65,7 +91,7 @@ class Popuptwodali(QWidget):
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms)
 
 	
-        #not linked to a function yet
+        #not linked to a function yet
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
 	self.activeheader_button.move(10, 340)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
@@ -78,28 +104,28 @@ class Popuptwodali(QWidget):
 	self.ali2drndheader_button.move(250, 370)
 	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
 	
-	self.advbtn = QPushButton("Advanced Parameters", self)
+	self.advbtn = QPushButton("Advanced Parameters", self)
         self.advbtn.move(10, 420)
-        #sets an infotip for this Pushbutton
+        #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
+        #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(10, 450)
-        #sets an infotip for this Pushbutton
+        #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
 	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
         self.cmdlinebtn.move(10, 480)
-        #sets an infotip for this Pushbutton
+        #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
 
-	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
 	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
 	# make 3D textured push button look
 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
@@ -108,7 +134,7 @@ class Popuptwodali(QWidget):
 	
 	
 	self.RUN_button.move(230, 520)
-        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
 
@@ -120,14 +146,14 @@ class Popuptwodali(QWidget):
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d"}
 	
-        #Example for User input stack name
-        #First create the label and define its position
+        #Example for User input stack name
+        #First create the label and define its position
 	stackname= QtGui.QLabel('Name of your stack', self)
 	stackname.move(10,60)
-        #Now add a line edit and define its position
+        #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
         self.stacknameedit.move(140,60)
-        #Adds a default value for the line edit
+        #Adds a default value for the line edit
 	self.stacknameedit.setText(self.savedparmsdict['stackname'])
 	#The same as above, but many line edits include Infotips
 	foldername= QtGui.QLabel('Output folder', self)
@@ -169,10 +195,10 @@ class Popuptwodali(QWidget):
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
 
-     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
    
     def gencmdline(self,saveparams=False):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
 	output=self.foldernameedit.text()
@@ -304,28 +330,28 @@ class Popuptwodali(QWidget):
 	header(str(stack), "active", one=True)
 	
     def setali2dheader(self):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
 	header(str(stack),'xform.align2d',zero=True)
 
     def setali2drndheader(self):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
 	header(str(stack),'xform.align2d',rand_alpha=True)
 	
-	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
-	#opens a file browser, showing files only in .hdf format
+	#opens a file browser, showing files only in .hdf format
    	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
-        #after the user selected a file, we obtain this filename as a Qstring
+        #after the user selected a file, we obtain this filename as a Qstring
 	a=QtCore.QString(file_name)
 	print a
-        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.stacknameedit.setText(str(a))
         
-	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
     def choose_file1(self):
 	file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
 	a=QtCore.QString(file_name1)
@@ -338,25 +364,25 @@ class Popuptwodali(QWidget):
 class Popupadvparams(QWidget):
     def __init__(self,savedparms):
         QWidget.__init__(self)
-        #Here we just set the window title
+        #Here we just set the window title
 	self.setWindowTitle('sxali2d advanced parameter selection')
-        #Here we just set a label and its position in the window
+        #Here we just set a label and its position in the window
 	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
 	title1.move(10,10)
-        #Labels and Line Edits for User Input
-        #Just a label
+        #Labels and Line Edits for User Input
+        #Just a label
 	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
 	title2.move(10,40)
 
 	self.savedparmsdict=savedparms
-        #Example for User input stack name
-        #First create the label and define its position
+        #Example for User input stack name
+        #First create the label and define its position
 	maskname= QtGui.QLabel('Mask', self)
 	maskname.move(10,60)
-        #Now add a line edit and define its position
+        #Now add a line edit and define its position
 	self.masknameedit=QtGui.QLineEdit(self)
         self.masknameedit.move(140,60)
-        #Adds a default value for the line edit
+        #Adds a default value for the line edit
 	self.masknameedit.setText(self.savedparmsdict['maskname'])
 	self.masknameedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
 	
@@ -415,90 +441,90 @@ class Popupadvparams(QWidget):
 	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')	
 	
-     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     
    
-###MAIN WINDOW	(started by class App)
-#This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
+###MAIN WINDOW	(started by class App)
+#This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
 class MainWindow(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        #sets the title of the window
+        #sets the title of the window
 	self.setWindowTitle('SPARX GUI')
-        #creates a Pushbutton, named sxali2d, defines its position in the window 
+        #creates a Pushbutton, named sxali2d, defines its position in the window 
         self.btn1 = QPushButton("sxali2d", self)
         self.btn1.move(10, 65)
-        #sets an infotip for this Pushbutton
+        #sets an infotip for this Pushbutton
         self.btn1.setToolTip('2D  reference free alignment of an image series ')
-        #when this button is clicked, this action starts the subfunction twodali
+        #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.btn1, SIGNAL("clicked()"), self.twodali)
-        #another Pushbutton, with a tooltip, not linked to a function yet
+        #another Pushbutton, with a tooltip, not linked to a function yet
 	self.btn2 = QPushButton("sxmref_ali2d", self)
         self.btn2.setToolTip('2D MULTI-referencealignment of an image series ')
         self.btn2.move(10, 95)
-        #Pushbutton named Info
+        #Pushbutton named Info
 	self.picbutton = QPushButton(self)
-        #when this button is clicked, this action starts the subfunction info
+        #when this button is clicked, this action starts the subfunction info
         self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
-        #this decorates the button with the sparx image
+        #this decorates the button with the sparx image
 	icon = QIcon("icon.png")
 	self.picbutton.setIcon(icon)
         self.picbutton.move(120, 5)
         self.picbutton.setToolTip('Info Page')
-        #Quitbutton
+        #Quitbutton
         self.btn3 = QPushButton("Close", self)
         self.btn3.setToolTip('Close SPARX GUI ')
 	self.btn3.move(180, 5)
         self.connect(self.btn3, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
-        #here we set two labels, their position and font style
+        #here we set two labels, their position and font style
 	title=QtGui.QLabel('<b>SPARX</b> GUI', self)
 	title1=QtGui.QLabel('<b>2D alignment</b> applications', self)
 	title.move(10,10)
 	title1.move(20, 45)
 	QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
 	
-    	#here we set the width and height of the main window
+    	#here we set the width and height of the main window
         self.resize(300,350)
 	
    
-    #This is the function two2ali, which is being started when the Pushbutton btn1 of the main window(called sxali2d) is being clicked
+    #This is the function two2ali, which is being started when the Pushbutton btn1 of the main window(called sxali2d) is being clicked
     def twodali(self):
         print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+        #opens the window Poptwodali, and defines its width and height
+        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popuptwodali()
         self.w.resize(600,600)
         self.w.show()
         
         
-    #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
+    #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
         print "Opening a new popup window..."
-        #opens the window infosparx, and defines its width and height
-        #The layout of the infosparx window is defined in class infosparx(QWidget Window)
+        #opens the window infosparx, and defines its width and height
+        #The layout of the infosparx window is defined in class infosparx(QWidget Window)
         self.w = infosparx()
         self.w.resize(250,200)
         self.w.show()
 
-#  this is the main class of the program
-#  Here we provide the necessary imports. The basic GUI widgets are located in QtGui module.
+#  this is the main class of the program
+#  Here we provide the necessary imports. The basic GUI widgets are located in QtGui module.
 class App(QApplication):
     def __init__(self, *args):
         QApplication.__init__(self, *args)
         #here we define the main window (class MainWindow)
         self.main = MainWindow()
-        #here we define that when all windows are closed, function byebye of class App will be started
+        #here we define that when all windows are closed, function byebye of class App will be started
         self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
-        #hshows main window
+        #hshows main window
         self.main.show()
         
-    #function byebye (just quit)  
+    #function byebye (just quit)  
     def byebye( self ):
         print' bye bye!'
         self.exit(0)
 
       
-#  Necessary for execution of the program
+#  Necessary for execution of the program
 def main(args):
     global app
     app = App(args)
