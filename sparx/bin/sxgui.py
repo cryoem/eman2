@@ -320,7 +320,7 @@ class Popuptwodali(QWidget):
 		
     def advparams(self):
         print "Opening a new popup window..."
-        self.w = Popupadvparams(self.savedparmsdict)
+        self.w = Popupadvparams_ali2d(self.savedparmsdict)
         self.w.resize(500,380)
         self.w.show()
 	self.setadv=True
@@ -361,7 +361,7 @@ class Popuptwodali(QWidget):
 	print d
 	self.stacknameedit.setText(d)
 
-class Popupadvparams(QWidget):
+class Popupadvparams_ali2d(QWidget):
     def __init__(self,savedparms):
         QWidget.__init__(self)
         #Here we just set the window title
