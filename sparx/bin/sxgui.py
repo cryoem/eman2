@@ -863,7 +863,7 @@ class MainWindow(QtGui.QWidget):
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
         #this decorates the button with the sparx image
-	icon = QIcon("icon.png")
+	icon = QIcon(get_image_directory()+"sparxicon.png")
 	self.picbutton.setIcon(icon)
         self.picbutton.move(120, 5)
         self.picbutton.setToolTip('Info Page')
