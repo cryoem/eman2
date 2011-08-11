@@ -160,6 +160,8 @@ class ValSlider(QtGui.QWidget):
 	def setEnabled(self,ena):
 		self.slider.setEnabled(ena)
 		self.text.setEnabled(ena)
+		try : return self.enablebox.setChecked(ena)
+		except: pass
 		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
 
 	def getEnabled(self):
@@ -1018,13 +1020,12 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 	def getAngularPosition(self):
 		return [self.x_light_pos, self.y_light_pos]
-		
-	def setAngularPosition(self, h, v, quiet=True):
+	
+	def setAngularPosition(self, h, v):
 		self.x_light_pos = h
 		self.y_light_pos = v
 		self.setPosition()
 		self.update()
-		if not quiet: self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)
 	
 	def setLightColor(self):
 		glLightfv(self.light, GL_AMBIENT, self.ambient)
@@ -1056,7 +1057,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.texture = glGenTextures(1)
 		
 	def __del__(self):
-		glDeleteTextures(self.texture)
+		glDeleteTextures(1, self.texture)
 		
 	def initializeGL(self):
 		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
@@ -1142,28 +1143,3 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 	def updateWidget(self):
 		self.update()
-		
-class EMANToolButton(QtGui.QToolButton):
-	toolpanellist = []
-	def __init__(self):
-		QtGui.QToolButton.__init__(self)
-		EMANToolButton.toolpanellist.append(self)
-	
-	def setSelfAsUnique(self):
-		for tool in EMANToolButton.toolpanellist:
-			if tool != self:
-				tool.setDown(False)
-	
-	def setDown(self, state):
-		QtGui.QToolButton.setDown(self, state)
-		self.emit(QtCore.SIGNAL("clicked(int)"), self.isDown())
-		
-	def mousePressEvent(self, event):
-		# Toggle the button on and off
-		if not self.isDown():
-			self.setSelfAsUnique()
-			self.setDown(True)
-		
-	def mouseReleaseEvent(self, event):
-		pass
-	

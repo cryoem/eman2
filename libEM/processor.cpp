@@ -3611,12 +3611,8 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 
 	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
 
-	float apix = params.set_default("apix",-1.123456789f);
-	if (apix == -1.123456789 ) {
-		if (image->has_attr("apix_x")) {
-			apix = image->get_attr("apix_x");
-		}
-	}
+	float apix = image->get_attr_default("apix_x",1.0f);
+	apix = params.set_default("apix",apix);
 
 	if (apix <= 0) throw InvalidParameterException("You must specify a positive non zero apix");
 
