@@ -38,6 +38,7 @@ from PyQt4.Qt import *
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 import os
+import subprocess
 from subprocess import *
 from EMAN2 import *
 from sparx import *
@@ -284,7 +285,8 @@ class Popuptwodali(QWidget):
 	if os.path.exists(outfolder):
 		print "output folder "+outfolder+" already exists!"
 		return
-	os.system(self.cmd)
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
 	
     def saveparms(self):	
 	# save all the parms in a text file so we can repopulate if user requests
