@@ -1,4 +1,5 @@
 #LINK_LIBRARIES(GLEM2)
+LINK_LIBRARIES(EM2)
 
 # all of these commented out by david woolford, because when i started writing testing code
 # none of them where being compile anyway...
@@ -12,7 +13,7 @@
 #ADD_EXECUTABLE(testpolardata testpolardata.cpp)
 #ADD_EXECUTABLE(fft_test fft_test.cpp)
 #ADD_EXECUTABLE(projector_test projector_test.cpp)
-#ADD_EXECUTABLE(mem_test mem_test.cpp)
+ADD_EXECUTABLE(mem_test mem_test.cpp)
 #ADD_EXECUTABLE(storage_order_test storage_order_test.cpp)
 #ADD_EXECUTABLE(randnum_test randnum_test.cpp)
 # this test added by david woolford - it should be executed and results evaluated on every platform.

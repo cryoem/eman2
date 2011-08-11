@@ -31,21 +31,186 @@
 
 #include <iostream>
 #include "emdata.h"
+#include <vector>
+#include "randnum.h"
 
 using namespace std;
 using namespace EMAN;
 
+void testfunc1()
+{
+	char t;
+
+	const int SIZE = 20000;
+	Randnum *r = Randnum::Instance();
+
+	EMData * pEM[SIZE];
+	for(int j=0; j<SIZE; ++j) {
+		EMData *volume = new EMData(64,64); // initial volume
+		volume->process_inplace("testimage.noise.uniform.rand");
+		pEM[j] = volume;
+	}
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	for(int i=0; i<SIZE; ++i) {
+		vector<float> vf;
+		for (int j=0; j<SIZE; ++j) {
+			vf.push_back(r->get_frand());
+		}
+
+//		cout << "Before actually set float array attribute...xsize = " << (*itvEM)->get_xsize() << endl;
+		pEM[i]->set_attr("farr", vf);
+	}
+
+	cout << "Before release memory...type a character to continue:" << endl;
+	cin>>t;
+
+	vector<float> vff =  pEM[1]->get_attr("farr");
+	for(int i=0; i<100; ++i) {
+		cout << vff[i] << endl;
+	}
+
+	for(int i=0; i<SIZE; ++i) {
+		if (pEM[i]) delete pEM[i];
+	}
+
+	cout << "After release EMData memory...type a character to continue:" << endl;
+	cin>>t;
+
+//	vector<float> vff2 =  pEM[1]->get_attr("farr");
+//	for(int i=0; i<100; ++i) {
+//		cout << vff2[i] << endl;
+//	}
+}
+
+void testfunc2()
+{
+	char t;
+
+	const int SIZE = 20000;
+	Randnum *r = Randnum::Instance();
+
+	EMData * pEM[SIZE];
+	for(int j=0; j<SIZE; ++j) {
+		EMData *volume = new EMData(64,64); // initial volume
+		volume->process_inplace("testimage.noise.uniform.rand");
+		pEM[j] = volume;
+	}
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	for(int i=0; i<SIZE; ++i) {
+		vector<float> vf;
+		for (int j=0; j<SIZE; ++j) {
+			vf.push_back(r->get_frand());
+		}
+
+//		cout << "Before actually set float array attribute...xsize = " << (*itvEM)->get_xsize() << endl;
+		pEM[i]->set_attr("farr", vf);
+	}
+
+	cout << "Before release memory...type a character to continue:" << endl;
+	cin>>t;
+
+	for(int i=0; i<SIZE; ++i) {
+		if (pEM[i]) delete pEM[i];
+	}
+
+	cout << "After release EMData memory...type a character to continue:" << endl;
+	cin>>t;
+}
+
+void testfunc3()
+{
+	char t;
+	const int SIZE = 100000000;
+	Randnum *r = Randnum::Instance();
+
+	EMData *volume = new EMData(64,64); // initial volume
+	volume->process_inplace("testimage.noise.uniform.rand");
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	vector<float> vf;
+	for (int j=0; j<SIZE; ++j) {
+		vf.push_back(r->get_frand());
+	}
+
+	volume->set_attr("farr", vf);
+
+
+	cout << "Before release memory...type a character to continue:" << endl;
+	cin>>t;
+
+	delete volume;
+
+	cout << "After release EMData memory...type a character to continue:" << endl;
+	cin>>t;
+}
+
+void testfunc4()
+{
+	char t;
+	const int SIZE = 100000000;
+	Randnum *r = Randnum::Instance();
+
+	EMData *volume = new EMData(64,64); // initial volume
+	volume->process_inplace("testimage.noise.uniform.rand");
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	vector<float> vf;
+	for (int j=0; j<SIZE; ++j) {
+		vf.push_back(r->get_frand());
+	}
+
+	cout << "After create float vector...type a character to continue:" << endl;
+	cin>>t;
+
+	volume->set_attr("farr", vf);
+
+	cout << "After set float vector as attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	vector<float> vf2 = volume->get_attr("farr");
+	for(int i=SIZE-1; i>SIZE-10; --i) {
+		cout << vf2[i] << endl;
+	}
+
+	cout << "After retrieve float vector attribute, Before release memory...type a character to continue:" << endl;
+	cin>>t;
+
+	delete volume;
+
+	cout << "After release EMData memory...type a character to continue:" << endl;
+	cin>>t;
+}
+
 int main()
 {
 	cout << "Hello, memory leak valgrind test!" << endl;
-	
-	EMData *volume = new EMData(); // initial volume
-	volume->read_image("vol001.tfc");
-	if (volume) delete volume;
+	char t;
 
-//	ENTERFUNC;
-	
-//	EXITFUNC;
-	
+//	cout << "testfunc1: access vector attribute before delete image..." << endl;
+//	testfunc1();
+
+//	cout << "testfunc2: NO access to vector attribute before delete image..." << endl;
+//	testfunc2();
+
+//	cout << "testfunc3: Single image test..." << endl;
+//	testfunc3();
+//	cout << "After testfunc3...type a character to continue:" << endl;
+//	cin>>t;
+
+	cout << "testfunc4: Single image test, access attribute after set..." << endl;
+	testfunc4();
+	cout << "After testfunc4...type a character to continue:" << endl;
+	cin>>t;
+
 	return 0;
 }
