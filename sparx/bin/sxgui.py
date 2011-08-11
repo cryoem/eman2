@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env  python
 #For a better unterstanding of the code, start at line 166(Main Window)
 #For any questions mail: christos.gatsogiannis@mpi-dortmund.mpg.de
 #In order to add an additional window, the procedure would be like this:
