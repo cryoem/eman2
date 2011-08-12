@@ -133,10 +133,13 @@ class Popuptwodali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, 520)
+	self.RUN_button.move(230, 530)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
+
+	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.', self)
+	outinfo.move(10,580)
 
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
@@ -157,6 +160,7 @@ class Popuptwodali(QWidget):
 	self.foldernameedit=QtGui.QLineEdit(self)
 	self.foldernameedit.move(140,self.y+30)
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+	
 	partradius= QtGui.QLabel('Particle radius', self)
 	partradius.move(10,self.y+60)
 	self.partradiusedit=QtGui.QLineEdit(self)
@@ -495,7 +499,7 @@ class Popupadvparams_ali2d(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.masknameedit.setText(str(a))
 		
-#Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window 
+#Layout of the Pop Up window  (for sxali2d); started by the function twodali of the main window 
 class PopupHelicalRefinement(QWidget):
     def __init__(self):
         
@@ -598,7 +602,7 @@ class MainWindow(QtGui.QWidget):
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popuptwodali()
-        self.w.resize(600,600)
+        self.w.resize(550,650)
         self.w.show()
     def helicalrefinement(self):
         print "Opening a new popup window..."
