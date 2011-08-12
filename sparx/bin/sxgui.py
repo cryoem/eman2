@@ -402,6 +402,11 @@ class Popupadvparams_ali2d(QWidget):
 	self.masknameedit.setText(self.savedparmsdict['maskname'])
 	self.masknameedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
 	
+	self.mskfile_button = QtGui.QPushButton("Open .hdf", self)
+	self.mskfile_button.move(285, 60-2)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
+	
 	center= QtGui.QLabel('Center type', self)
 	center.move(10,90)
 	self.centeredit=QtGui.QLineEdit(self)
@@ -481,6 +486,15 @@ class Popupadvparams_ali2d(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.usrfuncfileedit.setText(str(a))
 	
+    def choose_mskfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.masknameedit.setText(str(a))
+		
 #Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window 
 class PopupHelicalRefinement(QWidget):
     def __init__(self):
