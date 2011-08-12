@@ -315,6 +315,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	//FIXME THIS IS SO SIMILAR TO THE gen_orientations function that they should be probably use
 	// a common routine - SAME ISSUE FOR OTHER ORIENTATION GENERATORS
 	bool inc_mirror = params.set_default("inc_mirror",false);
+	bool breaksym = params.set_default("breaksym",false);
 	Dict delimiters = sym->get_delimiters(inc_mirror);
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
@@ -370,6 +371,8 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		}
 		alt_iterator += delta;
 	}
+	
+	if (breaksym) return tally*sym->get_nsym();
 	return tally;
 }
 
@@ -377,6 +380,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 {
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
+	bool breaksym = params.set_default("breaksym",false);
 
 	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
 	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
@@ -386,6 +390,8 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	}
 
 	bool inc_mirror = params.set_default("inc_mirror",false);
+	bool inc_mirror_real = inc_mirror;
+	if (breaksym) inc_mirror=true;		// we need to enable mirror generation, then strip them out at the end, or things don't work right...
 	Dict delimiters = sym->get_delimiters(inc_mirror);
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
@@ -466,6 +472,30 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 			}
 		}
 		alt_iterator += delta;
+	}
+	
+	// With breaksym, values are generated for one asymmetric unit as if symmetry were imposed, then
+	// the symmetry equivalent points are generated. Used with asymmetric structures with pseudosymmetry
+	if (breaksym) {
+		// no iterators here since we are making the list longer as we go
+		int nwithsym=ret.size();	// transforms in one asym unit
+		int nsym=sym->get_nsym();	// number of asymmetric units to generate
+		for (int j=1; j<nsym; j++) {
+			Transform t=sym->get_sym(j);
+			for (int i=0; i<nwithsym; i++) {
+				ret.push_back(ret[i]*t);		// add the symmetry modified transform to the end of the vector
+			}
+		}
+		
+		// Now we get rid of anything in the bottom half of the unit sphere if requested
+		if (!inc_mirror_real) {
+			vector<Transform> ret2;
+			for (vector<Transform>::iterator t=ret.begin(); t!=ret.end(); ++t) {
+				if ((*t)[2][2]>=0) ret2.push_back(*t); 
+//				printf("%f\n",t[2][2]);
+			}
+			return ret2;
+		}
 	}
 
 	return ret;

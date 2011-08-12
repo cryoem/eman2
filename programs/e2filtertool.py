@@ -680,7 +680,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		if len(self.procdata)==1 and self.procdata[0]["nz"]>1 : 
 			try: os.unlink("processed_map.hdf")
 			except : pass
-			self.procdata[0].write_image("processed_mape.hdf",0)
+			self.procdata[0].write_image("processed_map.hdf",0)
 			QtGui.QMessageBox.warning(None,"Saved","The processed map has been saved as processed_map.hdf")
 		else :
 			try: os.unlink("processed_images.hdf")

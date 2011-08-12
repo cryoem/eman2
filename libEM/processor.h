@@ -3645,6 +3645,41 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
+	/** Make a curve or surface non-convex (planar or concave), iteratively.
+	 *
+	 *@author Steve Ludtke
+	 *@date 2011/08/11
+	 */
+	class NonConvexProcessor:public Processor
+    {
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new NonConvexProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Makes a curve or plane non-convex. Useful in generating background curves from power spectra. Anchored at edges and (in 2d) at the center. If local value > mean(surrounding values) => mean(surrounding values).";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+/*			d.put("mask", EMObject::EMDATA, "mask object: nonzero pixel positions will be used to fit plane. default = 0");
+			d.put("changeZero", EMObject::INT, "if zero pixels are modified when removing gradient. default = 0");
+			d.put("planeParam", EMObject::FLOATARRAY, "fitted plane parameters output");*/
+			return d;
+		}
+
+		static const string NAME;
+	};
 
 	/** Flattens the background by subtracting the local mean
 	 *@param map an EMData object that defines the extent of the local neighbourhood - will be used for convolution

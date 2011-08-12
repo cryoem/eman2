@@ -121,6 +121,7 @@ const string LaplacianProcessor::NAME = "math.laplacian";
 const string ZeroConstantProcessor::NAME = "mask.contract";
 const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
+const string NonConvexProcessor::NAME = "math.nonconvex";
 const string BoxMaxProcessor::NAME = "math.localmax";
 const string MinusPeakProcessor::NAME = "math.submax";
 const string PeakOnlyProcessor::NAME = "mask.onlypeaks";
@@ -321,6 +322,7 @@ template <> Factory < Processor >::Factory()
 	force_add<MeanShrinkProcessor>();
 	force_add<MedianShrinkProcessor>();
 	force_add<FFTResampleProcessor>();
+	force_add<NonConvexProcessor>();
 
 	force_add<MakeRadiusSquaredProcessor>();
 	force_add<MakeRadiusProcessor>();
@@ -2763,6 +2765,21 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 //	}
 
 }
+
+void NonConvexProcessor::process_inplace(EMData * image) {
+	if (!image) { LOGWARN("NULL IMAGE"); return; }
+	
+	// 1-D
+	if (image->get_ysize()==1) {
+		
+	}
+	// 2-D
+	else if (image->get_zsize()==1) {
+		
+	}
+	
+}
+
 
 #include <gsl/gsl_linalg.h>
 void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
