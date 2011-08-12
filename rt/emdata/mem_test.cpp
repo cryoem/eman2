@@ -191,6 +191,56 @@ void testfunc4()
 	cin>>t;
 }
 
+void testfunc5()
+{
+	char t;
+	const int SIZE = 100000000;
+	Randnum *r = Randnum::Instance();
+
+	EMData *volume = new EMData(64,64); // initial volume
+	volume->process_inplace("testimage.noise.uniform.rand");
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	shared_array<float> saf(new float[SIZE]);
+	for (int j=0; j<SIZE; ++j) {
+		saf[j] = r->get_frand();
+	}
+
+	for(int i=SIZE-1; i>SIZE-10; --i) {
+		cout << saf[i] << '\t';
+	}
+	cout << endl;
+
+	shared_array<float> ssff = saf;
+
+	cout << "After create float array...type a character to continue: use_count = " << saf.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
+	cin>>t;
+
+	volume->set_attr("farr", saf);
+
+	cout << "After set float vector as attribute...type a character to continue: use_count = " << saf.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
+	cin>>t;
+
+	shared_array<float> saf2 = volume->get_attr("farr");
+
+	cout << "after get attr, use_count = " << saf2.use_count() << endl;
+
+	for(int i=SIZE-1; i>SIZE-10; --i) {
+		cout << saf2[i] << endl;
+	}
+
+	cout << "After retrieve float vector attribute, Before release memory...type a character to continue: use_count = " << saf2.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
+	cin>>t;
+
+	delete volume;
+
+	cout << "After release EMData memory...type a character to continue: use_count = " << saf.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
+	cin>>t;
+}
+
+
 int main()
 {
 	cout << "Hello, memory leak valgrind test!" << endl;
@@ -207,8 +257,13 @@ int main()
 //	cout << "After testfunc3...type a character to continue:" << endl;
 //	cin>>t;
 
+//	cout << "testfunc4: Single image test, access attribute after set..." << endl;
+//	testfunc4();
+//	cout << "After testfunc4...type a character to continue:" << endl;
+//	cin>>t;
+
 	cout << "testfunc4: Single image test, access attribute after set..." << endl;
-	testfunc4();
+	testfunc5();
 	cout << "After testfunc4...type a character to continue:" << endl;
 	cin>>t;
 
