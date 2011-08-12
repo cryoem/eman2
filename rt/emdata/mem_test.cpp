@@ -34,6 +34,11 @@
 #include <vector>
 #include "randnum.h"
 
+#include <boost/shared_array.hpp>
+using boost::shared_array;
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+
 using namespace std;
 using namespace EMAN;
 
@@ -191,6 +196,7 @@ void testfunc4()
 	cin>>t;
 }
 
+//test shared_array<float>
 void testfunc5()
 {
 	char t;
@@ -213,7 +219,7 @@ void testfunc5()
 	}
 	cout << endl;
 
-	shared_array<float> ssff = saf;
+//	shared_array<float> ssff = saf;
 
 	cout << "After create float array...type a character to continue: use_count = " << saf.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
 	cin>>t;
@@ -228,8 +234,9 @@ void testfunc5()
 	cout << "after get attr, use_count = " << saf2.use_count() << endl;
 
 	for(int i=SIZE-1; i>SIZE-10; --i) {
-		cout << saf2[i] << endl;
+		cout << saf2[i] << '\t';
 	}
+	cout << endl;
 
 	cout << "After retrieve float vector attribute, Before release memory...type a character to continue: use_count = " << saf2.use_count() << ", raw pointer = " << (void*)saf.get() << endl;
 	cin>>t;
@@ -240,6 +247,57 @@ void testfunc5()
 	cin>>t;
 }
 
+//test shared_ptr< vector<float> >
+void testfunc6()
+{
+	char t;
+	const int SIZE = 100000000;
+	Randnum *r = Randnum::Instance();
+
+	EMData *volume = new EMData(64,64); // initial volume
+	volume->process_inplace("testimage.noise.uniform.rand");
+
+	cout << "Before set float array attribute...type a character to continue:" << endl;
+	cin>>t;
+
+	shared_ptr< vector<float> > spvf(new vector<float>());
+//	shared_array<float> saf(new float[SIZE]);
+	for (int j=0; j<SIZE; ++j) {
+		spvf->push_back(r->get_frand());
+	}
+
+	for(int i=SIZE-1; i>SIZE-10; --i) {
+		cout << spvf->operator[](i) << '\t';
+	}
+	cout << endl;
+
+//	shared_array<float> ssff = saf;
+
+	cout << "After create float array...type a character to continue: use_count = " << spvf.use_count() << ", raw pointer = " << (void*)spvf.get() << endl;
+	cin>>t;
+
+	volume->set_attr("farr", spvf);
+
+	cout << "After set float vector as attribute...type a character to continue: use_count = " << spvf.use_count() << ", raw pointer = " << (void*)spvf.get() << endl;
+	cin>>t;
+
+	shared_ptr< vector<float> > spvf2 = volume->get_attr("farr");
+
+	cout << "after get attr, use_count = " << spvf2.use_count() << ", raw pointer = " << (void*)spvf2.get() << endl;
+
+	for(int i=SIZE-1; i>SIZE-10; --i) {
+		cout << spvf2->operator[](i) << '\t';
+	}
+	cout << endl;
+
+	cout << "After retrieve float vector attribute, Before release memory...type a character to continue: use_count = " << spvf.use_count() << ", raw pointer = " << (void*)spvf.get() << endl;
+	cin>>t;
+
+	delete volume;
+
+	cout << "After release EMData memory...type a character to continue: use_count = " << spvf.use_count() << ", raw pointer = " << (void*)spvf.get() << endl;
+	cin>>t;
+}
 
 int main()
 {
@@ -262,9 +320,14 @@ int main()
 //	cout << "After testfunc4...type a character to continue:" << endl;
 //	cin>>t;
 
-	cout << "testfunc4: Single image test, access attribute after set..." << endl;
-	testfunc5();
-	cout << "After testfunc4...type a character to continue:" << endl;
+//	cout << "testfunc5: Single image test, access attribute after set..." << endl;
+//	testfunc5();
+//	cout << "After testfunc5...type a character to continue:" << endl;
+//	cin>>t;
+
+	cout << "testfunc6: Single image test, access attribute after set..." << endl;
+	testfunc6();
+	cout << "After testfunc6...type a character to continue:" << endl;
 	cin>>t;
 
 	return 0;
