@@ -337,7 +337,7 @@ class Popuptwodali(QWidget):
     def advparams(self):
         print "Opening a new popup window..."
         self.w = Popupadvparams_ali2d(self.savedparmsdict)
-        self.w.resize(500,380)
+        self.w.resize(500,450)
         self.w.show()
 	self.setadv=True
     def setactiveheader(self):
@@ -457,17 +457,19 @@ class Popupadvparams_ali2d(QWidget):
 	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
 		
-	usrfuncfile= QtGui.QLabel('External File Containing User Function. Leave blank if file is not external to Sparx:', self)
+	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
 	usrfuncfile.move(10,330)
+	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)
+	usrfuncfile.move(10,350)
 	self.usrfuncfileedit=QtGui.QLineEdit(self)
-	self.usrfuncfileedit.move(140,350)
+	self.usrfuncfileedit.move(140,370)
 	self.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
 	self.usrfuncfileedit.setToolTip('name of the external file containing user function')	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     	
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	self.usrfile_button = QtGui.QPushButton("Select File", self)
-	self.usrfile_button.move(285, 350-2)
+	self.usrfile_button.move(285, 370-2)
 	QtCore.QObject.connect(self.usrfile_button, QtCore.SIGNAL("clicked()"), self.choose_usrfile)
 	
     def choose_usrfile(self):
