@@ -95,6 +95,12 @@ class Popuptwodali(QWidget):
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
 	self.activeheader_button.move(self.x-5, 340)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
+	
+	self.a2dheader_button = QtGui.QPushButton("set xform.align2d", self)
+	self.a2dheader_button.move(self.x-5+180, 340)
+	self.connect(self.a2dheader_button, SIGNAL("clicked()"), self.seta2dheader)
+	
+	'''
 	self.ali2dheader_button = QtGui.QPushButton("set xform.align2d to zero", self)
 	self.ali2dheader_button.move(self.x-5, 370)
 	self.connect(self.ali2dheader_button, SIGNAL("clicked()"), self.setali2dheader)
@@ -103,23 +109,23 @@ class Popuptwodali(QWidget):
 	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
 	self.ali2drndheader_button.move(self.x-5+240, 370)
 	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
-	
+	'''
 	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x-5, 420)
+        self.advbtn.move(self.x-5, 390)
         #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
-        self.savepbtn.move(self.x-5, 450)
+        self.savepbtn.move(self.x-5, 420)
         #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
 	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
-        self.cmdlinebtn.move(self.x-5, 480)
+        self.cmdlinebtn.move(self.x-5, 450)
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -133,13 +139,13 @@ class Popuptwodali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, 530)
+	self.RUN_button.move(230, 500)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
 
 	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.', self)
-	outinfo.move(10,580)
+	outinfo.move(10,550)
 
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
@@ -348,18 +354,26 @@ class Popuptwodali(QWidget):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
 	header(str(stack), "active", one=True)
-	
-    def setali2dheader(self):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
-	stack = self.stacknameedit.text()
-	print "stack defined="+ stack
-	header(str(stack),'xform.align2d',zero=True)
 
-    def setali2drndheader(self):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
+    def seta2dheader(self):
+	#opens a file browser, showing files only in .hdf format
+	ok=False
+	zerostr='set xform.align2d to zero'
+	randstr='randomize xform.align2d'
+	importstr='import parameters from file'
+	(item,stat)= QInputDialog.getItem(self,"xform.align2d","choose option",[zerostr,randstr,importstr])
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	#self.stacknameedit.setText(str(a))
+   	choice= str(item)
 	stack = self.stacknameedit.text()
-	print "stack defined="+ stack
-	header(str(stack),'xform.align2d',rand_alpha=True)
+	if choice == zerostr:
+		header(str(stack),'xform.align2d',zero=True)
+	if choice == randstr:
+		header(str(stack),'xform.align2d',rand_alpha=True)
+	if choice == importstr:
+		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "(*)")
+		a=str(QtCore.QString(file_name))
+		header(str(stack),'xform.align2d',fimport=a)
 	
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -466,7 +480,7 @@ class Popupadvparams_ali2d(QWidget):
 	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
 		
-	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
+	usrfuncfile= QtGui.QLabel('Enter name of external file containing user function:', self)
 	usrfuncfile.move(10,330)
 	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)
 	usrfuncfile.move(10,350)
