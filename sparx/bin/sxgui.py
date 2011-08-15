@@ -506,47 +506,518 @@ class Popupadvparams_ali2d(QWidget):
 #Layout of the Pop Up window  (for sxali2d); started by the function twodali of the main window 
 class PopupHelicalRefinement(QWidget):
     def __init__(self):
+        QWidget.__init__(self)
+	
+	x = [0.0]*20
+	y = [0.0]*20
+	# populate with default values
+	self.savedparmsdict ={'stackname':'NONE','inputparameters':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	
+	row = 0
+	self.setadv=False
+	self.cmd = ""
+	self.y=90
+	self.x = 10
+        #Here we just set the window title
+	self.setWindowTitle('sxihrst')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sihrsr</b> - performs helical refinement', self)
+	x[0] = 10
+	y[0] = 10
+	title1.move(x[row],y[row])
+
+	
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+	row = row+1
+	y[row] = y[row-1] +30	
+	self.file_button = QtGui.QPushButton("Open .hdf", self)
+	self.file_button.move(285, y[row])
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+        #exactly the same as above, but for subfunction choose_file1
+	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+	self.file_button1.move(385,y[row])
+	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	#Example for User input stack name
+        #First create the label and define its position
+	stackname= QtGui.QLabel('Name of your stack', self)
+	stackname.move(10,y[row])
+        #Now add a line edit and define its position
+	self.stacknameedit=QtGui.QLineEdit(self)
+        self.stacknameedit.move(140,y[row])
+        #Adds a default value for the line edit
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	
+	# file_button2 for input parameters
+	row = row+1
+	y[row] = y[row-1] +30	
+	self.file_button2 = QtGui.QPushButton("Open .txt", self)
+	self.file_button2.move(285, y[row])
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button2, QtCore.SIGNAL("clicked()"), self.choose_file2)
+	parameterfile= QtGui.QLabel('Input parameter file', self)
+	parameterfile.move(10,y[row])
+        #Now add a line edit and define its position
+	self.inputparameteredit=QtGui.QLineEdit(self)
+        self.inputparameteredit.move(140,y[row])
+        #Adds a default value for the line edit
+	self.inputparameteredit.setText(self.savedparmsdict['inputparameters'])
+	
+	# file_button3 for referencevolume
+	row = row+1
+	y[row] = y[row-1] +30	
+	self.file_button3 = QtGui.QPushButton("Open .hdf", self)
+	self.file_button3.move(285, y[row])
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button3, QtCore.SIGNAL("clicked()"), self.choose_file3)
+	parameterfile= QtGui.QLabel('Input initial volume', self)
+	parameterfile.move(10,y[row])
+        #Now add a line edit and define its position
+	self.referencevolumeedit=QtGui.QLineEdit(self)
+        self.referencevolumeedit.move(140,y[row])
+        #Adds a default value for the line edit
+	self.referencevolumeedit.setText(self.savedparmsdict['referencevolume'])
+	
+
+	#The same as above, but many line edits include Infotips
+	row = row+1
+	y[row] = y[row-1] +30	
+	foldername= QtGui.QLabel('Output folder', self)
+	foldername.move(10,y[row])
+	self.foldernameedit=QtGui.QLineEdit(self)
+	self.foldernameedit.move(140,y[row])
+	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+	
+	row = row+1
+	y[row] = y[row-1] +30
+	outradius= QtGui.QLabel('Out radius', self)
+	outradius.move(10, y[row] )
+	self.outradiusedit=QtGui.QLineEdit(self)
+	self.outradiusedit.move(140,y[row])
+	self.outradiusedit.setText(self.savedparmsdict['outradius'])
+	self.outradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')
+	
+	row = row+1
+	y[row] = y[row-1] +30	
+	xrange= QtGui.QLabel('x range', self)
+	xrange.move(10,y[row])
+	self.xrangeedit=QtGui.QLineEdit(self)
+	self.xrangeedit.move(140,self.y+90)
+	self.xrangeedit.setText(self.savedparmsdict['xrange'])
+	self.xrangeedit.setToolTip('Range for translational search in x\nif set to 0 no x directional alignment will be performed')
+	row = row+1
+	y[row] = y[row-1] +30
+	xtrans= QtGui.QLabel('step of x', self)
+	xtrans.move(10,y[row])
+	self.xtransedit=QtGui.QLineEdit(self)
+	self.xtransedit.move(140,y[row])
+	self.xtransedit.setText(self.savedparmsdict['xtrans'])
+	self.xtransedit.setToolTip('Step of translational search in x direction\nlarger values increase the speed but decrease the accuracy')
+	
+	row = row+1
+	y[row] = y[row-1] +30	
+	ynumber= QtGui.QLabel('ynumber', self)
+	ynumber.move(10,y[row])
+	self.ynumberit=QtGui.QLineEdit(self)
+	self.ynumberit.move(140,y[row])
+	self.ynumberit.setText(self.savedparmsdict['ynumber'])
+	self.ynumberit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')	
+	
+	row = row+1
+	y[row] = y[row-1] +30
+	nriter= QtGui.QLabel('Nr. of Iterations', self)
+	nriter.move(10,y[row])
+	self.nriteredit=QtGui.QLineEdit(self)
+	self.nriteredit.move(140,y[row])
+	self.nriteredit.setText(self.savedparmsdict['nriter'])
+	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n ')
+	
+	row = row+1
+	y[row] = y[row-1] +30
+	nproc= QtGui.QLabel('Nr. of Processors', self)
+	nproc.move(10,y[row])
+	self.nprocedit=QtGui.QLineEdit(self)
+	self.nprocedit.move(140,y[row])
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+	
+        #not linked to a function yet
+        self.activeheader_button = QtGui.QPushButton("activate all images", self)
+	self.activeheader_button.move(self.x-5, 340)
+	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
+	self.ali2dheader_button = QtGui.QPushButton("set xform.align2d to zero", self)
+	self.ali2dheader_button.move(self.x-5, 370)
+	self.connect(self.ali2dheader_button, SIGNAL("clicked()"), self.setali2dheader)
+	ort=QtGui.QLabel('<b>or</b>', self)
+	ort.move(220,370)
+	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
+	self.ali2drndheader_button.move(self.x-5+240, 370)
+	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
+	
+	self.advbtn = QPushButton("Advanced Parameters", self)
+        self.advbtn.move(self.x-5, 420)
+        #sets an infotip for this Pushbutton
+        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(self.x-5, 450)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(self.x-5, 480)
+        #sets an infotip for this Pushbutton
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
+
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	
+	
+	self.RUN_button.move(230, 530)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
+        #Labels and Line Edits for User Input
+
+	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.', self)
+	outinfo.move(10,580)
+
+	
+
+
+	header=QtGui.QLabel('Attributes xform.align2d and active parameters must be set in the input stack', self)
+	header.move(10,310)
+	
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+   
+    def gencmdline(self,writefile=True):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+   	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	output=self.foldernameedit.text()
+	print "output folder="+ output
+	ou=self.partradiusedit.text()
+	print "Particle radius="+ ou
+	xr=self.xyrangeedit.text()
+	print "xr=" +xr
+	yr=self.xyrangeedit.text()
+	print "yr=" +yr
+	ts=self.transedit.text()
+	print "ts=" +ts
+	maxit=self.nriteredit.text()
+	print "maxit="+maxit
+	
+	cmd1 = " sxali2d.py "+str(stack) +" "+ str(output)
+	
+	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
+	
+	mask=''
+	ctr=''
+	ringstep=''
+	inrad=''
+	CTF=''
+	snr=''
+	fourvar=''
+	gpn=''
+	userf=''
+	userfile=''
+	
+	if self.setadv:
+		mask = self.w.masknameedit.text()
+		if len(str(mask))> 1:
+			cmd1 = cmd1+" "+str(mask) 
+	cmd1 = cmd1 + args
+	
+	if self.setadv:	
+		ctr=self.w.centeredit.text()
+		cmd1 = cmd1+" --center=" +str(ctr)
+		
+		ringstep = self.w.ringstepedit.text()
+		cmd1 = cmd1+" --rs="+str(ringstep)
+		
+		inrad = self.w.innerradiusedit.text()
+		cmd1 = cmd1 + " --ir=" + str(inrad)
+		
+		CTF=str(self.w.ctfedit.text())
+		if str(CTF) == 'True':
+			cmd1 = cmd1 + " --CTF"
+			
+		snr = self.w.snredit.text()
+		cmd1 = cmd1 + " --snr=" + str(snr)
+		
+		fourvar = self.w.fourvaredit.text()
+		if str(fourvar) == 'True':
+			cmd1 = cmd1 + " --Fourvar"
+			
+		gpn = self.w.gpnredit.text()
+		cmd1 = cmd1 + " --Ng=" + str(gpn)
+		
+		userf = self.w.usrfuncedit.text()
+		
+		userfile = self.w.usrfuncfileedit.text()
+		
+		if len(userfile) <= 1:
+			cmd1 = cmd1 + " --function="+str(userf)
+		else:
+			userfile = self.w.usrfuncfileedit.text()
+			userfile = str(userfile)
+			if len(userfile) > 1:
+				# break it down into file name and directory path
+				rind = userfile.rfind('/')
+				fname = userfile[rind+1:]
+				fname, ext = os.path.splitext(fname)
+				fdir = userfile[0:rind]
+				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+	np = self.nprocedit.text()
+	
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	
+	if self.setadv:
+		self.w.savedparmsdict=self.savedparmsdict
+	
+	if int(str(np)) > 1:
+		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+	
+	if writefile:	
+		from time import localtime
+		a=time.localtime()
+		fname = 'ali2dcmd_%02d_%02d_%04d_%02d_%02d_%02d.txt'%(a.tm_mday,a.tm_mon, a.tm_year,a.tm_hour, a.tm_min, a.tm_sec)
+		f = open(fname,'a')
+		f.write(cmd1)
+		f.close()
+	
+	print cmd1
+	self.cmd = cmd1
+	
+    def runsxali2d(self):
+	self.gencmdline(writefile=False)
+	outfolder=self.savedparmsdict['foldername']
+	if os.path.exists(outfolder):
+		print "output folder "+outfolder+" already exists!"
+		return
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
+	
+    def saveparms(self):	
+	# save all the parms in a text file so we can repopulate if user requests
+	import pickle
+	output=open('savedparms.pkl','wb')
+	self.gencmdline(writefile=False)
+	pickle.dump(self.savedparmsdict,output)
+	output.close()
+	
+    def repoparms(self):	
+	# repopulate with saved parms
+	import pickle
+	pkl = open('savedparms.pkl','rb')
+	self.savedparmsdict = pickle.load(pkl)
+	print self.savedparmsdict
+	self.partradiusedit.setText(self.savedparmsdict['partradius'])
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
+	self.transedit.setText(self.savedparmsdict['trans'])
+	self.nriteredit.setText(self.savedparmsdict['nriter'])
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	if self.setadv:
+		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w.centeredit.setText(self.savedparmsdict['center'])
+		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
+		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+		self.w.ctfedit.setText(self.savedparmsdict['ctf'])
+		self.w.snredit.setText(self.savedparmsdict['snr'])
+		self.w.fourvaredit.setText(self.savedparmsdict['fourvar'])
+		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
+		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+		
+    def advparams(self):
+        print "Opening a new popup window..."
+        self.w = Popupadvparams_ali2d(self.savedparmsdict)
+        self.w.resize(500,450)
+        self.w.show()
+	self.setadv=True
+    def setactiveheader(self):
+	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	header(str(stack), "active", one=True)
+	
+    def setali2dheader(self):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	header(str(stack),'xform.align2d',zero=True)
+
+    def setali2drndheader(self):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	header(str(stack),'xform.align2d',rand_alpha=True)
+	
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
+    def choose_file(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.stacknameedit.setText(str(a))
         
-        QtGui.QWidget.__init__(self)
-        self.setWindowTitle(self.tr("Helical Refinment"))
-        self.__create_ui()
-    def __create_ui(self):
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+    def choose_file1(self):
+	file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
+	a=QtCore.QString(file_name1)
+	b=os.path.basename(str(a))
+	c=os.path.splitext(b)[0]
+	d="bdb:"+c
+	print d
+	self.stacknameedit.setText(d)
+    def choose_file2(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.txt)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.inputparameteredit.setText(str(a))
 	
+    def choose_file3(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Reference Volume", "", "hdf files (*.hdf)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.referencevolumeedit.setText(str(a))
 
-        input_stack_label = QtGui.QLabel(self.tr("Input Stack:"))
-	self.input_stack_line_edit = QtGui.QLineEdit()
-	self.input_stack_line_edit.setMinimumWidth(200)
-	self.input_stack_browse_button = QtGui.QPushButton(self.tr("Browse"))
-	input_stack_layout = QtGui.QHBoxLayout()
-	input_stack_layout.addWidget(input_stack_label)
-	input_stack_layout.addWidget(self.input_stack_line_edit)
-	input_stack_layout.addWidget(self.input_stack_browse_button)
-	
-	input_parms_label = QtGui.QLabel(self.tr("Input Projection Parameters:"))
-	self.input_param_line_edit = QtGui.QLineEdit()
-	self.input_param_line_edit.setMinimumWidth(200)
-	self.input_param_browse_button = QtGui.QPushButton(self.tr("Browse"))
-	input_param_layout = QtGui.QHBoxLayout()
-	input_param_layout.addWidget(input_parms_label)
-	input_param_layout.addWidget(self.input_param_line_edit)
-	input_param_layout.addWidget(self.input_param_browse_button)
-	
+class Popupadvparams_helical(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+        #Here we just set the window title
+	self.setWindowTitle('sxihrsr advanced parameter selection')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
+	title1.move(10,10)
+        #Labels and Line Edits for User Input
+        #Just a label
+	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	title2.move(10,40)
 
-	self.param_ative_button = QtGui.QPushButton("Open .bdb", self)
-	self.param_zeros_button = QtGui.QPushButton("Open .bdb", self)
-	param_setting_layout = QtGui.QHBoxLayout()
-	param_setting_layout.addWidget(self.param_ative_button)
-	param_setting_layout.addWidget(self.param_zeros_button)
+	self.savedparmsdict=savedparms
+        #Example for User input stack name
+        #First create the label and define its position
+	maskname= QtGui.QLabel('Mask', self)
+	maskname.move(10,60)
+        #Now add a line edit and define its position
+	self.masknameedit=QtGui.QLineEdit(self)
+        self.masknameedit.move(140,60)
+        #Adds a default value for the line edit
+	self.masknameedit.setText(self.savedparmsdict['maskname'])
+	self.masknameedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
 	
+	self.mskfile_button = QtGui.QPushButton("Open .hdf", self)
+	self.mskfile_button.move(285, 60-2)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
+	
+	center= QtGui.QLabel('Center type', self)
+	center.move(10,90)
+	self.centeredit=QtGui.QLineEdit(self)
+	self.centeredit.move(140,90)
+	self.centeredit.setText(self.savedparmsdict['center'])
+	self.centeredit.setToolTip('-1 - use average centering method (default),\n0 - if you do not want the average to be centered, \n1 - phase approximation of the center of gravity phase_cog, \n2 - cross-correlate with Gaussian function, \n3 - cross-correlate with donut shape image (e.g. inner radius=2, outer radius=7), \n4 - cross-correlate with reference image provided by user, \n5 - cross-correlate with self-rotated average..\ncentering may fail..use 0 to deactive it')
+	
+	ringstep= QtGui.QLabel('Ring step', self)
+	ringstep.move(10,120)
+	self.ringstepedit=QtGui.QLineEdit(self)
+	self.ringstepedit.move(140,120)
+	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
+	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
 
-	self.vbl = QtGui.QVBoxLayout(self)
-	self.vbl.setMargin(0)
-	self.vbl.setSpacing(6)
-	self.vbl.setObjectName("vbl")
-	self.vbl.addLayout(input_stack_layout)
-	self.vbl.addLayout(input_param_layout)
-	self.vbl.addLayout(param_setting_layout)
-	   
+	innerradius= QtGui.QLabel('Inner radius', self)
+	innerradius.move(10,150)
+	self.innerradiusedit=QtGui.QLineEdit(self)
+	self.innerradiusedit.move(140,150)
+	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	
+	ctf= QtGui.QLabel('CTF', self)
+	ctf.move(10,180)
+	self.ctfedit=QtGui.QLineEdit(self)
+	self.ctfedit.move(140,180)
+	self.ctfedit.setText(self.savedparmsdict['ctf'])
+	self.ctfedit.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
+
+	snr= QtGui.QLabel('SNR', self)
+	snr.move(10,210)
+	self.snredit=QtGui.QLineEdit(self)
+	self.snredit.move(140,210)
+	self.snredit.setText(self.savedparmsdict['snr'])
+	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')		
+	fourvar= QtGui.QLabel('Fourvar', self)
+	fourvar.move(10,240)
+	self.fourvaredit=QtGui.QLineEdit(self)
+	self.fourvaredit.move(140,240)
+	self.fourvaredit.setText(self.savedparmsdict['fourvar'])
+	self.fourvaredit.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+
+	gpnr= QtGui.QLabel('Number of Groups', self)
+	gpnr.move(10,270)
+	self.gpnredit=QtGui.QLineEdit(self)
+	self.gpnredit.move(140,270)
+	self.gpnredit.setText(self.savedparmsdict['gpnr'])
+	self.gpnredit.setToolTip('number of groups in the new CTF filteration')	
+	
+	usrfunc= QtGui.QLabel('User Function Name', self)
+	usrfunc.move(10,300)
+	self.usrfuncedit=QtGui.QLineEdit(self)
+	self.usrfuncedit.move(140,300)
+	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
+		
+	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
+	usrfuncfile.move(10,330)
+	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)
+	usrfuncfile.move(10,350)
+	self.usrfuncfileedit=QtGui.QLineEdit(self)
+	self.usrfuncfileedit.move(140,370)
+	self.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+	self.usrfuncfileedit.setToolTip('name of the external file containing user function')	
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+    	
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	self.usrfile_button = QtGui.QPushButton("Select File", self)
+	self.usrfile_button.move(285, 370-2)
+	QtCore.QObject.connect(self.usrfile_button, QtCore.SIGNAL("clicked()"), self.choose_usrfile)
+	
+    def choose_usrfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing User Fuction", "", "py files (*.py)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.usrfuncfileedit.setText(str(a))
+	
+    def choose_mskfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.masknameedit.setText(str(a))
+		
 
 
    
