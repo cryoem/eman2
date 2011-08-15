@@ -508,10 +508,9 @@ class PopupHelicalRefinement(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 	
-	x = [0.0]*20
-	y = [0.0]*20
+	y = [0.0]*40
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','inputparameters':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"helical","usrfuncfile":""}
 	
 	row = 0
 	self.setadv=False
@@ -519,12 +518,20 @@ class PopupHelicalRefinement(QWidget):
 	self.y=90
 	self.x = 10
         #Here we just set the window title
-	self.setWindowTitle('sxihrst')
+	self.setWindowTitle('sxihrsr')
         #Here we just set a label and its position in the window
 	title1=QtGui.QLabel('<b>sihrsr</b> - performs helical refinement', self)
-	x[0] = 10
 	y[0] = 10
-	title1.move(x[row],y[row])
+	title1.move(10,y[row])
+	
+	row = row+1
+	y[row] = y[row-1] +30
+	self.repopbtn = QPushButton("Repopulate With Previously Saved Parameters", self)
+        self.repopbtn.move(self.x-5,y[row])
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms)
 
 	
         #Here we create a Button(file_button with title run open .hdf) and its position in the window
@@ -555,13 +562,13 @@ class PopupHelicalRefinement(QWidget):
 	self.file_button2.move(285, y[row])
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button2, QtCore.SIGNAL("clicked()"), self.choose_file2)
-	parameterfile= QtGui.QLabel('Input parameter file', self)
+	parameterfile= QtGui.QLabel('Projection params', self)
 	parameterfile.move(10,y[row])
         #Now add a line edit and define its position
-	self.inputparameteredit=QtGui.QLineEdit(self)
-        self.inputparameteredit.move(140,y[row])
+	self.initialprojectionparameteredit=QtGui.QLineEdit(self)
+        self.initialprojectionparameteredit.move(140,y[row])
         #Adds a default value for the line edit
-	self.inputparameteredit.setText(self.savedparmsdict['inputparameters'])
+	self.initialprojectionparameteredit.setText(self.savedparmsdict['initialprojectionparameter'])
 	
 	# file_button3 for referencevolume
 	row = row+1
@@ -570,8 +577,8 @@ class PopupHelicalRefinement(QWidget):
 	self.file_button3.move(285, y[row])
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button3, QtCore.SIGNAL("clicked()"), self.choose_file3)
-	parameterfile= QtGui.QLabel('Input initial volume', self)
-	parameterfile.move(10,y[row])
+	volumefile= QtGui.QLabel('Initial volume', self)
+	volumefile.move(10,y[row])
         #Now add a line edit and define its position
 	self.referencevolumeedit=QtGui.QLineEdit(self)
         self.referencevolumeedit.move(140,y[row])
@@ -602,7 +609,7 @@ class PopupHelicalRefinement(QWidget):
 	xrange= QtGui.QLabel('x range', self)
 	xrange.move(10,y[row])
 	self.xrangeedit=QtGui.QLineEdit(self)
-	self.xrangeedit.move(140,self.y+90)
+	self.xrangeedit.move(140,y[row])
 	self.xrangeedit.setText(self.savedparmsdict['xrange'])
 	self.xrangeedit.setToolTip('Range for translational search in x\nif set to 0 no x directional alignment will be performed')
 	row = row+1
@@ -618,10 +625,28 @@ class PopupHelicalRefinement(QWidget):
 	y[row] = y[row-1] +30	
 	ynumber= QtGui.QLabel('ynumber', self)
 	ynumber.move(10,y[row])
-	self.ynumberit=QtGui.QLineEdit(self)
-	self.ynumberit.move(140,y[row])
-	self.ynumberit.setText(self.savedparmsdict['ynumber'])
-	self.ynumberit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')	
+	self.ynumberedit=QtGui.QLineEdit(self)
+	self.ynumberedit.move(140,y[row])
+	self.ynumberedit.setText(self.savedparmsdict['ynumber'])
+	self.ynumberedit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')
+	
+	row = row+1
+	y[row] = y[row-1] +30	
+	dp= QtGui.QLabel('Helical Rise', self)
+	dp.move(10,y[row])
+	self.dpedit=QtGui.QLineEdit(self)
+	self.dpedit.move(140,y[row])
+	self.dpedit.setText(self.savedparmsdict['dp'])
+	self.dpedit.setToolTip('helical rise in angstrom')
+	
+	row = row+1
+	y[row] = y[row-1] +30	
+	dphi= QtGui.QLabel('Helical Angle', self)
+	dphi.move(10,y[row])
+	self.dphiedit=QtGui.QLineEdit(self)
+	self.dphiedit.move(140,y[row])
+	self.dphiedit.setText(self.savedparmsdict['dp'])
+	self.dphiedit.setToolTip('helical angle in degree')	
 	
 	row = row+1
 	y[row] = y[row-1] +30
@@ -641,61 +666,71 @@ class PopupHelicalRefinement(QWidget):
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
 	
-        #not linked to a function yet
-        self.activeheader_button = QtGui.QPushButton("activate all images", self)
-	self.activeheader_button.move(self.x-5, 340)
-	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
-	self.ali2dheader_button = QtGui.QPushButton("set xform.align2d to zero", self)
-	self.ali2dheader_button.move(self.x-5, 370)
-	self.connect(self.ali2dheader_button, SIGNAL("clicked()"), self.setali2dheader)
-	ort=QtGui.QLabel('<b>or</b>', self)
-	ort.move(220,370)
-	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
-	self.ali2drndheader_button.move(self.x-5+240, 370)
-	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
+        row = row+1
+	y[row] = y[row-1] +30
+	header=QtGui.QLabel('Attributes xform.projection and active parameters must be set in the input stack', self)
+	header.move(10,y[row])
 	
+	#not linked to a function yet
+	row = row+1
+	y[row] = y[row-1] +30
+        self.activeheader_button = QtGui.QPushButton("activate all images", self)
+	self.activeheader_button.move(self.x-5, y[row])
+	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
+	self.projectionheader_button = QtGui.QPushButton("set xform.projection", self)
+	self.projectionheader_button.move(self.x-5, y[row])
+	self.projectionheader_button.setToolTip('Depending whether the projection parameters given or not, set xform projection to zero or specific vlues ')
+	self.connect(self.projectionheader_button, SIGNAL("clicked()"), self.setprojectionheader)
+	
+	row = row+1
+	y[row] = y[row-1] +30
 	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x-5, 420)
+        self.advbtn.move(self.x-5, y[row])
         #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
+        self.advbtn.setToolTip('Set Advanced Parameters for helical refinement such as center and CTF')
+        #when this button is clicked, this action starts the subfunction advanced params
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
+	row = row+1
+	y[row] = y[row-1] +30
 	self.savepbtn = QPushButton("Save Input Parameters", self)
-        self.savepbtn.move(self.x-5, 450)
+        self.savepbtn.move(self.x-5, y[row])
         #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
 	
+	row = row+1
+	y[row] = y[row-1] +30
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
-        self.cmdlinebtn.move(self.x-5, 480)
+        self.cmdlinebtn.move(self.x-5, y[row])
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
 
 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
-	self.RUN_button = QtGui.QPushButton('Run sxali2d', self)
+	row = row+1
+	y[row] = y[row-1] +30
+	self.RUN_button = QtGui.QPushButton('Run sxihrsr', self)
 	# make 3D textured push button look
 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 	
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, 530)
+	self.RUN_button.move(230, y[row])
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
-        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
         #Labels and Line Edits for User Input
-
-	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.', self)
-	outinfo.move(10,580)
+	row = row+1
+	y[row] = y[row-1] +30
+	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.projection in each image\'s header. The images themselves are not changed.', self)
+	outinfo.move(10,y[row])
 
 	
 
 
-	header=QtGui.QLabel('Attributes xform.align2d and active parameters must be set in the input stack', self)
-	header.move(10,310)
 	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
    
@@ -703,22 +738,32 @@ class PopupHelicalRefinement(QWidget):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
+	
+        projectionparameters = self.initialprojectionparameteredit.text()
+	print "Input parameter files="+ projectionparameters
+	referencevolume = self.referencevolumeedit.text()
+	print "Initial volume="+ referencevolume
+		
 	output=self.foldernameedit.text()
 	print "output folder="+ output
-	ou=self.partradiusedit.text()
-	print "Particle radius="+ ou
-	xr=self.xyrangeedit.text()
+	ou=self.outradiusedit.text()
+	print "Out radius="+ ou
+	xr=self.xrangeedit.text()
 	print "xr=" +xr
-	yr=self.xyrangeedit.text()
-	print "yr=" +yr
-	ts=self.transedit.text()
-	print "ts=" +ts
+	ynumber=self.ynumberedit.text()
+	print "ynumber=" +ynumber	
+	tx=self.xtransedit.text()
+	print "tx=" +tx
+	dp=self.dpedit.text()
+	print "dp=" +dp
+	dphi=self.dphiedit.text()
+	print "dp=" +dphi
 	maxit=self.nriteredit.text()
 	print "maxit="+maxit
 	
-	cmd1 = " sxali2d.py "+str(stack) +" "+ str(output)
+	cmd1 = " sxihrsr.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 	
-	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
+	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" "+ " --ynumber="+str(ynumber)+" "+ " --txs="+str(tx)+" " + " --dp="+str(dp)+" " + " --dphi="+str(dphi)+" "+ " --maxit="+ str(maxit) 
 	
 	mask=''
 	ctr=''
@@ -779,7 +824,7 @@ class PopupHelicalRefinement(QWidget):
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -790,7 +835,7 @@ class PopupHelicalRefinement(QWidget):
 	if writefile:	
 		from time import localtime
 		a=time.localtime()
-		fname = 'ali2dcmd_%02d_%02d_%04d_%02d_%02d_%02d.txt'%(a.tm_mday,a.tm_mon, a.tm_year,a.tm_hour, a.tm_min, a.tm_sec)
+		fname = 'ihrsrcmd_%02d_%02d_%04d_%02d_%02d_%02d.txt'%(a.tm_mday,a.tm_mon, a.tm_year,a.tm_hour, a.tm_min, a.tm_sec)
 		f = open(fname,'a')
 		f.write(cmd1)
 		f.close()
@@ -798,7 +843,7 @@ class PopupHelicalRefinement(QWidget):
 	print cmd1
 	self.cmd = cmd1
 	
-    def runsxali2d(self):
+    def runsxihrsr(self):
 	self.gencmdline(writefile=False)
 	outfolder=self.savedparmsdict['foldername']
 	if os.path.exists(outfolder):
@@ -815,17 +860,24 @@ class PopupHelicalRefinement(QWidget):
 	pickle.dump(self.savedparmsdict,output)
 	output.close()
 	
-    def repoparms(self):	
+    def repoparms(self):
+    
+  	
 	# repopulate with saved parms
 	import pickle
 	pkl = open('savedparms.pkl','rb')
 	self.savedparmsdict = pickle.load(pkl)
 	print self.savedparmsdict
-	self.partradiusedit.setText(self.savedparmsdict['partradius'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+	self.outradiusedit.setText(self.savedparmsdict['outradius'])
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	self.initialprojectionparameteredit.setText(self.savedparmsdict['initialprojectionparameter'])	
+	self.referencevolumeedit.setText(self.savedparmsdict['referencevolume'])	
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
-	self.transedit.setText(self.savedparmsdict['trans'])
+	self.xrangeedit.setText(self.savedparmsdict['xrange'])
+	self.xtransedit.setText(self.savedparmsdict['xtrans'])
+	self.ynumberedit.setText(self.savedparmsdict['ynumber'])
+	self.dpedit.setText(self.savedparmsdict['dp'])
+	self.dphiedit.setText(self.savedparmsdict['dphi'])
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	if self.setadv:
@@ -851,17 +903,19 @@ class PopupHelicalRefinement(QWidget):
 	print "stack defined="+ stack
 	header(str(stack), "active", one=True)
 	
-    def setali2dheader(self):
+    def setprojectionheader(self):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
 	stack = self.stacknameedit.text()
+	input_file = self.initialprojectionparameteredit.text()
 	print "stack defined="+ stack
-	header(str(stack),'xform.align2d',zero=True)
+	if( str(input_file) == "NONE" ):
+		header(str(stack),'xform.projection',zero=True)
+		print "zero projection"
+	else:
+        	header(str(stack),'xform.projection',fimport = str(input_file) )
+		print "set projection based on input file"	
 
-    def setali2drndheader(self):
-	#Here we just read in all user inputs in the line edits of the Poptwodali window
-	stack = self.stacknameedit.text()
-	print "stack defined="+ stack
-	header(str(stack),'xform.align2d',rand_alpha=True)
+
 	
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -889,7 +943,7 @@ class PopupHelicalRefinement(QWidget):
 	a=QtCore.QString(file_name)
 	print a
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-	self.inputparameteredit.setText(str(a))
+	self.initialprojectionparameteredit.setText(str(a))
 	
     def choose_file3(self):
 	#opens a file browser, showing files only in .hdf format
@@ -906,7 +960,7 @@ class Popupadvparams_helical(QWidget):
         #Here we just set the window title
 	self.setWindowTitle('sxihrsr advanced parameter selection')
         #Here we just set a label and its position in the window
-	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
+	title1=QtGui.QLabel('<b>sxihrsr</b> - set advanced params', self)
 	title1.move(10,10)
         #Labels and Line Edits for User Input
         #Just a label
@@ -1535,7 +1589,7 @@ class MainWindow(QtGui.QWidget):
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = PopupHelicalRefinement()
-        self.w.resize(600,600)
+        self.w.resize(600,800)
         self.w.show()    
        
     def ali3d(self):
