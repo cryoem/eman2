@@ -316,24 +316,6 @@ EMObject::EMObject(const vector <Transform>& tarray) :
 #endif
 }
 
-EMObject::EMObject(const shared_array<float>& sa) :
-		sharr(sa), type(FLOATARRAY)
-{
-#ifdef MEMDEBUG
-	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
-#endif
-}
-
-EMObject::EMObject(const shared_ptr< vector<float> >& spvf) :
-	shpvf(spvf), type(FLOATARRAY)
-{
-#ifdef MEMDEBUG
-	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
-#endif
-}
-
 EMObject::operator bool () const
 {
 	if (type == BOOL) {
@@ -657,32 +639,6 @@ EMObject::operator vector<Transform> () const
 		return vector<Transform>();
 	}
 	return transformarray;
-}
-
-EMObject::operator shared_array<float> () const
-{
-	if (type != FLOATARRAY) {
-		if (type != UNKNOWN) {
-			throw TypeException("Cannot convert to shared_array<float> from this data type",
-				get_object_type_name(type));
-		}
-		return shared_array<float>();
-	}
-
-	return sharr;
-}
-
-EMObject::operator shared_ptr< vector<float> > () const
-{
-	if (type != FLOATARRAY) {
-		if (type != UNKNOWN) {
-			throw TypeException("Cannot convert to shared_ptr< vector<float> > from this data type",
-				get_object_type_name(type));
-		}
-		return shared_ptr< vector<float> >();
-	}
-	
-	return shpvf;	
 }
 
 bool EMObject::is_null() const
@@ -1016,8 +972,6 @@ EMObject& EMObject::operator=( const EMObject& that )
 		case TRANSFORM:
 		case FLOATARRAY:
 			farray = that.farray;
-			sharr = that.sharr;
-			shpvf = that.shpvf;
 		break;
 		case INTARRAY:
 			iarray = that.iarray;

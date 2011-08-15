@@ -97,24 +97,6 @@ namespace EMAN {
 		}
     };
 
-    typedef shared_ptr< vector<float> > SHPTRVF;
-    struct shared_ptr_vector_to_python : python::to_python_converter< SHPTRVF,
-    																shared_ptr_vector_to_python >
-    {
-		static PyObject* convert(SHPTRVF const& v)
-		{
-			python::list result;
-
-			cout << "In shared_ptr_vector_to_python::convert(), list size = " << v->size() << endl;
-
-			for (size_t i = 0; i < v->size(); i++) {
-				result.append(v->operator[](i));
-			}
-
-			return python::incref(python::list(result).ptr());
-		}
-    };
-
 	template <class T>
 	struct tuple3_to_python : python::to_python_converter<T, tuple3_to_python<T> >
 	{
@@ -528,7 +510,7 @@ namespace EMAN {
 
 				python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
 				vector<int> iarray;
-				shared_ptr< vector<float> > farray(new vector<float>);
+				vector<float> farray;
 				vector<string> strarray;
 				vector<Transform> transformarray;
 
@@ -549,7 +531,7 @@ namespace EMAN {
 					}
 					else if (object_type == EMObject::FLOATARRAY) {
 						python::extract<float> elem_proxy1(py_elem_obj);
-						farray->push_back(elem_proxy1());
+						farray.push_back(elem_proxy1());
 					}
 					else if (object_type == EMObject::STRINGARRAY) {
 						python::extract<string> elem_proxy2(py_elem_obj);

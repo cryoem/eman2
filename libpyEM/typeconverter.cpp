@@ -202,11 +202,11 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		}
 	}
 	else if (t == EMObject::FLOATARRAY) {
-		shared_ptr< vector<float> > farray = emobj;
+		vector<float> farray = emobj;
 		python::list flist;
 
-		for (size_t i = 0; i < farray->size(); i++) {
-			flist.append(farray->operator[](i));
+		for (size_t i = 0; i < farray.size(); i++) {
+			flist.append(farray[i]);
 		}
 
 		result = python::incref(python::list(flist).ptr());
