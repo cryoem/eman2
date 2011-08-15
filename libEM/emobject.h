@@ -68,6 +68,12 @@ using std::endl;
 
 #include <cctype> // tolower
 #include <algorithm> //tolower
+
+#include <boost/shared_array.hpp>
+using boost::shared_array;
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+
 namespace EMAN
 {
 	class EMConsts {
@@ -170,6 +176,8 @@ namespace EMAN
 		EMObject(const vector < float >&v);
 		EMObject(const vector <string>& sarray);
 		EMObject(const vector <Transform>& tarray);
+		EMObject(const shared_array<float>& sa);
+		EMObject(const shared_ptr< vector<float> >& spvf);
 
 		/** Copy constructor.
 		 * copies pointer locations - does not take ownership
@@ -206,6 +214,8 @@ namespace EMAN
 		operator vector < float > () const;
 		operator vector<string> () const;
 		operator vector<Transform> () const;
+		operator shared_array<float> () const;
+		operator shared_ptr< vector<float> > () const;
 
 		/** Checks to see if the EMObject is interpretable
 		 * This basically equates to checking to see if the
@@ -272,6 +282,8 @@ namespace EMAN
 		vector <float> farray;
 		vector <string> strarray;
 		vector <Transform> transformarray;
+		shared_array<float> sharr;
+		shared_ptr< vector<float> > shpvf;
 		ObjectType type;
 
 		/** A debug function that prints as much information as possibe to cout
