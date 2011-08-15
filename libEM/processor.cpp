@@ -2768,6 +2768,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 
 void NonConvexProcessor::process_inplace(EMData * image) {
 	if (!image) { LOGWARN("NULL IMAGE"); return; }
+	int isinten=image->get_attr_default("is_intensity",0);
 	
 	// 1-D
 	if (image->get_ysize()==1) {
@@ -2775,8 +2776,76 @@ void NonConvexProcessor::process_inplace(EMData * image) {
 	}
 	// 2-D
 	else if (image->get_zsize()==1) {
+//		if (!isinten) throw ImageDimensionException("Only complex intensity images currently supported by NonConvexProcessor");
+		int nx2=image->get_xsize()/2;
+		int ny2=image->get_ysize()/2;
+		vector<float> rdist = image->calc_radial_dist(nx2*1.5,0,1,false);		// radial distribution to make sure nonconvex values decrease radially
+		// Make sure rdist is decreasing (or flat)
+		for (int i=1; i<nx2; i++) {
+			if (rdist[i]>rdist[i-1]) rdist[i]=rdist[i-1];
+		}
 		
+		image->process_inplace("xform.fourierorigin.tocenter");
+		EMData* binary=image->copy();
+		
+		// First we eliminate convex points from the input image (set to zero)
+		for (int x=0; x<image->get_xsize(); x+=2) {
+			for (int y=1; y<image->get_ysize()-1; y++) {
+				int r=(int)hypot((float)(x/2),(float)(y-ny2));
+				float cen=(*binary)(x,y);
+				if (x==0 || x==nx2*2-2 || (cen>(*binary)(x+2,y) || cen>(*binary)(x-2,y) || cen>(*binary)(x,y+1) || cen >(*binary)(x,y-1) || (*binary)(x,y)>rdist[r])) {		// point is considered nonconvex if lower than surrounding values and lower than mean
+					image->set_value_at_fast(x/2+nx2,y,0.0);	// we are turning image into a full real-space intensity image for now
+					image->set_value_at_fast(nx2-x/2,ny2*2-y-1,0.0);
+				}
+				else {
+					image->set_value_at_fast(x/2+nx2,y,cen);	// we are turning image into a full real-space intensity image for now
+					image->set_value_at_fast(nx2-x/2,ny2*2-y-1,cen);	// It will contain non-zero values only for nonconvex points
+				}
+			}
+		}
+		image->set_value_at_fast(nx2+1,ny2,(*binary)(2,ny2));	// We keep the points near the Fourier origin as a central anchor even though it's convex
+		image->set_value_at_fast(nx2-1,ny2,(*binary)(2,ny2));	// We keep the points near the Fourier origin as a central anchor even though it's convex
+		image->set_value_at_fast(nx2,ny2+1,(*binary)(0,ny2+1));	// We keep the points near the Fourier origin as a central anchor even though it's convex
+		image->set_value_at_fast(nx2,ny2-1,(*binary)(0,ny2-1));	// We keep the points near the Fourier origin as a central anchor even though it's convex
+		for (int y=0; y<ny2*2; y++) image->set_value_at_fast(0,y,0.0f);
+		
+		// Now make a binary version of the convex points
+		float *idat=image->get_data();
+		float *bdat=binary->get_data();
+		int nxy=(nx2*ny2*4);
+		for (int i=0; i<nxy; i++) {
+			bdat[i]=idat[i]==0?0:1.0;		// binary version of the convex points in image
+		}
+		binary->update();
+		
+		// We now use a Gaussian filter on both images, to use Gaussian interpolation to fill in zero values
+		image->set_complex(false);		// so we can use a Gaussian filter on it 
+		binary->set_complex(false);
+
+/*		image->write_image("con.hdf",0);*/
+		image->set_fftpad(false);
+		binary->set_fftpad(false);
+		
+		// Gaussian blur of both images
+		image->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.02f));
+		binary->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.02f));
+
+/*		image->write_image("con.hdf",1);
+		binary->write_image("con.hdf",2);*/
+		
+		for (int x=0; x<image->get_xsize(); x+=2) {
+			for (int y=0; y<image->get_ysize(); y++) {
+				float bv=binary->get_value_at(x/2+nx2,y);
+				image->set_value_at_fast(x,y,image->get_value_at(x/2+nx2,y)/(bv<=0?1.0:bv));
+				image->set_value_at_fast(x+1,y,0.0);
+			}
+		}
+		image->set_complex(true);
+		image->set_fftpad(true);
+		image->process_inplace("xform.fourierorigin.tocorner");
+		delete binary;
 	}
+	else throw ImageDimensionException("3D maps not yet supported by NonConvexProcessor");
 	
 }
 

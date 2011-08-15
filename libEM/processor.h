@@ -3666,7 +3666,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		string get_desc() const
 		{
-			return "Makes a curve or plane non-convex. Useful in generating background curves from power spectra. Anchored at edges and (in 2d) at the center. If local value > mean(surrounding values) => mean(surrounding values).";
+			return "Makes a curve or plane monotonically decreasing and non-convex. Useful in generating background curves from power spectra. Anchored at edges and (in 2d) at the center. If local value > mean(surrounding values) => mean(surrounding values).";
 		}
 
 		TypeDict get_param_types() const

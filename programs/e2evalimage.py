@@ -374,7 +374,6 @@ class GUIEvalImage(QtGui.QWidget):
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
 			self.fft=clip.do_fft()
-			self.wfft.set_data(self.fft)
 			
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
@@ -405,7 +404,6 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wimage.add_shapes(shp)
 			self.wimage.updateGL()
 			
-			self.wfft.set_data(self.fft)
 
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
 
@@ -414,6 +412,13 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[1].background=bg_1d
 		parms[1].dsbg=ds
 		
+		if self.f2dmode>0 :
+			self.fftbg=self.fft.process("math.nonconvex")
+			if self.f2dmode==1 : self.wfft.set_data(self.fft-self.fftbg)
+			else : self.wfft.set_data(self.fftbg)
+
+		else :
+			self.wfft.set_data(self.fft)
 
 		# Fitting not done yet. Need to make 2D background somehow
 #		if parms[1].defocus==0:
