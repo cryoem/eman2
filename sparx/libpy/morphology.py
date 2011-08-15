@@ -315,10 +315,11 @@ def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	pixel_size = dict["apix"]
 	b_factor = dict["bfactor"]
 	ampcont = dict["ampcont"]
-
+	dza = dict["dfdiff"]
+	azz = dict["dfang"]
 
 	if(ny < 1):  ny = nx
-	return  Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, 0.0, 0.0, sign)
+	return  Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):

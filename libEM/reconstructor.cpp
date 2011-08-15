@@ -3341,52 +3341,49 @@ EMData* nn4_ctfReconstructor::finish(bool)
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
-                    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-                    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-                    float tmp=0.0;
-                    if( m_varsnr )
-                    {
-					    float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-                        tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
-                    }
-                    else
-                    {
-                        tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
-                    }
+					int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+					int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+					float tmp=0.0;
+					if( m_varsnr )  {
+						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+					} else  {
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+					}
 
-					if( m_weighting == ESTIMATE ) {
-						int cx = ix;
-						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-						float sum = 0.0;
-						for( int ii = -kc; ii <= kc; ++ii ) {
-							int nbrcx = cx + ii;
-							if( nbrcx >= m_vnxc ) continue;
-							for( int jj= -kc; jj <= kc; ++jj ) {
-								int nbrcy = cy + jj;
-								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-								for( int kk = -kc; kk <= kc; ++kk ) {
-									int nbrcz = cz + jj;
-									if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-									if( nbrcx < 0 ) {
-										nbrcx = -nbrcx;
-										nbrcy = -nbrcy;
-										nbrcz = -nbrcz;
-									}
+			if( m_weighting == ESTIMATE ) {
+				int cx = ix;
+				int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+				int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+				float sum = 0.0;
+				for( int ii = -kc; ii <= kc; ++ii ) {
+					int nbrcx = cx + ii;
+					if( nbrcx >= m_vnxc ) continue;
+					for( int jj= -kc; jj <= kc; ++jj ) {
+						int nbrcy = cy + jj;
+						if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+						for( int kk = -kc; kk <= kc; ++kk ) {
+							int nbrcz = cz + jj;
+							if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+							if( nbrcx < 0 ) {
+								nbrcx = -nbrcx;
+								nbrcy = -nbrcy;
+								nbrcz = -nbrcz;
+							}
 
-									int nbrix = nbrcx;
-									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 ) {
-										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-										sum = sum + pow_a[c];
-							          		  // if(ix%20==0 && iy%20==0 && iz%20==0)
-							           		 //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
-									}
-								}
+							int nbrix = nbrcx;
+							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 ) {
+								int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+								sum = sum + pow_a[c];
+					          		  // if(ix%20==0 && iy%20==0 && iz%20==0)
+					           		 //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
 							}
 						}
-						float wght = 1.0f / ( 1.0f - alpha * sum );
+					}
+				}
+				float wght = 1.0f / ( 1.0f - alpha * sum );
 /*
                         if(ix%10==0 && iy%10==0)
                         {
@@ -3396,10 +3393,10 @@ EMData* nn4_ctfReconstructor::finish(bool)
                             std::cout << std::endl;
                         }
  */
-						tmp = tmp * wght;
-					}
-					(*m_volume)(2*ix,iy,iz) *= tmp;
-					(*m_volume)(2*ix+1,iy,iz) *= tmp;
+				tmp = tmp * wght;
+				}
+				(*m_volume)(2*ix,iy,iz) *= tmp;
+				(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}

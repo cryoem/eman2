@@ -6135,7 +6135,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   SS
 #undef   PROJ
 
-float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
+float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign, float daz, float dang)
 {
 	float cst  = cs*1.0e7f;
 
@@ -20091,13 +20091,13 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 
 EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh,float b_factor,float dza, float azz, float sign)
 {
-	int   ix, iy, iz;
-	int   i,  j, k;
-	int   nr2, nl2;
-	float  dzz, az, ak;
+	int    ix, iy, iz;
+	int    i,  j, k;
+	int    nr2, nl2;
+	float  az, ak;
 	float  scx, scy, scz;
-	int offset = 2 - nx%2;
-	int lsm = nx + offset;
+	int    offset = 2 - nx%2;
+	int    lsm = nx + offset;
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm, ny, nz);
 	float freq = 1.0f/(2.0f*ps);
@@ -20108,15 +20108,24 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	nl2 = nz/2 ;
 	for ( k=0; k<nz;k++) {
 		iz = k;  if(k>nl2) iz=k-nz;
+		float oz2 = iz*scz*iz*scz;
 		for ( j=0; j<ny;j++) {
 			iy = j;  if(j>nr2) iy=j - ny;
+			float oy = iy*scy;
+			float oy2 = oy*oy;
 			for ( i=0; i<lsm/2; i++) {
 				ix=i;
-				ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz, 0.5f)*freq;
-				if(ak!=0) az=0.0; else az=M_PI;
-				dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f));
-				(*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
-				(*ctf_img1) (i*2+1,j,k) = 0.0f;
+				if( dza == 0.0f) {
+					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
+					(*ctf_img1) (i*2,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+				} else {
+					float ox = ix*scx;
+					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
+					az = atan2(oy, ox);
+					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f));
+					(*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
+				}
+				//(*ctf_img1) (i*2+1,j,k) = 0.0f;  PAP  I assumed new EMData sets to zero
 			}
 		}
 	}

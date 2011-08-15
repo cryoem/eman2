@@ -1546,14 +1546,22 @@ public:
 	m_ampcont = params["ampcont"];
 	m_bfactor = params["bfactor"];
         m_defocus = params["defocus"];
+	m_dza     = params["dfdiff"];
+	m_azz     = params["dfang"];
         m_winsize2= m_winsize*m_winsize;
         m_vecsize = m_winsize2/4;
     }
 
-    static float get_ctf( int r2 )
+    static float get_ctf( int r2 ,int i, int j)
     {
-        float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
-        return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1 );
+        float  ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
+	if(m_dza == 0.0f)
+        	return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+	else {
+		float az = atan2(float(j), float(i));
+		float dzz = m_defocus + m_dza/2.0f*sin(2*(az-m_azz*M_PI/180.0f));
+		return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+	}
     }
 
 private:
@@ -1565,6 +1573,8 @@ private:
     static float m_ampcont;
     static float m_bfactor;
     static float m_defocus;
+    static float m_dza;
+    static float m_azz;
 };
 
 
@@ -1572,7 +1582,7 @@ int ctf_store::m_winsize, ctf_store::m_winsize2, ctf_store::m_vecsize;
 
 float ctf_store::m_cs, ctf_store::m_voltage, ctf_store::m_pixel;
 float ctf_store::m_ampcont, ctf_store::m_bfactor;
-float ctf_store::m_defocus;
+float ctf_store::m_defocus, ctf_store::m_dza, ctf_store::m_azz;
 
 
 class ctf_store_new
@@ -1591,6 +1601,8 @@ public:
 	m_ampcont = params["ampcont"];
 	m_bfactor = params["bfactor"];
         m_defocus = params["defocus"];
+	m_dza     = params["dfdiff"];
+	m_azz     = params["dfang"];
         m_winsize2= m_winsize*m_winsize;
         m_vecsize = m_winsize2/4;
     }
@@ -1598,7 +1610,7 @@ public:
     static float get_ctf( float r2 )
     {
         float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
-        return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1 );
+        return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
     }
 
 private:
@@ -1610,6 +1622,8 @@ private:
     static float m_ampcont;
     static float m_bfactor;
     static float m_defocus;
+    static float m_dza;
+    static float m_azz;
 };
 
 
@@ -1617,7 +1631,7 @@ int ctf_store_new::m_winsize, ctf_store_new::m_winsize2, ctf_store_new::m_vecsiz
 
 float ctf_store_new::m_cs, ctf_store_new::m_voltage, ctf_store_new::m_pixel;
 float ctf_store_new::m_ampcont, ctf_store_new::m_bfactor;
-float ctf_store_new::m_defocus;
+float ctf_store_new::m_defocus, ctf_store_new::m_dza, ctf_store_new::m_azz;
 
 
 
@@ -1632,7 +1646,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 	for (int i = 0; i <= n2; i++) {
 	        int r2 = i*i+j*j;
 		if ( (r2<n*n/4) && !((0==i) && (j<0)) ) {
-		        float  ctf = ctf_store::get_ctf( r2 );
+		        float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1646,7 +1660,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			
+
 			int iza, iya;
 			if (izn >= 0)  iza = izn + 1;
 			else           iza = n + izn + 1;
@@ -1656,51 +1670,12 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 
 			if(remove > 0 ) {
 				cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
-				(*w)(ixn,iya,iza) -= ctf*ctf*mult;
+				(*w)(ixn,iya,iza)  -= ctf*ctf*mult;
 			} else {
 				cmplx(ixn,iya,iza) += btq*ctf*float(mult);
-				(*w)(ixn,iya,iza) += ctf*ctf*mult;
+				(*w)(ixn,iya,iza)  += ctf*ctf*mult;
  			}
 
-  				       //	std::cout<<"	"<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
-		
-			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
-				if (ixn >= 0) {
-					int iza, iya;
-					if (izn >= 0)  iza = izn + 1;
-					else           iza = n + izn + 1;
-
-					if (iyn >= 0) iya = iyn + 1;
-					else          iya = n + iyn + 1;
-
-                                        if(remove > 0 ) {
-                                            cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
-					    (*w)(ixn,iya,iza) -= ctf*ctf*mult;
-                                        } else {
-				            cmplx(ixn,iya,iza) += btq*ctf*float(mult);
-					    (*w)(ixn,iya,iza) += ctf*ctf*mult;
-                                        }
-
-				       //	std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
-				} else {
-					int izt, iyt;
-					if (izn > 0) izt = n - izn + 1;
-					else         izt = -izn + 1;
-
-					if (iyn > 0) iyt = n - iyn + 1;
-					else         iyt = -iyn + 1;
-
-                                        if( remove > 0 ) {
-					    cmplx(-ixn,iyt,izt) -= conj(btq)*ctf*float(mult);
-					    (*w)(-ixn,iyt,izt) -= ctf*ctf*float(mult);
-                                        } else {
-					    cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
-					    (*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
-                                        }
-
-				        //	std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
-				}
-			}*/
 		}
 	}
 }
@@ -1715,7 +1690,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 	for (int i = 0; i <= n2; i++) {
 	        int r2 = i*i + j*j;
 		if ( (r2< n*n/4) && !((0==i) && (j< 0)) ) {
-                        float  ctf = ctf_store::get_ctf(r2);
+                        float  ctf = ctf_store::get_ctf(r2, i, j);
 
 			 //	   if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
@@ -1747,43 +1722,6 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 				(*w)(ixn,iya,iza) += mult*ctf*ctf;
 			}
 
-
-			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
-				if (ixn >= 0) {
-					int iza, iya;
-					if (izn >= 0)  iza = izn + 1;
-					else           iza = n + izn + 1;
-
-					if (iyn >= 0) iya = iyn + 1;
-					else          iya = n + iyn + 1;
-
-                                        if( remove > 0 ) {
-                                        	cmplx(ixn,iya,iza) -= btq*float(mult);
-                                        	(*w)(ixn,iya,iza) -= mult*ctf*ctf;
-                                        } else {
-						cmplx(ixn,iya,iza) += btq*float(mult);
-						(*w)(ixn,iya,iza) += mult*ctf*ctf;
-                                        }
-
-				} else {
-					int izt, iyt;
-					if (izn > 0) izt = n - izn + 1;
-					else         izt = -izn + 1;
-
-					if (iyn > 0) iyt = n - iyn + 1;
-					else         iyt = -iyn + 1;
-
-
-                                        if( remove > 0 ) {
-                                        	cmplx(-ixn,iyt,izt) -= conj(btq)*float(mult);
-						(*w)(-ixn,iyt,izt) -= mult*ctf*ctf;
-	                                } else {
-						cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
-						(*w)(-ixn,iyt,izt) += mult*ctf*ctf;
-                                        }
-					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
-				}
-			}*/
 		}
 	}
 }
@@ -2204,7 +2142,7 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 		for (int ix = 0; ix <= nxc; ix++) {
 			int r2 = ix*ix+iy*iy;
         		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) {
-			        float  ctf = ctf_store::get_ctf( r2 )*10.f;
+			        float  ctf = ctf_store::get_ctf( r2, ix, iy )*10.f;// ???PAP
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];

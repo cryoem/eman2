@@ -11,35 +11,3 @@ e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_
 rm tmp.hdf
 
 ../generate_projections.py --CTF --format="bdb" --apix=5.2 || exit
-
-sxboxer.py -A cmd --boxsize=64 --write_box_images --var --do_ctf --ctf_cs=2 --ctf_fstart=0.02 --ctf_fstop=0.5 --ctf_ampcont=10 --ctf_volt=120 --pix_in=5.2 --pix_out=5.2 --ccf_lo=1.0 --ccf_hi=30.0 --outformat=bdb --out_file=bdb:data2 mic*.hdf --force
-
-# Reference-free alignment of the entire 2D dataset
-sxali2d.py bdb:data ali2d_c --ou=30 --xr=3 --yr=3 --ts=1 --maxit=5 --CTF || exit
-
-# K-mean clustering of the 2D dataset
-sxk_means.py bdb:data kmeans --K=12 --maxit=100 --rand_seed=10 --init_method='d2w' || exit
-
-# Multireference alignment of the 2D dataset
-sxmref_ali2d.py bdb:data kmeans/averages.hdf ali2d_m --ou=30 --xr=3 --yr=3 --ts=1 --center=1 --maxit=5 --function="ref_ali2d_m" --rand_seed=10 --CTF || exit
-
-# Determination of the initial structure using class averages and common-lines
-sxfind_struct.py ali2d_m/multi_ref.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.3 --maxit=20 --rand_seed=10 --trials=2 || exit
-
-# 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
-sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf || exit
-
-# Low-pass filtration of the initial structure
-e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 || exit
-
-# 2D alignment parameters are transformed to 3D alignment parameters
-sxparams_2D_to_3D.py bdb:data || exit
-
-# 3D projection alignment - refinement of the initial structure
-sxali3d.py bdb:data ../fmodel_structure.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF || exit
-
-# Refinement of the 3D structure using high accuracy alignment
-sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function=reference4 --CTF --debug || exit
-
-
-

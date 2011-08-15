@@ -448,6 +448,8 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 	pixel_size = dict["apix"]
 	b_factor = dict["bfactor"]
 	ampcont = dict["ampcont"]
+	dza = dict["dfdiff"]
+	azz = dict["dfang"]
 
         if dopad and not img.is_complex():  ip = 1
 	else:                             ip = 0
@@ -461,12 +463,14 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 		"amp_contrast": ampcont,
 		"dopad": ip,
 		"binary": binary,
-		"sign": sign}
+		"sign": sign,
+		"dza": dza,
+		"azz":azz}
 	tmp = Processor.EMFourierFilter(img, params)
 	tmp.set_attr_dict({"ctf":ctf})
 	return tmp
 
-def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
+def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0):
 	"""
 		defocus: Angstrom
 		cs: mm
@@ -484,6 +488,8 @@ def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
 		"B_factor" : b_factor,
 		"amp_contrast": wgh,
 		"sign": sign,
+		"dza": dza,
+		"azz":azz,
 		"undo": 1}
 	return Processor.EMFourierFilter(e, params)
 

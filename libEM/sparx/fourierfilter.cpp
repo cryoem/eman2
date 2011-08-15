@@ -64,7 +64,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	bool   complex_input;
 	vector<float> table;
 	int undoctf=0;
-	float voltage=100.0f, ak=0.0f, cs=2.0f, ps=1.0f, b_factor=0.0f, wgh=0.1f, sign=-1.0f;
+	float voltage=100.0f, ak=0.0f, cs=2.0f, ps=1.0f, b_factor=0.0f, wgh=0.1f, sign=-1.0f, dza = 0.0f, azz = 0.0f;
+	float  tf=0.0f;
 	if (!fimage)  return NULL;
 	const int ndim = fimage->get_ndim();
 	// Set amount of Fourier padding
@@ -251,6 +252,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			undoctf  = params["undo"];
 			ix       = params["binary"];
 			if(ix == 1) {undoctf = 2;  b_factor=0.0;} //ignore B-factor for the binary CTF
+			dza = params["dza"];
+			azz = params["azz"];
 			break;
 		case KAISER_I0:
 		case KAISER_SINH:
@@ -636,13 +639,25 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 					for ( ix = 1; ix <= lsd2; ix++) {
 						jx=ix-1;
-						if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
-		        						     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
-						else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3)/ps/2.0f;
-						else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
-					               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
-			      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
-						float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+						if(ny>1 && nz<=1 ) {
+							//  astigmatism makes sense only on 2D
+							ak = sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
+		        				        static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
+							if(dza == 0.0f)  tf = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+							else {
+								float az = atan2(static_cast<float>(jy)/nyp2, static_cast<float>(jx)/lsd3);
+								float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f));
+								tf = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
+							}
+						}  else if(ny<=1) {
+							ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3)/ps/2.0f;
+							tf = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+						}  else if(nz>1)  {
+							ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
+					               		       static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
+			      					       static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
+							tf  =Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+						}
 						switch (undoctf) {
 						case 0:
 						    fp->cmplx(ix,iy,iz) *= tf;

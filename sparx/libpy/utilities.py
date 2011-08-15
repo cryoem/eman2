@@ -2794,14 +2794,14 @@ def get_ctf(ima):
 	
 	ctf_params = ima.get_attr("ctf")
 	
-	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
+	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont, ctf_params.dfdiff, ctf_params.dfang
 
 def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont]
-	[ microns, mm, kV, Angstroms, A^2, %]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmastism_amplitude, astigmatism_angle]
+	[ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
 
@@ -2820,7 +2820,11 @@ def generate_ctf(p):
 		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
 
 	ctf = EMAN2Ctf()
-	ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
+	if(len(p) == 6):
+		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
+	else:
+		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
+		
 	return ctf
 
 def set_ctf(ima, p):
