@@ -100,16 +100,6 @@ class Popuptwodali(QWidget):
 	self.a2dheader_button.move(self.x-5+180, 340)
 	self.connect(self.a2dheader_button, SIGNAL("clicked()"), self.seta2dheader)
 	
-	'''
-	self.ali2dheader_button = QtGui.QPushButton("set xform.align2d to zero", self)
-	self.ali2dheader_button.move(self.x-5, 370)
-	self.connect(self.ali2dheader_button, SIGNAL("clicked()"), self.setali2dheader)
-	ort=QtGui.QLabel('<b>or</b>', self)
-	ort.move(220,370)
-	self.ali2drndheader_button = QtGui.QPushButton("set xform.align2d to random values", self)
-	self.ali2drndheader_button.move(self.x-5+240, 370)
-	self.connect(self.ali2drndheader_button, SIGNAL("clicked()"), self.setali2drndheader)
-	'''
 	self.advbtn = QPushButton("Advanced Parameters", self)
         self.advbtn.move(self.x-5, 390)
         #sets an infotip for this Pushbutton
