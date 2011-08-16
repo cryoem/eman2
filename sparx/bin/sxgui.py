@@ -846,6 +846,7 @@ class PopupHelicalRefinement(QWidget):
 				fname, ext = os.path.splitext(fname)
 				fdir = userfile[0:rind]
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+	
 	np = self.nprocedit.text()
 	
 	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
@@ -863,6 +864,7 @@ class PopupHelicalRefinement(QWidget):
 		fname = 'ihrsrcmd_%02d_%02d_%04d_%02d_%02d_%02d.txt'%(a.tm_mday,a.tm_mon, a.tm_year,a.tm_hour, a.tm_min, a.tm_sec)
 		f = open(fname,'a')
 		f.write(cmd1)
+		f.write('\n')
 		f.close()
 	
 	print cmd1
