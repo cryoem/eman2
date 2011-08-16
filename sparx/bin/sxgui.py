@@ -129,7 +129,7 @@ class Popuptwodali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, 500)
+	self.RUN_button.move(230, 510)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
@@ -1294,7 +1294,7 @@ class Popupthreedali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230,  self.y+170)
+	self.RUN_button.move(230,  self.y+180)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali3d)
         #Labels and Line Edits for User Input
