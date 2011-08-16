@@ -516,11 +516,11 @@ class PopupHelicalRefinement(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 	
-	y = [0.0]*40
+	
 	# populate with default values
 	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"helical","usrfuncfile":""}
 	
-	row = 0
+	
 	self.setadv=False
 	self.cmd = ""
 	self.y=90
@@ -529,13 +529,13 @@ class PopupHelicalRefinement(QWidget):
 	self.setWindowTitle('sxihrsr')
         #Here we just set a label and its position in the window
 	title1=QtGui.QLabel('<b>sihrsr</b> - performs helical refinement', self)
-	y[0] = 10
-	title1.move(10,y[row])
+	y = 10
+	title1.move(10,y)
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	
+	y = y +30
 	self.repopbtn = QPushButton("Repopulate With Previously Saved Parameters", self)
-        self.repopbtn.move(self.x-5,y[row])
+        self.repopbtn.move(self.x-5,y)
         #sets an infotip for this Pushbutton
         self.repopbtn.setToolTip('Repopulate With Saved Parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -543,183 +543,172 @@ class PopupHelicalRefinement(QWidget):
 
 	
         #Here we create a Button(file_button with title run open .hdf) and its position in the window
-	row = row+1
-	y[row] = y[row-1] +30	
+	
+	y = y +30	
 	self.file_button = QtGui.QPushButton("Open .hdf", self)
-	self.file_button.move(285, y[row])
+	self.file_button.move(285, y)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
         #exactly the same as above, but for subfunction choose_file1
 	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
-	self.file_button1.move(385,y[row])
+	self.file_button1.move(385,y)
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
 	#Example for User input stack name
         #First create the label and define its position
 	stackname= QtGui.QLabel('Name of your stack', self)
-	stackname.move(10,y[row])
+	stackname.move(10,y)
         #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
-        self.stacknameedit.move(140,y[row])
+        self.stacknameedit.move(140,y)
         #Adds a default value for the line edit
 	self.stacknameedit.setText(self.savedparmsdict['stackname'])
 	
 	# file_button2 for input parameters
-	row = row+1
-	y[row] = y[row-1] +30	
+	
+	y = y +30	
 	self.file_button2 = QtGui.QPushButton("Open .txt", self)
-	self.file_button2.move(285, y[row])
+	self.file_button2.move(285, y)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button2, QtCore.SIGNAL("clicked()"), self.choose_file2)
 	parameterfile= QtGui.QLabel('Projection params', self)
-	parameterfile.move(10,y[row])
+	parameterfile.move(10,y)
         #Now add a line edit and define its position
 	self.initialprojectionparameteredit=QtGui.QLineEdit(self)
-        self.initialprojectionparameteredit.move(140,y[row])
+        self.initialprojectionparameteredit.move(140,y)
         #Adds a default value for the line edit
 	self.initialprojectionparameteredit.setText(self.savedparmsdict['initialprojectionparameter'])
 	
 	# file_button3 for referencevolume
-	row = row+1
-	y[row] = y[row-1] +30	
+	y = y +30	
 	self.file_button3 = QtGui.QPushButton("Open .hdf", self)
-	self.file_button3.move(285, y[row])
+	self.file_button3.move(285, y)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button3, QtCore.SIGNAL("clicked()"), self.choose_file3)
 	volumefile= QtGui.QLabel('Initial volume', self)
-	volumefile.move(10,y[row])
+	volumefile.move(10,y)
         #Now add a line edit and define its position
 	self.referencevolumeedit=QtGui.QLineEdit(self)
-        self.referencevolumeedit.move(140,y[row])
+        self.referencevolumeedit.move(140,y)
         #Adds a default value for the line edit
 	self.referencevolumeedit.setText(self.savedparmsdict['referencevolume'])
 	
 
 	#The same as above, but many line edits include Infotips
-	row = row+1
-	y[row] = y[row-1] +30	
+	y = y +30	
 	foldername= QtGui.QLabel('Output folder', self)
-	foldername.move(10,y[row])
+	foldername.move(10,y)
 	self.foldernameedit=QtGui.QLineEdit(self)
-	self.foldernameedit.move(140,y[row])
+	self.foldernameedit.move(140,y)
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	
+	y = y +30
 	outradius= QtGui.QLabel('Out radius', self)
-	outradius.move(10, y[row] )
+	outradius.move(10, y )
 	self.outradiusedit=QtGui.QLineEdit(self)
-	self.outradiusedit.move(140,y[row])
+	self.outradiusedit.move(140,y)
 	self.outradiusedit.setText(self.savedparmsdict['outradius'])
 	self.outradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')
 	
-	row = row+1
-	y[row] = y[row-1] +30	
+	y = y +30	
 	xrange= QtGui.QLabel('x range', self)
-	xrange.move(10,y[row])
+	xrange.move(10,y)
 	self.xrangeedit=QtGui.QLineEdit(self)
-	self.xrangeedit.move(140,y[row])
+	self.xrangeedit.move(140,y)
 	self.xrangeedit.setText(self.savedparmsdict['xrange'])
 	self.xrangeedit.setToolTip('Range for translational search in x\nif set to 0 no x directional alignment will be performed')
-	row = row+1
-	y[row] = y[row-1] +30
+	y = y +30
 	xtrans= QtGui.QLabel('step of x', self)
-	xtrans.move(10,y[row])
+	xtrans.move(10,y)
 	self.xtransedit=QtGui.QLineEdit(self)
-	self.xtransedit.move(140,y[row])
+	self.xtransedit.move(140,y)
 	self.xtransedit.setText(self.savedparmsdict['xtrans'])
 	self.xtransedit.setToolTip('Step of translational search in x direction\nlarger values increase the speed but decrease the accuracy')
 	
-	row = row+1
-	y[row] = y[row-1] +30	
+	y = y +30	
 	ynumber= QtGui.QLabel('ynumber', self)
-	ynumber.move(10,y[row])
+	ynumber.move(10,y)
 	self.ynumberedit=QtGui.QLineEdit(self)
-	self.ynumberedit.move(140,y[row])
+	self.ynumberedit.move(140,y)
 	self.ynumberedit.setText(self.savedparmsdict['ynumber'])
 	self.ynumberedit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')
-	
-	row = row+1
-	y[row] = y[row-1] +30	
+		
+	y = y +30	
 	dp= QtGui.QLabel('Helical Rise', self)
-	dp.move(10,y[row])
+	dp.move(10,y)
 	self.dpedit=QtGui.QLineEdit(self)
-	self.dpedit.move(140,y[row])
+	self.dpedit.move(140,y)
 	self.dpedit.setText(self.savedparmsdict['dp'])
 	self.dpedit.setToolTip('helical rise in angstrom')
 	
-	row = row+1
-	y[row] = y[row-1] +30	
+	y = y +30	
 	dphi= QtGui.QLabel('Helical Angle', self)
-	dphi.move(10,y[row])
+	dphi.move(10,y)
 	self.dphiedit=QtGui.QLineEdit(self)
-	self.dphiedit.move(140,y[row])
+	self.dphiedit.move(140,y)
 	self.dphiedit.setText(self.savedparmsdict['dp'])
 	self.dphiedit.setToolTip('helical angle in degree')	
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	y = y +30
 	nriter= QtGui.QLabel('Nr. of Iterations', self)
-	nriter.move(10,y[row])
+	nriter.move(10,y)
 	self.nriteredit=QtGui.QLineEdit(self)
-	self.nriteredit.move(140,y[row])
+	self.nriteredit.move(140,y)
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n ')
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	y = y +30
 	nproc= QtGui.QLabel('Nr. of Processors', self)
-	nproc.move(10,y[row])
+	nproc.move(10,y)
 	self.nprocedit=QtGui.QLineEdit(self)
-	self.nprocedit.move(140,y[row])
+	self.nprocedit.move(140,y)
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
 	
-        row = row+1
-	y[row] = y[row-1] +30
+      
+	y = y +30
 	header=QtGui.QLabel('Attributes xform.projection and active parameters must be set in the input stack', self)
-	header.move(10,y[row])
+	header.move(10,y)
 	
 	#not linked to a function yet
-	row = row+1
-	y[row] = y[row-1] +30
+	
+	y = y +30
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
-	self.activeheader_button.move(self.x-5, y[row])
+	self.activeheader_button.move(self.x-5, y)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
 	self.projectionheader_button = QtGui.QPushButton("set xform.projection", self)
-	self.projectionheader_button.move(self.x-5, y[row])
+	self.projectionheader_button.move(self.x-5, y)
 	self.projectionheader_button.setToolTip('Depending whether the projection parameters given or not, set xform projection to zero or specific vlues ')
 	self.connect(self.projectionheader_button, SIGNAL("clicked()"), self.setprojectionheader)
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	
+	y = y +30
 	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x-5, y[row])
+        self.advbtn.move(self.x-5, y)
         #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for helical refinement such as center and CTF')
         #when this button is clicked, this action starts the subfunction advanced params
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
-	
-	row = row+1
-	y[row] = y[row-1] +30
+		
+	y = y +30
 	self.savepbtn = QPushButton("Save Input Parameters", self)
-        self.savepbtn.move(self.x-5, y[row])
+        self.savepbtn.move(self.x-5, y)
         #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
 	
-	row = row+1
-	y[row] = y[row-1] +30
+	y = y +30
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
-        self.cmdlinebtn.move(self.x-5, y[row])
+        self.cmdlinebtn.move(self.x-5, y)
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
 
 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
-	row = row+1
-	y[row] = y[row-1] +30
+	
+	y = y +30
 	self.RUN_button = QtGui.QPushButton('Run sxihrsr', self)
 	# make 3D textured push button look
 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
@@ -727,14 +716,13 @@ class PopupHelicalRefinement(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, y[row])
+	self.RUN_button.move(230, y)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
         #Labels and Line Edits for User Input
-	row = row+1
-	y[row] = y[row-1] +30
+	y = y +30
 	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.projection in each image\'s header. The images themselves are not changed.', self)
-	outinfo.move(10,y[row])
+	outinfo.move(10,y)
 
 	
 
