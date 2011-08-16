@@ -143,7 +143,7 @@ class Popuptwodali(QWidget):
         #Example for User input stack name
         #First create the label and define its position
 	
-	stackname= QtGui.QLabel('Name of your stack', self)
+	stackname= QtGui.QLabel('Name of input stack', self)
 	stackname.move(10,self.y)
         #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
@@ -182,13 +182,13 @@ class Popuptwodali(QWidget):
 	self.transedit.move(140,self.y+120)
 	self.transedit.setText(self.savedparmsdict['trans'])
 	self.transedit.setToolTip('Step of translational search in x, y direction\nlarger values increase the speed but decrease the accuracy')	
-	nriter= QtGui.QLabel('Nr. of Iterations', self)
+	nriter= QtGui.QLabel('Number of Iterations', self)
 	nriter.move(10,self.y+150)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(140,self.y+150)
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
-	nproc= QtGui.QLabel('Nr. of Processors', self)
+	nproc= QtGui.QLabel('Number of Processors', self)
 	nproc.move(10,self.y+180)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(140,self.y+180)
@@ -200,7 +200,7 @@ class Popuptwodali(QWidget):
 	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     def outputinfo_ali2d(self):
-    	QMessageBox.information(self, "ali2d output",'Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.')
+    	QMessageBox.information(self, "ali2d output",'Output files (average of aligned images and Fourier Ring Correlation curve)\nare saved in Output folder. alignment parameters are saved in the attribute \nxform.align2d in each image header. The images themselves are not changed.')
 	
     def gencmdline(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
@@ -555,7 +555,7 @@ class PopupHelicalRefinement(QWidget):
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
 	#Example for User input stack name
         #First create the label and define its position
-	stackname= QtGui.QLabel('Name of your stack', self)
+	stackname= QtGui.QLabel('Name of input stack', self)
 	stackname.move(10,y)
         #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
@@ -603,7 +603,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	y = y +30
-	outradius= QtGui.QLabel('Out radius', self)
+	outradius= QtGui.QLabel('Outer radius', self)
 	outradius.move(10, y )
 	self.outradiusedit=QtGui.QLineEdit(self)
 	self.outradiusedit.move(140,y)
@@ -650,7 +650,7 @@ class PopupHelicalRefinement(QWidget):
 	self.dphiedit.setToolTip('helical angle in degree')	
 	
 	y = y +30
-	nriter= QtGui.QLabel('Nr. of Iterations', self)
+	nriter= QtGui.QLabel('Number of Iterations', self)
 	nriter.move(10,y)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(140,y)
@@ -658,7 +658,7 @@ class PopupHelicalRefinement(QWidget):
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n ')
 	
 	y = y +30
-	nproc= QtGui.QLabel('Nr. of Processors', self)
+	nproc= QtGui.QLabel('Number of CPUs', self)
 	nproc.move(10,y)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(140,y)
@@ -714,14 +714,14 @@ class PopupHelicalRefinement(QWidget):
 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 	
 	self.RUN_button.setStyleSheet(s)
-	
-	
+
+
 	self.RUN_button.move(230, y)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
         #Labels and Line Edits for User Input
 	y = y +30
-	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.projection in each image\'s header. The images themselves are not changed.', self)
+	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Shell Correlation curve)\nare saved in Output folder.  Alignment parameters are saved in the attribute \nxform.projection in each image header. The images themselves are not changed.', self)
 	outinfo.move(10,y)
 
 	
@@ -743,7 +743,7 @@ class PopupHelicalRefinement(QWidget):
 	output=self.foldernameedit.text()
 	print "output folder="+ output
 	ou=self.outradiusedit.text()
-	print "Out radius="+ ou
+	print "Outer radius="+ ou
 	xr=self.xrangeedit.text()
 	print "xr=" +xr
 	ynumber=self.ynumberedit.text()
@@ -855,7 +855,7 @@ class PopupHelicalRefinement(QWidget):
 	self.gencmdline(writefile=False)
 	pickle.dump(self.savedparmsdict,output)
 	output.close()
-	
+
     def repoparms(self):
     
   	
@@ -1114,7 +1114,7 @@ class Popupthreedali(QWidget):
         #Example for User input stack name
         #First create the label and define its position
 	
-	stackname= QtGui.QLabel('Name of your stack', self)
+	stackname= QtGui.QLabel('Name of input stack', self)
 	stackname.move(10,self.y)
         #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
@@ -1175,7 +1175,7 @@ class Popupthreedali(QWidget):
 	self.deltaedit.setToolTip('angular step for the reference projections in respective iterations')		
 	self.y =self.y+30
 
-	nriter= QtGui.QLabel('Nr. of Iterations', self)
+	nriter= QtGui.QLabel('Number of Iterations', self)
 	nriter.move(10,self.y+30)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(140,self.y+30)
@@ -1183,7 +1183,7 @@ class Popupthreedali(QWidget):
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
 	self.y =self.y+30
 	
-	nproc= QtGui.QLabel('Nr. of Processors', self)
+	nproc= QtGui.QLabel('Number of Processors', self)
 	nproc.move(10,self.y+30)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(140,self.y+30)
@@ -1327,9 +1327,9 @@ class Popupthreedali(QWidget):
 				fdir = userfile[0:rind]
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
-	
+
 	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
-	
+
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
 	
