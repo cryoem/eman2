@@ -518,7 +518,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"helical","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "theta_step":"1.0","nise":"2", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
 	
 	
 	self.setadv=False
@@ -649,6 +649,20 @@ class PopupHelicalRefinement(QWidget):
 	self.dphiedit.setText(self.savedparmsdict['dp'])
 	self.dphiedit.setToolTip('helical angle in degree')	
 	
+	y = y +30	
+	rmax= QtGui.QLabel('Helical Out Radius', self)
+	rmax.move(10,y)
+	self.rmaxedit=QtGui.QLineEdit(self)
+	self.rmaxedit.move(140,y)
+	self.rmaxedit.setText(self.savedparmsdict['rmax'])
+	self.rmaxedit.setToolTip('helical out radious')	
+	
+	y = y +30	
+	self.CTF_radio_button=QtGui.QRadioButton('CTF', self)
+	self.CTF_radio_button.move(10,y)
+	self.CTF_radio_button.setChecked(True)
+	self.CTF_radio_button.setToolTip('helical out radious')	
+	
 	y = y +30
 	nriter= QtGui.QLabel('Number of Iterations', self)
 	nriter.move(10,y)
@@ -674,7 +688,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	y = y +30
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
-	self.activeheader_button.move(self.x-5, y)
+	self.activeheader_button.move(self.x+180, y)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
 	self.projectionheader_button = QtGui.QPushButton("set xform.projection", self)
 	self.projectionheader_button.move(self.x-5, y)
@@ -754,18 +768,24 @@ class PopupHelicalRefinement(QWidget):
 	print "dp=" +dp
 	dphi=self.dphiedit.text()
 	print "dp=" +dphi
+	rmax=self.rmaxedit.text()
+	print "rmax==",rmax
 	maxit=self.nriteredit.text()
 	print "maxit="+maxit
 	
 	cmd1 = " sxihrsr.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 	
-	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" "+ " --ynumber="+str(ynumber)+" "+ " --txs="+str(tx)+" " + " --dp="+str(dp)+" " + " --dphi="+str(dphi)+" "+ " --maxit="+ str(maxit) 
+	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" "+ " --ynumber="+str(ynumber)+" "+ " --txs="+str(tx)+" " + " --dp="+str(dp)+" " + " --dphi="+str(dphi)+" "+ " --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
+	if (self.CTF_radio_button.isChecked() ):
+		args = args +" --CTF"
+		CTF = "True"
+	else:
+		CTF = "False"
 	
 	mask=''
 	ctr=''
 	ringstep=''
 	inrad=''
-	CTF=''
 	snr=''
 	fourvar=''
 	gpn=''
@@ -779,8 +799,8 @@ class PopupHelicalRefinement(QWidget):
 	cmd1 = cmd1 + args
 	
 	if self.setadv:	
-		ctr=self.w.centeredit.text()
-		cmd1 = cmd1+" --center=" +str(ctr)
+		delta=self.w.deltaedit.text()
+		cmd1 = cmd1+" --delta=" +str(delta)
 		
 		ringstep = self.w.ringstepedit.text()
 		cmd1 = cmd1+" --rs="+str(ringstep)
@@ -788,19 +808,23 @@ class PopupHelicalRefinement(QWidget):
 		inrad = self.w.innerradiusedit.text()
 		cmd1 = cmd1 + " --ir=" + str(inrad)
 		
-		CTF=str(self.w.ctfedit.text())
-		if str(CTF) == 'True':
-			cmd1 = cmd1 + " --CTF"
-			
+				
 		snr = self.w.snredit.text()
 		cmd1 = cmd1 + " --snr=" + str(snr)
 		
-		fourvar = self.w.fourvaredit.text()
-		if str(fourvar) == 'True':
-			cmd1 = cmd1 + " --Fourvar"
+		initial_theta = self.w.initial_thetaedit.text()
+		cmd1 = cmd1 + " --initial_theta=" + str(initial_theta)
 			
-		gpn = self.w.gpnredit.text()
-		cmd1 = cmd1 + " --Ng=" + str(gpn)
+		theta_step = self.w.theta_stepedit.text()
+		cmd1 = cmd1 + " --Ng=" + str(theta_step)
+		
+		nise = self.w.niseedit.text()
+		cmd1 = cmd1 + " --nise=" + str(nise)
+		
+		sym = self.w.symedit.text()
+		cmd1 = cmd1 + " --sym=" + str(sym)
+		datasym = self.w.datasymedit.text()
+		cmd1 = cmd1 + " --datasym=" + str(datasym)
 		
 		userf = self.w.usrfuncedit.text()
 		
@@ -820,7 +844,7 @@ class PopupHelicalRefinement(QWidget):
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -874,24 +898,31 @@ class PopupHelicalRefinement(QWidget):
 	self.ynumberedit.setText(self.savedparmsdict['ynumber'])
 	self.dpedit.setText(self.savedparmsdict['dp'])
 	self.dphiedit.setText(self.savedparmsdict['dphi'])
+	self.rmaxedit.setText(self.savedparmsdict['rmax'])
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	if( self.savedparmsdict['ctf'] == str("True")):
+		self.CTF_radio_button.setChecked(True)
+	else:
+		self.CTF_radio_button.setChecked(False)
 	if self.setadv:
 		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.centeredit.setText(self.savedparmsdict['center'])
+		self.w.deltaedit.setText(self.savedparmsdict['delta'])
 		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
 		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.ctfedit.setText(self.savedparmsdict['ctf'])
 		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.fourvaredit.setText(self.savedparmsdict['fourvar'])
-		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
+		self.w.initial_thetaedit.setText(self.savedparmsdict['initial_theta'])
+		self.w.theta_stepedit.setText(self.savedparmsdict['theta_step'])
+		self.w.niseedit.setText(self.savedparmsdict['nise'])
+		self.w.symedit.setText(self.savedparmsdict['sym'])
+		self.w.datasymedit.setText(self.savedparmsdict['datasym'])
 		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
 		
     def advparams(self):
         print "Opening a new popup window..."
-        self.w = Popupadvparams_ali2d(self.savedparmsdict)
-        self.w.resize(500,450)
+        self.w = Popupadvparams_helical(self.savedparmsdict)
+        self.w.resize(500,500)
         self.w.show()
 	self.setadv=True
     def setactiveheader(self):
@@ -956,98 +987,128 @@ class Popupadvparams_helical(QWidget):
         #Here we just set the window title
 	self.setWindowTitle('sxihrsr advanced parameter selection')
         #Here we just set a label and its position in the window
+	y = 10
 	title1=QtGui.QLabel('<b>sxihrsr</b> - set advanced params', self)
-	title1.move(10,10)
+	title1.move(10,y)
         #Labels and Line Edits for User Input
         #Just a label
+	y = y +20
 	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
-	title2.move(10,40)
+	title2.move(10,y)
 
 	self.savedparmsdict=savedparms
         #Example for User input stack name
         #First create the label and define its position
+	y = y+20
 	maskname= QtGui.QLabel('Mask', self)
-	maskname.move(10,60)
+	maskname.move(10,y)
         #Now add a line edit and define its position
 	self.masknameedit=QtGui.QLineEdit(self)
-        self.masknameedit.move(140,60)
+        self.masknameedit.move(140,y)
         #Adds a default value for the line edit
 	self.masknameedit.setText(self.savedparmsdict['maskname'])
 	self.masknameedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
 	
 	self.mskfile_button = QtGui.QPushButton("Open .hdf", self)
-	self.mskfile_button.move(285, 60-2)
+	self.mskfile_button.move(285, y-2)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
 	
-	center= QtGui.QLabel('Center type', self)
-	center.move(10,90)
-	self.centeredit=QtGui.QLineEdit(self)
-	self.centeredit.move(140,90)
-	self.centeredit.setText(self.savedparmsdict['center'])
-	self.centeredit.setToolTip('-1 - use average centering method (default),\n0 - if you do not want the average to be centered, \n1 - phase approximation of the center of gravity phase_cog, \n2 - cross-correlate with Gaussian function, \n3 - cross-correlate with donut shape image (e.g. inner radius=2, outer radius=7), \n4 - cross-correlate with reference image provided by user, \n5 - cross-correlate with self-rotated average..\ncentering may fail..use 0 to deactive it')
+	y = y+30
+	delta= QtGui.QLabel('Angular Step', self)
+	delta.move(10,y)
+	self.deltaedit=QtGui.QLineEdit(self)
+	self.deltaedit.move(140,y)
+	self.deltaedit.setText(self.savedparmsdict["delta"])
+	self.deltaedit.setToolTip("angular step of reference projections\n defualt = 1.0")
 	
+	y = y + 30
 	ringstep= QtGui.QLabel('Ring step', self)
-	ringstep.move(10,120)
+	ringstep.move(10,y)
 	self.ringstepedit=QtGui.QLineEdit(self)
-	self.ringstepedit.move(140,120)
+	self.ringstepedit.move(140,y)
 	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
 	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
 
+	y = y + 30
 	innerradius= QtGui.QLabel('Inner radius', self)
-	innerradius.move(10,150)
+	innerradius.move(10,y)
 	self.innerradiusedit=QtGui.QLineEdit(self)
-	self.innerradiusedit.move(140,150)
+	self.innerradiusedit.move(140,y)
 	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
 	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
 	
-	ctf= QtGui.QLabel('CTF', self)
-	ctf.move(10,180)
-	self.ctfedit=QtGui.QLineEdit(self)
-	self.ctfedit.move(140,180)
-	self.ctfedit.setText(self.savedparmsdict['ctf'])
-	self.ctfedit.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
-
+	y = y +30
 	snr= QtGui.QLabel('SNR', self)
-	snr.move(10,210)
+	snr.move(10,y)
 	self.snredit=QtGui.QLineEdit(self)
-	self.snredit.move(140,210)
+	self.snredit.move(140,y)
 	self.snredit.setText(self.savedparmsdict['snr'])
-	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')		
-	fourvar= QtGui.QLabel('Fourvar', self)
-	fourvar.move(10,240)
-	self.fourvaredit=QtGui.QLineEdit(self)
-	self.fourvaredit.move(140,240)
-	self.fourvaredit.setText(self.savedparmsdict['fourvar'])
-	self.fourvaredit.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
-
-	gpnr= QtGui.QLabel('Number of Groups', self)
-	gpnr.move(10,270)
-	self.gpnredit=QtGui.QLineEdit(self)
-	self.gpnredit.move(140,270)
-	self.gpnredit.setText(self.savedparmsdict['gpnr'])
-	self.gpnredit.setToolTip('number of groups in the new CTF filteration')	
+	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
+		
+	y = y + 30
+	initial_theta= QtGui.QLabel('Initial Theta', self)
+	initial_theta.move(10,y)
+	self.initial_thetaedit=QtGui.QLineEdit(self)
+	self.initial_thetaedit.move(140,y)
+	self.initial_thetaedit.setText(self.savedparmsdict['initial_theta'])
+	self.initial_thetaedit.setToolTip('intial theta for reference projection, default 90.0)')
 	
+	y = y + 30
+	theta_step= QtGui.QLabel('Theta Step', self)
+	theta_step.move(10,y)
+	self.theta_stepedit=QtGui.QLineEdit(self)
+	self.theta_stepedit.move(140,y)
+	self.theta_stepedit.setText(self.savedparmsdict['theta_step'])
+	self.theta_stepedit.setToolTip('step of theta for reference projection, default 1.0)')
+
+	y = y + 30
+	nise = QtGui.QLabel('nise', self)
+	nise.move(10,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(140,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+	y = y + 30
+	sym = QtGui.QLabel('point symmetry', self)
+	sym.move(10,y)
+	self.symedit=QtGui.QLineEdit(self)
+	self.symedit.move(140,y)
+	self.symedit.setText(self.savedparmsdict['sym'])
+	self.symedit.setToolTip('start symmetrization searching after nise steps')
+	
+	y = y + 30
+	datasym = QtGui.QLabel('save dp dphi', self)
+	datasym.move(10,y)
+	self.datasymedit=QtGui.QLineEdit(self)
+	self.datasymedit.move(140,y)
+	self.datasymedit.setText(self.savedparmsdict['datasym'])
+	self.datasymedit.setToolTip('file to save helical parameters of each iteration')	
+	
+	y = y + 30
 	usrfunc= QtGui.QLabel('User Function Name', self)
-	usrfunc.move(10,300)
+	usrfunc.move(10,y)
 	self.usrfuncedit=QtGui.QLineEdit(self)
-	self.usrfuncedit.move(140,300)
+	self.usrfuncedit.move(140,y)
 	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
-		
+	
+	y = y +30	
 	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
-	usrfuncfile.move(10,330)
-	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)
-	usrfuncfile.move(10,350)
+	usrfuncfile.move(10,y)
+	y = y + 30
+	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)	
+	usrfuncfile.move(10,y)
+	y = y + 30
 	self.usrfuncfileedit=QtGui.QLineEdit(self)
-	self.usrfuncfileedit.move(140,370)
+	self.usrfuncfileedit.move(140,y)
 	self.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
 	self.usrfuncfileedit.setToolTip('name of the external file containing user function')	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
-    	
-        #Here we define, that when this button is clicked, it starts subfunction choose_file
+    	#Here we define, that when this button is clicked, it starts subfunction choose_file
 	self.usrfile_button = QtGui.QPushButton("Select File", self)
-	self.usrfile_button.move(285, 370-2)
+	self.usrfile_button.move(285, y)
 	QtCore.QObject.connect(self.usrfile_button, QtCore.SIGNAL("clicked()"), self.choose_usrfile)
 	
     def choose_usrfile(self):
