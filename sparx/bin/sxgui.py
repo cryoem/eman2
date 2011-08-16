@@ -518,7 +518,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "theta_step":"1.0","nise":"2", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
 	
 	
 	self.setadv=False
@@ -783,12 +783,16 @@ class PopupHelicalRefinement(QWidget):
 		CTF = "False"
 	
 	mask=''
-	ctr=''
+	delta=''
 	ringstep=''
 	inrad=''
 	snr=''
-	fourvar=''
-	gpn=''
+	initial_theta=''
+	delta_theta=''
+	nise = ''
+	sym =''
+	datasym =''
+	
 	userf=''
 	userfile=''
 	
@@ -815,8 +819,8 @@ class PopupHelicalRefinement(QWidget):
 		initial_theta = self.w.initial_thetaedit.text()
 		cmd1 = cmd1 + " --initial_theta=" + str(initial_theta)
 			
-		theta_step = self.w.theta_stepedit.text()
-		cmd1 = cmd1 + " --Ng=" + str(theta_step)
+		delta_theta = self.w.delta_thetaedit.text()
+		cmd1 = cmd1 + " --delta_theta=" + str(delta_theta)
 		
 		nise = self.w.niseedit.text()
 		cmd1 = cmd1 + " --nise=" + str(nise)
@@ -844,7 +848,8 @@ class PopupHelicalRefinement(QWidget):
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	
 	
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -912,7 +917,7 @@ class PopupHelicalRefinement(QWidget):
 		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
 		self.w.snredit.setText(self.savedparmsdict['snr'])
 		self.w.initial_thetaedit.setText(self.savedparmsdict['initial_theta'])
-		self.w.theta_stepedit.setText(self.savedparmsdict['theta_step'])
+		self.w.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
 		self.w.niseedit.setText(self.savedparmsdict['nise'])
 		self.w.symedit.setText(self.savedparmsdict['sym'])
 		self.w.datasymedit.setText(self.savedparmsdict['datasym'])
@@ -1055,12 +1060,12 @@ class Popupadvparams_helical(QWidget):
 	self.initial_thetaedit.setToolTip('intial theta for reference projection, default 90.0)')
 	
 	y = y + 30
-	theta_step= QtGui.QLabel('Theta Step', self)
-	theta_step.move(10,y)
-	self.theta_stepedit=QtGui.QLineEdit(self)
-	self.theta_stepedit.move(140,y)
-	self.theta_stepedit.setText(self.savedparmsdict['theta_step'])
-	self.theta_stepedit.setToolTip('step of theta for reference projection, default 1.0)')
+	delta_theta= QtGui.QLabel('Theta Step', self)
+	delta_theta.move(10,y)
+	self.delta_thetaedit=QtGui.QLineEdit(self)
+	self.delta_thetaedit.move(140,y)
+	self.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
+	self.delta_thetaedit.setToolTip('step of theta for reference projection, default 1.0)')
 
 	y = y + 30
 	nise = QtGui.QLabel('nise', self)
