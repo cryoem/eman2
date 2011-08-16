@@ -737,7 +737,7 @@ class PopupHelicalRefinement(QWidget):
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
         #Labels and Line Edits for User Input
 	y = y +30
-	outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Shell Correlation curve)\nare saved in Output folder.  Alignment parameters are saved in the attribute \nxform.projection in each image header. The images themselves are not changed.', self)
+	outinfo= QtGui.QLabel('Output files (logfile, projection parameter files and pix error files)\nvol--reconstructed volume, volf--reconstructed volume after helicising and user function \n xform.projection was stored in each image header. ', self)
 	outinfo.move(10,y)
 
 	
