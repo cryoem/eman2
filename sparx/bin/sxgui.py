@@ -65,16 +65,20 @@ class Popuptwodali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	self.y=90
-	self.x = 10
+	self.x1 = 10
+	self.x2 = self.x1 + 150
+	self.x3 = self.x2+145
+	self.x4 = self.x3+100
+	
         #Here we just set the window title
 	self.setWindowTitle('sxali2d')
         #Here we just set a label and its position in the window
 	title1=QtGui.QLabel('<b>sxali2d</b> - performs 2D reference free alignment of an image series', self)
-	title1.move(10,10)
+	title1.move(self.x1,10)
 
 
 	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
-        self.repopbtn.move(self.x-5,40)
+        self.repopbtn.move(self.x1-5,40)
         #sets an infotip for this Pushbutton
         self.repopbtn.setToolTip('Repopulate With Saved Parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -82,40 +86,40 @@ class Popuptwodali(QWidget):
 
         #Here we create a Button(file_button with title run open .hdf) and its position in the window
 	self.file_button = QtGui.QPushButton("Open .hdf", self)
-	self.file_button.move(285, self.y-2)
+	self.file_button.move(self.x3, self.y-2)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
         #exactly the same as above, but for subfunction choose_file1
 	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
-	self.file_button1.move(385,self.y-2)
+	self.file_button1.move(self.x4,self.y-2)
 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
 	
 	
         #not linked to a function yet
         self.activeheader_button = QtGui.QPushButton("activate all images", self)
-	self.activeheader_button.move(self.x-5, 340)
+	self.activeheader_button.move(self.x1-5, 340)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
 	
 	self.a2dheader_button = QtGui.QPushButton("set xform.align2d", self)
-	self.a2dheader_button.move(self.x-5+180, 340)
+	self.a2dheader_button.move(self.x1-5+180, 340)
 	self.connect(self.a2dheader_button, SIGNAL("clicked()"), self.seta2dheader)
 	
 	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x-5, 390)
+        self.advbtn.move(self.x1-5, 390)
         #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
 	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
-        self.savepbtn.move(self.x-5, 420)
+        self.savepbtn.move(self.x1-5, 420)
         #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
 	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
-        self.cmdlinebtn.move(self.x-5, 450)
+        self.cmdlinebtn.move(self.x1-5, 450)
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
@@ -129,13 +133,10 @@ class Popuptwodali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230, 510)
+	self.RUN_button.move(230, 500)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali2d)
         #Labels and Line Edits for User Input
-
-	#outinfo= QtGui.QLabel('Output files (average of aligned images and Fourier Resolution Criterion curve)\nare saved in Output folder, and alignment parameters are saved in the attribute \nxform.align2d in each image\'s header. The images themselves are not changed.', self)
-	#outinfo.move(10,550)
 
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
@@ -144,59 +145,59 @@ class Popuptwodali(QWidget):
         #First create the label and define its position
 	
 	stackname= QtGui.QLabel('Name of input stack', self)
-	stackname.move(10,self.y)
+	stackname.move(self.x1,self.y)
         #Now add a line edit and define its position
 	self.stacknameedit=QtGui.QLineEdit(self)
-        self.stacknameedit.move(140,self.y)
+        self.stacknameedit.move(self.x2,self.y)
         #Adds a default value for the line edit
 	self.stacknameedit.setText(self.savedparmsdict['stackname'])
 	#The same as above, but many line edits include Infotips
 	foldername= QtGui.QLabel('Output folder', self)
-	foldername.move(10,self.y+30)
+	foldername.move(self.x1,self.y+30)
 	self.foldernameedit=QtGui.QLineEdit(self)
-	self.foldernameedit.move(140,self.y+30)
+	self.foldernameedit.move(self.x2,self.y+30)
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
 	
 	self.outinfobtn = QPushButton("Output Info", self)
-        self.outinfobtn.move(285,  self.y+30)
+        self.outinfobtn.move(self.x3,  self.y+30)
         #sets an infotip for this Pushbutton
         self.outinfobtn.setToolTip('Output Info')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_ali2d)
 	
 	partradius= QtGui.QLabel('Particle radius', self)
-	partradius.move(10,self.y+60)
+	partradius.move(self.x1,self.y+60)
 	self.partradiusedit=QtGui.QLineEdit(self)
-	self.partradiusedit.move(140,self.y+60)
+	self.partradiusedit.move(self.x2,self.y+60)
 	self.partradiusedit.setText(self.savedparmsdict['partradius'])
 	self.partradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')	
 	xyrange= QtGui.QLabel('xy range', self)
-	xyrange.move(10,self.y+90)
+	xyrange.move(self.x1,self.y+90)
 	self.xyrangeedit=QtGui.QLineEdit(self)
-	self.xyrangeedit.move(140,self.y+90)
+	self.xyrangeedit.move(self.x2,self.y+90)
 	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
 	self.xyrangeedit.setToolTip('Range for translational search in x, y direction\nif set to 0 only rotational alignment will be performed')
 	trans= QtGui.QLabel('translational step', self)
-	trans.move(10,self.y+120)
+	trans.move(self.x1,self.y+120)
 	self.transedit=QtGui.QLineEdit(self)
-	self.transedit.move(140,self.y+120)
+	self.transedit.move(self.x2,self.y+120)
 	self.transedit.setText(self.savedparmsdict['trans'])
 	self.transedit.setToolTip('Step of translational search in x, y direction\nlarger values increase the speed but decrease the accuracy')	
 	nriter= QtGui.QLabel('Number of Iterations', self)
-	nriter.move(10,self.y+150)
+	nriter.move(self.x1,self.y+150)
 	self.nriteredit=QtGui.QLineEdit(self)
-	self.nriteredit.move(140,self.y+150)
+	self.nriteredit.move(self.x2,self.y+150)
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
 	nproc= QtGui.QLabel('Number of Processors', self)
-	nproc.move(10,self.y+180)
+	nproc.move(self.x1,self.y+180)
 	self.nprocedit=QtGui.QLineEdit(self)
-	self.nprocedit.move(140,self.y+180)
+	self.nprocedit.move(self.x2,self.y+180)
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
 
 	header=QtGui.QLabel('Attributes xform.align2d and active parameters must be set in the input stack', self)
-	header.move(10,310)
+	header.move(self.x1,310)
 	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     def outputinfo_ali2d(self):
@@ -219,7 +220,7 @@ class Popuptwodali(QWidget):
 	maxit=self.nriteredit.text()
 	print "maxit="+maxit
 	
-	cmd1 = " sxali2d.py "+str(stack) +" "+ str(output)
+	cmd1 = "sxali2d.py "+str(stack) +" "+ str(output)
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
 	
@@ -295,6 +296,7 @@ class Popuptwodali(QWidget):
 		if stat:
 			f = open(fname,'a')
 			f.write(cmd1)
+			f.write('\n')
 			f.close()
 	
 	print cmd1
@@ -1301,7 +1303,7 @@ class Popupthreedali(QWidget):
 	self.RUN_button.setStyleSheet(s)
 	
 	
-	self.RUN_button.move(230,  self.y+180)
+	self.RUN_button.move(230,  self.y+170)
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxali3d)
         #Labels and Line Edits for User Input
@@ -1333,7 +1335,7 @@ class Popupthreedali(QWidget):
 	maxit=self.nriteredit.text()
 	print "maxit="+maxit
 	
-	cmd1 = " sxali3d.py "+str(stack) +" "+ str(ref)+" "+ str(output)
+	cmd1 = "sxali3d.py "+str(stack) +" "+ str(ref)+" "+ str(output)
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+ " --delta='"+str(delta)+"'"+" --maxit="+ str(maxit) 
 	
@@ -1409,6 +1411,7 @@ class Popupthreedali(QWidget):
 		if stat:
 			f = open(fname,'a')
 			f.write(cmd1)
+			f.write('\n')
 			f.close()
 	
 	print cmd1
