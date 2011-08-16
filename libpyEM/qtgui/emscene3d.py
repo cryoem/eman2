@@ -965,6 +965,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				# Set up the light
 				self.firstlight.setAmbient(line["AMBIENTLIGHT"][0],line["AMBIENTLIGHT"][1],line["AMBIENTLIGHT"][2],line["AMBIENTLIGHT"][3])
 				self.firstlight.setPosition(line["LIGHTPOSITION"][0], line["LIGHTPOSITION"][1], line["LIGHTPOSITION"][2], line["LIGHTPOSITION"][3])
+				if self.main_3d_inspector: self.main_3d_inspector.lightwidget.setAngularPosition(line["ANGULARLIGHTPOSITION"][0], line["ANGULARLIGHTPOSITION"][1])
 				# Set up the Camera
 				self.camera.setClipNear(line["CAMERACLIP"][0])
 				self.camera.setClipFar(line["CAMERACLIP"][1])
@@ -1025,6 +1026,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if item.getEvalString() == "SG":	
 			dictionary["AMBIENTLIGHT"] = self.firstlight.getAmbient()
 			dictionary["LIGHTPOSITION"] = self.firstlight.getPosition()
+			dictionary["ANGULARLIGHTPOSITION"] = self.firstlight.getAngularPosition()
 			dictionary["CAMERACLIP"] = [self.camera.getClipNear(), self.camera.getClipFar()]
 			dictionary["CAMERAPM"] = self.camera.getUseOrtho()
 			dictionary["CLEARCOLOR"] = self.getClearColor()
@@ -1077,6 +1079,7 @@ class EMLight:
 		self.setDiffuse(1.0, 1.0, 1.0, 1.0)		# Default diffuse color is white
 		self.setSpecualar(1.0, 1.0, 1.0, 1.0)		# Default specular color is white
 		self.setPosition(0.0, 0.0, 1.0, 0.0)		# Defulat position is 0, 0, 1.0 and light is directional (w=0)
+		self.setAngularPosition(0.0, 0.0)
 		if not glIsEnabled(GL_LIGHTING):
 			glEnable(GL_LIGHTING)
 
@@ -1135,7 +1138,21 @@ class EMLight:
 		"""
 		self.position = [x, y, z, w]
 		glLightfv(self.light, GL_POSITION, self.position)
-
+		
+	def setAngularPosition(self, theta, phi):
+		"""
+		@param theta: The theta component of the light position in spherical coords
+		@param phi: The theta component of the light position in spherical coords
+		Set the light position in sphericla coords. This is only used by the lightwidget in the inspector
+		"""
+		self.angularposition = [theta, phi]
+		
+	def getAngularPosition(self):
+		"""
+		Retun the light position as spherical coords
+		"""
+		return self.angularposition
+		
 	def getAmbient(self):
 		"""
 		Return the ambient lighting
@@ -1605,11 +1622,11 @@ class EMInspector3D(QtGui.QWidget):
 		# Otherwise add the node to the Root
 		addeditem = self.addTreeNode(node_name, insertion_node, parentitem=self.tree_widget.topLevelItem(0))
 		self.tree_widget.setCurrentItem(addeditem)
-		self._tree_widget_click(addeditem, 0)
+		self._tree_widget_click(addeditem, 0, quiet=True)
 		
 		return None
 		
-	def _tree_widget_click(self, item, col):
+	def _tree_widget_click(self, item, col, quiet=False):
 		"""
 		When a user clicks on the selection tree check box
 		"""
@@ -1617,7 +1634,7 @@ class EMInspector3D(QtGui.QWidget):
 		item.setSelectionState(item.checkState(0))
 		# This code is to prevent both decendents and childer from being selected....
 		self.ensureUniqueTreeLevelSelection(item.item3d())
-		self.updateSceneGraph()
+		if not quiet: self.updateSceneGraph()
 		
 	def _tree_widget_visible(self, item):
 		"""
@@ -1695,6 +1712,7 @@ class EMInspector3D(QtGui.QWidget):
 	
 	def _light_position_moved(self, position): 
 		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
+		self.scenegraph.firstlight.setAngularPosition(self.lightwidget.getAngularPosition()[0], self.lightwidget.getAngularPosition()[1]) 
 		self.scenegraph.updateSG()
 	
 	def _on_light_slider(self, value):
@@ -1910,9 +1928,9 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph.getMouseMode() == "xytranslate": self.translatetool.setDown(True)
 		if self.scenegraph.getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
 		if self.scenegraph.getMouseMode() == "scale": self.scaletool.setDown(True)
-		if self.scenegraph.getMouseMode() == "cube": self.scaletool.setDown(True)
-		if self.scenegraph.getMouseMode() == "sphere": self.scaletool.setDown(True)
-		if self.scenegraph.getMouseMode() == "cylinder": self.scaletool.setDown(True)
+		if self.scenegraph.getMouseMode() == "cube": self.cubetool.setDown(True)
+		if self.scenegraph.getMouseMode() == "sphere": self.spheretool.setDown(True)
+		if self.scenegraph.getMouseMode() == "cylinder": self.cylindertool.setDown(True)
 		# Lights
 		if self.lighttab_open:
 			angularposition = self.lightwidget.getAngularPosition()

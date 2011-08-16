@@ -86,8 +86,33 @@ class EMCube(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CUBE", self)
 		return self.item_inspector
+	
+	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
-	def renderNode(self):        
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderCube()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderCube()
+	
+			glPopAttrib()
+		else:
+			self.renderCube()
+			
+	def renderCube(self):        
 		# Material properties of the box
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -178,8 +203,33 @@ class EMSphere(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("SPHERE", self)
 		return self.item_inspector
-				
+	
 	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderSphere()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderSphere()
+	
+			glPopAttrib()
+		else:
+			self.renderSphere()
+			
+	def renderSphere(self):
 		# Material properties of the sphere
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)

@@ -413,8 +413,10 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.zoom = EMSpinWidget(1.0, 0.1, postivemode=True, wheelstep=0.1)
 		xformbox.addWidget(self.tz, 6, 0, 1, 1)
 		xformbox.addWidget(self.zoom, 6, 1, 1, 1)
-		self.resetbutton = QtGui.QPushButton("Reset Transform")
-		xformbox.addWidget(self.resetbutton, 7, 0, 1, 2)
+		self.resetbuttontx = QtGui.QPushButton("Reset Tx")
+		self.resetbuttonrot = QtGui.QPushButton("Reset Rot")
+		xformbox.addWidget(self.resetbuttontx, 7, 0, 1, 1)
+		xformbox.addWidget(self.resetbuttonrot, 7, 1, 1, 1)
 		xformframe.setLayout(xformbox)
 				
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
@@ -428,7 +430,8 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.ty,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.tz,QtCore.SIGNAL("valueChanged(int)"),self._on_translation)
 		QtCore.QObject.connect(self.zoom,QtCore.SIGNAL("valueChanged(int)"),self._on_scale)
-		QtCore.QObject.connect(self.resetbutton,QtCore.SIGNAL("clicked()"),self._on_reset)
+		QtCore.QObject.connect(self.resetbuttontx,QtCore.SIGNAL("clicked()"),self._on_resettx)
+		QtCore.QObject.connect(self.resetbuttonrot,QtCore.SIGNAL("clicked()"),self._on_resetrot)
 	
 	def _on_translation(self, value):
 		self.item3d().getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
@@ -438,12 +441,17 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.item3d().getTransform().set_scale(self.zoom.getValue())
 		self.inspector.updateSceneGraph()
 
-	def _on_reset(self):
-		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
+	def _on_resettx(self):
+		
 		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
 		self.updateItemControls()
 		self.inspector.updateSceneGraph()
-	
+		
+	def _on_resetrot(self):
+		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
+		self.updateItemControls()
+		self.inspector.updateSceneGraph()
+		
 	def updateItemControls(self):
 		# Translation update
 		translation =  self.item3d().getTransform().get_trans()

@@ -928,8 +928,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 	def __init__(self, light, parent=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
 		self.light = light
-		self.x_light_pos = 0
-		self.y_light_pos = 0
+		self.theta = 0
+		self.phi = 0
 		self.lightposition = [0.0, 0.0, 1.0, 0.0]
 		self.ambient = [1.0,1.0,1.0,1.0]
 		self.diffuse = [1.0,1.0,1.0,1.0]
@@ -963,8 +963,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 	def drawFlashLight(self):
 		glPushMatrix()
-		glRotate(self.x_light_pos, 0.0, math.cos(math.radians(self.y_light_pos)), 0.0)
-		glRotate(-self.y_light_pos,1.0, 0.0, 0.0)
+		glRotate(-self.phi, 1.0, 0.0, 0.0)
+		glRotate(-self.theta, 0.0, 1.0, 0.0)
 		glTranslate(0,0,4)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, [0.0,0.0,0.0,1.0])
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [0.0,0.0,0.0,1.0])
@@ -998,10 +998,10 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 	def mouseMoveEvent(self, event):
 
-		self.x_light_pos += event.x() - self.init_x
-		self.y_light_pos -= event.y() - self.init_y
-		self.x_light_pos = self.x_light_pos % 360
-		self.y_light_pos = self.y_light_pos % 360
+		self.theta -= event.x() - self.init_x
+		self.phi -= event.y() - self.init_y
+		self.theta = self.theta % 360
+		self.phi = self.phi % 360
 
 		self.setPosition()
 		self.init_x = event.x()
@@ -1010,20 +1010,20 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)
 		
 	def setPosition(self):
-		x = math.sin(math.radians(self.x_light_pos))
-		y = math.sin(math.radians(self.y_light_pos))
-		z = math.cos(math.radians(self.x_light_pos + self.y_light_pos))
+		z = math.sin(math.radians(self.theta + 90))*math.cos(math.radians(self.phi))
+		y = math.sin(math.radians(self.theta + 90))*math.sin(math.radians(self.phi))
+		x = math.cos(math.radians(self.theta + 90))
 		self.lightposition = [x, y, z, 0.0]
 		
 	def getPosition(self):
 		return self.lightposition
 		
 	def getAngularPosition(self):
-		return [self.x_light_pos, self.y_light_pos]
+		return [self.theta, self.phi]
 	
-	def setAngularPosition(self, h, v):
-		self.x_light_pos = h
-		self.y_light_pos = v
+	def setAngularPosition(self, theta, phi):
+		self.theta = theta
+		self.phi = phi
 		self.setPosition()
 		self.update()
 	
@@ -1143,3 +1143,27 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 	def updateWidget(self):
 		self.update()
+		
+class EMANToolButton(QtGui.QToolButton):
+	toolpanellist = []
+	def __init__(self):
+		QtGui.QToolButton.__init__(self)
+		EMANToolButton.toolpanellist.append(self)
+	
+	def setSelfAsUnique(self):
+		for tool in EMANToolButton.toolpanellist:
+			if tool != self:
+				tool.setDown(False)
+	
+	def setDown(self, state):
+		QtGui.QToolButton.setDown(self, state)
+		self.emit(QtCore.SIGNAL("clicked(int)"), self.isDown())
+		
+	def mousePressEvent(self, event):
+		# Toggle the button on and off
+		if not self.isDown():
+			self.setSelfAsUnique()
+			self.setDown(True)
+		
+	def mouseReleaseEvent(self, event):
+		pass

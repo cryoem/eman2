@@ -7,7 +7,7 @@ from OpenGL import GL
 from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
-from EMAN2 import EMData, MarchingCubes
+from EMAN2 import EMData, MarchingCubes, Transform
 from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from emimageutil import ImgHistogram
 from valslider import ValSlider
@@ -22,7 +22,10 @@ class EMDataItem3D(EMItem3D):
 		self.setData(data)
 		
 	def getEvalString(self):
-		return "EMDataItem3D(\"%s\")"%self.path
+		if self.transform:
+			return "EMDataItem3D(\"%s\", transform=Transform())"%self.path
+		else:
+			return "EMDataItem3D(\"%s\")"%self.path
 		
 	def getItemInspector(self):
 		if not self.item_inspector:
@@ -82,6 +85,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.updateItemControls()
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
+		QtCore.QObject.connect(self.histogram_widget, QtCore.SIGNAL("thresholdChanged(float)"), self.onHistogram)
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
 		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
@@ -101,7 +105,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 	def addControls(self, gridbox):
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
-		self.histogram_widget = ImgHistogram(self)
+		self.histogram_widget = ImgHistogram(self, inithreshold=0.5)
 		self.histogram_widget.setObjectName("hist")
 
 		# Perhaps we should allow the inspector control this?
@@ -141,9 +145,13 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 	def onThresholdSlider(self,val):
 		self.item3d().setThreshold(val)
+		self.histogram_widget.setProbe(val)
 #		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
 	
+	def onHistogram(self, value):
+		self.thr.setValue(value)
+		
 	def onSampling(self, val):
 		self.item3d().setSample(val)
 		self.inspector.updateSceneGraph()
@@ -183,7 +191,7 @@ class EMIsosurface(EMItem3D):
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
 		
-		self.dataChanged()
+		if parent: self.dataChanged()
 		
 	def setParent(self, parent):
 		"""
@@ -191,12 +199,13 @@ class EMIsosurface(EMItem3D):
 		"""
 		self.parent = parent
 		if parent:
-			data = self.parent.data
-			assert isinstance(data, EMData)
-			self.isorender = MarchingCubes(data)
+			self.dataChanged()
 		
 	def getEvalString(self):
-		return "EMIsosurface()"
+		if self.transform:
+			return "EMIsosurface(transform=Transform())"
+		else:
+			return "EMIsosurface()"
 	
 	def dataChanged(self):
 		data = self.getParent().getData()

@@ -353,10 +353,10 @@ class EMParentWin(QtGui.QWidget,Animator):
 	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
-	def __init__(self,parent):
+	def __init__(self,parent, inithreshold=None):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)
-		
+		self.inithreshold = inithreshold
 		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
@@ -368,6 +368,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.norm=0
 		self.minden=minden
 		self.maxden=maxden
+		if self.inithreshold: self.setProbe(self.inithreshold)
 		for i in self.histdata: self.norm+=float(i)*i
 		self.norm-=max(self.histdata)**2
 		self.norm=sqrt(self.norm/255)*3.0
@@ -376,6 +377,12 @@ class ImgHistogram(QtGui.QWidget):
 		if self.total==0 : self.histdata=None
 		self.update()
 	
+	def setProbe(self, value):
+		x = int(255.0*(value - self.minden)/(self.maxden-self.minden))
+		self.threshold = value
+		self.probe=(x,self.histdata[x])
+		self.update()
+		
 	def paintEvent (self, event):
 		if self.histdata==None : return
 		p=QtGui.QPainter()
@@ -393,10 +400,12 @@ class ImgHistogram(QtGui.QWidget):
 			p.setPen(Qt.red)
 			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-self.probe[1]*126/self.norm)
 			p.setFont(self.font)
-			p.drawText(200,20,"x=%d"%(self.probe[0]))
-			p.drawText(200,36,"%1.2f"%(self.probe[0]/255.0*(self.maxden-self.minden)+self.minden))
-			p.drawText(200,52,"y=%d"%(self.probe[1]))
-			p.drawText(200,68,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
+			#p.drawText(200,20,"x=%d"%(self.probe[0]))
+			#p.drawText(200,36,"%1.2f"%self.threshold)
+			#p.drawText(200,52,"y=%d"%(self.probe[1]))
+			#p.drawText(200,68,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
+			p.drawText(150,20,"thres=%1.2f"%self.threshold)
+			p.drawText(150,36,"p(t)=%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 		
 		p.setPen(Qt.black)
 		p.drawRect(0,0,257,128)
@@ -406,16 +415,21 @@ class ImgHistogram(QtGui.QWidget):
 		if event.button()==Qt.LeftButton:
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
+			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
+			self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
 			self.update()
 			
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
+			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
+			self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
 			self.update()
 	
 	def mouseReleaseEvent(self, event):
-		self.probe=None
+		#self.probe=None
+		pass
 		
 class EMMetaDataTable(object):
 	"""This is basically a factory class that will return an instance of QtWidget
