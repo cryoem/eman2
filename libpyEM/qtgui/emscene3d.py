@@ -528,7 +528,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
-		self.camera = EMCamera(1.0, 500.0)	# Default near,far, and zclip values
+		self.camera = EMCamera(1.0, 500.0)	# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None
 		self.item_inspector = None				# Get the inspector GUI
@@ -929,6 +929,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Loads a session begining 
 		"""
 		self.parentnodestack = [self]
+		#print tree
 		self._process_session_load(tree)
 		if self.main_3d_inspector: self.main_3d_inspector.loadSG()
 		
@@ -949,6 +950,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				item3dobject = eval(line[0]["CONSTRUCTOR"])
 				if line[0]["NODETYPE"] == "DataChild": # Data child need to have a parent set
 					item3dobject.setParent(self.parentnodestack[-1:][0])
+					item3dobject.dataChanged()
 				self._constructitem3d(line[0], item3dobject)
 
 		else:
@@ -964,8 +966,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				self.setSelectedItem(line["SELECTED"])
 				# Set up the light
 				self.firstlight.setAmbient(line["AMBIENTLIGHT"][0],line["AMBIENTLIGHT"][1],line["AMBIENTLIGHT"][2],line["AMBIENTLIGHT"][3])
-				self.firstlight.setPosition(line["LIGHTPOSITION"][0], line["LIGHTPOSITION"][1], line["LIGHTPOSITION"][2], line["LIGHTPOSITION"][3])
-				if self.main_3d_inspector: self.main_3d_inspector.lightwidget.setAngularPosition(line["ANGULARLIGHTPOSITION"][0], line["ANGULARLIGHTPOSITION"][1])
+				self.firstlight.setAngularPosition(line["ANGULARLIGHTPOSITION"][0], line["ANGULARLIGHTPOSITION"][1])
 				# Set up the Camera
 				self.camera.setClipNear(line["CAMERACLIP"][0])
 				self.camera.setClipFar(line["CAMERACLIP"][1])
@@ -1025,7 +1026,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Process a SceneGraph if needed
 		if item.getEvalString() == "SG":	
 			dictionary["AMBIENTLIGHT"] = self.firstlight.getAmbient()
-			dictionary["LIGHTPOSITION"] = self.firstlight.getPosition()
 			dictionary["ANGULARLIGHTPOSITION"] = self.firstlight.getAngularPosition()
 			dictionary["CAMERACLIP"] = [self.camera.getClipNear(), self.camera.getClipFar()]
 			dictionary["CAMERAPM"] = self.camera.getUseOrtho()
@@ -1145,6 +1145,10 @@ class EMLight:
 		@param phi: The theta component of the light position in spherical coords
 		Set the light position in sphericla coords. This is only used by the lightwidget in the inspector
 		"""
+		z = math.sin(math.radians(theta + 90))*math.cos(math.radians(phi))
+		y = math.sin(math.radians(theta + 90))*math.sin(math.radians(phi))
+		x = math.cos(math.radians(theta + 90))
+		self.setPosition(x, y, z, 0.0)
 		self.angularposition = [theta, phi]
 		
 	def getAngularPosition(self):
@@ -1711,8 +1715,7 @@ class EMInspector3D(QtGui.QWidget):
 		return lwidget
 	
 	def _light_position_moved(self, position): 
-		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
-		self.scenegraph.firstlight.setAngularPosition(self.lightwidget.getAngularPosition()[0], self.lightwidget.getAngularPosition()[1]) 
+		self.scenegraph.firstlight.setAngularPosition(position[0], position[1])
 		self.scenegraph.updateSG()
 	
 	def _on_light_slider(self, value):
@@ -1933,6 +1936,8 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph.getMouseMode() == "cylinder": self.cylindertool.setDown(True)
 		# Lights
 		if self.lighttab_open:
+			position =  self.scenegraph.firstlight.getAngularPosition()
+			self.lightwidget.setAngularPosition(position[0], position[1])
 			angularposition = self.lightwidget.getAngularPosition()
 			self.hvalslider.setValue(angularposition[0], quiet=1)
 			self.vvalslider.setValue(angularposition[1], quiet=1)
@@ -2099,7 +2104,7 @@ class NodeDialog(QtGui.QDialog):
 		self.node_stacked_widget.addWidget(self.getCylinderWidget())
 		self.node_type_combo.addItem("Data")
 		self.node_stacked_widget.addWidget(self.getDataWidget())
-		if self.item.item3d().name == "Data":
+		if self.item and self.item.item3d().name == "Data":
 			self.node_type_combo.addItem("Isosurface")
 			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
 		

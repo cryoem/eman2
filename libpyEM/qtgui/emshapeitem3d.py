@@ -398,6 +398,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 		colorvbox.addLayout(colorhbox)
 		colorvbox.addWidget(self.shininess)
 		colorframe.setLayout(colorvbox)
+		colorframe.setMaximumWidth(350)
 		gridbox.addWidget(colorframe, 3, 0, 1, 1)
 		
 		# Set to default, but do not run if being inherited

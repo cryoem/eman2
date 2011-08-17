@@ -1003,17 +1003,14 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.theta = self.theta % 360
 		self.phi = self.phi % 360
 
-		self.setPosition()
 		self.init_x = event.x()
 		self.init_y = event.y()
 		self.update()
-		self.emit(QtCore.SIGNAL("lightPositionMoved"), self.lightposition)
+		self.emit(QtCore.SIGNAL("lightPositionMoved"), [self.theta, self.phi])
 		
-	def setPosition(self):
-		z = math.sin(math.radians(self.theta + 90))*math.cos(math.radians(self.phi))
-		y = math.sin(math.radians(self.theta + 90))*math.sin(math.radians(self.phi))
-		x = math.cos(math.radians(self.theta + 90))
-		self.lightposition = [x, y, z, 0.0]
+	def setPosition(self, x, y, z, w, quiet=False):
+		self.lightposition = [x, y, z, w]
+		if not quiet: self.update()
 		
 	def getPosition(self):
 		return self.lightposition
@@ -1024,7 +1021,10 @@ class EMLightControls(QtOpenGL.QGLWidget):
 	def setAngularPosition(self, theta, phi):
 		self.theta = theta
 		self.phi = phi
-		self.setPosition()
+		z = math.sin(math.radians(self.theta + 90))*math.cos(math.radians(self.phi))
+		y = math.sin(math.radians(self.theta + 90))*math.sin(math.radians(self.phi))
+		x = math.cos(math.radians(self.theta + 90))
+		self.setPosition(x, y, z, 0.0, quiet=True)
 		self.update()
 	
 	def setLightColor(self):

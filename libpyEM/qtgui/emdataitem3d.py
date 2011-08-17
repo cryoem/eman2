@@ -51,7 +51,7 @@ class EMDataItem3D(EMItem3D):
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)
 	
 	def updateItemControls(self):
 		super(EMDataItem3DInspector, self).updateItemControls()
@@ -60,12 +60,10 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		
 	def addControls(self, gridbox):
 		super(EMDataItem3DInspector, self).addControls(gridbox)
-		hblbrowse = QtGui.QHBoxLayout()
 		self.file_path_label = QtGui.QLabel()
-		hblbrowse.addWidget(self.file_path_label)
+		gridbox.addWidget(self.file_path_label, 3, 0, 1, 1)
 		self.file_browse_button = QtGui.QPushButton("Browse")
-		hblbrowse.addWidget(self.file_browse_button)
-		gridbox.addLayout(hblbrowse, 3, 0, 1, 1)
+		gridbox.addWidget(self.file_browse_button, 3, 1, 1, 1)
 		
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
 		
@@ -105,7 +103,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 	def addControls(self, gridbox):
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
-		self.histogram_widget = ImgHistogram(self, inithreshold=0.5)
+		self.histogram_widget = ImgHistogram(self, inithreshold=self.item3d().isothr)
 		self.histogram_widget.setObjectName("hist")
 
 		# Perhaps we should allow the inspector control this?
@@ -119,7 +117,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.wireframe.setChecked(False)
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
-		self.thr.setValue(0.5)
+		self.thr.setValue(self.item3d().isothr)
 		self.sampling_label = QtGui.QLabel("Sample Level:")
 		self.sampling_spinbox = QtGui.QSpinBox()
 		self.sampling_spinbox.setValue(1)
@@ -193,14 +191,6 @@ class EMIsosurface(EMItem3D):
 		
 		if parent: self.dataChanged()
 		
-	def setParent(self, parent):
-		"""
-		For use in session restore
-		"""
-		self.parent = parent
-		if parent:
-			self.dataChanged()
-		
 	def getEvalString(self):
 		if self.transform:
 			return "EMIsosurface(transform=Transform())"
@@ -208,6 +198,9 @@ class EMIsosurface(EMItem3D):
 			return "EMIsosurface()"
 	
 	def dataChanged(self):
+		"""
+		This method must be implmented in any data child EMItem3D
+		"""
 		data = self.getParent().getData()
 		
 		if self.isothr: #there was data previously

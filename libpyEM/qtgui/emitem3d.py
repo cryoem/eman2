@@ -88,8 +88,8 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def getParent(self): return self.parent
 	def setParent(self, parent): 
 		self.parent = parent
-		if parent:
-			parent.addChild(self)
+		#if parent:	# Why is this here is causes chaos b/c things get added twice. You can only implment this if you check to ensure self is not already a child of parent!
+			#parent.addChild(self)
 	def isSelectedItem(self): return self.is_selected
 	def setSelectedItem(self, is_selected): self.is_selected = is_selected
 	def getTransform(self): return self.transform
@@ -418,6 +418,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		xformbox.addWidget(self.resetbuttontx, 7, 0, 1, 1)
 		xformbox.addWidget(self.resetbuttonrot, 7, 1, 1, 1)
 		xformframe.setLayout(xformbox)
+		xformframe.setMaximumWidth(350)
 				
 		xformframe.setMaximumHeight(self.transfromboxmaxheight)
 		xformframe.setLayout(xformbox)
