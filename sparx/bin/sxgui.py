@@ -686,7 +686,7 @@ class Popupadvparams_helical(QWidget):
 	self.niseedit.setText(self.savedparmsdict['nise'])
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
-		y = y + 30
+	y = y + 30
 	nise = QtGui.QLabel('nise', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
@@ -694,7 +694,7 @@ class Popupadvparams_helical(QWidget):
 	self.niseedit.setText(self.savedparmsdict['nise'])
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
-		y = y + 30
+	y = y + 30
 	nise = QtGui.QLabel('nise', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
@@ -702,7 +702,7 @@ class Popupadvparams_helical(QWidget):
 	self.niseedit.setText(self.savedparmsdict['nise'])
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
-		y = y + 30
+	y = y + 30
 	nise = QtGui.QLabel('nise', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
@@ -710,7 +710,7 @@ class Popupadvparams_helical(QWidget):
 	self.niseedit.setText(self.savedparmsdict['nise'])
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
-		y = y + 30
+	y = y + 30
 	nise = QtGui.QLabel('nise', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
