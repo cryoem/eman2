@@ -623,12 +623,100 @@ class Popupadvparams_helical(QWidget):
 	self.delta_thetaedit.setToolTip('step of theta for reference projection, default 1.0)')
 
 	y = y + 30
+	nise = QtGui.QLabel('Nise', self)
+	nise.move(x1,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(x2,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+	y = y + 30
+	rmin = QtGui.QLabel('Helix inner radius', self)
+	rmin.move(x1,y)
+	self.rminedit=QtGui.QLineEdit(self)
+	self.rminedit.move(x2,y)
+	self.rminedit.setText(self.savedparmsdict['rmin'])
+	self.rminedit.setToolTip('Inner radius of the helix')	
+	
+	y = y + 30
+	fract = QtGui.QLabel('Fraction used', self)
+	fract.move(x1,y)
+	self.fractedit=QtGui.QLineEdit(self)
+	self.fractedit.move(x2,y)
+	self.fractedit.setText(self.savedparmsdict['fract'])
+	self.fractedit.setToolTip('fraction of the volume used for helicising')	
+	
+	y = y + 30
+	dp_step = QtGui.QLabel('dp step', self)
+	dp_step.move(x1,y)
+	self.dp_stepedit=QtGui.QLineEdit(self)
+	self.dp_stepedit.move(x2,y)
+	self.dp_stepedit.setText(self.savedparmsdict['dp_step'])
+	self.dp_stepedit.setToolTip('step size of helicise rise search')
+	
+	y = y + 30
+	ndp = QtGui.QLabel('nise', self)
+	ndp.move(x1,y)
+	self.ndpedit=QtGui.QLineEdit(self)
+	self.ndpedit.move(x2,y)
+	self.ndpedit.setText(self.savedparmsdict['ndp'])
+	self.ndpedit.setToolTip('In symmetrization search, number of delta z steps equas to 2*ndp+1')	
+	
+	y = y + 30
+	dphi_step = QtGui.QLabel('dp step', self)
+	dphi_step.move(x1,y)
+	self.dphi_stepedit=QtGui.QLineEdit(self)
+	self.dphi_stepedit.move(x2,y)
+	self.dphi_stepedit.setText(self.savedparmsdict['dphi_step'])
+	self.dphi_stepedit.setToolTip('step size of helicise angle search')
+	
+	y = y + 30
+	ndphi = QtGui.QLabel('nise', self)
+	ndphi.move(x1,y)
+	self.ndphiedit=QtGui.QLineEdit(self)
+	self.ndphiedit.move(x2,y)
+	self.ndphiedit.setText(self.savedparmsdict['ndphi'])
+	self.ndphiedit.setToolTip('In symmetrization search, number of angular steps equas to 2*ndphi+1')	
+	
+	y = y + 30
 	nise = QtGui.QLabel('nise', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
 	self.niseedit.move(x2,y)
 	self.niseedit.setText(self.savedparmsdict['nise'])
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+		y = y + 30
+	nise = QtGui.QLabel('nise', self)
+	nise.move(x1,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(x2,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+		y = y + 30
+	nise = QtGui.QLabel('nise', self)
+	nise.move(x1,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(x2,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+		y = y + 30
+	nise = QtGui.QLabel('nise', self)
+	nise.move(x1,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(x2,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	
+		y = y + 30
+	nise = QtGui.QLabel('nise', self)
+	nise.move(x1,y)
+	self.niseedit=QtGui.QLineEdit(self)
+	self.niseedit.move(x2,y)
+	self.niseedit.setText(self.savedparmsdict['nise'])
+	self.niseedit.setToolTip('start symmetrization searching after nise steps')		
 	
 	y = y + 30
 	sym = QtGui.QLabel('point symmetry', self)
