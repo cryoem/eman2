@@ -64,7 +64,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
 	
 	
 	self.setadv=False
@@ -478,7 +478,7 @@ class PopupHelicalRefinement(QWidget):
     def advparams(self):
         print "Opening a new popup window..."
         self.w = Popupadvparams_helical(self.savedparmsdict)
-        self.w.resize(500,500)
+        self.w.resize(500,800)
         self.w.show()
 	self.setadv=True
     def setactiveheader(self):
@@ -647,7 +647,7 @@ class Popupadvparams_helical(QWidget):
 	self.fractedit.setToolTip('fraction of the volume used for helicising')	
 	
 	y = y + 30
-	dp_step = QtGui.QLabel('dp step', self)
+	dp_step = QtGui.QLabel('Dp step', self)
 	dp_step.move(x1,y)
 	self.dp_stepedit=QtGui.QLineEdit(self)
 	self.dp_stepedit.move(x2,y)
@@ -655,7 +655,7 @@ class Popupadvparams_helical(QWidget):
 	self.dp_stepedit.setToolTip('step size of helicise rise search')
 	
 	y = y + 30
-	ndp = QtGui.QLabel('nise', self)
+	ndp = QtGui.QLabel('Number of dp', self)
 	ndp.move(x1,y)
 	self.ndpedit=QtGui.QLineEdit(self)
 	self.ndpedit.move(x2,y)
@@ -663,7 +663,7 @@ class Popupadvparams_helical(QWidget):
 	self.ndpedit.setToolTip('In symmetrization search, number of delta z steps equas to 2*ndp+1')	
 	
 	y = y + 30
-	dphi_step = QtGui.QLabel('dp step', self)
+	dphi_step = QtGui.QLabel('Dphi step', self)
 	dphi_step.move(x1,y)
 	self.dphi_stepedit=QtGui.QLineEdit(self)
 	self.dphi_stepedit.move(x2,y)
@@ -671,7 +671,7 @@ class Popupadvparams_helical(QWidget):
 	self.dphi_stepedit.setToolTip('step size of helicise angle search')
 	
 	y = y + 30
-	ndphi = QtGui.QLabel('nise', self)
+	ndphi = QtGui.QLabel('Number of dphi', self)
 	ndphi.move(x1,y)
 	self.ndphiedit=QtGui.QLineEdit(self)
 	self.ndphiedit.move(x2,y)
@@ -679,45 +679,37 @@ class Popupadvparams_helical(QWidget):
 	self.ndphiedit.setToolTip('In symmetrization search, number of angular steps equas to 2*ndphi+1')	
 	
 	y = y + 30
-	nise = QtGui.QLabel('nise', self)
-	nise.move(x1,y)
-	self.niseedit=QtGui.QLineEdit(self)
-	self.niseedit.move(x2,y)
-	self.niseedit.setText(self.savedparmsdict['nise'])
-	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	psi_max = QtGui.QLabel('Maximum psi', self)
+	psi_max.move(x1,y)
+	self.psi_maxedit=QtGui.QLineEdit(self)
+	self.psi_maxedit.move(x2,y)
+	self.psi_maxedit.setText(self.savedparmsdict['psi_max'])
+	self.psi_maxedit.setToolTip('maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees')	
 	
 	y = y + 30
-	nise = QtGui.QLabel('nise', self)
-	nise.move(x1,y)
-	self.niseedit=QtGui.QLineEdit(self)
-	self.niseedit.move(x2,y)
-	self.niseedit.setText(self.savedparmsdict['nise'])
-	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	an = QtGui.QLabel('Angular neighborhood', self)
+	an.move(x1,y)
+	self.anedit=QtGui.QLineEdit(self)
+	self.anedit.move(x2,y)
+	self.anedit.setText(self.savedparmsdict['an'])
+	self.anedit.setToolTip('angular neighborhood for local searches, defaut -1')	
 	
 	y = y + 30
-	nise = QtGui.QLabel('nise', self)
-	nise.move(x1,y)
-	self.niseedit=QtGui.QLineEdit(self)
-	self.niseedit.move(x2,y)
-	self.niseedit.setText(self.savedparmsdict['nise'])
-	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
+	npad = QtGui.QLabel('Npad', self)
+	npad.move(x1,y)
+	self.npadedit=QtGui.QLineEdit(self)
+	self.npadedit.move(x2,y)
+	self.npadedit.setText(self.savedparmsdict['npad'])
+	self.npadedit.setToolTip('padding size for 3D reconstruction, please use npad = 2')	
 	
 	y = y + 30
-	nise = QtGui.QLabel('nise', self)
-	nise.move(x1,y)
-	self.niseedit=QtGui.QLineEdit(self)
-	self.niseedit.move(x2,y)
-	self.niseedit.setText(self.savedparmsdict['nise'])
-	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
-	
-	y = y + 30
-	nise = QtGui.QLabel('nise', self)
-	nise.move(x1,y)
-	self.niseedit=QtGui.QLineEdit(self)
-	self.niseedit.move(x2,y)
-	self.niseedit.setText(self.savedparmsdict['nise'])
-	self.niseedit.setToolTip('start symmetrization searching after nise steps')		
-	
+	chunk = QtGui.QLabel('Chunk', self)
+	chunk.move(x1,y)
+	self.chunkedit=QtGui.QLineEdit(self)
+	self.chunkedit.move(x2,y)
+	self.chunkedit.setText(self.savedparmsdict['chunk'])
+	self.chunkedit.setToolTip('percentage of data used for alignment')	
+
 	y = y + 30
 	sym = QtGui.QLabel('point symmetry', self)
 	sym.move(x1,y)
