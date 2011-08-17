@@ -2251,15 +2251,6 @@ class Popupadvparams_kmeans(QWidget):
 	self.randsdedit.setText(self.savedparmsdict['randsd'])
 	self.randsdedit.setToolTip('the seed used to generating random numbers (set to -1, means different and pseudo-random each time)')
 	
-	self.y1 += 30
-	
-	ringstep= QtGui.QLabel('Ring step', self)
-	ringstep.move(self.x1,self.y1)
-	self.ringstepedit=QtGui.QLineEdit(self)
-	self.ringstepedit.move(self.x2,self.y1)
-	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
-	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
-	
     def choose_mskfile(self):
 	#opens a file browser, showing files only in .hdf format
    	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
