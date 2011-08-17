@@ -119,7 +119,7 @@ class PopupHelicalRefinement(QWidget):
 	self.file_button2.move(x3, y)
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.file_button2, QtCore.SIGNAL("clicked()"), self.choose_file2)
-	parameterfile= QtGui.QLabel('Projection params', self)
+	parameterfile= QtGui.QLabel('Projection params file', self)
 	parameterfile.move(x1,y)
         #Now add a line edit and define its position
 	self.initialprojectionparameteredit=QtGui.QLineEdit(self)
@@ -152,7 +152,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	y = y +30
-	outradius= QtGui.QLabel('Outer radius', self)
+	outradius= QtGui.QLabel('Particle outer radius', self)
 	outradius.move(x1, y )
 	self.outradiusedit=QtGui.QLineEdit(self)
 	self.outradiusedit.move(x2,y)
@@ -160,14 +160,14 @@ class PopupHelicalRefinement(QWidget):
 	self.outradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')
 	
 	y = y +30	
-	xrange= QtGui.QLabel('x range', self)
+	xrange= QtGui.QLabel('X search range', self)
 	xrange.move(x1,y)
 	self.xrangeedit=QtGui.QLineEdit(self)
 	self.xrangeedit.move(x2,y)
 	self.xrangeedit.setText(self.savedparmsdict['xrange'])
 	self.xrangeedit.setToolTip('Range for translational search in x\nif set to 0 no x directional alignment will be performed')
 	y = y +30
-	xtrans= QtGui.QLabel('step of x', self)
+	xtrans= QtGui.QLabel('Step of x', self)
 	xtrans.move(x1,y)
 	self.xtransedit=QtGui.QLineEdit(self)
 	self.xtransedit.move(x2,y)
@@ -175,7 +175,7 @@ class PopupHelicalRefinement(QWidget):
 	self.xtransedit.setToolTip('Step of translational search in x direction\nlarger values increase the speed but decrease the accuracy')
 	
 	y = y +30	
-	ynumber= QtGui.QLabel('ynumber', self)
+	ynumber= QtGui.QLabel('Number of y search', self)
 	ynumber.move(x1,y)
 	self.ynumberedit=QtGui.QLineEdit(self)
 	self.ynumberedit.move(x2,y)
@@ -183,7 +183,7 @@ class PopupHelicalRefinement(QWidget):
 	self.ynumberedit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')
 		
 	y = y +30	
-	dp= QtGui.QLabel('Helical Rise', self)
+	dp= QtGui.QLabel('Helical rise (angstrom)', self)
 	dp.move(x1,y)
 	self.dpedit=QtGui.QLineEdit(self)
 	self.dpedit.move(x2,y)
@@ -191,7 +191,7 @@ class PopupHelicalRefinement(QWidget):
 	self.dpedit.setToolTip('helical rise in angstrom')
 	
 	y = y +30	
-	dphi= QtGui.QLabel('Helical Angle', self)
+	dphi= QtGui.QLabel('Helical angle', self)
 	dphi.move(x1,y)
 	self.dphiedit=QtGui.QLineEdit(self)
 	self.dphiedit.move(x2,y)
@@ -199,7 +199,7 @@ class PopupHelicalRefinement(QWidget):
 	self.dphiedit.setToolTip('helical angle in degree')	
 	
 	y = y +30	
-	rmax= QtGui.QLabel('Helical Out Radius', self)
+	rmax= QtGui.QLabel('Helical out radius', self)
 	rmax.move(x1,y)
 	self.rmaxedit=QtGui.QLineEdit(self)
 	self.rmaxedit.move(x2,y)
@@ -207,13 +207,12 @@ class PopupHelicalRefinement(QWidget):
 	self.rmaxedit.setToolTip('helical out radious')	
 	
 	y = y +30	
-	self.CTF_radio_button=QtGui.QRadioButton('CTF', self)
+	self.CTF_radio_button=QtGui.QRadioButton('CTF on', self)
 	self.CTF_radio_button.move(x1,y)
 	self.CTF_radio_button.setChecked(True)
-	self.CTF_radio_button.setToolTip('helical out radious')	
-	
+		
 	y = y +30
-	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(x1,y)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(x2,y)
@@ -221,25 +220,25 @@ class PopupHelicalRefinement(QWidget):
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n ')
 	
 	y = y +30
-	nproc= QtGui.QLabel('Number of CPUs', self)
+	nproc= QtGui.QLabel('Number of CPUs (>1)', self)
 	nproc.move(x1,y)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(x2,y)
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+	self.nprocedit.setToolTip('The number of processors to use, need to be >=2 since we only surrport MPI version')
 	
       
 	y = y +30
-	header=QtGui.QLabel('Attributes xform.projection and active parameters must be set in the input stack', self)
+	header=QtGui.QLabel('Active parameters and xform.projection must be set in the input stack', self)
 	header.move(x1,y)
 	
 	#not linked to a function yet
 	
 	y = y +30
-        self.activeheader_button = QtGui.QPushButton("activate all images", self)
+        self.activeheader_button = QtGui.QPushButton("Activate all images", self)
 	self.activeheader_button.move(x1-5, y)
 	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
-	self.projectionheader_button = QtGui.QPushButton("set xform.projection", self)
+	self.projectionheader_button = QtGui.QPushButton("Set xform.projection", self)
 	self.projectionheader_button.move(x1+180, y)
 	self.projectionheader_button.setToolTip('Depending whether the projection parameters given or not, set xform projection to zero or specific vlues ')
 	self.connect(self.projectionheader_button, SIGNAL("clicked()"), self.setprojectionheader)
@@ -338,7 +337,17 @@ class PopupHelicalRefinement(QWidget):
 	snr=self.savedparmsdict['snr']
 	initial_theta=self.savedparmsdict['initial_theta']
 	delta_theta=self.savedparmsdict['delta_theta']
-	nise = self.savedparmsdict['nise']
+	nise=self.savedparmsdict['nise']
+	rmin = self.savedparmsdict['rmin']
+	fract = self.savedparmsdict['fract']
+	dp_step = self.savedparmsdict['dp_step']
+	ndp = self.savedparmsdict['ndp']
+	dphi_step = self.savedparmsdict['dphi_step']
+	ndphi = self.savedparmsdict['ndphi']
+	psi_max = self.savedparmsdict['psi_max']
+	an = self.savedparmsdict['an']
+	npad = self.savedparmsdict['npad']
+	chunk = self.savedparmsdict['chunk']
 	sym =self.savedparmsdict['sym']
 	datasym =self.savedparmsdict['datasym']
 	
@@ -374,6 +383,36 @@ class PopupHelicalRefinement(QWidget):
 		nise = self.w.niseedit.text()
 		cmd1 = cmd1 + " --nise=" + str(nise)
 		
+		rmin = self.w.rminedit.text()
+		cmd1 = cmd1 + " --rmin=" + str(rmin)
+		
+		fract = self.w.fractedit.text()
+		cmd1 = cmd1 + " --fract=" + str(fract)
+		
+		dp_step = self.w.dp_stepedit.text()
+		cmd1 = cmd1 + " --dp_step=" + str(dp_step)
+		
+		ndp = self.w.ndpedit.text()
+		cmd1 = cmd1 + " --ndp=" + str(ndp)
+		
+		dphi_step = self.w.dphi_stepedit.text()
+		cmd1 = cmd1 + " --dphi_step=" + str(dphi_step)
+		
+		ndphi = self.w.ndphiedit.text()
+		cmd1 = cmd1 + " --ndphi=" + str(ndphi)
+		
+		psi_max = self.w.psi_maxedit.text()
+		cmd1 = cmd1 + " --psi_max=" + str(psi_max)
+		
+		an = self.w.anedit.text()
+		cmd1 = cmd1 + " --an=" + str(an)
+		
+		npad = self.w.npadedit.text()
+		cmd1 = cmd1 + " --npad=" + str(npad)
+		
+		chunk = self.w.chunkedit.text()
+		cmd1 = cmd1 + " --chunk=" + str(chunk)
+		
 		sym = self.w.symedit.text()
 		cmd1 = cmd1 + " --sym=" + str(sym)
 		datasym = self.w.datasymedit.text()
@@ -398,7 +437,10 @@ class PopupHelicalRefinement(QWidget):
 	
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"rmin":str(rmin),"fract":str(fract),"dp_step":str(dp_step),"ndp":str(ndp),"dphi_step":str(dphi_step),"ndphi":str(ndphi),"psi_max":str(psi_max),"an":str(an), "npad":str(npad), "chunk":str(chunk),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	
+	
+	
 	
 	
 	if self.setadv:
@@ -575,7 +617,7 @@ class Popupadvparams_helical(QWidget):
 	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
 	
 	y = y+30
-	delta= QtGui.QLabel('Angular Step', self)
+	delta= QtGui.QLabel('Angular step', self)
 	delta.move(x1,y)
 	self.deltaedit=QtGui.QLineEdit(self)
 	self.deltaedit.move(x2,y)
@@ -591,7 +633,7 @@ class Popupadvparams_helical(QWidget):
 	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
 
 	y = y + 30
-	innerradius= QtGui.QLabel('Inner radius', self)
+	innerradius= QtGui.QLabel('Particle inner radius', self)
 	innerradius.move(x1,y)
 	self.innerradiusedit=QtGui.QLineEdit(self)
 	self.innerradiusedit.move(x2,y)
@@ -607,7 +649,7 @@ class Popupadvparams_helical(QWidget):
 	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
 		
 	y = y + 30
-	initial_theta= QtGui.QLabel('Initial Theta', self)
+	initial_theta= QtGui.QLabel('Initial theta', self)
 	initial_theta.move(x1,y)
 	self.initial_thetaedit=QtGui.QLineEdit(self)
 	self.initial_thetaedit.move(x2,y)
@@ -615,7 +657,7 @@ class Popupadvparams_helical(QWidget):
 	self.initial_thetaedit.setToolTip('intial theta for reference projection, default 90.0)')
 	
 	y = y + 30
-	delta_theta= QtGui.QLabel('Theta Step', self)
+	delta_theta= QtGui.QLabel('Theta step', self)
 	delta_theta.move(x1,y)
 	self.delta_thetaedit=QtGui.QLineEdit(self)
 	self.delta_thetaedit.move(x2,y)
@@ -631,7 +673,7 @@ class Popupadvparams_helical(QWidget):
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
 	y = y + 30
-	rmin = QtGui.QLabel('Helix inner radius', self)
+	rmin = QtGui.QLabel('Helical inner radius', self)
 	rmin.move(x1,y)
 	self.rminedit=QtGui.QLineEdit(self)
 	self.rminedit.move(x2,y)
@@ -655,7 +697,7 @@ class Popupadvparams_helical(QWidget):
 	self.dp_stepedit.setToolTip('step size of helicise rise search')
 	
 	y = y + 30
-	ndp = QtGui.QLabel('Number of dp', self)
+	ndp = QtGui.QLabel('Number of dp search', self)
 	ndp.move(x1,y)
 	self.ndpedit=QtGui.QLineEdit(self)
 	self.ndpedit.move(x2,y)
@@ -671,7 +713,7 @@ class Popupadvparams_helical(QWidget):
 	self.dphi_stepedit.setToolTip('step size of helicise angle search')
 	
 	y = y + 30
-	ndphi = QtGui.QLabel('Number of dphi', self)
+	ndphi = QtGui.QLabel('Number of dphi search', self)
 	ndphi.move(x1,y)
 	self.ndphiedit=QtGui.QLineEdit(self)
 	self.ndphiedit.move(x2,y)
@@ -711,15 +753,15 @@ class Popupadvparams_helical(QWidget):
 	self.chunkedit.setToolTip('percentage of data used for alignment')	
 
 	y = y + 30
-	sym = QtGui.QLabel('point symmetry', self)
+	sym = QtGui.QLabel('Point group symmetry', self)
 	sym.move(x1,y)
 	self.symedit=QtGui.QLineEdit(self)
 	self.symedit.move(x2,y)
 	self.symedit.setText(self.savedparmsdict['sym'])
-	self.symedit.setToolTip('start symmetrization searching after nise steps')
+	self.symedit.setToolTip('now support cn and dn group symmetry')
 	
 	y = y + 30
-	datasym = QtGui.QLabel('save dp dphi', self)
+	datasym = QtGui.QLabel('File to save dp, dphi', self)
 	datasym.move(x1,y)
 	self.datasymedit=QtGui.QLineEdit(self)
 	self.datasymedit.move(x2,y)
