@@ -1106,7 +1106,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 			iz  = iz+1
 			if (iz == 1): pw2  = periodogram(ra)
 			else:         pw2 += periodogram(ra)
-	return  pw2/float(iz)		
+	return  pw2/float(iz)
 
 def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256):
 	""" 
