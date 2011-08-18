@@ -193,14 +193,14 @@ bool OmapIO::is_valid(const void *first_block, off_t file_size)
 		ByteOrder::swap_bytes(&const_value);
 	}
 
-	std::cout << "const_value = " << const_value
-			<< ", xstart = " << xstart
-			<< ", ystart = " << ystart
-			<< ", zstart = " << zstart
-			<< ", nx = " << nx
-			<< ", ny = " << ny
-			<< ", nz = " << nz
-			<< std::endl;
+//	std::cout << "const_value = " << const_value
+//			<< ", xstart = " << xstart
+//			<< ", ystart = " << ystart
+//			<< ", zstart = " << zstart
+//			<< ", nx = " << nx
+//			<< ", ny = " << ny
+//			<< ", nz = " << nz
+//			<< std::endl;
 
 	if(const_value != 100) return false;
 	if(nx<=0 || ny<=0 || nz<=0 || nx>10000 || ny>10000 || nz>10000) return false;
