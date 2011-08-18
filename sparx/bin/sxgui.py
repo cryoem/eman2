@@ -473,7 +473,10 @@ class PopupHelicalRefinement(QWidget):
     def saveparms(self):	
 	# save all the parms in a text file so we can repopulate if user requests
 	import pickle
-	output=open('savedparms.pkl','wb')
+	parameter_name = QtGui.QFileDialog.getSaveFileName(self, "Save Parameter File", "", "pkl files (*.pkl)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	parameter_name=QtCore.QString(parameter_name)
+	output=open(parameter_name,'wb')
 	self.gencmdline(writefile=False)
 	pickle.dump(self.savedparmsdict,output)
 	output.close()
@@ -483,7 +486,11 @@ class PopupHelicalRefinement(QWidget):
   	
 	# repopulate with saved parms
 	import pickle
-	pkl = open('savedparms.pkl','rb')
+	parameter_name = QtGui.QFileDialog.getOpenFileName(self, "Open Parameter File", "", "pkl files (*.pkl)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	parameter_name=QtCore.QString(parameter_name)
+	
+	pkl = open(parameter_name,'rb')
 	self.savedparmsdict = pickle.load(pkl)
 	print self.savedparmsdict
 	self.outradiusedit.setText(self.savedparmsdict['outradius'])
