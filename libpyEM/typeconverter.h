@@ -467,9 +467,9 @@ namespace EMAN {
 				return 0;
 			}
 #endif
-            if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr))) {
-                return 0;
-            }
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr))) {
+				return 0;
+			}
 			return obj_ptr;
 		}
 
@@ -486,7 +486,7 @@ namespace EMAN {
 			EMObject& result = *((EMObject*) storage);
 
 			PyObject * first_obj = PyObject_GetItem(obj_ptr, PyInt_FromLong(0));
-			if(!first_obj) {	//to handle the empty list in python
+			if(PySequence_Size(obj_ptr) == 0 || !first_obj) {	//to handle the empty list in python
 				result = EMObject();
 			}
 			else {
@@ -494,18 +494,25 @@ namespace EMAN {
 
 				if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
 					object_type = EMObject::INTARRAY;
+				   // PySequence_GetItem takes an int directly; otherwise you'd need
+				   // to DECREF the int object you pass to PyObject_GetItem as well.
+					Py_DECREF(first_obj);
 				}
 				else if( PyObject_TypeCheck(first_obj, &PyFloat_Type) ) {
 					object_type = EMObject::FLOATARRAY;
+					Py_DECREF(first_obj);
 				}
 				else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
 					object_type = EMObject::STRINGARRAY;
+					Py_DECREF(first_obj);
 				}
 				else if(string(first_obj->ob_type->tp_name) == "Transform") {
 					object_type = EMObject::TRANSFORMARRAY;
+					Py_DECREF(first_obj);
 				}
 				else {
 					object_type = EMObject::UNKNOWN;
+					Py_DECREF(first_obj);
 				}
 
 				python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
