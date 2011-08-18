@@ -606,12 +606,14 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
 		dx = self.sa_xf - self.sa_xi
-		dy = self.sa_yf - self.sa_yi 
+		dy = self.sa_yf - self.sa_yi
 		x = (self.sa_xi + self.camera.getWidth()/2) 
 		y = (self.camera.getHeight()/2 - self.sa_yi)
+		if dx < 2 and dx > -2: dx = 2
+		if dy < 2 and dy > -2: dy = 2
 
 		# Apply selection box, and center it in the green box
-		GLU.gluPickMatrix(x - dx/2, (viewport[3] - y) + dy/2, dx, dy, viewport)
+		GLU.gluPickMatrix(x + dx/2, (viewport[3] - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -683,21 +685,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Process the selection records
 		"""
 		# Remove old selection if not in append mode
-		if not self.appendselection:
-			for selected in self.getAllSelectedNodes():
-				selected.setSelectedItem(False)
-				# Inspector tree management
-				if EMQTreeWidgetItem:
-					selected.EMQTreeWidgetItem.setSelectionStateBox()
-					self.main_3d_inspector.tree_widget.setCurrentItem(selected.EMQTreeWidgetItem)
+		if (not records and not self.toggleselection) or (self.multiselect and not self.appendselection):
+			self.clearSelection(records)
+			
 		# Select the desired items	
 		closestitem = None
 		bestdistance = 1.0
 		for record in records:
 			if self.multiselect:
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-				# Extending toggling to multiple item makes for bonkers bahaviour
-				#if selecteditem.isSelectedItem(): self.itemstodeselect.append(selecteditem) # This will toogle any presiouly selected items in the item list, provided we don't move it.
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
 				if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
@@ -707,11 +703,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
-			if selecteditem.isSelectedItem(): self.itemstodeselect.append(selecteditem) # This will toogle any presiouly selected items in the item list, provided we don't move it.
-			selecteditem.setSelectedItem(True)
+			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection(records)
+			if self.toggleselection and selecteditem.isSelectedItem(): 
+				selecteditem.setSelectedItem(False)
+			else:
+				selecteditem.setSelectedItem(True)
 			# Inspector tree management
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
 	
+	def clearSelection(self, records):
+		"""
+		Clear all slected itemstodeselect
+		"""
+		for selected in self.getAllSelectedNodes():
+			selected.setSelectedItem(False)
+			# Inspector tree management
+			if EMQTreeWidgetItem:
+				selected.EMQTreeWidgetItem.setSelectionStateBox()
+				self.main_3d_inspector.tree_widget.setCurrentItem(selected.EMQTreeWidgetItem)
+					
 	def insertNewNode(self, name, node):
 		"""
 		Insert a new node in the SG
@@ -735,7 +745,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		# Process mouse events
-		self.itemstodeselect = []
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.setCursor(self.cubecursor)
 			self.newnode = EMCube(2.0)
@@ -761,16 +770,21 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Cylinder", self.newnode)
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
-			if  event.y() > 0.95*self.size().height():
+			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
 				self.setCursor(self.zrotatecursor)
+				self.zrotate = True
 			else:
 				self.setCursor(self.xyrotatecursor)
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier: 
+				self.zrotate = False
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
 			#self.setCursor(self.selectorcursor)
 			self.multiselect = False
 			self.appendselection = False
+			self.toggleselection = False
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
+			if event.modifiers()&Qt.ControlModifier:
+				self.toggleselection = True
 			# 5 seems a big enough selection box
 			self.sa_xi = event.x() - self.camera.getWidth()/2
 			self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
@@ -778,7 +792,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
 			self.pickItem()
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection") or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mousemode == "selection"):
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
 			#self.setCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
@@ -798,39 +812,30 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			self.setCursor(self.cubecursor)
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			self.setCursor(self.spherecursor)
 			self.newnode.setRadius(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			self.setCursor(self.cylindercursor)
 			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
 			sign = -(event.y() - self.first_y)
 			self.newnode.getTransform().set_rotation({"type":"eman","alt":math.copysign(90,sign)})
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
-			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.setCursor(self.zrotatecursor)
-				self.update_matrices([magnitude,0,0,-dx/magnitude], "rotate")
+			if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
+				self.update_matrices([dx,0,0,-1], "rotate")
 			else:
-				self.setCursor(self.xyrotatecursor) 
 				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
-			#self.setCursor(self.selectorcursor)
 			self.update_matrices([dx,-dy,0], "translate")
-			self.itemstodeselect = []	# The user means to move not toggle the item
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection") or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.mousemode == "selection"):
-			#self.setCursor(self.selectorcursor)
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
 			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			self.update_matrices([0,0,(dx+dy)], "translate")
+			self.update_matrices([0,0,(-dy)], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.update_matrices([dx,-dy,0], "translate")
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
 			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
-			self.setCursor(self.scalecursor)
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
 		self.updateSG()	
@@ -844,10 +849,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if self.toggle_render_selectedarea:
 			self.pickItem()
 			self.deselectArea()
-			self.updateSG()
-		for item in self.itemstodeselect: 
-			item.setSelectedItem(False)
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(item)
 			self.updateSG()
 			
 	def wheelEvent(self, event):
@@ -1607,7 +1608,8 @@ class EMInspector3D(QtGui.QWidget):
 	def removeTreeNode(self, parentitem, childindex):
 		# I am using the parent item rather than the item itself b/c the stupid widget has no , remove self function...
 		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
-		if parentitem.child(childindex).item3d(): self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
+		if parentitem.child(childindex).item3d():
+			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
 	
 	def insertNewNode(self, node_name, insertion_node):
