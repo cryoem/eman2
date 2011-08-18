@@ -975,7 +975,7 @@ class Popuptwodali(QWidget):
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_ali2d)
 
 	#######################################################################
 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
@@ -994,7 +994,7 @@ class Popuptwodali(QWidget):
     def outputinfo_ali2d(self):
     	QMessageBox.information(self, "ali2d output",'Output files (average of aligned images and Fourier Ring Correlation curve)\nare saved in Output folder. alignment parameters are saved in the attribute \nxform.align2d in each image header. The images themselves are not changed.')
 	
-    def gencmdline(self,writefile=True):
+    def gencmdline_ali2d(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -1015,64 +1015,56 @@ class Popuptwodali(QWidget):
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
 	
-	mask=''
-	ctr=''
-	ringstep=''
-	inrad=''
-	CTF=''
-	snr=''
-	fourvar=''
-	gpn=''
-	userf=''
-	userfile=''
+	mask=self.savedparmsdict['maskname']
+	ctr=self.savedparmsdict['center']
+	ringstep=self.savedparmsdict['ringstep']
+	inrad=self.savedparmsdict['innerradius']
+	CTF=self.savedparmsdict['ctf']
+	snr=self.savedparmsdict['snr']
+	fourvar=self.savedparmsdict['fourvar']
+	gpn=self.savedparmsdict['gpnr']
+	userf=self.savedparmsdict['usrfunc']
+	userfile=self.savedparmsdict['usrfuncfile']
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
-		if len(str(mask))> 1:
-			cmd1 = cmd1+" "+str(mask) 
+		
+	if len(str(mask))> 1:
+		cmd1 = cmd1+" "+str(mask) 
 	cmd1 = cmd1 + args
 	
 	if self.setadv:	
 		ctr=self.w.centeredit.text()
-		cmd1 = cmd1+" --center=" +str(ctr)
-		
 		ringstep = self.w.ringstepedit.text()
-		cmd1 = cmd1+" --rs="+str(ringstep)
-		
 		inrad = self.w.innerradiusedit.text()
-		cmd1 = cmd1 + " --ir=" + str(inrad)
-		
 		CTF=self.w.ctfchkbx.checkState()
-		
-		if CTF == Qt.Checked:
-			cmd1 = cmd1 + " --CTF"
-			
 		snr = self.w.snredit.text()
-		cmd1 = cmd1 + " --snr=" + str(snr)
-		
 		fourvar = self.w.fourvarchkbx.checkState()
-		if fourvar == Qt.Checked:
-			cmd1 = cmd1 + " --Fourvar"
-			
 		gpn = self.w.gpnredit.text()
-		cmd1 = cmd1 + " --Ng=" + str(gpn)
-		
 		userf = self.w.usrfuncedit.text()
-		
 		userfile = self.w.usrfuncfileedit.text()
+			
+	cmd1 = cmd1+" --center=" +str(ctr) +" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)+ " --Ng=" + str(gpn)
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"
+	if fourvar == Qt.Checked:
+		cmd1 = cmd1 + " --Fourvar"	
+	if len(userfile) < 1:
+		cmd1 = cmd1 + " --function="+str(userf)
+	else:
+		userfile = str(userfile)
+		# break it down into file name and directory path
+		rind = userfile.rfind('/')
 		
-		if len(userfile) <= 1:
-			cmd1 = cmd1 + " --function="+str(userf)
-		else:
-			userfile = self.w.usrfuncfileedit.text()
-			userfile = str(userfile)
-			if len(userfile) > 1:
-				# break it down into file name and directory path
-				rind = userfile.rfind('/')
-				fname = userfile[rind+1:]
-				fname, ext = os.path.splitext(fname)
-				fdir = userfile[0:rind]
-				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+		if rind == -1:
+			userfile = os.path.abspath(userfile)
+			rind = userfile.rfind('/')
+			
+		fname = userfile[rind+1:]
+		fname, ext = os.path.splitext(fname)
+		fdir = userfile[0:rind]
+		cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+		
 	np = self.nprocedit.text()
 	
 	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar, "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
@@ -1095,7 +1087,7 @@ class Popuptwodali(QWidget):
 	self.cmd = cmd1
 	
     def runsxali2d(self):
-	self.gencmdline(writefile=False)
+	self.gencmdline_ali2d(writefile=False)
 	outfolder=self.savedparmsdict['foldername']
 	if os.path.exists(outfolder):
 		print "output folder "+outfolder+" already exists!"
@@ -1107,7 +1099,7 @@ class Popuptwodali(QWidget):
 	# save all the parms in a text file so we can repopulate if user requests
 	import pickle
 	output=open(self.picklename,'wb')
-	self.gencmdline(writefile=False)
+	self.gencmdline_ali2d(writefile=False)
 	pickle.dump(self.savedparmsdict,output)
 	output.close()
 	
@@ -1581,16 +1573,16 @@ class Popupthreedali(QWidget):
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+ " --delta='"+str(delta)+"'"+" --maxit="+ str(maxit) 
 	
-	mask=''
-	ctr=''
-	ringstep=''
-	inrad=''
-	CTF=''
-	snr=''
-	fourvar=''
-	gpn=''
-	userf=''
-	userfile=''
+	mask=self.savedparmsdict['maskname']
+	ctr=self.savedparmsdict['center']
+	ringstep=self.savedparmsdict['ringstep']
+	inrad=self.savedparmsdict['innerradius']
+	CTF=self.savedparmsdict['ctf']
+	snr=self.savedparmsdict['snr']
+	fourvar=self.savedparmsdict['fourvar']
+	gpn=self.savedparmsdict['gpnr']
+	userf=self.savedparmsdict['usrfunc']
+	userfile=self.savedparmsdict['usrfuncfile']
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
@@ -2112,12 +2104,12 @@ class Popupkmeans(QWidget):
 	
 	args = " --K="+ str(kc)+ " --trials="+str(trials)+ " --maxit="+str(maxiter)
 	
-	randsd = '-1'
-	mask=''
-	ctf = 'False'
-	crit = 'all'
-	normalize = 'False'
-	init_method = 'rnd'
+	randsd = self.savedparmsdict['randsd']
+	mask=self.savedparmsdict['maskname']
+	ctf = self.savedparmsdict['ctf']
+	#crit = 'all'
+	#normalize = 'False'
+	#init_method = 'rnd'
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
@@ -2128,6 +2120,7 @@ class Popupkmeans(QWidget):
 	if self.setadv:	
 		randsd=self.w.randsdedit.text()
 		cmd1 = cmd1+" --rand_seed=" +str(randsd)
+		
 	
 	np = self.nprocedit.text()
 	
@@ -2182,6 +2175,8 @@ class Popupkmeans(QWidget):
 	if self.setadv:
 		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
 		self.w.randsdedit.setText(self.savedparmsdict['randsd'])
+		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w.normachkbx.setCheckState(self.savedparmsdict['norma'])
 		
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -2260,7 +2255,19 @@ class Popupadvparams_kmeans(QWidget):
 	
 	self.y1 += 30
 	
+	ctf= QtGui.QLabel('CTF', self)
+	ctf.move(self.x1,self.y1)
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(self.x2, self.y1)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 	
+	self.y1 += 30
+	
+	norma= QtGui.QLabel('normalize', self)
+	norma.move(self.x1,self.y1)
+	self.normachkbx = QtGui.QCheckBox("",self)
+	self.normachkbx.move(self.x2, self.y1)
+	self.normachkbx.setCheckState(self.savedparmsdict['norma'])
 	
     def choose_mskfile(self):
 	#opens a file browser, showing files only in .hdf format
