@@ -1157,7 +1157,8 @@ class Popuptwodali(QWidget):
 		if choice == importstr:
 			file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "(*)")
 			a=str(QtCore.QString(file_name))
-			header(str(stack),'xform.align2d',fimport=a)
+			if len(a)>0:
+				header(str(stack),'xform.align2d',fimport=a)
 	
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -1347,7 +1348,7 @@ class Popupthreedali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali3d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":""}
 	
 	########################################################################################
 	# layout parameters
@@ -1580,59 +1581,50 @@ class Popupthreedali(QWidget):
 	CTF=self.savedparmsdict['ctf']
 	snr=self.savedparmsdict['snr']
 	fourvar=self.savedparmsdict['fourvar']
-	gpn=self.savedparmsdict['gpnr']
 	userf=self.savedparmsdict['usrfunc']
 	userfile=self.savedparmsdict['usrfuncfile']
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
-		if len(str(mask))> 1:
-			cmd1 = cmd1+" "+str(mask) 
+	if len(str(mask))> 1:
+		cmd1 = cmd1+" "+str(mask) 
 	cmd1 = cmd1 + args
 	
 	if self.setadv:	
 		ctr=self.w.centeredit.text()
-		cmd1 = cmd1+" --center=" +str(ctr)
-		
 		ringstep = self.w.ringstepedit.text()
-		cmd1 = cmd1+" --rs="+str(ringstep)
-		
 		inrad = self.w.innerradiusedit.text()
-		cmd1 = cmd1 + " --ir=" + str(inrad)
-		
 		CTF=self.w.ctfchkbx.checkState()
-		if CTF == Qt.Checked:
-			cmd1 = cmd1 + " --CTF"
-			
 		snr = self.w.snredit.text()
-		cmd1 = cmd1 + " --snr=" + str(snr)
-		
 		fourvar = self.w.fourvarchkbx.checkState()
-		if fourvar == Qt.Checked:
-			cmd1 = cmd1 + " --Fourvar"
-			
-		gpn = self.w.gpnredit.text()
-		cmd1 = cmd1 + " --Ng=" + str(gpn)
-		
 		userf = self.w.usrfuncedit.text()
-		
 		userfile = self.w.usrfuncfileedit.text()
+	
+	cmd1 = cmd1+" --center=" +str(ctr)+" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"
+	if fourvar == Qt.Checked:
+		cmd1 = cmd1 + " --Fourvar"	
+	
+	if len(userfile) < 1:
+		cmd1 = cmd1 + " --function="+str(userf)
+	else:
+		userfile = str(userfile)
+		# break it down into file name and directory path
+		rind = userfile.rfind('/')
 		
-		if len(userfile) <= 1:
-			cmd1 = cmd1 + " --function="+str(userf)
-		else:
-			userfile = self.w.usrfuncfileedit.text()
-			userfile = str(userfile)
-			if len(userfile) > 1:
-				# break it down into file name and directory path
-				rind = userfile.rfind('/')
-				fname = userfile[rind+1:]
-				fname, ext = os.path.splitext(fname)
-				fdir = userfile[0:rind]
-				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+		if rind == -1:
+			userfile = os.path.abspath(userfile)
+			rind = userfile.rfind('/')
+			
+		fname = userfile[rind+1:]
+		fname, ext = os.path.splitext(fname)
+		fdir = userfile[0:rind]
+		cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+		
 	np = self.nprocedit.text()
-
-	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar, "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	
+	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar,"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -1725,7 +1717,8 @@ class Popupthreedali(QWidget):
 		if choice == importstr:
 			file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "(*)")
 			a=str(QtCore.QString(file_name))
-			header(str(stack),'xform.projection',fimport=a)
+			if len(a)>0:
+				header(str(stack),'xform.projection',fimport=a)
 	
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -1858,15 +1851,6 @@ class Popupadvparams_ali3d(QWidget):
 	
 	self.y1 += 30
 	
-	gpnr= QtGui.QLabel('Number of Groups', self)
-	gpnr.move(self.x1,self.y1)
-	self.gpnredit=QtGui.QLineEdit(self)
-	self.gpnredit.move(self.x2,self.y1)
-	self.gpnredit.setText(self.savedparmsdict['gpnr'])
-	self.gpnredit.setToolTip('number of groups in the new CTF filteration')	
-	
-	self.y1 += 30
-	
 	usrfunc= QtGui.QLabel('User Function Name', self)
 	usrfunc.move(self.x1,self.y1)
 	self.usrfuncedit=QtGui.QLineEdit(self)
@@ -1930,7 +1914,7 @@ class Popupkmeans(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":"False","crit":"all","normalize":"False", "init_method":"rnd"}
+	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
 
 	#######################################################################################
 	# Layout parameters
@@ -1943,7 +1927,7 @@ class Popupkmeans(QWidget):
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
-	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x2 = self.x1 + 200 # second column (text boxes)
 	self.x3 = self.x2+145 # third column (Open .hdf button)
 	self.x4 = self.x3+100 # fourth column (Open .bdb button)
 	self.x5 = 230 # run button
@@ -2079,7 +2063,7 @@ class Popupkmeans(QWidget):
     def advparams(self):
         print "Opening a new popup window..."
         self.w = Popupadvparams_kmeans(self.savedparmsdict)
-        self.w.resize(500,450)
+        self.w.resize(400,300)
         self.w.show()
 	self.setadv=True
 		
@@ -2107,21 +2091,32 @@ class Popupkmeans(QWidget):
 	randsd = self.savedparmsdict['randsd']
 	mask=self.savedparmsdict['maskname']
 	ctf = self.savedparmsdict['ctf']
-	#crit = 'all'
-	#normalize = 'False'
-	#init_method = 'rnd'
+	crit = self.savedparmsdict['crit']
+	normalize = self.savedparmsdict['normalize']
+	init_method = self.savedparmsdict['init_method']
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
-		if len(str(mask))> 1:
-			cmd1 = cmd1+" "+str(mask) 
+		
+	if len(str(mask))> 1:
+		cmd1 = cmd1+" "+str(mask) 
+			
 	cmd1 = cmd1 + args
 	
 	if self.setadv:	
 		randsd=self.w.randsdedit.text()
-		cmd1 = cmd1+" --rand_seed=" +str(randsd)
+		CTF=self.w.ctfchkbx.checkState()
+		normalize=self.w.normachkbx.checkState()
+		init_method=self.w.init_methodedit.text()
+		crit=self.w.critedit.text()
 		
-	
+	cmd1 = cmd1+" --rand_seed=" +str(randsd)+" --init_method="+str(init_method)+" --crit="+str(crit)
+		
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"
+	if normalize == Qt.Checked:
+		cmd1 = cmd1 + " --normalize"
+			
 	np = self.nprocedit.text()
 	
 	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'maxiter':str(maxiter),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":str(ctf),"crit":str(crit),"normalize":str(normalize), "init_method":str(init_method)}
@@ -2176,7 +2171,9 @@ class Popupkmeans(QWidget):
 		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
 		self.w.randsdedit.setText(self.savedparmsdict['randsd'])
 		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
-		self.w.normachkbx.setCheckState(self.savedparmsdict['norma'])
+		self.w.normachkbx.setCheckState(self.savedparmsdict['normalize'])
+		self.w.critedit.setText(self.savedparmsdict['crit'])
+		self.w.init_methodedit.setText(self.savedparmsdict['init_method'])
 		
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -2189,7 +2186,6 @@ class Popupkmeans(QWidget):
    	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
         #after the user selected a file, we obtain this filename as a Qstring
 	a=QtCore.QString(file_name)
-	print a
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.stacknameedit.setText(str(a))
         
@@ -2267,7 +2263,25 @@ class Popupadvparams_kmeans(QWidget):
 	norma.move(self.x1,self.y1)
 	self.normachkbx = QtGui.QCheckBox("",self)
 	self.normachkbx.move(self.x2, self.y1)
-	self.normachkbx.setCheckState(self.savedparmsdict['norma'])
+	self.normachkbx.setCheckState(self.savedparmsdict['normalize'])
+	self.y1 += 30
+	
+	crit= QtGui.QLabel('Criterion', self)
+	crit.move(self.x1,self.y1)
+	self.critedit=QtGui.QLineEdit(self)
+	self.critedit.move(self.x2,self.y1)
+	self.critedit.setText(self.savedparmsdict['crit'])
+	self.critedit.setToolTip('names of criterion used: \'all\' all criterions, \'C\' Coleman, \'H\' Harabasz or \'D\' Davies-Bouldin, thoses criterions return the values of classification quality, see also sxk_means_groups. Any combination is accepted, i.e., \'CD\', \'HC\', \'CHD\'.')
+	
+	self.y1 += 30
+	
+	initmethod= QtGui.QLabel('Criterion', self)
+	initmethod.move(self.x1,self.y1)
+	self.init_methodedit=QtGui.QLineEdit(self)
+	self.init_methodedit.move(self.x2,self.y1)
+	self.init_methodedit.setText(self.savedparmsdict['init_method'])
+	self.init_methodedit.setToolTip('Method used to initialize partition: "rnd" randomize or "d2w" for d2 weighting initialization (default is rnd)')
+	
 	
     def choose_mskfile(self):
 	#opens a file browser, showing files only in .hdf format
@@ -2371,7 +2385,7 @@ class MainWindow(QtGui.QWidget):
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupkmeans()
-        self.w.resize(550,550)
+        self.w.resize(580,550)
         self.w.show()
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
