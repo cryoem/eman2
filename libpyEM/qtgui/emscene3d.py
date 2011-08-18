@@ -275,6 +275,28 @@ cylindercursor = [
     'ccccccccccccccccc'
 ] 
 
+datacursor = [
+    '17 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'bbbbbbbcbbcccccbb',
+    'bbbbbbbcbbbcccbbb',
+    'bbccccccbbbbcbbbb',
+    'bbccccccbbbbbbbbb',
+    'bbccccccbbcbbbcbb',
+    'bbbbbcccbbcccccbb',
+    'bbbbbcccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbbbbbbcbbcccccbb',
+    'bbbbbbbcbbcccccbb',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
 cubeicon = [
     '16 16 2 1',
     'b c #000055',
@@ -363,6 +385,7 @@ texticon = [
     'ccccccccccccccccc'
 ] 
 
+'''
 isosurfaceicon = [
     '17 16 2 1',
     'b c #000055',
@@ -381,6 +404,28 @@ isosurfaceicon = [
     'cbccbccccbcbccccb',
     'cbccbccccbcbccccb',
     'bbbccbbbbcccbbbbc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+'''
+dataicon = [
+    '17 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'bbbbbbbcbbcccccbb',
+    'bbbbbbbcbbbcccbbb',
+    'bbccccccbbbbcbbbb',
+    'bbccccccbbbbbbbbb',
+    'bbccccccbbcbbbcbb',
+    'bbbbbcccbbcccccbb',
+    'bbbbbcccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbccccccbbcccccbb',
+    'bbbbbbbcbbcccccbb',
+    'bbbbbbbcbbcccccbb',
     'ccccccccccccccccc',
     'ccccccccccccccccc'
 ] 
@@ -722,16 +767,19 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selected.EMQTreeWidgetItem.setSelectionStateBox()
 				self.main_3d_inspector.tree_widget.setCurrentItem(selected.EMQTreeWidgetItem)
 					
-	def insertNewNode(self, name, node):
+	def insertNewNode(self, name, node, parentnode=None):
 		"""
 		Insert a new node in the SG
 		"""
 		insertionpoint = None
-		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(name, node)
+		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(name, node, parentnode)
 		if insertionpoint:
 			insertionpoint[0].insertChild(node, (insertionpoint[1] + 1))
 		else:
-			self.addChild(node)
+			if parentnode:
+				parentnode.addChild(node)
+			else:
+				self.addChild(node)
 		
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -745,28 +793,28 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		# Process mouse events
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
+			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
+			if not filename: return
+			name = os.path.basename(str(filename))
+			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event))
+			self.insertNewNode(name, self.newnode)
+			self.isonode = EMIsosurface(self.newnode, transform=Transform())
+			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
+			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.setCursor(self.cubecursor)
-			self.newnode = EMCube(2.0)
-			x = event.x() - self.camera.getWidth()/2
-			y = -event.y() + self.camera.getHeight()/2
-			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self.insertNewNode("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
-			self.newnode = EMSphere(2.0)
-			x = event.x() - self.camera.getWidth()/2
-			y = -event.y() + self.camera.getHeight()/2
-			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self.insertNewNode("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.setCursor(self.cylindercursor)
-			self.newnode = EMCylinder(2.0,2.0)
-			x = event.x() - self.camera.getWidth()/2
-			y = -event.y() + self.camera.getHeight()/2
-			self.newnode.setTransform(Transform({"type":"eman","tx":x,"ty":y}))
+			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self.insertNewNode("Cylinder", self.newnode)
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
@@ -804,7 +852,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.setCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
 			self.setCursor(self.scalecursor)		
-			
+	
+	def _gettransformbasedonscreen(self, event):
+		x = event.x() - self.camera.getWidth()/2
+		y = -event.y() + self.camera.getHeight()/2
+		return Transform({"type":"eman","tx":x,"ty":y})
+		
 	def mouseMoveEvent(self, event):
 		"""
 		Qt event handler. Scales the SG depending on what mouse button(s) are pressed when dragged
@@ -1079,8 +1132,7 @@ class EMLight:
 		self.setGlobalAmbient(0.0, 0.0, 0.0, 1.0)		# Default global ambient
 		self.setDiffuse(1.0, 1.0, 1.0, 1.0)		# Default diffuse color is white
 		self.setSpecualar(1.0, 1.0, 1.0, 1.0)		# Default specular color is white
-		self.setPosition(0.0, 0.0, 1.0, 0.0)		# Defulat position is 0, 0, 1.0 and light is directional (w=0)
-		self.setAngularPosition(0.0, 0.0)
+		self.setAngularPosition(-30.0, 45.0)		# Default angular position
 		if not glIsEnabled(GL_LIGHTING):
 			glEnable(GL_LIGHTING)
 
@@ -1510,9 +1562,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.texttool = EMANToolButton()
 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Insert Text")
-		self.isotool = EMANToolButton()
-		self.isotool.setIcon(QtGui.QIcon(QtGui.QPixmap(isosurfaceicon)))
-		self.isotool.setToolTip("Insert IsoSurface")
+		self.datatool = EMANToolButton()
+		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
+		self.datatool.setToolTip("Insert Data")
 		
 		tvbox.addWidget(toollabel)
 		tvbox.addWidget(self.selectiontool)
@@ -1526,7 +1578,7 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.spheretool)
 		tvbox.addWidget(self.cylindertool)
 		tvbox.addWidget(self.texttool)
-		tvbox.addWidget(self.isotool)
+		tvbox.addWidget(self.datatool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
 		
 		QtCore.QObject.connect(self.rotatetool, QtCore.SIGNAL("clicked(int)"), self._rotatetool_clicked)
@@ -1539,7 +1591,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked(int)"), self._spheretool_clicked)
 		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked(int)"), self._cylindertool_clicked)
 		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
-		QtCore.QObject.connect(self.isotool, QtCore.SIGNAL("clicked(int)"), self._isotool_clicked)
+		QtCore.QObject.connect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
 		
 		# Set the default tool
 		self.selectiontool.setDown(True)
@@ -1576,8 +1628,8 @@ class EMInspector3D(QtGui.QWidget):
 	def _texttool_clicked(self, state):
 		self.scenegraph.setMouseMode("text")
 		
-	def _isotool_clicked(self, state):
-		self.scenegraph.setMouseMode("isosurface")
+	def _datatool_clicked(self, state):
+		self.scenegraph.setMouseMode("data")
 				
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
@@ -1612,19 +1664,23 @@ class EMInspector3D(QtGui.QWidget):
 			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
 	
-	def insertNewNode(self, node_name, insertion_node):
+	def insertNewNode(self, node_name, insertion_node, parentnode=None):
 		"""
 		Insert a node at the highlighted location
 		"""
 		currentitem = self.tree_widget.currentItem()
+		itemparentnode = None
 		if currentitem:
-			itemparentnode = currentitem.parent
+			if not parentnode:
+				if currentitem.parent: itemparentnode = currentitem.parent()
+			else:
+				itemparentnode = currentitem
 			if itemparentnode:
-				thisnode_index = itemparentnode().indexOfChild(currentitem)
-				addeditem = self.addTreeNode(node_name, insertion_node, parentitem=itemparentnode(), insertionindex=(thisnode_index+1))
+				thisnode_index = itemparentnode.indexOfChild(currentitem)
+				addeditem = self.addTreeNode(node_name, insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
 				self.tree_widget.setCurrentItem(addeditem)
 				self._tree_widget_click(addeditem, 0)
-				return [itemparentnode().item3d(), thisnode_index]
+				return [itemparentnode.item3d(), thisnode_index]
 		# Otherwise add the node to the Root
 		addeditem = self.addTreeNode(node_name, insertion_node, parentitem=self.tree_widget.topLevelItem(0))
 		self.tree_widget.setCurrentItem(addeditem)
@@ -2045,7 +2101,7 @@ class NodeEditDialog(QtGui.QDialog):
 		self.inspector = weakref.ref(inspector)
 		grid = QtGui.QGridLayout(self)
 		label = QtGui.QLabel("Node Name")
-		self.nodename = QtGui.QLineEdit()
+		self.nodename = QtGui.QLineEdit(self.item.item3d().getLabel())
 		grid.addWidget(label, 0, 0, 1, 2)
 		grid.addWidget(self.nodename, 1, 0, 1, 2)
 		self.ok_button = QtGui.QPushButton("Ok")
@@ -2060,11 +2116,12 @@ class NodeEditDialog(QtGui.QDialog):
 	def _on_ok(self):
 		self.item.item3d().setLabel(self.nodename.text())
 		self.item.setText(0, self.nodename.text())
+		self.item.item3d().setLabel(self.nodename.text())
 		self.done(0)
 		
 	def _on_cancel(self):
 		self.done(1)
-		
+	
 class NodeDialog(QtGui.QDialog):
 	"""
 	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
@@ -2075,7 +2132,8 @@ class NodeDialog(QtGui.QDialog):
 		self.item = item
 		self.inspector = weakref.ref(inspector)
 		self.setWindowTitle('Node Controler')
-		#grid = QtGui.QGridLayout()
+		self.setMaximumWidth(300)
+		self.transformgroup = {}
 		vbox = QtGui.QVBoxLayout(self)
 		# Stuff within the frame
 		frame = QtGui.QFrame()
@@ -2124,10 +2182,11 @@ class NodeDialog(QtGui.QDialog):
 		self.cube_dim = QtGui.QLineEdit()
 		node_name_label = QtGui.QLabel("Cube Name")
 		self.node_name_cube = QtGui.QLineEdit()
-		grid.addWidget(cube_dim_label, 0, 0)
-		grid.addWidget(self.cube_dim, 0, 1)
-		grid.addWidget(node_name_label , 1, 0)
-		grid.addWidget(self.node_name_cube, 1, 1)
+		grid.addWidget(cube_dim_label, 0, 0, 1, 2)
+		grid.addWidget(self.cube_dim, 0, 2, 1, 2)
+		grid.addWidget(node_name_label , 1, 0, 1, 2)
+		grid.addWidget(self.node_name_cube, 1, 2, 1, 2)
+		self._get_transformlayout(grid, 2, "CUBE")
 		cubewidget.setLayout(grid)
 		return cubewidget
 		
@@ -2141,10 +2200,11 @@ class NodeDialog(QtGui.QDialog):
 		self.sphere_dim = QtGui.QLineEdit()
 		node_name_label = QtGui.QLabel("Sphere Name")
 		self.node_name_sphere = QtGui.QLineEdit()
-		grid.addWidget(sphere_dim_label, 0, 0)
-		grid.addWidget(self.sphere_dim, 0, 1)
-		grid.addWidget(node_name_label , 1, 0)
-		grid.addWidget(self.node_name_sphere, 1, 1)
+		grid.addWidget(sphere_dim_label, 0, 0, 1, 2)
+		grid.addWidget(self.sphere_dim, 0, 2, 1, 2)
+		grid.addWidget(node_name_label , 1, 0, 1, 2)
+		grid.addWidget(self.node_name_sphere, 1, 2, 1, 2)
+		self._get_transformlayout(grid, 2, "SPHERE")
 		spherewidget.setLayout(grid)
 		return spherewidget
 		
@@ -2156,16 +2216,17 @@ class NodeDialog(QtGui.QDialog):
 		grid = QtGui.QGridLayout()
 		cylider_radius_label = QtGui.QLabel("Cylider Radius")
 		self.cylider_radius = QtGui.QLineEdit()
-		grid.addWidget(cylider_radius_label, 0, 0)
-		grid.addWidget(self.cylider_radius, 0, 1)
+		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
+		grid.addWidget(self.cylider_radius, 0, 2, 1, 2)
 		cylider_height_label = QtGui.QLabel("Cylider Height")
 		self.cylider_height = QtGui.QLineEdit()
 		node_name_label = QtGui.QLabel("Cylider Name")
 		self.node_name_cylinder = QtGui.QLineEdit()
-		grid.addWidget(cylider_height_label, 1, 0)
-		grid.addWidget(self.cylider_height, 1, 1)
-		grid.addWidget(node_name_label , 2, 0)
-		grid.addWidget(self.node_name_cylinder, 2, 1)
+		grid.addWidget(cylider_height_label, 1, 0, 1, 2)
+		grid.addWidget(self.cylider_height, 1, 2, 1, 2)
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(self.node_name_cylinder, 2, 2, 1, 2)
+		self._get_transformlayout(grid, 3, "CYLINDER")
 		cyliderwidget.setLayout(grid)
 		return cyliderwidget
 	
@@ -2180,11 +2241,12 @@ class NodeDialog(QtGui.QDialog):
 		data_path_label = QtGui.QLabel("Data Path")
 		self.data_path = QtGui.QLineEdit()
 		self.browse_button = QtGui.QPushButton("Browse")
-		grid.addWidget(node_name_data_label, 0, 0)
-		grid.addWidget(self.node_name_data, 0, 1)
-		grid.addWidget(data_path_label, 1, 0)
-		grid.addWidget(self.data_path, 1, 1)
-		grid.addWidget(self.browse_button, 2, 0, 1, 2)
+		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
+		grid.addWidget(self.node_name_data, 0, 2, 1, 2)
+		grid.addWidget(data_path_label, 1, 0, 1, 2)
+		grid.addWidget(self.data_path, 1, 2, 1, 2)
+		grid.addWidget(self.browse_button, 2, 0, 1, 4)
+		self._get_transformlayout(grid, 3, "DATA")
 		datawidget.setLayout(grid)
 		
 		self.connect(self.browse_button, QtCore.SIGNAL('clicked()'), self._on_browse)
@@ -2199,11 +2261,74 @@ class NodeDialog(QtGui.QDialog):
 		grid = QtGui.QGridLayout()
 		node_name_data_label = QtGui.QLabel("Isosurface Name")
 		self.node_name_data = QtGui.QLineEdit()
-		grid.addWidget(node_name_data_label, 0, 0)
-		grid.addWidget(self.node_name_data, 0, 1)
+		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
+		grid.addWidget(self.node_name_data, 0, 2, 1, 2)
+		self._get_transformlayout(grid, 2, "ISO")
 		isosurfacewidget.setLayout(grid)
 		
 		return isosurfacewidget
+	
+	def _get_transformlayout(self, layout, idx, name):
+		self.transformgroup[name] = []
+		font = QtGui.QFont()
+		font.setBold(True)
+		translatelabel = QtGui.QLabel("Translation")
+		translatelabel.setFont(font)
+		translatelabel.setAlignment(QtCore.Qt.AlignCenter)
+		layout.addWidget(translatelabel, idx, 0, 1, 4)
+		txlabel = QtGui.QLabel("Tx")
+		tylabel = QtGui.QLabel("Ty")
+		txlabel.setAlignment(QtCore.Qt.AlignRight)
+		tylabel.setAlignment(QtCore.Qt.AlignRight)
+		txlineedit = QtGui.QLineEdit("0.0")
+		tylineedit = QtGui.QLineEdit("0.0")
+		txlineedit.setMinimumWidth(100.0)
+		tylineedit.setMinimumWidth(100.0)
+		self.transformgroup[name].append(txlineedit)
+		self.transformgroup[name].append(tylineedit)
+		layout.addWidget(txlabel, idx+1, 0, 1, 1)
+		layout.addWidget(txlineedit, idx+1, 1, 1, 1)
+		layout.addWidget(tylabel, idx+1, 2, 1, 1)
+		layout.addWidget(tylineedit, idx+1, 3, 1, 1)
+		tzlabel = QtGui.QLabel("Tz")
+		zoomlabel = QtGui.QLabel("Zm")
+		tylabel.setAlignment(QtCore.Qt.AlignRight)
+		zoomlabel.setAlignment(QtCore.Qt.AlignRight)
+		tzlineedit = QtGui.QLineEdit("0.0")
+		zoomlineedit = QtGui.QLineEdit("1.0")
+		tzlineedit.setMinimumWidth(100.0)
+		zoomlineedit.setMinimumWidth(100.0)
+		self.transformgroup[name].append(tzlineedit)
+		self.transformgroup[name].append(zoomlineedit)
+		layout.addWidget(tzlabel, idx+2, 0, 1, 1)
+		layout.addWidget(tzlineedit, idx+2, 1, 1, 1)
+		layout.addWidget(zoomlabel, idx+2, 2, 1, 1)
+		layout.addWidget(zoomlineedit, idx+2, 3, 1, 1)
+		rotatelabel = QtGui.QLabel("EMAN Rotation")
+		rotatelabel.setFont(font)
+		rotatelabel.setAlignment(QtCore.Qt.AlignCenter)
+		layout.addWidget(rotatelabel, idx+3, 0, 1, 4)
+		azlabel = QtGui.QLabel("Az")
+		azlabel.setAlignment(QtCore.Qt.AlignRight)
+		azlineedit = QtGui.QLineEdit("0.0")
+		altlabel = QtGui.QLabel("Alt")
+		altlabel.setAlignment(QtCore.Qt.AlignRight)
+		altlineedit = QtGui.QLineEdit("0.0")
+		azlineedit .setMinimumWidth(100.0)
+		altlineedit.setMinimumWidth(100.0)
+		layout.addWidget(azlabel, idx+4, 0, 1, 1)
+		layout.addWidget(azlineedit, idx+4, 1, 1, 1)
+		layout.addWidget(altlabel, idx+4, 2, 1, 1)
+		layout.addWidget(altlineedit, idx+4, 3, 1, 1)
+		philabel = QtGui.QLabel("Phi")
+		philabel.setAlignment(QtCore.Qt.AlignRight)
+		philineedit = QtGui.QLineEdit("0.0")
+		#self.philineedit.setMinimumWidth(100.0)
+		layout.addWidget(philabel, idx+5, 0, 1, 1)
+		layout.addWidget(philineedit, idx+5, 1, 1, 1)
+		self.transformgroup[name].append(azlineedit)
+		self.transformgroup[name].append(altlineedit)
+		self.transformgroup[name].append(philineedit)
 		
 	def _on_browse(self):
 		filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
@@ -2212,39 +2337,43 @@ class NodeDialog(QtGui.QDialog):
 		self.node_name_data.setText(name)
 	
 	def _on_add_node(self):
-		if not self.item.parent:
-			print "Cannot add another top level node!!!"
-			self.done(0)
-			return
 		insertion_node = None
-		node_name = "default"
-		itemparentnode = self.item.parent()
+		node_name = "default" 
+		parentnode = None
 		# Cube
 		if self.node_type_combo.currentText() == "Cube":
-			insertion_node = EMCube(float(self.cube_dim.text()))
+			d = self.transformgroup["CUBE"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node = EMCube(float(self.cube_dim.text()), transform=transform)
 			if self.node_name_cube.text() != "": node_name = self.node_name_cube.text()
 		# Sphere
 		if self.node_type_combo.currentText() == "Sphere":
-			insertion_node = EMSphere(float(self.sphere_dim.text()))
+			d = self.transformgroup["SPHERE"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node = EMSphere(float(self.sphere_dim.text()), transform=transform)
 			if self.node_name_sphere.text() != "": node_name = self.node_name_sphere.text()
 		# Cylinder
 		if self.node_type_combo.currentText() == "Cylinder":
-			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()))
+			d = self.transformgroup["CYLINDER"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()), transform=transform)
 			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
+			d = self.transformgroup["DATA"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
 			if str(self.data_path.text()) == "": self._on_browse()
-			insertion_node =  EMDataItem3D(str(self.data_path.text()), transform=Transform())
+			insertion_node =  EMDataItem3D(str(self.data_path.text()), transform=transform)
 			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
 		# Isosurface
 		if self.node_type_combo.currentText() == "Isosurface": 
-			insertion_node =  EMIsosurface(self.item.item3d(), transform=Transform())
+			d = self.transformgroup["ISO"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
 			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
-			itemparentnode=self.item
+			parentnode = self.item.item3d()
 			
-		thisnode_index = itemparentnode.indexOfChild(self.item)
-		self.inspector().addTreeNode(node_name, insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
-		itemparentnode.item3d().addChild(insertion_node)
+		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		self.inspector().updateSceneGraph()
 		self.done(0)
 	

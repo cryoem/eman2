@@ -43,8 +43,8 @@ from valslider import EMQTColorWidget, ValSlider
 class EMCube(EMItem3D):
 	name = "Cube"
 	nodetype = "ShapeNode"
-	def __init__(self, size):
-		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
+	def __init__(self, size, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setSize(size)
 		
@@ -164,8 +164,8 @@ class EMCube(EMItem3D):
 class EMSphere(EMItem3D):
 	name = "Sphere"
 	nodetype = "ShapeNode"
-	def __init__(self, radius):
-		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
+	def __init__(self, radius, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setRadius(radius)
 		
@@ -245,8 +245,8 @@ class EMSphere(EMItem3D):
 class EMCylinder(EMItem3D):
 	name = "Cylinder"
 	nodetype = "ShapeNode"
-	def __init__(self, radius, height):
-		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
+	def __init__(self, radius, height, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRadiusAndHeight(radius, height)
 		
