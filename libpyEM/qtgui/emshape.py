@@ -81,15 +81,15 @@ class EMShape:
 		"hidden"		anything, not rendered
 	"""
 	font_renderer = None
-	glutinit = True
+#	glutinit = True
 	dlists=-1
 
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
-		from emglobjects import init_glut
-		if EMShape.glutinit:
-			init_glut()
-			EMShape.glutint = False
+#		from emglobjects import init_glut
+		#if EMShape.glutinit:
+			#init_glut()
+			#EMShape.glutint = False
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
 		
@@ -97,14 +97,16 @@ class EMShape:
 		self.blend = 1.0
 		self.blendinc = 0.2
 		self.isanimated = False
-		if EMShape.font_renderer == None:
+		
+		#These are now allocated at the window level, not the shape level !
+		#if EMShape.font_renderer == None:
 			
-			try:
-				EMShape.font_renderer = get_3d_font_renderer()
-				EMShape.font_renderer.set_face_size(16)
-				EMShape.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			except:
-				EMShape.font_renderer = 1
+			#try:
+				#EMShape.font_renderer = get_3d_font_renderer()
+				#EMShape.font_renderer.set_face_size(16)
+				#EMShape.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+			#except:
+				#EMShape.font_renderer = 1
 	
 	def __getitem__(self,key): return self.shape[key]
 		
@@ -117,7 +119,7 @@ class EMShape:
 		coordinates. For data coordinate shapes, only the positional information
 		is in data coordinates, font size, line width, etcare in screen units.
 		col can be used to override the current shape's color."""
-		global glut_inited
+#		global glut_inited
 		s=self.shape
 		
 		if s[0]=="hidden": return
@@ -130,7 +132,7 @@ class EMShape:
 		sc=v2[0]-v[0]
 		
 		if  self.isanimated:
-			#print self.blend, "was the blend value"
+#			print self.blend, "was the blend value"
 			GL.glEnable(GL.GL_BLEND);
 			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
 			GL.glDisable(GL.GL_DEPTH_TEST);
@@ -311,29 +313,40 @@ class EMShape:
 		elif s[0]=="label":
 			
 			GL.glPushMatrix()
-			if s[8]<0 :
-				GL.glColor(1.,1.,1.)
-				GL.glTranslate(v[0],v[1],0)
-				GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				GL.glLineWidth(-s[8])
-				w=104.76*len(s[6])
-				GL.glBegin(GL.GL_QUADS)
-				GL.glVertex(-10.,-33.0)
-				GL.glVertex(w+10.,-33.0)
-				GL.glVertex(w+10.,119.05)
-				GL.glVertex(-10.,119.05)
-				GL.glEnd()
+			if EMShape.font_renderer != None :
+				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
+				GL.glTranslate(x1,y1,.2)
+				if s[8]<0 :
+					bbox = EMShape.font_renderer.bounding_box(text)
+					GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
 				GL.glColor(*col)
-				for i in s[6]:
-					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
-			else:
-				GL.glColor(*col)
-				GL.glTranslate(v[0],v[1],0)
-#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-				GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				GL.glLineWidth(fabs(s[8]))
-				for i in s[6]:
-					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+				EMShape.font_renderer.render_string(text)
+				GL.glPopAttrib()
+			else :
+				pass
+			#if s[8]<0 :
+				#GL.glColor(1.,1.,1.)
+				#GL.glTranslate(v[0],v[1],0)
+				#GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+				#GL.glLineWidth(-s[8])
+				#w=104.76*len(s[6])
+				#GL.glBegin(GL.GL_QUADS)
+				#GL.glVertex(-10.,-33.0)
+				#GL.glVertex(w+10.,-33.0)
+				#GL.glVertex(w+10.,119.05)
+				#GL.glVertex(-10.,119.05)
+				#GL.glEnd()
+				#GL.glColor(*col)
+				#for i in s[6]:
+					#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
+			#else:
+				#GL.glColor(*col)
+				#GL.glTranslate(v[0],v[1],0)
+##				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+				#GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+				#GL.glLineWidth(fabs(s[8]))
+				#for i in s[6]:
+					#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			GL.glPopMatrix()
 		elif s[0]=="circle":
 #			print s[6],v,v2
@@ -377,37 +390,44 @@ class EMShape:
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )
 				text = s[6]
-				if s[8]<0 :
-					if EMShape.font_renderer != None and EMShape.font_renderer != 1:
-						GL.glTranslate(x1,y1,.2)
+#				if s[8]<0 :
+				if EMShape.font_renderer != None :
+					GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
+					GL.glTranslate(x1,y1,.2)
+					if s[8]<0 :
 						bbox = EMShape.font_renderer.bounding_box(text)
 						GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
-						EMShape.font_renderer.render_string(text)
-					else:
-						GL.glColor(1.,1.,1.)
-						GL.glTranslate(x1,y1,0)
-						#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
-						GL.glScalef(s[7]/1500.0,s[7]/1500.0,1)
-						GL.glLineWidth(-s[8])
-						w=104.76*len(text)
-						GL.glBegin(GL.GL_QUADS)
-						GL.glVertex(-10.,-33.0)
-						GL.glVertex(w+10.,-33.0)
-						GL.glVertex(w+10.,119.05)
-						GL.glVertex(-10.,119.05)
-						GL.glEnd()
-						GL.glTranslate(0,0,.1)
-						GL.glColor(*col)
-						for i in text:
-							GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
-				else:
 					GL.glColor(*col)
-					GL.glTranslate(x1,y1,-1)
-	#				GL.glScalef(y2/100.0,y2/100.0,y2/100.0)
-					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,1)
-					GL.glLineWidth(fabs(s[8]))
-					for i in text:
-						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+					EMShape.font_renderer.render_string(text)
+					GL.glPopAttrib()
+				else :
+					pass
+				
+					#else:
+						#GL.glColor(1.,1.,1.)
+						#GL.glTranslate(x1,y1,0)
+						##GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+						#GL.glScalef(s[7]/1500.0,s[7]/1500.0,1)
+						#GL.glLineWidth(-s[8])
+						#w=104.76*len(text)
+						#GL.glBegin(GL.GL_QUADS)
+						#GL.glVertex(-10.,-33.0)
+						#GL.glVertex(w+10.,-33.0)
+						#GL.glVertex(w+10.,119.05)
+						#GL.glVertex(-10.,119.05)
+						#GL.glEnd()
+						#GL.glTranslate(0,0,.1)
+						#GL.glColor(*col)
+						#for i in text:
+							#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
+				#else:
+					#GL.glColor(*col)
+					#GL.glTranslate(x1,y1,-1)
+	##				GL.glScalef(y2/100.0,y2/100.0,y2/100.0)
+					#GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,1)
+					#GL.glLineWidth(fabs(s[8]))
+					#for i in text:
+						#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			elif s[0]=="scrcircle":
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )

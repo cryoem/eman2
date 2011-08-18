@@ -2827,8 +2827,8 @@ void NonConvexProcessor::process_inplace(EMData * image) {
 		binary->set_fftpad(false);
 		
 		// Gaussian blur of both images
-		image->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.02f));
-		binary->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.02f));
+		image->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.04f));
+		binary->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.04f));
 
 /*		image->write_image("con.hdf",1);
 		binary->write_image("con.hdf",2);*/

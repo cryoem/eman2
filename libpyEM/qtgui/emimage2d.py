@@ -223,9 +223,8 @@ class EMImage2DWidget(EMGLWidget):
 		self.frozen = False
 		self.isexcluded = False
 		self.parent_geometry = None
-		self.font_renderer = None
 		
-		self.eraser_shape = None # a single circle shape used for erasing in e2boxer
+		self.eraser_shape = None # a single circle shape used 0for erasing in e2boxer
 		
 		self.list_data = None 			# this can be used for viewing lists of data
 		self.list_fft_data = None		# this is used for doing the ffts of list data
@@ -958,6 +957,8 @@ class EMImage2DWidget(EMGLWidget):
 			else: self.inspector.set_hist(self.hist,self.minden,self.maxden)
 	
 		if self.shapelist != 0 and self.display_shapes:
+			emshape.EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+			GL.glColor(.7,1.0,.7,1.0)
 			GL.glPushMatrix()
 			#TODO: change self.render_bitmap()'s C++ functions so this ugly hack isn't necessary.
 			GL.glTranslate(-self.scale*(int(self.origin[0]/self.scale)+0.5),-self.scale*(int(self.origin[1]/self.scale)+0.5),0.1)
@@ -1087,6 +1088,7 @@ class EMImage2DWidget(EMGLWidget):
 		#print "Image2D context is", context,"display list is",self.shapelist
 		
 		# make our own cirle rather than use gluDisk or somesuch
+		emshape.EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		glNewList(self.shapelist,GL_COMPILE)
 		
 		isanimated = False
@@ -1160,14 +1162,27 @@ class EMImage2DWidget(EMGLWidget):
 					GL.glScalef(p[6]*(v2[0]-v[0]),p[6]*(v2[1]-v[1]),1.0)
 					glCallList(self.circle_dl)
 					GL.glPopMatrix()
-				else:
+				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
-					GL.glPushMatrix()
+					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
-			
+
+
+		# We do the scr* shapes last since they mess up the matrix
+		for k,s in self.shapes.items():
+			try:
+				if s.shape[0][:3]=="scr":
+#					print "shape",s.shape
+#					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
+					s.draw()		# No need for coordinate transform any more
+#					GL.glPopMatrix()
+#					GLUtil.colored_rectangle(s.shape[1:8],alpha)
+			except: pass
+
+
 		if isanimated:
 			GL.glDisable( GL.GL_BLEND);
 			if (depth_testing_was_on):
@@ -1597,11 +1612,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.rmousedrag=None
 		
 	def __draw_hud(self):
-		if self.font_renderer == None:
-			self.__init_font_renderer()
-		if self.list_data == None or self.font_render_mode != EMGLWidget.FTGL: return
-		
-		
+		if self.list_data == None : return
 		
 		width = self.width()
 		height = self.height()
@@ -1623,19 +1634,18 @@ class EMImage2DWidget(EMGLWidget):
 #		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
-		if self.font_render_mode == EMGLWidget.FTGL:
-			n = len(self.list_data)
-			string = str(self.list_idx+1) + ' / ' + str(n)
-			bbox = self.font_renderer.bounding_box(string)
-			x_offset = width-(bbox[3]-bbox[0]) - 10
-			y_offset = 10
-			
-			glPushMatrix()
-			glTranslate(x_offset,y_offset,0)
-			glRotate(20,0,1,0)
-			self.font_renderer.render_string(string)
-			glPopMatrix()
-			#y_offset += bbox[4]-bbox[1]
+		n = len(self.list_data)
+		string = str(self.list_idx+1) + ' / ' + str(n)
+		bbox = self.font_renderer.bounding_box(string)
+		x_offset = width-(bbox[3]-bbox[0]) - 10
+		y_offset = 10
+		
+		glPushMatrix()
+		glTranslate(x_offset,y_offset,0)
+		glRotate(20,0,1,0)
+		self.font_renderer.render_string(string)
+		glPopMatrix()
+		#y_offset += bbox[4]-bbox[1]
 
 		if enable_depth: glEnable(GL_DEPTH_TEST)
 		
@@ -1644,17 +1654,6 @@ class EMImage2DWidget(EMGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glDisable(GL_TEXTURE_2D)
 	
-	def __init_font_renderer(self):
-		try:
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(20)
-			self.font_renderer.set_depth(4)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			
-#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
-			self.font_render_mode = EMGLWidget.FTGL
-		except:
-			self.font_render_mode = EMGLWidget.GLUT
 	
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :

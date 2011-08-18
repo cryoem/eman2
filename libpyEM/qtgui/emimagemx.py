@@ -263,7 +263,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.inspector=None
 		
 		self.font_size = 11
-		self.load_font_renderer()
+		self.font_renderer.set_face_size(self.font_size)
+
 		if data:
 			self.set_data(data,False)
 			
@@ -364,14 +365,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.force_display_update()
 		self.updateGL()
 		
-	def load_font_renderer(self):
-		try:
-			self.font_render_mode = EMGLWidget.FTGL
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(self.font_size)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		except:
-			self.font_render_mode = EMGLWidget.GLUT
 		
 	allim=WeakKeyDictionary()
 	
@@ -390,9 +383,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	
 #	def width(self):
 #		return self.view_width()
-	
-	def using_ftgl(self):
-		return self.font_render_mode == EMGLWidget.FTGL
 	
 	def get_font_size(self):
 		return self.font_renderer.get_face_size()
@@ -814,9 +804,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			
 	
 	def set_font_render_resolution(self):
-		if self.font_render_mode != EMGLWidget.FTGL:
-			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
-			
+		" "
 		#self.font_renderer.set_face_size(int(self.height()*0.015))
 		#print "scale is",self.scale
 	
@@ -842,7 +830,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	
 	def render(self):
 		if not self.data : return
-		if self.font_render_mode == EMGLWidget.FTGL: self.set_font_render_resolution()
+		self.set_font_render_resolution()
 		try: 
 			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		except:
@@ -891,17 +879,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
 
-			if self.font_render_mode == EMGLWidget.GLUT:
-				init_glut()
-				try:
-					# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
-					# contrast the text labels...
-					a=GLUtil.render_amp8(self.data[0],0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
-					ims=[ord(pv) for pv in a]
-					if sum(ims)>32768 : txtcol=(0.0,0.0,0.0,1.0)
-					else : txtcol=(1.0,1.0,1.0,1.0)
-				except: txtcol=(1.0,1.0,1.0,1.0)
-			else: txtcol=(1,1,1,1)
+			txtcol=(1,1,1,1)
 			
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 			self.tex_names = []
@@ -1153,70 +1131,54 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
 		bgcol = [1-v for v in txtcol]
-		if self.font_render_mode == EMGLWidget.FTGL:
 			
-			glEnable(GL_TEXTURE_2D)
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			lighting = glIsEnabled(GL_LIGHTING)
-			glDisable(GL_LIGHTING)
-			#glEnable(GL_NORMALIZE)
-			tagy = ty
-			
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-			glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-			glMaterial(GL_FRONT,GL_SHININESS,1.0)
-			for v in self.valstodisp:
-				glPushMatrix()
-				glTranslate(tx,tagy,0)
-				glTranslate(0,1,0.2)
-				if v=="Img #" and not self.data[i].has_attr("Img #") : 
-					idx = i+self.img_num_offset
-					if idx != 0: idx = idx%self.max_idx
-					sidx = str(idx)
-					bbox = self.font_renderer.bounding_box(sidx)
-					GLUtil.mx_bbox(bbox,txtcol,bgcol)
-					self.font_renderer.render_string(sidx)
-					
-				else : 
+		glEnable(GL_TEXTURE_2D)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		lighting = glIsEnabled(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
+		#glEnable(GL_NORMALIZE)
+		tagy = ty
+		
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+		glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+		glMaterial(GL_FRONT,GL_SHININESS,1.0)
+		for v in self.valstodisp:
+			glPushMatrix()
+			glTranslate(tx,tagy,0)
+			glTranslate(0,1,0.2)
+			if v=="Img #" and not self.data[i].has_attr("Img #") : 
+				idx = i+self.img_num_offset
+				if idx != 0: idx = idx%self.max_idx
+				sidx = str(idx)
+				bbox = self.font_renderer.bounding_box(sidx)
+				GLUtil.mx_bbox(bbox,txtcol,bgcol)
+				self.font_renderer.render_string(sidx)
+				
+			else : 
+				try:
+					av=self.data[i].get_attr(v)
 					try:
-						av=self.data[i].get_attr(v)
-						try:
-							if isinstance(av,float) : avs="%1.4g"%av
-							elif isinstance(av,Transform):
-								t = av.get_rotation("eman")
-								avs = "%1.1f,%1.1f,%1.1f" %(t["az"],t["alt"],t["phi"])
-							elif isinstance(av,EMAN2Ctf):
-								avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
-							else: avs=str(av)
-						except:avs ="???"
-					except: avs = ""
-					bbox = self.font_renderer.bounding_box(avs)
-					
-					GLUtil.mx_bbox(bbox,txtcol,bgcol)
-					self.font_renderer.render_string(avs)
+						if isinstance(av,float) : avs="%1.4g"%av
+						elif isinstance(av,Transform):
+							t = av.get_rotation("eman")
+							avs = "%1.1f,%1.1f,%1.1f" %(t["az"],t["alt"],t["phi"])
+						elif isinstance(av,EMAN2Ctf):
+							avs = "%1.3f,%1.1f" %(av.defocus,av.bfactor)
+						else: avs=str(av)
+					except:avs ="???"
+				except: avs = ""
+				bbox = self.font_renderer.bounding_box(avs)
+				
+				GLUtil.mx_bbox(bbox,txtcol,bgcol)
+				self.font_renderer.render_string(avs)
 
-				tagy+=self.font_renderer.get_face_size()
+			tagy+=self.font_renderer.get_face_size()
 
-				glPopMatrix()
+			glPopMatrix()
+			
 			if lighting:
 				glEnable(GL_LIGHTING)
 			glDisable(GL_TEXTURE_2D)
-		elif self.font_render_mode == EMGLWidget.GLUT:
-			tagy = ty
-			glColor(*txtcol)
-			glDisable(GL_LIGHTING)
-			for v in self.valstodisp:
-				if v=="Img #" :
-					idx = i+self.img_num_offset
-					if idx != 0: idx = idx%self.max_idx
-					self.render_text(tx,tagy,"%d"%idx)
-				else : 
-					av=self.data[i].get_attr(v)
-					if isinstance(av,float) : avs="%1.4g"%av
-					else: avs=str(av)
-					try: self.render_text(tx,tagy,str(avs))
-					except:	self.render_text(tx,tagy,"------")
-				tagy+=16
 								
 	
 	def bounding_box(self,character):
@@ -2091,18 +2053,18 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.hbl.addWidget(self.valsbut)
 		
 		self.xyz = None
-		if self.target().using_ftgl():
-			self.font_label = QtGui.QLabel("font size:")
-			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-			self.hbl.addWidget(self.font_label)
 		
-			self.font_size = QtGui.QSpinBox()
-			self.font_size.setObjectName("nrow")
-			self.font_size.setRange(1,50)
-			self.font_size.setValue(int(self.target().get_font_size()))
-			self.hbl.addWidget(self.font_size)
-			
-			QtCore.QObject.connect(self.font_size, QtCore.SIGNAL("valueChanged(int)"), self.target().set_font_size)
+		self.font_label = QtGui.QLabel("font size:")
+		self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+		self.hbl.addWidget(self.font_label)
+	
+		self.font_size = QtGui.QSpinBox()
+		self.font_size.setObjectName("nrow")
+		self.font_size.setRange(1,50)
+		self.font_size.setValue(int(self.target().get_font_size()))
+		self.hbl.addWidget(self.font_size)
+		
+		QtCore.QObject.connect(self.font_size, QtCore.SIGNAL("valueChanged(int)"), self.target().set_font_size)
 		
 		
 		self.banim = QtGui.QPushButton("Animate")

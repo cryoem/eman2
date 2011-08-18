@@ -35,9 +35,10 @@ from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
 from emimageutil import EMParentWin
-from EMAN2 import remove_directories_from_name, get_image_directory
+from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer
 import EMAN2db
 import weakref
+from libpyGLUtils2 import *
 
 try: from PyQt4 import QtWebKit
 except: pass
@@ -98,8 +99,6 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	It also handles much of the inspector behavior, displays help in a web browser, and provides 
 	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
 	"""
-	FTGL = "ftgl"
-	GLUT = "glut"
 	
 	def hide(self):
 		if self.qt_parent:
@@ -135,6 +134,12 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.application_control = application_control
 		self.file_name = ""
 		self.disable_inspector = False
+		
+		self.makeCurrent()
+		self.font_renderer = get_3d_font_renderer()
+		self.font_renderer.set_face_size(16)
+		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+			
 		self.busy = False #updateGL() does nothing when self.busy == True
 	
 	def closeEvent(self, event):
@@ -164,14 +169,6 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	def enable_inspector(self,val=True): 
 		self.disable_inspector = not val
 		
-	def load_font_renderer(self):
-		try:
-			self.font_render_mode = EMGLWidget.FTGL
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(16)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		except:
-			self.font_render_mode = EMGLWidget.GLUT
 			
 	def show_inspector(self,force=0):
 		if self.disable_inspector: 

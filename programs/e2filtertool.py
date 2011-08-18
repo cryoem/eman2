@@ -361,7 +361,8 @@ class EMProcessorWidget(QtGui.QWidget):
 	
 	def updateFilt(self,val=None):
 		"Called whenever the processor changes"
-		if self.wenable.isChecked() : self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
+		#if self.wenable.isChecked() : 
+		self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
 	
 	def processorName(self):
 		"Returns the name of the currently selected processor"

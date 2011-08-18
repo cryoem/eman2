@@ -137,9 +137,6 @@ class EMPlot2DWidget(EMGLWidget):
 		self.data={}				# List of Lists to plot 
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
-		self.display_text = None # we need to be able render text, we use FTGL which uses display lists - so we can't use the EMShape because that object may be being referenced in multiple contexts
-		self.display_text_pos = [0,0] # the position of the displayed text
-		self.font_renderer = None # will eventually be an emftgl font renderer
 		
 		self.tex_name = 0
 		self.main_display_list = 0
@@ -373,18 +370,8 @@ class EMPlot2DWidget(EMGLWidget):
 	# make the function static
 	is_file_readable = staticmethod(is_file_readable)
 	
-	def init_font_renderer(self):
-		if self.font_renderer == None:
-			try:
-				self.font_renderer = get_3d_font_renderer()
-				self.font_renderer.set_face_size(16)
-				self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			except:
-				self.font_renderer = 0 # the reason for doing this is because we can write code like this: if self.font_renderer:
-	
 	def render(self):
 		init_glut()
-		if self.font_renderer == None: self.init_font_renderer() # do it here to ensure we have a valid GL context
 		
 		if not self.data : return
 		
@@ -404,6 +391,7 @@ class EMPlot2DWidget(EMGLWidget):
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
 		
+		EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		GL.glPushMatrix()
 		# overcome depth issues
 		glTranslate(0,0,5)
@@ -411,11 +399,6 @@ class EMPlot2DWidget(EMGLWidget):
 #			print k,s
 			s.draw(self.scr2plot)
 			
-		if self.display_text != None:
-			GL.glTranslate(self.display_text_pos[0],self.display_text_pos[1],.2)
-			bbox = self.font_renderer.bounding_box(self.display_text)
-			GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
-			self.font_renderer.render_string(self.display_text)
 		GL.glPopMatrix()
 		
 		if render: 
@@ -604,8 +587,6 @@ class EMPlot2DWidget(EMGLWidget):
 		else:
 			self.shapes={}
 		
-		self.display_text = None
-		self.display_text_pos = []
 		self.shapechange=1
 		#self.updateGL()
 	
@@ -621,11 +602,9 @@ class EMPlot2DWidget(EMGLWidget):
 		elif event.button()==Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			if self.font_renderer:
-				self.display_text = "%1.4g, %1.4g"%(lc[0],lc[1])
-				self.display_text_pos = [self.scrlim[2]-100,self.scrlim[3]-10]
-			else:
-				self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
+			try: recip="%1.2f"%(1.0/lc[0])
+			except: recip="-"
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.updateGL()
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
@@ -646,11 +625,9 @@ class EMPlot2DWidget(EMGLWidget):
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			
-			if self.font_renderer:
-				self.display_text = "%1.4g, %1.4g"%(lc[0],lc[1])
-				self.display_text_pos = [self.scrlim[2]-100,self.scrlim[3]-10]
-			else:
-				self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
+			try: recip="%1.2f"%(1.0/lc[0])
+			except: recip="-"
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 	

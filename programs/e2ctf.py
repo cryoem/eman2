@@ -1008,7 +1008,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 		if verbose: print "Using limited defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
 	else:
 		rng=range(3,128)
-		if verbose: print "Using full defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
+		if verbose: print "(%s) Using full defocus range (%1.2f - %1.2f)"%(str(dfhint),rng[0]/20.0,rng[-1]/20.0)
 
 
 	# This loop tries to find the best few possible defocuses
@@ -1070,7 +1070,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			parm=[b1a[1],500.0]
 
 	#		print "Initial guess : ",parm
-			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0]))
+			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0],rng))
 			oparm=sim.minimize(epsilon=.0000001,monitor=0)
 	#		print "Optimized : ",oparm
 			best.append((oparm[1],oparm[0]))			
@@ -1251,7 +1251,7 @@ def ctf_cmp_a(parms,data):
 def ctf_cmp_2(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data
 	This version is used for rough fitting of the defocus. ctf_cmp is used to fine-tune the values. """
-	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf,bgsub,s0,s1,ds,dforig,rng=data
 	ctf.defocus=parms[0]
 	ctf.bfactor=0.0
 	#c2=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# we use this for amplitude scaling
@@ -1294,6 +1294,8 @@ def ctf_cmp_2(parms,data):
 #	print er,(parms[0]-dforig)**2,parms[1]
 	
 	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
+	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
+	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 #	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
 	
