@@ -833,7 +833,7 @@ class Popuptwodali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
 
 	#######################################################################################
 	# Layout parameters
@@ -1042,15 +1042,16 @@ class Popuptwodali(QWidget):
 		inrad = self.w.innerradiusedit.text()
 		cmd1 = cmd1 + " --ir=" + str(inrad)
 		
-		CTF=str(self.w.ctfedit.text())
-		if str(CTF) == 'True':
+		CTF=self.w.ctfchkbx.checkState()
+		
+		if CTF == Qt.Checked:
 			cmd1 = cmd1 + " --CTF"
 			
 		snr = self.w.snredit.text()
 		cmd1 = cmd1 + " --snr=" + str(snr)
 		
-		fourvar = self.w.fourvaredit.text()
-		if str(fourvar) == 'True':
+		fourvar = self.w.fourvarchkbx.checkState()
+		if fourvar == Qt.Checked:
 			cmd1 = cmd1 + " --Fourvar"
 			
 		gpn = self.w.gpnredit.text()
@@ -1074,7 +1075,7 @@ class Popuptwodali(QWidget):
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar, "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -1127,9 +1128,9 @@ class Popuptwodali(QWidget):
 		self.w.centeredit.setText(self.savedparmsdict['center'])
 		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
 		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.ctfedit.setText(self.savedparmsdict['ctf'])
+		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.fourvaredit.setText(self.savedparmsdict['fourvar'])
+		self.w.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
 		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
 		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
@@ -1260,11 +1261,10 @@ class Popupadvparams_ali2d(QWidget):
 	
 	ctf= QtGui.QLabel('CTF', self)
 	ctf.move(self.x1,self.y1)
-	self.ctfedit=QtGui.QLineEdit(self)
-	self.ctfedit.move(self.x2,self.y1)
-	self.ctfedit.setText(self.savedparmsdict['ctf'])
-	self.ctfedit.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
-
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(self.x2, self.y1)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	
 	self.y1 += 30
 	
 	snr= QtGui.QLabel('SNR', self)
@@ -1278,10 +1278,10 @@ class Popupadvparams_ali2d(QWidget):
 		
 	fourvar= QtGui.QLabel('Fourvar', self)
 	fourvar.move(self.x1,self.y1)
-	self.fourvaredit=QtGui.QLineEdit(self)
-	self.fourvaredit.move(self.x2,self.y1)
-	self.fourvaredit.setText(self.savedparmsdict['fourvar'])
-	self.fourvaredit.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.fourvarchkbx=QtGui.QCheckBox("",self)
+	self.fourvarchkbx.move(self.x2,self.y1)
+	self.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
+	self.fourvarchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
 	
 	self.y1 += 30
 	
@@ -1355,7 +1355,7 @@ class Popupthreedali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","fourvar":"False", "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali3d","usrfuncfile":""}
 	
 	########################################################################################
 	# layout parameters
@@ -1608,15 +1608,15 @@ class Popupthreedali(QWidget):
 		inrad = self.w.innerradiusedit.text()
 		cmd1 = cmd1 + " --ir=" + str(inrad)
 		
-		CTF=str(self.w.ctfedit.text())
-		if str(CTF) == 'True':
+		CTF=self.w.ctfchkbx.checkState()
+		if CTF == Qt.Checked:
 			cmd1 = cmd1 + " --CTF"
 			
 		snr = self.w.snredit.text()
 		cmd1 = cmd1 + " --snr=" + str(snr)
 		
-		fourvar = self.w.fourvaredit.text()
-		if str(fourvar) == 'True':
+		fourvar = self.w.fourvarchkbx.checkState()
+		if fourvar == Qt.Checked:
 			cmd1 = cmd1 + " --Fourvar"
 			
 		gpn = self.w.gpnredit.text()
@@ -1640,7 +1640,7 @@ class Popupthreedali(QWidget):
 				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	np = self.nprocedit.text()
 
-	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"fourvar":str(fourvar), "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar, "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -1696,9 +1696,9 @@ class Popupthreedali(QWidget):
 		self.w.centeredit.setText(self.savedparmsdict['center'])
 		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
 		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.ctfedit.setText(self.savedparmsdict['ctf'])
+		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.fourvaredit.setText(self.savedparmsdict['fourvar'])
+		self.w.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
 		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
 		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
@@ -1841,10 +1841,10 @@ class Popupadvparams_ali3d(QWidget):
 	
 	ctf= QtGui.QLabel('CTF', self)
 	ctf.move(self.x1,self.y1)
-	self.ctfedit=QtGui.QLineEdit(self)
-	self.ctfedit.move(self.x2,self.y1)
-	self.ctfedit.setText(self.savedparmsdict['ctf'])
-	self.ctfedit.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(self.x2, self.y1)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	self.ctfchkbx.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
 	
 	self.y1 += 30
 	
@@ -1859,10 +1859,10 @@ class Popupadvparams_ali3d(QWidget):
 		
 	fourvar= QtGui.QLabel('Fourvar', self)
 	fourvar.move(self.x1,self.y1)
-	self.fourvaredit=QtGui.QLineEdit(self)
-	self.fourvaredit.move(self.x2,self.y1)
-	self.fourvaredit.setText(self.savedparmsdict['fourvar'])
-	self.fourvaredit.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.fourvarchkbx=QtGui.QCheckBox("",self)
+	self.fourvarchkbx.move(self.x2,self.y1)
+	self.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
+	self.fourvarchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
 	
 	self.y1 += 30
 	
@@ -2257,6 +2257,10 @@ class Popupadvparams_kmeans(QWidget):
 	self.randsdedit.move(self.x2,self.y1)
 	self.randsdedit.setText(self.savedparmsdict['randsd'])
 	self.randsdedit.setToolTip('the seed used to generating random numbers (set to -1, means different and pseudo-random each time)')
+	
+	self.y1 += 30
+	
+	
 	
     def choose_mskfile(self):
 	#opens a file browser, showing files only in .hdf format
