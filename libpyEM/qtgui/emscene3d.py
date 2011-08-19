@@ -1034,7 +1034,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.setTransform(current_xform_side)
 		QtOpenGL.QGLWidget.updateGL(self)
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGB,GL_UNSIGNED_BYTE)
+		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGBA,GL_UNSIGNED_BYTE)
 		# Then move back
 		self.setTransform(current_xform)
 		self.camera.setClipNear(oldnear)
@@ -1042,8 +1042,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.reset_camera = True	# Reset the camera when redering the real scene
 		self.setAutoBufferSwap(True)
 		self.pixels = []
-		self.pixels.append(0)
-		self.pixels.append(0)
+		self.pixels.append(1)
+		self.pixels.append(1)
 		self.pixels.append(self.camera.width)
 		self.pixels.append(self.camera.height)
 		self.pixels.append(pixeldata)
