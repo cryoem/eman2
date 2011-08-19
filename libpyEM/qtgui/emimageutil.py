@@ -353,10 +353,9 @@ class EMParentWin(QtGui.QWidget,Animator):
 	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
-	def __init__(self,parent, inithreshold=None):
+	def __init__(self,parent):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)
-		self.inithreshold = inithreshold
 		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
@@ -368,7 +367,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.norm=0
 		self.minden=minden
 		self.maxden=maxden
-		if self.inithreshold: self.setProbe(self.inithreshold)
+		
 		for i in self.histdata: self.norm+=float(i)*i
 		self.norm-=max(self.histdata)**2
 		self.norm=sqrt(self.norm/255)*3.0

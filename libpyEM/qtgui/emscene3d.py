@@ -297,6 +297,28 @@ datacursor = [
     'ccccccccccccccccc'
 ] 
 
+appcursor = [
+    '17 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'caaacccaaacccaaac',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'aaaaacaaaaccaaaac',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+]
+
 cubeicon = [
     '16 16 2 1',
     'b c #000055',
@@ -429,6 +451,28 @@ dataicon = [
     'ccccccccccccccccc',
     'ccccccccccccccccc'
 ] 
+
+appicon = [
+    '17 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'caaacccaaacccaaac',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'acccacacccacaccca',
+    'aaaaacaaaaccaaaac',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'acccacacccccacccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+]
 
 rotateicon = [
     '15 14 2 1',
@@ -591,6 +635,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.cubecursor = QtGui.QCursor(QtGui.QPixmap(cubecursor),-1,-1)
 		self.spherecursor = QtGui.QCursor(QtGui.QPixmap(spherecursor),-1,-1)
 		self.cylindercursor = QtGui.QCursor(QtGui.QPixmap(cylindercursor),-1,-1)
+		self.datacursor = QtGui.QCursor(QtGui.QPixmap(datacursor),-1,-1)
+		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
 
 	def getEvalString(self):
 		"""
@@ -704,6 +750,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Draw the selection box, box is always drawn orthographically
 		"""
 		if self.toggle_render_selectedarea: 
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
 			glMatrixMode(GL_PROJECTION)
 			glPushMatrix()
 			glLoadIdentity()
@@ -723,7 +770,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glEnd()
 			glPopMatrix()
 			glMatrixMode(GL_MODELVIEW)
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,0.0,0.0,1.0])
+			glPopAttrib()
 		
 	def processSelection(self, records):
 		"""
@@ -793,29 +840,42 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		# Process mouse events
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+			self.setCursor(self.appcursor)
+			self.emit(QtCore.SIGNAL("sgmousepress()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
+			self.setCursor(self.datacursor)
 			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
 			if not filename: return
 			name = os.path.basename(str(filename))
 			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event))
 			self.insertNewNode(name, self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.isonode = EMIsosurface(self.newnode, transform=Transform())
+			self.isonode.setSelectedItem(True)
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.setCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cube", self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Sphere", self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.setCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cylinder", self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self.newnode.update_matrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
@@ -844,6 +904,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			#self.setCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
+			self.toggleselection = False
+			self.selectArea((event.x()-2.0), event.x(), (event.y()-2.0), event.y()) # To enable selection just by clicking
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
@@ -864,6 +926,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = event.x() - self.previous_x
 		dy = event.y() - self.previous_y
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
@@ -871,7 +935,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
 			sign = -(event.y() - self.first_y)
-			self.newnode.getTransform().set_rotation({"type":"eman","alt":math.copysign(90,sign)})
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
@@ -909,10 +972,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QT event handler. Scales the SG unpon wheel movement
 		"""
 		if event.orientation() & Qt.Vertical:
+			self.cameraNeedsanUpdate()
 			if event.delta() > 0:
-				self.update_matrices([self.scalestep], "scale")
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
+				else:
+					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
-				self.update_matrices([-self.scalestep], "scale")
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
+				else:
+					self.camera.setFovy(self.camera.getFovy()-1.0)
 			self.updateSG()
 			
 	def mouseDoubleClickEvent(self,event):
@@ -1273,6 +1343,7 @@ class EMCamera:
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
 		"""
+		self.pseudofovy = 0
 		self.far = far
 		self.near = near
 		self.fovy = fovy
@@ -1291,7 +1362,7 @@ class EMCamera:
 		if width: self.width = width
 		if height: self.height = height
 		if self.usingortho:
-			glViewport(0,0,self.width,self.height)
+			glViewport(-self.pseudofovy,-self.pseudofovy,self.width+2*self.pseudofovy,self.height+2*self.pseudofovy)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setOrthoProjectionMatrix()
@@ -1389,8 +1460,22 @@ class EMCamera:
 		self.fovy = fovy
 	
 	def getFovy(self):
-		""" Return FOVY """
+		""" 
+		Return FOVY
+		"""
 		return self.fovy
+		
+	def setPseudoFovy(self, pseudofovy):
+		"""
+		Set PseudoFovy, a sort of fovy for orthogramphic projections
+		"""
+		if (self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0: self.pseudofovy = pseudofovy # negative viewport values are not acceptable
+		
+	def getPseudoFovy(self):
+		"""
+		Return PseudoFovy, a sort of fovy for orthogramphic projections
+		"""
+		return self.pseudofovy
 		
 	def getHeight(self):
 		""" Get the viewport height """
@@ -1565,6 +1650,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.datatool = EMANToolButton()
 		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
 		self.datatool.setToolTip("Insert Data")
+		self.apptool = EMANToolButton()
+		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
+		self.apptool.setToolTip("Insert Data")
 		
 		tvbox.addWidget(toollabel)
 		tvbox.addWidget(self.selectiontool)
@@ -1579,6 +1667,7 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.cylindertool)
 		tvbox.addWidget(self.texttool)
 		tvbox.addWidget(self.datatool)
+		tvbox.addWidget(self.apptool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
 		
 		QtCore.QObject.connect(self.rotatetool, QtCore.SIGNAL("clicked(int)"), self._rotatetool_clicked)
@@ -1592,6 +1681,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked(int)"), self._cylindertool_clicked)
 		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
 		QtCore.QObject.connect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
+		QtCore.QObject.connect(self.apptool, QtCore.SIGNAL("clicked(int)"), self._apptool_clicked)
 		
 		# Set the default tool
 		self.selectiontool.setDown(True)
@@ -1631,6 +1721,8 @@ class EMInspector3D(QtGui.QWidget):
 	def _datatool_clicked(self, state):
 		self.scenegraph.setMouseMode("data")
 				
+	def _apptool_clicked(self, state):
+		self.scenegraph.setMouseMode("app")
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
 		"""
@@ -2061,6 +2153,9 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.setSelectionStateBox() # set state of TreeItemwidget
 		
 	def toggleVisibleState(self):
+		""" 
+		Toogle visible state on and off
+		"""
 		self.item3d().setVisibleItem(not self.item3d().isVisibleItem())
 		self.getVisibleState()
 		

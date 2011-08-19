@@ -80,7 +80,6 @@ class EMDataItem3DInspector(EMItem3DInspector):
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)	# for the iso inspector we need two grid cols for extra space....
-		self.updateItemControls()
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		QtCore.QObject.connect(self.histogram_widget, QtCore.SIGNAL("thresholdChanged(float)"), self.onHistogram)
@@ -103,7 +102,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 	def addControls(self, gridbox):
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
-		self.histogram_widget = ImgHistogram(self, inithreshold=self.item3d().isothr)
+		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")
 
 		# Perhaps we should allow the inspector control this?
@@ -136,6 +135,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
+		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
 	
 	def onCullFaces(self):
 		self.item3d().cullbackfaces = self.cullbackface.isChecked()
@@ -144,11 +144,12 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	def onThresholdSlider(self,val):
 		self.item3d().setThreshold(val)
 		self.histogram_widget.setProbe(val)
-#		self.bright.setValue(-val,True)
 		self.inspector.updateSceneGraph()
 	
-	def onHistogram(self, value):
-		self.thr.setValue(value)
+	def onHistogram(self, val):
+		self.thr.setValue(val, quiet=1)
+		self.item3d().setThreshold(val)
+		self.inspector.updateSceneGraph()
 		
 	def onSampling(self, val):
 		self.item3d().setSample(val)
@@ -219,7 +220,7 @@ class EMIsosurface(EMItem3D):
 		self.force_update = True
 		self.isorender = MarchingCubes(data)
 		
-		self.getItemInspector().updateItemControls()
+		if self.item_inspector: self.getItemInspector().updateItemControls() # The idea is to use lazy evaluation for the item inspectors. Forcing inspector creation too early causes bugs!
 	
 		
 	# I have added these methods so the inspector can set the color John Flanagan
@@ -298,7 +299,7 @@ class EMIsosurface(EMItem3D):
 			self.force_update = False
 		
 		# This code draws an outline around the isosurface
-		if self.is_selected:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
 			
 			#Ross: these two lines add bounding box
 			data = self.getParent().data
