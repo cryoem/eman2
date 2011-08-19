@@ -217,6 +217,19 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 		return selected_list
 	
+	def getAllNodes(self):
+		"""
+		For the tree rooted at self, this recursive method returns a list of all the nodes.
+		@return: a list of selected nodes
+		"""
+		nodelist = []
+		nodelist.append(self)
+		for child in self.children: #Recursion ends on leaf nodes here
+			nodelist.extend(child.getAllNodes()) #Recursion
+		
+		return nodelist
+		
+		
 	def getNearbySelectedNodes(self):
 		"""
 		For the tree rooted at self, this recursive method returns a list of the selected nodes that are near self.
@@ -252,7 +265,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		Return a Qt widget that controls the scene item
 		"""
 		raise NotImplementedError("GUI controls must be implemented in the subclasses")
-	
+		
 	def setEMQTreeWidgetItem(self, node):
 		"""
 		Relate a QtreeItem to this node
@@ -361,9 +374,9 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.gridcols = numgridcols
 		self.addControls(gridbox)
 		self.setLayout(gridbox)
-	
+		
 	def setInspector(self, inspector):
-		self.inspector = inspector
+		self.inspector = weakref.ref(inspector)
 		
 	def addControls(self, gridbox):
 		# selection box and label
@@ -436,22 +449,22 @@ class EMItem3DInspector(QtGui.QWidget):
 	
 	def _on_translation(self, value):
 		self.item3d().getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_scale(self, value):
 		self.item3d().getTransform().set_scale(self.zoom.getValue())
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 
 	def _on_resettx(self):
 		
 		self.item3d().getTransform().set_trans(0.0, 0.0, 0.0)
 		self.updateItemControls()
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_resetrot(self):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.updateItemControls()
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def updateItemControls(self):
 		# Translation update
@@ -674,41 +687,41 @@ class EMItem3DInspector(QtGui.QWidget):
 		
 	def _on_EMAN_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_Imagic_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_Spider_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_MRC_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_XYZ_rotation(self, value):
 		self.item3d().getTransform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_spin_rotation(self, value):
 		v = Vec3f(self.spinn1slider.getValue(), self.spinn2slider.getValue(), self.spinn3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_sgirot_rotation(self, value):
 		v = Vec3f(self.sgirotn1slider.getValue(), self.sgirotn2slider.getValue(), self.sgirotn3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_quaternion_rotation(self, value):
 		v = Vec4f(self.quaternione0slider.getValue(), self.quaternione1slider.getValue(), self.quaternione2slider.getValue(), self.quaternione3slider.getValue())
 		v.normalize()
 		self.item3d().getTransform().set_rotation({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]})
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 
 if __name__ == '__main__':

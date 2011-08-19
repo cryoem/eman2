@@ -53,7 +53,7 @@ class EMCube(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0		
-	
+		
 	def setSize(self, size):
 		self.size = size
 		self.boundingboxsize = size
@@ -433,7 +433,7 @@ class EMCone(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]		
 		self.shininess = 25.0
-	
+		
 	def setRadiusAndHeight(self, radius, height):
 		self.radius = radius
 		self.height = height
@@ -522,7 +522,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
-	
+		
 	def updateItemControls(self):
 		super(EMInspectorControlShape, self).updateItemControls()
 		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
@@ -591,18 +591,18 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
 		self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
 		self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
 		self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def _on_shininess(self, shininess):
 		self.item3d().setShininess(shininess)
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()

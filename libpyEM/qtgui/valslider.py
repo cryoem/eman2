@@ -1057,7 +1057,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.texture = glGenTextures(1)
 		
 	def __del__(self):
-		glDeleteTextures(1, self.texture)
+		glDeleteTextures(self.texture)
 		
 	def initializeGL(self):
 		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black

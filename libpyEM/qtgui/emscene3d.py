@@ -771,7 +771,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Set the main 3d inspector
 		"""
 		self.main_3d_inspector = inspector
-		
+	
+	def showInspector(self):
+		"""
+		Show the SG inspector
+		"""
+		if not self.main_3d_inspector:
+			self.main_3d_inspector = EMInspector3D(self)
+			self.main_3d_inspector.loadSG()
+			self.main_3d_inspector.show()
+			
 	def pickItem(self):
 		"""
 		Pick an item on the screen using openGL's selection mechanism
@@ -1024,7 +1033,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.setCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
-			self.setCursor(self.scalecursor)		
+			#self.setCursor(self.scalecursor)
+			self.showInspector()
 	
 	def _gettransformbasedonscreen(self, event):
 		x = event.x() - self.camera.getWidth()/2
@@ -1065,8 +1075,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.update_matrices([0,0,(-dy)], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.update_matrices([dx,-dy,0], "translate")
-		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
-			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
+		#if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
+			#self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
 		self.updateSG()	
@@ -1643,6 +1653,12 @@ class EMInspector3D(QtGui.QWidget):
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
+	
+	def closeEvent(self, event):
+		self.scenegraph.main_3d_inspector = None
+		# There is a BUG in QStackedWidget @^#^&#, so it thinks that widgets have been deleted when they haven't!!! (It thinks that when you delete the stacked widget all widgets in the stack have been removed when in fact that is not always the case)
+		for node in self.scenegraph.getAllNodes():
+			node.item_inspector = None
 		
 	def _recursiveAdd(self, parentitem, parentnode):
 		"""
@@ -2628,9 +2644,9 @@ class GLdemo(QtGui.QWidget):
 		#self.isosurface = EMIsosurface(self.emdata, transform=Transform())
 		#self.emdata.addChild(self.isosurface)
 		
-		self.inspector = EMInspector3D(self.widget)
-		self.widget.setInspector(self.inspector)
-		self.inspector.loadSG()
+		#self.inspector = EMInspector3D(self.widget)
+		#self.widget.setInspector(self.inspector)
+		#self.inspector.loadSG()
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()
@@ -2647,5 +2663,5 @@ if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
-	window.show_inspector()
+	#window.show_inspector()
 	app.exec_()
