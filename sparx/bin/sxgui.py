@@ -1348,7 +1348,7 @@ class Popupthreedali(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
 	
 	########################################################################################
 	# layout parameters
@@ -1509,7 +1509,7 @@ class Popupthreedali(QWidget):
         #sets an infotip for this Pushbutton
         self.advbtn.setToolTip('Set Advanced Parameters for ali3d such as center and CTF')
         #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
+        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams_ali3d)
 	
 	self.y4 = self.y4+30
 	
@@ -1583,6 +1583,17 @@ class Popupthreedali(QWidget):
 	fourvar=self.savedparmsdict['fourvar']
 	userf=self.savedparmsdict['usrfunc']
 	userfile=self.savedparmsdict['usrfuncfile']
+	an = self.savedparmsdict['an']
+	ref_a = self.savedparmsdict['ref_a']
+	sym=self.savedparmsdict['sym']
+	npad=self.savedparmsdict['npad']
+	deltapsi=self.savedparmsdict['deltapsi']
+	startpsi=self.savedparmsdict['startpsi']
+	stoprnct=self.savedparmsdict['stoprnct']
+	debug=self.savedparmsdict['debug']
+	nch=self.savedparmsdict['nch']
+	chunk=self.savedparmsdict['chunk']
+	rantest=self.savedparmsdict['rantest']
 	
 	if self.setadv:
 		mask = self.w.masknameedit.text()
@@ -1596,16 +1607,34 @@ class Popupthreedali(QWidget):
 		inrad = self.w.innerradiusedit.text()
 		CTF=self.w.ctfchkbx.checkState()
 		snr = self.w.snredit.text()
-		fourvar = self.w.fourvarchkbx.checkState()
 		userf = self.w.usrfuncedit.text()
 		userfile = self.w.usrfuncfileedit.text()
-	
-	cmd1 = cmd1+" --center=" +str(ctr)+" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)
+		an = self.w.anedit.text()
+		ref_a = self.w.refaedit.text()
+		sym = self.w.symedit.text()
+		npad = self.w.npadedit.text()
+		
+		fourvar = self.w2.fourvarchkbx.checkState()
+		rantest = self.w2.rantestchkbx.checkState()
+		nch = self.w2.nchchkbx.checkState()
+		debug = self.w2.debugchkbx.checkState()
+		deltapsi = self.w2.deltapsiedit.text()
+		startpsi = self.w2.startpsiedit.text()
+		stoprnct = self.w2.stoprnctedit.text()
+		chunk = self.w2.chunkedit.text()
+		
+	cmd1 = cmd1+" --center=" +str(ctr)+" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)+ " --an='" + str(an)+ "'"+" --sym=" + str(sym)+ " --ref_a=" + str(ref_a)+ " --npad=" + str(npad)+ " --deltapsi='" + str(deltapsi)+"'"+ " --startpsi='" + str(startpsi)+ "'"+" --stoprnct=" + str(stoprnct)+ " --chunk=" + str(chunk)
 	if CTF == Qt.Checked:
 		cmd1 = cmd1 + " --CTF"
 	if fourvar == Qt.Checked:
 		cmd1 = cmd1 + " --Fourvar"	
-	
+	if nch == Qt.Checked:
+		cmd1 = cmd1 + " --n"
+	if rantest == Qt.Checked:
+		cmd1 = cmd1 + " --rantest"
+	if debug == Qt.Checked:
+		cmd1 = cmd1 + " --debug"
+				
 	if len(userfile) < 1:
 		cmd1 = cmd1 + " --function="+str(userf)
 	else:
@@ -1624,7 +1653,7 @@ class Popupthreedali(QWidget):
 		
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar,"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar,"usrfunc":str(userf), "usrfuncfile":str(userfile),"an":str(an),"ref_a":str(ref_a),"sym":str(sym),"npad":str(npad),"deltapsi":str(deltapsi),"startpsi":str(startpsi),"stoprnct":str(stoprnct),"debug":debug,"nch":nch,"chunk":str(chunk),"rantest":rantest}
 
 	if self.setadv:
 		self.w.savedparmsdict=self.savedparmsdict
@@ -1682,17 +1711,39 @@ class Popupthreedali(QWidget):
 		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
 		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
-		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
 		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+		self.w.anedit.setText(self.savedparmsdict['an'])
+		self.w.refaedit.setText(self.savedparmsdict['ref_a'])
+		self.w.symedit.setText(self.savedparmsdict['sym'])
+		self.w.npadedit.setText(self.savedparmsdict['npad'])
 		
-    def advparams(self):
-        print "Opening a new popup window..."
-        self.w = Popupadvparams_ali3d(self.savedparmsdict)
-        self.w.resize(500,450)
-        self.w.show()
+		self.w2.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
+		self.w2.debugchkbx.setCheckState(self.savedparmsdict['debug'])
+		self.w2.nchchkbx.setCheckState(self.savedparmsdict['nch'])
+		self.w2.rantestchkbx.setCheckState(self.savedparmsdict['rantest'])
+		self.w2.deltapsiedit.setCheckState(self.savedparmsdict['deltapsi'])
+		self.w2.startpsiedit.setCheckState(self.savedparmsdict['startpsi'])
+		self.w2.stoprnctedit.setCheckState(self.savedparmsdict['stoprnct'])
+		self.w2.chunkedit.setCheckState(self.savedparmsdict['chunk'])
+		
+    def advparams_ali3d(self):
+        self.w = Popupadvparams_ali3d_1(self.savedparmsdict)
+        #self.w.resize(500,450)
+	self.w2 = Popupadvparams_ali3d_2(self.savedparmsdict)
+        #self.w2.resize(500,450)
+        #self.w.show()
+	
+	self.TabWidget = QtGui.QTabWidget()
+    	#self.main1 = MainWindow1()
+    	#self.main2 = MainWindow2()
+    	self.TabWidget.insertTab(0,self.w,'Advanced CTF and Search')
+    	self.TabWidget.insertTab(1,self.w2,'Miscellaneous')
+	self.TabWidget.resize(500,500)
+    	self.TabWidget.show()
+    
 	self.setadv=True
+	
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -1749,7 +1800,7 @@ class Popupthreedali(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.refnameedit.setText(str(a))
         
-class Popupadvparams_ali3d(QWidget):
+class Popupadvparams_ali3d_1(QWidget):
     def __init__(self,savedparms):
         QWidget.__init__(self)
 	
@@ -1765,18 +1816,18 @@ class Popupadvparams_ali3d(QWidget):
 	########################################################################################
 	
         #Here we just set the window title
-	self.setWindowTitle('sxali3d advanced parameter selection')
+	#self.setWindowTitle('sxali3d advanced parameter selection')
         #Here we just set a label and its position in the window
-	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
+	title1=QtGui.QLabel('<b>sxali3d</b> - set advanced parameters related to CTF and search', self)
 	title1.move(self.x1,self.y1)
 	
 	self.y1 += 30
         #Labels and Line Edits for User Input
         #Just a label
-	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
-	title2.move(self.x1,self.y1)
+	#title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	#title2.move(self.x1,self.y1)
 	
-	self.y1 += 30
+	#self.y1 += 30
 	
 	self.savedparmsdict=savedparms
         #Example for User input stack name
@@ -1841,14 +1892,43 @@ class Popupadvparams_ali3d(QWidget):
 	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
 	
 	self.y1 += 30
-		
-	fourvar= QtGui.QLabel('Fourvar', self)
-	fourvar.move(self.x1,self.y1)
-	self.fourvarchkbx=QtGui.QCheckBox("",self)
-	self.fourvarchkbx.move(self.x2,self.y1)
-	self.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
-	self.fourvarchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
 	
+	refa= QtGui.QLabel('ref_a', self)
+	refa.move(self.x1,self.y1)
+        #Now add a line edit and define its position
+	self.refaedit=QtGui.QLineEdit(self)
+        self.refaedit.move(self.x2,self.y1)
+        #Adds a default value for the line edit
+	self.refaedit.setText(self.savedparmsdict['ref_a'])
+	self.refaedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
+	
+	self.y1 += 30
+	
+	sym= QtGui.QLabel('Symmetry', self)
+	sym.move(self.x1,self.y1)
+	self.symedit=QtGui.QLineEdit(self)
+	self.symedit.move(self.x2,self.y1)
+	self.symedit.setText(self.savedparmsdict['sym'])
+	self.symedit.setToolTip('-1 - use average centering method (default),\n0 - if you do not want the average to be centered, \n1 - phase approximation of the center of gravity phase_cog, \n2 - cross-correlate with Gaussian function, \n3 - cross-correlate with donut shape image (e.g. inner radius=2, outer radius=7), \n4 - cross-correlate with reference image provided by user, \n5 - cross-correlate with self-rotated average..\ncentering may fail..use 0 to deactive it')
+	
+	self.y1 += 30
+	
+	pad= QtGui.QLabel('npad', self)
+	pad.move(self.x1,self.y1)
+	self.npadedit=QtGui.QLineEdit(self)
+	self.npadedit.move(self.x2,self.y1)
+	self.npadedit.setText(self.savedparmsdict['npad'])
+	self.npadedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
+	
+	self.y1 += 30
+	
+	an= QtGui.QLabel('an', self)
+	an.move(self.x1,self.y1)
+	self.anedit=QtGui.QLineEdit(self)
+	self.anedit.move(self.x2,self.y1)
+	self.anedit.setText(self.savedparmsdict['an'])
+	self.anedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+
 	self.y1 += 30
 	
 	usrfunc= QtGui.QLabel('User Function Name', self)
@@ -1899,6 +1979,104 @@ class Popupadvparams_ali3d(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.masknameedit.setText(str(a))
 
+class Popupadvparams_ali3d_2(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+	
+	########################################################################################
+	# layout parameters
+	
+	self.y1=10
+	self.yspc = 4
+	
+	self.x1 = 10
+	self.x2 = 140
+	self.x3 = 285
+	########################################################################################
+	
+        #Here we just set the window title
+	#self.setWindowTitle('sxali3d advanced parameter selection 2')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxali3d</b> - set remaining advanced parameters', self)
+	title1.move(self.x1,self.y1)
+	
+	self.y1 += 30
+	
+	self.savedparmsdict=savedparms
+       	
+	fourvar= QtGui.QLabel('Fourvar', self)
+	fourvar.move(self.x1,self.y1)
+	self.fourvarchkbx=QtGui.QCheckBox("",self)
+	self.fourvarchkbx.move(self.x2,self.y1)
+	self.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
+	self.fourvarchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	
+	self.y1 += 30
+	
+	deltapsi= QtGui.QLabel('deltapsi', self)
+	deltapsi.move(self.x1,self.y1)
+	self.deltapsiedit=QtGui.QLineEdit(self)
+	self.deltapsiedit.move(self.x2,self.y1)
+	self.deltapsiedit.setText(self.savedparmsdict['deltapsi'])
+	self.deltapsiedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+
+	self.y1 += 30
+	
+	startpsi= QtGui.QLabel('startpsi', self)
+	startpsi.move(self.x1,self.y1)
+	self.startpsiedit=QtGui.QLineEdit(self)
+	self.startpsiedit.move(self.x2,self.y1)
+	self.startpsiedit.setText(self.savedparmsdict['startpsi'])
+	self.startpsiedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+
+	self.y1 += 30
+	
+	stoprnct= QtGui.QLabel('stoprnct', self)
+	stoprnct.move(self.x1,self.y1)
+	self.stoprnctedit=QtGui.QLineEdit(self)
+	self.stoprnctedit.move(self.x2,self.y1)
+	self.stoprnctedit.setText(self.savedparmsdict['stoprnct'])
+	self.stoprnctedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+
+	self.y1 += 30
+	
+	nch= QtGui.QLabel('n', self)
+	nch.move(self.x1,self.y1)
+	self.nchchkbx=QtGui.QCheckBox("",self)
+	self.nchchkbx.move(self.x2,self.y1)
+	self.nchchkbx.setCheckState(self.savedparmsdict['nch'])
+	self.nchchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	
+	self.y1 += 30
+	
+	chunk= QtGui.QLabel('chunk', self)
+	chunk.move(self.x1,self.y1)
+	self.chunkedit=QtGui.QLineEdit(self)
+	self.chunkedit.move(self.x2,self.y1)
+	self.chunkedit.setText(self.savedparmsdict['chunk'])
+	self.chunkedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+
+	self.y1 += 30
+	
+	dbg= QtGui.QLabel('debug', self)
+	dbg.move(self.x1,self.y1)
+	self.debugchkbx=QtGui.QCheckBox("",self)
+	self.debugchkbx.move(self.x2,self.y1)
+	self.debugchkbx.setCheckState(self.savedparmsdict['debug'])
+	self.debugchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	
+	self.y1 += 30
+	
+	rant= QtGui.QLabel('rantest', self)
+	rant.move(self.x1,self.y1)
+	self.rantestchkbx=QtGui.QCheckBox("",self)
+	self.rantestchkbx.move(self.x2,self.y1)
+	self.rantestchkbx.setCheckState(self.savedparmsdict['rantest'])
+	self.rantestchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	
+	self.y1 += 30
+	
+    
 #################
 ## kmeans
 
@@ -2378,8 +2556,7 @@ class MainWindow(QtGui.QWidget):
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupthreedali()
         self.w.resize(550,600)
-        self.w.show()   
-
+        self.w.show()  
     def kmeans(self):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
