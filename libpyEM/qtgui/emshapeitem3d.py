@@ -320,10 +320,12 @@ class EMCylinder(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
+		glPushMatrix()
 		quadratic = gluNewQuadric()
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
+		glTranslatef( 0,0,-self.height/2)
 		gluCylinder(quadratic,self.radius,self.radius,self.height,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_INSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
@@ -332,11 +334,91 @@ class EMCylinder(EMItem3D):
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
 		glPopMatrix()
+		glPopMatrix()
 
 class EMLine(EMItem3D):
 	name = "Line"
 	nodetype = "ShapeNode"
-	pass
+	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		# size
+		self.setEndAndWidth(x1, y1, z1, x2, y2, z2, width)
+		
+		# color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0
+
+	def setEndAndWidth(self, x1, y1, z1, x2, y2, z2, width):
+		self.x1 = x1
+		self.y1 = y1
+		self.z1 = z1
+		self.x2 = x2
+		self.y2 = y2
+		self.z2 = z2
+		self.width = width
+		self.slices = int(width/2)
+		self.stacks = int(width/2)
+		self.boundingboxsize = max(self.width/2, self.width/2)
+		if self.item_inspector: self.item_inspector.updateMetaData()	
+		
+	def getEvalString(self):
+		return "EMLine(%s, %s, %s, %s, %s, %s. %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
+	
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+
+	def getItemInspector(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("LINE", self)
+		return self.item_inspector
+	
+	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderLine()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderLine()
+	
+			glPopAttrib()
+		else:
+			self.renderLine()	
+			
+	def renderLine(self):
+		dx = self.x1 - self.x2
+		dy = self.y1 - self.y2
+		dz = self.z1 - self.z2
+		length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
+		
+		glPushMatrix()
+		glTranslatef(self.x1, self.y1, self.z1)
+		
 
 class EMCone(EMItem3D):
 	name = "Cone"
@@ -415,15 +497,18 @@ class EMCone(EMItem3D):
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
+		glPushMatrix()
 		quadratic = gluNewQuadric()
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
+		glTranslatef( 0,0,-self.height/2)
 		gluCylinder(quadratic,0,self.radius,self.height,self.slices,self.stacks)
 		glPushMatrix()
 		glTranslatef( 0,0,self.height)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+		glPopMatrix()
 		glPopMatrix()
 
 class EM3DText(EMItem3D):
