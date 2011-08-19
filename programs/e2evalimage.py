@@ -345,7 +345,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,1.0/(self.ringrad*ds),self.ringrad*ds),24.0,2.0)))
 			self.wfft.updateGL()
 		# 2-D Crystal mode
-		if self.f2danmode==2 :
+		elif self.f2danmode==2 :
 			shp={}
 			for a in range(-5,6):
 				for b in range(-5,6):
@@ -355,6 +355,9 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wfft.add_shapes(shp)
 			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(1.0/(hypot(*self.xpos1)*ds),1.0/(hypot(*self.xpos2)*ds)),60.0,2.0)))
 #			except: pass
+			self.wfft.updateGL()
+		else:
+			self.wfft.del_shapes()
 			self.wfft.updateGL()
 			
 
