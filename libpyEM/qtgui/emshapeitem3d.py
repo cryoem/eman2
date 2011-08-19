@@ -342,7 +342,7 @@ class EMLine(EMItem3D):
 	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=Transform()):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
-		self.setEndAndWidth(x1, y1, z1, x2, y2, z2, width)
+		self.setEndAndWidth(x1, y1, z1, x2, y2, z2, linewidth)
 		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]

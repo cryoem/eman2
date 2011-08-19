@@ -275,6 +275,50 @@ cylindercursor = [
     'ccccccccccccccccc'
 ] 
 
+conecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'cccccccbbcccccccc',
+    'ccccccbbbbccccccc',
+    'ccccccbbbbccccccc',
+    'cccccbbbbbbcccccc',
+    'cccccbbbbbbcccccc',
+    'ccccbbbbbbbbccccc',
+    'ccccbbbbbbbbccccc',
+    'cccbbbbbbbbbbcccc',
+    'cccbbbbbbbbbbcccc',
+    'ccbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbccc',
+    'cbbbbbbbbbbbbbbcc',
+    'cbbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbcccc',
+    'cccccbbbbbbcccccc',
+    'ccccccccccccccccc'
+]
+
+linecursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cccccccccccccbbcc',
+    'ccccccccccccbbccc',
+    'cccccccccccbbcccc',
+    'ccccccccccbbccccc',
+    'cccccccccbbcccccc',
+    'ccccccccbbccccccc',
+    'cccccccbbcccccccc',
+    'ccccccbbccccccccc',
+    'cccccbbcccccccccc',
+    'ccccbbccccccccccc',
+    'cccbbcccccccccccc',
+    'ccbbccccccccccccc',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc'
+] 
+
 datacursor = [
     '17 16 2 1',
     'b c #00ff00',
@@ -382,6 +426,50 @@ cylindericon = [
     'ccbbbbbbbbbbbbbcc',
     'cccbbbbbbbbbbbccc',
     'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
+coneicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccccbbcccccccc',
+    'ccccccbbbbccccccc',
+    'ccccccbbbbccccccc',
+    'cccccbbbbbbcccccc',
+    'cccccbbbbbbcccccc',
+    'ccccbbbbbbbbccccc',
+    'ccccbbbbbbbbccccc',
+    'cccbbbbbbbbbbcccc',
+    'cccbbbbbbbbbbcccc',
+    'ccbbbbbbbbbbbbccc',
+    'ccbbbbbbbbbbbbccc',
+    'cbbbbbbbbbbbbbbcc',
+    'cbbbbbbbbbbbbbbcc',
+    'cccbbbbbbbbbbcccc',
+    'cccccbbbbbbcccccc',
+    'ccccccccccccccccc'
+]
+
+lineicon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccccccccccccccccc',
+    'cccccccccccccbbcc',
+    'ccccccccccccbbccc',
+    'cccccccccccbbcccc',
+    'ccccccccccbbccccc',
+    'cccccccccbbcccccc',
+    'ccccccccbbccccccc',
+    'cccccccbbcccccccc',
+    'ccccccbbccccccccc',
+    'cccccbbcccccccccc',
+    'ccccbbccccccccccc',
+    'cccbbcccccccccccc',
+    'ccbbccccccccccccc',
+    'ccccccccccccccccc',
     'ccccccccccccccccc'
 ] 
 
@@ -632,9 +720,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.scalecursor = QtGui.QCursor(QtGui.QPixmap(scalecursor),-1,-1)
 		self.zhaircursor = QtGui.QCursor(QtGui.QPixmap(zhaircursor),-1,-1)
 		self.selectorcursor = QtGui.QCursor(QtGui.QPixmap(selectorcursor),-1,-1)
+		self.linecursor = QtGui.QCursor(QtGui.QPixmap(linecursor),-1,-1)
 		self.cubecursor = QtGui.QCursor(QtGui.QPixmap(cubecursor),-1,-1)
 		self.spherecursor = QtGui.QCursor(QtGui.QPixmap(spherecursor),-1,-1)
 		self.cylindercursor = QtGui.QCursor(QtGui.QPixmap(cylindercursor),-1,-1)
+		self.conecursor = QtGui.QCursor(QtGui.QPixmap(conecursor),-1,-1)
 		self.datacursor = QtGui.QCursor(QtGui.QPixmap(datacursor),-1,-1)
 		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
 
@@ -778,7 +868,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Remove old selection if not in append mode
 		if (not records and not self.toggleselection) or (self.multiselect and not self.appendselection):
-			self.clearSelection(records)
+			self.clearSelection()
 			
 		# Select the desired items	
 		closestitem = None
@@ -795,7 +885,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
-			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection(records)
+			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection()
 			if self.toggleselection and selecteditem.isSelectedItem(): 
 				selecteditem.setSelectedItem(False)
 			else:
@@ -803,7 +893,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			# Inspector tree management
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
 	
-	def clearSelection(self, records):
+	def clearSelection(self):
 		"""
 		Clear all slected itemstodeselect
 		"""
@@ -852,12 +942,22 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode(name, self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.isonode = EMIsosurface(self.newnode, transform=Transform())
+			self.clearSelection()
 			self.isonode.setSelectedItem(True)
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
+			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
+			self.setCursor(self.linecursor)
+			self.newnode = EMLine(0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, transform=self._gettransformbasedonscreen(event))
+			self.clearSelection()
+			self.newnode.setSelectedItem(True)
+			self.insertNewNode("Line", self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.setCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
+			self.clearSelection()
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cube", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
@@ -865,6 +965,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
+			self.clearSelection()
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Sphere", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
@@ -872,8 +973,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.setCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
+			self.clearSelection()
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cylinder", self.newnode)
+			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self.newnode.update_matrices([90,1,0,0], "rotate")
+			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
+			self.setCursor(self.conecursor)
+			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
+			self.clearSelection()
+			self.newnode.setSelectedItem(True)
+			self.insertNewNode("Cone", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.newnode.update_matrices([90,1,0,0], "rotate")
 			self.updateSG()	
@@ -928,13 +1039,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		dy = event.y() - self.previous_y
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
+			pass
+			#self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, event.y() - self.first_y, 0.0, 1.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.newnode.setRadius(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
-			sign = -(event.y() - self.first_y)
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
+			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
@@ -1635,6 +1750,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.multiselectiontool = EMANToolButton()
 		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
 		self.multiselectiontool.setToolTip("Select multiple objects\nMouse: Left 'n' drag")
+		self.linetool = EMANToolButton()
+		self.linetool.setIcon(QtGui.QIcon(QtGui.QPixmap(lineicon)))
+		self.linetool.setToolTip("Insert Line")
 		self.cubetool = EMANToolButton()
 		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
 		self.cubetool.setToolTip("Insert Cube")
@@ -1644,6 +1762,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.cylindertool = EMANToolButton()
 		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
 		self.cylindertool.setToolTip("Insert Cylinder")
+		self.conetool = EMANToolButton()
+		self.conetool.setIcon(QtGui.QIcon(QtGui.QPixmap(coneicon)))
+		self.conetool.setToolTip("Insert Cone")
 		self.texttool = EMANToolButton()
 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Insert Text")
@@ -1661,10 +1782,11 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.ztranslate)
 		tvbox.addWidget(self.rotatetool)
 		tvbox.addWidget(self.scaletool)
-
+		tvbox.addWidget(self.linetool)
 		tvbox.addWidget(self.cubetool)
 		tvbox.addWidget(self.spheretool)
 		tvbox.addWidget(self.cylindertool)
+		tvbox.addWidget(self.conetool)
 		tvbox.addWidget(self.texttool)
 		tvbox.addWidget(self.datatool)
 		tvbox.addWidget(self.apptool)
@@ -1676,9 +1798,11 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked(int)"), self._scaletool_clicked)
 		QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked(int)"), self._seltool_clicked)
 		QtCore.QObject.connect(self.multiselectiontool, QtCore.SIGNAL("clicked(int)"), self._multiseltool_clicked)
+		QtCore.QObject.connect(self.linetool, QtCore.SIGNAL("clicked(int)"), self._linetool_clicked)
 		QtCore.QObject.connect(self.cubetool, QtCore.SIGNAL("clicked(int)"), self._cubetool_clicked)
 		QtCore.QObject.connect(self.spheretool, QtCore.SIGNAL("clicked(int)"), self._spheretool_clicked)
 		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked(int)"), self._cylindertool_clicked)
+		QtCore.QObject.connect(self.conetool, QtCore.SIGNAL("clicked(int)"), self._conetool_clicked)
 		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
 		QtCore.QObject.connect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
 		QtCore.QObject.connect(self.apptool, QtCore.SIGNAL("clicked(int)"), self._apptool_clicked)
@@ -1706,6 +1830,9 @@ class EMInspector3D(QtGui.QWidget):
 	def _multiseltool_clicked(self, state):
 		self.scenegraph.setMouseMode("multiselection")
 	
+	def _linetool_clicked(self, state):
+		self.scenegraph.setMouseMode("line")
+		
 	def _cubetool_clicked(self, state):
 		self.scenegraph.setMouseMode("cube")
 		
@@ -1714,6 +1841,9 @@ class EMInspector3D(QtGui.QWidget):
 		
 	def _cylindertool_clicked(self, state):
 		self.scenegraph.setMouseMode("cylinder")
+	
+	def _conetool_clicked(self, state):
+		self.scenegraph.setMouseMode("cone")
 		
 	def _texttool_clicked(self, state):
 		self.scenegraph.setMouseMode("text")
