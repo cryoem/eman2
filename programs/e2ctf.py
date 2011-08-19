@@ -1078,7 +1078,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 		# best now contains quality,(df,bfac) for each optimized answer
 		best.sort()
-		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+#		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 
 	ctf.defocus=best[0][1][0]
 	ctf.bfactor=best[0][1][1]
@@ -1088,6 +1088,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 	if bgadj:
 		bg2=bg_1d[:]
+		if verbose: print "BG adjustment using df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 		for i in range(6):
 			# now we try to construct a better background based on the CTF zeroes being zero
 			df=best[0][1][0]
@@ -1125,8 +1126,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			bg_1d_low=low_bg_curve(bg_1d,ds)
 			bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background 
 			best[0][1][1]=500.0		# restart the fit with B=200.0
-			if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
-			else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+			if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+			else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
 			oparm=sim.minimize(epsilon=.00000001,monitor=0)
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
 				best[0]=(oparm[1],oparm[0])
@@ -1134,10 +1135,11 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			best[0]=(oparm[1],oparm[0])
 			if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 	else:
+		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 		# rerun the simplex with the new background
 		best[0][1][1]=500.0		# restart the fit with B=200.0
-		if hasgoodsf : sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
-		else : sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0]))
+		if hasgoodsf : sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+		else : sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
 		oparm=sim.minimize(epsilon=.0000001,monitor=0)
 		best[0]=(oparm[1],oparm[0])
 		if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
@@ -1172,7 +1174,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 def ctf_cmp(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
-	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf,bgsub,s0,s1,ds,dforig,rng=data
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
@@ -1213,6 +1215,8 @@ def ctf_cmp(parms,data):
 
 #	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
+	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
+	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
 	
 	#out=file("dbg","a")
 	#out.write("%f\t%f\t%f\t%f\t%f\t%d\n"%(parms[0],parms[1],er,mean,sig,mx))
@@ -1221,7 +1225,7 @@ def ctf_cmp(parms,data):
 
 def ctf_cmp_a(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data. It is a replacement for ctf_cmp"""
-	ctf,bgsub,s0,s1,ds,dforig=data
+	ctf,bgsub,s0,s1,ds,dforig,rng=data
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
@@ -1244,6 +1248,10 @@ def ctf_cmp_a(parms,data):
 	for i in range(s0,len(cc)): 
 		if i>=s0a and i<s0 : er+=fabs(cc[i]-bs[i])
 		if i>=s0 : er+=(cc[i]-bs[i])**2.0
+
+	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
+	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
+
 
 	return er
 

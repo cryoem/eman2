@@ -137,6 +137,9 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		
 		self.makeCurrent()
 		self.font_renderer = get_3d_font_renderer()
+		if self.font_renderer == None : 
+			print "FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu."
+			sys.exit(1)
 		self.font_renderer.set_face_size(16)
 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
