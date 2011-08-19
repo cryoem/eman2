@@ -337,6 +337,99 @@ class EMLine(EMItem3D):
 	nodetype = "ShapeNode"
 	pass
 
+class EMCone(EMItem3D):
+	name = "Cone"
+	nodetype = "ShapeNode"
+	def __init__(self, radius, height, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		#size
+		self.setRadiusAndHeight(radius, height)
+		
+		# color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]		
+		self.shininess = 25.0
+	
+	def setRadiusAndHeight(self, radius, height):
+		self.radius = radius
+		self.height = height
+		self.slices = int(radius)
+		self.stacks = int(radius)
+		self.boundingboxsize = max(self.radius, self.height)
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
+	def getEvalString(self):
+		return "EMCone(%s, %s)"%(self.radius, self.height)
+		
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+	
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
+	def getItemInspector(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CONE", self)
+		return self.item_inspector
+	
+	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cone, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderCone()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderCone()
+	
+			glPopAttrib()
+		else:
+			self.renderCone()
+	
+	def renderCone(self):
+	#def renderNode(self):	
+		# Material properties of the cone
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		
+		quadratic = gluNewQuadric()
+		gluQuadricDrawStyle(quadratic, GLU_FILL)
+		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
+		gluCylinder(quadratic,0,self.radius,self.height,self.slices,self.stacks)
+		glPushMatrix()
+		glTranslatef( 0,0,self.height)
+		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
+		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
+		glPopMatrix()
+
+class EM3DText(EMItem3D):
+	name = "3DText"
+	nodetype = "ShapeNode"
+	pass
+
 class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	Class to make EMItem GUI SHAPE Inspector
