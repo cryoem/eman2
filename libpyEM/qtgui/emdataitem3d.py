@@ -20,8 +20,6 @@ class EMDataItem3D(EMItem3D):
 	name = "Data"
 	def __init__(self, data, parent = None, children = set(), transform = None):
 		EMItem3D.__init__(self, parent, children, transform)
-#		self.texture3d_name = 0
-		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
 		self.setData(data)
 		
 	def getEvalString(self):
@@ -37,12 +35,6 @@ class EMDataItem3D(EMItem3D):
 	
 	def getData(self):
 		return self.data
-	
-	def generate3DTexture(self):
-		if self.texture3d_name != 0:
-			GL.glDeleteTextures(self.texture3d_name)
-			self.texture3d_name = 0
-		self.texture3d_name = self.glflags.gen_textureName(self.data)
 		
 	def setData(self, data):
 		if isinstance(data, EMData):
@@ -54,8 +46,6 @@ class EMDataItem3D(EMItem3D):
 		else:
 			self.data = EMData(str(data))
 			self.path = str(data)
-		
-#		self.generate3DTexture()
 		
 		for child in self.getChildren():
 			child.dataChanged()
@@ -117,52 +107,47 @@ class EMSliceItem3D(EMItem3D):
 		nx = data["nx"]
 		ny = data["ny"]
 		nz = data["nz"]
-		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2)
-		diag = int(math.ceil(interior_diagonal))
-		diag2 = int(math.ceil(interior_diagonal/2.0))
-
-		#TODO: this is a work in progress
-		#Goal 1: Draw any texture (such as test_image()) to a rectangle, even when the rectangle is rotated and translated
-		#Goal 2: Use a 2D texture cut from the EMData instead of test_image()
-		#Goal 3: Provide controls to select what slice of the EMData should be used (a slice plane)
-
-#		temp_data = EMData(size, size)
-#		temp_data.cut_slice(data, self.transform)
-		from EMAN2 import test_image
-		temp_data = test_image(size=(diag,diag))
+		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
+		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
+		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
+		diag2 = diag/2
+		
+		temp_data = EMData(diag, diag)
+		temp_data.cut_slice(data, self.transform)
 		
 		if self.texture_name != 0:
 			GL.glDeleteTextures(self.texture_name)
 		
 		self.texture_name = self.glflags.gen_textureName(temp_data)
 		
+		
 		#For debugging purposes, draw an outline
 		GL.glBegin(GL.GL_LINE_LOOP)
-		GL.glColor3f(1.0, 1.0, 1.0)
 		GL.glVertex3f(-diag2, -diag2, 0)
 		GL.glVertex3f(-diag2, diag2, 0)
 		GL.glVertex3f(diag2, diag2, 0)
 		GL.glVertex3f(diag2, -diag2, 0)
 		GL.glEnd()
 		
-		#Now draw a texture on another quad
+		
+		#Now draw the texture on another quad
 		GL.glEnable(GL.GL_TEXTURE_2D)
+		GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
 		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
 		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
-		GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
-		
+		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
 		GL.glBegin(GL.GL_QUADS)
 		GL.glTexCoord2f(0, 0)
 		GL.glVertex3f(-diag2, -diag2, 0)
-		GL.glTexCoord2f(0, diag)
+		GL.glTexCoord2f(0, 1)
 		GL.glVertex3f(-diag2, diag2, 0)
-		GL.glTexCoord2f(diag, diag)
+		GL.glTexCoord2f(1, 1)
 		GL.glVertex3f(diag2, diag2, 0)
-		GL.glTexCoord2f(diag, 0)
+		GL.glTexCoord2f(1, 0)
 		GL.glVertex3f(diag2, -diag2, 0)
 		glEnd()
 		
