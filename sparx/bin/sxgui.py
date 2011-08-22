@@ -829,8 +829,6 @@ class Popuptwodali(QWidget):
 	#######################################################################################
 	# class variables
 	
-	self.picklename='ali2dsaveparms.pkl'
-	self.setadv=False
 	self.cmd = ""
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
@@ -842,7 +840,7 @@ class Popuptwodali(QWidget):
 	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
 	self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
 	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
-	self.y5 = self.y4 + 110 # run button 
+	self.y5 = self.y4 + 95 # run button 
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
@@ -954,14 +952,6 @@ class Popuptwodali(QWidget):
 	
 	######################################################################################
 	
-	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x1-5, self.y4)
-        #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
-	self.y4+=30
-	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(self.x1-5, self.y4)
         #sets an infotip for this Pushbutton
@@ -1015,34 +1005,21 @@ class Popuptwodali(QWidget):
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit) 
 	
-	mask=self.savedparmsdict['maskname']
-	ctr=self.savedparmsdict['center']
-	ringstep=self.savedparmsdict['ringstep']
-	inrad=self.savedparmsdict['innerradius']
-	CTF=self.savedparmsdict['ctf']
-	snr=self.savedparmsdict['snr']
-	fourvar=self.savedparmsdict['fourvar']
-	gpn=self.savedparmsdict['gpnr']
-	userf=self.savedparmsdict['usrfunc']
-	userfile=self.savedparmsdict['usrfuncfile']
-	
-	if self.setadv:
-		mask = self.w.masknameedit.text()
+	mask = self.w1.masknameedit.text()
 		
 	if len(str(mask))> 1:
 		cmd1 = cmd1+" "+str(mask) 
 	cmd1 = cmd1 + args
 	
-	if self.setadv:	
-		ctr=self.w.centeredit.text()
-		ringstep = self.w.ringstepedit.text()
-		inrad = self.w.innerradiusedit.text()
-		CTF=self.w.ctfchkbx.checkState()
-		snr = self.w.snredit.text()
-		fourvar = self.w.fourvarchkbx.checkState()
-		gpn = self.w.gpnredit.text()
-		userf = self.w.usrfuncedit.text()
-		userfile = self.w.usrfuncfileedit.text()
+	ctr=self.w1.centeredit.text()
+	ringstep = self.w1.ringstepedit.text()
+	inrad = self.w1.innerradiusedit.text()
+	CTF=self.w1.ctfchkbx.checkState()
+	snr = self.w1.snredit.text()
+	fourvar = self.w1.fourvarchkbx.checkState()
+	gpn = self.w1.gpnredit.text()
+	userf = self.w1.usrfuncedit.text()
+	userfile = self.w1.usrfuncfileedit.text()
 			
 	cmd1 = cmd1+" --center=" +str(ctr) +" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)+ " --Ng=" + str(gpn)
 	if CTF == Qt.Checked:
@@ -1069,8 +1046,7 @@ class Popuptwodali(QWidget):
 	
 	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar, "gpnr":str(gpn),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
-	if self.setadv:
-		self.w.savedparmsdict=self.savedparmsdict
+	self.w1.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -1096,43 +1072,39 @@ class Popuptwodali(QWidget):
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
 	
     def saveparms(self):	
-	# save all the parms in a text file so we can repopulate if user requests
-	import pickle
-	output=open(self.picklename,'wb')
-	self.gencmdline_ali2d(writefile=False)
-	pickle.dump(self.savedparmsdict,output)
-	output.close()
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_ali2d(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
 	
     def repoparms_ali2d(self):	
-	# repopulate with saved parms
-	import pickle
-	pkl = open(self.picklename,'rb')
-	self.savedparmsdict = pickle.load(pkl)
-	self.partradiusedit.setText(self.savedparmsdict['partradius'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
-	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
-	self.transedit.setText(self.savedparmsdict['trans'])
-	self.nriteredit.setText(self.savedparmsdict['nriter'])
-	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	if self.setadv:
-		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.centeredit.setText(self.savedparmsdict['center'])
-		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
-		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
-		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
-		self.w.gpnredit.setText(self.savedparmsdict['gpnr'])
-		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
-		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.partradiusedit.setText(self.savedparmsdict['partradius'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+		self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
+		self.transedit.setText(self.savedparmsdict['trans'])
+		self.nriteredit.setText(self.savedparmsdict['nriter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w1.centeredit.setText(self.savedparmsdict['center'])
+		self.w1.ringstepedit.setText(self.savedparmsdict['ringstep'])
+		self.w1.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w1.snredit.setText(self.savedparmsdict['snr'])
+		self.w1.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
+		self.w1.gpnredit.setText(self.savedparmsdict['gpnr'])
+		self.w1.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+		self.w1.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
 		
-    def advparams(self):
-        print "Opening a new popup window..."
-        self.w = Popupadvparams_ali2d(self.savedparmsdict)
-        self.w.resize(500,450)
-        self.w.show()
-	self.setadv=True
+    
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -1659,7 +1631,7 @@ class Popupthreedali(QWidget):
 	
     def repoparms_ali3d(self):	
 	# repopulate with saved parms
-	(fname,stat)= QInputDialog.getText(self,"Get Input Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -2040,9 +2012,6 @@ class Popupkmeans(QWidget):
 	
 	#######################################################################################
 	# class variables
-	
-	self.picklename='kmeanssaveparms.pkl'
-	self.setadv=False
 	self.cmd = ""
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
@@ -2054,7 +2023,7 @@ class Popupkmeans(QWidget):
 	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
 	self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
 	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
-	self.y5 = self.y4 + 110 # run button 
+	self.y5 = self.y4 + 95 # run button 
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
@@ -2156,14 +2125,6 @@ class Popupkmeans(QWidget):
 	
 	######################################################################################
 	
-	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x1-5, self.y4)
-        #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
-	self.y4+=30
-	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(self.x1-5, self.y4)
         #sets an infotip for this Pushbutton
@@ -2191,13 +2152,6 @@ class Popupkmeans(QWidget):
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxk_means)
         #Labels and Line Edits for User Input	
 
-    def advparams(self):
-        print "Opening a new popup window..."
-        self.w = Popupadvparams_kmeans(self.savedparmsdict)
-        self.w.resize(400,300)
-        self.w.show()
-	self.setadv=True
-		
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     def outputinfo_kmeans(self):
     	QMessageBox.information(self, "kmeans output",'The directory to which the averages of K clusters, and the variance. The classification charts are written to the logfile. Warning: If the output directory already exists, the program will crash and an error message will come up. Please change the name of directory and restart the program.')
@@ -2219,27 +2173,19 @@ class Popupkmeans(QWidget):
 	
 	args = " --K="+ str(kc)+ " --trials="+str(trials)+ " --maxit="+str(maxiter)
 	
-	randsd = self.savedparmsdict['randsd']
-	mask=self.savedparmsdict['maskname']
-	ctf = self.savedparmsdict['ctf']
-	crit = self.savedparmsdict['crit']
-	normalize = self.savedparmsdict['normalize']
-	init_method = self.savedparmsdict['init_method']
 	
-	if self.setadv:
-		mask = self.w.masknameedit.text()
+	mask = self.w1.masknameedit.text()
 		
 	if len(str(mask))> 1:
 		cmd1 = cmd1+" "+str(mask) 
 			
 	cmd1 = cmd1 + args
 	
-	if self.setadv:	
-		randsd=self.w.randsdedit.text()
-		ctf=self.w.ctfchkbx.checkState()
-		normalize=self.w.normachkbx.checkState()
-		init_method=self.w.init_methodedit.text()
-		crit=self.w.critedit.text()
+	randsd=self.w1.randsdedit.text()
+	ctf=self.w1.ctfchkbx.checkState()
+	normalize=self.w1.normachkbx.checkState()
+	init_method=self.w1.init_methodedit.text()
+	crit=self.w1.critedit.text()
 		
 	cmd1 = cmd1+" --rand_seed=" +str(randsd)+" --init_method="+str(init_method)+" --crit="+str(crit)
 		
@@ -2250,11 +2196,9 @@ class Popupkmeans(QWidget):
 			
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'maxiter':str(maxiter),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":ctf,"crit":str(crit),"normalize":str(normalize), "init_method":str(init_method)}
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'maxiter':str(maxiter),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":ctf,"crit":str(crit),"normalize":normalize, "init_method":str(init_method)}
 
-	
-	if self.setadv:
-		self.w.savedparmsdict=self.savedparmsdict
+	self.w1.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -2280,31 +2224,32 @@ class Popupkmeans(QWidget):
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
 	
     def saveparms(self):	
-	# save all the parms in a text file so we can repopulate if user requests
-	import pickle
-	output=open(self.picklename,'wb')
-	self.gencmdline_kmeans(writefile=False)
-	pickle.dump(self.savedparmsdict,output)
-	output.close()
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_kmeans(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
 	
     def repoparms_kmeans(self):	
-	# repopulate with saved parms
-	import pickle
-	pkl = open(self.picklename,'rb')
-	self.savedparmsdict = pickle.load(pkl)
-	self.kcedit.setText(self.savedparmsdict['kc'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
-	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.trialsedit.setText(self.savedparmsdict['trials'])
-	self.maxiteredit.setText(self.savedparmsdict['maxiter'])
-	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	if self.setadv:
-		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.randsdedit.setText(self.savedparmsdict['randsd'])
-		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
-		self.w.normachkbx.setCheckState(self.savedparmsdict['normalize'])
-		self.w.critedit.setText(self.savedparmsdict['crit'])
-		self.w.init_methodedit.setText(self.savedparmsdict['init_method'])
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.kcedit.setText(self.savedparmsdict['kc'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+		self.trialsedit.setText(self.savedparmsdict['trials'])
+		self.maxiteredit.setText(self.savedparmsdict['maxiter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w1.randsdedit.setText(self.savedparmsdict['randsd'])
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w1.normachkbx.setCheckState(self.savedparmsdict['normalize'])
+		self.w1.critedit.setText(self.savedparmsdict['crit'])
+		self.w1.init_methodedit.setText(self.savedparmsdict['init_method'])
 		
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -2430,12 +2375,10 @@ class Popupkmeansgroups(QWidget):
 	
 	#######################################################################################
 	# class variables
-	
-	self.picklename='kmeansgroupssaveparms.pkl'
 	self.cmd = ""
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
-	self.setadv=False
+	
 	#######################################################################################
 	# Layout parameters
 	
@@ -2443,7 +2386,7 @@ class Popupkmeansgroups(QWidget):
 	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
 	self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
 	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
-	self.y5 = self.y4 + 110 # run button 
+	self.y5 = self.y4 + 95 # run button 
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
@@ -2552,14 +2495,6 @@ class Popupkmeansgroups(QWidget):
 	
 	######################################################################################
 	
-	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x1-5, self.y4)
-        #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
-	self.y4+=30
-	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(self.x1-5, self.y4)
         #sets an infotip for this Pushbutton
@@ -2587,12 +2522,6 @@ class Popupkmeansgroups(QWidget):
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxk_means_groups)
         #Labels and Line Edits for User Input	
 
-    def advparams(self):
-        print "Opening a new popup window..."
-        self.w = Popupadvparams_kmeans_groups(self.savedparmsdict)
-        self.w.resize(400,300)
-        self.w.show()
-	self.setadv=True
 		
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     def outputinfo_kmeans_groups(self):
@@ -2617,21 +2546,15 @@ class Popupkmeansgroups(QWidget):
 	
 	args = " --K1="+ str(kc1)+" --K2="+ str(kc2)+ " --trials="+str(trials)+ " --maxit="+str(maxiter)
 	
-	randsd = self.savedparmsdict['randsd']
-	mask=self.savedparmsdict['maskname']
-	ctf = self.savedparmsdict['ctf']
-	
-	if self.setadv:
-		mask = self.w.masknameedit.text()
+	mask = self.w1.masknameedit.text()
 		
 	if len(str(mask))> 1:
 		cmd1 = cmd1+" "+str(mask) 
 			
 	cmd1 = cmd1 + args
-	
-	if self.setadv:	
-		randsd=self.w.randsdedit.text()
-		ctf=self.w.ctfchkbx.checkState()
+		
+	randsd=self.w1.randsdedit.text()
+	ctf=self.w1.ctfchkbx.checkState()
 		
 	cmd1 = cmd1+" --rand_seed=" +str(randsd)
 		
@@ -2642,9 +2565,7 @@ class Popupkmeansgroups(QWidget):
 	
 	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc1':str(kc1),'kc2':str(kc2),'trials':str(trials),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":ctf,'maxiter':str(maxiter)}
 
-	
-	if self.setadv:
-		self.w.savedparmsdict=self.savedparmsdict
+	self.w1.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -2671,28 +2592,30 @@ class Popupkmeansgroups(QWidget):
 	
     def saveparms(self):	
 	# save all the parms in a text file so we can repopulate if user requests
-	import pickle
-	output=open(self.picklename,'wb')
-	self.gencmdline_kmeans_groups(writefile=False)
-	pickle.dump(self.savedparmsdict,output)
-	output.close()
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_kmeans_groups(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
 	
     def repoparms_kmeans_groups(self):	
-	# repopulate with saved parms
-	import pickle
-	pkl = open(self.picklename,'rb')
-	self.savedparmsdict = pickle.load(pkl)
-	self.kc1edit.setText(self.savedparmsdict['kc1'])
-	self.kc2edit.setText(self.savedparmsdict['kc2'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
-	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.trialsedit.setText(self.savedparmsdict['trials'])
-	self.maxiteredit.setText(self.savedparmsdict['maxiter'])
-	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	if self.setadv:
-		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.randsdedit.setText(self.savedparmsdict['randsd'])
-		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	(fname,stat)= QInputDialog.getText(self,"Get Input Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.kc1edit.setText(self.savedparmsdict['kc1'])
+		self.kc2edit.setText(self.savedparmsdict['kc2'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+		self.trialsedit.setText(self.savedparmsdict['trials'])
+		self.maxiteredit.setText(self.savedparmsdict['maxiter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w1.randsdedit.setText(self.savedparmsdict['randsd'])
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 		
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -2863,8 +2786,14 @@ class MainWindow(QtGui.QWidget):
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popuptwodali()
-        self.w.resize(550,550)
-        self.w.show()
+	self.w1 = Popupadvparams_ali2d(self.w.savedparmsdict)
+        self.w.w1 = self.w1
+        self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced')
+	self.TabWidget.resize(550,570)
+    	self.TabWidget.show()
+	
     def helicalrefinement(self):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
@@ -2883,9 +2812,9 @@ class MainWindow(QtGui.QWidget):
 	self.w.w1 = self.w1
 	self.w.w2 = self.w2
 	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'0')
-    	self.TabWidget.insertTab(1,self.w1,'1')
-	self.TabWidget.insertTab(2,self.w2,'2')
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
+	self.TabWidget.insertTab(2,self.w2,'Advanced MISC')
 	self.TabWidget.resize(550,650)
     	self.TabWidget.show()
         
@@ -2894,17 +2823,27 @@ class MainWindow(QtGui.QWidget):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupkmeans()
-        self.w.resize(580,550)
-        self.w.show()
+        
+	self.w = Popupkmeans()
+	self.w1 = Popupadvparams_kmeans(self.w.savedparmsdict)
+        self.w.w1 = self.w1
+        self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced')
+	self.TabWidget.resize(580,570)
+    	self.TabWidget.show()
 	
     def kmeansgroups(self):
         print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupkmeansgroups()
-        self.w.resize(580,550)
-        self.w.show()	
+	
+	self.w = Popupkmeansgroups()
+	self.w1 = Popupadvparams_kmeans_groups(self.w.savedparmsdict)
+        self.w.w1 = self.w1
+        self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced')
+	self.TabWidget.resize(580,570)
+    	self.TabWidget.show()
 	
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
