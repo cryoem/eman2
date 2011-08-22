@@ -410,7 +410,9 @@ class EMLine(EMItem3D):
 		else:
 			self.renderLine()	
 			
-	def renderLine(self):
+	def renderLine(self):	
+		r2d = 180.0/math.pi
+		
 		dx = self.x1 - self.x2
 		dy = self.y1 - self.y2
 		dz = self.z1 - self.z2
@@ -419,6 +421,49 @@ class EMLine(EMItem3D):
 		glPushMatrix()
 		glTranslatef(self.x1, self.y1, self.z1)
 		
+		#orentation vector
+		vx = self.x2 - self.x1
+		vy = self.y2 - self.y1
+		vz = self.z2 - self.z1
+		
+		#rotation vector, z x r
+		rx = -vy*vz
+		ry = vx*vz
+		ax = 0.0
+		
+		if vz == 0:
+			ax = r2d*math.acos(vx/length)
+			if vx<=0: ax = -ax
+		else:
+			ax = r2d*math.acos(vz/length)
+			if vz<=0: ax = -ax
+		
+		if vz==0:
+			glRotated(90.0, 0, 1, 0.0)	#Rotate & align with x axis
+			glRotated(ax, -1.0, 0.0, 0.0)	#Rotate to point 2 in x-y plane
+		else:
+			glRotated(ax, rx, ry, 0)
+			
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		
+		glPushMatrix()
+		quadratic = gluNewQuadric()
+		gluQuadricDrawStyle(quadratic, GLU_FILL)
+		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
+		glTranslatef( 0,0,-length/2)
+		gluCylinder(quadratic,self.width/2,self.width/2,length,self.slices,self.stacks)
+		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
+		glTranslatef( 0,0,-length/10)
+		gluCylinder(quadratic,0,self.width/2,length/10,self.slices,self.stacks)
+		glTranslatef( 0,0,length+length/10)
+		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
+		gluCylinder(quadratic,self.width/2,0,length/10,self.slices,self.stacks)
+		glPopMatrix()
+		glPopMatrix()
 
 class EMCone(EMItem3D):
 	name = "Cone"
