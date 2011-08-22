@@ -37,8 +37,9 @@ from OpenGL.GL import *
 import math 
 from emglobjects import init_glut
 from emitem3d import EMItem3D, EMItem3DInspector
-from EMAN2 import Transform
+from EMAN2 import Transform, get_3d_font_renderer
 from valslider import EMQTColorWidget, ValSlider
+from libpyGLUtils2 import FTGLFontMode
 
 class EMCube(EMItem3D):
 	name = "Cube"
@@ -559,7 +560,88 @@ class EMCone(EMItem3D):
 class EM3DText(EMItem3D):
 	name = "3DText"
 	nodetype = "ShapeNode"
-	pass
+	def __init__(self, string, fontSize):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
+		#size
+		self.setRenderString(string, fontSize)
+		
+		# color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]		
+		self.shininess = 25.0
+		
+		self.font_renderer = get_3d_font_renderer()
+		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+		self.font_renderer.set_depth(75)
+		
+	def setRenderString(self, string, fontSize):
+		self.renderString = string
+		self.fontSize = fontSize
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
+	def getEvalString(self):
+		return "EMCone(%s, %s)"%(self.radius, self.height)
+		
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+	
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
+	def getItemInspector(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("3DText", self)
+		return self.item_inspector
+	
+	def renderNode(self):
+		if self.is_selected:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cone, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.render3DText()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.render3DText()
+	
+			glPopAttrib()
+		else:
+			self.render3DText()	
+	
+	def render3DText(self):
+		# Material properties of the 3D text
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		
+		glEnable(GL_NORMALIZE)
+		#HERE
+		glPushMatrix()
+		glNormal(0,0,1)
+		glEnable(GL_TEXTURE_2D)
+		
+		self.font_renderer.render_string(self.renderString)
+		glPopMatrix()	
 
 class EMInspectorControlShape(EMItem3DInspector):
 	"""
