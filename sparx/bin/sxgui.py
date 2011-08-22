@@ -2283,21 +2283,21 @@ class Popupkmeans(QWidget):
 	
 	if self.setadv:	
 		randsd=self.w.randsdedit.text()
-		CTF=self.w.ctfchkbx.checkState()
+		ctf=self.w.ctfchkbx.checkState()
 		normalize=self.w.normachkbx.checkState()
 		init_method=self.w.init_methodedit.text()
 		crit=self.w.critedit.text()
 		
 	cmd1 = cmd1+" --rand_seed=" +str(randsd)+" --init_method="+str(init_method)+" --crit="+str(crit)
 		
-	if CTF == Qt.Checked:
+	if ctf == Qt.Checked:
 		cmd1 = cmd1 + " --CTF"
 	if normalize == Qt.Checked:
 		cmd1 = cmd1 + " --normalize"
 			
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'maxiter':str(maxiter),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":str(ctf),"crit":str(crit),"normalize":str(normalize), "init_method":str(init_method)}
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'maxiter':str(maxiter),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":ctf,"crit":str(crit),"normalize":str(normalize), "init_method":str(init_method)}
 
 	
 	if self.setadv:
@@ -2481,7 +2481,7 @@ class Popupkmeansgroups(QWidget):
 	self.picklename='kmeansgroupssaveparms.pkl'
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked}
+	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
 	self.setadv=False
 	#######################################################################################
 	# Layout parameters
@@ -2546,12 +2546,20 @@ class Popupkmeansgroups(QWidget):
         self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_kmeans_groups)
 	self.y2 += 30
 	
-	kc= QtGui.QLabel('Number of clusters', self)
-	kc.move(self.x1,self.y2)
-	self.kcedit=QtGui.QLineEdit(self)
-	self.kcedit.move(self.x2,self.y2)
-	self.kcedit.setText(self.savedparmsdict['kc'])
-	self.kcedit.setToolTip('The requested number of clusters')	
+	kc1= QtGui.QLabel('Minimum number of clusters', self)
+	kc1.move(self.x1,self.y2)
+	self.kc1edit=QtGui.QLineEdit(self)
+	self.kc1edit.move(self.x2,self.y2)
+	self.kc1edit.setText(self.savedparmsdict['kc1'])
+	self.kc1edit.setToolTip('Minimum requested number of clusters')	
+	self.y2 += 30
+	
+	kc2= QtGui.QLabel('Maximum number of clusters', self)
+	kc2.move(self.x1,self.y2)
+	self.kc2edit=QtGui.QLineEdit(self)
+	self.kc2edit.move(self.x2,self.y2)
+	self.kc2edit.setText(self.savedparmsdict['kc2'])
+	self.kc2edit.setToolTip('The requested number of clusters')	
 	self.y2 += 30
 
 	trials= QtGui.QLabel('Number of trials', self)
@@ -2562,6 +2570,13 @@ class Popupkmeansgroups(QWidget):
 	self.trialsedit.setToolTip('number of trials of K-means (see description below) (default one trial). MPI version ignore --trials, the number of trials in MPI version will be the number of cpu used.')
 	self.y2 += 30
 	
+	maxiter= QtGui.QLabel('Maxinum Number of Iterations', self)
+	maxiter.move(self.x1,self.y2)
+	self.maxiteredit=QtGui.QLineEdit(self)
+	self.maxiteredit.move(self.x2,self.y2)
+	self.maxiteredit.setText(self.savedparmsdict['maxiter'])
+	self.maxiteredit.setToolTip('maximum number of iterations the program will perform (default 100)')
+	self.y2 += 30
 	# make ctf, normalize and init_method radio button...
 	
 	nproc= QtGui.QLabel('Number of Processors', self)
@@ -2636,14 +2651,18 @@ class Popupkmeansgroups(QWidget):
 	print "stack defined="+ stack
 	output=self.foldernameedit.text()
 	print "output folder="+ output
-	kc=self.kcedit.text()
-	print "Number of requested clusters="+ kc
+	kc1=self.kc1edit.text()
+	print "Minimum number of requested clusters="+ kc1
+	kc2=self.kc2edit.text()
+	print "Maximum number of requested clusters="+ kc2
 	trials=self.trialsedit.text()
 	print "Number of trials="+ trials
+	maxiter=self.maxiteredit.text()
+	print "maxiter="+ maxiter
 	
 	cmd1 = "sxk_means_groups.py "+str(stack) +" "+ str(output)
 	
-	args = " --K="+ str(kc)+ " --trials="+str(trials)
+	args = " --K1="+ str(kc1)+" --K2="+ str(kc2)+ " --trials="+str(trials)+ " --maxit="+str(maxiter)
 	
 	randsd = self.savedparmsdict['randsd']
 	mask=self.savedparmsdict['maskname']
@@ -2659,16 +2678,16 @@ class Popupkmeansgroups(QWidget):
 	
 	if self.setadv:	
 		randsd=self.w.randsdedit.text()
-		CTF=self.w.ctfchkbx.checkState()
+		ctf=self.w.ctfchkbx.checkState()
 		
 	cmd1 = cmd1+" --rand_seed=" +str(randsd)
 		
-	if CTF == Qt.Checked:
+	if ctf == Qt.Checked:
 		cmd1 = cmd1 + " --CTF"
 			
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":str(ctf)}
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc1':str(kc1),'kc2':str(kc2),'trials':str(trials),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":ctf,'maxiter':str(maxiter)}
 
 	
 	if self.setadv:
@@ -2689,7 +2708,7 @@ class Popupkmeansgroups(QWidget):
 	self.cmd = cmd1
 	
     def runsxk_means_groups(self):
-	self.gencmdline_kmeans(writefile=False)
+	self.gencmdline_kmeans_groups(writefile=False)
 	outfolder=self.savedparmsdict['foldername']
 	if os.path.exists(outfolder):
 		print "output folder "+outfolder+" already exists!"
@@ -2701,7 +2720,7 @@ class Popupkmeansgroups(QWidget):
 	# save all the parms in a text file so we can repopulate if user requests
 	import pickle
 	output=open(self.picklename,'wb')
-	self.gencmdline_kmeans(writefile=False)
+	self.gencmdline_kmeans_groups(writefile=False)
 	pickle.dump(self.savedparmsdict,output)
 	output.close()
 	
@@ -2710,10 +2729,12 @@ class Popupkmeansgroups(QWidget):
 	import pickle
 	pkl = open(self.picklename,'rb')
 	self.savedparmsdict = pickle.load(pkl)
-	self.kcedit.setText(self.savedparmsdict['kc'])
+	self.kc1edit.setText(self.savedparmsdict['kc1'])
+	self.kc2edit.setText(self.savedparmsdict['kc2'])
 	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
 	self.trialsedit.setText(self.savedparmsdict['trials'])
+	self.maxiteredit.setText(self.savedparmsdict['maxiter'])
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
 	if self.setadv:
 		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
