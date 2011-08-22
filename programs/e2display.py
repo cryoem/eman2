@@ -62,6 +62,7 @@ def main():
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_option("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_option("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
+	parser.add_option("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -73,14 +74,13 @@ def main():
 	gapp = app
 	#QtGui.QApplication(sys.argv)
 	win=[]
-
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 		
 		
 		
 	if len(args)<1 :
-		dialog = EMBrowser()
+		dialog = EMBrowser(usescenegraph=options.newwidget)
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
@@ -109,7 +109,7 @@ def main():
 			if not file_exists(i):
 				print "%s doesn't exist" %i
 				sys.exit(1)
-			display_file(i,app,options.singleimage)
+			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
 			
 	if options.fullrange:
 		revert_full_range(fullrangeparms)
@@ -210,8 +210,8 @@ def getmxim(fsp,fsp2,clsnum):
 	imgs=[i[0] for i in imgs]
 	return imgs
 
-def display_file(filename,app,force_2d=False):
-	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
+def display_file(filename,app,force_2d=False,usescenegraph=False):
+	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d,usescenegraph=options.newwidget)
 	w.setWindowTitle(get_file_tag(filename))
 	
 	app.show_specific(w)
@@ -222,7 +222,7 @@ def display_file(filename,app,force_2d=False):
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImageWidget(data=img,old=None,app=app)
+	w=EMImageWidget(data=img,old=None,app=app,usescenegraph=options.newwidget)
 	w.setWindowTitle(title)
 	try:
 		if file_exists(title):

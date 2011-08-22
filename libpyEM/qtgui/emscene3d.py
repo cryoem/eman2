@@ -705,6 +705,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
+		QtOpenGL.QGLFormat().setDepth(True)
 		self.camera = EMCamera(1.0, 500.0)	# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None
@@ -713,7 +714,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
-		self.mousemode = "Selection"				# The mouse mode
+		self.mousemode = "selection"				# The mouse mode
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -779,7 +780,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if not self.main_3d_inspector:
 			self.main_3d_inspector = EMInspector3D(self)
 			self.main_3d_inspector.loadSG()
+			self.main_3d_inspector.updateInspector()
 			self.main_3d_inspector.show()
+			
 			
 	def pickItem(self):
 		"""
@@ -909,24 +912,27 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for selected in self.getAllSelectedNodes():
 			selected.setSelectedItem(False)
 			# Inspector tree management
-			if EMQTreeWidgetItem:
+			if selected.EMQTreeWidgetItem:
 				selected.EMQTreeWidgetItem.setSelectionStateBox()
-				self.main_3d_inspector.tree_widget.setCurrentItem(selected.EMQTreeWidgetItem)
 					
-	def insertNewNode(self, name, node, parentnode=None):
+	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
 		"""
-		Insert a new node in the SG
+		Insert a new node in the SG, also takes care of inspector
+		if parent node is sepcified the node is inserted as a child of the parent
+		This function should be used to add nodes to the tree b/c it detemines where in the tree the node should be inserted
 		"""
 		insertionpoint = None
-		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(name, node, parentnode)
+		node.setLabel(name)
+		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(node, parentnode, thisnode_index=parentidx) # This is used to find out where we want the item inserted
 		if insertionpoint:
 			insertionpoint[0].insertChild(node, (insertionpoint[1] + 1))
 		else:
-			if parentnode:
+			if not parentnode: parentnode = self
+			if parentidx == None:
 				parentnode.addChild(node)
 			else:
-				self.addChild(node)
-		
+				parentnode.insertChild(node, (parentidx+1))
+
 	# Event subclassing
 	def mousePressEvent(self, event):
 		"""
@@ -957,7 +963,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.setCursor(self.linecursor)
-			self.newnode = EMLine(0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode = EMLine(0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 4.0, transform=self._gettransformbasedonscreen(event))
 			self.clearSelection()
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Line", self.newnode)
@@ -971,6 +977,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Cube", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.updateSG()
+			self.main_3d_inspector.updateTree(currentnode=self.newnode)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
@@ -1004,6 +1011,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				self.setCursor(self.xyrotatecursor)
 				self.zrotate = False
+		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
+			self.setCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
 			#self.setCursor(self.selectorcursor)
 			self.multiselect = False
@@ -1032,8 +1041,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.setCursor(self.zhaircursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.setCursor(self.crosshaircursor)
-		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
-			#self.setCursor(self.scalecursor)
+		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
 	def _gettransformbasedonscreen(self, event):
@@ -1050,8 +1058,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			pass
-			#self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, event.y() - self.first_y, 0.0, 1.0)
+			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, event.y() - self.first_y, 0.0, 4.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
@@ -1075,8 +1082,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.update_matrices([0,0,(-dy)], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.update_matrices([dx,-dy,0], "translate")
-		#if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and self.mousemode == "scale"):
-			#self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
+		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
+			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
 		self.updateSG()	
@@ -1177,6 +1184,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Loads a session begining 
 		"""
+		# Clear old tree
+		children = tuple(self.getChildren()) # Need to create immutable so that list chaos does not ensue with prunnig down the list
+		for child in children:
+			self.removeChild(child)
+		
 		self.parentnodestack = [self]
 		#print tree
 		self._process_session_load(tree)
@@ -1822,10 +1834,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
 		QtCore.QObject.connect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
 		QtCore.QObject.connect(self.apptool, QtCore.SIGNAL("clicked(int)"), self._apptool_clicked)
-		
-		# Set the default tool
-		self.selectiontool.setDown(True)
-		
+			
 		return tvbox
 	
 	def _rotatetool_clicked(self, state):
@@ -1902,29 +1911,37 @@ class EMInspector3D(QtGui.QWidget):
 			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
 	
-	def insertNewNode(self, node_name, insertion_node, parentnode=None):
+	def insertNewNode(self, insertion_node, parentnode=None, thisnode_index=None):
 		"""
-		Insert a node at the highlighted location
+		Insert a node at the highlighted location. If an item is highlighted the item3d who had a child is retured along with its order in the children
 		"""
 		currentitem = self.tree_widget.currentItem()
 		itemparentnode = None
+
 		if currentitem:
 			if not parentnode:
 				if currentitem.parent: itemparentnode = currentitem.parent()
 			else:
-				itemparentnode = currentitem
+				itemparentnode = parentnode.EMQTreeWidgetItem
 			if itemparentnode:
-				thisnode_index = itemparentnode.indexOfChild(currentitem)
-				addeditem = self.addTreeNode(node_name, insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
+				if not thisnode_index: thisnode_index = itemparentnode.indexOfChild(currentitem)
+				addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
 				self.tree_widget.setCurrentItem(addeditem)
 				self._tree_widget_click(addeditem, 0)
 				return [itemparentnode.item3d(), thisnode_index]
 		# Otherwise add the node to the Root
-		addeditem = self.addTreeNode(node_name, insertion_node, parentitem=self.tree_widget.topLevelItem(0))
+		addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=self.tree_widget.topLevelItem(0))
 		self.tree_widget.setCurrentItem(addeditem)
 		self._tree_widget_click(addeditem, 0, quiet=True)
 		
 		return None
+	
+	def clearTree(self):
+		"""
+		Clear the entire tree
+		"""
+		self.tree_widget.topLevelItem(0).removeAllChildren(self)
+		self.tree_widget.takeTopLevelItem(0)
 		
 	def _tree_widget_click(self, item, col, quiet=False):
 		"""
@@ -2186,8 +2203,7 @@ class EMInspector3D(QtGui.QWidget):
 			return	
 		rfile.close()
 		# Clear the current tree
-		self.tree_widget.topLevelItem(0).removeAllChildren(self)
-		self.tree_widget.takeTopLevelItem(0)
+		self.clearTree()
 		# Load the new data
 		self.scenegraph.makeCurrent()
 		self.scenegraph.loadSession(tree)
@@ -2230,6 +2246,9 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph.getMouseMode() == "cube": self.cubetool.setDown(True)
 		if self.scenegraph.getMouseMode() == "sphere": self.spheretool.setDown(True)
 		if self.scenegraph.getMouseMode() == "cylinder": self.cylindertool.setDown(True)
+		if self.scenegraph.getMouseMode() == "cone": self.conetool.setDown(True)
+		if self.scenegraph.getMouseMode() == "line": self.linetool.setDown(True)
+		if self.scenegraph.getMouseMode() == "app": self.apptool.setDown(True)
 		# Lights
 		if self.lighttab_open:
 			position =  self.scenegraph.firstlight.getAngularPosition()
@@ -2249,7 +2268,16 @@ class EMInspector3D(QtGui.QWidget):
 			self.camerawidget.updateWidget()
 		# utils
 		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
-			
+	
+	def updateTree(self, currentnode=None):
+		"""
+		Update the SG tree
+		"""
+		self.clearTree()
+		self.loadSG()
+		if currentnode:
+			self.tree_widget.setCurrentItem(currentnode.EMQTreeWidgetItem)
+		
 	def updateSceneGraph(self):
 		""" 
 		Updates SG, in the near future this will be improved to allow for slow operations
@@ -2267,7 +2295,7 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 		QtGui.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.emit(QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self.currentItem())
-		if e.button()==Qt.MidButton:
+		if e.button()==Qt.MidButton or (e.buttons()&Qt.LeftButton and e.modifiers()&Qt.AltModifier):
 			self.emit(QtCore.SIGNAL("editItem(QTreeWidgetItem*)"), self.currentItem())
 			
 			
@@ -2329,7 +2357,6 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		"""
 		for i in xrange(self.childCount()):
 			self.child(0).removeAllChildren(inspector)
-			self.item3d().removeChild(self.child(0).item3d())
 			inspector.removeTreeNode(self, 0) 
 
 class NodeEditDialog(QtGui.QDialog):
@@ -2613,8 +2640,9 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
 			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
 			parentnode = self.item.item3d()
-			
-		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
+		
+		insertion_node.setLabel(node_name)
+		self.inspector().scenegraph.insertNewNode(insertion_node, parentnode=parentnode)
 		self.inspector().updateSceneGraph()
 		self.done(0)
 	

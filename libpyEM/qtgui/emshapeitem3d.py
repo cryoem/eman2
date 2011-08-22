@@ -411,9 +411,8 @@ class EMLine(EMItem3D):
 		else:
 			self.renderLine()	
 			
-	def renderLine(self):	
+	def renderLine(self):
 		r2d = 180.0/math.pi
-		
 		dx = self.x1 - self.x2
 		dy = self.y1 - self.y2
 		dz = self.z1 - self.z2

@@ -123,7 +123,7 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 			
 
 			
-def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
+def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],usescenegraph=False):
 	'''
 	This would be similar to policy based design using templated inheritance
 	Type is a type of EMAN2 display module. Search for DataDisplayModuleTemplate
@@ -137,7 +137,11 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			self.data_functors = data_functors # functors that can be called once the data is acquired
 			
 		def item_action(self,item,target):
-			from emimage3d import EMImage3DWidget
+			from EMAN2 import Transform
+			from emdataitem3d import EMDataItem3D, EMIsosurface
+			from emshapeitem3d import EMCube
+			
+			name = os.path.basename(str(item.get_url()))
 			single_mode = target.single_preview_only()
 			if single_mode and len(self.display_modules) != 0:
 				old_module = self.display_modules[-1]
@@ -149,7 +153,13 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				elif self.module_type == EM3DSymModel:
 					old_module.model.set_data(data)
 				else: 
-					old_module.set_data(data)
+					if usescenegraph:
+						emdata3d = EMDataItem3D(data, transform=Transform())
+						isosurface = EMIsosurface(emdata3d, transform=Transform())
+						old_module.insertNewNode(name, emdata3d, parentnode=old_module)
+						old_module.insertNewNode("Iso", isosurface, parentnode=emdata3d)
+					else:
+						old_module.set_data(data)
 				old_module.setWindowTitle(item.get_url())
 				old_module.show()
 				old_module.updateGL()
@@ -167,7 +177,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 				widget.set_model(model)
 			else: 
 				widget = self.module_type()
-					
+				
 			data = getattr(item,self.get_data_attr)()
 			for funct in self.data_functors: 
 				funct(data)
@@ -177,8 +187,13 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[]):
 			elif self.module_type == EMPlot2DWidget:
 				widget.set_data(data,item.get_url())
 			else:
-				widget.set_data(data)
-			
+				if usescenegraph:
+					emdata3d = EMDataItem3D(data, transform=Transform())
+					isosurface = EMIsosurface(emdata3d, transform=Transform())
+					widget.insertNewNode(name, emdata3d, parentnode=widget)
+					widget.insertNewNode("Iso", isosurface, parentnode=emdata3d)	
+				else:
+					widget.set_data(data)
 			self.display_modules.append(widget)
 			self.module_events.append(ModuleEventsManager(self,widget))
 			widget.show()
@@ -681,10 +696,11 @@ def fspsort(x):
 
 EMBrowserType = EMSelectorBaseTemplate(QtGui.QWidget)
 class EMBrowser(EMBrowserType):
-	def __init__(self, single_selection=False):
+	def __init__(self, single_selection=False, usescenegraph=False):
 		EMBrowserType.__init__(self,single_selection)
 		
 		self.add_list_widget() # 3 panels in browsing mode
+		self.usescenegraph = usescenegraph
 		
 		self.__init_action_delegates()
 		
@@ -726,8 +742,12 @@ class EMBrowser(EMBrowserType):
 		All of the available actions for the context menu (right click)
 		'''
 		self.action_delegates = {}
-		from emimage3d import EMImage3DWidget
-		self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DWidget)()
+		if self.usescenegraph:
+			from emscene3d import EMScene3D
+			self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMScene3D, usescenegraph=self.usescenegraph)()
+		else:
+			from emimage3d import EMImage3DWidget
+			self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DWidget)()
 		from emimagemx import ApplyProcessor
 		self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModel,data_functors=[ApplyProcessor("normalize",{})])()
 		self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceModel,data_functors=[ApplyProcessor("normalize",{})])()

@@ -76,7 +76,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		self.file_path_label.setText(file_path)
 		self.item3d().setData(file_path)
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 
 class EMSliceItem3D(EMItem3D):
 	name = "Slice"
@@ -231,25 +231,25 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	
 	def onCullFaces(self):
 		self.item3d().cullbackfaces = self.cullbackface.isChecked()
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def onThresholdSlider(self,val):
 		self.item3d().setThreshold(val)
 		self.histogram_widget.setProbe(val)
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 	
 	def onHistogram(self, val):
 		self.thr.setValue(val, quiet=1)
 		self.item3d().setThreshold(val)
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 		
 	def onSampling(self, val):
 		self.item3d().setSample(val)
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 	
 	def onWireframe(self):
 		self.item3d().wire = self.wireframe.isChecked()
-		self.inspector.updateSceneGraph()
+		self.inspector().updateSceneGraph()
 	
 	def setSamplingRange(self,range):
 		self.sampling_spinbox.setMinimum(1)
