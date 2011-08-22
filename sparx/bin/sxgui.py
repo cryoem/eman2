@@ -2471,6 +2471,348 @@ class Popupadvparams_kmeans(QWidget):
 	self.masknameedit.setText(str(a))
 
         
+class Popupkmeansgroups(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+	
+	#######################################################################################
+	# class variables
+	
+	self.picklename='kmeansgroupssaveparms.pkl'
+	self.cmd = ""
+	# populate with default values
+	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked}
+	self.setadv=False
+	#######################################################################################
+	# Layout parameters
+	
+	self.y1 = 10 # title and Repopulate button
+	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
+	self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
+	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
+	self.y5 = self.y4 + 110 # run button 
+	self.yspc = 4
+	
+	self.x1 = 10 # first column (text box labels)
+	self.x2 = self.x1 + 200 # second column (text boxes)
+	self.x3 = self.x2+145 # third column (Open .hdf button)
+	self.x4 = self.x3+100 # fourth column (Open .bdb button)
+	self.x5 = 230 # run button
+	#######################################################################################
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxk_means_groups')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxk_means_groups</b> - K-means groups classification of a set of images', self)
+	title1.move(self.x1,self.y1)
+	self.y1 += 30
+
+	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+        self.repopbtn.move(self.x1-5,self.y1)
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_kmeans_groups)
+
+	#######################################################################################
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+	self.file_button = QtGui.QPushButton("Open .hdf", self)
+	self.file_button.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+        #exactly the same as above, but for subfunction choose_file1
+	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+	self.file_button1.move(self.x4,self.y2-self.yspc)
+	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	
+	stackname= QtGui.QLabel('Name of input stack', self)
+	stackname.move(self.x1,self.y2)
+	self.stacknameedit=QtGui.QLineEdit(self)
+        self.stacknameedit.move(self.x2,self.y2)
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	self.y2 += 30
+	
+	foldername= QtGui.QLabel('Output folder', self)
+	foldername.move(self.x1,self.y2)
+	self.foldernameedit=QtGui.QLineEdit(self)
+	self.foldernameedit.move(self.x2,self.y2)
+	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+	
+	self.outinfobtn = QPushButton("Output Info", self)
+        self.outinfobtn.move(self.x3,  self.y2-self.yspc)
+        #sets an infotip for this Pushbutton
+        self.outinfobtn.setToolTip('Output Info')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_kmeans_groups)
+	self.y2 += 30
+	
+	kc= QtGui.QLabel('Number of clusters', self)
+	kc.move(self.x1,self.y2)
+	self.kcedit=QtGui.QLineEdit(self)
+	self.kcedit.move(self.x2,self.y2)
+	self.kcedit.setText(self.savedparmsdict['kc'])
+	self.kcedit.setToolTip('The requested number of clusters')	
+	self.y2 += 30
+
+	trials= QtGui.QLabel('Number of trials', self)
+	trials.move(self.x1,self.y2)
+	self.trialsedit=QtGui.QLineEdit(self)
+	self.trialsedit.move(self.x2,self.y2)
+	self.trialsedit.setText(self.savedparmsdict['trials'])
+	self.trialsedit.setToolTip('number of trials of K-means (see description below) (default one trial). MPI version ignore --trials, the number of trials in MPI version will be the number of cpu used.')
+	self.y2 += 30
+	
+	# make ctf, normalize and init_method radio button...
+	
+	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc.move(self.x1,self.y2)
+	self.nprocedit=QtGui.QLineEdit(self)
+	self.nprocedit.move(self.x2,self.y2)
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+
+	##########################################################
+	
+	header=QtGui.QLabel('The clustering is performed only using images from the stack that has flag active set to one', self)
+	header.move(self.x1,self.y3)
+	self.y3 += 30
+	
+        #not linked to a function yet
+        self.activeheader_button = QtGui.QPushButton("activate all images", self)
+	self.activeheader_button.move(self.x1-5, self.y3)
+	self.connect(self.activeheader_button, SIGNAL("clicked()"), self.setactiveheader)
+	
+	######################################################################################
+	
+	self.advbtn = QPushButton("Advanced Parameters", self)
+        self.advbtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.advbtn.setToolTip('Set Advanced Parameters for ali2d such as center and CTF')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
+	self.y4+=30
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	self.y4+=30
+	
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_kmeans_groups)
+
+	#######################################################################
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxk_means', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	self.RUN_button.move(self.x5, self.y5)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxk_means_groups)
+        #Labels and Line Edits for User Input	
+
+    def advparams(self):
+        print "Opening a new popup window..."
+        self.w = Popupadvparams_kmeans_groups(self.savedparmsdict)
+        self.w.resize(400,300)
+        self.w.show()
+	self.setadv=True
+		
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+    def outputinfo_kmeans_groups(self):
+    	QMessageBox.information(self, "k_means_groups output",'')
+	
+    def gencmdline_kmeans_groups(self,writefile=True):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+   	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	output=self.foldernameedit.text()
+	print "output folder="+ output
+	kc=self.kcedit.text()
+	print "Number of requested clusters="+ kc
+	trials=self.trialsedit.text()
+	print "Number of trials="+ trials
+	
+	cmd1 = "sxk_means_groups.py "+str(stack) +" "+ str(output)
+	
+	args = " --K="+ str(kc)+ " --trials="+str(trials)
+	
+	randsd = self.savedparmsdict['randsd']
+	mask=self.savedparmsdict['maskname']
+	ctf = self.savedparmsdict['ctf']
+	
+	if self.setadv:
+		mask = self.w.masknameedit.text()
+		
+	if len(str(mask))> 1:
+		cmd1 = cmd1+" "+str(mask) 
+			
+	cmd1 = cmd1 + args
+	
+	if self.setadv:	
+		randsd=self.w.randsdedit.text()
+		CTF=self.w.ctfchkbx.checkState()
+		
+	cmd1 = cmd1+" --rand_seed=" +str(randsd)
+		
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"
+			
+	np = self.nprocedit.text()
+	
+	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'kc':str(kc),'trials':str(trials),'nproc':str(np),'randsd':str(randsd),'maskname':str(mask),"ctf":str(ctf)}
+
+	
+	if self.setadv:
+		self.w.savedparmsdict=self.savedparmsdict
+	
+	if int(str(np)) > 1:
+		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+	
+	if writefile:	
+		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+		if stat:
+			f = open(fname,'a')
+			f.write(cmd1)
+			f.write('\n')
+			f.close()
+	
+	print cmd1
+	self.cmd = cmd1
+	
+    def runsxk_means_groups(self):
+	self.gencmdline_kmeans(writefile=False)
+	outfolder=self.savedparmsdict['foldername']
+	if os.path.exists(outfolder):
+		print "output folder "+outfolder+" already exists!"
+		return
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
+	
+    def saveparms(self):	
+	# save all the parms in a text file so we can repopulate if user requests
+	import pickle
+	output=open(self.picklename,'wb')
+	self.gencmdline_kmeans(writefile=False)
+	pickle.dump(self.savedparmsdict,output)
+	output.close()
+	
+    def repoparms_kmeans_groups(self):	
+	# repopulate with saved parms
+	import pickle
+	pkl = open(self.picklename,'rb')
+	self.savedparmsdict = pickle.load(pkl)
+	self.kcedit.setText(self.savedparmsdict['kc'])
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+	self.trialsedit.setText(self.savedparmsdict['trials'])
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	if self.setadv:
+		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w.randsdedit.setText(self.savedparmsdict['randsd'])
+		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		
+    def setactiveheader(self):
+	stack = self.stacknameedit.text()
+	print "stack defined="+ stack
+	header(str(stack), "active", one=True)
+
+   
+    def choose_file(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.stacknameedit.setText(str(a))
+        
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+    def choose_file1(self):
+	file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
+	a=QtCore.QString(file_name1)
+	b=os.path.basename(str(a))
+	c=os.path.splitext(b)[0]
+	d="bdb:"+c
+	print d
+	self.stacknameedit.setText(d)
+
+class Popupadvparams_kmeans_groups(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+	
+	self.x1 = 10
+	self.x2 = 140
+	self.x3 = 285
+	
+	self.y1 = 10
+	self.yspc = 4
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxk_means_groups advanced parameter selection')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxk_means_groups</b> - set advanced params', self)
+	title1.move(self.x1,self.y1)
+        #Labels and Line Edits for User Input
+        #Just a label
+	self.y1 += 30
+	
+	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	title2.move(self.x1,self.y1)
+	
+	self.y1 += 30
+	
+	self.savedparmsdict=savedparms
+        #Example for User input stack name
+        #First create the label and define its position
+	maskname= QtGui.QLabel('Mask', self)
+	maskname.move(self.x1,self.y1)
+        #Now add a line edit and define its position
+	self.masknameedit=QtGui.QLineEdit(self)
+        self.masknameedit.move(self.x2,self.y1)
+        #Adds a default value for the line edit
+	self.masknameedit.setText(self.savedparmsdict['maskname'])
+	
+	self.mskfile_button = QtGui.QPushButton("Open .hdf", self)
+	self.mskfile_button.move(self.x3, self.y1-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
+	
+	self.y1 += 30
+	
+	randsd= QtGui.QLabel('Random Seed', self)
+	randsd.move(self.x1,self.y1)
+	self.randsdedit=QtGui.QLineEdit(self)
+	self.randsdedit.move(self.x2,self.y1)
+	self.randsdedit.setText(self.savedparmsdict['randsd'])
+	self.randsdedit.setToolTip('the seed used to generating random numbers (set to -1, means different and pseudo-random each time)')
+	
+	self.y1 += 30
+	
+	ctf= QtGui.QLabel('CTF', self)
+	ctf.move(self.x1,self.y1)
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(self.x2, self.y1)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	
+	self.y1 += 30
+	
+    def choose_mskfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.masknameedit.setText(str(a))
+
 ###MAIN WINDOW	(started by class App)
 #This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
 class MainWindow(QtGui.QWidget):
@@ -2512,6 +2854,13 @@ class MainWindow(QtGui.QWidget):
         #sets an infotip for this Pushbutton
         self.btn4.setToolTip('K-means classification of a set of images')
 	self.connect(self.btn4, SIGNAL("clicked()"), self.kmeans)
+	
+	
+	self.btn5 = QPushButton("sxk_means_groups", self)
+        self.btn5.move(10, 185+30)
+        #sets an infotip for this Pushbutton
+        self.btn5.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
+	self.connect(self.btn5, SIGNAL("clicked()"), self.kmeansgroups)
 	
         #this decorates the button with the sparx image
 	icon = QIcon(get_image_directory()+"sparxicon.png")
@@ -2564,6 +2913,15 @@ class MainWindow(QtGui.QWidget):
         self.w = Popupkmeans()
         self.w.resize(580,550)
         self.w.show()
+	
+    def kmeansgroups(self):
+        print "Opening a new popup window..."
+        #opens the window Poptwodali, and defines its width and height
+        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+        self.w = Popupkmeansgroups()
+        self.w.resize(580,550)
+        self.w.show()	
+	
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
         print "Opening a new popup window..."
