@@ -1343,9 +1343,6 @@ class Popupthreedali(QWidget):
 	
 	########################################################################################
 	# class variables
-	
-	self.picklename='ali3dsavedparams.pkl'
-	self.setadv=False
 	self.cmd = ""
 	# populate with default values
 	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
@@ -1357,7 +1354,7 @@ class Popupthreedali(QWidget):
 	self.y2 = self.y1 + 78
 	self.y3 = self.y2 + 282
 	self.y4 = self.y3 + 80
-	self.y5 = self.y4 + 110
+	self.y5 = self.y4 + 95
 	self.yspc = 4
 	
 	self.x1 = 10
@@ -1504,15 +1501,6 @@ class Popupthreedali(QWidget):
 	
 	########################################################################################
 	
-	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(self.x1-5, self.y4)
-        #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for ali3d such as center and CTF')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams_ali3d)
-	
-	self.y4 = self.y4+30
-	
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(self.x1-5,  self.y4)
         #sets an infotip for this Pushbutton
@@ -1574,54 +1562,33 @@ class Popupthreedali(QWidget):
 	
 	args = " --ou="+ str(ou)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+ " --delta='"+str(delta)+"'"+" --maxit="+ str(maxit) 
 	
-	mask=self.savedparmsdict['maskname']
-	ctr=self.savedparmsdict['center']
-	ringstep=self.savedparmsdict['ringstep']
-	inrad=self.savedparmsdict['innerradius']
-	CTF=self.savedparmsdict['ctf']
-	snr=self.savedparmsdict['snr']
-	fourvar=self.savedparmsdict['fourvar']
-	userf=self.savedparmsdict['usrfunc']
-	userfile=self.savedparmsdict['usrfuncfile']
-	an = self.savedparmsdict['an']
-	ref_a = self.savedparmsdict['ref_a']
-	sym=self.savedparmsdict['sym']
-	npad=self.savedparmsdict['npad']
-	deltapsi=self.savedparmsdict['deltapsi']
-	startpsi=self.savedparmsdict['startpsi']
-	stoprnct=self.savedparmsdict['stoprnct']
-	debug=self.savedparmsdict['debug']
-	nch=self.savedparmsdict['nch']
-	chunk=self.savedparmsdict['chunk']
-	rantest=self.savedparmsdict['rantest']
 	
-	if self.setadv:
-		mask = self.w.masknameedit.text()
+	mask = self.w1.masknameedit.text()
 	if len(str(mask))> 1:
 		cmd1 = cmd1+" "+str(mask) 
 	cmd1 = cmd1 + args
 	
-	if self.setadv:	
-		ctr=self.w.centeredit.text()
-		ringstep = self.w.ringstepedit.text()
-		inrad = self.w.innerradiusedit.text()
-		CTF=self.w.ctfchkbx.checkState()
-		snr = self.w.snredit.text()
-		userf = self.w.usrfuncedit.text()
-		userfile = self.w.usrfuncfileedit.text()
-		an = self.w.anedit.text()
-		ref_a = self.w.refaedit.text()
-		sym = self.w.symedit.text()
-		npad = self.w.npadedit.text()
+	
+	ctr=self.w1.centeredit.text()
+	ringstep = self.w1.ringstepedit.text()
+	inrad = self.w1.innerradiusedit.text()
+	CTF=self.w1.ctfchkbx.checkState()
+	snr = self.w1.snredit.text()
+	userf = self.w1.usrfuncedit.text()
+	userfile = self.w1.usrfuncfileedit.text()
+	an = self.w1.anedit.text()
+	ref_a = self.w1.refaedit.text()
+	sym = self.w1.symedit.text()
+	npad = self.w1.npadedit.text()
 		
-		fourvar = self.w2.fourvarchkbx.checkState()
-		rantest = self.w2.rantestchkbx.checkState()
-		nch = self.w2.nchchkbx.checkState()
-		debug = self.w2.debugchkbx.checkState()
-		deltapsi = self.w2.deltapsiedit.text()
-		startpsi = self.w2.startpsiedit.text()
-		stoprnct = self.w2.stoprnctedit.text()
-		chunk = self.w2.chunkedit.text()
+	fourvar = self.w2.fourvarchkbx.checkState()
+	rantest = self.w2.rantestchkbx.checkState()
+	nch = self.w2.nchchkbx.checkState()
+	debug = self.w2.debugchkbx.checkState()
+	deltapsi = self.w2.deltapsiedit.text()
+	startpsi = self.w2.startpsiedit.text()
+	stoprnct = self.w2.stoprnctedit.text()
+	chunk = self.w2.chunkedit.text()
 		
 	cmd1 = cmd1+" --center=" +str(ctr)+" --rs="+str(ringstep)+ " --ir=" + str(inrad)+ " --snr=" + str(snr)+ " --an='" + str(an)+ "'"+" --sym=" + str(sym)+ " --ref_a=" + str(ref_a)+ " --npad=" + str(npad)+ " --deltapsi='" + str(deltapsi)+"'"+ " --startpsi='" + str(startpsi)+ "'"+" --stoprnct=" + str(stoprnct)+ " --chunk=" + str(chunk)
 	if CTF == Qt.Checked:
@@ -1655,8 +1622,8 @@ class Popupthreedali(QWidget):
 	
 	self.savedparmsdict = {'stackname':str(stack),'refname':str(ref),'foldername':str(output),'partradius':str(ou),'xyrange':str(xr),'trans':str(yr),'delta':str(delta),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'center':str(ctr),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"fourvar":fourvar,"usrfunc":str(userf), "usrfuncfile":str(userfile),"an":str(an),"ref_a":str(ref_a),"sym":str(sym),"npad":str(npad),"deltapsi":str(deltapsi),"startpsi":str(startpsi),"stoprnct":str(stoprnct),"debug":debug,"nch":nch,"chunk":str(chunk),"rantest":rantest}
 
-	if self.setadv:
-		self.w.savedparmsdict=self.savedparmsdict
+	self.w1.savedparmsdict=self.savedparmsdict
+	self.w2.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -1682,68 +1649,54 @@ class Popupthreedali(QWidget):
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
 	
     def saveparms(self):	
-	
-	import pickle
-	output=open(self.picklename,'wb')
-	self.gencmdline_ali3d(writefile=False)
-	pickle.dump(self.savedparmsdict,output)
-	output.close()
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_ali3d(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
 	
     def repoparms_ali3d(self):	
 	# repopulate with saved parms
-	import pickle
-	pkl = open(self.picklename,'rb')
-	self.savedparmsdict = pickle.load(pkl)
-	print self.savedparmsdict
-	self.partradiusedit.setText(self.savedparmsdict['partradius'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])
-	self.refnameedit.setText(self.savedparmsdict['refname'])	
-	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
-	self.transedit.setText(self.savedparmsdict['trans'])
-	self.deltaedit.setText(self.savedparmsdict['delta'])
-	self.nriteredit.setText(self.savedparmsdict['nriter'])
-	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	if self.setadv:
-		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.centeredit.setText(self.savedparmsdict['center'])
-		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
-		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
-		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
-		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
-		self.w.anedit.setText(self.savedparmsdict['an'])
-		self.w.refaedit.setText(self.savedparmsdict['ref_a'])
-		self.w.symedit.setText(self.savedparmsdict['sym'])
-		self.w.npadedit.setText(self.savedparmsdict['npad'])
+	(fname,stat)= QInputDialog.getText(self,"Get Input Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		print self.savedparmsdict
+		self.partradiusedit.setText(self.savedparmsdict['partradius'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])
+		self.refnameedit.setText(self.savedparmsdict['refname'])	
+		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+		self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
+		self.transedit.setText(self.savedparmsdict['trans'])
+		self.deltaedit.setText(self.savedparmsdict['delta'])
+		self.nriteredit.setText(self.savedparmsdict['nriter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+	
+		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w1.centeredit.setText(self.savedparmsdict['center'])
+		self.w1.ringstepedit.setText(self.savedparmsdict['ringstep'])
+		self.w1.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w1.snredit.setText(self.savedparmsdict['snr'])
+		self.w1.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+		self.w1.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+		self.w1.anedit.setText(self.savedparmsdict['an'])
+		self.w1.refaedit.setText(self.savedparmsdict['ref_a'])
+		self.w1.symedit.setText(self.savedparmsdict['sym'])
+		self.w1.npadedit.setText(self.savedparmsdict['npad'])
 		
 		self.w2.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
 		self.w2.debugchkbx.setCheckState(self.savedparmsdict['debug'])
 		self.w2.nchchkbx.setCheckState(self.savedparmsdict['nch'])
 		self.w2.rantestchkbx.setCheckState(self.savedparmsdict['rantest'])
-		self.w2.deltapsiedit.setCheckState(self.savedparmsdict['deltapsi'])
-		self.w2.startpsiedit.setCheckState(self.savedparmsdict['startpsi'])
-		self.w2.stoprnctedit.setCheckState(self.savedparmsdict['stoprnct'])
-		self.w2.chunkedit.setCheckState(self.savedparmsdict['chunk'])
+		self.w2.deltapsiedit.setText(self.savedparmsdict['deltapsi'])
+		self.w2.startpsiedit.setText(self.savedparmsdict['startpsi'])
+		self.w2.stoprnctedit.setText(self.savedparmsdict['stoprnct'])
+		self.w2.chunkedit.setText(self.savedparmsdict['chunk'])
 		
-    def advparams_ali3d(self):
-        self.w = Popupadvparams_ali3d_1(self.savedparmsdict)
-        #self.w.resize(500,450)
-	self.w2 = Popupadvparams_ali3d_2(self.savedparmsdict)
-        #self.w2.resize(500,450)
-        #self.w.show()
-	
-	self.TabWidget = QtGui.QTabWidget()
-    	#self.main1 = MainWindow1()
-    	#self.main2 = MainWindow2()
-    	self.TabWidget.insertTab(0,self.w,'Advanced CTF and Search')
-    	self.TabWidget.insertTab(1,self.w2,'Miscellaneous')
-	self.TabWidget.resize(500,500)
-    	self.TabWidget.show()
-    
-	self.setadv=True
-	
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -2643,7 +2596,7 @@ class Popupkmeansgroups(QWidget):
 		
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
     def outputinfo_kmeans_groups(self):
-    	QMessageBox.information(self, "k_means_groups output",'')
+    	QMessageBox.information(self, "k_means_groups output",'Output directory will contain two text files: output_file and output_file.p, where output_file is the name of the output folder. \n\n output_file will contain columns according the criteria chosen, for example if crit=\'CHD\', the columns of numbers: (1) number of clusters, (2) values of Coleman criterion, (3) values of Harabasz criterion and (4) values of Davies-Bouldin criterion \n\n output_file.p will contain a gnuplot script, this file allow plot directly the values of all criteria with the same range. Use this command in gnuplot: load \'output_file.p\'\n\n WATCH_GRP_KMEANS or WATCH_MPI_GRP_KMEANS contain the progress of k-means groups. This file can be read in real-time to watch the evolution of criteria')
 	
     def gencmdline_kmeans_groups(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
@@ -2918,15 +2871,25 @@ class MainWindow(QtGui.QWidget):
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = PopupHelicalRefinement()
         self.w.resize(600,800)
-        self.w.show()    
-       
+        self.w.show()   
+	
     def ali3d(self):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupthreedali()
-        self.w.resize(550,600)
-        self.w.show()  
+	self.w1 = Popupadvparams_ali3d_1(self.w.savedparmsdict)
+	self.w2 = Popupadvparams_ali3d_2(self.w.savedparmsdict)
+	self.w.w1 = self.w1
+	self.w.w2 = self.w2
+	self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'0')
+    	self.TabWidget.insertTab(1,self.w1,'1')
+	self.TabWidget.insertTab(2,self.w2,'2')
+	self.TabWidget.resize(550,650)
+    	self.TabWidget.show()
+        
+	
     def kmeans(self):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
