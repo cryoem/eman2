@@ -2710,6 +2710,247 @@ class Popupadvparams_kmeans_groups(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.masknameedit.setText(str(a))
 
+
+class Popuppdb2em(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+	
+	#######################################################################################
+	# class variables
+	self.cmd = ""
+	# populate with default values
+	self.savedparmsdict = {'pdbfile':'NONE','output':'NONE','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
+	
+	#######################################################################################
+	# Layout parameters
+	
+	self.y1 = 10 # title and Repopulate button
+	self.y2 = self.y1 + 85 # Text boxes for inputting parameters
+	#self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
+	self.y4 = self.y2 + 290 # Advanced Parameters, Save Input and Generate command line buttons
+	self.y5 = self.y4 + 95 # run button 
+	self.yspc = 4
+	
+	self.x1 = 10 # first column (text box labels)
+	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x3 = self.x2+145 # third column (Open .hdf button)
+	self.x4 = self.x3+100 # fourth column (Open .bdb button)
+	self.x5 = 230 # run button
+	#######################################################################################
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxpdb2em')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxpdb2em</b> - convert atomic model (pdb file) into sampled electron density map', self)
+	title1.move(self.x1,self.y1)
+	self.y1 += 30
+
+	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+        self.repopbtn.move(self.x1-5,self.y1)
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_pdb2em)
+
+	#######################################################################################
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+	self.file_button = QtGui.QPushButton("Open .pdb", self)
+	self.file_button.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+	
+	pdb= QtGui.QLabel('Name of pdb file', self)
+	pdb.move(self.x1,self.y2)
+	self.pdbfileedit=QtGui.QLineEdit(self)
+        self.pdbfileedit.move(self.x2,self.y2)
+	self.pdbfileedit.setText(self.savedparmsdict['pdbfile'])
+	self.y2 += 30
+	
+	output= QtGui.QLabel('EM Output file', self)
+	output.move(self.x1,self.y2)
+	self.outputedit=QtGui.QLineEdit(self)
+	self.outputedit.move(self.x2,self.y2)
+	self.outputedit.setText(self.savedparmsdict['output'])	
+	
+	self.outinfobtn = QPushButton("Output Info", self)
+        self.outinfobtn.move(self.x3,  self.y2-self.yspc)
+        #sets an infotip for this Pushbutton
+        self.outinfobtn.setToolTip('Output Info')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_pdb2em)
+	self.y2 += 30
+	
+	apix= QtGui.QLabel('Pixel size (Angstroms)', self)
+	apix.move(self.x1,self.y2)
+	self.apixedit=QtGui.QLineEdit(self)
+	self.apixedit.move(self.x2,self.y2)
+	self.apixedit.setText(self.savedparmsdict['apix'])
+	self.apixedit.setToolTip('Pixel size in Angstroms of the output map')	
+	self.y2 += 30
+	
+	box= QtGui.QLabel('Box size (voxels)', self)
+	box.move(self.x1,self.y2)
+	self.boxedit=QtGui.QLineEdit(self)
+	self.boxedit.move(self.x2,self.y2)
+	self.boxedit.setText(self.savedparmsdict['box'])
+	self.boxedit.setToolTip('size of the output map in voxels. (If not given, the program will find the minimum box size that includes the structre. However, in most cases this will result in a rectangular box, i.e., each dimension will be different.)')	
+	self.y2 += 30
+
+	het= QtGui.QLabel('het', self)
+	het.move(self.x1,self.y2)
+	self.hetchkbx = QtGui.QCheckBox("",self)
+	self.hetchkbx.move(self.x2, self.y2)
+	self.hetchkbx.setCheckState(self.savedparmsdict['het'])
+	self.hetchkbx.setToolTip('Include HET atoms in the map.')	
+	self.y2 += 30
+	
+	center= QtGui.QLabel('Center', self)
+	center.move(self.x1,self.y2)
+	self.centeredit=QtGui.QLineEdit(self)
+	self.centeredit.move(self.x2,self.y2)
+	self.centeredit.setText(self.savedparmsdict['center'])
+	self.centeredit.setToolTip('specify whether to center the atomic model before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered). Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2).')	
+	self.y2 += 30
+	
+	Och= QtGui.QLabel('O', self)
+	Och.move(self.x1,self.y2)
+	self.Ochchkbx = QtGui.QCheckBox("",self)
+	self.Ochchkbx.move(self.x2, self.y2)
+	self.Ochchkbx.setCheckState(self.savedparmsdict['Och'])
+	self.Ochchkbx.setToolTip('apply additional rotation so the model will appear in O in the same rotation as in chimera.')	
+	self.y2 += 30
+	
+	quiet= QtGui.QLabel('Quiet', self)
+	quiet.move(self.x1,self.y2)
+	self.quietchkbx = QtGui.QCheckBox("",self)
+	self.quietchkbx.move(self.x2, self.y2)
+	self.quietchkbx.setCheckState(self.savedparmsdict['quiet'])
+	self.quietchkbx.setToolTip('do not print any information to the monitor.')	
+	self.y2 += 30
+	
+	tr0= QtGui.QLabel('tr0', self)
+	tr0.move(self.x1,self.y2)
+	self.tr0edit=QtGui.QLineEdit(self)
+	self.tr0edit.move(self.x2,self.y2)
+	self.tr0edit.setText(self.savedparmsdict['tr0'])
+	self.tr0edit.setToolTip('Filename of initial 3x4 transformation matrix')
+	self.y2 += 30
+	# make ctf, normalize and init_method radio button...
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	self.y4+=30
+	
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_pdb2em)
+
+	#######################################################################
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxpdb2em', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	self.RUN_button.move(self.x5, self.y5)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxpdb2em)
+        #Labels and Line Edits for User Input	
+
+		
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+    def outputinfo_pdb2em(self):
+    	QMessageBox.information(self, "sxpdb2em output",'output 3-D electron density map (any EM format). Attribute pixel_size will be set to the specified value.')
+	
+    def gencmdline_pdb2em(self,writefile=True):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+   	pdbfile = self.pdbfileedit.text()
+	output=self.outputedit.text()
+	apix=self.apixedit.text()
+	box=self.boxedit.text()
+	center=self.centeredit.text()
+	tr0=self.tr0edit.text()
+	het=self.hetchkbx.checkState()
+	quiet=self.quietchkbx.checkState()
+	Och=self.Ochchkbx.checkState()
+	
+	cmd1 = "sxpdb2em.py "+str(pdbfile) +" "+ str(output)
+	
+	args = " --apix="+ str(apix)+" --box="+ str(box)+ " --center="+str(center)
+	
+	cmd1 = cmd1 + args
+		
+	if het == Qt.Checked:
+		cmd1 = cmd1 + " --het"
+	if quiet == Qt.Checked:
+		cmd1 = cmd1 + " --quiet"
+	if Och == Qt.Checked:
+		cmd1 = cmd1 + " --O"		
+	
+	if len(str(tr0)) > 0:
+		cmd1 = cmd1 + " --tr0="+str(tr0)
+	
+	self.savedparmsdict = {'pdbfile':str(pdbfile),'output':str(output),'apix':str(apix),'box':str(box),'het':het,'center':str(center),'Och':Och,'quiet':quiet,'tr0':str(tr0)}
+	
+	
+	if writefile:	
+		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+		if stat:
+			f = open(fname,'a')
+			f.write(cmd1)
+			f.write('\n')
+			f.close()
+	
+	print cmd1
+	self.cmd = cmd1
+	
+    def runsxpdb2em(self):
+	self.gencmdline_pdb2em(writefile=False)
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
+	
+    def saveparms(self):	
+	# save all the parms in a text file so we can repopulate if user requests
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_pdb2em(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
+	
+    def repoparms_pdb2em(self):	
+	(fname,stat)= QInputDialog.getText(self,"Get Input Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.pdbfileedit.setText(self.savedparmsdict['pdbfile'])
+		self.outputedit.setText(self.savedparmsdict['output'])
+		self.apixedit.setText(self.savedparmsdict['apix'])	
+		self.boxedit.setText(self.savedparmsdict['box'])	
+		self.centeredit.setText(self.savedparmsdict['center'])
+		self.hetchkbx.setCheckState(self.savedparmsdict['het'])
+		self.Ochchkbx.setCheckState(self.savedparmsdict['Och'])
+		self.quietchkbx.setCheckState(self.savedparmsdict['quiet'])
+		self.tr0edit.setText(self.savedparmsdict['tr0'])
+		
+    def choose_file(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open PDB File", "", "PDB files (*.pdb)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.pdbfileedit.setText(str(a))
+        
+
 ###MAIN WINDOW	(started by class App)
 #This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
 class MainWindow(QtGui.QWidget):
@@ -2717,48 +2958,70 @@ class MainWindow(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         #sets the title of the window
 	self.setWindowTitle('SPARX GUI')
+	
+	self.y2 = 65
+	
         #creates a Pushbutton, named sxali2d, defines its position in the window 
         self.btn1 = QPushButton("sxali2d", self)
-        self.btn1.move(10, 65)
+        self.btn1.move(10, self.y2)
         #sets an infotip for this Pushbutton
         self.btn1.setToolTip('2D  reference free alignment of an image series ')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.btn1, SIGNAL("clicked()"), self.twodali)
+	
+	self.y2 += 30
+	
         #another Pushbutton, with a tooltip, not linked to a function yet
 	self.btn2 = QPushButton("sxmref_ali2d", self)
         self.btn2.setToolTip('2D MULTI-referencealignment of an image series ')
-        self.btn2.move(10, 95)
-        #Pushbutton named Info
-	self.picbutton = QPushButton(self)
-        #when this button is clicked, this action starts the subfunction info
-        self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
-	#creates a Pushbutton, named sxihrsr defines its position in the window 
+        self.btn2.move(10, self.y2)
+       
+	self.y2 += 30
+	
         self.btn3 = QPushButton("sxihrsr", self)
-        self.btn3.move(10, 125)
+        self.btn3.move(10, self.y2)
         #sets an infotip for this Pushbutton
         self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
 	
+	self.y2 += 30
+	
 	self.btn4 = QPushButton("sxali3d", self)
-        self.btn4.move(10, 155)
+        self.btn4.move(10, self.y2)
         #sets an infotip for this Pushbutton
         self.btn4.setToolTip('Perform 3-D projection matching given initial reference volume and image series')
 	self.connect(self.btn4, SIGNAL("clicked()"), self.ali3d)
 	
-	self.btn4 = QPushButton("sxk_means", self)
-        self.btn4.move(10, 185)
+	self.y2 += 30
+	
+	self.btn5 = QPushButton("sxk_means", self)
+        self.btn5.move(10, self.y2)
         #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('K-means classification of a set of images')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.kmeans)
+        self.btn5.setToolTip('K-means classification of a set of images')
+	self.connect(self.btn5, SIGNAL("clicked()"), self.kmeans)
 	
+	self.y2 += 30
 	
-	self.btn5 = QPushButton("sxk_means_groups", self)
-        self.btn5.move(10, 185+30)
+	self.btn6 = QPushButton("sxk_means_groups", self)
+        self.btn6.move(10, self.y2)
         #sets an infotip for this Pushbutton
-        self.btn5.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
-	self.connect(self.btn5, SIGNAL("clicked()"), self.kmeansgroups)
+        self.btn6.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
+	self.connect(self.btn6, SIGNAL("clicked()"), self.kmeansgroups)
 	
+	self.y2 += 30
+	
+	self.btn7 = QPushButton("sxpdb2em", self)
+        self.btn7.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn7.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
+	self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
+
+	 #Pushbutton named Info
+	self.picbutton = QPushButton(self)
+        #when this button is clicked, this action starts the subfunction info
+        self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
+	#creates a Pushbutton, named sxihrsr defines its position in the window 
         #this decorates the button with the sparx image
 	icon = QIcon(get_image_directory()+"sparxicon.png")
 	self.picbutton.setIcon(icon)
@@ -2844,7 +3107,16 @@ class MainWindow(QtGui.QWidget):
     	self.TabWidget.insertTab(1,self.w1,'Advanced')
 	self.TabWidget.resize(580,570)
     	self.TabWidget.show()
-	
+
+    def pdb2em(self):
+        print "Opening a new popup window..."
+        #opens the window Poptwodali, and defines its width and height
+        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+        
+	self.w = Popuppdb2em()
+	self.w.resize(580,570)
+    	self.w.show()
+		
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
         print "Opening a new popup window..."
